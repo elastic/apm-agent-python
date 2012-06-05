@@ -1,7 +1,7 @@
 import logbook
 from unittest2 import TestCase
-from raven.base import Client
-from raven.handlers.logbook import SentryHandler
+from opbeat_python.base import Client
+from opbeat_python.handlers.logbook import SentryHandler
 
 
 class TempStoreClient(Client):
@@ -18,7 +18,7 @@ class LogbookHandlerTest(TestCase):
         self.logger = logbook.Logger(__name__)
 
     def test_logger(self):
-        client = TempStoreClient(include_paths=['tests', 'raven'])
+        client = TempStoreClient(include_paths=['tests', 'opbeat_python'])
         handler = SentryHandler(client)
         logger = self.logger
 

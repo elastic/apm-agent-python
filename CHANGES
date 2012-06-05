@@ -30,7 +30,7 @@
 
 1.4.0
 
-* Raven now tracks the state of the Sentry server. If it receives an error, it will slow down
+* raven now tracks the state of the Sentry server. If it receives an error, it will slow down
   requests to the server (by passing them into a named logger, sentry.errors), and increasingly
   delay the next try with repeated failures, up to about a minute.
 
@@ -83,7 +83,7 @@
 
 1.2.0
 
-* Made DSN a first-class citizen throughout Raven.
+* Made DSN a first-class citizen throughout raven.
 * Added a Pylons-specific WSGI middleware.
 * Improved the generic WSGI middleware to capture HTTP information.
 * Improved logging and logbook handlers.
@@ -127,7 +127,7 @@
 1.0.4
 
 * Corrected a bug in setup_logging.
-* Raven now sends "sentry_version" header which is the expected
+* raven now sends "sentry_version" header which is the expected
   server version.
 
 1.0.3
@@ -145,7 +145,7 @@
 1.0.0
 
 * Now only works with Sentry>=2.0.0 server.
-* Raven is now listed as raven2 on PyPi.
+* raven is now listed as raven2 on PyPi.
 
 0.8.0
 
@@ -201,4 +201,4 @@
 
 0.1
 
-* Initial version of Raven (extracted from django-sentry 1.12.1).
+* Initial version of raven (extracted from django-sentry 1.12.1).

@@ -10,15 +10,15 @@ import logging
 
 from django.test import TestCase
 from sentry.models import Group, Event
-from raven.contrib.django import DjangoClient
+from opbeat_python.contrib.django import DjangoClient
 
 
 class ServerTest(TestCase):
     def setUp(self):
-        self.raven = DjangoClient(include_paths=['tests'])
+        self.opbeat_python = DjangoClient(include_paths=['tests'])
 
     def test_text(self):
-        event_id, checksum = self.raven.capture('Message', message='hello')
+        event_id, checksum = self.opbeat_python.capture('Message', message='hello')
 
         self.assertEquals(Group.objects.count(), 1)
         self.assertEquals(Event.objects.count(), 1)
@@ -47,7 +47,7 @@ class ServerTest(TestCase):
         else:
             self.fail('Whatttt?')
 
-        event_id, checksum = self.raven.capture('Exception')
+        event_id, checksum = self.opbeat_python.capture('Exception')
 
         self.assertEquals(Group.objects.count(), 1)
         self.assertEquals(Event.objects.count(), 1)

@@ -1,9 +1,9 @@
 Configuring Celery
 ==================
 
-Celery provides a hook for catching task failures, and Raven can easily plug into that hook::
+Celery provides a hook for catching task failures, and opbeat_python can easily plug into that hook::
 
-    from raven.contrib.celery import register_signal
+    from opbeat_python.contrib.celery import register_signal
 
     register_signal(client)
 

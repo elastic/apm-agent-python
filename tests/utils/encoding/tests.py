@@ -4,7 +4,7 @@ import uuid
 
 from unittest2 import TestCase
 
-from raven.utils.encoding import transform, shorten
+from opbeat_python.utils.encoding import transform, shorten
 
 
 class TransformTest(TestCase):

@@ -6,8 +6,8 @@ import tempfile
 import unittest2
 import zerorpc
 
-from raven.base import Client
-from raven.contrib.zerorpc import SentryMiddleware
+from opbeat_python.base import Client
+from opbeat_python.contrib.zerorpc import SentryMiddleware
 
 
 class TempStoreClient(Client):
@@ -22,7 +22,7 @@ class TempStoreClient(Client):
 class ZeroRPCTest(unittest2.TestCase):
 
     def setUp(self):
-        self._socket_dir = tempfile.mkdtemp(prefix='ravenzerorpcunittest')
+        self._socket_dir = tempfile.mkdtemp(prefix='opbeat_pythonzerorpcunittest')
         self._server_endpoint = 'ipc://{0}'.format(os.path.join(
                     self._socket_dir, 'random_zeroserver'
         ))

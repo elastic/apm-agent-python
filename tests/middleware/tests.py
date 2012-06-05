@@ -1,7 +1,7 @@
 import logging
 from unittest2 import TestCase
-from raven.base import Client
-from raven.middleware import Sentry
+from opbeat_python.base import Client
+from opbeat_python.middleware import Sentry
 
 import webob
 

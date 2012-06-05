@@ -1,8 +1,8 @@
 import logging
 from unittest2 import TestCase
-from raven.base import Client
-from raven.handlers.logging import SentryHandler
-from raven.utils.stacks import iter_stack_frames
+from opbeat_python.base import Client
+from opbeat_python.handlers.logging import SentryHandler
+from opbeat_python.utils.stacks import iter_stack_frames
 
 
 class TempStoreClient(Client):
@@ -16,7 +16,7 @@ class TempStoreClient(Client):
 
 class LoggingIntegrationTest(TestCase):
     def setUp(self):
-        self.client = TempStoreClient(include_paths=['tests', 'raven'])
+        self.client = TempStoreClient(include_paths=['tests', 'opbeat_python'])
         self.handler = SentryHandler(self.client)
         self.logger = logging.getLogger(__name__)
         self.logger.handlers = []

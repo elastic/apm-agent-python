@@ -1,12 +1,12 @@
 Configuring ``WSGI`` Middleware
 ===============================
 
-Raven includes a simple to use WSGI middleware.
+opbeat_python includes a simple to use WSGI middleware.
 
 ::
 
-    from raven import Client
-    from raven.middleware import Sentry
+    from opbeat_python import Client
+    from opbeat_python.middleware import Sentry
 
     application = Sentry(
         application,

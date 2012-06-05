@@ -8,7 +8,7 @@ A Pylons-specific middleware exists to enable easy configuration from settings:
 
 ::
 
-    from raven.contrib.pylons import Sentry
+    from opbeat_python.contrib.pylons import Sentry
 
     application = Sentry(application, config)
 
@@ -55,7 +55,7 @@ Add the following lines to your project's `.ini` file to setup `SentryHandler`:
     formatter = generic
 
     [handler_sentry]
-    class = raven.handlers.logging.SentryHandler
+    class = opbeat_python.handlers.logging.SentryHandler
     args = (['http://sentry.local/api/store/'], 'KEY')
     level = NOTSET
     formatter = generic

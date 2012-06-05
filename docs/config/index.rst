@@ -24,13 +24,13 @@ Configuring the Client
 
 Settings are specified as part of the intialization of the client.
 
-As of Raven 1.2.0, you can now configure all clients through a standard DSN
+As of opbeat_python 1.2.0, you can now configure all clients through a standard DSN
 string. This can be specified as a default using the ``SENTRY_DSN`` environment
 variable, as well as passed to all clients by using the ``dsn`` argument.
 
 ::
 
-    from raven import Client
+    from opbeat_python import Client
 
     # Read configuration from the environment
     client = Client()
@@ -70,7 +70,7 @@ It is composed of six important pieces:
 Client Arguments
 ----------------
 
-The following are valid arguments which may be passed to the Raven client:
+The following are valid arguments which may be passed to the opbeat_python client:
 
 dsn
 ~~~
@@ -143,7 +143,7 @@ Extending this allow you to ignore module prefixes when we attempt to discover w
     exclude_paths = [
         'django',
         'sentry',
-        'raven',
+        'opbeat_python',
         'lxml.objectify',
     ]
 
@@ -157,7 +157,7 @@ For example, in Django this defaults to your list of ``INSTALLED_APPS``, and is 
     include_paths = [
         'django',
         'sentry',
-        'raven',
+        'opbeat_python',
         'lxml.objectify',
     ]
 
@@ -188,7 +188,7 @@ If a string is longer than the given length, it will be truncated down to the sp
 auto_log_stacks
 ~~~~~~~~~~~~~~~
 
-Should Raven automatically log frame stacks (including locals) all calls as it would for exceptions.
+Should opbeat_python automatically log frame stacks (including locals) all calls as it would for exceptions.
 
 ::
 
@@ -212,44 +212,44 @@ additional global state data or sanitizing data that you want to keep off of the
 ::
 
     processors = (
-        'raven.processors.SanitizePasswordsProcessor',
+        'opbeat_python.processors.SanitizePasswordsProcessor',
     )
 
 Sanitizing Data
 ---------------
 
-Several processors are included with Raven to assist in data sanitiziation. These are configured with the
+Several processors are included with opbeat_python to assist in data sanitiziation. These are configured with the
 ``processors`` value.
 
-.. data:: raven.processors.SanitizePasswordsProcessor
+.. data:: opbeat_python.processors.SanitizePasswordsProcessor
 
    Removes all keys which resemble ``password`` or ``secret`` within stacktrace contexts, and HTTP
    bits (such as cookies, POST data, the querystring, and environment).
 
-.. data:: raven.processors.RemoveStackLocalsProcessor
+.. data:: opbeat_python.processors.RemoveStackLocalsProcessor
 
    Removes all stacktrace context variables. This will cripple the functionality of Sentry, as you'll only
    get raw tracebacks, but it will ensure no local scoped information is available to the server.
 
-.. data:: raven.processors.RemovePostDataProcessor
+.. data:: opbeat_python.processors.RemovePostDataProcessor
 
    Removes the ``body`` of all HTTP data.
 
 Testing the Client
 ------------------
 
-Once you've got your server configured, you can test the Raven client by using it's CLI::
+Once you've got your server configured, you can test the opbeat_python client by using it's CLI::
 
-  raven test <DSN value>
+  opbeat_python test <DSN value>
 
 If you've configured your environment to have SENTRY_DSN available, you can simply drop
 the optional DSN argument::
 
-  raven test
+  opbeat_python test
 
 You should get something like the following, assuming you're configured everything correctly::
 
-  $ raven test http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
+  $ opbeat_python test http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
   Using DSN configuration:
     http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
 

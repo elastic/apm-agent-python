@@ -1,5 +1,5 @@
 from unittest2 import TestCase
-from raven.contrib.pylons import Sentry
+from opbeat_python.contrib.pylons import Sentry
 
 
 def example_app(environ, start_response):

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from unittest2 import TestCase
-from raven.base import Client
+from opbeat_python.base import Client
 
 # Some internal stuff to extend the transport layer
-from raven.transport import Transport
+from opbeat_python.transport import Transport
 
 import datetime
 import calendar

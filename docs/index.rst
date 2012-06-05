@@ -1,7 +1,7 @@
-Raven
+opbeat_python
 =====
 
-Raven is a standalone (and the official) Python client for `Sentry <http://www.getsentry.com/>`_.
+opbeat_python is a standalone (and the official) Python client for `Sentry <http://www.getsentry.com/>`_.
 
 .. toctree::
    :maxdepth: 2
@@ -23,9 +23,9 @@ More information about Sentry can be found at http://www.getsentry.com/
 Resources
 ---------
 
-* `Documentation <http://raven.readthedocs.org/>`_
-* `Bug Tracker <http://github.com/dcramer/raven/issues>`_
-* `Code <http://github.com/dcramer/raven>`_
+* `Documentation <http://opbeat_python.readthedocs.org/>`_
+* `Bug Tracker <http://github.com/dcramer/opbeat_python/issues>`_
+* `Code <http://github.com/dcramer/opbeat_python>`_
 * `Mailing List <https://groups.google.com/group/getsentry>`_
 * `IRC <irc://irc.freenode.net/sentry>`_  (irc.freenode.net, #sentry)
 

@@ -4,7 +4,7 @@ import datetime
 import uuid
 from unittest2 import TestCase
 
-from raven.utils import json
+from opbeat_python.utils import json
 
 
 class JSONTest(TestCase):

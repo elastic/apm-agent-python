@@ -6,7 +6,7 @@ use it simply add :class:`SentryHandler` to your logger.
 
 First you'll need to configure a handler::
 
-    from raven.handlers.logging import SentryHandler
+    from opbeat_python.handlers.logging import SentryHandler
 
     # Manually specify a client
     client = Client(...)
@@ -19,7 +19,7 @@ You can also automatically configure the default client with a DSN::
 
 Finally, call the :func:`setup_logging` helper function::
 
-    from raven.conf import setup_logging
+    from opbeat_python.conf import setup_logging
 
     setup_logging(handler)
 

@@ -1,5 +1,5 @@
 from unittest2 import TestCase
-from raven.utils.wsgi import get_headers, get_host, get_environ
+from opbeat_python.utils.wsgi import get_headers, get_host, get_environ
 
 
 class GetHeadersTest(TestCase):

@@ -4,15 +4,15 @@ Configuring Flask
 Setup
 -----
 
-The first thing you'll need to do is to initialize Raven under your application::
+The first thing you'll need to do is to initialize opbeat_python under your application::
 
-    from raven.contrib.flask import Sentry
+    from opbeat_python.contrib.flask import Sentry
     sentry = Sentry(app, dsn='http://public_key:secret_key@example.com/1')
 
 If you don't specify the ``dsn`` value, we will attempt to read it from your environment under
 the ``SENTRY_DSN`` key.
 
-Building applications on the fly? You can use Raven's ``init_app`` hook::
+Building applications on the fly? You can use opbeat_python's ``init_app`` hook::
 
     sentry = Sentry(dsn='http://public_key:secret_key@example.com/1')
 

@@ -1,12 +1,12 @@
 Configuring ``logbook``
 =======================
 
-Raven provides a `logbook <http://logbook.pocoo.org>`_ handler which will pipe
+opbeat_python provides a `logbook <http://logbook.pocoo.org>`_ handler which will pipe
 messages to Sentry.
 
 First you'll need to configure a handler::
 
-    from raven.handlers.logbook import SentryHandler
+    from opbeat_python.handlers.logbook import SentryHandler
 
     # Manually specify a client
     client = Client(...)
@@ -19,7 +19,7 @@ You can also automatically configure the default client with a DSN::
 
 Finally, bind your handler to your context::
 
-    from raven.handlers.logbook import SentryHandler
+    from opbeat_python.handlers.logbook import SentryHandler
 
     client = Client(...)
     sentry_handler = SentryHandler(client)

@@ -46,7 +46,7 @@ if not settings.configured:
             'djcelery',  # celery client
 
             'sentry',  # server
-            'raven.contrib.django',
+            'opbeat_python.contrib.django',
         ],
         ROOT_URLCONF='',
         DEBUG=False,

@@ -2,12 +2,12 @@
 
 import inspect
 import mock
-import raven
+import opbeat_python
 import time
 from socket import socket, AF_INET, SOCK_DGRAM
 from unittest2 import TestCase
-from raven.base import Client, ClientState
-from raven.utils.stacks import iter_stack_frames
+from opbeat_python.base import Client, ClientState
+from opbeat_python.utils.stacks import iter_stack_frames
 
 
 class TempStoreClient(Client):
@@ -60,8 +60,8 @@ class ClientTest(TestCase):
     def setUp(self):
         self.client = TempStoreClient()
 
-    @mock.patch('raven.base.Client._send_remote')
-    @mock.patch('raven.base.ClientState.should_try')
+    @mock.patch('opbeat_python.base.Client._send_remote')
+    @mock.patch('opbeat_python.base.ClientState.should_try')
     def test_send_remote_failover(self, should_try, send_remote):
         should_try.return_value = True
 
@@ -82,8 +82,8 @@ class ClientTest(TestCase):
         client.send_remote('http://example.com/api/store', 'foo')
         self.assertEquals(client.state.status, client.state.ONLINE)
 
-    @mock.patch('raven.base.Client.send_remote')
-    @mock.patch('raven.base.time.time')
+    @mock.patch('opbeat_python.base.Client.send_remote')
+    @mock.patch('opbeat_python.base.time.time')
     def test_send(self, time, send_remote):
         time.return_value = 1328055286.51
         client = Client(
@@ -101,12 +101,12 @@ class ClientTest(TestCase):
             headers={
                 'Content-Type': 'application/octet-stream',
                 'X-Sentry-Auth': 'Sentry sentry_timestamp=1328055286.51, '
-                'sentry_client=raven-python/%s, sentry_version=2.0, sentry_key=public' % (raven.VERSION,)
+                'sentry_client=opbeat_python-python/%s, sentry_version=2.0, sentry_key=public' % (opbeat_python.VERSION,)
             },
         )
 
-    @mock.patch('raven.base.Client.send_remote')
-    @mock.patch('raven.base.time.time')
+    @mock.patch('opbeat_python.base.Client.send_remote')
+    @mock.patch('opbeat_python.base.time.time')
     def test_send_with_public_key(self, time, send_remote):
         time.return_value = 1328055286.51
         client = Client(
@@ -124,12 +124,12 @@ class ClientTest(TestCase):
             headers={
                 'Content-Type': 'application/octet-stream',
                 'X-Sentry-Auth': 'Sentry sentry_timestamp=1328055286.51, '
-                'sentry_client=raven-python/%s, sentry_version=2.0, sentry_key=foo' % (raven.VERSION,)
+                'sentry_client=opbeat_python-python/%s, sentry_version=2.0, sentry_key=foo' % (opbeat_python.VERSION,)
             },
         )
 
-    @mock.patch('raven.base.Client.send_remote')
-    @mock.patch('raven.base.time.time')
+    @mock.patch('opbeat_python.base.Client.send_remote')
+    @mock.patch('opbeat_python.base.time.time')
     def test_send_with_auth_header(self, time, send_remote):
         time.return_value = 1328055286.51
         client = Client(

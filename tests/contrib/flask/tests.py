@@ -1,7 +1,7 @@
 import logging
 from flask import Flask
-from raven.base import Client
-from raven.contrib.flask import Sentry
+from opbeat_python.base import Client
+from opbeat_python.contrib.flask import Sentry
 from unittest2 import TestCase
 
 

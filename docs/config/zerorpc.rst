@@ -5,12 +5,12 @@ Setup
 -----
 
 The ZeroRPC integration comes as middleware for ZeroRPC. The middleware can be
-configured like the original Raven client (using keyword arguments) and
+configured like the original opbeat_python client (using keyword arguments) and
 registered into ZeroRPC's context manager::
 
     import zerorpc
 
-    from raven.contrib.zerorpc import SentryMiddleware
+    from opbeat_python.contrib.zerorpc import SentryMiddleware
 
     sentry = SentryMiddleware(dsn='udp://public_key:secret_key@example.com:4242/1')
     zerorpc.Context.get_instance().register_middleware(sentry)
@@ -26,5 +26,5 @@ Caveats
 
 Since sending an exception to Sentry will basically block your RPC call, you are
 *strongly* advised to use the UDP server of Sentry. In any cases, a cleaner and
-long term solution would be to make Raven requests to the Sentry server
+long term solution would be to make opbeat_python requests to the Sentry server
 asynchronous.

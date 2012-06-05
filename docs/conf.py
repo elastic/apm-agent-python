@@ -41,7 +41,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Raven'
+project = u'opbeat_python'
 copyright = u'2010, David Cramer'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -50,7 +50,7 @@ copyright = u'2010, David Cramer'
 #
 # The short X.Y version.
 
-version = __import__('pkg_resources').get_distribution('raven').version
+version = __import__('pkg_resources').get_distribution('opbeat_python').version
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -91,7 +91,7 @@ pygments_style = 'sphinx'
 intersphinx_mapping = {
     'http://docs.python.org/2.7': None,
     'django': ('http://docs.djangoproject.com/en/dev/', 'http://docs.djangoproject.com/en/dev/_objects/'),
-    'http://raven.readthedocs.org/en/latest': None
+    'http://opbeat_python.readthedocs.org/en/latest': None
 }
 
 
@@ -172,7 +172,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Ravendoc'
+htmlhelp_basename = 'opbeat_pythondoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -186,7 +186,7 @@ htmlhelp_basename = 'Ravendoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Raven.tex', u'Raven Documentation',
+  ('index', 'opbeat_python.tex', u'opbeat_python Documentation',
    u'David Cramer', 'manual'),
 ]
 
@@ -219,6 +219,6 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'raven', u'Raven Documentation',
+    ('index', 'opbeat_python', u'opbeat_python Documentation',
      [u'David Cramer'], 1)
 ]
