@@ -1,0 +1,1 @@
+from opbeat_python.contrib.transports.zeromq.opbeat_python_zmq import ZmqPubTransport
