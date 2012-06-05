@@ -36,8 +36,8 @@ class MiddlewareTest(TestCase):
         self.assertEquals(len(client.events), 1)
         event = client.events.pop(0)
 
-        self.assertTrue('sentry.interfaces.Exception' in event)
-        exc = event['sentry.interfaces.Exception']
+        self.assertTrue('exception' in event)
+        exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'hello world')
         self.assertEquals(event['level'], logging.ERROR)

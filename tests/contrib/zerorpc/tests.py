@@ -45,9 +45,9 @@ class ZeroRPCTest(unittest2.TestCase):
         except zerorpc.exceptions.RemoteError as ex:
             self.assertEqual(ex.name, 'IndexError')
             self.assertEqual(len(self._sentry.events), 1)
-            exc = self._sentry.events[0]['sentry.interfaces.Exception']
+            exc = self._sentry.events[0]['exception']
             self.assertEqual(exc['type'], 'IndexError')
-            frames = self._sentry.events[0]['sentry.interfaces.Stacktrace']['frames']
+            frames = self._sentry.events[0]['stacktrace']['frames']
             self.assertEqual(frames[0]['function'], 'choice')
             self.assertEqual(frames[0]['module'], 'random')
             return

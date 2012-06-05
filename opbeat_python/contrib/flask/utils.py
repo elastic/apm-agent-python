@@ -7,7 +7,7 @@ def get_data_from_request(request):
     urlparts = urlparse.urlsplit(request.url)
 
     return {
-        'sentry.interfaces.Http': {
+        'http': {
             'url': '%s://%s%s' % (urlparts.scheme, urlparts.netloc, urlparts.path),
             'query_string': urlparts.query,
             'method': request.method,

@@ -30,8 +30,8 @@ class RemovePostDataProcessor(Processor):
     Removes HTTP post data.
     """
     def process(self, data, **kwargs):
-        if 'sentry.interfaces.Http' in data:
-            data['sentry.interfaces.Http'].pop('data', None)
+        if 'http' in data:
+            data['http'].pop('data', None)
 
         return data
 
@@ -41,8 +41,8 @@ class RemoveStackLocalsProcessor(Processor):
     Removes local context variables from stacktraces.
     """
     def process(self, data, **kwargs):
-        if 'sentry.interfaces.Stacktrace' in data:
-            for frame in data['sentry.interfaces.Stacktrace'].get('frames', []):
+        if 'stacktrace' in data:
+            for frame in data['stacktrace'].get('frames', []):
                 frame.pop('vars', None)
 
         return data
@@ -102,10 +102,10 @@ class SanitizePasswordsProcessor(Processor):
                 data[n] = varmap(self.sanitize, data[n])
 
     def process(self, data, **kwargs):
-        if 'sentry.interfaces.Stacktrace' in data:
-            self.filter_stacktrace(data['sentry.interfaces.Stacktrace'])
+        if 'stacktrace' in data:
+            self.filter_stacktrace(data['stacktrace'])
 
-        if 'sentry.interfaces.Http' in data:
-            self.filter_http(data['sentry.interfaces.Http'])
+        if 'http' in data:
+            self.filter_http(data['http'])
 
         return data

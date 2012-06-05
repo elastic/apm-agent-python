@@ -71,7 +71,7 @@ def runtests(*test_args, **kwargs):
         test_args = ['tests']
 
     kwargs.setdefault('interactive', False)
-
+    kwargs.setdefault('w',where_am_i)
     test_runner = NoseTestSuiteRunner(**kwargs)
 
     failures = test_runner.run_tests(test_args)

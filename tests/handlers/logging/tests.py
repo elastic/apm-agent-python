@@ -30,10 +30,10 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(event['logger'], __name__)
         self.assertEquals(event['level'], logging.ERROR)
         self.assertEquals(event['message'], 'This is a test error')
-        self.assertFalse('sentry.interfaces.Stacktrace' in event)
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('stacktrace' in event)
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test error')
         self.assertEquals(msg['params'], ())
 
@@ -44,10 +44,10 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(event['logger'], __name__)
         self.assertEquals(event['level'], logging.WARNING)
         self.assertEquals(event['message'], 'This is a test warning')
-        self.assertFalse('sentry.interfaces.Stacktrace' in event)
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('stacktrace' in event)
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test warning')
         self.assertEquals(msg['params'], ())
 
@@ -60,10 +60,10 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)
         self.assertEquals(event['extra']['url'], 'http://example.com')
-        self.assertFalse('sentry.interfaces.Stacktrace' in event)
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('stacktrace' in event)
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test info with a url')
         self.assertEquals(msg['params'], ())
 
@@ -77,13 +77,13 @@ class LoggingIntegrationTest(TestCase):
         event = self.client.events.pop(0)
 
         self.assertEquals(event['message'], 'This is a test info with an exception')
-        self.assertTrue('sentry.interfaces.Stacktrace' in event)
-        self.assertTrue('sentry.interfaces.Exception' in event)
-        exc = event['sentry.interfaces.Exception']
+        self.assertTrue('stacktrace' in event)
+        self.assertTrue('exception' in event)
+        exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'This is a test ValueError')
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test info with an exception')
         self.assertEquals(msg['params'], ())
 
@@ -92,10 +92,10 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)
         self.assertEquals(event['message'], 'This is a test of args')
-        self.assertFalse('sentry.interfaces.Stacktrace' in event)
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('stacktrace' in event)
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test of %s')
         self.assertEquals(msg['params'], ('args',))
 
@@ -103,14 +103,14 @@ class LoggingIntegrationTest(TestCase):
         self.logger.info('This is a test of stacks', extra={'stack': True})
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)
-        self.assertTrue('sentry.interfaces.Stacktrace' in event)
-        frames = event['sentry.interfaces.Stacktrace']['frames']
+        self.assertTrue('stacktrace' in event)
+        frames = event['stacktrace']['frames']
         self.assertNotEquals(len(frames), 1)
         frame = frames[0]
         self.assertEquals(frame['module'], __name__)
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test of stacks')
         self.assertEquals(msg['params'], ())
         self.assertEquals(event['culprit'], 'tests.handlers.logging.tests.test_record_stack')
@@ -122,10 +122,10 @@ class LoggingIntegrationTest(TestCase):
         event = self.client.events.pop(0)
         self.assertEquals(event.get('culprit'), None)
         self.assertEquals(event['message'], 'This is a test of no stacks')
-        self.assertFalse('sentry.interfaces.Stacktrace' in event)
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('stacktrace' in event)
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test of no stacks')
         self.assertEquals(msg['params'], ())
 
@@ -137,12 +137,12 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(event['culprit'], 'tests.handlers.logging.tests.test_explicit_stack')
         self.assertTrue('message' in event, event)
         self.assertEquals(event['message'], 'This is a test of stacks')
-        self.assertFalse('sentry.interfaces.Exception' in event)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertFalse('exception' in event)
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test of stacks')
         self.assertEquals(msg['params'], ())
-        self.assertTrue('sentry.interfaces.Stacktrace' in event)
+        self.assertTrue('stacktrace' in event)
 
     def test_extra_culprit(self):
         self.logger.info('This is a test of stacks', extra={'culprit': 'foo.bar'})
@@ -160,13 +160,13 @@ class LoggingIntegrationTest(TestCase):
         event = self.client.events.pop(0)
 
         self.assertEquals(event['message'], 'This is a test with an exception')
-        self.assertTrue('sentry.interfaces.Stacktrace' in event)
-        self.assertTrue('sentry.interfaces.Exception' in event)
-        exc = event['sentry.interfaces.Exception']
+        self.assertTrue('stacktrace' in event)
+        self.assertTrue('exception' in event)
+        exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'This is a test ValueError')
-        self.assertTrue('sentry.interfaces.Message' in event)
-        msg = event['sentry.interfaces.Message']
+        self.assertTrue('message' in event)
+        msg = event['message']
         self.assertEquals(msg['message'], 'This is a test with an exception')
         self.assertEquals(msg['params'], ())
 

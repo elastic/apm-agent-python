@@ -37,7 +37,7 @@ class Sentry(object):
         event_id = self.client.capture('Exception',
             exc_info=exc_info,
             data={
-                'sentry.interfaces.Http': {
+                'http': {
                     'method': environ.get('REQUEST_METHOD'),
                     'url': get_current_url(environ, strip_querystring=True),
                     'query_string': environ.get('QUERY_STRING'),

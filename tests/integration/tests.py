@@ -34,8 +34,8 @@ class ServerTest(TestCase):
         versions = data['modules']
         self.assertTrue('tests' in versions)
         self.assertEquals(versions['tests'], 1.0)
-        self.assertTrue('sentry.interfaces.Message' in data)
-        message = data['sentry.interfaces.Message']
+        self.assertTrue('message' in data)
+        message = data['message']
         self.assertEquals(message['message'], 'hello')
         self.assertEquals(message['params'], ())
 
@@ -63,12 +63,12 @@ class ServerTest(TestCase):
         versions = data['modules']
         self.assertTrue('tests' in versions)
         self.assertEquals(versions['tests'], 1.0)
-        self.assertTrue('sentry.interfaces.Exception' in data)
-        exc = data['sentry.interfaces.Exception']
+        self.assertTrue('exception' in data)
+        exc = data['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'hello')
-        self.assertTrue('sentry.interfaces.Stacktrace' in data)
-        frames = data['sentry.interfaces.Stacktrace']['frames']
+        self.assertTrue('stacktrace' in data)
+        frames = data['stacktrace']['frames']
         frame = frames[0]
         self.assertEquals(frame['function'], 'test_exception')
         self.assertEquals(frame['module'], __name__)

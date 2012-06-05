@@ -38,8 +38,8 @@ class FlaskTest(TestCase):
 
         event = client.events.pop(0)
 
-        self.assertTrue('sentry.interfaces.Exception' in event)
-        exc = event['sentry.interfaces.Exception']
+        self.assertTrue('exception' in event)
+        exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'hello world')
         self.assertEquals(event['level'], logging.ERROR)
@@ -55,8 +55,8 @@ class FlaskTest(TestCase):
 
         event = client.events.pop(0)
 
-        self.assertTrue('sentry.interfaces.Http' in event)
-        http = event['sentry.interfaces.Http']
+        self.assertTrue('http' in event)
+        http = event['http']
         self.assertEquals(http['url'], 'http://localhost/an-error/')
         self.assertEquals(http['query_string'], 'foo=bar')
         self.assertEquals(http['method'], 'GET')
@@ -84,8 +84,8 @@ class FlaskTest(TestCase):
 
         event = client.events.pop(0)
 
-        self.assertTrue('sentry.interfaces.Http' in event)
-        http = event['sentry.interfaces.Http']
+        self.assertTrue('http' in event)
+        http = event['http']
         self.assertEquals(http['url'], 'http://localhost/an-error/')
         self.assertEquals(http['query_string'], 'biz=baz')
         self.assertEquals(http['method'], 'POST')

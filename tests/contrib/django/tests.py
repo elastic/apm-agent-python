@@ -100,8 +100,8 @@ class DjangoClientTest(TestCase):
         self.opbeat_python.capture('Message', message='foo')
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
-        self.assertTrue('sentry.interfaces.Message' in event)
-        message = event['sentry.interfaces.Message']
+        self.assertTrue('message' in event)
+        message = event['message']
         self.assertEquals(message['message'], 'foo')
         self.assertEquals(event['level'], logging.ERROR)
         self.assertEquals(event['message'], 'foo')
@@ -117,8 +117,8 @@ class DjangoClientTest(TestCase):
 
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
-        self.assertTrue('sentry.interfaces.Exception' in event)
-        exc = event['sentry.interfaces.Exception']
+        self.assertTrue('exception' in event)
+        exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], u"invalid literal for int() with base 10: 'hello'")
         self.assertEquals(event['level'], logging.ERROR)
@@ -130,8 +130,8 @@ class DjangoClientTest(TestCase):
 
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
-        self.assertTrue('sentry.interfaces.Exception' in event)
-        exc = event['sentry.interfaces.Exception']
+        self.assertTrue('exception' in event)
+        exc = event['exception']
         self.assertEquals(exc['type'], 'Exception')
         self.assertEquals(exc['value'], 'view exception')
         self.assertEquals(event['level'], logging.ERROR)
@@ -147,8 +147,8 @@ class DjangoClientTest(TestCase):
 
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
-        self.assertTrue('sentry.interfaces.User' in event)
-        user_info = event['sentry.interfaces.User']
+        self.assertTrue('user' in event)
+        user_info = event['user']
         self.assertTrue('is_authenticated' in user_info)
         self.assertFalse(user_info['is_authenticated'])
         self.assertFalse('username' in user_info)
@@ -160,8 +160,8 @@ class DjangoClientTest(TestCase):
 
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
-        self.assertTrue('sentry.interfaces.User' in event)
-        user_info = event['sentry.interfaces.User']
+        self.assertTrue('user' in event)
+        user_info = event['user']
         self.assertTrue('is_authenticated' in user_info)
         self.assertTrue(user_info['is_authenticated'])
         self.assertTrue('username' in user_info)
@@ -176,8 +176,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(len(self.opbeat_python.events), 1)
             event = self.opbeat_python.events.pop(0)
 
-            self.assertTrue('sentry.interfaces.Exception' in event)
-            exc = event['sentry.interfaces.Exception']
+            self.assertTrue('exception' in event)
+            exc = event['exception']
             self.assertEquals(exc['type'], 'ImportError')
             self.assertEquals(exc['value'], 'request')
             self.assertEquals(event['level'], logging.ERROR)
@@ -193,8 +193,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(len(self.opbeat_python.events), 1)
             event = self.opbeat_python.events.pop(0)
 
-            self.assertTrue('sentry.interfaces.Exception' in event)
-            exc = event['sentry.interfaces.Exception']
+            self.assertTrue('exception' in event)
+            exc = event['exception']
             self.assertEquals(exc['type'], 'ImportError')
             self.assertEquals(exc['value'], 'response')
             self.assertEquals(event['level'], logging.ERROR)
@@ -211,8 +211,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(len(self.opbeat_python.events), 2)
             event = self.opbeat_python.events.pop(0)
 
-            self.assertTrue('sentry.interfaces.Exception' in event)
-            exc = event['sentry.interfaces.Exception']
+            self.assertTrue('exception' in event)
+            exc = event['exception']
             self.assertEquals(exc['type'], 'Exception')
             self.assertEquals(exc['value'], 'view exception')
             self.assertEquals(event['level'], logging.ERROR)
@@ -221,8 +221,8 @@ class DjangoClientTest(TestCase):
 
             event = self.opbeat_python.events.pop(0)
 
-            self.assertTrue('sentry.interfaces.Exception' in event)
-            exc = event['sentry.interfaces.Exception']
+            self.assertTrue('exception' in event)
+            exc = event['exception']
             self.assertEquals(exc['type'], 'ValueError')
             self.assertEquals(exc['value'], 'handler500')
             self.assertEquals(event['level'], logging.ERROR)
@@ -236,8 +236,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(len(self.opbeat_python.events), 1)
             event = self.opbeat_python.events.pop(0)
 
-            self.assertTrue('sentry.interfaces.Exception' in event)
-            exc = event['sentry.interfaces.Exception']
+            self.assertTrue('exception' in event)
+            exc = event['exception']
             self.assertEquals(exc['type'], 'ImportError')
             self.assertEquals(exc['value'], 'view')
             self.assertEquals(event['level'], logging.ERROR)
@@ -317,8 +317,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(event['level'], logging.INFO)
             self.assertEquals(event['logger'], 'http404')
 
-            self.assertTrue('sentry.interfaces.Http' in event)
-            http = event['sentry.interfaces.Http']
+            self.assertTrue('http' in event)
+            http = event['http']
             self.assertEquals(http['url'], u'http://testserver/non-existant-page')
             self.assertEquals(http['method'], 'GET')
             self.assertEquals(http['query_string'], '')
@@ -364,8 +364,8 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
 
-        self.assertTrue('sentry.interfaces.Http' in event)
-        http = event['sentry.interfaces.Http']
+        self.assertTrue('http' in event)
+        http = event['http']
         self.assertEquals(http['method'], 'POST')
         self.assertEquals(http['data'], '<unavailable>')
 
@@ -388,8 +388,8 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
 
-        self.assertTrue('sentry.interfaces.Http' in event)
-        http = event['sentry.interfaces.Http']
+        self.assertTrue('http' in event)
+        http = event['http']
         self.assertEquals(http['method'], 'POST')
         self.assertEquals(http['data'], '<unavailable>')
         self.assertTrue('headers' in http)
@@ -436,8 +436,8 @@ class DjangoLoggingTest(TestCase):
 
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
-        self.assertTrue('sentry.interfaces.Http' in event)
-        http = event['sentry.interfaces.Http']
+        self.assertTrue('http' in event)
+        http = event['http']
         self.assertEquals(http['method'], 'POST')
 
 

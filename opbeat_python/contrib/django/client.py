@@ -54,7 +54,7 @@ class DjangoClient(Client):
         environ = request.META
 
         result = {
-            'sentry.interfaces.Http': {
+            'http': {
                 'method': request.method,
                 'url': request.build_absolute_uri(),
                 'query_string': request.META.get('QUERY_STRING'),
@@ -66,7 +66,7 @@ class DjangoClient(Client):
         }
 
         if hasattr(request, 'user') and isinstance(request.user, (User, AnonymousUser)):
-            result['sentry.interfaces.User'] = self.get_user_info(request)
+            result['user'] = self.get_user_info(request)
 
         return result
 

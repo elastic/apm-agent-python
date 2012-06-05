@@ -26,7 +26,7 @@ class BaseEvent(object):
         raise NotImplementedError
 
     def capture(self, **kwargs):
-        return {
+        return {b
         }
 
 
@@ -41,15 +41,15 @@ class Exception(BaseEvent):
     """
 
     def to_string(self, data):
-        exc = data['sentry.interfaces.Exception']
+        exc = data['exception']
         if exc['value']:
             return '%s: %s' % (exc['type'], exc['value'])
         return exc['type']
 
     def get_hash(self, data):
-        exc = data['sentry.interfaces.Exception']
+        exc = data['exception']
         output = [exc['type']]
-        for frame in data['sentry.interfaces.Stacktrace']['frames']:
+        for frame in data['stacktrace']['frames']:
             output.append(frame['module'])
             output.append(frame['function'])
         return output
@@ -89,12 +89,12 @@ class Exception(BaseEvent):
         return {
             'level': logging.ERROR,
             'culprit': culprit,
-            'sentry.interfaces.Exception': {
+            'exception': {
                 'value': to_unicode(exc_value),
                 'type': str(exc_type),
                 'module': str(exc_module),
             },
-            'sentry.interfaces.Stacktrace': {
+            'stacktrace': {
                 'frames': frames
             },
         }
@@ -109,18 +109,18 @@ class Message(BaseEvent):
     """
 
     def to_string(self, data):
-        msg = data['sentry.interfaces.Message']
+        msg = data['message']
         if msg.get('params'):
             return msg['message'] % msg['params']
         return msg['message']
 
     def get_hash(self, data):
-        msg = data['sentry.interfaces.Message']
+        msg = data['message']
         return [msg['message']]
 
     def capture(self, message, params=(), **kwargs):
         data = {
-            'sentry.interfaces.Message': {
+            'message': {
                 'message': message,
                 'params': params,
             }
@@ -136,16 +136,16 @@ class Query(BaseEvent):
     - engine: 'postgesql_psycopg2'
     """
     def to_string(self, data):
-        sql = data['sentry.interfaces.Query']
+        sql = data['query']
         return sql['query']
 
     def get_hash(self, data):
-        sql = data['sentry.interfaces.Query']
+        sql = data['query']
         return [sql['query'], sql['engine']]
 
     def capture(self, query, engine, **kwargs):
         return {
-            'sentry.interfaces.Query': {
+            'query': {
                 'query': query,
                 'engine': engine,
             }

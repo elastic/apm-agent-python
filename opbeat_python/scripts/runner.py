@@ -48,7 +48,7 @@ def main():
         data={
             'culprit': 'opbeat_python.scripts.runner',
             'logger': 'opbeat_python.test',
-            'sentry.interfaces.Http': {
+            'http': {
                 'method': 'GET',
                 'url': 'http://example.com',
             }

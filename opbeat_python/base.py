@@ -120,7 +120,7 @@ class Client(object):
 			string_max_length=None, list_max_length=None,
 			project_id=None, api_key=None, processors=None,
 			servers = None,
-			 **kwargs):
+			**kwargs):
 		# configure loggers first
 		cls = self.__class__
 		self.state = ClientState()
@@ -257,7 +257,7 @@ class Client(object):
 
 		if 'stacktrace' in data and not culprit:
 			culprit = get_culprit(
-				data['sentry.interfaces.Stacktrace']['frames'],
+				data['stacktrace']['frames'],
 				self.include_paths, self.exclude_paths
 			)
 
