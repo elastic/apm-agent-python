@@ -71,7 +71,7 @@ def runtests(*test_args, **kwargs):
         test_args = ['tests']
 
     kwargs.setdefault('interactive', False)
-    kwargs.setdefault('w',where_am_i)
+    # kwargs.setdefault('verbosity')
     test_runner = NoseTestSuiteRunner(**kwargs)
 
     failures = test_runner.run_tests(test_args)
@@ -84,3 +84,12 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     runtests(*args, **options.__dict__)
+
+
+## MOUNT
+## sudo mount -t vboxsf -o uid=0,gid=1001,umask=007,dmode=776,fmode=666 ron /media/sf_ron 
+
+
+
+
+

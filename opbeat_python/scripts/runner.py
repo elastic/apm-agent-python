@@ -20,25 +20,32 @@ def main():
     root = logging.getLogger('sentry.errors')
     root.setLevel(logging.DEBUG)
     root.addHandler(logging.StreamHandler())
+    
+    if len(sys.argv) == 3:
+        project_id = sys.argv[1]
+        api_key = sys.argv[2]
+    else:
+        project_id = os.environ.get('OPBEAT_PROJECT_ID')
+        api_key = os.environ.get('OPBEAT_API_KEY')
 
-    dsn = ' '.join(sys.argv[2:]) or os.environ.get('SENTRY_DSN')
-    if not dsn:
+    if not (project_id and api_key):
         print "Error: No configuration detected!"
-        print "You must either pass a DSN to the command, or set the SENTRY_DSN environment variable."
+        print "You must either pass a project_id and api_key to the command, or set the OPBEAT_PROJECT_ID and OPBEAT_API_KEY environment variables."
         sys.exit(1)
 
-    print "Using DSN configuration:"
-    print " ", dsn
-    print
+    print "Using configuration:"
+    print " ", project_id
+    print " ", api_key
+    print 
 
-    client = Client(dsn, include_paths=['opbeat_python'])
+    client = Client(project_id=project_id, api_key=api_key, include_paths=['opbeat_python'])
 
     print "Client configuration:"
-    for k in ('servers', 'project', 'public_key', 'secret_key'):
+    for k in ('servers', 'project_id', 'api_key'):
         print '  %-15s: %s' % (k, getattr(client, k))
     print
 
-    if not all([client.servers, client.project, client.public_key, client.secret_key]):
+    if not all([client.servers, client.project_id, client.api_key]):
         print "Error: All values must be set!"
         sys.exit(1)
 

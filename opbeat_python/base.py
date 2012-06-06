@@ -205,7 +205,7 @@ class Client(object):
 		return self.module_cache[name](self)
 
 	def build_msg(self, event_type, data=None, date=None,
-			extra=None, stack=None, public_key=None,
+			extra=None, stack=None,
 			**kwargs):
 		"""
 		Captures, processes and serializes an event into a dict object
@@ -242,7 +242,6 @@ class Client(object):
 		if stack and 'stacktrace' not in data:
 			if stack is True:
 				frames = iter_stack_frames()
-
 			else:
 				frames = stack
 
@@ -302,17 +301,19 @@ class Client(object):
 			data['message'] = handler.to_string(data)
 
 		data.update({
-			'timestamp':  time.mktime(date.timetuple()),
+			'timestamp':  date,
 			# 'time_spent': time_spent,
 			'client_supplied_id': event_id,
 		})
-		data.setdefault('project', self.project)
-		data.setdefault('site', self.site)
-		data.setdefault('public_key', self.public_key)
+		data.setdefault('project_id', self.project_id)
+		# data.setdefault('site', self.site)
+		# data.setdefault('public_key', self.public_key)
+		data.setdefault('project_id', self.project_id)
+		data.setdefault('api_key', self.api_key)
 
 		return data
 
-	def capture(self, event_type, data=None, date=None, time_spent=None,
+	def capture(self, event_type, data=None, date=None,
 				extra=None, stack=None, **kwargs):
 		"""
 		Captures and processes an event and pipes it off to SentryClient.send.
@@ -350,19 +351,19 @@ class Client(object):
 						   path.
 		:param data: the data base
 		:param date: the datetime of this event
-		:param event_id: a 32-length unique string identifying this event
+		:param client_supplied_id: a 32-length unique string identifying this event
 		:param extra: a dictionary of additional standard metadata
 		:param culprit: a string representing the cause of this event
 						(generally a path to a function)
 		:return: a 32-length string identifying this event
 		"""
 
-		data = self.build_msg(event_type, data, date, time_spent,
+		data = self.build_msg(event_type, data, date,
 				extra, stack, **kwargs)
 
 		self.send(**data)
 
-		return data['event_id']
+		return data['client_supplied_id']
 
 	def _send_remote(self, url, data, headers={}):
 		parsed = urlparse(url)
@@ -404,14 +405,14 @@ class Client(object):
 		else:
 			self.state.set_success()
 
-	def send(self, public_key=None, auth_header=None, **data):
+	def send(self, project_id=None, api_key=None, auth_header=None, **data):
 		"""
 		Serializes the message and passes the payload onto ``send_encoded``.
 		"""
 		message = self.encode(data)
 
 		try:
-			return self.send_encoded(message, public_key=public_key, auth_header=auth_header)
+			return self.send_encoded(message, project_id=project_id, api_key=api_key, auth_header=auth_header)
 		except TypeError:
 			# Make the assumption that public_key wasnt supported
 			warnings.warn('%s.send_encoded needs updated to support ``**kwargs``' % (type(self).__name__,),
@@ -430,6 +431,10 @@ class Client(object):
 
 		if not auth_header:
 			timestamp = time.time()
+			if not project_id:
+				project_id = self.project_id
+				api_key = self.api_key
+				
 			auth_header = "apikey %s:%s" % (project_id, api_key)
 
 		for url in self.servers:

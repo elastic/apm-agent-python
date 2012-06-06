@@ -27,13 +27,8 @@ CLIENT = 'opbeat_python.contrib.django.DjangoClient'
 
 NAME = socket.gethostname()
 
-# Superuser key -- will be used if set, otherwise defers to
-# SECRET_KEY and PUBLIC_KEY
-KEY = None
-
 # Credentials to authenticate with the Sentry server
-SECRET_KEY = None
-PUBLIC_KEY = None
+API_KEY = None
 
 # We allow setting the site name either by explicitly setting it with the
 # SENTRY_SITE setting, or using the django.contrib.sites framework for
@@ -65,3 +60,5 @@ PROCESSORS = (
 
 # Default Project ID
 PROJECT = 1
+
+SERVERS = ['localhost:8193']

@@ -61,10 +61,10 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'opbeat = opbeat.scripts.runner:main',
+            'opbeat = opbeat_python.scripts.runner:main',
         ],
         'paste.filter_app_factory': [
-            'opbeat_python = opbeat.contrib.paste:sentry_filter_factory',
+            'opbeat_python = opbeat_python.contrib.paste:sentry_filter_factory',
         ],
     },
     classifiers=[

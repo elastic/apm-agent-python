@@ -67,9 +67,8 @@ class ClientTest(TestCase):
 
         client = Client(
             servers=['http://example.com'],
-            public_key='public',
-            secret_key='secret',
-            project=1,
+            project_id='public',
+            api_key='secret',
         )
 
         # test error
@@ -86,11 +85,12 @@ class ClientTest(TestCase):
     @mock.patch('opbeat_python.base.time.time')
     def test_send(self, time, send_remote):
         time.return_value = 1328055286.51
+        public = "public"
+        api_key = "secret"
         client = Client(
             servers=['http://example.com'],
-            public_key='public',
-            secret_key='secret',
-            project=1,
+            project_id=public,
+            api_key=api_key,
         )
         client.send(**{
             'foo': 'bar',
@@ -100,33 +100,32 @@ class ClientTest(TestCase):
             data='eJyrVkrLz1eyUlBKSixSqgUAIJgEVA==',
             headers={
                 'Content-Type': 'application/octet-stream',
-                'X-Sentry-Auth': 'Sentry sentry_timestamp=1328055286.51, '
-                'sentry_client=opbeat_python-python/%s, sentry_version=2.0, sentry_key=public' % (opbeat_python.VERSION,)
+                'X-Opbeat-Auth': 'apikey %s:%s' % (public, api_key)
             },
         )
 
-    @mock.patch('opbeat_python.base.Client.send_remote')
-    @mock.patch('opbeat_python.base.time.time')
-    def test_send_with_public_key(self, time, send_remote):
-        time.return_value = 1328055286.51
-        client = Client(
-            servers=['http://example.com'],
-            public_key='public',
-            secret_key='secret',
-            project=1,
-        )
-        client.send(public_key='foo', **{
-            'foo': 'bar',
-        })
-        send_remote.assert_called_once_with(
-            url='http://example.com',
-            data='eJyrVkrLz1eyUlBKSixSqgUAIJgEVA==',
-            headers={
-                'Content-Type': 'application/octet-stream',
-                'X-Sentry-Auth': 'Sentry sentry_timestamp=1328055286.51, '
-                'sentry_client=opbeat_python-python/%s, sentry_version=2.0, sentry_key=foo' % (opbeat_python.VERSION,)
-            },
-        )
+    # @mock.patch('opbeat_python.base.Client.send_remote')
+    # @mock.patch('opbeat_python.base.time.time')
+    # def test_send_with_public_key(self, time, send_remote):
+    #     time.return_value = 1328055286.51
+    #     client = Client(
+    #         servers=['http://example.com'],
+    #         public_key='public',
+    #         secret_key='secret',
+    #         project=1,
+    #     )
+    #     client.send(public_key='foo', **{
+    #         'foo': 'bar',
+    #     })
+    #     send_remote.assert_called_once_with(
+    #         url='http://example.com',
+    #         data='eJyrVkrLz1eyUlBKSixSqgUAIJgEVA==',
+    #         headers={
+    #             'Content-Type': 'application/octet-stream',
+    #             'X-Sentry-Auth': 'Sentry sentry_timestamp=1328055286.51, '
+    #             'sentry_client=opbeat_python-python/%s, sentry_version=2.0, sentry_key=foo' % (opbeat_python.VERSION,)
+    #         },
+    #     )
 
     @mock.patch('opbeat_python.base.Client.send_remote')
     @mock.patch('opbeat_python.base.time.time')
@@ -134,9 +133,8 @@ class ClientTest(TestCase):
         time.return_value = 1328055286.51
         client = Client(
             servers=['http://example.com'],
-            public_key='public',
-            secret_key='secret',
-            project=1,
+            project_id='public',
+            api_key='secret',
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -146,7 +144,7 @@ class ClientTest(TestCase):
             data='eJyrVkrLz1eyUlBKSixSqgUAIJgEVA==',
             headers={
                 'Content-Type': 'application/octet-stream',
-                'X-Sentry-Auth': 'foo'
+                'X-Opbeat-Auth': 'foo'
             },
         )
 
@@ -156,29 +154,29 @@ class ClientTest(TestCase):
         self.assertTrue(type(encoded), str)
         self.assertEquals(data, self.client.decode(encoded))
 
-    def test_dsn(self):
-        client = Client(dsn='http://public:secret@example.com/1')
-        self.assertEquals(client.servers, ['http://example.com/api/store/'])
-        self.assertEquals(client.project, '1')
-        self.assertEquals(client.public_key, 'public')
-        self.assertEquals(client.secret_key, 'secret')
+    # def test_dsn(self):
+    #     client = Client(dsn='http://public:secret@example.com/1')
+    #     self.assertEquals(client.servers, ['http://example.com/api/store/'])
+    #     self.assertEquals(client.project, '1')
+    #     self.assertEquals(client.public_key, 'public')
+    #     self.assertEquals(client.secret_key, 'secret')
 
-    def test_dsn_as_first_arg(self):
-        client = Client('http://public:secret@example.com/1')
-        self.assertEquals(client.servers, ['http://example.com/api/store/'])
-        self.assertEquals(client.project, '1')
-        self.assertEquals(client.public_key, 'public')
-        self.assertEquals(client.secret_key, 'secret')
+    # def test_dsn_as_first_arg(self):
+    #     client = Client('http://public:secret@example.com/1')
+    #     self.assertEquals(client.servers, ['http://example.com/api/store/'])
+    #     self.assertEquals(client.project, '1')
+    #     self.assertEquals(client.public_key, 'public')
+    #     self.assertEquals(client.secret_key, 'secret')
 
-    def test_slug_in_dsn(self):
-        client = Client('http://public:secret@example.com/slug-name')
-        self.assertEquals(client.servers, ['http://example.com/api/store/'])
-        self.assertEquals(client.project, 'slug-name')
-        self.assertEquals(client.public_key, 'public')
-        self.assertEquals(client.secret_key, 'secret')
+    # def test_slug_in_dsn(self):
+    #     client = Client('http://public:secret@example.com/slug-name')
+    #     self.assertEquals(client.servers, ['http://example.com/api/store/'])
+    #     self.assertEquals(client.project, 'slug-name')
+    #     self.assertEquals(client.public_key, 'public')
+    #     self.assertEquals(client.secret_key, 'secret')
 
-    def test_invalid_servers_with_dsn(self):
-        self.assertRaises(ValueError, Client, 'foo', dsn='http://public:secret@example.com/1')
+    # def test_invalid_servers_with_dsn(self):
+    #     self.assertRaises(ValueError, Client, 'foo', dsn='http://public:secret@example.com/1')
 
     def test_explicit_message_on_message_event(self):
         self.client.capture('Message', message='test', data={
@@ -258,21 +256,21 @@ class ClientTest(TestCase):
         self.assertTrue('stacktrace' in event)
         self.assertTrue('timestamp' in event)
 
-    def test_site(self):
-        self.client.capture('Message', message='test', data={'site': 'test'})
+    # def test_site(self):
+    #     self.client.capture('Message', message='test', data={'site': 'test'})
 
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertEquals(event['site'], 'test')
-        self.assertTrue('timestamp' in event)
+    #     self.assertEquals(len(self.client.events), 1)
+    #     event = self.client.events.pop(0)
+    #     self.assertEquals(event['site'], 'test')
+    #     self.assertTrue('timestamp' in event)
 
-    def test_implicit_site(self):
-        self.client = TempStoreClient(site='foo')
-        self.client.capture('Message', message='test')
+    # def test_implicit_site(self):
+    #     self.client = TempStoreClient(site='foo')
+    #     self.client.capture('Message', message='test')
 
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertEquals(event['site'], 'foo')
+    #     self.assertEquals(len(self.client.events), 1)
+    #     event = self.client.events.pop(0)
+    #     self.assertEquals(event['site'], 'foo')
 
     def test_logger(self):
         self.client.capture('Message', message='test', data={'logger': 'test'})
@@ -283,19 +281,19 @@ class ClientTest(TestCase):
         self.assertTrue('timestamp' in event)
 
 
-class ClientUDPTest(TestCase):
-    def setUp(self):
-        self.server_socket = socket(AF_INET, SOCK_DGRAM)
-        self.server_socket.bind(('127.0.0.1', 0))
-        self.client = Client(servers=["udp://%s:%s" % self.server_socket.getsockname()], key='BassOmatic')
+# class ClientUDPTest(TestCase):
+#     def setUp(self):
+#         self.server_socket = socket(AF_INET, SOCK_DGRAM)
+#         self.server_socket.bind(('127.0.0.1', 0))
+#         self.client = Client(servers=["udp://%s:%s" % self.server_socket.getsockname()], key='BassOmatic')
 
-    def test_delivery(self):
-        self.client.create_from_text('test')
-        data, address = self.server_socket.recvfrom(2**16)
-        self.assertTrue("\n\n" in data)
-        header, payload = data.split("\n\n")
-        for substring in ("sentry_timestamp=", "sentry_client="):
-            self.assertTrue(substring in header)
+#     def test_delivery(self):
+#         self.client.create_from_text('test')
+#         data, address = self.server_socket.recvfrom(2**16)
+#         self.assertTrue("\n\n" in data)
+#         header, payload = data.split("\n\n")
+#         for substring in ("sentry_timestamp=", "sentry_client="):
+#             self.assertTrue(substring in header)
 
-    def tearDown(self):
-        self.server_socket.close()
+#     def tearDown(self):
+#         self.server_socket.close()

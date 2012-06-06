@@ -23,12 +23,10 @@ class SentryHandler(logging.Handler, object):
         client = kwargs.get('client_cls', Client)
         if len(args) == 1:
             arg = args[0]
-            if isinstance(arg, basestring):
-                self.client = client(dsn=arg)
-            elif isinstance(arg, Client):
+            if isinstance(arg, Client):
                 self.client = arg
             else:
-                raise ValueError('The first argument to %s must be either a Client instance or a DSN, got %r instead.' % (
+                raise ValueError('The first argument to %s must be a Client instance, got %r instead.' % (
                     self.__class__.__name__,
                     arg,
                 ))
@@ -39,7 +37,7 @@ class SentryHandler(logging.Handler, object):
             self.client = client(servers=servers, key=key)
         else:
             self.client = client(*args, **kwargs)
-
+        
         logging.Handler.__init__(self)
 
     def emit(self, record):

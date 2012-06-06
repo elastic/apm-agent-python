@@ -9,7 +9,7 @@ from opbeat_python.processors import SanitizePasswordsProcessor, RemovePostDataP
 class SantizePasswordsProcessorTest(TestCase):
     def test_stacktrace(self):
         data = {
-            'sentry.interfaces.Stacktrace': {
+            'stacktrace': {
                 'frames': [
                     {
                         'vars': {
@@ -26,8 +26,8 @@ class SantizePasswordsProcessorTest(TestCase):
         proc = SanitizePasswordsProcessor(Mock())
         result = proc.process(data)
 
-        self.assertTrue('sentry.interfaces.Stacktrace' in result)
-        stack = result['sentry.interfaces.Stacktrace']
+        self.assertTrue('stacktrace' in result)
+        stack = result['stacktrace']
         self.assertTrue('frames' in stack)
         self.assertEquals(len(stack['frames']), 1)
         frame = stack['frames'][0]
@@ -44,7 +44,7 @@ class SantizePasswordsProcessorTest(TestCase):
 
     def test_http(self):
         data = {
-            'sentry.interfaces.Http': {
+            'http': {
                 'data': {
                     'foo': 'bar',
                     'password': 'hello',
@@ -75,8 +75,8 @@ class SantizePasswordsProcessorTest(TestCase):
         proc = SanitizePasswordsProcessor(Mock())
         result = proc.process(data)
 
-        self.assertTrue('sentry.interfaces.Http' in result)
-        http = result['sentry.interfaces.Http']
+        self.assertTrue('http' in result)
+        http = result['http']
         for n in ('data', 'env', 'headers', 'cookies'):
             self.assertTrue(n in http)
             vars = http[n]
@@ -91,7 +91,7 @@ class SantizePasswordsProcessorTest(TestCase):
 
     def test_querystring_as_string(self):
         data = {
-            'sentry.interfaces.Http': {
+            'http': {
                 'query_string': 'foo=bar&password=hello&the_secret=hello&a_password_here=hello',
             }
         }
@@ -99,13 +99,13 @@ class SantizePasswordsProcessorTest(TestCase):
         proc = SanitizePasswordsProcessor(Mock())
         result = proc.process(data)
 
-        self.assertTrue('sentry.interfaces.Http' in result)
-        http = result['sentry.interfaces.Http']
+        self.assertTrue('http' in result)
+        http = result['http']
         self.assertEquals(http['query_string'], 'foo=bar&password=%(m)s&the_secret=%(m)s&a_password_here=%(m)s' % dict(m=proc.MASK))
 
     def test_querystring_as_string_with_partials(self):
         data = {
-            'sentry.interfaces.Http': {
+            'http': {
                 'query_string': 'foo=bar&password&baz=bar',
             }
         }
@@ -113,8 +113,8 @@ class SantizePasswordsProcessorTest(TestCase):
         proc = SanitizePasswordsProcessor(Mock())
         result = proc.process(data)
 
-        self.assertTrue('sentry.interfaces.Http' in result)
-        http = result['sentry.interfaces.Http']
+        self.assertTrue('http' in result)
+        http = result['http']
         self.assertEquals(http['query_string'], 'foo=bar&password&baz=bar' % dict(m=proc.MASK))
 
     def test_sanitize_credit_card(self):
@@ -126,7 +126,7 @@ class SantizePasswordsProcessorTest(TestCase):
 class RemovePostDataProcessorTest(TestCase):
     def test_does_remove_data(self):
         data = {
-            'sentry.interfaces.Http': {
+            'http': {
                 'data': 'foo',
             }
         }
@@ -134,15 +134,15 @@ class RemovePostDataProcessorTest(TestCase):
         proc = RemovePostDataProcessor(Mock())
         result = proc.process(data)
 
-        self.assertTrue('sentry.interfaces.Http' in result)
-        http = result['sentry.interfaces.Http']
+        self.assertTrue('http' in result)
+        http = result['http']
         self.assertFalse('data' in http)
 
 
 class RemoveStackLocalsProcessorTest(TestCase):
     def test_does_remove_data(self):
         data = {
-            'sentry.interfaces.Stacktrace': {
+            'stacktrace': {
                 'frames': [
                     {
                         'vars': {
@@ -158,7 +158,7 @@ class RemoveStackLocalsProcessorTest(TestCase):
         proc = RemoveStackLocalsProcessor(Mock())
         result = proc.process(data)
 
-        self.assertTrue('sentry.interfaces.Stacktrace' in result)
-        stack = result['sentry.interfaces.Stacktrace']
+        self.assertTrue('stacktrace' in result)
+        stack = result['stacktrace']
         for frame in stack['frames']:
             self.assertFalse('vars' in frame)

@@ -46,61 +46,61 @@ class Transport(object):
         raise NotImplementedError
 
 
-class UDPTransport(Transport):
+# class UDPTransport(Transport):
 
-    scheme = ['udp']
+#     scheme = ['udp']
 
-    def __init__(self, parsed_url):
-        self.check_scheme(parsed_url)
+#     def __init__(self, parsed_url):
+#         self.check_scheme(parsed_url)
 
-        self._parsed_url = parsed_url
+#         self._parsed_url = parsed_url
 
-    def send(self, data, headers):
-        auth_header = headers.get('X-Sentry-Auth')
+#     def send(self, data, headers):
+#         auth_header = headers.get('X-Sentry-Auth')
 
-        if auth_header is None:
-            # silently ignore attempts to send messages without an auth header
-            return
+#         if auth_header is None:
+#             # silently ignore attempts to send messages without an auth header
+#             return
 
-        host, port = self._parsed_url.netloc.split(':')
+#         host, port = self._parsed_url.netloc.split(':')
 
-        udp_socket = None
-        try:
-            udp_socket = socket(AF_INET, SOCK_DGRAM)
-            udp_socket.setblocking(False)
-            udp_socket.sendto(auth_header + '\n\n' + data, (host, int(port)))
-        except socket_error:
-            # as far as I understand things this simply can't happen,
-            # but still, it can't hurt
-            pass
-        finally:
-            # Always close up the socket when we're done
-            if udp_socket is not None:
-                udp_socket.close()
-                udp_socket = None
+#         udp_socket = None
+#         try:
+#             udp_socket = socket(AF_INET, SOCK_DGRAM)
+#             udp_socket.setblocking(False)
+#             udp_socket.sendto(auth_header + '\n\n' + data, (host, int(port)))
+#         except socket_error:
+#             # as far as I understand things this simply can't happen,
+#             # but still, it can't hurt
+#             pass
+#         finally:
+#             # Always close up the socket when we're done
+#             if udp_socket is not None:
+#                 udp_socket.close()
+#                 udp_socket = None
 
-    def compute_scope(self, url, scope):
-        path_bits = url.path.rsplit('/', 1)
-        if len(path_bits) > 1:
-            path = path_bits[0]
-        else:
-            path = ''
-        project = path_bits[-1]
+#     def compute_scope(self, url, scope):
+#         path_bits = url.path.rsplit('/', 1)
+#         if len(path_bits) > 1:
+#             path = path_bits[0]
+#         else:
+#             path = ''
+#         project = path_bits[-1]
 
-        if not all([url.port, project, url.username, url.password]):
-            raise ValueError('Invalid Sentry DSN: %r' % url.geturl())
+#         if not all([url.port, project, url.username, url.password]):
+#             raise ValueError('Invalid Sentry DSN: %r' % url.geturl())
 
-        netloc = url.hostname
-        netloc += ':%s' % url.port
+#         netloc = url.hostname
+#         netloc += ':%s' % url.port
 
-        server = '%s://%s%s/api/store/' % (url.scheme, netloc, path)
-        scope.update({
-            'SENTRY_SERVERS': [server],
-            'SENTRY_PROJECT': project,
-            'SENTRY_PUBLIC_KEY': url.username,
-            'SENTRY_SECRET_KEY': url.password,
-        })
-        return scope
+#         server = '%s://%s%s/api/store/' % (url.scheme, netloc, path)
+#         scope.update({
+#             'SENTRY_SERVERS': [server],
+#             'SENTRY_PROJECT': project,
+#             'SENTRY_PUBLIC_KEY': url.username,
+#             'SENTRY_SECRET_KEY': url.password,
+#         })
+#         return scope
 
 
 class HTTPTransport(Transport):
@@ -153,9 +153,11 @@ class HTTPTransport(Transport):
 class TransportRegistry(object):
     def __init__(self):
         # setup a default list of senders
-        self._schemes = {'http': HTTPTransport,
+        self._schemes = {
+                        # 'http': HTTPTransport,
                          'https': HTTPTransport,
-                         'udp': UDPTransport}
+                         # 'udp': UDPTransport
+                         }
         self._transports = {}
 
     def register_scheme(self, scheme, cls):
@@ -172,9 +174,10 @@ class TransportRegistry(object):
         return scheme in self._schemes
 
     def get_transport(self, parsed_url):
-        if parsed_url.scheme not in self._transports:
-            self._transports[parsed_url.scheme] = self._schemes[parsed_url.scheme](parsed_url)
-        return self._transports[parsed_url.scheme]
+        return HTTPTransport(parsed_url)
+        # if parsed_url.scheme not in self._transports:
+        #     self._transports[parsed_url.scheme] = self._schemes[parsed_url.scheme](parsed_url)
+        # return self._transports[parsed_url.scheme]
 
     def compute_scope(self, url, scope):
         """

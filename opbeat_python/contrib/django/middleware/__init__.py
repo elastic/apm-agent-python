@@ -25,7 +25,7 @@ class Sentry404CatchMiddleware(object):
         })
         result = client.capture('Message', message='Page Not Found: %s' % request.build_absolute_uri(), data=data)
         request.sentry = {
-            'project_id': data.get('project', client.project),
+            'project_id': data.get('project_id', client.project_id),
             'id': client.get_ident(result),
         }
         return response
