@@ -85,7 +85,7 @@ class TransportTest(TestCase):
         expected = {
             'project_id':project_id,
             'api_key':api_key,
-            'message': {'message': 'foo', 'params': ()},
+            'message': {'message':'foo','params':()},
             'server_name': u'test_server',
             'level': 40,
             # 'checksum': 'acbd18db4cc2f85cedef654fccc4a4d8',

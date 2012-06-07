@@ -104,7 +104,7 @@ class DjangoClientTest(TestCase):
         message = event['message']
         self.assertEquals(message['message'], 'foo')
         self.assertEquals(event['level'], logging.ERROR)
-        self.assertEquals(event['message'], 'foo')
+        self.assertEquals(event['message'], {'message':'foo','params':()})
         self.assertEquals(type(event['timestamp']), datetime.datetime)
 
     def test_signal_integration(self):
@@ -304,7 +304,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat_python.events), 1)
         event = self.opbeat_python.events.pop(0)
 
-        self.assertEquals(event['message'], 'test')
+        self.assertEquals(event['message'], {'message':'test','params':()})
 
     def test_404_middleware(self):
         with Settings(MIDDLEWARE_CLASSES=['opbeat_python.contrib.django.middleware.Sentry404CatchMiddleware']):

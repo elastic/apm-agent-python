@@ -160,7 +160,7 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)
 
-        self.assertEquals(event['message'], 'This is a test with an exception')
+        self.assertEquals(event['message'], {'message':'This is a test with an exception','params':()})
         self.assertTrue('stacktrace' in event)
         self.assertTrue('exception' in event)
         exc = event['exception']
@@ -168,7 +168,7 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(exc['value'], 'This is a test ValueError')
         self.assertTrue('message' in event)
         msg = event['message']
-        # self.assertEquals(msg['message'], 'This is a test with an exception')
+        self.assertEquals(msg['message'], 'This is a test with an exception')
         self.assertEquals(msg['params'], ())
 
 
