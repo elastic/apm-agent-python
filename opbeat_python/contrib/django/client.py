@@ -124,6 +124,6 @@ class DjangoClient(Client):
             self.error_logger.error('No servers configured, and sentry not installed. Cannot send message')
             return None
 
-    def send_integrated(self, kwargs):
-        from sentry.models import Group
-        return Group.objects.from_kwargs(**kwargs)
+    # def send_integrated(self, kwargs):
+    #     from sentry.models import Group
+    #     return Group.objects.from_kwargs(**kwargs)

@@ -117,8 +117,11 @@ class HTTPTransport(Transport):
         """
         Sends a request to a remote webserver using HTTP POST.
         """
+        print "HTTPTransport:send", self._url
         req = urllib2.Request(self._url, headers=headers)
         try:
+            print headers
+            print data
             response = urllib2.urlopen(req, data, self.timeout).read()
         except:
             response = urllib2.urlopen(req, data).read()
@@ -174,6 +177,7 @@ class TransportRegistry(object):
         return scheme in self._schemes
 
     def get_transport(self, parsed_url):
+        print "get_transport", parsed_url
         return HTTPTransport(parsed_url)
         # if parsed_url.scheme not in self._transports:
         #     self._transports[parsed_url.scheme] = self._schemes[parsed_url.scheme](parsed_url)

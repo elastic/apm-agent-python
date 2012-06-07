@@ -108,26 +108,22 @@ def get_client(client=None):
 
     tmp_client = client is not None
     if not tmp_client:
-        client = getattr(django_settings, 'SENTRY_CLIENT', 'opbeat_python.contrib.django.DjangoClient')
+        client = getattr(django_settings, 'OPBEAT_CLIENT', 'opbeat_python.contrib.django.DjangoClient')
 
     if _client[0] != client:
         module, class_name = client.rsplit('.', 1)
         instance = getattr(__import__(module, {}, {}, class_name), class_name)(
-            servers=getattr(django_settings, 'SENTRY_SERVERS', None),
-            include_paths=set(getattr(django_settings, 'SENTRY_INCLUDE_PATHS', [])) | get_installed_apps(),
-            exclude_paths=getattr(django_settings, 'SENTRY_EXCLUDE_PATHS', None),
-            timeout=getattr(django_settings, 'SENTRY_TIMEOUT', None),
-            name=getattr(django_settings, 'SENTRY_NAME', None),
-            auto_log_stacks=getattr(django_settings, 'SENTRY_AUTO_LOG_STACKS', None),
-            key=getattr(django_settings, 'SENTRY_KEY', md5_constructor(django_settings.SECRET_KEY).hexdigest()),
+            # servers=getattr(django_settings, 'SENTRY_SERVERS', None),
+            include_paths=set(getattr(django_settings, 'OPBEAT_INCLUDE_PATHS', [])) | get_installed_apps(),
+            exclude_paths=getattr(django_settings, 'OPBEAT_EXCLUDE_PATHS', None),
+            timeout=getattr(django_settings, 'OPBEAT_TIMEOUT', None),
+            name=getattr(django_settings, 'OPBEAT_NAME', None),
+            auto_log_stacks=getattr(django_settings, 'OPBEAT_AUTO_LOG_STACKS', None),
             string_max_length=getattr(django_settings, 'SENTRY_MAX_LENGTH_STRING', None),
-            list_max_length=getattr(django_settings, 'SENTRY_MAX_LENGTH_LIST', None),
-            site=getattr(django_settings, 'SENTRY_SITE', None),
-            public_key=getattr(django_settings, 'SENTRY_PUBLIC_KEY', None),
-            secret_key=getattr(django_settings, 'SENTRY_SECRET_KEY', None),
-            project=getattr(django_settings, 'SENTRY_PROJECT', None),
-            processors=getattr(django_settings, 'SENTRY_PROCESSORS', None),
-            dsn=getattr(django_settings, 'SENTRY_DSN', None),
+            list_max_length=getattr(django_settings, 'OPBEAT_MAX_LENGTH_LIST', None),
+            api_key=getattr(django_settings, 'OPBEAT_API_KEY', None),
+            project_id=getattr(django_settings, 'OPBEAT_PROJECT_ID', None),
+            processors=getattr(django_settings, 'OPBEAT_PROCESSORS', None)
         )
         if not tmp_client:
             _client = (client, instance)
@@ -161,7 +157,7 @@ def sentry_exception_handler(request=None, **kwargs):
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
         try:
-            if (django_settings.DEBUG and not getattr(django_settings, 'SENTRY_DEBUG', False)) or getattr(exc_info[1], 'skip_sentry', False):
+            if (django_settings.DEBUG and not getattr(django_settings, 'OPBEAT_DEBUG', False)) or getattr(exc_info[1], 'skip_opbeat', False):
                 return
 
             if transaction.is_dirty():

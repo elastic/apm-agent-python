@@ -87,12 +87,12 @@ class Client(object):
 	HTTP API to Opbeat servers.
 
 	Will read default configuration from the environment variable
-	``OPBEAT_PROJECT_ID`` and ``OPBEAT_PROJECT_API_KEY`` if available.
+	``OPBEAT_PROJECT_ID`` and ``OPBEAT_API_KEY`` if available.
 
 	>>> from opbeat import Client
 
 	>>> # Read configuration from ``os.environ['OPBEAT_PROJECT_ID']``
-	>>> # and ``os.environ['OPBEAT_PROJECT_API_KEY']``
+	>>> # and ``os.environ['OPBEAT_API_KEY']``
 	>>> client = Client()
 
 	>>> # Specify a DSN explicitly
@@ -129,7 +129,7 @@ class Client(object):
 		self.state = ClientState()
 		self.logger = logging.getLogger('%s.%s' % (cls.__module__,
 			cls.__name__))
-		self.error_logger = logging.getLogger('sentry.errors')
+		self.error_logger = logging.getLogger('opbeat.errors')
 
 		# if isinstance(servers, basestring):
 		# 	# must be a DSN:
@@ -147,10 +147,10 @@ class Client(object):
 			self.logger.info(msg)
 			project_id = os.environ['OPBEAT_PROJECT_ID']
 
-		if api_key is None and os.environ.get('OPBEAT_PROJECT_API_KEY'):
-			msg = "Configuring opbeat_python from environment variable 'OPBEAT_PROJECT_API_KEY'"
+		if api_key is None and os.environ.get('OPBEAT_API_KEY'):
+			msg = "Configuring opbeat_python from environment variable 'OPBEAT_API_KEY'"
 			self.logger.info(msg)
-			api_key = os.environ['OPBEAT_PROJECT_API_KEY']
+			api_key = os.environ['OPBEAT_API_KEY']
 
 		# if dsn:
 		# 	# TODO: should we validate other options werent sent?
@@ -164,12 +164,21 @@ class Client(object):
 		# 	public_key = options['SENTRY_PUBLIC_KEY']
 		# 	secret_key = options['SENTRY_SECRET_KEY']
 
+
+		self.servers = servers or defaults.SERVERS
+
+
+		print "servers", self.servers
+		print "proj",project_id
+		print "api", api_key
+
+
 		# servers may be set to a NoneType (for Django)
-		if servers and not (project_id and api_key):
+		if self.servers and not (project_id and api_key):
 			msg = 'Missing configuration for client. Please see documentation.'
 			raise TypeError(msg)
 
-		self.servers = servers or defaults.SERVERS
+
 		self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
 		self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
 		self.timeout = int(timeout or defaults.TIMEOUT)
@@ -370,7 +379,7 @@ class Client(object):
 
 	def _send_remote(self, url, data, headers={}):
 		parsed = urlparse(url)
-
+		print "_send_remote"
 		transport = self._registry.get_transport(parsed)
 		return transport.send(data, headers)
 
@@ -385,6 +394,8 @@ class Client(object):
 		return message
 
 	def send_remote(self, url, data, headers={}):
+		print "send_remote"
+
 		if not self.state.should_try():
 			message = self._get_log_message(data)
 			self.error_logger.error(message)
@@ -393,6 +404,7 @@ class Client(object):
 		try:
 			self._send_remote(url=url, data=data, headers=headers)
 		except Exception, e:
+			print "ex:",type(e), e.message
 			if isinstance(e, urllib2.HTTPError):
 				body = e.read()
 				self.error_logger.error('Unable to reach Sentry log server: %s (url: %%s, body: %%s)' % (e,), url, body,
