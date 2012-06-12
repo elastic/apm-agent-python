@@ -49,6 +49,6 @@ class Sentry(object):
                     'headers': dict(get_headers(environ)),
                     'env': dict(get_environ(environ)),
                 }
-            },
+            }
         )
         return event_id

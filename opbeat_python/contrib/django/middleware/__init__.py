@@ -38,13 +38,13 @@ class Sentry404CatchMiddleware(object):
 
 class SentryResponseErrorIdMiddleware(object):
     """
-    Appends the X-Sentry-ID response header for referencing a message within
+    Appends the X-Opbeat-ID response header for referencing a message within
     the Sentry datastore.
     """
     def process_response(self, request, response):
         if not getattr(request, 'sentry', None):
             return response
-        response['X-Sentry-ID'] = request.sentry['id']
+        response['X-Opbeat-ID'] = request.sentry['id']
         return response
 
 

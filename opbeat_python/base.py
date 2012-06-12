@@ -164,14 +164,7 @@ class Client(object):
 		# 	public_key = options['SENTRY_PUBLIC_KEY']
 		# 	secret_key = options['SENTRY_SECRET_KEY']
 
-
 		self.servers = servers or defaults.SERVERS
-
-
-		print "servers", self.servers
-		print "proj",project_id
-		print "api", api_key
-
 
 		# servers may be set to a NoneType (for Django)
 		if self.servers and not (project_id and api_key):
@@ -240,6 +233,7 @@ class Client(object):
 			event_type = 'opbeat_python.events.%s' % event_type
 
 		handler = self.get_handler(event_type)
+
 		result = handler.capture(**kwargs)
 
 		# data (explicit) culprit takes over auto event detection
@@ -274,10 +268,14 @@ class Client(object):
 
 		if not data.get('level'):
 			data['level'] = logging.ERROR
+		try:
+			data['level'] = logging.getLevelName(data['level']).lower()
+		except Exception, ex:
+			print ex
+		
 		# data['modules'] = get_versions(self.include_paths)
 		data['server_name'] = self.name
 		data.setdefault('extra', {})
-		data.setdefault('level', logging.ERROR)
 
 		# Shorten lists/strings
 		for k, v in extra.iteritems():
@@ -373,13 +371,14 @@ class Client(object):
 		data = self.build_msg(event_type, data, date,
 				extra, stack, **kwargs)
 
+
+
 		self.send(**data)
 
 		return data['client_supplied_id']
 
 	def _send_remote(self, url, data, headers={}):
 		parsed = urlparse(url)
-		print "_send_remote"
 		transport = self._registry.get_transport(parsed)
 		return transport.send(data, headers)
 
@@ -394,8 +393,6 @@ class Client(object):
 		return message
 
 	def send_remote(self, url, data, headers={}):
-		print "send_remote"
-
 		if not self.state.should_try():
 			message = self._get_log_message(data)
 			self.error_logger.error(message)
@@ -404,7 +401,6 @@ class Client(object):
 		try:
 			self._send_remote(url=url, data=data, headers=headers)
 		except Exception, e:
-			print "ex:",type(e), e.message
 			if isinstance(e, urllib2.HTTPError):
 				body = e.read()
 				self.error_logger.error('Unable to reach Sentry log server: %s (url: %%s, body: %%s)' % (e,), url, body,
@@ -454,8 +450,9 @@ class Client(object):
 
 		for url in self.servers:
 			headers = {
-				'X-Opbeat-Auth': auth_header,
+				'Authorization': auth_header,
 				'Content-Type': 'application/octet-stream',
+				'User-Agent': "opbeat_python/1.0"
 			}
 
 			self.send_remote(url=url, data=message, headers=headers)
@@ -464,13 +461,13 @@ class Client(object):
 		"""
 		Serializes ``data`` into a raw string.
 		"""
-		return base64.b64encode(json.dumps(data).encode('zlib'))
+		return json.dumps(data).encode('zlib')
 
 	def decode(self, data):
 		"""
 		Unserializes a string, ``data``.
 		"""
-		return json.loads(base64.b64decode(data).decode('zlib'))
+		return json.loads(data.decode('zlib'))
 
 	def captureMessage(self, message, **kwargs):
 		"""

@@ -63,4 +63,4 @@ def register_signal(client):
         handler.setLevel(logging.ERROR)
         handler.addFilter(CeleryFilter())
         logger.addHandler(handler)
-    after_setup_logger.connect(process_logger_event, weak=False)
+    # after_setup_logger.connect(process_logger_event, weak=False)

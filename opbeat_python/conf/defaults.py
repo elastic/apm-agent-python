@@ -21,7 +21,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir))
 DEBUG = False
 
 # This should be the full URL to sentries store view
-SERVERS = ['http://localhost:8193/api/v1/errorlog/']
+SERVERS = ['https://www.opbeat.com/api/v1/errorlog/']
 
 TIMEOUT = 5
 
