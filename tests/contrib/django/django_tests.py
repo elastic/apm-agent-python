@@ -28,7 +28,7 @@ from opbeat_python.contrib.django.views import is_valid_origin
 
 from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 
-settings.SENTRY_CLIENT = 'tests.contrib.django.tests.TempStoreClient'
+settings.SENTRY_CLIENT = 'tests.contrib.django.django_tests.TempStoreClient'
 
 
 class MockClientHandler(TestClientHandler):
@@ -123,7 +123,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(exc['value'], u"invalid literal for int() with base 10: 'hello'")
         self.assertEquals(event['level'], logging.ERROR)
         self.assertEquals(event['message'], u"ValueError: invalid literal for int() with base 10: 'hello'")
-        self.assertEquals(event['culprit'], 'tests.contrib.django.tests.test_signal_integration')
+        self.assertEquals(event['culprit'], 'tests.contrib.django.django_tests.test_signal_integration')
 
     def test_view_exception(self):
         self.assertRaises(Exception, self.client.get, reverse('sentry-raise-exc'))

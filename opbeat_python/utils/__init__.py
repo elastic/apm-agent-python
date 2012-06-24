@@ -9,8 +9,8 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
-import hashlib
-import hmac
+# import hashlib
+# import hmac
 try:
     import pkg_resources
 except ImportError:
@@ -91,19 +91,19 @@ def get_versions(module_list=None):
     return versions
 
 
-def get_signature(message, timestamp, key):
-    return hmac.new(str(key), '%s %s' % (timestamp, message), hashlib.sha1).hexdigest()
+# def get_signature(message, timestamp, key):
+#     return hmac.new(str(key), '%s %s' % (timestamp, message), hashlib.sha1).hexdigest()
 
 
-def get_auth_header(protocol, timestamp, client, api_key=None, signature=None, **kwargs):
-    header = [
-        ('sentry_timestamp', timestamp),
-        ('sentry_client', client),
-        ('sentry_version', protocol),
-    ]
-    if signature:
-        header.append(('sentry_signature', signature))
-    if api_key:
-        header.append(('sentry_key', api_key))
+# def get_auth_header(protocol, timestamp, client, api_key=None, signature=None, **kwargs):
+#     header = [
+#         ('sentry_timestamp', timestamp),
+#         ('sentry_client', client),
+#         ('sentry_version', protocol),
+#     ]
+#     if signature:
+#         header.append(('sentry_signature', signature))
+#     if api_key:
+#         header.append(('sentry_key', api_key))
 
-    return 'Sentry %s' % ', '.join('%s=%s' % (k, v) for k, v in header)
+#     return 'Sentry %s' % ', '.join('%s=%s' % (k, v) for k, v in header)

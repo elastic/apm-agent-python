@@ -24,7 +24,7 @@ class MiddlewareTest(TestCase):
         self.app = example_app
 
     def test_error_handler(self):
-        client = TempStoreClient()
+        client = TempStoreClient(project_id="1", api_key="key")
         middleware = Sentry(self.app, client=client)
 
         request = webob.Request.blank('/an-error?foo=bar')
@@ -40,7 +40,7 @@ class MiddlewareTest(TestCase):
         exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'hello world')
-        self.assertEquals(event['level'], logging.ERROR)
+        self.assertEquals(event['level'], "error")
         self.assertEquals(event['message'], 'ValueError: hello world')
 
         self.assertTrue('http' in event)

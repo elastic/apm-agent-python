@@ -118,11 +118,14 @@ class Message(BaseEvent):
         return msg['message']
 
     def get_hash(self, data):
-        msg = data['message']
+        msg = data['param_message']
         return [msg['message']]
 
-    def capture(self, param_message, **kwargs):
-        params = param_message.get('params',[])
+    def capture(self, param_message = None, message = None, **kwargs):
+        if message:
+            param_message = {'message':message}
+
+        params = param_message.get('params',())
         data = {
             'param_message': {
                 'message': param_message['message'],

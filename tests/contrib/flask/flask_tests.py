@@ -4,15 +4,7 @@ from opbeat_python.base import Client
 from opbeat_python.contrib.flask import Sentry
 from unittest2 import TestCase
 
-
-class TempStoreClient(Client):
-    def __init__(self, servers=None, **kwargs):
-        self.events = []
-        super(TempStoreClient, self).__init__(servers=servers, **kwargs)
-
-    def send(self, **kwargs):
-        self.events.append(kwargs)
-
+from tests.helpers import get_tempstoreclient
 
 def create_app():
     app = Flask(__name__)
@@ -30,7 +22,7 @@ class FlaskTest(TestCase):
         self.client = self.app.test_client()
 
     def test_error_handler(self):
-        client = TempStoreClient()
+        client = get_tempstoreclient()
         sentry = Sentry(self.app, client=client)
         response = self.client.get('/an-error/')
         self.assertEquals(response.status_code, 500)
@@ -42,12 +34,12 @@ class FlaskTest(TestCase):
         exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
         self.assertEquals(exc['value'], 'hello world')
-        self.assertEquals(event['level'], logging.ERROR)
+        self.assertEquals(event['level'], "error")
         self.assertEquals(event['message'], 'ValueError: hello world')
         self.assertEquals(event['culprit'], 'tests.contrib.flask.tests.an_error')
 
     def test_get(self):
-        client = TempStoreClient()
+        client = get_tempstoreclient()
         sentry = Sentry(self.app, client=client)
         response = self.client.get('/an-error/?foo=bar')
         self.assertEquals(response.status_code, 500)
@@ -76,7 +68,7 @@ class FlaskTest(TestCase):
         self.assertEquals(env['SERVER_PORT'], '80')
 
     def test_post(self):
-        client = TempStoreClient()
+        client = get_tempstoreclient()
         sentry = Sentry(self.app, client=client)
         response = self.client.post('/an-error/?biz=baz', data={'foo': 'bar'})
         self.assertEquals(response.status_code, 500)

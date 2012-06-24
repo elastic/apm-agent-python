@@ -17,8 +17,7 @@ files = listdir(where_am_i)
 for file in files:
     name, extension = splitext(file)
     if extension == ".egg":
-        sys.path.insert(0, file)
-
+        sys.path.insert(1, file)
 
 from django.conf import settings
 

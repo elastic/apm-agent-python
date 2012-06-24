@@ -9,15 +9,7 @@ from unittest2 import TestCase
 from opbeat_python.base import Client, ClientState
 from opbeat_python.utils.stacks import iter_stack_frames
 
-
-class TempStoreClient(Client):
-    def __init__(self, servers=None, **kwargs):
-        self.events = []
-        super(TempStoreClient, self).__init__(servers=servers, **kwargs)
-
-    def send(self, **kwargs):
-        self.events.append(kwargs)
-
+from tests.helpers import get_tempstoreclient
 
 class ClientStateTest(TestCase):
     def test_should_try_online(self):
@@ -58,7 +50,7 @@ class ClientStateTest(TestCase):
 
 class ClientTest(TestCase):
     def setUp(self):
-        self.client = TempStoreClient()
+        self.client = get_tempstoreclient()
 
     @mock.patch('opbeat_python.base.Client._send_remote')
     @mock.patch('opbeat_python.base.ClientState.should_try')
@@ -216,7 +208,7 @@ class ClientTest(TestCase):
         self.assertEquals(len(frames['frames']), 1)
         frame = frames['frames'][0]
         self.assertEquals(frame['abs_path'], __file__.replace('.pyc', '.py'))
-        self.assertEquals(frame['filename'], 'tests/client/tests.py')
+        self.assertEquals(frame['filename'], 'tests/client/client_tests.py')
         self.assertEquals(frame['module'], __name__)
         self.assertEquals(frame['function'], 'test_exception_event')
         self.assertTrue('timestamp' in event)
@@ -226,7 +218,7 @@ class ClientTest(TestCase):
 
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)
-        self.assertEquals(event['message'], {'message':'test','params':()})
+        self.assertEquals(event['message'], 'test')
         self.assertFalse('stacktrace' in event)
         self.assertTrue('timestamp' in event)
 

@@ -25,7 +25,7 @@ from urlparse import urlparse
 
 import opbeat_python
 from opbeat_python.conf import defaults
-from opbeat_python.utils import json, varmap, get_versions, get_auth_header
+from opbeat_python.utils import json, varmap, get_versions
 
 from opbeat_python.utils.encoding import transform, shorten, to_string
 from opbeat_python.utils.stacks import get_stack_info, iter_stack_frames, \
@@ -228,9 +228,9 @@ class Client(object):
 		if stack is None:
 			stack = self.auto_log_stacks
 
-		if '.' not in event_type:
+		# if '.' not in event_type:
 			# Assume it's a builtin
-			event_type = 'opbeat_python.events.%s' % event_type
+		event_type = 'opbeat_python.events.%s' % event_type
 
 		handler = self.get_handler(event_type)
 
