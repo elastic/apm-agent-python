@@ -118,11 +118,11 @@ class SentryHandler(logging.Handler, object):
             handler = self.client.get_handler('opbeat_python.events.Exception')
 
             data.update(handler.capture(exc_info=record.exc_info))
-            data['checksum'] = handler.get_hash(data)
+            # data['checksum'] = handler.get_hash(data)
 
         data['level'] = record.levelno
         data['logger'] = record.name
 
-        return self.client.capture('Message', message=record.msg, params=record.args,
+        return self.client.capture('Message', param_message={'message':record.msg,'params':record.args},
                             stack=stack, data=data, extra=extra,
                             date=date, **kwargs)

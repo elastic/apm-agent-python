@@ -112,7 +112,7 @@ class Message(BaseEvent):
     """
 
     def to_string(self, data):
-        msg = data['message']
+        msg = data['param_message']
         if msg.get('params'):
             return msg['message'] % msg['params']
         return msg['message']
@@ -121,10 +121,11 @@ class Message(BaseEvent):
         msg = data['message']
         return [msg['message']]
 
-    def capture(self, message, params=(), **kwargs):
+    def capture(self, param_message, **kwargs):
+        params = param_message.get('params',[])
         data = {
-            'message': {
-                'message': message,
+            'param_message': {
+                'message': param_message['message'],
                 'params': params,
             }
         }

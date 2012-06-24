@@ -23,12 +23,12 @@ class SentryHandler(logbook.Handler):
     def __init__(self, *args, **kwargs):
         if len(args) == 1:
             arg = args[0]
-            if isinstance(arg, basestring):
-                self.client = kwargs.pop('client_cls', Client)(dsn=arg)
-            elif isinstance(arg, Client):
+            # if isinstance(arg, basestring):
+            #     self.client = kwargs.pop('client_cls', Client)(dsn=arg)
+            if isinstance(arg, Client):
                 self.client = arg
             else:
-                raise ValueError('The first argument to %s must be either a Client instance or a DSN, got %r instead.' % (
+                raise ValueError('The first argument to %s must be a Client instance got %r instead.' % (
                     self.__class__.__name__,
                     arg,
                 ))
@@ -78,8 +78,11 @@ class SentryHandler(logbook.Handler):
             data.update(handler.capture(exc_info=record.exc_info))
 
         return self.client.capture('Message',
-            message=record.msg,
-            params=record.args,
+            param_message=
+                {
+                    'message':record.msg,
+                    'params':record.args
+                },
             data=data,
             extra=record.extra,
         )
