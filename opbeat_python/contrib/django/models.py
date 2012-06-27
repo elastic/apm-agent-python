@@ -177,7 +177,6 @@ def sentry_exception_handler(request=None, **kwargs):
 
     return actually_do_stuff(request, **kwargs)
 
-
 def register_handlers():
     from django.core.signals import got_request_exception
 
@@ -195,3 +194,13 @@ def register_handlers():
 
 if 'opbeat_python.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
+
+    try:
+        # Do deployment stuff
+        from opbeat_python.deployment import send_deployment_info
+        send_deployment_info(client)
+    except Exception, ex:
+        
+        import traceback
+        traceback.print_exc()
+        pass

@@ -20,8 +20,14 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir))
 # Allow local testing of Sentry even if DEBUG is enabled
 DEBUG = False
 
-# This should be the full URL to sentries store view
-SERVERS = ['https://www.opbeat.com/api/v1/errorlog/']
+# This should be the schema+host of the Opbeat server
+SERVERS = ['https://www.opbeat.com']
+
+# Error API path
+ERROR_API_PATH = '/api/v1/error/'
+
+# Deployment Tracking API path
+DEPLOYMENT_API_PATH = '/api/v1/deployment/'
 
 TIMEOUT = 5
 

@@ -10,3 +10,4 @@ Large portions are
 """
 
 from opbeat_python.contrib.django.client import *
+

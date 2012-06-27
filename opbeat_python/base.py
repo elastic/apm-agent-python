@@ -25,7 +25,7 @@ from urlparse import urlparse
 
 import opbeat_python
 from opbeat_python.conf import defaults
-from opbeat_python.utils import json, varmap, get_versions
+from opbeat_python.utils import json, varmap
 
 from opbeat_python.utils.encoding import transform, shorten, to_string
 from opbeat_python.utils.stacks import get_stack_info, iter_stack_frames, \
@@ -122,7 +122,7 @@ class Client(object):
 			timeout=None, name=None, auto_log_stacks=None, key=None,
 			string_max_length=None, list_max_length=None,
 			project_id=None, api_key=None, processors=None,
-			servers = None,
+			servers = None, api_path=None,
 			**kwargs):
 		# configure loggers first
 		cls = self.__class__
@@ -166,6 +166,11 @@ class Client(object):
 
 		self.servers = servers or defaults.SERVERS
 
+		if not api_path:
+			api_path = defaults.ERROR_API_PATH 
+
+		self.servers = [ server+api_path for server in self.servers]
+		
 		# servers may be set to a NoneType (for Django)
 		if self.servers and not (project_id and api_key):
 			msg = 'Missing configuration for client. Please see documentation.'

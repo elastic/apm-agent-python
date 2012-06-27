@@ -110,16 +110,15 @@ class DjangoClient(Client):
         Serializes and signs ``data`` and passes the payload off to ``send_remote``
 
         If ``servers`` was passed into the constructor, this will serialize the data and pipe it to
-        each server using ``send_remote()``. Otherwise, this will communicate with ``sentry.models.GroupedMessage``
-        directly.
+        each server using ``send_remote()``.
         """
         if self.servers:
             return super(DjangoClient, self).send(**kwargs)
-        elif 'sentry' in settings.INSTALLED_APPS:
-            try:
-                return self.send_integrated(kwargs)
-            except Exception, e:
-                self.error_logger.error('Unable to record event: %s', e, exc_info=True)
+        # elif 'sentry' in settings.INSTALLED_APPS:
+        #     try:
+        #         return self.send_integrated(kwargs)
+        #     except Exception, e:
+        #         self.error_logger.error('Unable to record event: %s', e, exc_info=True)
         else:
             self.error_logger.error('No servers configured, and sentry not installed. Cannot send message')
             return None
