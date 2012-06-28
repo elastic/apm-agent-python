@@ -2,7 +2,7 @@
 opbeat_python.conf.defaults
 ~~~~~~~~~~~~~~~~~~~
 
-Represents the default values for all Sentry settings.
+Represents the default values for all Opbeat settings.
 
 :copyright: (c) 2011-2012 Opbeat
 
