@@ -166,16 +166,10 @@ class Client(object):
 
 		self.servers = servers or defaults.SERVERS
 
-		if not api_path:
-			api_path = defaults.ERROR_API_PATH 
-
-		self.servers = [ server+api_path for server in self.servers]
-		
 		# servers may be set to a NoneType (for Django)
 		if self.servers and not (project_id and api_key):
 			msg = 'Missing configuration for client. Please see documentation.'
 			raise TypeError(msg)
-
 
 		self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
 		self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
@@ -214,7 +208,7 @@ class Client(object):
 	def get_handler(self, name):
 		return self.module_cache[name](self)
 
-	def build_msg(self, event_type, data=None, date=None,
+	def build_msg_for_logging(self, event_type, data=None, date=None,
 			extra=None, stack=None,
 			**kwargs):
 		"""
@@ -232,6 +226,8 @@ class Client(object):
 			date = datetime.datetime.utcnow()
 		if stack is None:
 			stack = self.auto_log_stacks
+
+		self.build_msg(data=data)
 
 		# if '.' not in event_type:
 			# Assume it's a builtin
@@ -278,8 +274,6 @@ class Client(object):
 		except Exception, ex:
 			print ex
 		
-		# data['modules'] = get_versions(self.include_paths)
-		data['server_name'] = self.name
 		data.setdefault('extra', {})
 
 		# Shorten lists/strings
@@ -289,21 +283,6 @@ class Client(object):
 
 		if culprit:
 			data['culprit'] = culprit
-
-		# if 'checksum' not in data:
-		# 	checksum_bits = handler.get_hash(data)
-		# else:
-		# 	checksum_bits = data['checksum']
-
-		# if isinstance(checksum_bits, (list, tuple)):
-		# 	checksum = hashlib.md5()
-		# 	for bit in checksum_bits:
-		# 		checksum.update(to_string(bit))
-		# 	checksum = checksum.hexdigest()
-		# else:
-		# 	checksum = checksum_bits
-
-		# data['checksum'] = checksum
 
 		# Run the data through processors
 		for processor in self.get_processors():
@@ -320,15 +299,22 @@ class Client(object):
 			# 'time_spent': time_spent,
 			'client_supplied_id': event_id,
 		})
-		data.setdefault('project_id', self.project_id)
-		# data.setdefault('site', self.site)
-		# data.setdefault('public_key', self.public_key)
-		data.setdefault('project_id', self.project_id)
-		data.setdefault('api_key', self.api_key)
+
 
 		return data
 
-	def capture(self, event_type, data=None, date=None,
+
+
+	def build_msg(self, data=None,
+			**kwargs):
+		data['server_name'] = self.name
+		data.setdefault('project_id', self.project_id)
+		data.setdefault('project_id', self.project_id)
+		data.setdefault('api_key', self.api_key)
+		return data
+
+
+	def capture(self, event_type, data=None, date=None, api_path=None,
 				extra=None, stack=None, **kwargs):
 		"""
 		Captures and processes an event and pipes it off to SentryClient.send.
@@ -373,10 +359,13 @@ class Client(object):
 		:return: a 32-length string identifying this event
 		"""
 
-		data = self.build_msg(event_type, data, date,
+		data = self.build_msg_for_logging(event_type, data, date,
 				extra, stack, **kwargs)
 
-
+		if not api_path:
+			api_path = defaults.ERROR_API_PATH 
+		
+		data['servers'] = [ server+api_path for server in self.servers]
 
 		self.send(**data)
 
@@ -421,27 +410,27 @@ class Client(object):
 		else:
 			self.state.set_success()
 
-	def send(self, project_id=None, api_key=None, auth_header=None, **data):
+	def send(self, project_id=None, api_key=None, auth_header=None, servers = None, **data):
 		"""
 		Serializes the message and passes the payload onto ``send_encoded``.
 		"""
 		message = self.encode(data)
 
 		try:
-			return self.send_encoded(message, project_id=project_id, api_key=api_key, auth_header=auth_header)
+			return self.send_encoded(message, project_id=project_id, api_key=api_key, auth_header=auth_header, servers=servers)
 		except TypeError:
 			# Make the assumption that public_key wasnt supported
 			warnings.warn('%s.send_encoded needs updated to support ``**kwargs``' % (type(self).__name__,),
 				DeprecationWarning)
 			return self.send_encoded(message)
 
-	def send_encoded(self, message, project_id, api_key, auth_header=None, **kwargs):
+	def send_encoded(self, message, project_id, api_key, auth_header=None, servers = None, **kwargs):
 		"""
 		Given an already serialized message, signs the message and passes the
 		payload off to ``send_remote`` for each server specified in the servers
 		configuration.
 		"""
-		if not self.servers:
+		if not servers:
 			warnings.warn('opbeat_python client has no remote servers configured')
 			return
 
@@ -453,7 +442,7 @@ class Client(object):
 				
 			auth_header = "apikey %s:%s" % (project_id, api_key)
 
-		for url in self.servers:
+		for url in servers:
 			headers = {
 				'Authorization': auth_header,
 				'Content-Type': 'application/octet-stream',

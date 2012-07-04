@@ -17,7 +17,7 @@ import socket
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir))
 
-# Allow local testing of Sentry even if DEBUG is enabled
+# Allow local testing of Opbeat even if DEBUG is enabled
 DEBUG = False
 
 # This should be the schema+host of the Opbeat server
@@ -36,14 +36,8 @@ CLIENT = 'opbeat_python.contrib.django.DjangoClient'
 
 NAME = socket.gethostname()
 
-# Credentials to authenticate with the Sentry server
+# Credentials to authenticate with the Opbeat server
 API_KEY = None
-
-# We allow setting the site name either by explicitly setting it with the
-# SENTRY_SITE setting, or using the django.contrib.sites framework for
-# fetching the current site. Since we can't reliably query the database
-# from this module, the specific logic is within the SiteFilter
-SITE = None
 
 # Extending this allow you to ignore module prefixes when we attempt to
 # discover which function an error comes from (typically a view)

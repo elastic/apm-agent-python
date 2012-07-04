@@ -16,9 +16,13 @@ import sys
 import pkg_resources
 import os
 
+VCS_NAME_MAP = {
+	'git':'git',
+	'hg':'mercurial',
+	'svn':'subversion'
+}
+
 def send_deployment_info(client):
-	# Versions are returned as a dict of "module":"version"
-	# We will convert it
 	versions = get_versions_from_installed(client.include_paths)
 
 	versions = dict([(module, {'module':module, 'version':version}) for module, version in versions.items()])
@@ -29,9 +33,21 @@ def send_deployment_info(client):
 	rep_info = get_repository_info()
 
 	if rep_info:
-	  versions['_repository'] = {'module':client.name, 'vcs':rep_info}
+		versions['_repository'] = {'module':'_repository', 'vcs':rep_info}
+
+	# Versions are returned as a dict of "module":"version"
+	# We convert i here. Just ditch the keys.
+	list_versions = [v for k,v in versions.items()]
+
+	server_name = client.name
+
+	data = {'server_name':server_name, 'releases':list_versions}
 
 	urls = [server+defaults.DEPLOYMENT_API_PATH for server in client.servers]
+	
+	client.build_msg(data=data)
+
+	client.send(servers=urls,**data)
 
 _VERSION_CACHE ={}
 def get_versions_from_installed(module_list=None):
@@ -102,8 +118,10 @@ def get_version_from_location(location):
 	if backend_cls:
 		backend = backend_cls()
 		url, rev = backend.get_info(location)
-		print backend.get_url_rev(location)
-		return {'type': backend_cls.name,'rev':rev, 'repository':url}
+
+		vcs_type = VCS_NAME_MAP[backend_cls.name]
+
+		return {'type': vcs_type,'revision':rev, 'repository':url}
 	else:
 		head, tail = os.path.split(location)
 		if head and head != '/': ## TODO: Support windows
@@ -114,7 +132,6 @@ def get_version_from_location(location):
 def get_repository_info():
 	import os
 	location = os.getcwd()
-	print "CWD:",location
 	cwd_rev_info = get_version_from_location(location)
-	print "cwd info:", cwd_rev_info
 	return cwd_rev_info
+	
