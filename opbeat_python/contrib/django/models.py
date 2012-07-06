@@ -155,11 +155,8 @@ def sentry_exception_handler(request=None, **kwargs):
 
     @transaction.commit_on_success
     def actually_do_stuff(request=None, **kwargs):
-        print kwargs
         exc_info = sys.exc_info()
         try:
-            print "skip:",getattr(exc_info[1], 'skip_opbeat', False)
-            # print exc_info[1].skip_opbeat
             if (django_settings.DEBUG and not getattr(django_settings, 'OPBEAT_DEBUG', False)) or getattr(exc_info[1], 'skip_opbeat', False):
                 return
 
@@ -198,11 +195,11 @@ def register_handlers():
 if 'opbeat_python.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
 
-    # if (not django_settings.DEBUG) or (django_settings.DEBUG and getattr(django_settings, 'OPBEAT_DEBUG', False)):
-    #     try:
-    #         # Do deployment stuff
-    #         from opbeat_python.deployment import send_deployment_info
-    #         send_deployment_info(client)
-    #     except Exception, ex:
-    #         import traceback
-    #         traceback.print_exc()
+    if (not django_settings.DEBUG) or (django_settings.DEBUG and getattr(django_settings, 'OPBEAT_DEBUG', False)):
+        try:
+            # Do deployment stuff
+            from opbeat_python.deployment import send_deployment_info
+            send_deployment_info(client)
+        except Exception, ex:
+            import traceback
+            traceback.print_exc()
