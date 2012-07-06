@@ -29,8 +29,7 @@ class BaseEvent(object):
         raise NotImplementedError
 
     def capture(self, **kwargs):
-        return {b
-        }
+        return {}
 
 
 class Exception(BaseEvent):

@@ -11,11 +11,11 @@ Large portions are
 
 # import hashlib
 # import hmac
-try:
-    import pkg_resources
-except ImportError:
-    pkg_resources = None
-import sys
+# try:
+#     import pkg_resources
+# except ImportError:
+#     pkg_resources = None
+# import sys
 
 
 def varmap(func, var, context=None, name=None):

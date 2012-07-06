@@ -11,23 +11,20 @@ Large portions are
 
 from __future__ import absolute_import
 
-import base64
 import datetime
-import hashlib
 import logging
 import os
 import time
 import urllib2
 import uuid
 import warnings
-import time
 from urlparse import urlparse
 
 import opbeat_python
 from opbeat_python.conf import defaults
 from opbeat_python.utils import json, varmap
 
-from opbeat_python.utils.encoding import transform, shorten, to_string
+from opbeat_python.utils.encoding import transform, shorten
 from opbeat_python.utils.stacks import get_stack_info, iter_stack_frames, \
   get_culprit
 from opbeat_python.transport import TransportRegistry
@@ -439,7 +436,6 @@ class Client(object):
 			return
 
 		if not auth_header:
-			timestamp = time.time()
 			if not project_id:
 				project_id = self.project_id
 				api_key = self.api_key

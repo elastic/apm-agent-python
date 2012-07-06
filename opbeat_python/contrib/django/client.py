@@ -13,7 +13,7 @@ from __future__ import absolute_import
 
 import logging
 
-from django.conf import settings
+# from django.conf import settings
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin

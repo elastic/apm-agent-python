@@ -18,7 +18,7 @@ import logging
 import warnings
 
 from django.conf import settings as django_settings
-from django.utils.hashcompat import md5_constructor
+
 
 logger = logging.getLogger('sentry.errors.client')
 

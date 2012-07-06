@@ -11,4 +11,4 @@ Large portions are
 
 # TODO: need to educate myself on how this works
 
-from opbeat_python.contrib.django.models import client
+# from opbeat_python.contrib.django.models import client
