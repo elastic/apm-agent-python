@@ -195,11 +195,11 @@ def register_handlers():
 if 'opbeat_python.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
 
-    if (not django_settings.DEBUG) or (django_settings.DEBUG and getattr(django_settings, 'OPBEAT_DEBUG', False)):
-        try:
-            # Do deployment stuff
-            from opbeat_python.deployment import send_deployment_info
-            send_deployment_info(client)
-        except Exception, ex:
-            import traceback
-            traceback.print_exc()
+    # if (not django_settings.DEBUG) or (django_settings.DEBUG and getattr(django_settings, 'OPBEAT_DEBUG', False)):
+    #     try:
+    #         # Do deployment stuff
+    #         from opbeat_python.deployment import send_deployment_info
+    #         send_deployment_info(client)
+    #     except Exception, ex:
+    #         import traceback
+    #         traceback.print_exc()
