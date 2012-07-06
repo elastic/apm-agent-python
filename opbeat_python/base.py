@@ -268,11 +268,13 @@ class Client(object):
 			)
 
 		if not data.get('level'):
-			data['level'] = logging.ERROR
-		try:
-			data['level'] = logging.getLevelName(data['level']).lower()
-		except Exception, ex:
-			print ex
+			data['level'] = 'error'
+
+		if isinstance( data['level'], ( int, long ) ):
+			try:
+				data['level'] = logging.getLevelName(data['level']).lower()
+			except Exception, ex:
+				print ex
 		
 		data.setdefault('extra', {})
 
@@ -307,7 +309,7 @@ class Client(object):
 
 	def build_msg(self, data=None,
 			**kwargs):
-		data['server_name'] = self.name
+		data.setdefault('server_name', self.name)
 		data.setdefault('project_id', self.project_id)
 		data.setdefault('project_id', self.project_id)
 		data.setdefault('api_key', self.api_key)
@@ -430,6 +432,8 @@ class Client(object):
 		payload off to ``send_remote`` for each server specified in the servers
 		configuration.
 		"""
+
+		servers = servers or self.servers
 		if not servers:
 			warnings.warn('opbeat_python client has no remote servers configured')
 			return
@@ -446,7 +450,7 @@ class Client(object):
 			headers = {
 				'Authorization': auth_header,
 				'Content-Type': 'application/octet-stream',
-				'User-Agent': "opbeat_python/1.0"
+				'User-Agent': 'opbeat_python/%s' % opbeat_python.VERSION
 			}
 
 			self.send_remote(url=url, data=message, headers=headers)

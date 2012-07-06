@@ -32,7 +32,7 @@ class LogbookHandlerTest(TestCase):
             self.assertEquals(len(client.events), 1)
             event = client.events.pop(0)
             self.assertEquals(event['logger'], __name__)
-            self.assertEquals(event['level'], logbook.WARNING)
+            self.assertEquals(event['level'], 'warning')
             self.assertEquals(event['message'], 'This is a test warning')
             self.assertFalse('stacktrace' in event)
             self.assertFalse('exception' in event)

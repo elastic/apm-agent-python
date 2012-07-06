@@ -81,7 +81,7 @@ class TransportTest(TestCase):
 
         mydate = datetime.datetime(2012, 5, 4, tzinfo=pytz.utc)
         d = calendar.timegm(mydate.timetuple())
-        msg = c.build_msg("Message", message='foo', date=d)
+        msg = c.build_msg_for_logging("Message", message='foo', date=d)
         expected = {
             'project_id':project_id,
             'api_key':api_key,
@@ -94,8 +94,7 @@ class TransportTest(TestCase):
             # 'modules': {},
             # 'site': None,
             # 'time_spent': None,
-            'timestamp': 1336089600,
-            # 'message': 'foo',
+            'timestamp': 1336089600
         }
 
         # The client_supplied_id is always overridden

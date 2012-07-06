@@ -13,13 +13,13 @@ class MessageTest(TestCase):
         message = Message(client)
         message.logger = Mock()
         data = {
-            'message': {
+            'param_message': {
                 'message': unformatted_message,
             }
         }
 
         self.assertEqual(message.to_string(data), unformatted_message)
 
-        data['message']['params'] = (1, 2)
+        data['param_message']['params'] = (1, 2)
         self.assertEqual(message.to_string(data),
                          unformatted_message % (1, 2))

@@ -9,15 +9,7 @@ import zerorpc
 from opbeat_python.base import Client
 from opbeat_python.contrib.zerorpc import SentryMiddleware
 
-
-class TempStoreClient(Client):
-    def __init__(self, servers=None, **kwargs):
-        self.events = []
-        super(TempStoreClient, self).__init__(servers=servers, **kwargs)
-
-    def send(self, **kwargs):
-        self.events.append(kwargs)
-
+from tests.helpers import get_tempstoreclient
 
 class ZeroRPCTest(unittest2.TestCase):
 
@@ -27,7 +19,7 @@ class ZeroRPCTest(unittest2.TestCase):
                     self._socket_dir, 'random_zeroserver'
         ))
 
-        self._sentry = TempStoreClient()
+        self._sentry = get_tempstoreclient()
         zerorpc.Context.get_instance().register_middleware(SentryMiddleware(
                     client=self._sentry
         ))

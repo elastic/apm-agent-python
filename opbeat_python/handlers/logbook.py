@@ -18,6 +18,15 @@ import traceback
 from opbeat_python.base import Client
 from opbeat_python.utils.encoding import to_string
 
+LOOKBOOK_LEVELS = {
+    logbook.DEBUG:'debug',
+    logbook.INFO: 'info',
+    logbook.NOTICE: 'info',
+    logbook.WARNING: 'warning',
+    logbook.ERROR: 'error',
+    logbook.CRITICAL:'fatal',
+}
+
 
 class SentryHandler(logbook.Handler):
     def __init__(self, *args, **kwargs):
@@ -66,17 +75,17 @@ class SentryHandler(logbook.Handler):
 
     def _emit(self, record):
         data = {
-            'level': record.level,
+            'level': LOOKBOOK_LEVELS[record.level],
             'logger': record.channel,
         }
-
+        print data
         # If there's no exception being processed, exc_info may be a 3-tuple of None
         # http://docs.python.org/library/sys.html#sys.exc_info
         if record.exc_info is True or (record.exc_info and all(record.exc_info)):
             handler = self.client.get_handler('opbeat_python.events.Exception')
 
             data.update(handler.capture(exc_info=record.exc_info))
-
+        
         return self.client.capture('Message',
             param_message=
                 {

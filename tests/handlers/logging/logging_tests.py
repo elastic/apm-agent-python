@@ -133,7 +133,7 @@ class LoggingIntegrationTest(TestCase):
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event)
         msg = event['param_message']
-        self.assertEquals(msg['param_message'], 'This is a test of stacks')
+        self.assertEquals(msg['message'], 'This is a test of stacks')
         self.assertEquals(msg['params'], ())
         self.assertTrue('stacktrace' in event)
 
