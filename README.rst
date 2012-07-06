@@ -1,8 +1,8 @@
 opbeat_python
 ====================
 
-.. image:: https://secure.travis-ci.org/dcramer/opbeat_python.png?branch=master
-   :target: http://travis-ci.org/dcramer/opbeat_python
+.. .. image:: https://secure.travis-ci.org/dcramer/opbeat_python.png?branch=master
+..    :target: http://travis-ci.org/dcramer/opbeat_python
 
 opbeat_python is a Python client for `Opbeat <http://opbeat.com/>`_. It provides
 full out-of-the-box support for many of the popular frameworks, including
