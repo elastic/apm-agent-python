@@ -510,7 +510,7 @@ class Client(object):
 
 		if rep_info:
 			versions['_repository'] = {'module':'_repository', 'vcs':rep_info}
-		print versions
+
 		# Versions are returned as a dict of "module":"version"
 		# We convert it here. Just ditch the keys.
 		list_versions = [v for k,v in versions.items()]
