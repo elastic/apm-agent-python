@@ -14,7 +14,6 @@ import sys
 import pwd
 
 from optparse import OptionParser
-print sys.path
 
 from opbeat_python.conf import defaults
 from opbeat_python.base import Client
