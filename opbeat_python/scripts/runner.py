@@ -13,11 +13,28 @@ import os
 import sys
 import pwd
 
-from optparse import OptionParser
+from optparse import OptionParser, IndentedHelpFormatter, textwrap
 
 from opbeat_python.conf import defaults
 from opbeat_python.base import Client
 import opbeat_python
+
+class IndentedHelpFormatterWithNL(IndentedHelpFormatter):
+	def format_description(self, description):
+		if not description: return ""
+		desc_width = self.width - self.current_indent
+		indent = " "*self.current_indent
+		
+		bits = description.split('\n')
+		formatted_bits = [
+			textwrap.fill(bit,
+			desc_width,
+			initial_indent=indent,
+			subsequent_indent=indent)
+			for bit in bits]
+		result = "\n".join(formatted_bits) + "\n"
+		return result
+
 
 
 def get_options():
@@ -59,7 +76,7 @@ def send_test_message(client, *args):
 	print
 	
 def send_deployment(client, args):
-	print 'Sending a deployment info...',
+	print 'Sending a deployment info...'
 
 	if len(args) > 0:
 		directory = os.path.abspath(args[0])
@@ -109,10 +126,21 @@ def main():
 	root.setLevel(logging.DEBUG)
 	root.addHandler(logging.StreamHandler())
 	
-	parser = OptionParser(description=' Interface with Opbeat',
+	pos_args = {
+		'test-msg':send_test_message,
+		'send-deployment':send_deployment
+	}
+	desc = ' Interface with Opbeat'
+	desc += """\n\nCommands supported are: \n"""
+	desc += """\n - """+"""\n - """.join([k for k in pos_args]) + "\n"
+
+	parser = OptionParser(description=desc,
 								   prog='opbeat_python',
 								   version=opbeat_python.VERSION,
-								   option_list=get_options()
+								   option_list=get_options(),
+								   usage = "usage: %prog [options] command",
+							       formatter=IndentedHelpFormatterWithNL()
+
 								   )
 
 	# parser.add_option("-k", "--api-key",action="store",
@@ -127,10 +155,6 @@ def main():
 		parser.print_help()
 		return
 
-	pos_args = {
-		'test-msg':send_test_message,
-		'send-deployment':send_deployment
-	}
 
 	if len(args) < 1 or args[0] not in pos_args:
 		parser.print_help()
