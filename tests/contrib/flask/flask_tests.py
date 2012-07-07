@@ -1,7 +1,7 @@
 import logging
 from flask import Flask
 from opbeat_python.base import Client
-from opbeat_python.contrib.flask import Sentry
+from opbeat_python.contrib.flask import Opbeat
 from unittest2 import TestCase
 
 from tests.helpers import get_tempstoreclient
@@ -23,7 +23,7 @@ class FlaskTest(TestCase):
 
     def test_error_handler(self):
         client = get_tempstoreclient()
-        sentry = Sentry(self.app, client=client)
+        opbeat = Opbeat(self.app, client=client)
         response = self.client.get('/an-error/')
         self.assertEquals(response.status_code, 500)
         self.assertEquals(len(client.events), 1)
@@ -40,7 +40,7 @@ class FlaskTest(TestCase):
 
     def test_get(self):
         client = get_tempstoreclient()
-        sentry = Sentry(self.app, client=client)
+        opbeat = Opbeat(self.app, client=client)
         response = self.client.get('/an-error/?foo=bar')
         self.assertEquals(response.status_code, 500)
         self.assertEquals(len(client.events), 1)
@@ -69,7 +69,7 @@ class FlaskTest(TestCase):
 
     def test_post(self):
         client = get_tempstoreclient()
-        sentry = Sentry(self.app, client=client)
+        opbeat = Opbeat(self.app, client=client)
         response = self.client.post('/an-error/?biz=baz', data={'foo': 'bar'})
         self.assertEquals(response.status_code, 500)
         self.assertEquals(len(client.events), 1)

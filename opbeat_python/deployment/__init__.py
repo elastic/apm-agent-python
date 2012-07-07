@@ -12,32 +12,6 @@ VCS_NAME_MAP = {
 	'svn':'subversion'
 }
 
-def send_deployment_info(client):
-	versions = get_versions_from_installed(client.include_paths)
-
-	versions = dict([(module, {'module':module, 'version':version}) for module, version in versions.items()])
-
-	dist_versions = get_version_from_distributions(get_installed_distributions())
-	versions.update(dist_versions)
-
-	rep_info = get_repository_info()
-
-	if rep_info:
-		versions['_repository'] = {'module':'_repository', 'vcs':rep_info}
-
-	# Versions are returned as a dict of "module":"version"
-	# We convert i here. Just ditch the keys.
-	list_versions = [v for k,v in versions.items()]
-
-	server_name = client.name
-
-	data = {'server_name':server_name, 'releases':list_versions}
-
-	urls = [server+defaults.DEPLOYMENT_API_PATH for server in client.servers]
-	
-	client.build_msg(data=data)
-
-	client.send(servers=urls,**data)
 
 _VERSION_CACHE ={}
 def get_versions_from_installed(module_list=None):
@@ -119,9 +93,9 @@ def get_version_from_location(location):
 		else:
 			return None
 
-def get_repository_info():
-	import os
-	location = os.getcwd()
-	cwd_rev_info = get_version_from_location(location)
+def get_repository_info(directory=None):
+	if not directory:
+		directory = os.getcwd()
+	cwd_rev_info = get_version_from_location(directory)
 	return cwd_rev_info
 	

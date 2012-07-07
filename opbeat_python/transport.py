@@ -138,7 +138,7 @@ class HTTPTransport(Transport):
         project = path_bits[-1]
 
         if not all([netloc, project, url.username, url.password]):
-            raise ValueError('Invalid Sentry DSN: %r' % url.geturl())
+            raise ValueError('Invalid Opbeat DSN: %r' % url.geturl())
 
         server = '%s://%s%s/api/store/' % (url.scheme, netloc, path)
         scope.update({

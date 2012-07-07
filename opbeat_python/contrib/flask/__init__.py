@@ -21,55 +21,53 @@ from opbeat_python.contrib.flask.utils import get_data_from_request
 from opbeat_python.handlers.logging import SentryHandler
 
 
-def make_client(client_cls, app, dsn=None):
+def make_client(client_cls, app, project_id=None, api_key=None):
     return client_cls(
-        include_paths=set(app.config.get('SENTRY_INCLUDE_PATHS', [])) | set([app.import_name]),
-        exclude_paths=app.config.get('SENTRY_EXCLUDE_PATHS'),
-        servers=app.config.get('SENTRY_SERVERS'),
-        name=app.config.get('SENTRY_NAME'),
-        key=app.config.get('SENTRY_KEY'),
-        public_key=app.config.get('SENTRY_PUBLIC_KEY'),
-        secret_key=app.config.get('SENTRY_SECRET_KEY'),
-        project=app.config.get('SENTRY_PROJECT'),
-        site=app.config.get('SENTRY_SITE_NAME'),
-        dsn=dsn or app.config.get('SENTRY_DSN') or os.environ.get('SENTRY_DSN'),
+        include_paths=set(app.config.get('OPBEAT_INCLUDE_PATHS', [])) | set([app.import_name]),
+        exclude_paths=app.config.get('OPBEAT_EXCLUDE_PATHS'),
+        servers=app.config.get('OPBEAT_SERVERS'),
+        name=app.config.get('OPBEAT_NAME'),
+        project_id=project_id or app.config.get('OPBEAT_PROJECT_ID') or os.environ.get('OPBEAT_PROJECT_ID'),
+        api_key=api_key or app.config.get('OPBEAT_API_KEY') or os.environ.get('OPBEAT_API_KEY')
     )
 
 
-class Sentry(object):
+class Opbeat(object):
     """
-    Flask application for Sentry.
+    Flask application for Opbeat.
 
-    Look up configuration from ``os.environ['SENTRY_DSN']``::
+    Look up configuration from ``os.environ['OPBEAT_PROJECT_ID']``
+    and os.environ.get('OPBEAT_API_KEY')::
 
-    >>> sentry = Sentry(app)
+    >>> opbeat = Opbeat(app)
 
-    Pass an arbitrary DSN::
+    Pass an arbitrary PROJECT_ID and API_KEY::
 
-    >>> sentry = Sentry(app, dsn='http://public:secret@example.com/1')
+    >>> opbeat = Opbeat(app, project_id='1', api_key='asdasdasd')
 
     Pass an explicit client::
 
-    >>> sentry = Sentry(app, client=client)
+    >>> opbeat = Opbeat(app, client=client)
 
     Automatically configure logging::
 
-    >>> sentry = Sentry(app, logging=True)
+    >>> opbeat = Opbeat(app, logging=True)
 
     Capture an exception::
 
     >>> try:
     >>>     1 / 0
     >>> except ZeroDivisionError:
-    >>>     sentry.captureException()
+    >>>     opbeat.captureException()
 
     Capture a message::
 
-    >>> sentry.captureMessage('hello, world!')
+    >>> opbeat.captureMessage('hello, world!')
     """
-    def __init__(self, app=None, client=None, client_cls=Client, dsn=None,
-                 logging=False):
-        self.dsn = dsn
+    def __init__(self, app=None, client=None, client_cls=Client, project_id=None,
+                 api_key=None, logging=False):
+        self.project_id = project_id
+        self.api_key = api_key
         self.logging = logging
         self.client_cls = client_cls
         self.client = client
@@ -91,7 +89,7 @@ class Sentry(object):
     def init_app(self, app):
         self.app = app
         if not self.client:
-            self.client = make_client(self.client_cls, app, self.dsn)
+            self.client = make_client(self.client_cls, app, self.project_id, self.api_key)
 
         if self.logging:
             setup_logging(SentryHandler(self.client))

@@ -29,6 +29,8 @@ from opbeat_python.utils.stacks import get_stack_info, iter_stack_frames, \
   get_culprit
 from opbeat_python.transport import TransportRegistry
 
+from opbeat_python.deployment import get_installed_distributions, get_versions_from_installed, get_version_from_distributions, get_repository_info
+
 __all__ = ('Client',)
 
 
@@ -396,10 +398,10 @@ class Client(object):
 		except Exception, e:
 			if isinstance(e, urllib2.HTTPError):
 				body = e.read()
-				self.error_logger.error('Unable to reach Sentry log server: %s (url: %%s, body: %%s)' % (e,), url, body,
+				self.error_logger.error('Unable to reach Opbeat server: %s (url: %%s, body: %%s)' % (e,), url, body,
 					exc_info=True, extra={'data': {'body': body, 'remote_url': url}})
 			else:
-				tmpl = 'Unable to reach Sentry log server: %s (url: %%s)'
+				tmpl = 'Unable to reach Opbeat server: %s (url: %%s)'
 				self.error_logger.error(tmpl % (e,), url, exc_info=True,
 						extra={'data': {'remote_url': url}})
 
@@ -496,6 +498,32 @@ class Client(object):
 		return self.capture('Query', query=query, params=params, engine=engine,
 				**kwargs)
 
+	def send_deployment_info(self, directory=None):
+		versions = get_versions_from_installed(self.include_paths)
+
+		versions = dict([(module, {'module':module, 'version':version}) for module, version in versions.items()])
+
+		dist_versions = get_version_from_distributions(get_installed_distributions())
+		versions.update(dist_versions)
+
+		rep_info = get_repository_info(directory)
+
+		if rep_info:
+			versions['_repository'] = {'module':'_repository', 'vcs':rep_info}
+		print versions
+		# Versions are returned as a dict of "module":"version"
+		# We convert it here. Just ditch the keys.
+		list_versions = [v for k,v in versions.items()]
+
+		server_name = self.name
+
+		data = {'server_name':server_name, 'releases':list_versions}
+
+		urls = [server+defaults.DEPLOYMENT_API_PATH for server in self.servers]
+		
+		self.build_msg(data=data)
+
+		return self.send(servers=urls,**data)
 
 class DummyClient(Client):
 	"Sends messages into an empty void"
