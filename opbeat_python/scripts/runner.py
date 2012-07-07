@@ -80,7 +80,9 @@ def send_deployment(client, args):
 
 	if len(args) > 0:
 		directory = os.path.abspath(args[0])
-	print "Using directory:", directory
+		print "Using directory:", directory
+	else:
+		directory = None
 
 	client.send_deployment_info(directory=directory)
 
