@@ -64,8 +64,7 @@ class Opbeat(object):
 
     >>> opbeat.captureMessage('hello, world!')
     """
-    def __init__(self, app=None, client=None, client_cls=Client, project_id=None,
-                 api_key=None, logging=False):
+    def __init__(self, app=None, project_id=None, api_key=None, client=None, client_cls=Client, logging=False):
         self.project_id = project_id
         self.api_key = api_key
         self.logging = logging
