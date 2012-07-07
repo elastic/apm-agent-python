@@ -276,6 +276,19 @@ class ClientTest(TestCase):
         self.assertTrue('timestamp' in event)
 
 
+
+    @mock.patch('opbeat_python.base.Client.build_msg')
+    @mock.patch('opbeat_python.base.Client.send')
+    def test_send_deployment(self, build_msg,send):
+        client = Client(
+            servers=['http://example.com'],
+            project_id='public',
+            api_key='secret',
+        )
+        client.send_deployment_info()
+        build_msg.assert_called_once()
+        send.assert_called_once()
+
 # class ClientUDPTest(TestCase):
 #     def setUp(self):
 #         self.server_socket = socket(AF_INET, SOCK_DGRAM)

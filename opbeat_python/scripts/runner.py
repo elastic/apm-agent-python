@@ -102,7 +102,12 @@ def build_client(project_id = None, api_key=None, server=None):
 		print 
 		return False
 
-	servers = [server] or [os.environ.get('OPBEAT_SERVER')] or defaults.SERVERS
+	if server:
+		servers = [server]
+	elif os.environ.get('OPBEAT_SERVER'):
+		servers = [os.environ.get('OPBEAT_SERVER')]
+	else:
+		servers = defaults.SERVERS
 
 	# print "Using configuration:"
 	# print " ", project_id
