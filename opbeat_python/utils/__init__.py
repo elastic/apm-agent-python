@@ -45,7 +45,7 @@ def varmap(func, var, context=None, name=None):
 #     return hmac.new(str(key), '%s %s' % (timestamp, message), hashlib.sha1).hexdigest()
 
 
-# def get_auth_header(protocol, timestamp, client, api_key=None, signature=None, **kwargs):
+# def get_auth_header(protocol, timestamp, client, access_token=None, signature=None, **kwargs):
 #     header = [
 #         ('sentry_timestamp', timestamp),
 #         ('sentry_client', client),
@@ -53,7 +53,7 @@ def varmap(func, var, context=None, name=None):
 #     ]
 #     if signature:
 #         header.append(('sentry_signature', signature))
-#     if api_key:
-#         header.append(('sentry_key', api_key))
+#     if access_token:
+#         header.append(('sentry_key', access_token))
 
 #     return 'Sentry %s' % ', '.join('%s=%s' % (k, v) for k, v in header)

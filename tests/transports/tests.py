@@ -70,13 +70,13 @@ class TransportTest(TestCase):
 
     def test_build_then_send(self):
         project_id = "project_id"
-        api_key = "api_key"
+        access_token = "access_token"
 
         try:
             Client.register_scheme('mock', DummyScheme)
         except:
             pass
-        c = Client(project_id=project_id, api_key=api_key,
+        c = Client(project_id=project_id, access_token=access_token,
                 name="test_server")
 
         mydate = datetime.datetime(2012, 5, 4, tzinfo=pytz.utc)
@@ -84,7 +84,7 @@ class TransportTest(TestCase):
         msg = c.build_msg_for_logging("Message", message='foo', date=d)
         expected = {
             'project_id':project_id,
-            'api_key':api_key,
+            'access_token':access_token,
             'message': 'foo',
             'param_message': {'message':'foo','params':()},
             'server_name': u'test_server',

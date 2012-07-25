@@ -12,7 +12,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 #     def test_path(self):
@@ -22,7 +22,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 #     def test_port(self):
@@ -32,7 +32,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 #     def test_scope_is_optional(self):
@@ -41,7 +41,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 #     def test_http(self):
@@ -51,7 +51,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 
@@ -62,7 +62,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 
@@ -73,7 +73,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 
@@ -84,7 +84,7 @@ from unittest2 import TestCase
 #         self.assertEquals(res, {
 #             'OPBEAT_SERVERS': ['https://sentry.local/api/store/'],
 #             'OPBEAT_PROJECT_ID': 'foo',
-#             'OPBEAT_API_KEY': 'bar',
+#             'OPBEAT_ACCESS_TOKEN': 'bar',
 #         })
 
 

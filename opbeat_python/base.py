@@ -29,8 +29,6 @@ from opbeat_python.utils.stacks import get_stack_info, iter_stack_frames, \
   get_culprit
 from opbeat_python.transport import TransportRegistry
 
-from opbeat_python.deployment import get_installed_distributions, get_versions_from_installed, get_version_from_distributions, get_repository_info
-
 __all__ = ('Client',)
 
 
@@ -86,23 +84,23 @@ class Client(object):
 	HTTP API to Opbeat servers.
 
 	Will read default configuration from the environment variable
-	``OPBEAT_PROJECT_ID`` and ``OPBEAT_API_KEY`` if available.
+	``OPBEAT_PROJECT_ID`` and ``OPBEAT_ACCESS_TOKEN`` if available.
 
 	>>> from opbeat import Client
 
 	>>> # Read configuration from ``os.environ['OPBEAT_PROJECT_ID']``
-	>>> # and ``os.environ['OPBEAT_API_KEY']``
+	>>> # and ``os.environ['OPBEAT_ACCESS_TOKEN']``
 	>>> client = Client()
 
 	>>> # Specify a DSN explicitly
 	>>> client =
-	>>> Client(project_id='project_id', api_key='api_key')
+	>>> Client(project_id='project_id', access_token='access_token')
 
 	>>> # Configure the client manually
 	>>> client = Client(
 	>>>     include_paths=['my.package'],
 	>>>     project='project_id',
-	>>>     api_key='api_key'
+	>>>     access_token='access_token'
 	>>> )
 
 	>>> # Record an exception
@@ -120,7 +118,7 @@ class Client(object):
 	def __init__(self, include_paths=None, exclude_paths=None,
 			timeout=None, name=None, auto_log_stacks=None, key=None,
 			string_max_length=None, list_max_length=None,
-			project_id=None, api_key=None, processors=None,
+			project_id=None, access_token=None, processors=None,
 			servers = None, api_path=None,
 			**kwargs):
 		# configure loggers first
@@ -146,10 +144,10 @@ class Client(object):
 			self.logger.info(msg)
 			project_id = os.environ['OPBEAT_PROJECT_ID']
 
-		if api_key is None and os.environ.get('OPBEAT_API_KEY'):
-			msg = "Configuring opbeat_python from environment variable 'OPBEAT_API_KEY'"
+		if access_token is None and os.environ.get('OPBEAT_ACCESS_TOKEN'):
+			msg = "Configuring opbeat_python from environment variable 'OPBEAT_ACCESS_TOKEN'"
 			self.logger.info(msg)
-			api_key = os.environ['OPBEAT_API_KEY']
+			access_token = os.environ['OPBEAT_ACCESS_TOKEN']
 
 		# if dsn:
 		# 	# TODO: should we validate other options werent sent?
@@ -166,7 +164,7 @@ class Client(object):
 		self.servers = servers or defaults.SERVERS
 
 		# servers may be set to a NoneType (for Django)
-		if self.servers and not (project_id and api_key):
+		if self.servers and not (project_id and access_token):
 			msg = 'Missing configuration for client. Please see documentation.'
 			raise TypeError(msg)
 
@@ -181,7 +179,7 @@ class Client(object):
 				defaults.MAX_LENGTH_STRING)
 		self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
 
-		self.api_key = api_key
+		self.access_token = access_token
 		self.project_id = project_id
 
 		self.processors = processors or defaults.PROCESSORS
@@ -310,8 +308,7 @@ class Client(object):
 			**kwargs):
 		data.setdefault('server_name', self.name)
 		data.setdefault('project_id', self.project_id)
-		data.setdefault('project_id', self.project_id)
-		data.setdefault('api_key', self.api_key)
+		data.setdefault('access_token', self.access_token)
 		return data
 
 
@@ -364,7 +361,7 @@ class Client(object):
 				extra, stack, **kwargs)
 
 		if not api_path:
-			api_path = defaults.ERROR_API_PATH 
+			api_path = defaults.ERROR_API_PATH.format(data['project_id'])
 		
 		data['servers'] = [ server+api_path for server in self.servers]
 
@@ -411,21 +408,21 @@ class Client(object):
 		else:
 			self.state.set_success()
 
-	def send(self, project_id=None, api_key=None, auth_header=None, servers = None, **data):
+	def send(self, project_id=None, access_token=None, auth_header=None, servers = None, **data):
 		"""
 		Serializes the message and passes the payload onto ``send_encoded``.
 		"""
 		message = self.encode(data)
 
 		try:
-			return self.send_encoded(message, project_id=project_id, api_key=api_key, auth_header=auth_header, servers=servers)
+			return self.send_encoded(message, project_id=project_id, access_token=access_token, auth_header=auth_header, servers=servers)
 		except TypeError:
 			# Make the assumption that public_key wasnt supported
 			warnings.warn('%s.send_encoded needs updated to support ``**kwargs``' % (type(self).__name__,),
 				DeprecationWarning)
 			return self.send_encoded(message)
 
-	def send_encoded(self, message, project_id, api_key, auth_header=None, servers = None, **kwargs):
+	def send_encoded(self, message, project_id, access_token, auth_header=None, servers = None, **kwargs):
 		"""
 		Given an already serialized message, signs the message and passes the
 		payload off to ``send_remote`` for each server specified in the servers
@@ -440,9 +437,11 @@ class Client(object):
 		if not auth_header:
 			if not project_id:
 				project_id = self.project_id
-				api_key = self.api_key
+
+			if not access_token:
+				access_token = self.access_token
 				
-			auth_header = "apikey %s:%s" % (project_id, api_key)
+			auth_header = "Bearer %s" % (access_token)
 
 		for url in servers:
 			headers = {
@@ -497,33 +496,6 @@ class Client(object):
 		"""
 		return self.capture('Query', query=query, params=params, engine=engine,
 				**kwargs)
-
-	def send_deployment_info(self, directory=None):
-		versions = get_versions_from_installed(self.include_paths)
-
-		versions = dict([(module, {'module':module, 'version':version}) for module, version in versions.items()])
-
-		dist_versions = get_version_from_distributions(get_installed_distributions())
-		versions.update(dist_versions)
-
-		rep_info = get_repository_info(directory)
-
-		if rep_info:
-			versions['_repository'] = {'module':'_repository', 'vcs':rep_info}
-
-		# Versions are returned as a dict of "module":"version"
-		# We convert it here. Just ditch the keys.
-		list_versions = [v for k,v in versions.items()]
-
-		server_name = self.name
-
-		data = {'server_name':server_name, 'releases':list_versions}
-
-		urls = [server+defaults.DEPLOYMENT_API_PATH for server in self.servers]
-		
-		self.build_msg(data=data)
-
-		return self.send(servers=urls,**data)
 
 class DummyClient(Client):
 	"Sends messages into an empty void"

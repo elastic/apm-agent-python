@@ -24,7 +24,7 @@ class MiddlewareTest(TestCase):
         self.app = example_app
 
     def test_error_handler(self):
-        client = TempStoreClient(project_id="1", api_key="key")
+        client = TempStoreClient(project_id="1", access_token="key")
         middleware = Sentry(self.app, client=client)
 
         request = webob.Request.blank('/an-error?foo=bar')

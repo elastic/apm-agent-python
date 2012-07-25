@@ -121,7 +121,7 @@ def get_client(client=None):
             auto_log_stacks=getattr(django_settings, 'OPBEAT_AUTO_LOG_STACKS', None),
             string_max_length=getattr(django_settings, 'SENTRY_MAX_LENGTH_STRING', None),
             list_max_length=getattr(django_settings, 'OPBEAT_MAX_LENGTH_LIST', None),
-            api_key=getattr(django_settings, 'OPBEAT_API_KEY', None),
+            access_token=getattr(django_settings, 'OPBEAT_ACCESS_TOKEN', None),
             project_id=getattr(django_settings, 'OPBEAT_PROJECT_ID', None),
             processors=getattr(django_settings, 'OPBEAT_PROCESSORS', None)
         )

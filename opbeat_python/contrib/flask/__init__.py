@@ -21,14 +21,14 @@ from opbeat_python.contrib.flask.utils import get_data_from_request
 from opbeat_python.handlers.logging import SentryHandler
 
 
-def make_client(client_cls, app, project_id=None, api_key=None):
+def make_client(client_cls, app, project_id=None, access_token=None):
     return client_cls(
         include_paths=set(app.config.get('OPBEAT_INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=app.config.get('OPBEAT_EXCLUDE_PATHS'),
         servers=app.config.get('OPBEAT_SERVERS'),
         name=app.config.get('OPBEAT_NAME'),
         project_id=project_id or app.config.get('OPBEAT_PROJECT_ID') or os.environ.get('OPBEAT_PROJECT_ID'),
-        api_key=api_key or app.config.get('OPBEAT_API_KEY') or os.environ.get('OPBEAT_API_KEY')
+        access_token=access_token or app.config.get('OPBEAT_ACCESS_KEY') or os.environ.get('OPBEAT_ACCESS_KEY')
     )
 
 
@@ -37,13 +37,13 @@ class Opbeat(object):
     Flask application for Opbeat.
 
     Look up configuration from ``os.environ['OPBEAT_PROJECT_ID']``
-    and os.environ.get('OPBEAT_API_KEY')::
+    and os.environ.get('OPBEAT_ACCESS_TOKEN')::
 
     >>> opbeat = Opbeat(app)
 
-    Pass an arbitrary PROJECT_ID and API_KEY::
+    Pass an arbitrary PROJECT_ID and ACCESS_TOKEN::
 
-    >>> opbeat = Opbeat(app, project_id='1', api_key='asdasdasd')
+    >>> opbeat = Opbeat(app, project_id='1', access_token='asdasdasd')
 
     Pass an explicit client::
 
@@ -64,9 +64,9 @@ class Opbeat(object):
 
     >>> opbeat.captureMessage('hello, world!')
     """
-    def __init__(self, app=None, project_id=None, api_key=None, client=None, client_cls=Client, logging=False):
+    def __init__(self, app=None, project_id=None, access_token=None, client=None, client_cls=Client, logging=False):
         self.project_id = project_id
-        self.api_key = api_key
+        self.access_token = access_token
         self.logging = logging
         self.client_cls = client_cls
         self.client = client
@@ -88,7 +88,7 @@ class Opbeat(object):
     def init_app(self, app):
         self.app = app
         if not self.client:
-            self.client = make_client(self.client_cls, app, self.project_id, self.api_key)
+            self.client = make_client(self.client_cls, app, self.project_id, self.access_token)
 
         if self.logging:
             setup_logging(SentryHandler(self.client))

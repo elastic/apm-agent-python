@@ -60,7 +60,7 @@ class ClientTest(TestCase):
         client = Client(
             servers=['http://example.com'],
             project_id='public',
-            api_key='secret',
+            access_token='secret',
         )
 
         # test error
@@ -78,11 +78,11 @@ class ClientTest(TestCase):
     def test_send(self, time, send_remote):
         time.return_value = 1328055286.51
         public = "public"
-        api_key = "secret"
+        access_token = "secret"
         client = Client(
             servers=['http://example.com'],
             project_id=public,
-            api_key=api_key,
+            access_token=access_token,
         )
         client.send(**{
             'foo': 'bar',
@@ -92,7 +92,7 @@ class ClientTest(TestCase):
             data='x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T',
             headers={
                 'Content-Type': 'application/octet-stream',
-                'Authorization': 'apikey %s:%s' % (public, api_key),
+                'Authorization': 'Bearer %s' % (access_token),
                 'User-Agent': 'opbeat_python/%s' % opbeat_python.VERSION
             },
         )
@@ -127,7 +127,7 @@ class ClientTest(TestCase):
         client = Client(
             servers=['http://example.com'],
             project_id='public',
-            api_key='secret',
+            access_token='secret',
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -274,20 +274,6 @@ class ClientTest(TestCase):
         event = self.client.events.pop(0)
         self.assertEquals(event['logger'], 'test')
         self.assertTrue('timestamp' in event)
-
-
-
-    @mock.patch('opbeat_python.base.Client.build_msg')
-    @mock.patch('opbeat_python.base.Client.send')
-    def test_send_deployment(self, build_msg,send):
-        client = Client(
-            servers=['http://example.com'],
-            project_id='public',
-            api_key='secret',
-        )
-        client.send_deployment_info()
-        build_msg.assert_called_once()
-        send.assert_called_once()
 
 # class ClientUDPTest(TestCase):
 #     def setUp(self):

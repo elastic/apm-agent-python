@@ -24,7 +24,7 @@ DEBUG = False
 SERVERS = ['https://www.opbeat.com']
 
 # Error API path
-ERROR_API_PATH = '/api/v1/error/'
+ERROR_API_PATH = '/api/v1/project/{0}/error/'
 
 # Deployment Tracking API path
 DEPLOYMENT_API_PATH = '/api/v1/deployment/'
@@ -37,7 +37,7 @@ CLIENT = 'opbeat_python.contrib.django.DjangoClient'
 NAME = socket.gethostname()
 
 # Credentials to authenticate with the Opbeat server
-API_KEY = None
+ACCESS_TOKEN = None
 
 # Extending this allow you to ignore module prefixes when we attempt to
 # discover which function an error comes from (typically a view)

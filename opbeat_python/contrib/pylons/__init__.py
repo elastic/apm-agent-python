@@ -26,7 +26,7 @@ class Sentry(Middleware):
             name=config.get('sentry.name'),
             # key=config.get('sentry.key'),
             project_id=config.get('sentry.project_id'),
-            api_key=config.get('sentry.api_key'),
+            access_token=config.get('sentry.access_token'),
             # project=config.get('sentry.project'),
             # site=config.get('sentry.site'),
             include_paths=list_from_setting(config, 'sentry.include_paths'),

@@ -176,7 +176,7 @@ class LoggingHandlerTest(TestCase):
         self.assertEquals(handler.client, client)
 
     # def test_args_as_servers_and_keys(self):
-    #     handler = SentryHandler(['http://sentry.local/api/store/'], project_id="project_id", api_key="key")
+    #     handler = SentryHandler(['http://sentry.local/api/store/'], project_id="project_id", access_token="key")
     #     self.assertTrue(isinstance(handler.client, Client))
 
     # def test_args_as_servers_and_key(self):

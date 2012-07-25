@@ -31,7 +31,7 @@ from django.test.client import Client as TestClient, ClientHandler as TestClient
 settings.OPBEAT_CLIENT = 'tests.contrib.django.django_tests.TempStoreClient'
 
 def get_client(*args,**kwargs):
-    with Settings(OPBEAT_API_KEY='key',OPBEAT_PROJECT_ID='99'):
+    with Settings(OPBEAT_ACCESS_TOKEN='key',OPBEAT_PROJECT_ID='99'):
         cli = orig_get_client(*args,**kwargs)
         return cli
 
@@ -89,7 +89,7 @@ class ClientProxyTest(TestCase):
         self.assertEquals(get_client(), client)
 
     def test_basic(self):
-        with Settings(OPBEAT_API_KEY='key',OPBEAT_PROJECT_ID='99'):
+        with Settings(OPBEAT_ACCESS_TOKEN='key',OPBEAT_PROJECT_ID='99'):
             client.capture('Message', message='foo')
             self.assertEquals(len(client.events), 1)
             client.events.pop(0)
@@ -453,7 +453,7 @@ class CeleryIsolatedClientTest(TestCase):
         self.client = CeleryClient(
             servers=['http://example.com'],
             project_id='public',
-            api_key='secret',
+            access_token='secret',
         )
 
     @mock.patch('opbeat_python.contrib.django.celery.CeleryClient.send_raw')
@@ -489,7 +489,7 @@ class CeleryIntegratedClientTest(TestCase):
         self.client = CeleryClient(
             servers=['http://example.com'],
             project_id='public',
-            api_key='secret',
+            access_token='secret',
         )
 
     @mock.patch('opbeat_python.contrib.django.celery.CeleryClient.send_raw_integrated')
