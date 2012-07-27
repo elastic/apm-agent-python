@@ -10,9 +10,10 @@ Using the Django integration is as simple as adding :mod:`opbeat_python.contrib.
         'opbeat_python.contrib.django',
     )
 
-Additional settings for the client are configured using ``SENTRY_<setting name>``::
+Additional settings for the client are configured using ``OPBEAT_<setting name>``::
 
-    SENTRY_DSN = 'http://public:secret@example.com/1'
+    OPBEAT_PROJECT_ID = '<id>'
+    OPBEAT_ACCESS_TOKEN = '<token>'
 
 
 You'll be referencing the client slightly differently in Django as well::
@@ -37,7 +38,7 @@ Django 1.3
         'disable_existing_loggers': True,
         'root': {
             'level': 'WARNING',
-            'handlers': ['sentry'],
+            'handlers': ['opbeat_python'],
         },
         'formatters': {
             'verbose': {
@@ -45,7 +46,7 @@ Django 1.3
             },
         },
         'handlers': {
-            'sentry': {
+            'opbeat_python': {
                 'level': 'ERROR',
                 'class': 'opbeat_python.contrib.django.handlers.SentryHandler',
             },
@@ -66,24 +67,13 @@ Django 1.3
                 'handlers': ['console'],
                 'propagate': False,
             },
-            'sentry.errors': {
+            'opbeat_python.errors': {
                 'level': 'DEBUG',
                 'handlers': ['console'],
                 'propagate': False,
             },
         },
     }
-
-
-Older Versions
-~~~~~~~~~~~~~~
-
-::
-
-    from opbeat_python.conf import setup_logging
-    from opbeat_python.contrib.django.handlers import SentryHandler
-
-    setup_logging(SentryHandler())
 
 Usage
 ~~~~~
@@ -171,14 +161,14 @@ level of your Django application::
 Additional Settings
 -------------------
 
-SENTRY_CLIENT
+OPBEAT_CLIENT
 ~~~~~~~~~~~~~~
 
-In some situations you may wish for a slightly different behavior to how Sentry
+In some situations you may wish for a slightly different behavior to how Opbeat
 communicates with your server. For this, opbeat_python allows you to specify a custom
 client::
 
-    SENTRY_CLIENT = 'opbeat_python.contrib.django.DjangoClient'
+    OPBEAT_CLIENT = 'opbeat_python.contrib.django.DjangoClient'
 
 Caveats
 -------
