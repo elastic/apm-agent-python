@@ -12,14 +12,13 @@ web application.
 Your application doesn't live on the web? No problem! opbeat_python is easy to use in
 any Python application.
 
-Even if your application is not written in Python, you can use the opbeat_python commandline
-to notify Opbeat about deployments.
 
-.. Resources
-.. ---------
 
-.. * `Documentation <http://opbeat_python.readthedocs.org/>`_
-.. * `Bug Tracker <http://github.com/dcramer/opbeat_python/issues>`_
-.. * `Code <http://github.com/dcramer/opbeat_python>`_
+Resources
+---------
+
+* `Documentation <https://www.opbeat.com/docs/opbeat_python/index.html>`_
+* `Bug Tracker <http://github.com/opbeat/opbeat_python/issues>`_
+* `Code <http://github.com/opbeat/opbeat_python>`_
 .. * `Mailing List <https://groups.google.com/group/getsentry>`_
 .. * `IRC <irc://irc.freenode.net/sentry>`_  (irc.freenode.net, #sentry)
