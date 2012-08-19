@@ -8,16 +8,17 @@ A Pylons-specific middleware exists to enable easy configuration from settings:
 
 ::
 
-    from opbeat_python.contrib.pylons import Sentry
+    from opbeat_python.contrib.pylons import Opbeat
 
-    application = Sentry(application, config)
+    application = Opbeat(application, config)
 
-Configuration is handled via the sentry namespace:
+Configuration is handled via the opbeat namespace:
 
 .. code-block:: ini
 
-    [sentry]
-    dsn=http://public:secret@example.com/1
+    [opbeat]
+    project_id=gmwnmogdehmnmhau
+    access_token=asdasdasdasd
     include_paths=my.package,my.other.package,
     exclude_paths=my.package.crud
 
@@ -25,27 +26,27 @@ Configuration is handled via the sentry namespace:
 Logger setup
 ------------
 
-Add the following lines to your project's `.ini` file to setup `SentryHandler`:
+Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
 
 .. code-block:: ini
 
     [loggers]
-    keys = root, sentry
+    keys = root, opbeat
 
     [handlers]
-    keys = console, sentry
+    keys = console, opbeat
 
     [formatters]
     keys = generic
 
     [logger_root]
     level = INFO
-    handlers = console, sentry
+    handlers = console, opbeat
 
     [logger_sentry]
     level = WARN
     handlers = console
-    qualname = sentry.errors
+    qualname = opbeat.errors
     propagate = 0
 
     [handler_console]
@@ -54,8 +55,8 @@ Add the following lines to your project's `.ini` file to setup `SentryHandler`:
     level = NOTSET
     formatter = generic
 
-    [handler_sentry]
-    class = opbeat_python.handlers.logging.SentryHandler
+    [handler_opbeat]
+    class = opbeat_python.handlers.logging.OpbeatHandler
     args = (['http://sentry.local/api/store/'], 'KEY')
     level = NOTSET
     formatter = generic

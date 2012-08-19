@@ -8,7 +8,7 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from opbeat_python.middleware import Sentry as Middleware
+from opbeat_python.middleware import Opbeat as Middleware
 from opbeat_python.base import Client
 
 
@@ -19,17 +19,14 @@ def list_from_setting(config, setting):
     return value.split()
 
 
-class Sentry(Middleware):
+class Opbeat(Middleware):
     def __init__(self, app, config, client_cls=Client):
         client = client_cls(
-            servers=list_from_setting(config, 'sentry.servers'),
-            name=config.get('sentry.name'),
-            # key=config.get('sentry.key'),
-            project_id=config.get('sentry.project_id'),
-            access_token=config.get('sentry.access_token'),
-            # project=config.get('sentry.project'),
-            # site=config.get('sentry.site'),
-            include_paths=list_from_setting(config, 'sentry.include_paths'),
-            exclude_paths=list_from_setting(config, 'sentry.exclude_paths'),
+            servers=list_from_setting(config, 'opbeat.servers'),
+            name=config.get('opbeat.name'),
+            project_id=config.get('opbeat.project_id'),
+            access_token=config.get('opbeat.access_token'),
+            include_paths=list_from_setting(config, 'opbeat.include_paths'),
+            exclude_paths=list_from_setting(config, 'opbeat.exclude_paths'),
         )
-        super(Sentry, self).__init__(app, client)
+        super(Opbeat, self).__init__(app, client)

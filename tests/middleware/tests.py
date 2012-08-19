@@ -1,7 +1,7 @@
 import logging
 from unittest2 import TestCase
 from opbeat_python.base import Client
-from opbeat_python.middleware import Sentry
+from opbeat_python.middleware import Opbeat
 
 import webob
 
@@ -25,7 +25,7 @@ class MiddlewareTest(TestCase):
 
     def test_error_handler(self):
         client = TempStoreClient(project_id="1", access_token="key")
-        middleware = Sentry(self.app, client=client)
+        middleware = Opbeat(self.app, client=client)
 
         request = webob.Request.blank('/an-error?foo=bar')
         response = middleware(request.environ, lambda *args: None)

@@ -48,7 +48,7 @@ Django 1.3
         'handlers': {
             'opbeat_python': {
                 'level': 'ERROR',
-                'class': 'opbeat_python.contrib.django.handlers.SentryHandler',
+                'class': 'opbeat_python.contrib.django.handlers.OpbeatHandler',
             },
             'console': {
                 'level': 'DEBUG',
@@ -90,63 +90,63 @@ addition of an optional ``request`` key in the extra data::
 404 Logging
 -----------
 
-In certain conditions you may wish to log 404 events to the Sentry server. To
+In certain conditions you may wish to log 404 events to the Opbeat server. To
 do this, you simply need to enable a Django middleware::
 
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-      'opbeat_python.contrib.django.middleware.Sentry404CatchMiddleware',
+      'opbeat_python.contrib.django.middleware.Opbeat404CatchMiddleware',
       ...,
     )
 
-Message References
-------------------
+.. Message References
+.. ------------------
 
-Sentry supports sending a message ID to your clients so that they can be
-tracked easily by your development team. There are two ways to access this
-information, the first is via the ``X-Sentry-ID`` HTTP response header. Adding
-this is as simple as appending a middleware to your stack::
+.. Sentry supports sending a message ID to your clients so that they can be
+.. tracked easily by your development team. There are two ways to access this
+.. information, the first is via the ``X-Sentry-ID`` HTTP response header. Adding
+.. this is as simple as appending a middleware to your stack::
 
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-      # We recommend putting this as high in the chain as possible
-      'opbeat_python.contrib.django.middleware.SentryResponseErrorIdMiddleware',
-      ...,
-    )
+..     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
+..       # We recommend putting this as high in the chain as possible
+..       'opbeat_python.contrib.django.middleware.SentryResponseErrorIdMiddleware',
+..       ...,
+..     )
 
-Another alternative method is rendering it within a template. By default,
-Sentry will attach :attr:`request.sentry` when it catches a Django exception.
-In our example, we will use this information to modify the default
-:file:`500.html` which is rendered, and show the user a case reference ID. The
-first step in doing this is creating a custom :func:`handler500` in your
-:file:`urls.py` file::
+.. Another alternative method is rendering it within a template. By default,
+.. Sentry will attach :attr:`request.sentry` when it catches a Django exception.
+.. In our example, we will use this information to modify the default
+.. :file:`500.html` which is rendered, and show the user a case reference ID. The
+.. first step in doing this is creating a custom :func:`handler500` in your
+.. :file:`urls.py` file::
 
-    from django.conf.urls.defaults import *
+..     from django.conf.urls.defaults import *
 
-    from django.views.defaults import page_not_found, server_error
+..     from django.views.defaults import page_not_found, server_error
 
-    def handler500(request):
-        """
-        500 error handler which includes ``request`` in the context.
+..     def handler500(request):
+..         """
+..         500 error handler which includes ``request`` in the context.
 
-        Templates: `500.html`
-        Context: None
-        """
-        from django.template import Context, loader
-        from django.http import HttpResponseServerError
+..         Templates: `500.html`
+..         Context: None
+..         """
+..         from django.template import Context, loader
+..         from django.http import HttpResponseServerError
 
-        t = loader.get_template('500.html') # You need to create a 500.html template.
-        return HttpResponseServerError(t.render(Context({
-            'request': request,
-        })))
+..         t = loader.get_template('500.html') # You need to create a 500.html template.
+..         return HttpResponseServerError(t.render(Context({
+..             'request': request,
+..         })))
 
-Once we've successfully added the :data:`request` context variable, adding the
-Sentry reference ID to our :file:`500.html` is simple:
+.. Once we've successfully added the :data:`request` context variable, adding the
+.. Sentry reference ID to our :file:`500.html` is simple:
 
-.. code-block:: django
+.. .. code-block:: django
 
-    <p>You've encountered an error, oh noes!</p>
-    {% if request.sentry.id %}
-        <p>If you need assistance, you may reference this error as <strong>{{ request.sentry.id }}</strong>.</p>
-    {% endif %}
+..     <p>You've encountered an error, oh noes!</p>
+..     {% if request.sentry.id %}
+..         <p>If you need assistance, you may reference this error as <strong>{{ request.sentry.id }}</strong>.</p>
+..     {% endif %}
 
 WSGI Middleware
 ---------------
@@ -155,8 +155,8 @@ If you are using a WSGI interface to serve your app, you can also apply a
 middleware which will ensure that you catch errors even at the fundamental
 level of your Django application::
 
-    from opbeat_python.contrib.django.middleware.wsgi import Sentry
-    application = Sentry(django.core.handlers.wsgi.WSGIHandler())
+    from opbeat_python.contrib.django.middleware.wsgi import Opbeat
+    application = Opbeat(django.core.handlers.wsgi.WSGIHandler())
 
 Additional Settings
 -------------------
@@ -177,9 +177,9 @@ Error Handling Middleware
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you already have middleware in place that handles :func:`process_exception`
-you will need to take extra care when using Sentry.
+you will need to take extra care when using Opbeat.
 
-For example, the following middleware would suppress Sentry logging due to it
+For example, the following middleware would suppress Opbeat logging due to it
 returning a response::
 
     class MyMiddleware(object):
@@ -192,7 +192,7 @@ add something like the following::
     from django.core.signals import got_request_exception
     class MyMiddleware(object):
         def process_exception(self, request, exception):
-            # Make sure the exception signal is fired for Sentry
+            # Make sure the exception signal is fired for Opbeat
             got_request_exception.send(sender=self, request=request)
             return HttpResponse('foo')
 
@@ -202,11 +202,11 @@ Note that this technique may break unit tests using the Django test client
 because the exceptions won't be translated into the expected 404 or 403
 response codes.
 
-Or, alternatively, you can just enable Sentry responses::
+Or, alternatively, you can just enable Opbeat responses::
 
-    from opbeat_python.contrib.django.models import sentry_exception_handler
+    from opbeat_python.contrib.django.models import opbeat_exception_handler
     class MyMiddleware(object):
         def process_exception(self, request, exception):
-            # Make sure the exception signal is fired for Sentry
-            sentry_exception_handler(request=request)
+            # Make sure the exception signal is fired for Opbeat
+            opbeat_exception_handler(request=request)
             return HttpResponse('foo')

@@ -12,10 +12,10 @@ Large portions are
 from __future__ import absolute_import
 
 import logging
-from opbeat_python.handlers.logging import SentryHandler as BaseSentryHandler
+from opbeat_python.handlers.logging import OpbeatHandler as BaseOpbeatHandler
 
 
-class SentryHandler(BaseSentryHandler):
+class OpbeatHandler(BaseOpbeatHandler):
     def __init__(self):
         logging.Handler.__init__(self)
 
@@ -27,9 +27,9 @@ class SentryHandler(BaseSentryHandler):
     client = property(_get_client)
 
     def _emit(self, record):
-        from opbeat_python.contrib.django.middleware import SentryLogMiddleware
+        from opbeat_python.contrib.django.middleware import OpbeatLogMiddleware
 
         # Fetch the request from a threadlocal variable, if available
-        request = getattr(record, 'request', getattr(SentryLogMiddleware.thread, 'request', None))
+        request = getattr(record, 'request', getattr(OpbeatLogMiddleware.thread, 'request', None))
 
-        return super(SentryHandler, self)._emit(record, request=request)
+        return super(OpbeatHandler, self)._emit(record, request=request)

@@ -6,9 +6,9 @@ opbeat_python includes a simple to use WSGI middleware.
 ::
 
     from opbeat_python import Client
-    from opbeat_python.middleware import Sentry
+    from opbeat_python.middleware import Opbeat
 
-    application = Sentry(
+    application = Opbeat(
         application,
         Client('http://public:secret@example.com/1')
     )

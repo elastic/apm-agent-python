@@ -18,7 +18,7 @@ from flask.signals import got_request_exception
 from opbeat_python.conf import setup_logging
 from opbeat_python.base import Client
 from opbeat_python.contrib.flask.utils import get_data_from_request
-from opbeat_python.handlers.logging import SentryHandler
+from opbeat_python.handlers.logging import OpbeatHandler
 
 
 def make_client(client_cls, app, project_id=None, access_token=None):
@@ -91,7 +91,7 @@ class Opbeat(object):
             self.client = make_client(self.client_cls, app, self.project_id, self.access_token)
 
         if self.logging:
-            setup_logging(SentryHandler(self.client))
+            setup_logging(OpbeatHandler(self.client))
 
         got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 

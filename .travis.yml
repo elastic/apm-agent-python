@@ -14,8 +14,8 @@ install:
   - sudo pip install -e . --use-mirrors
 script:
   - make test
-notifications:
-  irc:
-    channels: "irc.freenode.org#sentry"
-    on_success: change
-    on_failure: change
+# notifications:
+  # irc:
+    # channels: "irc.freenode.org#sentry"
+    # on_success: change
+    # on_failure: change

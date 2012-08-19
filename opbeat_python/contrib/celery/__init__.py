@@ -15,7 +15,7 @@ except ImportError:
     from celery.decorators import task
 from celery.signals import after_setup_logger, task_failure
 from opbeat_python.base import Client
-from opbeat_python.handlers.logging import SentryHandler
+from opbeat_python.handlers.logging import OpbeatHandler
 
 
 class CeleryMixin(object):
@@ -57,7 +57,7 @@ def register_signal(client):
                              colorize, **kw):
         import logging
         logger = logging.getLogger()
-        handler = SentryHandler(client)
+        handler = OpbeatHandler(client)
         if handler.__class__ in map(type, logger.handlers):
             return False
         handler.setLevel(logging.ERROR)

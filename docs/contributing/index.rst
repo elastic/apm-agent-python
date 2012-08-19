@@ -1,7 +1,7 @@
 Contributing
 ============
 
-Want to contribute back to Sentry? This page describes the general development flow,
+Want to contribute back to Opbeat? This page describes the general development flow,
 our philosophy, the test suite, and issue tracking.
 
 (Though it actually doesn't describe all of that, yet)
@@ -9,8 +9,8 @@ our philosophy, the test suite, and issue tracking.
 Setting up an Environment
 -------------------------
 
-Sentry is designed to run off of setuptools with minimal work. Because of this
-setting up a development environment for Sentry requires only a few steps.
+Opbeat is designed to run off of setuptools with minimal work. Because of this
+setting up a development environment for Opbeat requires only a few steps.
 
 The first thing you're going to want to do, is build a virtualenv and install
 any base dependancies.

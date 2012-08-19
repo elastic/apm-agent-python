@@ -1,5 +1,5 @@
 from unittest2 import TestCase
-from opbeat_python.contrib.pylons import Sentry
+from opbeat_python.contrib.pylons import Opbeat
 
 
 def example_app(environ, start_response):
@@ -12,8 +12,8 @@ class MiddlewareTest(TestCase):
 
     def test_init(self):
         config = {
-            'sentry.servers': 'http://localhost/api/store',
-            'sentry.project_id': 'p' * 32,
-            'sentry.access_token': 's' * 32,
+            'opbeat.servers': 'http://localhost/api/store',
+            'opbeat.project_id': 'p' * 32,
+            'opbeat.access_token': 'a' * 32,
         }
-        middleware = Sentry(self.app, config)
+        middleware = Opbeat(self.app, config)

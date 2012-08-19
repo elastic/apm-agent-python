@@ -30,7 +30,7 @@ class AsyncWorker(object):
     def main_thread_terminated(self):
         size = self._queue.qsize()
         if size:
-            print "Sentry attempts to send %s error messages" % size
+            print "Opbeat attempts to send %s error messages" % size
             print "Waiting up to %s seconds" % SENTRY_WAIT_SECONDS
             if os.name == 'nt':
                 print "Press Ctrl-Break to quit"
@@ -92,13 +92,13 @@ class AsyncClient(Client):
         self.worker.queue(self.send_sync, kwargs)
 
 
-class SentryWorker(object):
+class OpbeatWorker(object):
     """
     A WSGI middleware which provides ``environ['opbeat_python.worker']``
     that can be used by clients to process asynchronous tasks.
 
     >>> from opbeat_python.base import Client
-    >>> application = SentryWorker(application)
+    >>> application = OpbeatWorker(application)
     """
     def __init__(self, application):
         self.application = application

@@ -160,7 +160,7 @@ class Client(object):
 		# 	project = options['SENTRY_PROJECT']
 		# 	public_key = options['SENTRY_PUBLIC_KEY']
 		# 	secret_key = options['SENTRY_SECRET_KEY']
-
+		
 		self.servers = servers or defaults.SERVERS
 
 		# servers may be set to a NoneType (for Django)

@@ -15,6 +15,6 @@ import warnings
 
 warnings.warn('opbeat_python.contrib.django.logging is deprecated. Use opbeat_python.contrib.django.handlers instead.', DeprecationWarning)
 
-from opbeat_python.contrib.django.handlers import SentryHandler
+from opbeat_python.contrib.django.handlers import OpbeatHandler
 
-__all__ = ('SentryHandler',)
+__all__ = ('OpbeatHandler',)

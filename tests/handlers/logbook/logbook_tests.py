@@ -1,7 +1,7 @@
 import logbook
 from unittest2 import TestCase
 from opbeat_python.base import Client
-from opbeat_python.handlers.logbook import SentryHandler
+from opbeat_python.handlers.logbook import OpbeatHandler
 from tests.helpers import get_tempstoreclient
 
 class LogbookHandlerTest(TestCase):
@@ -10,7 +10,7 @@ class LogbookHandlerTest(TestCase):
 
     def test_logger(self):
         client = get_tempstoreclient(include_paths=['tests', 'opbeat_python'])
-        handler = SentryHandler(client)
+        handler = OpbeatHandler(client)
         logger = self.logger
 
         with handler.applicationbound():
@@ -87,24 +87,24 @@ class LogbookHandlerTest(TestCase):
 
     def test_client_arg(self):
         client = get_tempstoreclient(include_paths=['tests'])
-        handler = SentryHandler(client)
+        handler = OpbeatHandler(client)
         self.assertEquals(handler.client, client)
 
     def test_client_kwarg(self):
         client = get_tempstoreclient(include_paths=['tests'])
-        handler = SentryHandler(client=client)
+        handler = OpbeatHandler(client=client)
         self.assertEquals(handler.client, client)
 
     # def test_first_arg_as_dsn(self):
-    #     handler = SentryHandler('http://public:secret@example.com/1')
+    #     handler = OpbeatHandler('http://public:secret@example.com/1')
     #     self.assertTrue(isinstance(handler.client, Client))
 
     # def test_custom_client_class(self):
-    #     handler = SentryHandler('http://public:secret@example.com/1', client_cls=TempStoreClient)
+    #     handler = OpbeatHandler('http://public:secret@example.com/1', client_cls=TempStoreClient)
     #     self.assertTrue(type(handler.client), TempStoreClient)
 
     def test_invalid_first_arg_type(self):
-        self.assertRaises(ValueError, SentryHandler, object)
+        self.assertRaises(ValueError, OpbeatHandler, object)
 
     def test_missing_client_arg(self):
-        self.assertRaises(TypeError, SentryHandler)
+        self.assertRaises(TypeError, OpbeatHandler)

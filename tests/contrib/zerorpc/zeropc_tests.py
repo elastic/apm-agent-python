@@ -7,7 +7,7 @@ import unittest2
 import zerorpc
 
 from opbeat_python.base import Client
-from opbeat_python.contrib.zerorpc import SentryMiddleware
+from opbeat_python.contrib.zerorpc import OpbeatMiddleware
 
 from tests.helpers import get_tempstoreclient
 
@@ -20,7 +20,7 @@ class ZeroRPCTest(unittest2.TestCase):
         ))
 
         self._sentry = get_tempstoreclient()
-        zerorpc.Context.get_instance().register_middleware(SentryMiddleware(
+        zerorpc.Context.get_instance().register_middleware(OpbeatMiddleware(
                     client=self._sentry
         ))
 

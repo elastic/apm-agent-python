@@ -12,13 +12,13 @@ from opbeat_python.base import Client
 from opbeat_python.utils.stacks import iter_traceback_frames
 
 
-class SentryMiddleware(object):
-    """Sentry/opbeat_python middleware for ZeroRPC.
+class OpbeatMiddleware(object):
+    """Opbeat/opbeat_python middleware for ZeroRPC.
 
-    >>> sentry = SentryMiddleware(dsn='udp://..../')
+    >>> sentry = OpbeatMiddleware(dsn='udp://..../')
     >>> zerorpc.Context.get_instance().register_middleware(sentry)
 
-    Exceptions detected server-side in ZeroRPC will be submitted to Sentry (and
+    Exceptions detected server-side in ZeroRPC will be submitted to Opbeat (and
     propagated to the client as well).
 
     hide_zerorpc_frames: modify the exception stacktrace to remove the internal

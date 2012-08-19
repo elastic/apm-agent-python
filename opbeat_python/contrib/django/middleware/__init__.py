@@ -17,7 +17,7 @@ import threading
 import logging
 
 
-class Sentry404CatchMiddleware(object):
+class Opbeat404CatchMiddleware(object):
     def process_response(self, request, response):
         if response.status_code != 404 or _is_ignorable_404(request.get_full_path()):
             return response
@@ -33,13 +33,13 @@ class Sentry404CatchMiddleware(object):
         }
         return response
 
-    # sentry_exception_handler(sender=Sentry404CatchMiddleware, request=request)
+    # sentry_exception_handler(sender=Opbeat404CatchMiddleware, request=request)
 
 
-class SentryResponseErrorIdMiddleware(object):
+class OpbeatResponseErrorIdMiddleware(object):
     """
     Appends the X-Opbeat-ID response header for referencing a message within
-    the Sentry datastore.
+    the Opbeat datastore.
     """
     def process_response(self, request, response):
         if not getattr(request, 'sentry', None):
@@ -48,7 +48,7 @@ class SentryResponseErrorIdMiddleware(object):
         return response
 
 
-class SentryLogMiddleware(object):
+class OpbeatLogMiddleware(object):
     # Create a threadlocal variable to store the session in for logging
     thread = threading.local()
 

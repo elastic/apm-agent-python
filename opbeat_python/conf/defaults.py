@@ -43,7 +43,7 @@ ACCESS_TOKEN = None
 # discover which function an error comes from (typically a view)
 EXCLUDE_PATHS = []
 
-# By default Sentry only looks at modules in INSTALLED_APPS for drilling down
+# By default Opbeat only looks at modules in INSTALLED_APPS for drilling down
 # where an exception is located
 INCLUDE_PATHS = []
 

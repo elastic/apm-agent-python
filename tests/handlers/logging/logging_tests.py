@@ -1,7 +1,7 @@
 import logging
 from unittest2 import TestCase
 from opbeat_python.base import Client
-from opbeat_python.handlers.logging import SentryHandler
+from opbeat_python.handlers.logging import OpbeatHandler
 from opbeat_python.utils.stacks import iter_stack_frames
 
 from tests.helpers import get_tempstoreclient
@@ -9,7 +9,7 @@ from tests.helpers import get_tempstoreclient
 class LoggingIntegrationTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient(include_paths=['tests', 'opbeat_python'])
-        self.handler = SentryHandler(self.client)
+        self.handler = OpbeatHandler(self.client)
         self.logger = logging.getLogger(__name__)
         self.logger.handlers = []
         self.logger.addHandler(self.handler)
@@ -167,29 +167,29 @@ class LoggingIntegrationTest(TestCase):
 class LoggingHandlerTest(TestCase):
     def test_client_arg(self):
         client = get_tempstoreclient(include_paths=['tests'])
-        handler = SentryHandler(client)
+        handler = OpbeatHandler(client)
         self.assertEquals(handler.client, client)
 
     def test_client_kwarg(self):
         client = get_tempstoreclient(include_paths=['tests'])
-        handler = SentryHandler(client=client)
+        handler = OpbeatHandler(client=client)
         self.assertEquals(handler.client, client)
 
     # def test_args_as_servers_and_keys(self):
-    #     handler = SentryHandler(['http://sentry.local/api/store/'], project_id="project_id", access_token="key")
+    #     handler = OpbeatHandler(['http://sentry.local/api/store/'], project_id="project_id", access_token="key")
     #     self.assertTrue(isinstance(handler.client, Client))
 
     # def test_args_as_servers_and_key(self):
-    #     handler = SentryHandler(['http://sentry.local/api/store/'], 'KEY')
+    #     handler = OpbeatHandler(['http://sentry.local/api/store/'], 'KEY')
     #     self.assertTrue(isinstance(handler.client, Client))
 
     # def test_first_arg_as_dsn(self):
-    #     handler = SentryHandler('http://public:secret@example.com/1')
+    #     handler = OpbeatHandler('http://public:secret@example.com/1')
     #     self.assertTrue(isinstance(handler.client, Client))
 
     # def test_custom_client_class(self):
-    #     handler = SentryHandler('http://public:secret@example.com/1', client_cls=TempStoreClient)
+    #     handler = OpbeatHandler('http://public:secret@example.com/1', client_cls=TempStoreClient)
     #     self.assertTrue(type(handler.client), TempStoreClient)
 
     def test_invalid_first_arg_type(self):
-        self.assertRaises(ValueError, SentryHandler, object)
+        self.assertRaises(ValueError, OpbeatHandler, object)

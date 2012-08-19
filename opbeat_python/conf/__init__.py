@@ -63,14 +63,14 @@ def setup_logging(handler, exclude=['opbeat_python',
 
     For a typical Python install:
 
-    >>> from opbeat_python.handlers.logging import SentryHandler
+    >>> from opbeat_python.handlers.logging import OpbeatHandler
     >>> client = Sentry(...)
-    >>> setup_logging(SentryHandler(client))
+    >>> setup_logging(OpbeatHandler(client))
 
     Within Django:
 
-    >>> from opbeat_python.contrib.django.logging import SentryHandler
-    >>> setup_logging(SentryHandler())
+    >>> from opbeat_python.contrib.django.logging import OpbeatHandler
+    >>> setup_logging(OpbeatHandler())
 
     Returns a boolean based on if logging was configured or not.
     """

@@ -33,7 +33,7 @@ tests_require = [
     'nose',
     'mock',
     'pep8',
-    'sentry>=4.4.6',
+    # 'sentry>=4.4.6',
     'unittest2',
     'webob',
     'zerorpc>=0.2.0',
@@ -65,7 +65,7 @@ setup(
             'opbeat_python = opbeat_python.scripts.runner:main',
         ],
         'paste.filter_app_factory': [
-            'opbeat_python = opbeat_python.contrib.paste:sentry_filter_factory',
+            'opbeat_python = opbeat_python.contrib.paste:opbeat_filter_factory',
         ],
     },
     classifiers=[

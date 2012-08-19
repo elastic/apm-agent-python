@@ -14,13 +14,13 @@ from opbeat_python.utils.wsgi import get_current_url, get_headers, \
   get_environ
 
 
-class Sentry(object):
+class Opbeat(object):
     """
     A WSGI middleware which will attempt to capture any
-    uncaught exceptions and send them to Sentry.
+    uncaught exceptions and send them to Opbeat.
 
     >>> from opbeat_python.base import Client
-    >>> application = Sentry(application, Client())
+    >>> application = Opbeat(application, Client())
     """
     def __init__(self, application, client):
         self.application = application

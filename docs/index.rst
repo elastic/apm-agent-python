@@ -1,7 +1,8 @@
 opbeat_python
 =====
 
-opbeat_python is a standalone (and the official) Python client for `Sentry <http://www.getsentry.com/>`_.
+opbeat_python is a standalone (and the official) Python client for `Oopbeat <https://www.opbeat.com/>`_.
+It is forked from raven.
 
 .. toctree::
    :maxdepth: 2
@@ -11,26 +12,26 @@ opbeat_python is a standalone (and the official) Python client for `Sentry <http
    usage
    contributing/index
 
-About Sentry
-------------
+.. About Sentry
+.. ------------
 
-Sentry provides you with a generic interface to view and interact with your error logs. With this
-it allows you to interact and view near real-time information to discover issues and more
-easily trace them in your application.
+.. Sentry provides you with a generic interface to view and interact with your error logs. With this
+.. it allows you to interact and view near real-time information to discover issues and more
+.. easily trace them in your application.
 
-More information about Sentry can be found at http://www.getsentry.com/
+.. More information about Sentry can be found at http://www.getsentry.com/
 
-Resources
----------
+.. Resources
+.. ---------
 
-* `Documentation <http://opbeat_python.readthedocs.org/>`_
-* `Bug Tracker <http://github.com/dcramer/opbeat_python/issues>`_
-* `Code <http://github.com/dcramer/opbeat_python>`_
-* `Mailing List <https://groups.google.com/group/getsentry>`_
-* `IRC <irc://irc.freenode.net/sentry>`_  (irc.freenode.net, #sentry)
+.. * `Documentation <http://opbeat_python.readthedocs.org/>`_
+.. * `Bug Tracker <http://github.com/dcramer/opbeat_python/issues>`_
+.. * `Code <http://github.com/dcramer/opbeat_python>`_
+.. * `Mailing List <https://groups.google.com/group/getsentry>`_
+.. * `IRC <irc://irc.freenode.net/sentry>`_  (irc.freenode.net, #sentry)
 
-Deprecation Notes
------------------
+.. Deprecation Notes
+.. -----------------
 
-Milestones releases are 1.3 or 1.4, and our deprecation policy is to a two version step. For example,
-a feature will be deprecated in 1.3, and completely removed in 1.4.
+.. Milestones releases are 1.3 or 1.4, and our deprecation policy is to a two version step. For example,
+.. a feature will be deprecated in 1.3, and completely removed in 1.4.

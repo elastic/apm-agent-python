@@ -9,16 +9,16 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
-from opbeat_python.middleware import Sentry
+from opbeat_python.middleware import Opbeat
 
 
-class Sentry(Sentry):
+class Opbeat(Opbeat):
     """
     Identical to the default WSGI middleware except that
     the client comes dynamically via ``get_client
 
-    >>> from opbeat_python.contrib.django.middleware.wsgi import Sentry
-    >>> application = Sentry(application)
+    >>> from opbeat_python.contrib.django.middleware.wsgi import Opbeat
+    >>> application = Opbeat(application)
     """
     def __init__(self, application):
         self.application = application

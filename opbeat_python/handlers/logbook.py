@@ -28,7 +28,7 @@ LOOKBOOK_LEVELS = {
 }
 
 
-class SentryHandler(logbook.Handler):
+class OpbeatHandler(logbook.Handler):
     def __init__(self, *args, **kwargs):
         if len(args) == 1:
             arg = args[0]
@@ -46,25 +46,25 @@ class SentryHandler(logbook.Handler):
             try:
                 self.client = kwargs.pop('client')
             except KeyError:
-                raise TypeError('Expected keyword argument for SentryHandler: client')
-        super(SentryHandler, self).__init__(*args, **kwargs)
+                raise TypeError('Expected keyword argument for OpbeatHandler: client')
+        super(OpbeatHandler, self).__init__(*args, **kwargs)
 
     def emit(self, record):
-        # from sentry.client.middleware import SentryLogMiddleware
+        # from sentry.client.middleware import OpbeatLogMiddleware
 
         # # Fetch the request from a threadlocal variable, if available
-        # request = getattr(SentryLogMiddleware.thread, 'request', None)
+        # request = getattr(OpbeatLogMiddleware.thread, 'request', None)
         self.format(record)
 
         # Avoid typical config issues by overriding loggers behavior
-        if record.channel.startswith('sentry.errors'):
+        if record.channel.startswith('opbeat.errors'):
             print >> sys.stderr, to_string(record.message)
             return
 
         try:
             return self._emit(record)
         except Exception:
-            print >> sys.stderr, "Top level Sentry exception caught - failed creating log record"
+            print >> sys.stderr, "Top level Opbeat exception caught - failed creating log record"
             print >> sys.stderr, to_string(record.msg)
             print >> sys.stderr, to_string(traceback.format_exc())
 

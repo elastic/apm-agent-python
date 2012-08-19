@@ -9,7 +9,7 @@ where_am_i = dirname(abspath(__file__))
 
 sys.path.insert(0, where_am_i)
 
-logging.getLogger('sentry').addHandler(logging.StreamHandler())
+logging.getLogger('opbeat').addHandler(logging.StreamHandler())
 
 # adding eggs to path
 files = listdir(where_am_i)
@@ -27,12 +27,12 @@ if not settings.configured:
         DATABASES={
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
-                'TEST_NAME': 'sentry_tests.db',
+                'TEST_NAME': 'opbeat_tests.db',
             },
         },
         # HACK: this fixes our threaded runserver remote tests
         # DATABASE_NAME='test_sentry',
-        TEST_DATABASE_NAME='sentry_tests.db',
+        TEST_DATABASE_NAME='opbeat_tests.db',
         INSTALLED_APPS=[
             'django.contrib.auth',
             'django.contrib.admin',
@@ -44,7 +44,7 @@ if not settings.configured:
 
             'djcelery',  # celery client
 
-            'sentry',  # server
+            # 'opbeat',  # server
             'opbeat_python.contrib.django',
         ],
         ROOT_URLCONF='',

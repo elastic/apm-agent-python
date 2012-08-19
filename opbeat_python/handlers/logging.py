@@ -21,7 +21,7 @@ from opbeat_python.utils.encoding import to_string
 from opbeat_python.utils.stacks import iter_stack_frames
 
 
-class SentryHandler(logging.Handler, object):
+class OpbeatHandler(logging.Handler, object):
     def __init__(self, *args, **kwargs):
         client = kwargs.get('client_cls', Client)
         if len(args) == 1:
@@ -52,14 +52,14 @@ class SentryHandler(logging.Handler, object):
         self.format(record)
 
         # Avoid typical config issues by overriding loggers behavior
-        if record.name.startswith('sentry.errors'):
+        if record.name.startswith('opbeat.errors'):
             print >> sys.stderr, to_string(record.message)
             return
 
         try:
             return self._emit(record)
         except Exception:
-            print >> sys.stderr, "Top level Sentry exception caught - failed creating log record"
+            print >> sys.stderr, "Top level Opbeat exception caught - failed creating log record"
             print >> sys.stderr, to_string(record.msg)
             print >> sys.stderr, to_string(traceback.format_exc())
 

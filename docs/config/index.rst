@@ -1,10 +1,10 @@
 Configuration
 =============
 
-This document describes configuration options available to Sentry.
+This document describes configuration options available to Opbeat.
 
 .. note:: Some integrations allow specifying these in a standard configuration, otherwise they are generally passed upon
-          instantiation of the Sentry client.
+          instantiation of the Opbeat client.
 
 .. toctree::
    :maxdepth: 2
@@ -35,94 +35,36 @@ variable, as well as passed to all clients by using the ``dsn`` argument.
     # Read configuration from the environment
     client = Client()
 
-    # Manually specify a DSN
-    client = Client('http://public:secret@example.com/1')
-
     # Configure a client manually
     client = Client(
-        servers=['http://sentry.local/api/store/'],
-        public_key='public_key',
-        secret_key='secret_key',
-        project=1,
+        project_id='public_key',
+        access_token='secret_key',
     )
-
-
-The Sentry DSN
---------------
-
-The DSN can be found in Sentry by navigation to Account -> Projects -> [Project Name] -> [Member Name]. Its template resembles the following::
-
-    '{PROTOCOL}://{PUBLIC_KEY}:{SECRET_KEY}@{HOST}/{PATH}{PROJECT_ID}'
-
-It is composed of six important pieces:
-
-* The Protocol used. This can be one of the following: http, https, or udp.
-
-* The public and secret keys to authenticate the client.
-
-* The hostname of the Sentry server.
-
-* An optional path if Sentry is not located at the webserver root. This is specific to HTTP requests.
-
-* The project ID which the authenticated user is bound to.
-
 
 Client Arguments
 ----------------
 
 The following are valid arguments which may be passed to the opbeat_python client:
 
-dsn
-~~~
-
-A sentry compatible DSN.
-
-::
-
-    dsn = 'http://public:secret@example.com/1'
-
 project
 ~~~~~~~
 
-Set this to your Sentry project ID. The default value for installations is ``1``.
+Set this to your Opbeat project ID.
 
 ::
 
-    project = 1
+    project = 'fb9f9e31ea4f40d48855c603f15a2aa4'
 
-
-public_key
+access_token
 ~~~~~~~~~~
 
-Set this to the public key of the project member which will authenticate as the
-client. You can find this information on the member details page of your project
-within Sentry.
+Set this to the secret key of the project.
+You can find this information on the settings page of your project
+at https://opbeat.com
 
 ::
 
-    public_key = 'fb9f9e31ea4f40d48855c603f15a2aa4'
-
-
-secret_key
-~~~~~~~~~~
-
-Set this to the secret key of the project member which will authenticate as the
-client. You can find this information on the member details page of your project
-within Sentry.
-
-::
-
-    public_key = '6e968b3d8ba240fcb50072ad9cba0810'
-
-site
-~~~~
-
-An optional, arbitrary string to identify this client installation.
-
-::
-
-    site = 'my site name'
-
+    access_token = '6e968b3d8ba240fcb50072ad9cba0810'
 
 name
 ~~~~
@@ -131,7 +73,7 @@ This will override the ``server_name`` value for this installation. Defaults to 
 
 ::
 
-    name = 'sentry_rocks_' + socket.gethostname()
+    name = 'opbeat_rocks_' + socket.gethostname()
 
 exclude_paths
 ~~~~~~~~~~~~~
@@ -142,7 +84,6 @@ Extending this allow you to ignore module prefixes when we attempt to discover w
 
     exclude_paths = [
         'django',
-        'sentry',
         'opbeat_python',
         'lxml.objectify',
     ]
@@ -156,7 +97,6 @@ For example, in Django this defaults to your list of ``INSTALLED_APPS``, and is 
 
     include_paths = [
         'django',
-        'sentry',
         'opbeat_python',
         'lxml.objectify',
     ]
@@ -206,7 +146,7 @@ If supported, the timeout value for sending messages to remote.
 processors
 ~~~~~~~~~~
 
-A list of processors to apply to events before sending them to the Sentry server. Useful for sending
+A list of processors to apply to events before sending them to the Opbeat server. Useful for sending
 additional global state data or sanitizing data that you want to keep off of the server.
 
 ::
@@ -228,38 +168,38 @@ Several processors are included with opbeat_python to assist in data sanitiziati
 
 .. data:: opbeat_python.processors.RemoveStackLocalsProcessor
 
-   Removes all stacktrace context variables. This will cripple the functionality of Sentry, as you'll only
+   Removes all stacktrace context variables. This will cripple the functionality of Opbeat, as you'll only
    get raw tracebacks, but it will ensure no local scoped information is available to the server.
 
 .. data:: opbeat_python.processors.RemovePostDataProcessor
 
    Removes the ``body`` of all HTTP data.
 
-Testing the Client
-------------------
+.. Testing the Client
+.. ------------------
 
-Once you've got your server configured, you can test the opbeat_python client by using it's CLI::
+.. Once you've got your server configured, you can test the opbeat_python client by using it's CLI::
 
-  opbeat_python test <DSN value>
+..   opbeat_python test <DSN value>
 
-If you've configured your environment to have SENTRY_DSN available, you can simply drop
-the optional DSN argument::
+.. If you've configured your environment to have SENTRY_DSN available, you can simply drop
+.. the optional DSN argument::
 
-  opbeat_python test
+..   opbeat_python test
 
-You should get something like the following, assuming you're configured everything correctly::
+.. You should get something like the following, assuming you're configured everything correctly::
 
-  $ opbeat_python test http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
-  Using DSN configuration:
-    http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
+..   $ opbeat_python test http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
+..   Using DSN configuration:
+..     http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
 
-  Client configuration:
-    servers        : ['http://localhost:9000/api/store/']
-    project        : 1
-    public_key     : dd2c825ff9b1417d88a99573903ebf80
-    secret_key     : 91631495b10b45f8a1cdbc492088da6a
+..   Client configuration:
+..     servers        : ['http://localhost:9000/api/store/']
+..     project        : 1
+..     public_key     : dd2c825ff9b1417d88a99573903ebf80
+..     secret_key     : 91631495b10b45f8a1cdbc492088da6a
 
-  Sending a test message... success!
+..   Sending a test message... success!
 
-  The test message can be viewed at the following URL:
-    http://localhost:9000/1/search/?q=c988bf5cb7db4653825c92f6864e7206$b8a6fbd29cc9113a149ad62cf7e0ddd5
+..   The test message can be viewed at the following URL:
+..     http://localhost:9000/1/search/?q=c988bf5cb7db4653825c92f6864e7206$b8a6fbd29cc9113a149ad62cf7e0ddd5

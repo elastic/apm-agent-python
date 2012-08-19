@@ -27,27 +27,27 @@ See the `Pyramid PasteDeploy Configuration Documentation <http://docs.pylonsproj
 Logger setup
 ------------
 
-Add the following lines to your project's `.ini` file to setup `SentryHandler`:
+Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
 
 .. code-block:: ini
 
     [loggers]
-    keys = root, sentry
+    keys = root, opbeat
 
     [handlers]
-    keys = console, sentry
+    keys = console, opbeat
 
     [formatters]
     keys = generic
 
     [logger_root]
     level = INFO
-    handlers = console, sentry
+    handlers = console, opbeat
 
-    [logger_sentry]
+    [logger_opbeat]
     level = WARN
     handlers = console
-    qualname = sentry.errors
+    qualname = opbeat.errors
     propagate = 0
 
     [handler_console]
@@ -56,8 +56,8 @@ Add the following lines to your project's `.ini` file to setup `SentryHandler`:
     level = NOTSET
     formatter = generic
 
-    [handler_sentry]
-    class = opbeat_python.handlers.logging.SentryHandler
+    [handler_opbeat]
+    class = opbeat_python.handlers.logging.OpbeatHandler
     args = ('http://public:secret@example.com/1',)
     level = WARNING
     formatter = generic
