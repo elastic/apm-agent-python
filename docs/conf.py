@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'opbeat_python'
-copyright = u'2010, David Cramer'
+copyright = u'2010, David Cramer, 2012 Opbeat'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -91,7 +91,7 @@ pygments_style = 'sphinx'
 intersphinx_mapping = {
     'http://docs.python.org/2.7': None,
     'django': ('http://docs.djangoproject.com/en/dev/', 'http://docs.djangoproject.com/en/dev/_objects/'),
-    'http://opbeat_python.readthedocs.org/en/latest': None
+    # 'http://opbeat_python.readthedocs.org/en/latest': None
 }
 
 

@@ -47,7 +47,7 @@ Client Arguments
 The following are valid arguments which may be passed to the opbeat_python client:
 
 project
-~~~~~~~
+~~~~~~~~~~~~~~
 
 Set this to your Opbeat project ID.
 
@@ -56,7 +56,7 @@ Set this to your Opbeat project ID.
     project = 'fb9f9e31ea4f40d48855c603f15a2aa4'
 
 access_token
-~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Set this to the secret key of the project.
 You can find this information on the settings page of your project
@@ -67,7 +67,7 @@ at https://opbeat.com
     access_token = '6e968b3d8ba240fcb50072ad9cba0810'
 
 name
-~~~~
+~~~~~~~~~~~~~~
 
 This will override the ``server_name`` value for this installation. Defaults to ``socket.gethostname()``.
 
