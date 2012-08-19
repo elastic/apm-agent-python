@@ -1,7 +1,7 @@
 opbeat_python
 =====
 
-opbeat_python is a standalone (and the official) Python client for `Oopbeat <https://www.opbeat.com/>`_.
+opbeat_python is a standalone (and the official) Python client for `Opbeat <https://www.opbeat.com/>`_.
 It is forked from raven.
 
 .. toctree::
