@@ -46,7 +46,7 @@ install_requires = [
 
 setup(
     name='opbeat_python',
-    version='1.0',
+    version='1.0.1',
     author='Ron Cohen',
     author_email='ron@opbeat.com',
     url='http://github.com/opbeat/opbeat_python',
