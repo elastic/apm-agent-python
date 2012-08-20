@@ -3,11 +3,7 @@ Install
 
 If you haven't already, start by downloading opbeat_python. The easiest way is with **pip**::
 
-	pip install opbeat_python --upgrade
-
-Or with *setuptools*::
-
-	easy_install -U opbeat_python
+	pip install opbeat_python -e git+git@github.com:opbeat/opbeat_python.git#egg=opbeat_python --upgrade
 
 Requirements
 ------------

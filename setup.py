@@ -41,8 +41,7 @@ tests_require = [
 ]
 
 install_requires = [
-    'simplejson>=2.3.0,<2.5.0',
-    'ssh'
+    'simplejson>=2.3.0,<2.5.0'
 ]
 
 setup(
