@@ -17,7 +17,7 @@ any Python application.
 Resources
 ---------
 
-* `Documentation <https://www.opbeat.com/docs/opbeat_python/index.html>`_
+* `Documentation <https://www.opbeat.com/docs/opbeat_python/>`_
 * `Bug Tracker <http://github.com/opbeat/opbeat_python/issues>`_
 * `Code <http://github.com/opbeat/opbeat_python>`_
 .. * `Mailing List <https://groups.google.com/group/getsentry>`_
