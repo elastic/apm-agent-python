@@ -10,16 +10,18 @@ Using the Django integration is as simple as adding :mod:`opbeat_python.contrib.
             'opbeat_python.contrib.django',
         )
 
-Additional settings for the client are configured using ``OPBEAT_<setting name>``::
+Remember to add the following settings to settings.py::
 
     OPBEAT_PROJECT_ID = '<id>'
     OPBEAT_ACCESS_TOKEN = '<token>'
 
-You'll be referencing the client slightly differently in Django as well::
+You'll find your project id and access token under ``Project Settings`` on opbeat.com
 
-    from opbeat_python.contrib.django.models import client
+.. You'll be referencing the client slightly differently in Django as well::
 
-    client.captureException()
+..     from opbeat_python.contrib.django.models import client
+
+..     client.captureException()
 
 
 Integration with :mod:`logging`
