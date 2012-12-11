@@ -137,8 +137,8 @@ class TransformTest(TestCase):
 class ShortenTest(TestCase):
     def test_shorten_string(self):
         result = shorten('hello world!', string_length=5)
-        self.assertEquals(len(result), 8)
-        self.assertEquals(result, 'hello...')
+        self.assertEquals(len(result), 5)
+        self.assertEquals(result, 'he...')
 
     def test_shorten_lists(self):
         result = shorten(range(500), list_length=50)

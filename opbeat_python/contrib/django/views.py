@@ -6,10 +6,15 @@ opbeat_python.contrib.django.views
 :license: BSD, see LICENSE for more details.
 """
 
-import simplejson
+
+try:
+    import json
+except:
+    import simplejson as json
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseBadRequest
+from django.http import (HttpResponse, HttpResponseForbidden,
+                            HttpResponseBadRequest)
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -79,8 +84,8 @@ def report(request, project_id=None):
             return HttpResponseBadRequest()
 
         try:
-            decoded = simplejson.loads(data)
-        except simplejson.JSONDecodeError:
+            decoded = json.loads(data)
+        except json.JSONDecodeError:
             return HttpResponseBadRequest()
 
         response = HttpResponse()

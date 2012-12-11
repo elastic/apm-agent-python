@@ -53,6 +53,13 @@ MAX_LENGTH_LIST = 50
 # The maximum length to store of a string-like structure.
 MAX_LENGTH_STRING = 400
 
+MAX_LENGTH_VALUES = {
+	'message':		200,
+	'server_name':	200,
+	'culprit':		100,
+	'logger':		60
+}
+
 # Automatically log frame stacks from all ``logging`` messages.
 AUTO_LOG_STACKS = False
 

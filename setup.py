@@ -24,7 +24,7 @@ from setuptools import setup, find_packages
 tests_require = [
     'blinker>=1.1',
     'celery',
-    'Django>=1.2,<1.4',
+    'Django>=1.2,<1.5',
     'django-celery',
     'django-nose',
     'gevent',
@@ -40,9 +40,13 @@ tests_require = [
     'pytz'
 ]
 
-install_requires = [
-    'simplejson>=2.3.0,<2.5.0'
-]
+install_requires = []
+
+try:
+    # For Python >= 2.6
+    import json
+except ImportError:
+    install_requires.append("simplejson>=2.3.0,<2.5.0")
 
 setup(
     name='opbeat_python',

@@ -78,7 +78,7 @@ class OpbeatHandler(logbook.Handler):
             'level': LOOKBOOK_LEVELS[record.level],
             'logger': record.channel,
         }
-        print data
+
         # If there's no exception being processed, exc_info may be a 3-tuple of None
         # http://docs.python.org/library/sys.html#sys.exc_info
         if record.exc_info is True or (record.exc_info and all(record.exc_info)):

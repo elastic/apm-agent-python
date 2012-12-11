@@ -22,7 +22,7 @@ from urlparse import urlparse
 
 import opbeat_python
 from opbeat_python.conf import defaults
-from opbeat_python.utils import json, varmap
+from opbeat_python.utils import opbeat_json as json, varmap
 
 from opbeat_python.utils.encoding import transform, shorten
 from opbeat_python.utils.stacks import get_stack_info, iter_stack_frames, \
@@ -292,6 +292,13 @@ class Client(object):
 
 		if 'message' not in data:
 			data['message'] = handler.to_string(data)
+
+		# Make sure certain values are not too long
+		for v in defaults.MAX_LENGTH_VALUES:
+			if v in data:
+
+				data[v] = shorten(data[v], 
+							string_length=defaults.MAX_LENGTH_VALUES[v])
 
 		data.update({
 			'timestamp':  date,

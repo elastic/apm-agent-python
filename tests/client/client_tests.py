@@ -4,6 +4,7 @@ import inspect
 import mock
 import opbeat_python
 import time
+import string
 from socket import socket, AF_INET, SOCK_DGRAM
 from unittest2 import TestCase
 from opbeat_python.base import Client, ClientState
@@ -274,6 +275,42 @@ class ClientTest(TestCase):
         event = self.client.events.pop(0)
         self.assertEquals(event['logger'], 'test')
         self.assertTrue('timestamp' in event)
+
+    def test_long_message(self):
+        message = 'm' * 201
+
+        self.client.capture('Message', message=message)
+
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)
+        self.assertTrue(len(event['message']) < 201, len(event['message']))
+
+    def test_long_culprit(self):
+        culprit = 'c' * 101
+
+        self.client.capture('Message', message='test', data={'culprit':culprit})
+
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)
+        self.assertTrue(len(event['culprit']) < 101, len(event['culprit']))
+
+    def test_long_logger(self):
+        logger = 'c' * 61
+
+        self.client.capture('Message', message='test', data={'logger':logger})
+
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)
+        self.assertTrue(len(event['logger']) < 61, len(event['logger']))
+
+    # def test_long_server_name(self):
+    #     message = 's' * 201
+
+    #     self.client.capture('Message', message=message,)
+
+    #     self.assertEquals(len(self.client.events), 1)
+    #     event = self.client.events.pop(0)
+    #     self.assertTrue(len(event['server_name']) < 201)
 
 # class ClientUDPTest(TestCase):
 #     def setUp(self):
