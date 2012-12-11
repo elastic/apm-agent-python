@@ -9,7 +9,7 @@ opbeat_python.contrib.django.views
 
 try:
     import json
-except:
+except ImportError:
     import simplejson as json
 
 from django.conf import settings
