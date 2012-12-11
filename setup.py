@@ -50,7 +50,7 @@ except ImportError:
 
 setup(
     name='opbeat_python',
-    version='1.0.1',
+    version='1.0.2',
     author='Ron Cohen',
     author_email='ron@opbeat.com',
     url='http://github.com/opbeat/opbeat_python',
