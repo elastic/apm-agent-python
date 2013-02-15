@@ -6,6 +6,8 @@ Setup
 
 Using Opbeat with Flask requires the blinker library to be installed. This is most easily installed using pip:
 
+.. code-block:: bash
+
     $ pip install blinker
 
 The first thing you'll need to do is to initialize opbeat_python under your application::
