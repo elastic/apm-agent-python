@@ -17,8 +17,8 @@ any base dependancies.
 
 ::
 
-    virtualenv ~/.virtualenvs/opbeat_python
-    source ~/.virtualenvs/opbeat_python/bin/activate
+    virtualenv ~/.virtualenvs/opbeat
+    source ~/.virtualenvs/opbeat/bin/activate
     python setup.py develop
 
 Running the Test Suite
@@ -53,4 +53,4 @@ Contributing Back Code
 
 Ideally all patches should be sent as a pull request on GitHub, and include tests. If you're fixing a bug or making a large change the patch **must** include test coverage.
 
-You can see a list of open pull requests (pending changes) by visiting https://github.com/opbeat/opbeat_python/pulls
+You can see a list of open pull requests (pending changes) by visiting https://github.com/opbeat/opbeat/pulls

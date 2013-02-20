@@ -2,7 +2,7 @@
 
 from mock import Mock
 from unittest2 import TestCase
-from opbeat_python.events import Message
+from opbeat.events import Message
 
 
 class MessageTest(TestCase):

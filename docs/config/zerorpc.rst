@@ -5,12 +5,12 @@ Setup
 -----
 
 The ZeroRPC integration comes as middleware for ZeroRPC. The middleware can be
-configured like the original opbeat_python client (using keyword arguments) and
+configured like the original opbeat client (using keyword arguments) and
 registered into ZeroRPC's context manager::
 
     import zerorpc
 
-    from opbeat_python.contrib.zerorpc import OpbeatMiddleware
+    from opbeat.contrib.zerorpc import OpbeatMiddleware
 
     sentry = OpbeatMiddleware(dsn='udp://public_key:secret_key@example.com:4242/1')
     zerorpc.Context.get_instance().register_middleware(sentry)
@@ -26,5 +26,5 @@ Caveats
 
 Since sending an exception to Opbeat will basically block your RPC call, you are
 *strongly* advised to use the UDP server of Opbeat. In any cases, a cleaner and
-long term solution would be to make opbeat_python requests to the Opbeat server
+long term solution would be to make opbeat requests to the Opbeat server
 asynchronous.

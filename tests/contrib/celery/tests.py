@@ -3,20 +3,20 @@
 import mock
 from unittest2 import TestCase
 from celery.tests.utils import with_eager_tasks
-from opbeat_python.contrib.celery import CeleryClient
+from opbeat.contrib.celery import CeleryClient
 
 
 class ClientTest(TestCase):
     def setUp(self):
         self.client = CeleryClient(project_id="1", access_token="test_key")
 
-    @mock.patch('opbeat_python.contrib.celery.CeleryClient.send_raw')
+    @mock.patch('opbeat.contrib.celery.CeleryClient.send_raw')
     def test_send_encoded(self, send_raw):
         self.client.send_encoded('foo')
 
         send_raw.delay.assert_called_once_with('foo')
 
-    @mock.patch('opbeat_python.contrib.celery.CeleryClient.send_raw')
+    @mock.patch('opbeat.contrib.celery.CeleryClient.send_raw')
     def test_without_eager(self, send_raw):
         """
         Integration test to ensure it propagates all the way down
@@ -27,7 +27,7 @@ class ClientTest(TestCase):
         self.assertEquals(send_raw.delay.call_count, 1)
 
     @with_eager_tasks
-    @mock.patch('opbeat_python.base.Client.send_encoded')
+    @mock.patch('opbeat.base.Client.send_encoded')
     def test_with_eager(self, send_encoded):
         """
         Integration test to ensure it propagates all the way down

@@ -6,7 +6,7 @@ use it simply add :class:`OpbeatHandler` to your logger.
 
 First you'll need to configure a handler::
 
-    from opbeat_python.handlers.logging import OpbeatHandler
+    from opbeat.handlers.logging import OpbeatHandler
 
     # Manually specify a client
     client = Client(...)
@@ -19,7 +19,7 @@ First you'll need to configure a handler::
 
 Finally, call the :func:`setup_logging` helper function::
 
-    from opbeat_python.conf import setup_logging
+    from opbeat.conf import setup_logging
 
     setup_logging(handler)
 

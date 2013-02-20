@@ -8,14 +8,14 @@ Using Opbeat with Flask requires the blinker library to be installed. This is mo
 
     $ pip install blinker
 
-The first thing you'll need to do is to initialize opbeat_python under your application::
+The first thing you'll need to do is to initialize opbeat under your application::
 
-    from opbeat_python.contrib.flask import Opbeat
+    from opbeat.contrib.flask import Opbeat
     opbeat = Opbeat(app, project_id='921', access_token='...')
 
 If you don't specify the ``project_id`` and ``access_token`` values, we will attempt to read it from your environment under the ``OPBEAT_PROJECT_ID`` and ``OPBEAT_ACCESS_TOKEN`` keys respectively.
 
-Building applications on the fly? You can use opbeat_python's ``init_app`` hook::
+Building applications on the fly? You can use opbeat's ``init_app`` hook::
 
     opbeat = Opbeat(project_id='921', access_token='...')
 

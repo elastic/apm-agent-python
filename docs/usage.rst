@@ -1,5 +1,5 @@
 Usage
 =====
 
-.. autoclass:: opbeat_python.Client
+.. autoclass:: opbeat.Client
    :members:

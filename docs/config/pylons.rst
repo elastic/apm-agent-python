@@ -8,7 +8,7 @@ A Pylons-specific middleware exists to enable easy configuration from settings:
 
 ::
 
-    from opbeat_python.contrib.pylons import Opbeat
+    from opbeat.contrib.pylons import Opbeat
 
     application = Opbeat(application, config)
 
@@ -56,7 +56,7 @@ Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
     formatter = generic
 
     [handler_opbeat]
-    class = opbeat_python.handlers.logging.OpbeatHandler
+    class = opbeat.handlers.logging.OpbeatHandler
     args = (['http://sentry.local/api/store/'], 'KEY')
     level = NOTSET
     formatter = generic

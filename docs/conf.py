@@ -41,7 +41,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'opbeat_python'
+project = u'opbeat'
 copyright = u'2010, David Cramer, 2012 Opbeat'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -50,7 +50,7 @@ copyright = u'2010, David Cramer, 2012 Opbeat'
 #
 # The short X.Y version.
 
-version = __import__('pkg_resources').get_distribution('opbeat_python').version
+version = __import__('pkg_resources').get_distribution('opbeat').version
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -91,7 +91,7 @@ pygments_style = 'sphinx'
 intersphinx_mapping = {
     'http://docs.python.org/2.7': None,
     'django': ('http://docs.djangoproject.com/en/dev/', 'http://docs.djangoproject.com/en/dev/_objects/'),
-    # 'http://opbeat_python.readthedocs.org/en/latest': None
+    # 'http://opbeat.readthedocs.org/en/latest': None
 }
 
 
@@ -175,7 +175,7 @@ html_sidebars = {
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'opbeat_pythondoc'
+htmlhelp_basename = 'opbeatdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -189,7 +189,7 @@ htmlhelp_basename = 'opbeat_pythondoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'opbeat_python.tex', u'opbeat_python Documentation',
+  ('index', 'opbeat.tex', u'opbeat Documentation',
    u'David Cramer', 'manual'),
 ]
 
@@ -222,6 +222,6 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'opbeat_python', u'opbeat_python Documentation',
+    ('index', 'opbeat', u'opbeat Documentation',
      [u'David Cramer'], 1)
 ]

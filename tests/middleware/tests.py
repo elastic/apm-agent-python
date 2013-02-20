@@ -1,7 +1,7 @@
 import logging
 from unittest2 import TestCase
-from opbeat_python.base import Client
-from opbeat_python.middleware import Opbeat
+from opbeat.base import Client
+from opbeat.middleware import Opbeat
 
 import webob
 

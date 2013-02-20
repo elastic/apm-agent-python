@@ -1,6 +1,6 @@
 import logging
 import mock
-from opbeat_python.conf import load, setup_logging
+from opbeat.conf import load, setup_logging
 from unittest2 import TestCase
 
 

@@ -1,4 +1,4 @@
-from opbeat_python.base import Client
+from opbeat.base import Client
 
 
 def get_tempstoreclient(project_id="1", access_token="test_key", **kwargs):

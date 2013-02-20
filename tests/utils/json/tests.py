@@ -4,7 +4,7 @@ import datetime
 import uuid
 from unittest2 import TestCase
 
-from opbeat_python.utils import opbeat_json as json
+from opbeat.utils import opbeat_json as json
 
 
 class JSONTest(TestCase):

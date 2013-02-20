@@ -1,12 +1,12 @@
 Configuring ``WSGI`` Middleware
 ===============================
 
-opbeat_python includes a simple to use WSGI middleware.
+opbeat includes a simple to use WSGI middleware.
 
 ::
 
-    from opbeat_python import Client
-    from opbeat_python.middleware import Opbeat
+    from opbeat import Client
+    from opbeat.middleware import Opbeat
 
     application = Opbeat(
         application,
