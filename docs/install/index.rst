@@ -1,10 +1,11 @@
 Install
 =======
 
-If you haven't already, start by downloading opbeat. The easiest way is with **pip**::
+If you haven't already, start by downloading opbeat. The easiest way is with **pip**
 
-	pip install -e git+git://github.com/opbeat/opbeat_python.git#egg=opbeat --upgrade
+.. code-block:: bash
 
+	pip install opbeat_python -e git+git@github.com:opbeat/opbeat_python.git#egg=opbeat --upgrade
 
 Requirements
 ------------
