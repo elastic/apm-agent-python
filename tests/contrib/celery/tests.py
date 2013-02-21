@@ -8,7 +8,11 @@ from opbeat.contrib.celery import CeleryClient
 
 class ClientTest(TestCase):
     def setUp(self):
-        self.client = CeleryClient(project_id="1", access_token="test_key")
+        self.client = CeleryClient(
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret'
+        )
 
     @mock.patch('opbeat.contrib.celery.CeleryClient.send_raw')
     def test_send_encoded(self, send_raw):

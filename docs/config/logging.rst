@@ -68,7 +68,7 @@ be seen as the same message within Opbeat::
 
 The :mod:`logging` integration also allows easy capture of
 stack frames (and their locals) as if you were logging an exception. This can
-be done automatically with the ``OPBEAT_AUTO_LOG_STACKS`` setting, as well as
+be done automatically with the ``AUTO_LOG_STACKS`` setting, as well as
 by passing the ``stack`` boolean to ``extra``::
 
     logger.error('There was an error', extra={

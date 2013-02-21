@@ -1,18 +1,7 @@
-import logging
 from unittest2 import TestCase
-from opbeat.base import Client
 from opbeat.middleware import Opbeat
-
+from ..helpers import get_tempstoreclient
 import webob
-
-
-class TempStoreClient(Client):
-    def __init__(self, servers=None, **kwargs):
-        self.events = []
-        super(TempStoreClient, self).__init__(servers=servers, **kwargs)
-
-    def send(self, **kwargs):
-        self.events.append(kwargs)
 
 
 def example_app(environ, start_response):
@@ -24,7 +13,7 @@ class MiddlewareTest(TestCase):
         self.app = example_app
 
     def test_error_handler(self):
-        client = TempStoreClient(project_id="1", access_token="key")
+        client = get_tempstoreclient()
         middleware = Opbeat(self.app, client=client)
 
         request = webob.Request.blank('/an-error?foo=bar')

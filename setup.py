@@ -34,7 +34,6 @@ tests_require = [
     'nose',
     'mock',
     'pep8',
-    # 'sentry>=4.4.6',
     'unittest2',
     'webob',
     'zerorpc>=0.2.0',

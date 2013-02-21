@@ -1,19 +1,20 @@
 from opbeat.base import Client
 
 
-def get_tempstoreclient(project_id="1", access_token="test_key", **kwargs):
-	return TempStoreClient(project_id=project_id,
-							access_token=access_token, **kwargs)
+def get_tempstoreclient(organization_id="1", app_id="2",
+						secret_token="test_key", **kwargs):
+	return TempStoreClient(organization_id=organization_id, app_id=app_id,
+							secret_token=secret_token, **kwargs)
 
 
 class TempStoreClient(Client):
 	def __init__(self,
-				servers=None, project_id=None,
-				access_token=None, **kwargs):
+				servers=None, organization_id=None, app_id=None,
+				secret_token=None, **kwargs):
 		self.events = []
 		super(TempStoreClient, self).__init__(
-								servers=servers, project_id=project_id,
-								access_token=access_token, **kwargs)
+								servers=servers, organization_id=organization_id,
+								app_id=app_id, secret_token=secret_token, **kwargs)
 
 	def send(self, **kwargs):
 		self.events.append(kwargs)

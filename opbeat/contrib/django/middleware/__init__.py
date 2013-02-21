@@ -27,13 +27,11 @@ class Opbeat404CatchMiddleware(object):
             'logger': 'http404',
         })
         result = client.capture('Message', param_message={'message':'Page Not Found: %s','params':[request.build_absolute_uri()]}, data=data)
-        request.sentry = {
-            'project_id': data.get('project_id', client.project_id),
+        request.opbeat = {
+            'app_id': data.get('app_id', client.app_id),
             'id': client.get_ident(result),
         }
         return response
-
-    # sentry_exception_handler(sender=Opbeat404CatchMiddleware, request=request)
 
 
 class OpbeatResponseErrorIdMiddleware(object):
@@ -42,9 +40,9 @@ class OpbeatResponseErrorIdMiddleware(object):
     the Opbeat datastore.
     """
     def process_response(self, request, response):
-        if not getattr(request, 'sentry', None):
+        if not getattr(request, 'opbeat', None):
             return response
-        response['X-Opbeat-ID'] = request.sentry['id']
+        response['X-Opbeat-ID'] = request.opbeat['id']
         return response
 
 

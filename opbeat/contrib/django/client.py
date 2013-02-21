@@ -13,7 +13,6 @@ from __future__ import absolute_import
 
 import logging
 
-# from django.conf import settings
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
@@ -26,7 +25,7 @@ __all__ = ('DjangoClient',)
 
 
 class DjangoClient(Client):
-    logger = logging.getLogger('sentry.errors.client.django')
+    logger = logging.getLogger('opbeat.errors.client.django')
 
     def get_user_info(self, request):
         if request.user.is_authenticated():
@@ -97,9 +96,9 @@ class DjangoClient(Client):
         result = super(DjangoClient, self).capture(event_type, **kwargs)
 
         if is_http_request:
-            # attach the sentry object to the request
-            request.sentry = {
-                'project_id': data.get('project_project', self.project_id),
+            # attach the opbeat object to the request
+            request.opbeat = {
+                'app_id': data.get('app_id', self.app_id),
                 'id': self.get_ident(result),
             }
 
@@ -114,15 +113,6 @@ class DjangoClient(Client):
         """
         if self.servers:
             return super(DjangoClient, self).send(**kwargs)
-        # elif 'sentry' in settings.INSTALLED_APPS:
-        #     try:
-        #         return self.send_integrated(kwargs)
-        #     except Exception, e:
-        #         self.error_logger.error('Unable to record event: %s', e, exc_info=True)
         else:
-            self.error_logger.error('No servers configured, and sentry not installed. Cannot send message')
+            self.error_logger.error('No servers configured, and opbeat not installed. Cannot send message')
             return None
-
-    # def send_integrated(self, kwargs):
-    #     from sentry.models import Group
-    #     return Group.objects.from_kwargs(**kwargs)

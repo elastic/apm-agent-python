@@ -1,3 +1,9 @@
+1.1
+
+* Renamed from opbeat_python to opbeat.
+* Simplified configuration
+* Conform to the updated Opbeat API.
+
 1.0
 
 * Changes to conform to the Opbeat API.
