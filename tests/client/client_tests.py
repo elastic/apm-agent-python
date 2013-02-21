@@ -60,8 +60,9 @@ class ClientTest(TestCase):
 
         client = Client(
             servers=['http://example.com'],
-            project_id='public',
-            access_token='secret',
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
         )
 
         # test error
@@ -82,8 +83,9 @@ class ClientTest(TestCase):
         access_token = "secret"
         client = Client(
             servers=['http://example.com'],
-            project_id=public,
-            access_token=access_token,
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
         )
         client.send(**{
             'foo': 'bar',
@@ -127,8 +129,9 @@ class ClientTest(TestCase):
         time.return_value = 1328055286.51
         client = Client(
             servers=['http://example.com'],
-            project_id='public',
-            access_token='secret',
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',

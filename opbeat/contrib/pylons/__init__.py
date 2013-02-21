@@ -24,8 +24,9 @@ class Opbeat(Middleware):
         client = client_cls(
             servers=list_from_setting(config, 'opbeat.servers'),
             name=config.get('opbeat.name'),
-            project_id=config.get('opbeat.project_id'),
-            access_token=config.get('opbeat.access_token'),
+            organization_id=config.get('opbeat.organization_id'),
+            app_id=config.get('opbeat.app_id'),
+            secret_token=config.get('opbeat.secret_token'),
             include_paths=list_from_setting(config, 'opbeat.include_paths'),
             exclude_paths=list_from_setting(config, 'opbeat.exclude_paths'),
         )

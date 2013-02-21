@@ -9,7 +9,7 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
-__all__ = ('VERSION', 'Client', 'load')
+__all__ = ('VERSION', 'Client')
 
 try:
     VERSION = __import__('pkg_resources') \

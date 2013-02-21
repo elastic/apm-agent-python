@@ -10,7 +10,7 @@ opbeat includes a simple to use WSGI middleware.
 
     application = Opbeat(
         application,
-        Client('http://public:secret@example.com/1')
+        Client(organization_id='<org-id>', app_id='<app-id>', secret_token='..')
     )
 
 .. note:: Many frameworks will not propagate exceptions to the underlying WSGI middleware by default.

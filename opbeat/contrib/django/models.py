@@ -20,7 +20,7 @@ import warnings
 from django.conf import settings as django_settings
 
 
-logger = logging.getLogger('sentry.errors.client')
+logger = logging.getLogger('opbeat.errors.client')
 
 
 def get_installed_apps():
@@ -108,22 +108,27 @@ def get_client(client=None):
 
     tmp_client = client is not None
     if not tmp_client:
-        client = getattr(django_settings, 'OPBEAT_CLIENT', 'opbeat.contrib.django.DjangoClient')
+        config = getattr(django_settings, 'OPBEAT', {})
+        client = config.get('CLIENT', 'opbeat.contrib.django.DjangoClient')
 
     if _client[0] != client:
         module, class_name = client.rsplit('.', 1)
+
+        config = getattr(django_settings, 'OPBEAT', {})
+
         instance = getattr(__import__(module, {}, {}, class_name), class_name)(
-            servers=getattr(django_settings, 'OPBEAT_SERVERS', None),
-            include_paths=set(getattr(django_settings, 'OPBEAT_INCLUDE_PATHS', [])) | get_installed_apps(),
-            exclude_paths=getattr(django_settings, 'OPBEAT_EXCLUDE_PATHS', None),
-            timeout=getattr(django_settings, 'OPBEAT_TIMEOUT', None),
-            name=getattr(django_settings, 'OPBEAT_NAME', None),
-            auto_log_stacks=getattr(django_settings, 'OPBEAT_AUTO_LOG_STACKS', None),
-            string_max_length=getattr(django_settings, 'SENTRY_MAX_LENGTH_STRING', None),
-            list_max_length=getattr(django_settings, 'OPBEAT_MAX_LENGTH_LIST', None),
-            access_token=getattr(django_settings, 'OPBEAT_ACCESS_TOKEN', None),
-            project_id=getattr(django_settings, 'OPBEAT_PROJECT_ID', None),
-            processors=getattr(django_settings, 'OPBEAT_PROCESSORS', None)
+            servers=config.get('SERVERS', None),
+            include_paths=set(config.get('INCLUDE_PATHS', [])) | get_installed_apps(),
+            exclude_paths=config.get('EXCLUDE_PATHS', None),
+            timeout=config.get('TIMEOUT', None),
+            hostname=config.get('HOSTNAME', None),
+            auto_log_stacks=config.get('AUTO_LOG_STACKS', None),
+            string_max_length=config.get('MAX_LENGTH_STRING', None),
+            list_max_length=config.get('MAX_LENGTH_LIST', None),
+            organization_id=config.get('ORGANIZATION_ID', None),
+            app_id=config.get('APP_ID', None),
+            secret_token=config.get('SECRET_TOKEN', None),
+            processors=config.get('PROCESSORS', None)
         )
         if not tmp_client:
             _client = (client, instance)
@@ -150,14 +155,15 @@ def get_transaction_wrapper(client):
     return transaction
 
 
-def sentry_exception_handler(request=None, **kwargs):
+def opbeat_exception_handler(request=None, **kwargs):
     transaction = get_transaction_wrapper(client)
 
     @transaction.commit_on_success
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
         try:
-            if (django_settings.DEBUG and not getattr(django_settings, 'OPBEAT_DEBUG', False)) or getattr(exc_info[1], 'skip_opbeat', False):
+            config = getattr(django_settings, 'OPBEAT', {})
+            if (django_settings.DEBUG and not config.get('DEBUG', False)) or getattr(exc_info[1], 'skip_opbeat', False):
                 return
 
             if transaction.is_dirty():
@@ -181,7 +187,7 @@ def register_handlers():
     from django.core.signals import got_request_exception
 
     # Connect to Django's internal signal handler
-    got_request_exception.connect(sentry_exception_handler)
+    got_request_exception.connect(opbeat_exception_handler)
 
     # If Celery is installed, register a signal handler
     if 'djcelery' in django_settings.INSTALLED_APPS:
@@ -194,12 +200,3 @@ def register_handlers():
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
-
-    # if (not django_settings.DEBUG) or (django_settings.DEBUG and getattr(django_settings, 'OPBEAT_DEBUG', False)):
-    #     try:
-    #         # Do deployment stuff
-    #         from opbeat.deployment import send_deployment_info
-    #         send_deployment_info(client)
-    #     except Exception, ex:
-    #         import traceback
-    #         traceback.print_exc()

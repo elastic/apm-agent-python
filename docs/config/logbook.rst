@@ -12,11 +12,6 @@ First you'll need to configure a handler::
     client = Client(...)
     handler = OpbeatHandler(client)
 
-.. You can also automatically configure the default client with a DSN::
-
-..     # Configure the default client
-..     handler = SentryHandler('http://public:secret@example.com/1')
-
 Finally, bind your handler to your context::
 
     from opbeat.handlers.logbook import OpbeatHandler

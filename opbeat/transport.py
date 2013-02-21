@@ -46,63 +46,6 @@ class Transport(object):
         raise NotImplementedError
 
 
-# class UDPTransport(Transport):
-
-#     scheme = ['udp']
-
-#     def __init__(self, parsed_url):
-#         self.check_scheme(parsed_url)
-
-#         self._parsed_url = parsed_url
-
-#     def send(self, data, headers):
-#         auth_header = headers.get('X-Sentry-Auth')
-
-#         if auth_header is None:
-#             # silently ignore attempts to send messages without an auth header
-#             return
-
-#         host, port = self._parsed_url.netloc.split(':')
-
-#         udp_socket = None
-#         try:
-#             udp_socket = socket(AF_INET, SOCK_DGRAM)
-#             udp_socket.setblocking(False)
-#             udp_socket.sendto(auth_header + '\n\n' + data, (host, int(port)))
-#         except socket_error:
-#             # as far as I understand things this simply can't happen,
-#             # but still, it can't hurt
-#             pass
-#         finally:
-#             # Always close up the socket when we're done
-#             if udp_socket is not None:
-#                 udp_socket.close()
-#                 udp_socket = None
-
-#     def compute_scope(self, url, scope):
-#         path_bits = url.path.rsplit('/', 1)
-#         if len(path_bits) > 1:
-#             path = path_bits[0]
-#         else:
-#             path = ''
-#         project = path_bits[-1]
-
-#         if not all([url.port, project, url.username, url.password]):
-#             raise ValueError('Invalid Sentry DSN: %r' % url.geturl())
-
-#         netloc = url.hostname
-#         netloc += ':%s' % url.port
-
-#         server = '%s://%s%s/api/store/' % (url.scheme, netloc, path)
-#         scope.update({
-#             'SENTRY_SERVERS': [server],
-#             'SENTRY_PROJECT': project,
-#             'SENTRY_PUBLIC_KEY': url.username,
-#             'SENTRY_SECRET_KEY': url.password,
-#         })
-#         return scope
-
-
 class HTTPTransport(Transport):
 
     scheme = ['http', 'https']

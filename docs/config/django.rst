@@ -12,16 +12,14 @@ Using the Django integration is as simple as adding :mod:`opbeat.contrib.django`
 
 Remember to add the following settings to settings.py::
 
-    OPBEAT_PROJECT_ID = '<id>'
-    OPBEAT_ACCESS_TOKEN = '<token>'
+    OPBEAT = {
+        'ORGANIZATION_ID': '<org-id>',
+        'APP_ID': '<app-id>',
+        'SECRET_TOKEN': '<token>',
+    }
 
-You'll find your project id and access token under ``Project Settings`` on opbeat.com
-
-.. You'll be referencing the client slightly differently in Django as well::
-
-..     from opbeat.contrib.django.models import client
-
-..     client.captureException()
+You'll find your organization id, app id and and secret token under 
+``App Settings`` on opbeat.com
 
 
 Integration with :mod:`logging`
@@ -162,14 +160,17 @@ level of your Django application::
 Additional Settings
 -------------------
 
-OPBEAT_CLIENT
+OPBEAT CLIENT
 ~~~~~~~~~~~~~~
 
 In some situations you may wish for a slightly different behavior to how Opbeat
 communicates with your server. For this, opbeat allows you to specify a custom
 client::
 
-    OPBEAT_CLIENT = 'opbeat.contrib.django.DjangoClient'
+    OPBEAT = {
+        'CLIENT': 'opbeat.contrib.django.DjangoClient',
+        ...
+    }
 
 Caveats
 -------

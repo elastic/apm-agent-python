@@ -35,12 +35,9 @@ class OpbeatHandler(logging.Handler, object):
                 ))
         elif 'client' in kwargs:
             self.client = kwargs['client']
-        elif len(args) == 2 and not kwargs:
-            servers, key = args
-            self.client = client(servers=servers, key=key)
         else:
             self.client = client(*args, **kwargs)
-        
+
         logging.Handler.__init__(self)
 
     def emit(self, record):

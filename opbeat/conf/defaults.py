@@ -24,7 +24,7 @@ DEBUG = False
 SERVERS = ['https://opbeat.com']
 
 # Error API path
-ERROR_API_PATH = '/api/v0/project/{0}/error/'
+ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
 
 # Deployment Tracking API path
 DEPLOYMENT_API_PATH = '/api/v0/deployment/'
@@ -34,7 +34,7 @@ TIMEOUT = 5
 # TODO: this is specific to Django
 CLIENT = 'opbeat.contrib.django.DjangoClient'
 
-NAME = socket.gethostname()
+HOSTNAME = socket.gethostname()
 
 # Credentials to authenticate with the Opbeat server
 ACCESS_TOKEN = None

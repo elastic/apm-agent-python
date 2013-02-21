@@ -29,9 +29,7 @@ class OpbeatMiddleware(object):
     """
 
     def __init__(self, hide_zerorpc_frames=True, client=None, **kwargs):
-        print type(client)
-        self._sentry_client = client or Client(**kwargs)
-        print type(self._sentry_client)
+        self._opbeat_client = client or Client(**kwargs)
         self._hide_zerorpc_frames = hide_zerorpc_frames
 
     def server_inspect_exception(self, req_event, rep_event, task_ctx, exc_info):
@@ -59,7 +57,7 @@ class OpbeatMiddleware(object):
                     break
                 traceback = traceback.tb_next
 
-        self._sentry_client.captureException(
+        self._opbeat_client.captureException(
             exc_info,
             extra=task_ctx
         )

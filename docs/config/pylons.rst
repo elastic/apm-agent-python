@@ -17,8 +17,9 @@ Configuration is handled via the opbeat namespace:
 .. code-block:: ini
 
     [opbeat]
-    project_id=gmwnmogdehmnmhau
-    access_token=asdasdasdasd
+    organization_id=orgid
+    app_id=gmwnmogdehmnmhau
+    secret_token=asdasdasdasd
     include_paths=my.package,my.other.package,
     exclude_paths=my.package.crud
 
@@ -43,7 +44,7 @@ Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
     level = INFO
     handlers = console, opbeat
 
-    [logger_sentry]
+    [logger_opbeat]
     level = WARN
     handlers = console
     qualname = opbeat.errors
@@ -57,7 +58,7 @@ Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
 
     [handler_opbeat]
     class = opbeat.handlers.logging.OpbeatHandler
-    args = (['http://sentry.local/api/store/'], 'KEY')
+    args = ('<organization_id>', '<app_id>', '<secret_token>')
     level = NOTSET
     formatter = generic
 

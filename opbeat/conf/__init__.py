@@ -10,61 +10,23 @@ Large portions are
 """
 
 import logging
-import urlparse
 
-
-__all__ = ('load', 'setup_logging')
-
-
-# TODO (vng): this seems weirdly located in opbeat.conf.  Seems like
-# it's really a part of opbeat.transport.TransportRegistry
-# Not quite sure what to do with this
-def load(dsn, scope=None, transport_registry=None):
-    """
-    Parses a Sentry compatible DSN and loads it
-    into the given scope.
-
-    >>> import opbeat
-
-    >>> dsn = 'https://public_key:secret_key@sentry.local/project_id'
-
-    >>> # Apply configuration to local scope
-    >>> opbeat.load(dsn, locals())
-
-    >>> # Return DSN configuration
-    >>> options = opbeat.load(dsn)
-    """
-
-    if not transport_registry:
-        from opbeat.transport import TransportRegistry
-        transport_registry = TransportRegistry()
-
-    url = urlparse.urlparse(dsn)
-
-    if not transport_registry.supported_scheme(url.scheme):
-        raise ValueError('Unsupported Sentry DSN scheme: %r' % url.scheme)
-
-    if scope is None:
-        scope = {}
-    scope_extras = transport_registry.compute_scope(url, scope)
-    scope.update(scope_extras)
-
-    return scope
+__all__ = ('setup_logging', )
 
 
 def setup_logging(handler, exclude=['opbeat',
                                     'gunicorn',
                                     'south',
-                                    'sentry.errors']):
+                                    'opbeat.errors']):
     """
-    Configures logging to pipe to Sentry.
+    Configures logging to pipe to Opbeat.
 
-    - ``exclude`` is a list of loggers that shouldn't go to Sentry.
+    - ``exclude`` is a list of loggers that shouldn't go to Opbeat.
 
     For a typical Python install:
 
     >>> from opbeat.handlers.logging import OpbeatHandler
-    >>> client = Sentry(...)
+    >>> client = Opbeat(...)
     >>> setup_logging(OpbeatHandler(client))
 
     Within Django:

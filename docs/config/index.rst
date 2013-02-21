@@ -24,10 +24,6 @@ Configuring the Client
 
 Settings are specified as part of the intialization of the client.
 
-As of opbeat 1.2.0, you can now configure all clients through a standard DSN
-string. This can be specified as a default using the ``SENTRY_DSN`` environment
-variable, as well as passed to all clients by using the ``dsn`` argument.
-
 ::
 
     from opbeat import Client
@@ -37,8 +33,9 @@ variable, as well as passed to all clients by using the ``dsn`` argument.
 
     # Configure a client manually
     client = Client(
-        project_id='public_key',
-        access_token='secret_key',
+        organization_id='<org-id>',
+        app_id='<org-id>',
+        secret_token='<secret-token>',
     )
 
 Client Arguments
@@ -46,16 +43,25 @@ Client Arguments
 
 The following are valid arguments which may be passed to the opbeat client:
 
-project
-~~~~~~~~~~~~~~
+organization id
+~~~~~~~~~~~~~~~~
 
-Set this to your Opbeat project ID.
+Set this to your Opbeat organization ID.
 
 ::
 
-    project = 'fb9f9e31ea4f40d48855c603f15a2aa4'
+    organization_id = 'fb9f9e31ea4f40d48855c603f15a2aa4'
 
-access_token
+app id
+~~~~~~~~~~~~~~
+
+Set this to your Opbeat app ID.
+
+::
+
+    app_id = 'fb9f9e31ea'
+
+secret_token
 ~~~~~~~~~~~~~~~~~~
 
 Set this to the secret key of the project.
@@ -64,16 +70,16 @@ at https://opbeat.com
 
 ::
 
-    access_token = '6e968b3d8ba240fcb50072ad9cba0810'
+    secret_token = '6e968b3d8ba240fcb50072ad9cba0810'
 
-name
+hostname
 ~~~~~~~~~~~~~~
 
-This will override the ``server_name`` value for this installation. Defaults to ``socket.gethostname()``.
+This will override the ``hostname`` value for this installation. Defaults to ``socket.gethostname()``.
 
 ::
 
-    name = 'opbeat_rocks_' + socket.gethostname()
+    hostname = 'opbeat_rocks_' + socket.gethostname()
 
 exclude_paths
 ~~~~~~~~~~~~~
@@ -174,32 +180,3 @@ Several processors are included with opbeat to assist in data sanitiziation. The
 .. data:: opbeat.processors.RemovePostDataProcessor
 
    Removes the ``body`` of all HTTP data.
-
-.. Testing the Client
-.. ------------------
-
-.. Once you've got your server configured, you can test the opbeat client by using it's CLI::
-
-..   opbeat test <DSN value>
-
-.. If you've configured your environment to have SENTRY_DSN available, you can simply drop
-.. the optional DSN argument::
-
-..   opbeat test
-
-.. You should get something like the following, assuming you're configured everything correctly::
-
-..   $ opbeat test http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
-..   Using DSN configuration:
-..     http://dd2c825ff9b1417d88a99573903ebf80:91631495b10b45f8a1cdbc492088da6a@localhost:9000/1
-
-..   Client configuration:
-..     servers        : ['http://localhost:9000/api/store/']
-..     project        : 1
-..     public_key     : dd2c825ff9b1417d88a99573903ebf80
-..     secret_key     : 91631495b10b45f8a1cdbc492088da6a
-
-..   Sending a test message... success!
-
-..   The test message can be viewed at the following URL:
-..     http://localhost:9000/1/search/?q=c988bf5cb7db4653825c92f6864e7206$b8a6fbd29cc9113a149ad62cf7e0ddd5

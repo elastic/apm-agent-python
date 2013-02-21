@@ -6,7 +6,6 @@ import datetime
 import django
 import logging
 import mock
-import re
 from celery.tests.utils import with_eager_tasks
 from StringIO import StringIO
 
@@ -24,15 +23,22 @@ from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-from opbeat.contrib.django.views import is_valid_origin
 
 from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 
-settings.OPBEAT_CLIENT = 'tests.contrib.django.django_tests.TempStoreClient'
+settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
+
 
 def get_client(*args,**kwargs):
-    with Settings(OPBEAT_ACCESS_TOKEN='key',OPBEAT_PROJECT_ID='99'):
-        cli = orig_get_client(*args,**kwargs)
+    config = {
+        'APP_ID': 'key',
+        'ORGANIZATION_ID': 'org',
+        'SECRET_TOKEN': '99'
+    }
+    config.update(settings.OPBEAT)
+
+    with Settings(OPBEAT=config):
+        cli = orig_get_client(*args, **kwargs)
         return cli
 
 
@@ -61,8 +67,8 @@ class Settings(object):
     """
     Allows you to define settings that are required for this function to work.
 
-    >>> with Settings(SENTRY_LOGIN_URL='foo'): #doctest: +SKIP
-    >>>     print settings.SENTRY_LOGIN_URL #doctest: +SKIP
+    >>> with Settings(OPBEAT={'LOGIN_URL': 'foo'}): #doctest: +SKIP
+    >>>     print settings.OPBEAT['LOGIN_URL'] #doctest: +SKIP
     """
 
     NotDefined = object()
@@ -89,7 +95,14 @@ class ClientProxyTest(TestCase):
         self.assertEquals(get_client(), client)
 
     def test_basic(self):
-        with Settings(OPBEAT_ACCESS_TOKEN='key',OPBEAT_PROJECT_ID='99'):
+        config = {
+            'APP_ID': 'key',
+            'ORGANIZATION_ID': 'org',
+            'SECRET_TOKEN': '99'
+        }
+        config.update(settings.OPBEAT)
+
+        with Settings(OPBEAT=config):
             client.capture('Message', message='foo')
             self.assertEquals(len(client.events), 1)
             client.events.pop(0)
@@ -107,7 +120,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
         self.assertTrue('message' in event)
-        
+
         self.assertEquals(event['message'], 'foo')
         self.assertEquals(event['level'], 'error')
         self.assertEquals(event['param_message'], {'message':'foo','params':()})
@@ -132,7 +145,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['culprit'], 'tests.contrib.django.django_tests.test_signal_integration')
 
     def test_view_exception(self):
-        self.assertRaises(Exception, self.client.get, reverse('sentry-raise-exc'))
+        self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
@@ -149,7 +162,7 @@ class DjangoClientTest(TestCase):
         user.set_password('admin')
         user.save()
 
-        self.assertRaises(Exception, self.client.get, reverse('sentry-raise-exc'))
+        self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
@@ -162,7 +175,7 @@ class DjangoClientTest(TestCase):
 
         self.assertTrue(self.client.login(username='admin', password='admin'))
 
-        self.assertRaises(Exception, self.client.get, reverse('sentry-raise-exc'))
+        self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
@@ -177,7 +190,7 @@ class DjangoClientTest(TestCase):
 
     def test_request_middleware_exception(self):
         with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
-            self.assertRaises(ImportError, self.client.get, reverse('sentry-raise-exc'))
+            self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
             event = self.opbeat.events.pop(0)
@@ -194,7 +207,7 @@ class DjangoClientTest(TestCase):
         if django.VERSION[:2] < (1, 3):
             return
         with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenResponseMiddleware']):
-            self.assertRaises(ImportError, self.client.get, reverse('sentry-no-error'))
+            self.assertRaises(ImportError, self.client.get, reverse('opbeat-no-error'))
 
             self.assertEquals(len(self.opbeat.events), 1)
             event = self.opbeat.events.pop(0)
@@ -212,7 +225,7 @@ class DjangoClientTest(TestCase):
             client = TestClient(REMOTE_ADDR='127.0.0.1')
             client.handler = MockOpbeatMiddleware(MockClientHandler())
 
-            self.assertRaises(Exception, client.get, reverse('sentry-raise-exc'))
+            self.assertRaises(Exception, client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 2)
             event = self.opbeat.events.pop(0)
@@ -237,7 +250,7 @@ class DjangoClientTest(TestCase):
 
     def test_view_middleware_exception(self):
         with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenViewMiddleware']):
-            self.assertRaises(ImportError, self.client.get, reverse('sentry-raise-exc'))
+            self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
             event = self.opbeat.events.pop(0)
@@ -253,7 +266,7 @@ class DjangoClientTest(TestCase):
     def test_exclude_modules_view(self):
         exclude_paths = self.opbeat.exclude_paths
         self.opbeat.exclude_paths = ['tests.views.decorated_raise_exc']
-        self.assertRaises(Exception, self.client.get, reverse('sentry-raise-exc-decor'))
+        self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc-decor'))
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
@@ -265,7 +278,7 @@ class DjangoClientTest(TestCase):
         include_paths = self.opbeat.include_paths
         self.opbeat.include_paths = ['django.shortcuts.get_object_or_404']
 
-        self.assertRaises(Exception, self.client.get, reverse('sentry-django-exc'))
+        self.assertRaises(Exception, self.client.get, reverse('opbeat-django-exc'))
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
@@ -274,7 +287,7 @@ class DjangoClientTest(TestCase):
         self.opbeat.include_paths = include_paths
 
     def test_template_name_as_view(self):
-        self.assertRaises(TemplateSyntaxError, self.client.get, reverse('sentry-template-exc'))
+        self.assertRaises(TemplateSyntaxError, self.client.get, reverse('opbeat-template-exc'))
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
@@ -282,7 +295,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['culprit'], 'error.html')
 
     # def test_request_in_logging(self):
-    #     resp = self.client.get(reverse('sentry-log-request-exc'))
+    #     resp = self.client.get(reverse('opbeat-log-request-exc'))
     #     self.assertEquals(resp.status_code, 200)
 
     #     self.assertEquals(len(self.opbeat.events), 1)
@@ -310,7 +323,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
 
-        self.assertEquals(event['param_message'], {'message':'test','params':()})
+        self.assertEquals(event['param_message'], {'message': 'test','params':()})
 
     def test_404_middleware(self):
         with Settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
@@ -411,9 +424,9 @@ class DjangoClientTest(TestCase):
     ## TODO: Find out why this is broken
     # def test_filtering_middleware(self):
     #     with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.FilteringMiddleware']):
-    #         self.assertRaises(IOError, self.client.get, reverse('sentry-raise-ioerror'))
+    #         self.assertRaises(IOError, self.client.get, reverse('opbeat-raise-ioerror'))
     #         self.assertEquals(len(self.opbeat.events), 0)
-    #         self.assertRaises(Exception, self.client.get, reverse('sentry-raise-exc'))
+    #         self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
     #         self.assertEquals(len(self.opbeat.events), 1)
     #         self.opbeat.events.pop(0)
 
@@ -452,8 +465,9 @@ class CeleryIsolatedClientTest(TestCase):
     def setUp(self):
         self.client = CeleryClient(
             servers=['http://example.com'],
-            project_id='public',
-            access_token='secret',
+            organization_id='org',
+            app_id='app',
+            secret_token='secret',
         )
 
     @mock.patch('opbeat.contrib.django.celery.CeleryClient.send_raw')
@@ -488,8 +502,9 @@ class CeleryIntegratedClientTest(TestCase):
     def setUp(self):
         self.client = CeleryClient(
             servers=['http://example.com'],
-            project_id='public',
-            access_token='secret',
+            organization_id='org',
+            app_id='app',
+            secret_token='secret',
         )
 
     @mock.patch('opbeat.contrib.django.celery.CeleryClient.send_raw_integrated')
@@ -497,17 +512,6 @@ class CeleryIntegratedClientTest(TestCase):
         self.client.send_integrated('foo')
 
         send_raw.delay.assert_called_once_with('foo')
-
-    ## NO direct sending
-    # @mock.patch('opbeat.contrib.django.celery.CeleryClient.send_raw_integrated')
-    # def test_without_eager(self, send_raw):
-    #     """
-    #     Integration test to ensure it propagates all the way down
-    #     and calls delay on the task.
-    #     """
-    #     self.client.capture('Message', message='test')
-
-    #     self.assertEquals(send_raw.delay.call_count, 1)
 
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
@@ -519,84 +523,3 @@ class CeleryIntegratedClientTest(TestCase):
         self.client.capture('Message', message='test')
 
         self.assertEquals(send_encoded.call_count, 1)
-
-
-class IsValidOriginTestCase(TestCase):
-    def test_setting_empty(self):
-        with Settings(SENTRY_ALLOW_ORIGIN=None):
-            self.assertFalse(is_valid_origin('http://example.com'))
-
-    def test_setting_all(self):
-        with Settings(SENTRY_ALLOW_ORIGIN='*'):
-            self.assertTrue(is_valid_origin('http://example.com'))
-
-    def test_setting_uri(self):
-        with Settings(SENTRY_ALLOW_ORIGIN=['http://example.com']):
-            self.assertTrue(is_valid_origin('http://example.com'))
-
-    def test_setting_regexp(self):
-        with Settings(SENTRY_ALLOW_ORIGIN=[re.compile('https?\://(.*\.)?example\.com')]):
-            self.assertTrue(is_valid_origin('http://example.com'))
-
-
-# class ReportViewTest(TestCase):
-#     urls = 'opbeat.contrib.django.urls'
-
-#     def setUp(self):
-#         self.path = reverse('opbeat-report')
-
-#     def test_does_not_allow_get(self):
-#         resp = self.client.get(self.path)
-#         self.assertEquals(resp.status_code, 405)
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin')
-#     def test_calls_is_valid_origin_with_header(self, is_valid_origin):
-#         self.client.post(self.path, HTTP_ORIGIN='http://example.com')
-#         is_valid_origin.assert_called_once_with('http://example.com')
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=False))
-#     def test_fails_on_invalid_origin(self):
-#         resp = self.client.post(self.path, HTTP_ORIGIN='http://example.com')
-#         self.assertEquals(resp.status_code, 403)
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=True))
-#     def test_options_call_sends_headers(self):
-#         resp = self.client.options(self.path, HTTP_ORIGIN='http://example.com')
-#         self.assertEquals(resp.status_code, 200)
-#         self.assertEquals(resp['Access-Control-Allow-Origin'], 'http://example.com')
-#         self.assertEquals(resp['Access-Control-Allow-Methods'], 'POST, OPTIONS')
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=True))
-#     def test_missing_data(self):
-#         resp = self.client.post(self.path, HTTP_ORIGIN='http://example.com')
-#         self.assertEquals(resp.status_code, 400)
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=True))
-#     def test_invalid_data(self):
-#         resp = self.client.post(self.path, HTTP_ORIGIN='http://example.com',
-#             data='[1', content_type='application/octet-stream')
-#         self.assertEquals(resp.status_code, 400)
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=True))
-#     def test_sends_data(self):
-#         resp = self.client.post(self.path, HTTP_ORIGIN='http://example.com',
-#             data='{}', content_type='application/octet-stream')
-#         self.assertEquals(resp.status_code, 200)
-#         event = client.events.pop(0)
-#         self.assertEquals(event, {'auth_header': None})
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=True))
-#     def test_sends_authorization_header(self):
-#         resp = self.client.post(self.path, HTTP_ORIGIN='http://example.com',
-#             HTTP_AUTHORIZATION='Opbeat foo/bar', data='{}', content_type='application/octet-stream')
-#         self.assertEquals(resp.status_code, 200)
-#         event = client.events.pop(0)
-#         self.assertEquals(event, {'auth_header': 'Opbeat foo/bar'})
-
-#     @mock.patch('opbeat.contrib.django.views.is_valid_origin', mock.Mock(return_value=True))
-#     def test_sends_x_sentry_auth_header(self):
-#         resp = self.client.post(self.path, HTTP_ORIGIN='http://example.com',
-#             HTTP_X_SENTRY_AUTH='Opbeat foo/bar', data='{}', content_type='application/octet-stream')
-#         self.assertEquals(resp.status_code, 200)
-#         event = client.events.pop(0)
-#         self.assertEquals(event, {'auth_header': 'Opbeat foo/bar'})

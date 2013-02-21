@@ -84,23 +84,20 @@ class Client(object):
     HTTP API to Opbeat servers.
 
     Will read default configuration from the environment variable
-    ``OPBEAT_PROJECT_ID`` and ``OPBEAT_ACCESS_TOKEN`` if available.
+    ``OPBEAT_ORGANIZATION_ID``, ``OPBEAT_APP_ID`` and ``OPBEAT_SECRET_TOKEN``
+    if available.
 
     >>> from opbeat import Client
 
-    >>> # Read configuration from ``os.environ['OPBEAT_PROJECT_ID']``
-    >>> # and ``os.environ['OPBEAT_ACCESS_TOKEN']``
+    >>> # Read configuration from environment
     >>> client = Client()
-
-    >>> # Specify a DSN explicitly
-    >>> client =
-    >>> Client(project_id='project_id', access_token='access_token')
 
     >>> # Configure the client manually
     >>> client = Client(
     >>>     include_paths=['my.package'],
-    >>>     project='project_id',
-    >>>     access_token='access_token'
+    >>>     organization_id='org_id',
+    >>>     app_id='app_id',
+    >>>     secret_token='secret_token',
     >>> )
 
     >>> # Record an exception
@@ -115,11 +112,11 @@ class Client(object):
 
     _registry = TransportRegistry()
 
-    def __init__(self, include_paths=None, exclude_paths=None,
-            timeout=None, name=None, auto_log_stacks=None, key=None,
+    def __init__(self, organization_id=None, app_id=None, secret_token=None,
+            include_paths=None, exclude_paths=None,
+            timeout=None, hostname=None, auto_log_stacks=None, key=None,
             string_max_length=None, list_max_length=None,
-            project_id=None, access_token=None, processors=None,
-            servers = None, api_path=None,
+            processors=None, servers=None, api_path=None,
             **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -128,59 +125,37 @@ class Client(object):
             cls.__name__))
         self.error_logger = logging.getLogger('opbeat.errors')
 
-        # if isinstance(servers, basestring):
-        #   # must be a DSN:
-        #   if dsn:
-        #       # TODO: this should indicate what the caller can do to correct
-        #       # the constructor
-        #       msg = "You seem to be incorrectly instantiating the " + \
-        #             "opbeat Client class"
-        #       raise ValueError(msg)
-        #   dsn = servers
-        #   servers = None
-
-        if project_id is None and os.environ.get('OPBEAT_PROJECT_ID'):
-            msg = "Configuring opbeat from environment variable 'OPBEAT_PROJECT_ID'"
+        if organization_id is None and os.environ.get('OPBEAT_ORGANIZATION_ID'):
+            msg = "Configuring opbeat from environment variable 'OPBEAT_ORGANIZATION_ID'"
             self.logger.info(msg)
-            project_id = os.environ['OPBEAT_PROJECT_ID']
+            organization_id = os.environ['OPBEAT_ORGANIZATION_ID']
 
-        if access_token is None and os.environ.get('OPBEAT_ACCESS_TOKEN'):
-            msg = "Configuring opbeat from environment variable 'OPBEAT_ACCESS_TOKEN'"
+        if secret_token is None and os.environ.get('OPBEAT_SECRET_TOKEN'):
+            msg = "Configuring opbeat from environment variable 'OPBEAT_SECRET_TOKEN'"
             self.logger.info(msg)
-            access_token = os.environ['OPBEAT_ACCESS_TOKEN']
+            secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
-        # if dsn:
-        #   # TODO: should we validate other options werent sent?
-        #   urlparts = urlparse(dsn)
-        #   msg = "Configuring opbeat for host: %s://%s:%s" % (urlparts.scheme,
-        #           urlparts.netloc, urlparts.path)
-        #   self.logger.info(msg)
-        #   options = opbeat.load(dsn, transport_registry=self._registry)
-        #   servers = options['SENTRY_SERVERS']
-        #   project = options['SENTRY_PROJECT']
-        #   public_key = options['SENTRY_PUBLIC_KEY']
-        #   secret_key = options['SENTRY_SECRET_KEY']
-        
         self.servers = servers or defaults.SERVERS
 
         # servers may be set to a NoneType (for Django)
-        if self.servers and not (project_id and access_token):
+        if self.servers and not (organization_id and app_id and secret_token):
             msg = 'Missing configuration for client. Please see documentation.'
             raise TypeError(msg)
 
         self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
         self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
         self.timeout = int(timeout or defaults.TIMEOUT)
-        self.name = unicode(name or defaults.NAME)
+        self.hostname = unicode(hostname or defaults.HOSTNAME)
         self.auto_log_stacks = bool(auto_log_stacks or
                 defaults.AUTO_LOG_STACKS)
-        
+
         self.string_max_length = int(string_max_length or
                 defaults.MAX_LENGTH_STRING)
         self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
 
-        self.access_token = access_token
-        self.project_id = project_id
+        self.organization_id = organization_id
+        self.app_id = app_id
+        self.secret_token = secret_token
 
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
@@ -211,7 +186,6 @@ class Client(object):
         """
         Captures, processes and serializes an event into a dict object
         """
-
         # create ID client-side so that it can be passed to application
         event_id = uuid.uuid4().hex
 
@@ -269,7 +243,7 @@ class Client(object):
 
         if isinstance( data['level'], ( int, long ) ):
             data['level'] = logging.getLevelName(data['level']).lower()
- 
+
         data.setdefault('extra', {})
 
         # Shorten lists/strings
@@ -293,9 +267,9 @@ class Client(object):
         # Make sure certain values are not too long
         for v in defaults.MAX_LENGTH_VALUES:
             if v in data:
-
-                data[v] = shorten(data[v], 
-                            string_length=defaults.MAX_LENGTH_VALUES[v])
+                data[v] = shorten(data[v],
+                            string_length=defaults.MAX_LENGTH_VALUES[v]
+                          )
 
         data.update({
             'timestamp':  date,
@@ -303,18 +277,15 @@ class Client(object):
             'client_supplied_id': event_id,
         })
 
-
         return data
-
-
 
     def build_msg(self, data=None,
             **kwargs):
-        data.setdefault('server_name', self.name)
-        data.setdefault('project_id', self.project_id)
-        data.setdefault('access_token', self.access_token)
+        data.setdefault('machine', {'hostname': self.hostname})
+        data.setdefault('organization_id', self.organization_id)
+        data.setdefault('app_id', self.app_id)
+        data.setdefault('secret_token', self.secret_token)
         return data
-
 
     def capture(self, event_type, data=None, date=None, api_path=None,
                 extra=None, stack=None, **kwargs):
@@ -365,8 +336,11 @@ class Client(object):
                 extra, stack, **kwargs)
 
         if not api_path:
-            api_path = defaults.ERROR_API_PATH.format(data['project_id'])
-        
+            api_path = defaults.ERROR_API_PATH.format(
+                data['organization_id'],
+                data['app_id']
+            )
+
         data['servers'] = [server+api_path for server in self.servers]
         self.send(**data)
 
@@ -411,40 +385,49 @@ class Client(object):
         else:
             self.state.set_success()
 
-    def send(self, project_id=None, access_token=None, auth_header=None, servers = None, **data):
+    def send(self, organization_id=None, app_id=None, secret_token=None,
+             auth_header=None, servers=None, **data):
         """
         Serializes the message and passes the payload onto ``send_encoded``.
         """
         message = self.encode(data)
 
         try:
-            return self.send_encoded(message, project_id=project_id, access_token=access_token, auth_header=auth_header, servers=servers)
+            return self.send_encoded(message,
+                                     organization_id=organization_id,
+                                     app_id=app_id,
+                                     secret_token=secret_token,
+                                     auth_header=auth_header,
+                                     servers=servers)
         except TypeError:
             # Make the assumption that public_key wasnt supported
             warnings.warn('%s.send_encoded needs updated to support ``**kwargs``' % (type(self).__name__,),
                 DeprecationWarning)
             return self.send_encoded(message)
 
-    def send_encoded(self, message, project_id, access_token, auth_header=None, servers = None, **kwargs):
+    def send_encoded(self, message, organization_id, app_id, secret_token,
+                     auth_header=None, servers = None, **kwargs):
         """
         Given an already serialized message, signs the message and passes the
         payload off to ``send_remote`` for each server specified in the servers
         configuration.
         """
-
         servers = servers or self.servers
         if not servers:
             warnings.warn('opbeat client has no remote servers configured')
             return
 
         if not auth_header:
-            if not project_id:
-                project_id = self.project_id
+            if not organization_id:
+                organization_id = self.organization_id
 
-            if not access_token:
-                access_token = self.access_token
-                
-            auth_header = "Bearer %s" % (access_token)
+            if not app_id:
+                app_id = self.app_id
+
+            if not secret_token:
+                secret_token = self.secret_token
+
+            auth_header = "Bearer %s" % (secret_token)
 
         for url in servers:
             headers = {

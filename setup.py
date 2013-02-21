@@ -33,7 +33,6 @@ tests_require = [
     'nose',
     'mock',
     'pep8',
-    # 'sentry>=4.4.6',
     'unittest2',
     'webob',
     'zerorpc>=0.2.0',
@@ -50,7 +49,7 @@ except ImportError:
 
 setup(
     name='opbeat',
-    version='1.0.2',
+    version='1.1',
     author='Ron Cohen',
     author_email='ron@opbeat.com',
     url='http://github.com/opbeat/opbeat',
