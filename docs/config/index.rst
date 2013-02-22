@@ -2,12 +2,15 @@ Configuration
 =============
 
 This document describes configuration options available to Opbeat.
+For available framework integrations and modules, see the sidebar on the left.
 
-.. note:: Some integrations allow specifying these in a standard configuration, otherwise they are generally passed upon
-          instantiation of the Opbeat client.
+.. container:: note
+
+  Some integrations allow specifying these in a standard configuration, otherwise they are generally passed upon instantiation of the Opbeat client.
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    django
    flask
@@ -41,7 +44,7 @@ Settings are specified as part of the intialization of the client.
 Client Arguments
 ----------------
 
-The following are valid arguments which may be passed to the opbeat client:
+The following are valid arguments which may be passed to the Opbeat client:
 
 organization id
 ~~~~~~~~~~~~~~~~

@@ -66,6 +66,8 @@ Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
     format = %(asctime)s,%(msecs)03d %(levelname)-5.5s [%(name)s] %(message)s
     datefmt = %H:%M:%S
 
-.. note:: You may want to setup other loggers as well.  See the `Pyramid Logging Documentation <http://docs.pylonsproject.org/projects/pyramid/en/latest/narr/logging.html>`_ for more information.
+.. container:: note
+
+    You may want to setup other loggers as well.  See the `Pyramid Logging Documentation <http://docs.pylonsproject.org/projects/pyramid/en/latest/narr/logging.html>`_ for more information.
 
 

@@ -66,6 +66,8 @@ Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
     format = %(asctime)s,%(msecs)03d %(levelname)-5.5s [%(name)s] %(message)s
     datefmt = %H:%M:%S
 
-.. note:: You may want to setup other loggers as well.
+.. container:: note
+
+    You may want to setup other loggers as well.
 
 

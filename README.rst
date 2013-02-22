@@ -1,15 +1,16 @@
-opbeat
+Opbeat
 ====================
 
 .. .. image:: https://secure.travis-ci.org/dcramer/opbeat.png?branch=master
 ..    :target: http://travis-ci.org/dcramer/opbeat
 
-opbeat is a Python client for `Opbeat <http://opbeat.com/>`_. It provides
+This is a Python client for `Opbeat <http://opbeat.com/>`_. It provides 
 full out-of-the-box support for many of the popular frameworks, including
 Django, and Flask. opbeat also includes drop-in support for any WSGI-compatible
 web application.
 
-Your application doesn't live on the web? No problem! opbeat is easy to use in
+
+Your application doesn't live on the web? No problem! Opbeat is easy to use in
 any Python application.
 
 

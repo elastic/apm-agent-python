@@ -13,4 +13,6 @@ opbeat includes a simple to use WSGI middleware.
         Client(organization_id='<org-id>', app_id='<app-id>', secret_token='..')
     )
 
-.. note:: Many frameworks will not propagate exceptions to the underlying WSGI middleware by default.
+.. container:: note
+
+    Many frameworks will not propagate exceptions to the underlying WSGI middleware by default.
