@@ -5,6 +5,7 @@ This is the official, standalone Python client for `Opbeat <https://www.opbeat.c
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    install/index
    config/index
