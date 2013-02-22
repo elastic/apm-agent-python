@@ -483,7 +483,8 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                 **kwargs)
 
+
 class DummyClient(Client):
-	"Sends messages into an empty void"
-	def send(self, **kwargs):
-		return None
+    "Sends messages into an empty void"
+    def send(self, **kwargs):
+        return None

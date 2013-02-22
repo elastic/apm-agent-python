@@ -56,8 +56,15 @@ within your ``extra`` clause::
         }
     })
 
-.. note:: The ``url`` and ``view`` keys are used internally by Opbeat within the extra data.
-.. note:: Any key (in ``data``) prefixed with ``_`` will not automatically output on the Opbeat details view.
+.. container:: note 
+
+    The ``url`` and ``view`` keys are used internally by Opbeat within the extra data.
+
+.. container:: note
+
+    Any key (in ``data``) prefixed with ``_`` will not automatically output on the Opbeat details view.
+
+| 
 
 Opbeat will intelligently group messages if you use proper string formatting. For example, the following messages would
 be seen as the same message within Opbeat::
@@ -75,7 +82,7 @@ by passing the ``stack`` boolean to ``extra``::
         'stack': True,
     })
 
-.. .. note::
+.. .. container:: note
 
 ..     Other languages that provide a logging package that is comparable to the
 ..     python :mod:`logging` package may define an Opbeat handler.  Check the

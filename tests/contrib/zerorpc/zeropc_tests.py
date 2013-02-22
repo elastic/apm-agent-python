@@ -6,13 +6,12 @@ import tempfile
 import unittest2
 import zerorpc
 
-from opbeat.base import Client
 from opbeat.contrib.zerorpc import OpbeatMiddleware
 
 from tests.helpers import get_tempstoreclient
 
-class ZeroRPCTest(unittest2.TestCase):
 
+class ZeroRPCTest(unittest2.TestCase):
     def setUp(self):
         self._socket_dir = tempfile.mkdtemp(prefix='opbeatzerorpcunittest')
         self._server_endpoint = 'ipc://{0}'.format(os.path.join(
@@ -24,6 +23,7 @@ class ZeroRPCTest(unittest2.TestCase):
                     client=self._opbeat
         ))
 
+    def test_zerorpc_middleware_with_reqrep(self):
         self._server = zerorpc.Server(random)
         self._server.bind(self._server_endpoint)
         gevent.spawn(self._server.run)
@@ -31,7 +31,6 @@ class ZeroRPCTest(unittest2.TestCase):
         self._client = zerorpc.Client()
         self._client.connect(self._server_endpoint)
 
-    def test_zerorpc_middleware(self):
         try:
             self._client.choice([])
         except zerorpc.exceptions.RemoteError as ex:

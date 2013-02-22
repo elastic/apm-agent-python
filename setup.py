@@ -36,7 +36,7 @@ tests_require = [
     'pep8',
     'unittest2',
     'webob',
-    'zerorpc>=0.2.0',
+    'zerorpc>=0.4.0',
     'pytz'
 ]
 

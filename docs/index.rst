@@ -1,11 +1,12 @@
-opbeat
+Python
 =================
 
-opbeat is a standalone (and the official) Python client for `Opbeat <https://opbeat.com/>`_.
-It is forked from raven.
+This is the official, standalone Python client for
+`Opbeat <https://www.opbeat.com/>`_. It is forked from raven.
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    install/index
    config/index
