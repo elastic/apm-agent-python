@@ -9,7 +9,6 @@ full out-of-the-box support for many of the popular frameworks, including
 Django, and Flask. opbeat also includes drop-in support for any WSGI-compatible
 web application.
 
-
 Your application doesn't live on the web? No problem! Opbeat is easy to use in
 any Python application.
 
