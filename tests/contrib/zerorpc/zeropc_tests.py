@@ -6,22 +6,22 @@ import tempfile
 import unittest2
 import zerorpc
 
-from opbeat_python.base import Client
-from opbeat_python.contrib.zerorpc import OpbeatMiddleware
+from opbeat.base import Client
+from opbeat.contrib.zerorpc import OpbeatMiddleware
 
 from tests.helpers import get_tempstoreclient
 
 class ZeroRPCTest(unittest2.TestCase):
 
     def setUp(self):
-        self._socket_dir = tempfile.mkdtemp(prefix='opbeat_pythonzerorpcunittest')
+        self._socket_dir = tempfile.mkdtemp(prefix='opbeatzerorpcunittest')
         self._server_endpoint = 'ipc://{0}'.format(os.path.join(
                     self._socket_dir, 'random_zeroserver'
         ))
 
-        self._sentry = get_tempstoreclient()
+        self._opbeat = get_tempstoreclient()
         zerorpc.Context.get_instance().register_middleware(OpbeatMiddleware(
-                    client=self._sentry
+                    client=self._opbeat
         ))
 
         self._server = zerorpc.Server(random)
@@ -36,10 +36,10 @@ class ZeroRPCTest(unittest2.TestCase):
             self._client.choice([])
         except zerorpc.exceptions.RemoteError as ex:
             self.assertEqual(ex.name, 'IndexError')
-            self.assertEqual(len(self._sentry.events), 1)
-            exc = self._sentry.events[0]['exception']
+            self.assertEqual(len(self._opbeat.events), 1)
+            exc = self._opbeat.events[0]['exception']
             self.assertEqual(exc['type'], 'IndexError')
-            frames = self._sentry.events[0]['stacktrace']['frames']
+            frames = self._opbeat.events[0]['stacktrace']['frames']
             self.assertEqual(frames[0]['function'], 'choice')
             self.assertEqual(frames[0]['module'], 'random')
             return

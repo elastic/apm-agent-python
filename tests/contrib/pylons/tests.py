@@ -1,5 +1,5 @@
 from unittest2 import TestCase
-from opbeat_python.contrib.pylons import Opbeat
+from opbeat.contrib.pylons import Opbeat
 
 
 def example_app(environ, start_response):

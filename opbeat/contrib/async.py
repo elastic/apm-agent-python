@@ -15,7 +15,7 @@ from threading import Thread, Lock
 import atexit
 import os
 
-SENTRY_WAIT_SECONDS = 10
+OPBEAT_WAIT_SECONDS = 10
 
 
 class AsyncWorker(object):
@@ -31,12 +31,12 @@ class AsyncWorker(object):
         size = self._queue.qsize()
         if size:
             print "Opbeat attempts to send %s error messages" % size
-            print "Waiting up to %s seconds" % SENTRY_WAIT_SECONDS
+            print "Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS
             if os.name == 'nt':
                 print "Press Ctrl-Break to quit"
             else:
                 print "Press Ctrl-C to quit"
-            self.stop(timeout=SENTRY_WAIT_SECONDS)
+            self.stop(timeout=OPBEAT_WAIT_SECONDS)
 
     def start(self):
         """

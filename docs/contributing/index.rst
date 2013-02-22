@@ -17,8 +17,8 @@ any base dependancies.
 
 ::
 
-    virtualenv ~/.virtualenvs/opbeat_python
-    source ~/.virtualenvs/opbeat_python/bin/activate
+    virtualenv ~/.virtualenvs/opbeat
+    source ~/.virtualenvs/opbeat/bin/activate
     python setup.py develop
 
 Running the Test Suite

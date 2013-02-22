@@ -1,7 +1,7 @@
-opbeat_python
+opbeat
 =================
 
-opbeat_python is a standalone (and the official) Python client for `Opbeat <https://www.opbeat.com/>`_.
+opbeat is a standalone (and the official) Python client for `Opbeat <https://opbeat.com/>`_.
 It is forked from raven.
 
 .. toctree::
@@ -24,9 +24,9 @@ It is forked from raven.
 .. Resources
 .. ---------
 
-.. * `Documentation <http://opbeat_python.readthedocs.org/>`_
-.. * `Bug Tracker <http://github.com/dcramer/opbeat_python/issues>`_
-.. * `Code <http://github.com/dcramer/opbeat_python>`_
+.. * `Documentation <http://opbeat.readthedocs.org/>`_
+.. * `Bug Tracker <http://github.com/dcramer/opbeat/issues>`_
+.. * `Code <http://github.com/dcramer/opbeat>`_
 .. * `Mailing List <https://groups.google.com/group/getsentry>`_
 .. * `IRC <irc://irc.freenode.net/sentry>`_  (irc.freenode.net, #sentry)
 

@@ -4,10 +4,10 @@ Configuring Django
 Setup
 -----
 
-Using the Django integration is as simple as adding :mod:`opbeat_python.contrib.django` to your installed apps::
+Using the Django integration is as simple as adding :mod:`opbeat.contrib.django` to your installed apps::
 
         INSTALLED_APPS = (
-            'opbeat_python.contrib.django',
+            'opbeat.contrib.django',
         )
 
 Remember to add the following settings to settings.py::
@@ -19,7 +19,7 @@ You'll find your project id and access token under ``Project Settings`` on opbea
 
 .. You'll be referencing the client slightly differently in Django as well::
 
-..     from opbeat_python.contrib.django.models import client
+..     from opbeat.contrib.django.models import client
 
 ..     client.captureException()
 
@@ -39,7 +39,7 @@ Django 1.3+
         'disable_existing_loggers': True,
         'root': {
             'level': 'WARNING',
-            'handlers': ['opbeat_python'],
+            'handlers': ['opbeat'],
         },
         'formatters': {
             'verbose': {
@@ -47,9 +47,9 @@ Django 1.3+
             },
         },
         'handlers': {
-            'opbeat_python': {
+            'opbeat': {
                 'level': 'ERROR',
-                'class': 'opbeat_python.contrib.django.handlers.OpbeatHandler',
+                'class': 'opbeat.contrib.django.handlers.OpbeatHandler',
             },
             'console': {
                 'level': 'DEBUG',
@@ -63,12 +63,12 @@ Django 1.3+
                 'handlers': ['console'],
                 'propagate': False,
             },
-            'opbeat_python': {
+            'opbeat': {
                 'level': 'DEBUG',
                 'handlers': ['console'],
                 'propagate': False,
             },
-            'opbeat_python.errors': {
+            'opbeat.errors': {
                 'level': 'DEBUG',
                 'handlers': ['console'],
                 'propagate': False,
@@ -95,7 +95,7 @@ In certain conditions you may wish to log 404 events to the Opbeat server. To
 do this, you simply need to enable a Django middleware::
 
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-      'opbeat_python.contrib.django.middleware.Opbeat404CatchMiddleware',
+      'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware',
       ...,
     )
 
@@ -109,7 +109,7 @@ do this, you simply need to enable a Django middleware::
 
 ..     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
 ..       # We recommend putting this as high in the chain as possible
-..       'opbeat_python.contrib.django.middleware.SentryResponseErrorIdMiddleware',
+..       'opbeat.contrib.django.middleware.SentryResponseErrorIdMiddleware',
 ..       ...,
 ..     )
 
@@ -156,7 +156,7 @@ If you are using a WSGI interface to serve your app, you can also apply a
 middleware which will ensure that you catch errors even at the fundamental
 level of your Django application::
 
-    from opbeat_python.contrib.django.middleware.wsgi import Opbeat
+    from opbeat.contrib.django.middleware.wsgi import Opbeat
     application = Opbeat(django.core.handlers.wsgi.WSGIHandler())
 
 Additional Settings
@@ -166,10 +166,10 @@ OPBEAT_CLIENT
 ~~~~~~~~~~~~~~
 
 In some situations you may wish for a slightly different behavior to how Opbeat
-communicates with your server. For this, opbeat_python allows you to specify a custom
+communicates with your server. For this, opbeat allows you to specify a custom
 client::
 
-    OPBEAT_CLIENT = 'opbeat_python.contrib.django.DjangoClient'
+    OPBEAT_CLIENT = 'opbeat.contrib.django.DjangoClient'
 
 Caveats
 -------
@@ -205,7 +205,7 @@ response codes.
 
 Or, alternatively, you can just enable Opbeat responses::
 
-    from opbeat_python.contrib.django.models import opbeat_exception_handler
+    from opbeat.contrib.django.models import opbeat_exception_handler
     class MyMiddleware(object):
         def process_exception(self, request, exception):
             # Make sure the exception signal is fired for Opbeat

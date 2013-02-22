@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-opbeat_python
+opbeat
 ======
 
-opbeat_python is a Python client for `Opbeat <https://opbeat.com/>`_. It provides
+opbeat is a Python client for `Opbeat <https://opbeat.com/>`_. It provides
 full out-of-the-box support for many of the popular frameworks, including
 `Django <djangoproject.com>`_, `Flask <http://flask.pocoo.org/>`_, and `Pylons
-<http://www.pylonsproject.org/>`_. opbeat_python also includes drop-in support for any
+<http://www.pylonsproject.org/>`_. opbeat also includes drop-in support for any
 `WSGI <http://wsgi.readthedocs.org/>`_-compatible web application.
 """
 
@@ -20,6 +20,7 @@ except ImportError:
     pass
 
 from setuptools import setup, find_packages
+from opbeat.version import VERSION
 
 tests_require = [
     'blinker>=1.1',
@@ -49,12 +50,12 @@ except ImportError:
     install_requires.append("simplejson>=2.3.0,<2.5.0")
 
 setup(
-    name='opbeat_python',
-    version='1.0.2',
+    name='opbeat',
+    version=VERSION,
     author='Ron Cohen',
     author_email='ron@opbeat.com',
     url='http://github.com/opbeat/opbeat_python',
-    description='opbeat_python is a client for Opbeat (https://www.opbeat.com)',
+    description='opbeat is a client for Opbeat (https://www.opbeat.com)',
     long_description=__doc__,
     packages=find_packages(exclude=("tests",)),
     zip_safe=False,
@@ -64,11 +65,8 @@ setup(
     test_suite='runtests.runtests',
     include_package_data=True,
     entry_points={
-        'console_scripts': [
-            'opbeat_python = opbeat_python.scripts.runner:main',
-        ],
         'paste.filter_app_factory': [
-            'opbeat_python = opbeat_python.contrib.paste:opbeat_filter_factory',
+            'opbeat = opbeat.contrib.paste:opbeat_filter_factory',
         ],
     },
     classifiers=[

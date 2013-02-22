@@ -3,7 +3,7 @@
 from mock import Mock
 from unittest2 import TestCase
 
-from opbeat_python.utils.stacks import get_culprit, get_stack_info
+from opbeat.utils.stacks import get_culprit, get_stack_info
 
 
 class Context(object):

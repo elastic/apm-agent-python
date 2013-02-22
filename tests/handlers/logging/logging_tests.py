@@ -1,14 +1,14 @@
 import logging
 from unittest2 import TestCase
-from opbeat_python.base import Client
-from opbeat_python.handlers.logging import OpbeatHandler
-from opbeat_python.utils.stacks import iter_stack_frames
+from opbeat.base import Client
+from opbeat.handlers.logging import OpbeatHandler
+from opbeat.utils.stacks import iter_stack_frames
 
 from tests.helpers import get_tempstoreclient
 
 class LoggingIntegrationTest(TestCase):
     def setUp(self):
-        self.client = get_tempstoreclient(include_paths=['tests', 'opbeat_python'])
+        self.client = get_tempstoreclient(include_paths=['tests', 'opbeat'])
         self.handler = OpbeatHandler(self.client)
         self.logger = logging.getLogger(__name__)
         self.logger.handlers = []

@@ -1,7 +1,7 @@
 import logbook
 from unittest2 import TestCase
-from opbeat_python.base import Client
-from opbeat_python.handlers.logbook import OpbeatHandler
+from opbeat.base import Client
+from opbeat.handlers.logbook import OpbeatHandler
 from tests.helpers import get_tempstoreclient
 
 class LogbookHandlerTest(TestCase):
@@ -9,7 +9,7 @@ class LogbookHandlerTest(TestCase):
         self.logger = logbook.Logger(__name__)
 
     def test_logger(self):
-        client = get_tempstoreclient(include_paths=['tests', 'opbeat_python'])
+        client = get_tempstoreclient(include_paths=['tests', 'opbeat'])
         handler = OpbeatHandler(client)
         logger = self.logger
 

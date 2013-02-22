@@ -1,7 +1,7 @@
 import logging
 from flask import Flask
-from opbeat_python.base import Client
-from opbeat_python.contrib.flask import Opbeat
+from opbeat.base import Client
+from opbeat.contrib.flask import Opbeat
 from unittest2 import TestCase
 
 from tests.helpers import get_tempstoreclient

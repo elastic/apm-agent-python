@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from unittest2 import TestCase
-from opbeat_python.base import Client
+from opbeat.base import Client
 
 # Some internal stuff to extend the transport layer
-from opbeat_python.transport import Transport
+from opbeat.transport import Transport
 
 import datetime
 import calendar

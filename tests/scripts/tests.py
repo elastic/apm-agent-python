@@ -3,8 +3,8 @@
 from unittest2 import TestCase
 import mock
 
-from opbeat_python.scripts.runner import build_client
-from opbeat_python.conf import defaults
+from opbeat.scripts.runner import build_client
+from opbeat.conf import defaults
 
 
 class ScriptRunnerTest(TestCase):

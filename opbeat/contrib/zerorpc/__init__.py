@@ -15,22 +15,24 @@ from opbeat.utils.stacks import iter_traceback_frames
 class OpbeatMiddleware(object):
     """Opbeat/opbeat middleware for ZeroRPC.
 
-    >>> sentry = OpbeatMiddleware(dsn='udp://..../')
-    >>> zerorpc.Context.get_instance().register_middleware(sentry)
+    >>> opbeat = OpbeatMiddleware(app_id='..', secret_token='...')
+    >>> zerorpc.Context.get_instance().register_middleware(opbeat)
 
     Exceptions detected server-side in ZeroRPC will be submitted to Opbeat (and
     propagated to the client as well).
-
-    hide_zerorpc_frames: modify the exception stacktrace to remove the internal
-                         zerorpc frames (True by default to make the stacktrace
-                         as readable as possible);
-    client: use an existing opbeat.Client object, otherwise one will be
-            instantiated from the keyword arguments.
-
     """
 
     def __init__(self, hide_zerorpc_frames=True, client=None, **kwargs):
-        self._sentry_client = client or Client(**kwargs)
+        """Create a middleware object that can be injected in a ZeroRPC server.
+
+        - hide_zerorpc_frames: modify the exception stacktrace to remove the
+                               internal zerorpc frames (True by default to make
+                               the stacktrace as readable as possible);
+        - client: use an existing raven.Client object, otherwise one will be
+                  instantiated from the keyword arguments.
+
+        """
+        self._opbeat_client = client or Client(**kwargs)
         self._hide_zerorpc_frames = hide_zerorpc_frames
 
     def inspect_error(self, task_context, exc_info):
@@ -52,7 +54,7 @@ class OpbeatMiddleware(object):
                 if frame_info.function == '__call__':
                     break
 
-        self._sentry_client.captureException(
+        self._opbeat_client.captureException(
             exc_info,
             extra=task_context
         )

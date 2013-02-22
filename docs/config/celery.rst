@@ -1,9 +1,9 @@
 Configuring Celery
 ==================
 
-Celery provides a hook for catching task failures, and opbeat_python can easily plug into that hook::
+Celery provides a hook for catching task failures, and opbeat can easily plug into that hook::
 
-    from opbeat_python.contrib.celery import register_signal
+    from opbeat.contrib.celery import register_signal
 
     register_signal(client)
 
