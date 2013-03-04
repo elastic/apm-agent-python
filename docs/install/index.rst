@@ -5,7 +5,7 @@ If you haven't already, start by downloading opbeat. The easiest way is with **p
 
 .. code-block:: bash
 
-	pip install -e git+git@github.com:opbeat/opbeat_python.git#egg=opbeat --upgrade
+	pip install opbeat
 
 Requirements
 ------------
