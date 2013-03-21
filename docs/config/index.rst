@@ -68,8 +68,8 @@ Set this to your Opbeat app ID.
 secret_token
 ~~~~~~~~~~~~~~~~~~
 
-Set this to the secret key of the project.
-You can find this information on the settings page of your project
+Set this to the secret key of the app.
+You can find this information on the settings page of your app
 at https://opbeat.com
 
 ::
