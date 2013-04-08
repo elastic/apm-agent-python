@@ -10,12 +10,12 @@ Introduction
 ------------
 To send error logs to Opbeat, you must install an agent. 
 
-This is the official Opbeat standalone Python agent. It is forked from `raven <https://github.com/dcramer/raven>`_.
+This is the official Opbeat standalone Python agent. It is forked from `Raven <https://github.com/dcramer/raven>`_.
 
 Requirements
 ------------
 - pip
-- simplejson (if < Python 2.7)
+- simplejson (Only if you're using < Python 2.7)
 
 
 Installation
@@ -41,12 +41,3 @@ Configuration
 ..	"`Logbook </docs/opbeat_python/docs/config/logbook>`_", ""
 .. "`WSGI Middle </docs/opbeat_python/docs/config/wsgi>`_", ""
 ..	"`ZeroRPC </docs/opbeat_python/docs/config/zerorpc>`_", ""
-
-
-
-.. toctree::
-   :maxdepth: 2
-
-   Django </docs/opbeat_python/docs/config/django>
-   docs/config/index
-

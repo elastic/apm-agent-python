@@ -24,13 +24,10 @@ Remember to add the following settings to settings.py:
     :class: lang-python
 
     OPBEAT = {
-        'ORGANIZATION_ID': '<org-id>',
+        'ORGANIZATION_ID': '<organization-id>',
         'APP_ID': '<app-id>',
-        'SECRET_TOKEN': '<token>',
+        'SECRET_TOKEN': '<secret-token>',
     }
-
-You'll find your organization id, app id and and secret token under 
-``App Settings`` on opbeat.com
 
 
 Integration with logging
