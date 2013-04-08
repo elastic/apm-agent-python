@@ -30,11 +30,12 @@ Installation
 Configuration
 -------------
 
-.. csv-table::
-	:class: table
 
-	"`Django </docs/opbeat_python/docs/config/django>`_", ""
-	"`Flask </docs/opbeat_python/docs/config/flask>`_", ""
+.. toctree::
+   :maxdepth: 1
+
+   Django <config/django>
+   Flask <config/flask>
 .. "`Pylons </docs/opbeat_python/docs/config/pylons>`_", ""
 .. "`Pyramid </docs/opbeat_python/docs/config/pyramid>`_", ""
 ..	"`Logging </docs/opbeat_python/docs/config/logging>`_", ""
@@ -42,11 +43,4 @@ Configuration
 .. "`WSGI Middle </docs/opbeat_python/docs/config/wsgi>`_", ""
 ..	"`ZeroRPC </docs/opbeat_python/docs/config/zerorpc>`_", ""
 
-
-
-.. toctree::
-   :maxdepth: 2
-
-   Django </docs/opbeat_python/docs/config/django>
-   docs/config/index
 
