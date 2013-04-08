@@ -22,7 +22,7 @@ Installation
 ------------
 
 .. code::
-	:class: lang-bash
+	:class: lang-c
 
 	# Install Opbeat
 	$ pip install opbeat
