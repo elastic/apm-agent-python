@@ -1,36 +1,44 @@
-Configuring Django
-==================
+Error logging: Configuring Django
+=================================
+
+.. csv-table::
+  :class: page-info
+
+  "Page updated: 4th April 2013", ""
 
 Setup
 -----
 
-Using the Django integration is as simple as adding :mod:`opbeat.contrib.django` to your installed apps::
+Using the Django integration is as simple as adding :mod:`opbeat.contrib.django` to your installed apps:
 
-        INSTALLED_APPS = (
-            'opbeat.contrib.django',
-        )
+.. code::
+    :class: lang-python wm
 
-Remember to add the following settings to settings.py::
+    INSTALLED_APPS = (
+        'opbeat.contrib.django',
+    )
+
+Remember to add the following settings to settings.py:
+
+.. code::
+    :class: lang-python
 
     OPBEAT = {
-        'ORGANIZATION_ID': '<org-id>',
+        'ORGANIZATION_ID': '<organization-id>',
         'APP_ID': '<app-id>',
-        'SECRET_TOKEN': '<token>',
+        'SECRET_TOKEN': '<secret-token>',
     }
 
-You'll find your organization id, app id and and secret token under 
-``App Settings`` on opbeat.com
 
-
-Integration with :mod:`logging`
+Integration with logging
 -------------------------------
-
-To integrate with the standard library's :mod:`logging` module:
+To integrate with the standard library's logging module:
 
 Django 1.3+
 ~~~~~~~~~~~~~~
 
-::
+.. code::
+    :class: lang-json
 
     LOGGING = {
         'version': 1,
@@ -78,99 +86,64 @@ Usage
 ~~~~~
 
 Logging usage works the same way as it does outside of Django, with the
-addition of an optional ``request`` key in the extra data::
+addition of an optional ``request`` key in the extra data:
 
+.. code::
+    :class: lang-python
+    
     logger.error('There was some crazy error', exc_info=True, extra={
         # Optionally pass a request and we'll grab any information we can
         'request': request,
     })
 
-
 404 Logging
 -----------
 
 In certain conditions you may wish to log 404 events to the Opbeat server. To
-do this, you simply need to enable a Django middleware::
+do this, you simply need to enable a Django middleware:
+
+.. code::
+    :class: lang-python
 
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
       'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware',
       ...,
     )
 
-.. Message References
-.. ------------------
-
-.. Sentry supports sending a message ID to your clients so that they can be
-.. tracked easily by your development team. There are two ways to access this
-.. information, the first is via the ``X-Sentry-ID`` HTTP response header. Adding
-.. this is as simple as appending a middleware to your stack::
-
-..     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-..       # We recommend putting this as high in the chain as possible
-..       'opbeat.contrib.django.middleware.SentryResponseErrorIdMiddleware',
-..       ...,
-..     )
-
-.. Another alternative method is rendering it within a template. By default,
-.. Sentry will attach :attr:`request.sentry` when it catches a Django exception.
-.. In our example, we will use this information to modify the default
-.. :file:`500.html` which is rendered, and show the user a case reference ID. The
-.. first step in doing this is creating a custom :func:`handler500` in your
-.. :file:`urls.py` file::
-
-..     from django.conf.urls.defaults import *
-
-..     from django.views.defaults import page_not_found, server_error
-
-..     def handler500(request):
-..         """
-..         500 error handler which includes ``request`` in the context.
-
-..         Templates: `500.html`
-..         Context: None
-..         """
-..         from django.template import Context, loader
-..         from django.http import HttpResponseServerError
-
-..         t = loader.get_template('500.html') # You need to create a 500.html template.
-..         return HttpResponseServerError(t.render(Context({
-..             'request': request,
-..         })))
-
-.. Once we've successfully added the :data:`request` context variable, adding the
-.. Sentry reference ID to our :file:`500.html` is simple:
-
-.. .. code-block:: django
-
-..     <p>You've encountered an error, oh noes!</p>
-..     {% if request.sentry.id %}
-..         <p>If you need assistance, you may reference this error as <strong>{{ request.sentry.id }}</strong>.</p>
-..     {% endif %}
-
 WSGI Middleware
 ---------------
 
 If you are using a WSGI interface to serve your app, you can also apply a
 middleware which will ensure that you catch errors even at the fundamental
-level of your Django application::
+level of your Django application:
+
+.. code::
+    :class: lang-python
 
     from opbeat.contrib.django.middleware.wsgi import Opbeat
     application = Opbeat(django.core.handlers.wsgi.WSGIHandler())
 
+|
+
 Additional Settings
 -------------------
 
-OPBEAT CLIENT
+Opbeat client
 ~~~~~~~~~~~~~~
 
 In some situations you may wish for a slightly different behavior to how Opbeat
 communicates with your server. For this, opbeat allows you to specify a custom
-client::
+client:
+
+.. code::
+    :class: lang-python
 
     OPBEAT = {
         'CLIENT': 'opbeat.contrib.django.DjangoClient',
         ...
     }
+
+|
 
 Caveats
 -------
@@ -182,14 +155,20 @@ If you already have middleware in place that handles :func:`process_exception`
 you will need to take extra care when using Opbeat.
 
 For example, the following middleware would suppress Opbeat logging due to it
-returning a response::
+returning a response:
+
+.. code::
+    :class: lang-python wm
 
     class MyMiddleware(object):
         def process_exception(self, request, exception):
             return HttpResponse('foo')
 
 To work around this, you can either disable your error handling middleware, or
-add something like the following::
+add something like the following:
+
+.. code::
+    :class: lang-python
 
     from django.core.signals import got_request_exception
     class MyMiddleware(object):
@@ -204,7 +183,12 @@ Note that this technique may break unit tests using the Django test client
 because the exceptions won't be translated into the expected 404 or 403
 response codes.
 
-Or, alternatively, you can just enable Opbeat responses::
+|
+
+Or, alternatively, you can just enable Opbeat responses:
+
+.. code::
+    :class: lang-python
 
     from opbeat.contrib.django.models import opbeat_exception_handler
     class MyMiddleware(object):
