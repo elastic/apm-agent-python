@@ -96,7 +96,7 @@ class Opbeat(object):
         if not self.client:
             self.client = make_client(
                 self.client_cls, app,
-                self.organiation_id, self.app_id, self.secret_token
+                self.organization_id, self.app_id, self.secret_token
             )
 
         if self.logging:
