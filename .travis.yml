@@ -8,7 +8,7 @@ env:
   - DJANGO=1.4.4
 install:
   - sudo apt-get install libevent-dev
-  - sudo aot-get install libzmq3-dev
+  - sudo apt-get install libzmq3-dev
   - sudo pip install Django==$DJANGO --use-mirrors
   - sudo pip install -e . --use-mirrors
 script:
