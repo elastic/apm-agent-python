@@ -1,5 +1,5 @@
-Django
-======
+Error logging: Configuring Django
+=================================
 
 .. csv-table::
   :class: page-info

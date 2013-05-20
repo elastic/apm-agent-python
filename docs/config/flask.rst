@@ -1,5 +1,5 @@
-Flask
-=================
+Error logging: Configuring Flask
+=================================
 
 .. csv-table::
   :class: page-info

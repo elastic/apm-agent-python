@@ -36,6 +36,7 @@ Configuration
 
    Django <config/django>
    Flask <config/flask>
+   Other <config/other>
 .. "`Pylons </docs/opbeat_python/docs/config/pylons>`_", ""
 .. "`Pyramid </docs/opbeat_python/docs/config/pyramid>`_", ""
 ..	"`Logging </docs/opbeat_python/docs/config/logging>`_", ""
