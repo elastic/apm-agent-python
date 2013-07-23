@@ -22,9 +22,9 @@ Configuration is handled via the opbeat namespace:
 .. code-block:: ini
 
     [opbeat]
-    organization_id=orgid
-    app_id=gmwnmogdehmnmhau
-    secret_token=asdasdasdasd
+    organization_id=<organization-id>
+    app_id=<app-id>
+    secret_token=<secret-token>
     include_paths=my.package,my.other.package,
     exclude_paths=my.package.crud
 
@@ -63,7 +63,7 @@ Add the following lines to your project's `.ini` file to setup `OpbeatHandler`:
 
     [handler_opbeat]
     class = opbeat.handlers.logging.OpbeatHandler
-    args = ('<organization_id>', '<app_id>', '<secret_token>')
+    args = ('<organization-id>', '<app-id>', '<secret-token>')
     level = NOTSET
     formatter = generic
 

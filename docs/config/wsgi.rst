@@ -15,7 +15,7 @@ opbeat includes a simple to use WSGI middleware.
 
     application = Opbeat(
         application,
-        Client(organization_id='<org-id>', app_id='<app-id>', secret_token='..')
+        Client(organization_id='<organization-id>', app_id='<app-id>', secret_token='<secret-token>')
     )
 
 .. container:: note
