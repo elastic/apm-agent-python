@@ -1,4 +1,4 @@
-Error logging: Configuring Flask
+Configuring Flask
 =================================
 
 .. csv-table::

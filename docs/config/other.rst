@@ -1,10 +1,10 @@
-Error logging: Configuring Other stacks
+Configuring Other stacks
 =======================================
 
 .. csv-table::
   :class: page-info
 
-  "Page updated: 4th April 2013", ""
+  "Page updated: 23rd July 2013", ""
 
 Introduction
 ----------------------
@@ -186,3 +186,10 @@ Several processors are included with opbeat to assist in data sanitiziation. The
 .. data:: opbeat.processors.RemovePostDataProcessor
 
    Removes the ``body`` of all HTTP data.
+
+
+Usage
+-----
+
+.. autoclass:: opbeat.Client
+   :members:

@@ -1,4 +1,4 @@
-Error logging: Configuring Django
+Configuring Django
 =================================
 
 .. csv-table::

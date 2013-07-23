@@ -1,6 +1,11 @@
 Configuring ``logging``
 =======================
 
+.. csv-table::
+  :class: page-info
+
+  "Page updated: 23rd July 2013", ""
+
 Opbeat supports the ability to directly tie into the :mod:`logging` module.  To
 use it simply add :class:`OpbeatHandler` to your logger.
 

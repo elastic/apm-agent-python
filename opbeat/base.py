@@ -85,7 +85,7 @@ class Client(object):
 
     Will read default configuration from the environment variable
     ``OPBEAT_ORGANIZATION_ID``, ``OPBEAT_APP_ID`` and ``OPBEAT_SECRET_TOKEN``
-    if available.
+    if available. ::
 
     >>> from opbeat import Client
 

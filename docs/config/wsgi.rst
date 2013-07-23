@@ -1,6 +1,11 @@
 Configuring ``WSGI`` Middleware
 ===============================
 
+.. csv-table::
+  :class: page-info
+
+  "Page updated: 23rd July 2013", ""
+
 opbeat includes a simple to use WSGI middleware.
 
 ::

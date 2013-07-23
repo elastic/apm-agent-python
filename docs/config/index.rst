@@ -4,4 +4,4 @@ Configuration
 .. csv-table::
   :class: page-info
 
-  "Page updated: 4th April 2013", ""
+  "Page updated: 23rd July 2013", ""

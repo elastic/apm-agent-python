@@ -1,6 +1,11 @@
 Configuring ``logbook``
 =======================
 
+.. csv-table::
+  :class: page-info
+
+  "Page updated: 23rd July 2013", ""
+
 opbeat provides a `logbook <http://logbook.pocoo.org>`_ handler which will pipe
 messages to Opbeat.
 

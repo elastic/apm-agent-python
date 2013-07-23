@@ -4,7 +4,7 @@ Error logging: Python
 .. csv-table::
 	:class: page-info
 
-	"Page updated: 4th April 2013", ""
+	"Page updated: 23rd July 2013", ""
 
 Introduction
 ------------
@@ -36,10 +36,10 @@ Configuration
 
    Django <config/django>
    Flask <config/flask>
+   Pylons <config/pylons>
+   Pyramid <config/pyramid>
+   Logging <config/logging>
+   Logbook <config/logbook>
+   WSGI Middle <config/wsgi>
+   ZeroRPC <config/zerorpc>
    Other <config/other>
-.. "`Pylons </docs/opbeat_python/docs/config/pylons>`_", ""
-.. "`Pyramid </docs/opbeat_python/docs/config/pyramid>`_", ""
-..	"`Logging </docs/opbeat_python/docs/config/logging>`_", ""
-..	"`Logbook </docs/opbeat_python/docs/config/logbook>`_", ""
-.. "`WSGI Middle </docs/opbeat_python/docs/config/wsgi>`_", ""
-..	"`ZeroRPC </docs/opbeat_python/docs/config/zerorpc>`_", ""
