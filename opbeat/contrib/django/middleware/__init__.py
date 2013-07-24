@@ -10,11 +10,16 @@ Large portions are
 """
 
 from __future__ import absolute_import
-
-from django.middleware.common import _is_ignorable_404
+from django.conf import settings
 from opbeat.contrib.django.models import client
 import threading
 import logging
+
+def _is_ignorable_404(self, uri):
+    """
+    Returns True if the given request *shouldn't* notify the site managers.
+    """
+    return any(pattern.search(uri) for pattern in settings.IGNORABLE_404_URLS)
 
 
 class Opbeat404CatchMiddleware(object):
