@@ -15,7 +15,7 @@ from opbeat.contrib.django.models import client
 import threading
 import logging
 
-def _is_ignorable_404(self, uri):
+def _is_ignorable_404(uri):
     """
     Returns True if the given request *shouldn't* notify the site managers.
     """
