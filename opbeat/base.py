@@ -33,49 +33,49 @@ __all__ = ('Client',)
 
 
 class ModuleProxyCache(dict):
-	def __missing__(self, key):
-		module, class_name = key.rsplit('.', 1)
+    def __missing__(self, key):
+        module, class_name = key.rsplit('.', 1)
 
-		handler = getattr(__import__(module, {},
-				{}, [class_name], -1), class_name)
+        handler = getattr(__import__(module, {},
+                {}, [class_name], -1), class_name)
 
-		self[key] = handler
+        self[key] = handler
 
-		return handler
+        return handler
 
 
 class ClientState(object):
-	ONLINE = 1
-	ERROR = 0
+    ONLINE = 1
+    ERROR = 0
 
-	def __init__(self):
-		self.status = self.ONLINE
-		self.last_check = None
-		self.retry_number = 0
+    def __init__(self):
+        self.status = self.ONLINE
+        self.last_check = None
+        self.retry_number = 0
 
-	def should_try(self):
-		if self.status == self.ONLINE:
-			return True
+    def should_try(self):
+        if self.status == self.ONLINE:
+            return True
 
-		interval = min(self.retry_number, 6) ** 2
+        interval = min(self.retry_number, 6) ** 2
 
-		if time.time() - self.last_check > interval:
-			return True
+        if time.time() - self.last_check > interval:
+            return True
 
-		return False
+        return False
 
-	def set_fail(self):
-		self.status = self.ERROR
-		self.retry_number += 1
-		self.last_check = time.time()
+    def set_fail(self):
+        self.status = self.ERROR
+        self.retry_number += 1
+        self.last_check = time.time()
 
-	def set_success(self):
-		self.status = self.ONLINE
-		self.last_check = None
-		self.retry_number = 0
+    def set_success(self):
+        self.status = self.ONLINE
+        self.last_check = None
+        self.retry_number = 0
 
-	def did_fail(self):
-		return self.status == self.ERROR
+    def did_fail(self):
+        return self.status == self.ERROR
 
 
 class Client(object):
@@ -290,7 +290,7 @@ class Client(object):
     def capture(self, event_type, data=None, date=None, api_path=None,
                 extra=None, stack=None, **kwargs):
         """
-        Captures and processes an event and pipes it off to SentryClient.send.
+        Captures and processes an event and pipes it off to Client.send.
 
         To use structured data (interfaces) with capture:
 

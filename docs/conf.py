@@ -11,13 +11,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
-from opbeat.version import VERSION
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+
+from opbeat.version import VERSION
 
 # -- General configuration -----------------------------------------------------
 
@@ -142,7 +141,7 @@ html_static_path = ['_static']
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
 html_sidebars = {
-	  '**': ['globaltoc.html','relations.html'],
+	  '**': ['globaltoc.html', 'relations.html'],
    }
    
 # Additional templates that should be rendered to pages, maps page names to
