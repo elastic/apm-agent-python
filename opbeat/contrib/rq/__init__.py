@@ -12,7 +12,7 @@ def register_opbeat(client, worker):
     worker.work()
 
     """
-    def send_to_sentry(job, *exc_info):
+    def send_to_opbeat(job, *exc_info):
         client.captureException(
             exc_info=exc_info,
             extra={
@@ -24,4 +24,4 @@ def register_opbeat(client, worker):
             }
         )
 
-    worker.push_exc_handler(send_to_sentry)
+    worker.push_exc_handler(send_to_opbeat)
