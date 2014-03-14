@@ -12,7 +12,7 @@ Setup
 Using the Django integration is as simple as adding :mod:`opbeat.contrib.django` to your installed apps:
 
 .. code::
-    :class: lang-python wm
+    :class: language-python
 
     INSTALLED_APPS = (
         'opbeat.contrib.django',
@@ -21,7 +21,7 @@ Using the Django integration is as simple as adding :mod:`opbeat.contrib.django`
 Remember to add the following settings to settings.py:
 
 .. code::
-    :class: lang-python
+    :class: language-python
 
     OPBEAT = {
         'ORGANIZATION_ID': '<organization-id>',
@@ -38,7 +38,7 @@ Django 1.3+
 ~~~~~~~~~~~~~~
 
 .. code::
-    :class: lang-json
+    :class: language-python
 
     LOGGING = {
         'version': 1,
@@ -89,8 +89,8 @@ Logging usage works the same way as it does outside of Django, with the
 addition of an optional ``request`` key in the extra data:
 
 .. code::
-    :class: lang-python
-    
+    :class: language-python
+
     logger.error('There was some crazy error', exc_info=True, extra={
         # Optionally pass a request and we'll grab any information we can
         'request': request,
@@ -103,7 +103,7 @@ In certain conditions you may wish to log 404 events to the Opbeat server. To
 do this, you simply need to enable a Django middleware:
 
 .. code::
-    :class: lang-python
+    :class: language-python
 
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
       'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware',
@@ -118,7 +118,7 @@ middleware which will ensure that you catch errors even at the fundamental
 level of your Django application:
 
 .. code::
-    :class: lang-python
+    :class: language-python
 
     from opbeat.contrib.django.middleware.wsgi import Opbeat
     application = Opbeat(django.core.handlers.wsgi.WSGIHandler())
@@ -136,7 +136,7 @@ communicates with your server. For this, opbeat allows you to specify a custom
 client:
 
 .. code::
-    :class: lang-python
+    :class: language-python
 
     OPBEAT = {
         'CLIENT': 'opbeat.contrib.django.DjangoClient',
@@ -158,7 +158,7 @@ For example, the following middleware would suppress Opbeat logging due to it
 returning a response:
 
 .. code::
-    :class: lang-python wm
+    :class: language-python wm
 
     class MyMiddleware(object):
         def process_exception(self, request, exception):
@@ -168,7 +168,7 @@ To work around this, you can either disable your error handling middleware, or
 add something like the following:
 
 .. code::
-    :class: lang-python
+    :class: language-python
 
     from django.core.signals import got_request_exception
     class MyMiddleware(object):
@@ -188,7 +188,7 @@ response codes.
 Or, alternatively, you can just enable Opbeat responses:
 
 .. code::
-    :class: lang-python
+    :class: language-python
 
     from opbeat.contrib.django.models import opbeat_exception_handler
     class MyMiddleware(object):

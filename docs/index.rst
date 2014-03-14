@@ -2,13 +2,13 @@ Error logging: Python
 =====================
 
 .. csv-table::
-	:class: page-info
+    :class: page-info
 
-	"Page updated: 23rd July 2013", ""
+    "Page updated: 23rd July 2013", ""
 
 Introduction
 ------------
-To send error logs to Opbeat, you must install an agent. 
+To send error logs to Opbeat, you must install an agent.
 
 This is the official Opbeat standalone Python agent. It is forked from `Raven <https://github.com/dcramer/raven>`_.
 
@@ -22,10 +22,10 @@ Installation
 ------------
 
 .. code::
-	:class: lang-c
+    :class: language-bash
 
-	# Install Opbeat
-	$ pip install opbeat
+    # Install Opbeat
+    $ pip install opbeat
 
 Configuration
 -------------

@@ -9,7 +9,10 @@ Configuring ``logging``
 Opbeat supports the ability to directly tie into the :mod:`logging` module.  To
 use it simply add :class:`OpbeatHandler` to your logger.
 
-First you'll need to configure a handler::
+First you'll need to configure a handler
+
+.. code::
+    :class: language-python
 
     from opbeat.handlers.logging import OpbeatHandler
 
@@ -22,7 +25,10 @@ First you'll need to configure a handler::
 ..     # Configure the default client
 ..     handler = OpbeatHandler('http://public:secret@example.com/1')
 
-Finally, call the :func:`setup_logging` helper function::
+Finally, call the :func:`setup_logging` helper function
+
+.. code::
+    :class: language-python
 
     from opbeat.conf import setup_logging
 
@@ -33,14 +39,20 @@ Usage
 
 A recommended pattern in logging is to simply reference the modules name for
 each logger, so for example, you might at the top of your module define the
-following::
+following
+
+.. code::
+    :class: language-python
 
     import logging
     logger = logging.getLogger(__name__)
 
 You can also use the ``exc_info`` and ``extra={'stack': True}`` arguments on
 your ``log`` methods. This will store the appropriate information and allow
-Opbeat to render it based on that information::
+Opbeat to render it based on that information
+
+.. code::
+    :class: language-python
 
     logger.error('There was some crazy error', exc_info=True, extra={
         'culprit': 'my.view.name',
@@ -49,7 +61,10 @@ Opbeat to render it based on that information::
 You may also pass additional information to be stored as meta information with
 the event. As long as the key name is not reserved and not private (_foo) it
 will be displayed on the Opbeat dashboard. To do this, pass it as ``data``
-within your ``extra`` clause::
+within your ``extra`` clause
+
+.. code::
+    :class: language-python
 
     logger.error('There was some crazy error', exc_info=True, extra={
         # Optionally you can pass additional arguments to specify request info
@@ -61,7 +76,7 @@ within your ``extra`` clause::
         }
     })
 
-.. container:: note 
+.. container:: note
 
     The ``url`` and ``view`` keys are used internally by Opbeat within the extra data.
 
@@ -69,10 +84,13 @@ within your ``extra`` clause::
 
     Any key (in ``data``) prefixed with ``_`` will not automatically output on the Opbeat details view.
 
-| 
+|
 
 Opbeat will intelligently group messages if you use proper string formatting. For example, the following messages would
-be seen as the same message within Opbeat::
+be seen as the same message within Opbeat
+
+.. code::
+    :class: language-python
 
     logger.error('There was some %s error', 'crazy')
     logger.error('There was some %s error', 'fun')
@@ -81,7 +99,10 @@ be seen as the same message within Opbeat::
 The :mod:`logging` integration also allows easy capture of
 stack frames (and their locals) as if you were logging an exception. This can
 be done automatically with the ``AUTO_LOG_STACKS`` setting, as well as
-by passing the ``stack`` boolean to ``extra``::
+by passing the ``stack`` boolean to ``extra``
+
+.. code::
+    :class: language-python
 
     logger.error('There was an error', extra={
         'stack': True,
