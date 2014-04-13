@@ -17,7 +17,5 @@ Resources
 ---------
 
 * `Documentation <https://www.opbeat.com/docs>`_
-* `Bug Tracker <http://github.com/opbeat/opbeat/issues>`_
-* `Code <http://github.com/opbeat/opbeat>`_
-.. * `Mailing List <https://groups.google.com/group/getsentry>`_
-.. * `IRC <irc://irc.freenode.net/sentry>`_  (irc.freenode.net, #sentry)
+* `Bug Tracker <http://github.com/opbeat/opbeat_python/issues>`_
+* `Code <http://github.com/opbeat/opbeat_python>`_
