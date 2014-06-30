@@ -31,7 +31,6 @@ tests_require = [
     'Django>=1.2',
     'django-celery',
     'django-nose',
-    'gevent',
     'Flask>=0.8',
     'logbook',
     'nose',
@@ -44,6 +43,7 @@ tests_require = [
 if sys.version_info[0] == 2:
     tests_require += [
         'unittest2',
+        'gevent',
         'zerorpc>=0.4.0',
     ]
 
