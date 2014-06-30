@@ -14,10 +14,13 @@ full out-of-the-box support for many of the popular frameworks, including
 # in multiprocessing/util.py _exit_function when running `python
 # setup.py test` (see
 # http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html)
-try:
-    import multiprocessing
-except ImportError:
-    pass
+for m in ('multiprocessing', 'billiard'):
+    try:
+        __import__(m)
+    except ImportError:
+        pass
+
+import sys
 
 from setuptools import setup, find_packages
 from opbeat.version import VERSION
@@ -25,7 +28,7 @@ from opbeat.version import VERSION
 tests_require = [
     'blinker>=1.1',
     'celery',
-    'Django>=1.2,<1.5',
+    'Django>=1.2',
     'django-celery',
     'django-nose',
     'gevent',
@@ -34,13 +37,19 @@ tests_require = [
     'nose',
     'mock',
     'pep8',
-    'unittest2',
     'webob',
-    'zerorpc>=0.4.0',
     'pytz'
 ]
 
-install_requires = []
+if sys.version_info[0] == 2:
+    tests_require += [
+        'unittest2',
+        'zerorpc>=0.4.0',
+    ]
+
+install_requires = [
+    'six'
+]
 
 try:
     # For Python >= 2.6

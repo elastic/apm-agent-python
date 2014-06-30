@@ -1,4 +1,7 @@
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 from opbeat.utils.wsgi import get_headers, get_environ
 

@@ -10,49 +10,63 @@ Large portions are
 """
 
 import uuid
-from types import ClassType, TypeType
+import six
 
 
-def force_unicode(s, encoding='utf-8', errors='strict'):
+def is_protected_type(obj):
+    """Determine if the object instance is of a protected type.
+
+    Objects of protected types are preserved as-is when passed to
+    force_text(strings_only=True).
     """
-    Similar to smart_unicode, except that lazy instances are resolved to
+    from decimal import Decimal
+    import datetime
+    return isinstance(obj, six.integer_types + (type(None), float, Decimal,
+        datetime.datetime, datetime.date, datetime.time))
+
+
+def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
+    """
+    Similar to smart_text, except that lazy instances are resolved to
     strings, rather than kept as lazy objects.
 
-    Adapted from Django
+    If strings_only is True, don't convert (some) non-string-like objects.
     """
+    # Handle the common case first, saves 30-40% when s is an instance of
+    # six.text_type. This function gets called often in that setting.
+    #
+    # Adapted from Django
+    if isinstance(s, six.text_type):
+        return s
+    if strings_only and is_protected_type(s):
+        return s
     try:
-        if not isinstance(s, basestring,):
+        if not isinstance(s, six.string_types):
             if hasattr(s, '__unicode__'):
-                s = unicode(s)
+                s = s.__unicode__()
             else:
-                try:
-                    s = unicode(str(s), encoding, errors)
-                except UnicodeEncodeError:
-                    if not isinstance(s, Exception):
-                        raise
-                    # If we get to here, the caller has passed in an Exception
-                    # subclass populated with non-ASCII data without special
-                    # handling to display as a string. We need to handle this
-                    # without raising a further exception. We do an
-                    # approximation to what the Exception's standard str()
-                    # output should be.
-                    s = ' '.join([force_unicode(arg, encoding,
-                            errors) for arg in s])
-        elif not isinstance(s, unicode):
-            # Note: We use .decode() here, instead of unicode(s, encoding,
-            # errors), so that if s is a SafeString, it ends up being a
-            # SafeUnicode at the end.
+                if six.PY3:
+                    if isinstance(s, bytes):
+                        s = six.text_type(s, encoding, errors)
+                    else:
+                        s = six.text_type(s)
+                else:
+                    s = six.text_type(bytes(s), encoding, errors)
+        else:
+            # Note: We use .decode() here, instead of six.text_type(s, encoding,
+            # errors), so that if s is a SafeBytes, it ends up being a
+            # SafeText at the end.
             s = s.decode(encoding, errors)
-    except UnicodeDecodeError, e:
+    except UnicodeDecodeError as e:
         if not isinstance(s, Exception):
-            raise UnicodeDecodeError(s, *e.args)
+            raise UnicodeDecodeError(*e.args)
         else:
             # If we get to here, the caller has passed in an Exception
             # subclass populated with non-ASCII bytestring data without a
             # working unicode method. Try to handle this without raising a
             # further exception by individually forcing the exception args
             # to unicode.
-            s = ' '.join([force_unicode(arg, encoding,
+            s = ' '.join([force_text(arg, encoding, strings_only,
                     errors) for arg in s])
     return s
 
@@ -64,10 +78,12 @@ def _has_sentry_metadata(value):
         return False
 
 
-def transform(value, stack=[], context=None):
+def transform(value, stack=None, context=None):
     # TODO: make this extendable
     if context is None:
         context = {}
+    if stack is None:
+        stack = []
 
     objid = id(value)
     if objid in context:
@@ -89,12 +105,12 @@ def transform(value, stack=[], context=None):
     elif isinstance(value, uuid.UUID):
         ret = repr(value)
     elif isinstance(value, dict):
-        ret = dict((to_string(k), transform_rec(v)) for k, v in value.iteritems())
-    elif isinstance(value, unicode):
+        ret = dict((to_unicode(k), transform_rec(v)) for k, v in six.iteritems(value))
+    elif isinstance(value, six.text_type):
         ret = to_unicode(value)
-    elif isinstance(value, str):
+    elif isinstance(value, six.binary_type):
         ret = to_string(value)
-    elif not isinstance(value, (ClassType, TypeType)) and \
+    elif not isinstance(value, six.class_types) and \
             _has_sentry_metadata(value):
         ret = transform_rec(value.__sentry__())
     # elif isinstance(value, Promise):
@@ -109,7 +125,7 @@ def transform(value, stack=[], context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
-    elif isinstance(value, long):
+    elif six.PY2 and isinstance(value, long):
         ret = long(value)
     elif value is not None:
         try:
@@ -126,12 +142,12 @@ def transform(value, stack=[], context=None):
 
 def to_unicode(value):
     try:
-        value = unicode(force_unicode(value))
+        value = six.text_type(force_text(value))
     except (UnicodeEncodeError, UnicodeDecodeError):
         value = '(Error decoding value)'
     except Exception:  # in some cases we get a different exception
         try:
-            value = str(repr(type(value)))
+            value = six.binary_type(repr(type(value)))
         except Exception:
             value = '(Error decoding value)'
     return value
@@ -139,14 +155,14 @@ def to_unicode(value):
 
 def to_string(value):
     try:
-        return str(value.decode('utf-8').encode('utf-8'))
+        return six.binary_type(value.decode('utf-8').encode('utf-8'))
     except:
         return to_unicode(value).encode('utf-8')
 
 
 def shorten(var, list_length=50, string_length=200):
     var = transform(var)
-    if isinstance(var, basestring) and len(var) > string_length:
+    if isinstance(var, six.string_types) and len(var) > string_length:
         var = var[:string_length - 3] + '...'
     elif isinstance(var, (list, tuple, set, frozenset)) and len(var) > list_length:
         # TODO: we should write a real API for storing some metadata with vars when

@@ -8,7 +8,7 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-
+import six
 import inspect
 import re
 import sys
@@ -47,45 +47,49 @@ def get_lines_from_file(filename, lineno, context_lines, loader=None, module_nam
             source = source.splitlines()
     if source is None:
         try:
-            f = open(filename)
+            f = open(filename, 'rb')
             try:
                 source = f.readlines()
             finally:
                 f.close()
         except (OSError, IOError):
             pass
-    if source is None:
-        return None, [], None
 
-    encoding = 'ascii'
-    for line in source[:2]:
-        # File coding may be specified. Match pattern from PEP-263
-        # (http://www.python.org/dev/peps/pep-0263/)
-        match = _coding_re.search(line)
-        if match:
-            encoding = match.group(1)
-            break
-    source = [unicode(sline, encoding, 'replace') for sline in source]
+        if source is None:
+            return None, None, None
+        encoding = 'utf8'
+        for line in source[:2]:
+            # File coding may be specified. Match pattern from PEP-263
+            # (http://www.python.org/dev/peps/pep-0263/)
+            match = _coding_re.search(line.decode('utf8'))  # let's assume utf8
+            if match:
+                encoding = match.group(1)
+                break
+        source = [six.text_type(sline, encoding, 'replace') for sline in source]
 
     lower_bound = max(0, lineno - context_lines)
     upper_bound = lineno + context_lines
 
     try:
-        pre_context = [line.strip('\n') for line in source[lower_bound:lineno]]
-        context_line = source[lineno].strip('\n')
-        post_context = [line.strip('\n') for line in source[(lineno + 1):upper_bound]]
+        pre_context = [line.strip('\r\n') for line in source[lower_bound:lineno]]
+        context_line = source[lineno].strip('\r\n')
+        post_context = [line.strip('\r\n') for line in source[(lineno + 1):upper_bound]]
     except IndexError:
         # the file may have changed since it was loaded into memory
-        return None, [], None
+        return None, None, None
 
     return pre_context, context_line, post_context
 
 
-def get_culprit(frames, include_paths=[], exclude_paths=[]):
+def get_culprit(frames, include_paths=None, exclude_paths=None):
     # We iterate through each frame looking for a deterministic culprit
     # When one is found, we mark it as last "best guess" (best_guess) and then
     # check it against ``exclude_paths``. If it isnt listed, then we
     # use this option. If nothing is found, we use the "best guess".
+    if include_paths is None:
+        include_paths = []
+    if exclude_paths is None:
+        exclude_paths = []
     best_guess = None
     culprit = None
     for frame in frames:

@@ -15,10 +15,18 @@ import datetime
 import logging
 import os
 import time
-import urllib2
+import zlib
+import six
+try:
+    from urllib2 import HTTPError
+except ImportError:
+    from urllib.error import HTTPError
 import uuid
 import warnings
-from urlparse import urlparse
+try:
+    import urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
 import opbeat
 from opbeat.conf import defaults
@@ -37,7 +45,7 @@ class ModuleProxyCache(dict):
         module, class_name = key.rsplit('.', 1)
 
         handler = getattr(__import__(module, {},
-                {}, [class_name], -1), class_name)
+                {}, [class_name]), class_name)
 
         self[key] = handler
 
@@ -140,12 +148,12 @@ class Client(object):
         # servers may be set to a NoneType (for Django)
         if self.servers and not (organization_id and app_id and secret_token):
             msg = 'Missing configuration for client. Please see documentation.'
-            raise TypeError(msg)
+            self.logger.info(msg)
 
         self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
         self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
         self.timeout = int(timeout or defaults.TIMEOUT)
-        self.hostname = unicode(hostname or defaults.HOSTNAME)
+        self.hostname = six.text_type(hostname or defaults.HOSTNAME)
         self.auto_log_stacks = bool(auto_log_stacks or
                 defaults.AUTO_LOG_STACKS)
 
@@ -213,7 +221,7 @@ class Client(object):
         if data.get('culprit'):
             culprit = data['culprit']
 
-        for k, v in result.iteritems():
+        for k, v in six.iteritems(result):
             if k not in data:
                 data[k] = v
 
@@ -241,13 +249,13 @@ class Client(object):
         if not data.get('level'):
             data['level'] = 'error'
 
-        if isinstance( data['level'], ( int, long ) ):
+        if isinstance( data['level'], six.integer_types):
             data['level'] = logging.getLevelName(data['level']).lower()
 
         data.setdefault('extra', {})
 
         # Shorten lists/strings
-        for k, v in extra.iteritems():
+        for k, v in six.iteritems(extra):
             data['extra'][k] = shorten(v, string_length=self.string_max_length,
                     list_length=self.list_max_length)
 
@@ -347,7 +355,7 @@ class Client(object):
         return data['client_supplied_id']
 
     def _send_remote(self, url, data, headers={}):
-        parsed = urlparse(url)
+        parsed = urlparse.urlparse(url)
         transport = self._registry.get_transport(parsed)
         return transport.send(data, headers)
 
@@ -369,8 +377,8 @@ class Client(object):
 
         try:
             self._send_remote(url=url, data=data, headers=headers)
-        except Exception, e:
-            if isinstance(e, urllib2.HTTPError):
+        except Exception as e:
+            if isinstance(e, HTTPError):
                 body = e.read()
                 self.error_logger.error('Unable to reach Opbeat server: %s (url: %%s, body: %%s)' % (e,), url, body,
                     exc_info=True, extra={'data': {'body': body, 'remote_url': url}})
@@ -442,13 +450,14 @@ class Client(object):
         """
         Serializes ``data`` into a raw string.
         """
-        return json.dumps(data).encode('zlib')
+        # return json.dumps(data).encode('zlib')
+        return zlib.compress(json.dumps(data).encode('utf8'))
 
     def decode(self, data):
         """
         Unserializes a string, ``data``.
         """
-        return json.loads(data.decode('zlib'))
+        return json.loads(zlib.decompress(data).decode('utf8'))
 
     def captureMessage(self, message, **kwargs):
         """

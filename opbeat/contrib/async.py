@@ -8,8 +8,11 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-
-from Queue import Queue
+import six
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 from opbeat.base import Client
 from threading import Thread, Lock
 import atexit
@@ -30,12 +33,12 @@ class AsyncWorker(object):
     def main_thread_terminated(self):
         size = self._queue.qsize()
         if size:
-            print "Opbeat attempts to send %s error messages" % size
-            print "Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS
+            six.print_("Opbeat attempts to send %s error messages" % size)
+            six.print_("Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS)
             if os.name == 'nt':
-                print "Press Ctrl-Break to quit"
+                six.print_("Press Ctrl-Break to quit")
             else:
-                print "Press Ctrl-C to quit"
+                six.print_("Press Ctrl-C to quit")
             self.stop(timeout=OPBEAT_WAIT_SECONDS)
 
     def start(self):

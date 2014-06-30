@@ -15,6 +15,7 @@ import datetime
 import logging
 import sys
 import traceback
+import six
 
 from opbeat.base import Client
 from opbeat.utils.encoding import to_string
@@ -50,15 +51,15 @@ class OpbeatHandler(logging.Handler, object):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.name.startswith('opbeat.errors'):
-            print >> sys.stderr, to_string(record.message)
+            six.print_(to_string(record.message), file=sys.stderr)
             return
 
         try:
             return self._emit(record)
         except Exception:
-            print >> sys.stderr, "Top level Opbeat exception caught - failed creating log record"
-            print >> sys.stderr, to_string(record.msg)
-            print >> sys.stderr, to_string(traceback.format_exc())
+            six.print_("Top level Opbeat exception caught - failed creating log record", sys.stderr)
+            six.print_(to_string(record.msg), sys.stderr)
+            six.print_(to_string(traceback.format_exc()), sys.stderr)
 
             try:
                 self.client.capture('Exception')
@@ -68,7 +69,7 @@ class OpbeatHandler(logging.Handler, object):
     def _emit(self, record, **kwargs):
         data = {}
 
-        for k, v in record.__dict__.iteritems():
+        for k, v in six.iteritems(record.__dict__):
             if '.' not in k and k not in ('culprit',):
                 continue
             data[k] = v

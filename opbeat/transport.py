@@ -1,4 +1,8 @@
-import urllib2
+try:
+    from urllib2 import Request, urlopen
+except ImportError:
+    from urllib.request import Request, urlopen
+
 from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
 
 
@@ -9,7 +13,7 @@ class InvalidScheme(ValueError):
     """
 
 
-class DuplicateScheme(StandardError):
+class DuplicateScheme(Exception):
     """
     Raised when registering a handler for a particular scheme which
     is already registered
@@ -60,11 +64,11 @@ class HTTPTransport(Transport):
         """
         Sends a request to a remote webserver using HTTP POST.
         """
-        req = urllib2.Request(self._url, headers=headers)
+        req = Request(self._url, headers=headers)
         try:
-            response = urllib2.urlopen(req, data, self.timeout).read()
+            response = urlopen(req, data, self.timeout).read()
         except:
-            response = urllib2.urlopen(req, data).read()
+            response = urlopen(req, data).read()
         return response
 
     def compute_scope(self, url, scope):

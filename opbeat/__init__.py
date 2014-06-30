@@ -14,8 +14,8 @@ __all__ = ('VERSION', 'Client')
 try:
     VERSION = __import__('pkg_resources') \
         .get_distribution('opbeat').version
-except Exception, e:
+except Exception as e:
     VERSION = 'unknown'
 
-from base import *
-from conf import *
+from opbeat.base import *
+from opbeat.conf import *
