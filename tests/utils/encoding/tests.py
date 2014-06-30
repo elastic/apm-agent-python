@@ -90,7 +90,10 @@ class TransformTest(TestCase):
         keys = list(result.keys())
         self.assertEquals(len(keys), 1)
         self.assertTrue(type(keys[0]), six.binary_type)
-        self.assertEquals(keys[0], 'רונית מגן')
+        if six.PY3:
+            self.assertEquals(keys[0], 'רונית מגן')
+        else:
+            self.assertEquals(keys[0], u'רונית מגן')
 
     def test_dict_keys_utf8_as_unicode(self):
         x = {
