@@ -32,7 +32,7 @@ def get_lines_from_file(filename, lineno, context_lines, loader=None, module_nam
             #   File "/Users/dcramer/Development/django-sentry/sentry/client/handlers.py", line 31, in emit
             #     get_client().create_from_record(record, request=request)
             #   File "/Users/dcramer/Development/django-sentry/sentry/client/base.py", line 325, in create_from_record
-            #     data['__sentry__']['frames'] = varmap(shorten, get_stack_info(stack))
+            #     data['__opbeat__']['frames'] = varmap(shorten, get_stack_info(stack))
             #   File "/Users/dcramer/Development/django-sentry/sentry/utils/stacks.py", line 112, in get_stack_info
             #     pre_context_lineno, pre_context, context_line, post_context = get_lines_from_file(filename, lineno, 7, loader, module_name)
             #   File "/Users/dcramer/Development/django-sentry/sentry/utils/stacks.py", line 24, in get_lines_from_file

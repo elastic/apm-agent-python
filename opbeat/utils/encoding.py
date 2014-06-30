@@ -73,7 +73,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
 
 def _has_sentry_metadata(value):
     try:
-        return callable(value.__getattribute__("__sentry__"))
+        return callable(value.__getattribute__("__opbeat__"))
     except:
         return False
 

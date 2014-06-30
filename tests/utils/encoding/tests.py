@@ -118,7 +118,7 @@ class TransformTest(TestCase):
 
     def test_custom_repr(self):
         class Foo(object):
-            def __sentry__(self):
+            def __opbeat__(self):
                 return 'example'
 
         x = Foo()
