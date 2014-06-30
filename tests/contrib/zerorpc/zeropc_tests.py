@@ -1,17 +1,19 @@
-import gevent
 import os
 import random
 import shutil
 import tempfile
-import unittest2
-import zerorpc
+import six
+if six.PY2:
+    import zerorpc  # no python 3 support for zerorpc
 
+from opbeat.utils.compat import TestCase
 from opbeat.contrib.zerorpc import OpbeatMiddleware
+from opbeat.utils.compat import skipIf
 
 from tests.helpers import get_tempstoreclient
 
-
-class ZeroRPCTest(unittest2.TestCase):
+@skipIf(six.PY3, "no zerorpc/gevent for Python3")
+class ZeroRPCTest(TestCase):
     def setUp(self):
         self._socket_dir = tempfile.mkdtemp(prefix='opbeatzerorpcunittest')
         self._server_endpoint = 'ipc://{0}'.format(os.path.join(
@@ -24,6 +26,8 @@ class ZeroRPCTest(unittest2.TestCase):
         ))
 
     def test_zerorpc_middleware_with_reqrep(self):
+        import gevent
+
         self._server = zerorpc.Server(random)
         self._server.bind(self._server_endpoint)
         gevent.spawn(self._server.run)

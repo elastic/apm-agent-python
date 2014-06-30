@@ -2,7 +2,7 @@
 
 import datetime
 import uuid
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 
 from opbeat.utils import opbeat_json as json
 
@@ -18,8 +18,8 @@ class JSONTest(TestCase):
 
     def test_set(self):
         res = set(['foo', 'bar'])
-        self.assertEquals(json.dumps(res), '["foo", "bar"]')
+        self.assertIn(json.dumps(res), ('["foo", "bar"]', '["bar", "foo"]'))
 
     def test_frozenset(self):
         res = frozenset(['foo', 'bar'])
-        self.assertEquals(json.dumps(res), '["foo", "bar"]')
+        self.assertIn(json.dumps(res), ('["foo", "bar"]', '["bar", "foo"]'))

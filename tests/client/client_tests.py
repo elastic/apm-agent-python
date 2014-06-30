@@ -5,8 +5,9 @@ import mock
 import opbeat
 import time
 import string
+import six
 from socket import socket, AF_INET, SOCK_DGRAM
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 from opbeat.base import Client, ClientState
 from opbeat.utils.stacks import iter_stack_frames
 
@@ -92,7 +93,7 @@ class ClientTest(TestCase):
         })
         send_remote.assert_called_once_with(
             url='http://example.com',
-            data='x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T',
+            data=six.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
             headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': 'Bearer %s' % (access_token),
@@ -138,7 +139,7 @@ class ClientTest(TestCase):
         })
         send_remote.assert_called_once_with(
             url='http://example.com',
-            data='x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T',
+            data=six.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
             headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': 'foo',

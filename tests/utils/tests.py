@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 
 import opbeat
 # from opbeat.utils import get_versions

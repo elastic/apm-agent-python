@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 from opbeat.base import Client
 
 # Some internal stuff to extend the transport layer

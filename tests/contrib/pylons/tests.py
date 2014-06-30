@@ -1,4 +1,4 @@
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 from opbeat.contrib.pylons import Opbeat
 
 

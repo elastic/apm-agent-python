@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import six
 from mock import Mock
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 
 from opbeat.utils.stacks import get_culprit, get_stack_info
 
@@ -12,7 +13,7 @@ class Context(object):
 
     __getitem__ = lambda s, *a: s.dict.__getitem__(*a)
     __setitem__ = lambda s, *a: s.dict.__setitem__(*a)
-    iterkeys = lambda s, *a: s.dict.iterkeys(*a)
+    iterkeys = lambda s, *a: six.iterkeys(s.dict, *a)
 
 
 class StackTest(TestCase):
@@ -41,17 +42,15 @@ class StackTest(TestCase):
         })
         frame.f_lineno = 1
         frame.f_globals = {}
-        frame.f_code.co_filename = __file__
+        frame.f_code.co_filename = __file__.replace('.pyc', '.py')
         frame.f_code.co_name = __name__
-
         frames = [(frame, 1)]
         results = get_stack_info(frames)
         self.assertEquals(len(results), 1)
         result = results[0]
         self.assertTrue('vars' in result)
-        vars = result['vars']
-        self.assertTrue(isinstance(vars, dict))
-        self.assertTrue('foo' in vars)
-        self.assertEquals(vars['foo'], 'bar')
-        self.assertTrue('biz' in vars)
-        self.assertEquals(vars['biz'], 'baz')
+        vars = {
+            "foo": "bar",
+            "biz": "baz",
+        }
+        self.assertEquals(result['vars'], vars)

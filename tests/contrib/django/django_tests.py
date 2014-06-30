@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-
+import six
 import datetime
 import django
 import logging
 import mock
-from celery.tests.utils import with_eager_tasks
-from StringIO import StringIO
+from six import StringIO
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -23,13 +22,21 @@ from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
+from opbeat.utils.compat import skipIf
+
+try:
+    from celery.tests.utils import with_eager_tasks
+    has_with_eager_tasks = True
+except ImportError:
+    from opbeat.utils.compat import noop_decorator as with_eager_tasks
+    has_with_eager_tasks = False
 
 from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
 
-def get_client(*args,**kwargs):
+def get_client(*args, **kwargs):
     config = {
         'APP_ID': 'key',
         'ORGANIZATION_ID': 'org',
@@ -78,12 +85,12 @@ class Settings(object):
         self._orig = {}
 
     def __enter__(self):
-        for k, v in self.overrides.iteritems():
+        for k, v in six.iteritems(self.overrides):
             self._orig[k] = getattr(settings, k, self.NotDefined)
             setattr(settings, k, v)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        for k, v in self._orig.iteritems():
+        for k, v in six.iteritems(self._orig):
             if v is self.NotDefined:
                 delattr(settings, k)
             else:
@@ -101,10 +108,10 @@ class ClientProxyTest(TestCase):
             'SECRET_TOKEN': '99'
         }
         config.update(settings.OPBEAT)
-
+        event_count = len(client.events)
         with Settings(OPBEAT=config):
             client.capture('Message', message='foo')
-            self.assertEquals(len(client.events), 1)
+            self.assertEquals(len(client.events), event_count + 1)
             client.events.pop(0)
 
 
@@ -114,6 +121,7 @@ class DjangoClientTest(TestCase):
 
     def setUp(self):
         self.opbeat = get_client()
+        self.opbeat.events = []
 
     def test_basic(self):
         self.opbeat.capture('Message', message='foo')
@@ -304,6 +312,7 @@ class DjangoClientTest(TestCase):
     #     self.assertEquals(event['culprit'], 'tests.contrib.django.views.logging_request_exc')
     #     self.assertEquals(event['data']['META']['REMOTE_ADDR'], '127.0.0.1')
 
+    @skipIf(six.PY3, 'see Python bug #10805')
     def test_record_none_exc_info(self):
         # sys.exc_info can return (None, None, None) if no exception is being
         # handled anywhere on the stack. See:
@@ -486,6 +495,7 @@ class CeleryIsolatedClientTest(TestCase):
 
         self.assertEquals(send_raw.delay.call_count, 1)
 
+    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
     def test_with_eager(self, send_encoded):
@@ -513,6 +523,7 @@ class CeleryIntegratedClientTest(TestCase):
 
         send_raw.delay.assert_called_once_with('foo')
 
+    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
     def test_with_eager(self, send_encoded):

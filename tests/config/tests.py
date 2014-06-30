@@ -1,7 +1,8 @@
 import logging
 import mock
 from opbeat.conf import setup_logging
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
+
 
 class SetupLoggingTest(TestCase):
     def test_basic_not_configured(self):

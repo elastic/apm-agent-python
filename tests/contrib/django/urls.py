@@ -1,7 +1,10 @@
 from __future__ import absolute_import
 
 from django.conf import settings
-from django.conf.urls.defaults import *
+try:
+    from django.conf.urls import *  # Django 1.2
+except ImportError:
+    from django.conf.urls import *
 from django.http import HttpResponse
 
 def handler500(request):

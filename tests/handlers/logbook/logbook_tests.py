@@ -1,5 +1,5 @@
 import logbook
-from unittest2 import TestCase
+from opbeat.utils.compat import TestCase
 from opbeat.base import Client
 from opbeat.handlers.logbook import OpbeatHandler
 from tests.helpers import get_tempstoreclient

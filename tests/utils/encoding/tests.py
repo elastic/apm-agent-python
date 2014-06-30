@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-
+import six
 import uuid
 
-from unittest2 import TestCase
-
+from opbeat.utils.compat import TestCase, skipIf
 from opbeat.utils.encoding import transform, shorten
 
 
@@ -16,18 +15,20 @@ class TransformTest(TestCase):
         self.assertEquals(result, 'רונית מגן')
 
     def test_correct_unicode(self):
-        x = 'רונית מגן'.decode('utf-8')
+        x = 'רונית מגן'
+        if six.PY2:
+            x = x.decode('utf-8')
 
         result = transform(x)
-        self.assertEquals(type(result), unicode)
+        self.assertEquals(type(result), six.text_type)
         self.assertEquals(result, x)
 
     def test_bad_string(self):
-        x = 'The following character causes problems: \xd4'
+        x = six.b('The following character causes problems: \xd4')
 
         result = transform(x)
-        self.assertEquals(type(result), str)
-        self.assertEquals(result, '<type \'str\'>')
+        self.assertEquals(type(result), six.binary_type)
+        self.assertEquals(result, six.b('(Error decoding value)'))
 
     def test_float(self):
         result = transform(13.0)
@@ -72,11 +73,11 @@ class TransformTest(TestCase):
     #         u'Igpay Atinlay')
 
     def test_dict_keys(self):
-        x = {u'foo': 'bar'}
+        x = {'foo': 'bar'}
 
         result = transform(x)
         self.assertEquals(type(result), dict)
-        keys = result.keys()
+        keys = list(result.keys())
         self.assertEquals(len(keys), 1)
         self.assertTrue(type(keys[0]), str)
         self.assertEquals(keys[0], 'foo')
@@ -86,19 +87,21 @@ class TransformTest(TestCase):
 
         result = transform(x)
         self.assertEquals(type(result), dict)
-        keys = result.keys()
+        keys = list(result.keys())
         self.assertEquals(len(keys), 1)
-        self.assertTrue(type(keys[0]), str)
+        self.assertTrue(type(keys[0]), six.binary_type)
         self.assertEquals(keys[0], 'רונית מגן')
 
     def test_dict_keys_utf8_as_unicode(self):
-        x = {u'רונית מגן': 'bar'}
+        x = {
+            six.text_type('\u05e8\u05d5\u05e0\u05d9\u05ea \u05de\u05d2\u05df'): 'bar'
+        }
 
         result = transform(x)
-        keys = result.keys()
+        keys = list(result.keys())
         self.assertEquals(len(keys), 1)
         self.assertTrue(type(keys[0]), str)
-        self.assertEquals(keys[0], 'רונית מגן')
+        self.assertEquals(keys[0], '\u05e8\u05d5\u05e0\u05d9\u05ea \u05de\u05d2\u05df')
 
     def test_uuid(self):
         x = uuid.uuid4()
@@ -131,7 +134,11 @@ class TransformTest(TestCase):
         x = Foo()
 
         result = transform(x)
-        self.assertEquals(result, u"<BadRepr: <class 'tests.utils.encoding.tests.Foo'>>")
+        if six.PY2:
+            expected = u"<BadRepr: <class 'tests.utils.encoding.tests.Foo'>>"
+        else:
+            expected = "<BadRepr: <class 'tests.utils.encoding.tests.TransformTest.test_broken_repr.<locals>.Foo'>>"
+        self.assertEquals(result, expected)
 
 
 class ShortenTest(TestCase):
@@ -141,7 +148,7 @@ class ShortenTest(TestCase):
         self.assertEquals(result, 'he...')
 
     def test_shorten_lists(self):
-        result = shorten(range(500), list_length=50)
+        result = shorten(list(range(500)), list_length=50)
         self.assertEquals(len(result), 52)
         self.assertEquals(result[-2], '...')
         self.assertEquals(result[-1], '(450 more elements)')
