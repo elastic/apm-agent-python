@@ -6,7 +6,7 @@ import datetime
 import django
 import logging
 import mock
-from opbeat.utils.six import StringIO
+from opbeat.utils.six import StringIO, BytesIO
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -375,9 +375,9 @@ class DjangoClientTest(TestCase):
     def test_raw_post_data_partial_read(self):
         if django.VERSION[:2] < (1, 3):
             return
-        v = '{"foo": "bar"}'
+        v = six.b('{"foo": "bar"}')
         request = WSGIRequest(environ={
-            'wsgi.input': StringIO(v + '\r\n\r\n'),
+            'wsgi.input': BytesIO(v + six.b('\r\n\r\n')),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
