@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 
+import django
 from django.conf import settings
-try:
-    from django.conf.urls import *  # Django 1.2
-except ImportError:
+if django.VERSION < (1, 3):
+    from django.conf.urls.defaults import *  # Django 1.2
+else:
     from django.conf.urls import *
 from django.http import HttpResponse
 
