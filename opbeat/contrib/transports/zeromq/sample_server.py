@@ -3,7 +3,7 @@ TODO: This needs to be fleshed out as a Sentry service
 """
 import zmq
 import json
-import six
+from opbeat.utils import six
 
 CONTEXT = zmq.Context()
 socket = CONTEXT.socket(zmq.SUB)

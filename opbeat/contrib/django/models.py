@@ -16,7 +16,7 @@ from __future__ import absolute_import
 import sys
 import logging
 import warnings
-import six
+from opbeat.utils import six
 
 from django.conf import settings as django_settings
 

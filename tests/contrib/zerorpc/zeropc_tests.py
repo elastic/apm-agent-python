@@ -2,7 +2,7 @@ import os
 import random
 import shutil
 import tempfile
-import six
+from opbeat.utils import six
 if six.PY2:
     import zerorpc  # no python 3 support for zerorpc
 

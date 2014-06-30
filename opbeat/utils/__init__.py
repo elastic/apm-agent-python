@@ -17,7 +17,7 @@ Large portions are
 #     pkg_resources = None
 # import sys
 
-import six
+from opbeat.utils import six
 
 def varmap(func, var, context=None, name=None):
     """

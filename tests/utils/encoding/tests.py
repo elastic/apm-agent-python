@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import six
+from opbeat.utils import six
 import uuid
 
 from opbeat.utils.compat import TestCase, skipIf

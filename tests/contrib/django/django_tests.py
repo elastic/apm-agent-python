@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import six
+from opbeat.utils import six
 import datetime
 import django
 import logging
 import mock
-from six import StringIO
+from opbeat.utils.six import StringIO
 
 from django.conf import settings
 from django.contrib.auth.models import User

@@ -10,7 +10,7 @@ Large portions are
 """
 
 import uuid
-import six
+from opbeat.utils import six
 
 
 def is_protected_type(obj):
@@ -71,7 +71,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
     return s
 
 
-def _has_sentry_metadata(value):
+def _has_opbeat_metadata(value):
     try:
         return callable(value.__getattribute__("__opbeat__"))
     except:
@@ -111,8 +111,8 @@ def transform(value, stack=None, context=None):
     elif isinstance(value, six.binary_type):
         ret = to_string(value)
     elif not isinstance(value, six.class_types) and \
-            _has_sentry_metadata(value):
-        ret = transform_rec(value.__sentry__())
+            _has_opbeat_metadata(value):
+        ret = transform_rec(value.__opbeat__())
     # elif isinstance(value, Promise):
     #     # EPIC HACK
     #     # handles lazy model instances (which are proxy values that dont easily give you the actual function)

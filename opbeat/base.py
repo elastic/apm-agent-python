@@ -16,7 +16,7 @@ import logging
 import os
 import time
 import zlib
-import six
+from opbeat.utils import six
 try:
     from urllib2 import HTTPError
 except ImportError:

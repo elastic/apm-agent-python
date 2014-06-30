@@ -10,7 +10,7 @@ Large portions are
 """
 from __future__ import absolute_import
 
-import six
+from opbeat.utils import six
 
 import logbook
 import sys

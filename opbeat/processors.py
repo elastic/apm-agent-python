@@ -10,7 +10,7 @@ Large portions are
 """
 
 import re
-import six
+from opbeat.utils import six
 
 from opbeat.utils import varmap
 

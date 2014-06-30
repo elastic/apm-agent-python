@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import six
+from opbeat.utils import six
 from mock import Mock
 from opbeat.utils.compat import TestCase
 

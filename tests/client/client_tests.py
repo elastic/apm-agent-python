@@ -5,7 +5,7 @@ import mock
 import opbeat
 import time
 import string
-import six
+from opbeat.utils import six
 from socket import socket, AF_INET, SOCK_DGRAM
 from opbeat.utils.compat import TestCase
 from opbeat.base import Client, ClientState
