@@ -47,9 +47,7 @@ if sys.version_info[0] == 2:
         'zerorpc>=0.4.0',
     ]
 
-install_requires = [
-    'six'
-]
+install_requires = []
 
 try:
     # For Python >= 2.6
