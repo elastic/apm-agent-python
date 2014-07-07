@@ -36,7 +36,7 @@ class Transport(object):
         if url.scheme not in self.scheme:
             raise InvalidScheme()
 
-    def send(self, data, headers, **kwargs):
+    def send(self, data, headers):
         """
         You need to override this to do something with the actual
         data. Usually - this is sending to a server
@@ -62,13 +62,14 @@ class HTTPTransport(Transport):
         self._parsed_url = parsed_url
         self._url = parsed_url.geturl()
 
-    def send(self, data, headers, **kwargs):
+    def send(self, data, headers, timeout=None):
         """
         Sends a request to a remote webserver using HTTP POST.
         """
         req = Request(self._url, headers=headers)
+        if timeout is None:
+            timeout = defaults.TIMEOUT
         try:
-            timeout = kwargs.get('timeout', defaults.TIMEOUT)
             response = urlopen(req, data, timeout).read()
         except TypeError:
             response = urlopen(req, data).read()
