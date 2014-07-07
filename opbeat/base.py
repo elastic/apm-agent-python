@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 import datetime
 import logging
+import socket
 import os
 import time
 import zlib
@@ -354,10 +355,12 @@ class Client(object):
 
         return data['client_supplied_id']
 
-    def _send_remote(self, url, data, headers={}):
+    def _send_remote(self, url, data, headers=None):
+        if headers is None:
+            headers = {}
         parsed = urlparse.urlparse(url)
         transport = self._registry.get_transport(parsed)
-        return transport.send(data, headers)
+        return transport.send(data, headers, timeout=self.timeout)
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
@@ -369,7 +372,7 @@ class Client(object):
             message = data.pop('message', '<no message value>')
         return message
 
-    def send_remote(self, url, data, headers={}):
+    def send_remote(self, url, data, headers=None):
         if not self.state.should_try():
             message = self._get_log_message(data)
             self.error_logger.error(message)
@@ -378,7 +381,12 @@ class Client(object):
         try:
             self._send_remote(url=url, data=data, headers=headers)
         except Exception as e:
-            if isinstance(e, HTTPError):
+            if isinstance(e, socket.timeout):
+                self.error_logger.error("Connection to Opbeat server timed out (url: %s, timeout: %d seconds)" % (
+                    url,
+                    self.timeout,
+                ), exc_info=True, extra={'data': {'remote_url': url}})
+            elif isinstance(e, HTTPError):
                 body = e.read()
                 self.error_logger.error('Unable to reach Opbeat server: %s (url: %%s, body: %%s)' % (e,), url, body,
                     exc_info=True, extra={'data': {'body': body, 'remote_url': url}})

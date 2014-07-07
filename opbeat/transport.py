@@ -1,9 +1,15 @@
+import logging
+
 try:
     from urllib2 import Request, urlopen
 except ImportError:
     from urllib.request import Request, urlopen
 
 from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
+
+from opbeat.conf import defaults
+
+error_logger = logging.getLogger('opbeat.errors')
 
 
 class InvalidScheme(ValueError):
@@ -34,7 +40,7 @@ class Transport(object):
         if url.scheme not in self.scheme:
             raise InvalidScheme()
 
-    def send(self, data, headers):
+    def send(self, data, headers, **kwargs):
         """
         You need to override this to do something with the actual
         data. Usually - this is sending to a server
@@ -60,14 +66,15 @@ class HTTPTransport(Transport):
         self._parsed_url = parsed_url
         self._url = parsed_url.geturl()
 
-    def send(self, data, headers):
+    def send(self, data, headers, **kwargs):
         """
         Sends a request to a remote webserver using HTTP POST.
         """
         req = Request(self._url, headers=headers)
         try:
-            response = urlopen(req, data, self.timeout).read()
-        except:
+            timeout = kwargs.get('timeout', defaults.TIMEOUT)
+            response = urlopen(req, data, timeout).read()
+        except TypeError:
             response = urlopen(req, data).read()
         return response
 

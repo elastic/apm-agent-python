@@ -23,6 +23,7 @@ class Opbeat(Middleware):
     def __init__(self, app, config, client_cls=Client):
         client = client_cls(
             servers=list_from_setting(config, 'opbeat.servers'),
+            timeout=config.get('opbeat.timeout'),
             name=config.get('opbeat.name'),
             organization_id=config.get('opbeat.organization_id'),
             app_id=config.get('opbeat.app_id'),
