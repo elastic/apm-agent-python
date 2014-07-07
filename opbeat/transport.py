@@ -1,5 +1,3 @@
-import logging
-
 try:
     from urllib2 import Request, urlopen
 except ImportError:
@@ -8,8 +6,6 @@ except ImportError:
 from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
 
 from opbeat.conf import defaults
-
-error_logger = logging.getLogger('opbeat.errors')
 
 
 class InvalidScheme(ValueError):
