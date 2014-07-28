@@ -32,9 +32,18 @@ class DjangoClient(Client):
             user_info = {
                 'is_authenticated': True,
                 'id': request.user.pk,
-                'username': request.user.username,
-                'email': request.user.email,
             }
+            if hasattr(request.user, 'get_username'):
+                user_info['username'] = request.user.get_username()
+            elif hasattr(request.user, 'username'):
+                user_info['username'] = request.user.username
+            else:
+                # this only happens if the project uses custom user models, but
+                # doesn't correctly inherit from AbstractBaseUser
+                user_info['username'] = ''
+
+            if hasattr(request.user, 'email'):
+                user_info['email'] = request.user.email
         else:
             user_info = {
                 'is_authenticated': False,
@@ -42,7 +51,14 @@ class DjangoClient(Client):
         return user_info
 
     def get_data_from_request(self, request):
-        from django.contrib.auth.models import User, AnonymousUser
+        from django.contrib.auth.models import AnonymousUser
+        try:
+            # try to import User via get_user_model (Django 1.5+)
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+        except ImportError:
+            # import the User model from the standard location (Django <1.5)
+            from django.contrib.auth.models import User
 
         if request.method != 'GET':
             try:

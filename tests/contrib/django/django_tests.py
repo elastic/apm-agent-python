@@ -196,6 +196,27 @@ class DjangoClientTest(TestCase):
         self.assertTrue('email' in user_info)
         self.assertEquals(user_info['email'], 'admin@example.com')
 
+    @skipIf(django.VERSION < (1, 5), 'Custom user model was introduced with Django 1.5')
+    def test_user_info_with_custom_user(self):
+        with self.settings(AUTH_USER_MODEL='testapp.MyUser'):
+            from django.contrib.auth import get_user_model
+            MyUser = get_user_model()
+            user = MyUser(my_username='admin')
+            user.set_password('admin')
+            user.save()
+            self.assertTrue(self.client.login(username='admin', password='admin'))
+            self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
+
+            self.assertEquals(len(self.opbeat.events), 1)
+            event = self.opbeat.events.pop(0)
+            self.assertTrue('user' in event)
+            user_info = event['user']
+            self.assertTrue('is_authenticated' in user_info)
+            self.assertTrue(user_info['is_authenticated'])
+            self.assertTrue('username' in user_info)
+            self.assertEquals(user_info['username'], 'admin')
+            self.assertFalse('email' in user_info)
+
     def test_request_middleware_exception(self):
         with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))

@@ -46,6 +46,7 @@ if not settings.configured:
 
             # 'opbeat',  # server
             'opbeat.contrib.django',
+            'tests.contrib.django.testapp',
         ],
         ROOT_URLCONF='',
         DEBUG=False,
