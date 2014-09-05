@@ -10,6 +10,7 @@ env:
   - DJANGO=1.4.13
   - DJANGO=1.5.8
   - DJANGO=1.6.5
+  - DJANGO=1.7
 matrix:
   exclude:
     - python: 3.3
