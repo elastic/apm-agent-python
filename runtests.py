@@ -46,6 +46,7 @@ if not settings.configured:
 
             # 'opbeat',  # server
             'opbeat.contrib.django',
+            'tests.contrib.django.testapp',
         ],
         ROOT_URLCONF='',
         DEBUG=False,
@@ -58,6 +59,11 @@ if not settings.configured:
         CELERY_ALWAYS_EAGER=True,
         TEMPLATE_DEBUG=True,
         TEMPLATE_DIRS=[join(where_am_i, 'tests', 'contrib', 'django', 'templates')],
+        MIDDLEWARE_CLASSES=[
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+        ]
     )
     import djcelery
     djcelery.setup_loader()
