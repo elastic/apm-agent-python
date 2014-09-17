@@ -24,13 +24,16 @@ import sys
 
 from setuptools import setup, find_packages
 from opbeat.version import VERSION
+from setuptools.command.test import test as TestCommand
 
 tests_require = [
+    'pytest',
+    'pytest-django',
+    'pytest-capturelog',
     'blinker>=1.1',
     'celery',
     'Django>=1.2',
     'django-celery',
-    'django-nose',
     'Flask>=0.8',
     'logbook',
     'nose',
@@ -55,6 +58,21 @@ try:
 except ImportError:
     install_requires.append("simplejson>=2.3.0,<2.5.0")
 
+
+class PyTest(TestCommand):
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
+
+
 setup(
     name='opbeat',
     version=VERSION,
@@ -67,8 +85,9 @@ setup(
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
-    extras_require={'test': tests_require},
-    test_suite='runtests.runtests',
+    extras_require={'tests': tests_require},
+    cmdclass={'test': PyTest},
+    test_suite='tests',
     include_package_data=True,
     entry_points={
         'paste.filter_app_factory': [
