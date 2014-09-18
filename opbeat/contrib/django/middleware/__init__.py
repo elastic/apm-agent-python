@@ -19,7 +19,8 @@ def _is_ignorable_404(uri):
     """
     Returns True if the given request *shouldn't* notify the site managers.
     """
-    return any(pattern.search(uri) for pattern in settings.IGNORABLE_404_URLS)
+    urls = getattr(settings, 'IGNORABLE_404_URLS', ())
+    return any(pattern.search(uri) for pattern in urls)
 
 
 class Opbeat404CatchMiddleware(object):
