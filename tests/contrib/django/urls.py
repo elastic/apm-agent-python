@@ -2,10 +2,10 @@ from __future__ import absolute_import
 
 import django
 from django.conf import settings
-if django.VERSION < (1, 3):
-    from django.conf.urls.defaults import *  # Django 1.2
+if django.VERSION < (1, 4):
+    from django.conf.urls.defaults import *  # Django 1.3
 else:
-    from django.conf.urls import *
+    from django.conf.urls import url, patterns
 from django.http import HttpResponse
 
 def handler500(request):
