@@ -15,7 +15,6 @@ billiard
 blinker>=1.1
 celery
 django-celery
-gevent
 greenlet
 itsdangerous
 kombu
@@ -26,5 +25,3 @@ py
 
 pytz
 pyzmq==13.1.0
-unittest2
-zerorpc
