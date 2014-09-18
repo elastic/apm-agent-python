@@ -27,9 +27,10 @@ from opbeat.version import VERSION
 from setuptools.command.test import test as TestCommand
 
 tests_require = [
-    'pytest',
-    'pytest-django',
-    'pytest-capturelog',
+    'py==1.4.24',
+    'pytest==2.6.2',
+    'pytest-django==2.6.2',
+    'pytest-capturelog==0.7',
     'blinker>=1.1',
     'celery',
     'Django>=1.2',
