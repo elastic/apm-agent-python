@@ -25,6 +25,6 @@ pep8
 py
 
 pytz
-pyzmq
+pyzmq==13.1.0
 unittest2
 zerorpc

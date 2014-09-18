@@ -36,7 +36,6 @@ tests_require = [
     'django-celery',
     'Flask>=0.8',
     'logbook',
-    'nose',
     'mock',
     'pep8',
     'webob',
