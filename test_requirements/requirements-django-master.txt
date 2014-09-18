@@ -1,0 +1,2 @@
+-e git://github.com/django/django.git@master#egg=Django
+-r requirements-base.txt

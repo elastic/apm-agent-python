@@ -9,7 +9,8 @@ where_am_i = dirname(abspath(__file__))
 
 sys.path.insert(0, where_am_i)
 
-collect_ignore = ['build']
+# don't run tests of dependencies that land in "build" and "src"
+collect_ignore = ['build', 'src']
 
 
 def pytest_configure(config):
