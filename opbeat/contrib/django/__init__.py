@@ -9,5 +9,7 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
+default_app_config = 'opbeat.contrib.django.apps.OpbeatConfig'
+
 from opbeat.contrib.django.client import *
 
