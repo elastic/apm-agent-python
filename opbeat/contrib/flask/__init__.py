@@ -29,9 +29,9 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         servers=opbeat_config.get('SERVERS'),
         hostname=opbeat_config.get('HOSTNAME'),
         timeout=opbeat_config.get('TIMEOUT'),
-        organization_id=organization_id or opbeat_config.get('OPBEAT_ORGANIZATION_ID') or os.environ.get('OPBEAT_ORGANIZATION_ID'),
-        app_id=app_id or opbeat_config.get('APP_ID') or os.environ.get('APP_ID'),
-        secret_token=secret_token or opbeat_config.get('SECRET_TOKEN') or os.environ.get('SECRET_TOKEN')
+        organization_id=organization_id or opbeat_config.get('ORGANIZATION_ID') or os.environ.get('OPBEAT_ORGANIZATION_ID'),
+        app_id=app_id or opbeat_config.get('APP_ID') or os.environ.get('OPBEAT_APP_ID'),
+        secret_token=secret_token or opbeat_config.get('SECRET_TOKEN') or os.environ.get('OPBEAT_SECRET_TOKEN')
     )
 
 
