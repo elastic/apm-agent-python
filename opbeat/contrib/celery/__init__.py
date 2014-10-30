@@ -44,7 +44,6 @@ def register_signal(client):
     def process_failure_signal(sender, task_id, exception, args, kwargs,
                                traceback, einfo, **kw):
         client.captureException(
-            exc_info=einfo.exc_info,
             extra={
                 'task_id': task_id,
                 'task': sender,
