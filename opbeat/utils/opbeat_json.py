@@ -19,13 +19,17 @@ except ImportError:
 
 
 class BetterJSONEncoder(json.JSONEncoder):
+    ENCODERS = {
+        set: list,
+        frozenset: list,
+        datetime.datetime: lambda obj: obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        uuid.UUID: lambda obj: obj.hex,
+        bytes: lambda obj: obj.decode('utf-8', errors='replace')
+    }
+
     def default(self, obj):
-        if isinstance(obj, uuid.UUID):
-            return obj.hex
-        elif isinstance(obj, datetime.datetime):
-            return obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        elif isinstance(obj, (set, frozenset)):
-            return list(obj)
+        if type(obj) in self.ENCODERS:
+            return self.ENCODERS[type(obj)](obj)
         return super(BetterJSONEncoder, self).default(obj)
 
 

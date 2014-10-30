@@ -23,3 +23,7 @@ class JSONTest(TestCase):
     def test_frozenset(self):
         res = frozenset(['foo', 'bar'])
         self.assertIn(json.dumps(res), ('["foo", "bar"]', '["bar", "foo"]'))
+
+    def test_bytes(self):
+        res = bytes('foobar')
+        self.assertEqual(json.dumps(res), '"foobar"')
