@@ -1,39 +1,39 @@
 language: python
 python:
-  - 2.6
-  - 2.7
-  - 3.3
-  - 3.4
+- 2.6
+- 2.7
+- 3.3
+- 3.4
 env:
-  - DJANGO=1.3
-  - DJANGO=1.4
-  - DJANGO=1.5
-  - DJANGO=1.6
-  - DJANGO=1.7
-  - DJANGO=master
+- DJANGO=1.3
+- DJANGO=1.4
+- DJANGO=1.5
+- DJANGO=1.6
+- DJANGO=1.7
+- DJANGO=master
 matrix:
   exclude:
-    - python: 2.6
-      env: DJANGO=1.7
-    - python: 2.6
-      env: DJANGO=master
-    - python: 3.3
-      env: DJANGO=1.3
-    - python: 3.3
-      env: DJANGO=1.4
-
-    - python: 3.4
-      env: DJANGO=1.3
-    - python: 3.4
-      env: DJANGO=1.4
+  - python: 2.6
+    env: DJANGO=1.7
+  - python: 2.6
+    env: DJANGO=master
+  - python: 3.3
+    env: DJANGO=1.3
+  - python: 3.3
+    env: DJANGO=1.4
+  - python: 3.4
+    env: DJANGO=1.3
+  - python: 3.4
+    env: DJANGO=1.4
   allow_failures:
-    - env: DJANGO=master
-
+  - env: DJANGO=master
 install:
-  - sudo apt-get install libevent-dev
-  - sudo apt-get install libzmq3-dev
-  - pip install -r test_requirements/requirements-django-$DJANGO.txt --use-mirrors
+- sudo apt-get install libevent-dev
+- sudo apt-get install libzmq3-dev
+- pip install -r test_requirements/requirements-django-$DJANGO.txt --use-mirrors
 script:
-  - make test
+- make test
 notifications:
   email: false
+  slack:
+    secure: RVOfZ9GQHhjTHQmp/Mlbrse+YR5ctQmNSGAVpc0szSPLs551YF3d+gZU+jgLktrfqMBp9PDDTmFWvRw9EcSgFP9IbJmywmw9uIy6MV9IcYmoaE96fL88SkpSSGiqSzN8vQf9wm6lkqMv9XKy/VlvCP4qfep2+z5G8EIkMWxqURE=
