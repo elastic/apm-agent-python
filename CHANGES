@@ -1,3 +1,8 @@
+1.3.1
+ * fixed catching local variables in celery tasks
+ * added AppConfig for Django 1.7, thanks @stefanfoulis
+ * fixed JSON encoding for the bytes type in Python 3, thanks Trey Long for the report
+
 1.3
  * added support for Django 1.7
  * dropped support for Django 1.2
