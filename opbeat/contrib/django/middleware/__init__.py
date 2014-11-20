@@ -10,8 +10,9 @@ Large portions are
 """
 
 from __future__ import absolute_import
+from datetime import datetime
 from django.conf import settings
-from opbeat.contrib.django.models import client
+from opbeat.contrib.django.models import client, get_client
 import threading
 import logging
 
@@ -37,6 +38,38 @@ class Opbeat404CatchMiddleware(object):
             'app_id': data.get('app_id', client.app_id),
             'id': client.get_ident(result),
         }
+        return response
+
+
+class OpbeatMetricsMiddleware(object):
+    # Create a threadlocal variable to store the session in for logging
+    thread_local = threading.local()
+
+    def __init__(self):
+        self.client = get_client()
+
+    def process_request(self, request):
+        self.thread_local.request_start = datetime.now()
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        self.thread_local.view_func = view_func
+
+    def process_response(self, request, response):
+        if (hasattr(self.thread_local, "request_start")
+                and hasattr(response, "status_code")):
+            elapsed = (datetime.now() - self.thread_local.request_start)\
+                .total_seconds()*1000
+
+            if hasattr(self.thread_local, "view_func"):
+                print self.thread_local.view_func
+                view_func = "{}.{}".format(
+                    self.thread_local.view_func.__module__,
+                    self.thread_local.view_func.__name__)
+            else:
+                view_func = None
+
+            status_code = response.status_code
+            self.client.captureRequest(elapsed, status_code, view_func)
         return response
 
 

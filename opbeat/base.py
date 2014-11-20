@@ -500,6 +500,27 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                 **kwargs)
 
+    def captureRequest(self, elapsed, response_code, view_name):
+        data = self.build_msg({"gauges": [
+            {
+                "name": "response_time",
+                "value": elapsed,
+                "segments": {
+                    "response_code": response_code,
+                    "action": view_name
+                },
+                "timestamp": time.time()
+            }
+        ]})
+
+        api_path = defaults.METRICS_API_PATH.format(
+            data['organization_id'],
+            data['app_id']
+        )
+
+        data['servers'] = [server+api_path for server in self.servers]
+        return self.send(**data)
+
 
 class DummyClient(Client):
     "Sends messages into an empty void"

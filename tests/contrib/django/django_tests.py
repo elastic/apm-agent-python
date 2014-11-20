@@ -297,7 +297,7 @@ class DjangoClientTest(TestCase):
         self.opbeat.exclude_paths = ['tests.views.decorated_raise_exc']
         self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc-decor'))
 
-        self.assertEquals(len(self.opbeat.events), 1)
+        self.assertEquals(len(self.opbeat.events), 1, self.opbeat.events)
         event = self.opbeat.events.pop(0)
 
         self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
