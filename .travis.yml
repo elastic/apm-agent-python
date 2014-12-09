@@ -5,16 +5,18 @@ python:
 - 3.3
 - 3.4
 env:
-- DJANGO=1.3
-- DJANGO=1.4
-- DJANGO=1.5
-- DJANGO=1.6
-- DJANGO=1.7
-- DJANGO=master
-- secure: "ScEu5IeXfRMymD3VoXz2ywVhz0xTLQggyuTGyn8T2jfrDEfeDUDnMSsYbpd/9EvIsb6tx7BtKw1nJrZ7exaOfeV9lRp/97GUYQcea+VgWTfelrOviPzaaokeKTP5HS28Hq1diub6/aTboblj+v619shSDbcYN37Fov/DDt2vAnQ=" # AWS_ACCESS_KEY_ID
-- secure: "RFTgp9a4+oPy/OwjQZO0eWw0gdFSxYELWaawGiIb1kT5+prh7Qbw2sgQ1G3HWZkNS4gzDAme/jFm8ipA5PsDi4eaQIIS+f6nhpITawEWi5OCHs3xuoCo+E4wDzZACuiNpj/5ko6/99TBgw88SrTd+Yk/wZYGCfWbFS+IeMuZWxY=" # AWS_SECRET_ACCESS_KEY
-- PIP_ACCEL_S3_BUCKET=travisci.pip-cache.opbeat.com
-- PIP_ACCEL_S3_PREFIX=travis
+  matrix:
+    - DJANGO=1.3
+    - DJANGO=1.4
+    - DJANGO=1.5
+    - DJANGO=1.6
+    - DJANGO=1.7
+    - DJANGO=master
+  global:
+    - secure: "ScEu5IeXfRMymD3VoXz2ywVhz0xTLQggyuTGyn8T2jfrDEfeDUDnMSsYbpd/9EvIsb6tx7BtKw1nJrZ7exaOfeV9lRp/97GUYQcea+VgWTfelrOviPzaaokeKTP5HS28Hq1diub6/aTboblj+v619shSDbcYN37Fov/DDt2vAnQ=" # AWS_ACCESS_KEY_ID
+    - secure: "RFTgp9a4+oPy/OwjQZO0eWw0gdFSxYELWaawGiIb1kT5+prh7Qbw2sgQ1G3HWZkNS4gzDAme/jFm8ipA5PsDi4eaQIIS+f6nhpITawEWi5OCHs3xuoCo+E4wDzZACuiNpj/5ko6/99TBgw88SrTd+Yk/wZYGCfWbFS+IeMuZWxY=" # AWS_SECRET_ACCESS_KEY
+    - PIP_ACCEL_S3_BUCKET=travisci.pip-cache.opbeat.com
+    - PIP_ACCEL_S3_PREFIX=travis
 matrix:
   exclude:
   - python: 2.6
