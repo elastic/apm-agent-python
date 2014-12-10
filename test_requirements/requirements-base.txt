@@ -1,7 +1,7 @@
-py==1.4.24
-pytest==2.6.2
+py==1.4.26
+pytest==2.6.4
 pytest-capturelog==0.7
-pytest-django==2.6.2
+pytest-django==2.7.0
 
 Flask
 Jinja2
