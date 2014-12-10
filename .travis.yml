@@ -38,7 +38,7 @@ install:
 - sudo apt-get install libzmq3-dev
 - pip install 'pip-accel[s3]'
 - pip-accel install -r test_requirements/requirements-django-$DJANGO.txt --use-mirrors
-- python -c "import sys; sys.exit(sys.version_info[0] == 3)" && pip-accel install -r test_requirements/requirements-python-2.txt 
+- python -c "import sys; sys.exit(sys.version_info[0] == 3)" && pip-accel install -r test_requirements/requirements-python-2.txt || true 
 
 script:
 - make test
