@@ -25,5 +25,3 @@ pep8
 
 pytz
 pyzmq==13.1.0
-gevent
-zerorpc
