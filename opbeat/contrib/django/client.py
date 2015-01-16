@@ -13,10 +13,21 @@ from __future__ import absolute_import
 
 import logging
 
-from django.conf import settings
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
+
+try:
+    # Attempt to use the Django 1.7+ apps sub-framework.
+    from django.apps import apps
+
+    is_app_installed = apps.is_installed
+except ImportError:
+    from django.conf import settings
+
+    # Use the legacy method of simple checking the configuration.
+    def is_app_installed(app_name):
+        return app_name in settings.INSTALLED_APPS
 
 from opbeat.base import Client
 from opbeat.contrib.django.utils import get_data_from_template
@@ -52,8 +63,7 @@ class DjangoClient(Client):
         return user_info
 
     def get_data_from_request(self, request):
-        django_auth_installed = \
-            'django.contrib.auth' in settings.INSTALLED_APPS
+        django_auth_installed = is_app_installed('django.contrib.auth')
 
         if django_auth_installed:
             from django.contrib.auth.models import AnonymousUser
