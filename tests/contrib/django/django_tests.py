@@ -217,6 +217,16 @@ class DjangoClientTest(TestCase):
             self.assertEquals(user_info['username'], 'admin')
             self.assertFalse('email' in user_info)
 
+    def test_user_info_with_non_django_auth(self):
+        with self.settings(INSTALLED_APPS=[
+                app for app in settings.INSTALLED_APPS if app != 'django.contrib.auth'
+        ]):
+            self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
+
+            self.assertEquals(len(self.opbeat.events), 1)
+            event = self.opbeat.events.pop(0)
+            self.assertFalse('user' in event)
+
     def test_request_middleware_exception(self):
         with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
