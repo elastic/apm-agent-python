@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 import logging
 
+from django.conf import settings
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
@@ -51,14 +52,18 @@ class DjangoClient(Client):
         return user_info
 
     def get_data_from_request(self, request):
-        from django.contrib.auth.models import AnonymousUser
-        try:
-            # try to import User via get_user_model (Django 1.5+)
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-        except ImportError:
-            # import the User model from the standard location (Django <1.5)
-            from django.contrib.auth.models import User
+        django_auth_installed = \
+            'django.contrib.auth' in settings.INSTALLED_APPS
+
+        if django_auth_installed:
+            from django.contrib.auth.models import AnonymousUser
+            try:
+                # try to import User via get_user_model (Django 1.5+)
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+            except ImportError:
+                # import the User model from the standard location (Django <1.5)
+                from django.contrib.auth.models import User
 
         if request.method != 'GET':
             try:
@@ -83,7 +88,9 @@ class DjangoClient(Client):
             }
         }
 
-        if hasattr(request, 'user') and isinstance(request.user, (User, AnonymousUser)):
+        if django_auth_installed and \
+           hasattr(request, 'user') and \
+           isinstance(request.user, (User, AnonymousUser)):
             result['user'] = self.get_user_info(request)
 
         return result
