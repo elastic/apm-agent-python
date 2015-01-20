@@ -29,7 +29,7 @@ from setuptools.command.test import test as TestCommand
 tests_require = [
     'py==1.4.26',
     'pytest==2.6.4',
-    'pytest-django==2.7.0',
+    'pytest-django==2.8.0',
     'pytest-capturelog==0.7',
     'blinker>=1.1',
     'celery',
