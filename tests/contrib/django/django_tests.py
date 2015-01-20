@@ -218,7 +218,7 @@ class DjangoClientTest(TestCase):
             self.assertFalse('email' in user_info)
 
     def test_user_info_with_non_django_auth(self):
-        with Settings(INSTALLED_APPS=[
+        with self.settings(INSTALLED_APPS=[
             app for app in settings.INSTALLED_APPS
             if app != 'django.contrib.auth'
         ]):
