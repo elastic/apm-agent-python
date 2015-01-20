@@ -15,6 +15,7 @@ from django.core.signals import got_request_exception
 from django.core.handlers.wsgi import WSGIRequest
 from django.template import TemplateSyntaxError
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
@@ -44,7 +45,7 @@ def get_client(*args, **kwargs):
     }
     config.update(settings.OPBEAT)
 
-    with Settings(OPBEAT=config):
+    with override_settings(OPBEAT=config):
         cli = orig_get_client(*args, **kwargs)
         return cli
 
@@ -70,33 +71,6 @@ class TempStoreClient(DjangoClient):
         self.events.append(kwargs)
 
 
-class Settings(object):
-    """
-    Allows you to define settings that are required for this function to work.
-
-    >>> with Settings(OPBEAT={'LOGIN_URL': 'foo'}): #doctest: +SKIP
-    >>>     print settings.OPBEAT['LOGIN_URL'] #doctest: +SKIP
-    """
-
-    NotDefined = object()
-
-    def __init__(self, **overrides):
-        self.overrides = overrides
-        self._orig = {}
-
-    def __enter__(self):
-        for k, v in six.iteritems(self.overrides):
-            self._orig[k] = getattr(settings, k, self.NotDefined)
-            setattr(settings, k, v)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        for k, v in six.iteritems(self._orig):
-            if v is self.NotDefined:
-                delattr(settings, k)
-            else:
-                setattr(settings, k, v)
-
-
 class ClientProxyTest(TestCase):
     def test_proxy_responds_as_client(self):
         self.assertEquals(get_client(), client)
@@ -109,7 +83,7 @@ class ClientProxyTest(TestCase):
         }
         config.update(settings.OPBEAT)
         event_count = len(client.events)
-        with Settings(OPBEAT=config):
+        with self.settings(OPBEAT=config):
             client.capture('Message', message='foo')
             self.assertEquals(len(client.events), event_count + 1)
             client.events.pop(0)
@@ -231,7 +205,7 @@ class DjangoClientTest(TestCase):
             self.assertFalse('user' in event)
 
     def test_request_middleware_exception(self):
-        with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -248,7 +222,7 @@ class DjangoClientTest(TestCase):
     def test_response_middlware_exception(self):
         if django.VERSION[:2] < (1, 3):
             return
-        with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenResponseMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenResponseMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-no-error'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -263,7 +237,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_response')
 
     def test_broken_500_handler_with_middleware(self):
-        with Settings(BREAK_THAT_500=True):
+        with self.settings(BREAK_THAT_500=True):
             client = TestClient(REMOTE_ADDR='127.0.0.1')
             client.handler = MockOpbeatMiddleware(MockClientHandler())
 
@@ -291,7 +265,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(event['culprit'], 'tests.contrib.django.urls.handler500')
 
     def test_view_middleware_exception(self):
-        with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenViewMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenViewMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -369,7 +343,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['param_message'], {'message': 'test','params':()})
 
     def test_404_middleware(self):
-        with Settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
             resp = self.client.get('/non-existant-page')
             self.assertEquals(resp.status_code, 404)
 
@@ -388,7 +362,7 @@ class DjangoClientTest(TestCase):
 
     # def test_response_error_id_middleware(self):
     #     # TODO: test with 500s
-    #     with Settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+    #     with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
     #         resp = self.client.get('/non-existant-page')
     #         self.assertEquals(resp.status_code, 404)
     #         headers = dict(resp.items())
@@ -466,7 +440,7 @@ class DjangoClientTest(TestCase):
 
     ## TODO: Find out why this is broken
     # def test_filtering_middleware(self):
-    #     with Settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.FilteringMiddleware']):
+    #     with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.FilteringMiddleware']):
     #         self.assertRaises(IOError, self.client.get, reverse('opbeat-raise-ioerror'))
     #         self.assertEquals(len(self.opbeat.events), 0)
     #         self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
