@@ -1,3 +1,9 @@
+## 1.4 ##
+ * added preliminary support for Django 1.8
+ * dropped support for Django 1.3
+ * When using Django, only try to submit user data if ``django.contrib.auth`` is
+   installed. Thanks @nickbruun for the report and fix!
+
 ### 1.3.2 ###
  * fixed configuration of Flask integration to follow our documentation. The old
    behaviour still works, but has been deprecated.
