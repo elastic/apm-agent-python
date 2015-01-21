@@ -1,9 +1,10 @@
 Opbeat
+======
 
-.. .. image:: https://secure.travis-ci.org/dcramer/opbeat.png?branch=master
-..    :target: http://travis-ci.org/dcramer/opbeat
+.. image:: https://api.travis-ci.org/opbeat/opbeat_python.svg?branch=master
+    :target: https://travis-ci.org/opbeat/opbeat_python
 
-This is a Python client for `Opbeat <http://opbeat.com/>`_. It provides 
+This is a Python client for `Opbeat <https://opbeat.com/>`_. It provides
 full out-of-the-box support for many of the popular frameworks, including
 Django, and Flask. Opbeat also includes drop-in support for any WSGI-compatible
 web application.
@@ -17,5 +18,5 @@ Resources
 ---------
 
 * `Documentation <https://www.opbeat.com/docs>`_
-* `Bug Tracker <http://github.com/opbeat/opbeat_python/issues>`_
-* `Code <http://github.com/opbeat/opbeat_python>`_
+* `Bug Tracker <https://github.com/opbeat/opbeat_python/issues>`_
+* `Code <https://github.com/opbeat/opbeat_python>`_
