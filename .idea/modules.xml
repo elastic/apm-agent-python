@@ -3,7 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/opbeat_python.iml" filepath="$PROJECT_DIR$/.idea/opbeat_python.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../threadingtest/.idea/threadingtest.iml" filepath="$PROJECT_DIR$/../threadingtest/.idea/threadingtest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../threadingtest-monitor/.idea/threadingtest-monitor.iml" filepath="$PROJECT_DIR$/../threadingtest-monitor/.idea/threadingtest-monitor.iml" />
     </modules>
   </component>
 </project>
-
