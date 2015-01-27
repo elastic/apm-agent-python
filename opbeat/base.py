@@ -139,6 +139,11 @@ class Client(object):
             self.logger.info(msg)
             organization_id = os.environ['OPBEAT_ORGANIZATION_ID']
 
+        if app_id is None and os.environ.get('OPBEAT_APP_ID'):
+            msg = "Configuring opbeat from environment variable 'OPBEAT_APP_ID'"
+            self.logger.info(msg)
+            app_id = os.environ['OPBEAT_APP_ID']
+
         if secret_token is None and os.environ.get('OPBEAT_SECRET_TOKEN'):
             msg = "Configuring opbeat from environment variable 'OPBEAT_SECRET_TOKEN'"
             self.logger.info(msg)

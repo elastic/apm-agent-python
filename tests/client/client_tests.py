@@ -54,6 +54,17 @@ class ClientTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
 
+    def test_config_by_environment(self):
+        with mock.patch.dict('os.environ', {
+            'OPBEAT_ORGANIZATION_ID': 'org',
+            'OPBEAT_APP_ID': 'app',
+            'OPBEAT_SECRET_TOKEN': 'token',
+        }):
+            client = Client()
+            self.assertEqual(client.organization_id, 'org')
+            self.assertEqual(client.app_id, 'app')
+            self.assertEqual(client.secret_token, 'token')
+
     @mock.patch('opbeat.base.Client._send_remote')
     @mock.patch('opbeat.base.ClientState.should_try')
     def test_send_remote_failover(self, should_try, send_remote):
