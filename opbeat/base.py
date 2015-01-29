@@ -534,17 +534,15 @@ class Client(object):
         :param view_name: name of the view
 
         """
-        data = [
-            {
-                "name": "opbeat.apm.response_time",
-                "value": elapsed,
-                "segments": {
-                    "response_code": response_code,
-                    "transaction_name": view_name
-                },
-                "timestamp": time.time()
-            }
-        ]
+        data = {
+            "name": "opbeat.apm.response_time",
+            "value": elapsed,
+            "segments": {
+                "response_code": response_code,
+                "transaction_name": view_name
+            },
+            "timestamp": time.time()
+        }
         self._metrics_store.add(data)
         if not self._metrics_thread.is_alive():
             self._metrics_thread.start()
@@ -576,6 +574,8 @@ class Client(object):
         )
 
         data['servers'] = [server+api_path for server in self.servers]
+        import pprint
+        pprint.pprint(data)
         self.send(**data)
 
     def _metrics_thread_shutdown(self, *args, **kwargs):
