@@ -11,11 +11,14 @@ Large portions are
 
 from __future__ import absolute_import
 
+import atexit
 import datetime
 import logging
 import socket
 import os
+import sys
 import time
+import threading
 import zlib
 from opbeat.utils import six
 try:
@@ -34,6 +37,7 @@ from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
 
 from opbeat.utils.encoding import transform, shorten
+from opbeat.utils.metrics import MetricsStore
 from opbeat.utils.stacks import get_stack_info, iter_stack_frames, \
   get_culprit
 from opbeat.transport import TransportRegistry
@@ -122,11 +126,12 @@ class Client(object):
     _registry = TransportRegistry()
 
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
-            include_paths=None, exclude_paths=None,
-            timeout=None, hostname=None, auto_log_stacks=None, key=None,
-            string_max_length=None, list_max_length=None,
-            processors=None, servers=None, api_path=None,
-            **kwargs):
+                 include_paths=None, exclude_paths=None,
+                 timeout=None, hostname=None, auto_log_stacks=None, key=None,
+                 string_max_length=None, list_max_length=None,
+                 processors=None, servers=None, api_path=None,
+                 metrics_send_freq_secs=None,
+                 **kwargs):
         # configure loggers first
         cls = self.__class__
         self.state = ClientState()
@@ -161,6 +166,8 @@ class Client(object):
         self.string_max_length = int(string_max_length or
                 defaults.MAX_LENGTH_STRING)
         self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
+        self.metrics_send_freq_secs = (metrics_send_freq_secs or
+                                       defaults.METRICS_SEND_FREQ_SECS)
 
         self.organization_id = organization_id
         self.app_id = app_id
@@ -168,6 +175,23 @@ class Client(object):
 
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
+
+        self._metrics_store = MetricsStore()
+        self._metrics_thread = threading.Thread(target=self._metrics_loop)
+        self._metrics_thread.daemon = True
+
+        # if we run under uwsgi, use its atexit machinery, otherwise Python's
+        # native "atexit"
+        try:
+            import uwsgi
+            orig = getattr(uwsgi, 'atexit', lambda: None)
+            def uwsgi_atexit():
+                orig()
+                self._metrics_thread_shutdown()
+            uwsgi.atexit = uwsgi_atexit
+        except ImportError:
+            atexit.register(self._metrics_thread_shutdown)
+
 
     @classmethod
     def register_scheme(cls, scheme, transport_class):
@@ -501,28 +525,65 @@ class Client(object):
                 **kwargs)
 
     def captureRequest(self, elapsed, response_code, view_name):
-        data = self.build_msg({"gauges": [
+        """
+        Captures request metrics. This method is non-blocking and returns
+        immediately
+
+        :param elapsed: time elapsed for the whole response, in seconds
+        :param response_code: HTTP response code
+        :param view_name: name of the view
+
+        """
+        data = [
             {
-                "name": "response_time",
+                "name": "opbeat.apm.response_time",
                 "value": elapsed,
                 "segments": {
                     "response_code": response_code,
-                    "action": view_name
+                    "transaction_name": view_name
                 },
                 "timestamp": time.time()
             }
-        ]})
+        ]
+        self._metrics_store.add(data)
+        if not self._metrics_thread.is_alive():
+            self._metrics_thread.start()
 
+    def _metrics_loop(self):
+        _last_sent = time.time()
+        while 1:
+            with self._metrics_store.cond:
+                wait_time = max(
+                    0,
+                    self.metrics_send_freq_secs - (time.time() - _last_sent)
+                )
+                if wait_time:
+                    self._metrics_store.cond.wait(wait_time)
+                else:
+                    self._metrics_collect()
+                    _last_sent = time.time()
+
+    def _metrics_collect(self):
+        items = self._metrics_store.get_all()
+        if not items:
+            return
+        data = self.build_msg({
+            'gauges': items,
+        })
         api_path = defaults.METRICS_API_PATH.format(
-            data['organization_id'],
-            data['app_id']
+            self.organization_id,
+            self.app_id,
         )
 
         data['servers'] = [server+api_path for server in self.servers]
-        return self.send(**data)
+        self.send(**data)
+
+    def _metrics_thread_shutdown(self, *args, **kwargs):
+        with self._metrics_store.cond:
+            self._metrics_collect()
 
 
 class DummyClient(Client):
-    "Sends messages into an empty void"
+    """Sends messages into an empty void"""
     def send(self, **kwargs):
         return None

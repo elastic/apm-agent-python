@@ -10,9 +10,11 @@ Large portions are
 """
 
 from __future__ import absolute_import
+from collections import defaultdict
 from datetime import datetime
 from django.conf import settings
 from opbeat.contrib.django.models import client, get_client
+from opbeat.utils.metrics import Aggregator
 import threading
 import logging
 
@@ -55,22 +57,28 @@ class OpbeatMetricsMiddleware(object):
         self.thread_local.view_func = view_func
 
     def process_response(self, request, response):
-        if (hasattr(self.thread_local, "request_start")
-                and hasattr(response, "status_code")):
-            elapsed = (datetime.now() - self.thread_local.request_start)\
-                .total_seconds()*1000
+        try:
+            if (hasattr(self.thread_local, "request_start")
+                    and hasattr(response, "status_code")):
+                elapsed = (datetime.now() - self.thread_local.request_start)\
+                    .total_seconds()*1000
 
-            if hasattr(self.thread_local, "view_func"):
-                print self.thread_local.view_func
-                view_func = "{}.{}".format(
-                    self.thread_local.view_func.__module__,
-                    self.thread_local.view_func.__name__)
-            else:
-                view_func = None
+                if hasattr(self.thread_local, "view_func"):
+                    view_func = "{}.{}".format(
+                        self.thread_local.view_func.__module__,
+                        self.thread_local.view_func.__name__)
+                else:
+                    view_func = None
 
-            status_code = response.status_code
-            self.client.captureRequest(elapsed, status_code, view_func)
-        return response
+                status_code = response.status_code
+                self.client.captureRequest(elapsed, status_code, view_func)
+        except Exception:
+            self.client.error_logger.error(
+                'Exception during metrics tracking',
+                exc_info=True,
+            )
+        finally:
+            return response
 
 
 class OpbeatResponseErrorIdMiddleware(object):

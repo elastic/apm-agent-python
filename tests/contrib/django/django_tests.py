@@ -447,6 +447,12 @@ class DjangoClientTest(TestCase):
     #         self.assertEquals(len(self.opbeat.events), 1)
     #         self.opbeat.events.pop(0)
 
+    def test_request_metrics(self):
+        print self.opbeat._metrics_store.get_all()
+        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatMetricsMiddleware']):
+            self.assertEqual(len(self.opbeat._metrics_store), 0)
+            self.client.get(reverse('opbeat-no-error'))
+            self.assertEqual(len(self.opbeat._metrics_store), 1)
 
 class DjangoLoggingTest(TestCase):
     def setUp(self):

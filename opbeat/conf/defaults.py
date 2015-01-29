@@ -67,3 +67,6 @@ AUTO_LOG_STACKS = False
 PROCESSORS = (
     'opbeat.processors.SanitizePasswordsProcessor',
 )
+
+# how often we send data to the metrics backend
+METRICS_SEND_FREQ_SECS = 10
