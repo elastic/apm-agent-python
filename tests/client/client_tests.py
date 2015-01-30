@@ -8,7 +8,7 @@ import string
 from opbeat.utils import six
 from socket import socket, AF_INET, SOCK_DGRAM
 from opbeat.utils.compat import TestCase
-from opbeat.base import Client, ClientState
+from opbeat.base import Client, ClientState, DummyClient
 from opbeat.utils.stacks import iter_stack_frames
 
 from tests.helpers import get_tempstoreclient
@@ -306,6 +306,22 @@ class ClientTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)
         self.assertTrue(len(event['logger']) < 61, len(event['logger']))
+
+    @mock.patch('opbeat.base.Client.send')
+    def test_metrics_collection(self, mock_send):
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            metrics_send_freq_secs=0.1
+        )
+        for i in range(7):
+            client.captureRequest(0.1, 200, 'test')
+        self.assertEqual(len(client._metrics_store), 7)
+        time.sleep(0.15)
+        self.assertEqual(len(client._metrics_store), 0)
+        self.assertEqual(mock_send.call_count, 1)
 
     # def test_long_server_name(self):
     #     message = 's' * 201

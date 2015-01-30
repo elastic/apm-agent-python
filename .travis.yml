@@ -6,11 +6,11 @@ python:
 - 3.4
 env:
   matrix:
-    - DJANGO=1.3
     - DJANGO=1.4
     - DJANGO=1.5
     - DJANGO=1.6
     - DJANGO=1.7
+    - DJANGO=1.8
     - DJANGO=master
   global:
     - secure: "ScEu5IeXfRMymD3VoXz2ywVhz0xTLQggyuTGyn8T2jfrDEfeDUDnMSsYbpd/9EvIsb6tx7BtKw1nJrZ7exaOfeV9lRp/97GUYQcea+VgWTfelrOviPzaaokeKTP5HS28Hq1diub6/aTboblj+v619shSDbcYN37Fov/DDt2vAnQ=" # AWS_ACCESS_KEY_ID
@@ -23,13 +23,11 @@ matrix:
   - python: 2.6
     env: DJANGO=1.7
   - python: 2.6
+    env: DJANGO=1.8
+  - python: 2.6
     env: DJANGO=master
   - python: 3.3
-    env: DJANGO=1.3
-  - python: 3.3
     env: DJANGO=1.4
-  - python: 3.4
-    env: DJANGO=1.3
   - python: 3.4
     env: DJANGO=1.4
   allow_failures:

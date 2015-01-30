@@ -21,6 +21,7 @@ for m in ('multiprocessing', 'billiard'):
         pass
 
 import sys
+import os
 
 from setuptools import setup, find_packages
 from opbeat.version import VERSION
@@ -29,7 +30,7 @@ from setuptools.command.test import test as TestCommand
 tests_require = [
     'py==1.4.26',
     'pytest==2.6.4',
-    'pytest-django==2.7.0',
+    'pytest-django==2.8.0',
     'pytest-capturelog==0.7',
     'blinker>=1.1',
     'celery',
@@ -78,9 +79,9 @@ setup(
     version=VERSION,
     author='Ron Cohen',
     author_email='ron@opbeat.com',
-    url='http://github.com/opbeat/opbeat_python',
+    url='https://github.com/opbeat/opbeat_python',
     description='opbeat is a client for Opbeat (https://www.opbeat.com)',
-    long_description=__doc__,
+    long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     packages=find_packages(exclude=("tests",)),
     zip_safe=False,
     install_requires=install_requires,

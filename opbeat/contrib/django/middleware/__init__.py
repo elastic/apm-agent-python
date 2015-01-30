@@ -10,14 +10,13 @@ Large portions are
 """
 
 from __future__ import absolute_import
-import json
+
 import threading
 import logging
-from datetime import datetime, time
 
 from django.conf import settings
-from opbeat.contrib.django.instruments.aggr import instrumentation
 
+from opbeat.contrib.django.instruments.aggr import instrumentation
 from opbeat.contrib.django.instruments.db import enable_instrumentation as db_enable_instrumentation
 from opbeat.contrib.django.instruments.cache import enable_instrumentation as cache_enable_instrumentation
 from opbeat.contrib.django.instruments.template import enable_instrumentation as template_enable_instrumentation
@@ -84,6 +83,12 @@ class OpbeatMetricsMiddleware(object):
         instrumentation.set_view(view_name)
 
     def process_response(self, request, response):
-        instrumentation.set_response_code(response.status_code)
-        instrumentation.request_end()
+        try:
+            instrumentation.set_response_code(response.status_code)
+            instrumentation.request_end()
+        except Exception:
+            self.client.error_logger.error(
+                'Exception during metrics tracking',
+                exc_info=True,
+            )
         return response

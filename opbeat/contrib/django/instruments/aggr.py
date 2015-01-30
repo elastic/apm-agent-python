@@ -42,9 +42,8 @@ class RequestMetrics(object):
     # Create a threadlocal variable to store the session in for logging
     thread_local = threading.local()
 
-    def __init__(self):
-        self.last_send = None
-        self.reset()
+    def __init__(self, client):
+        self.client = client
 
     def request_start(self):
         self.thread_local.request_start = time.time()
@@ -56,40 +55,47 @@ class RequestMetrics(object):
     def set_response_code(self, code):
         self.thread_local.response_code = code
 
-    def request_end(self):
-        request_start = self.thread_local.request_start
-        view_duration = (time.time() - request_start) * 1000
+    def request_end(self, response):
+        if (hasattr(self.thread_local, "request_start")
+                and hasattr(response, "status_code")):
+            elapsed = (datetime.now() - self.thread_local.request_start)\
+                .total_seconds()*1000
 
-        request_timed_calls = self.thread_local.timed_calls
+            view_name = getattr(self.thread_local, "view_name", None)
 
-        # todo: use response code
-        # response_code = self.thread_local.response_code
-
-        # needs to be in a critical section
-        view_name = getattr(self.thread_local, 'view_name', "Django")
-        self.view_calls[view_name].append(view_duration)
-
-        for timed_call in request_timed_calls:
-            view_calls = self.timed_calls[view_name]
-
-            if timed_call.fingerprint not in view_calls:
-                view_calls[timed_call.fingerprint] = timed_call
-                view_calls[timed_call.fingerprint].start_time_list = [
-                    (start_time - request_start)*1000
-                    for start_time in timed_call.start_time_list
-                ]
-            else:
-                view_calls[timed_call.fingerprint].duration_list += \
-                    timed_call.duration_list
-                # Add the start time offsets
-                view_calls[timed_call.fingerprint].start_time_list += \
-                    [(start_time - request_start)*1000
-                     for start_time in timed_call.start_time_list]
-
-        if not self.last_send or (datetime.now() - self.last_send).total_seconds() > 10:
-            self.last_send = datetime.now()
-            self.send()
-            self.reset()
+            status_code = response.status_code
+            self.client.captureRequest(elapsed, status_code, view_name)
+        #
+        # request_timed_calls = self.thread_local.timed_calls
+        #
+        # # todo: use response code
+        # # response_code = self.thread_local.response_code
+        #
+        # # needs to be in a critical section
+        # view_name = getattr(self.thread_local, 'view_name', "Django")
+        # self.view_calls[view_name].append(view_duration)
+        #
+        # for timed_call in request_timed_calls:
+        #     view_calls = self.timed_calls[view_name]
+        #
+        #     if timed_call.fingerprint not in view_calls:
+        #         view_calls[timed_call.fingerprint] = timed_call
+        #         view_calls[timed_call.fingerprint].start_time_list = [
+        #             (start_time - request_start)*1000
+        #             for start_time in timed_call.start_time_list
+        #         ]
+        #     else:
+        #         view_calls[timed_call.fingerprint].duration_list += \
+        #             timed_call.duration_list
+        #         # Add the start time offsets
+        #         view_calls[timed_call.fingerprint].start_time_list += \
+        #             [(start_time - request_start)*1000
+        #              for start_time in timed_call.start_time_list]
+        #
+        # if not self.last_send or (datetime.now() - self.last_send).total_seconds() > 10:
+        #     self.last_send = datetime.now()
+        #     self.send()
+        #     self.reset()
 
         # end of critical section
 

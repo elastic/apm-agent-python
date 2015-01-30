@@ -17,6 +17,18 @@ from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
 
+try:
+    # Attempt to use the Django 1.7+ apps sub-framework.
+    from django.apps import apps
+
+    is_app_installed = apps.is_installed
+except ImportError:
+    from django.conf import settings
+
+    # Use the legacy method of simple checking the configuration.
+    def is_app_installed(app_name):
+        return app_name in settings.INSTALLED_APPS
+
 from opbeat.base import Client
 from opbeat.contrib.django.utils import get_data_from_template
 from opbeat.utils.wsgi import get_headers, get_environ
@@ -51,14 +63,17 @@ class DjangoClient(Client):
         return user_info
 
     def get_data_from_request(self, request):
-        from django.contrib.auth.models import AnonymousUser
-        try:
-            # try to import User via get_user_model (Django 1.5+)
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-        except ImportError:
-            # import the User model from the standard location (Django <1.5)
-            from django.contrib.auth.models import User
+        django_auth_installed = is_app_installed('django.contrib.auth')
+
+        if django_auth_installed:
+            from django.contrib.auth.models import AnonymousUser
+            try:
+                # try to import User via get_user_model (Django 1.5+)
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+            except ImportError:
+                # import the User model from the standard location (Django <1.5)
+                from django.contrib.auth.models import User
 
         if request.method != 'GET':
             try:
@@ -83,7 +98,9 @@ class DjangoClient(Client):
             }
         }
 
-        if hasattr(request, 'user') and isinstance(request.user, (User, AnonymousUser)):
+        if django_auth_installed and \
+           hasattr(request, 'user') and \
+           isinstance(request.user, (User, AnonymousUser)):
             result['user'] = self.get_user_info(request)
 
         return result

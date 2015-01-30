@@ -26,8 +26,8 @@ SERVERS = ['https://opbeat.com']
 # Error API path
 ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
 
-# Deployment Tracking API path
-DEPLOYMENT_API_PATH = '/api/v0/deployment/'
+# Error API path
+METRICS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/metrics/'
 
 TIMEOUT = 5
 
@@ -67,3 +67,6 @@ AUTO_LOG_STACKS = False
 PROCESSORS = (
     'opbeat.processors.SanitizePasswordsProcessor',
 )
+
+# how often we send data to the metrics backend
+METRICS_SEND_FREQ_SECS = 10
