@@ -10,10 +10,19 @@ Large portions are
 """
 
 from __future__ import absolute_import
-from django.conf import settings
-from opbeat.contrib.django.models import client
+import json
 import threading
 import logging
+from datetime import datetime, time
+
+from django.conf import settings
+from opbeat.contrib.django.instruments.aggr import instrumentation
+
+from opbeat.contrib.django.instruments.db import enable_instrumentation as db_enable_instrumentation
+from opbeat.contrib.django.instruments.cache import enable_instrumentation as cache_enable_instrumentation
+from opbeat.contrib.django.instruments.template import enable_instrumentation as template_enable_instrumentation
+from opbeat.contrib.django.models import client, get_client
+
 
 def _is_ignorable_404(uri):
     """
@@ -32,7 +41,7 @@ class Opbeat404CatchMiddleware(object):
             'level': logging.INFO,
             'logger': 'http404',
         })
-        result = client.capture('Message', param_message={'message':'Page Not Found: %s','params':[request.build_absolute_uri()]}, data=data)
+        result = client.capture('Message', param_message={'message': 'Page Not Found: %s','params':[request.build_absolute_uri()]}, data=data)
         request.opbeat = {
             'app_id': data.get('app_id', client.app_id),
             'id': client.get_ident(result),
@@ -58,3 +67,23 @@ class OpbeatLogMiddleware(object):
 
     def process_request(self, request):
         self.thread.request = request
+
+
+class OpbeatMetricsMiddleware(object):
+    def __init__(self):
+        self.client = get_client()
+
+    def process_request(self, request):
+        instrumentation.request_start()
+        db_enable_instrumentation()
+        cache_enable_instrumentation()
+        template_enable_instrumentation()
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        view_name = "{}.{}".format(view_func.__module__, view_func.__name__)
+        instrumentation.set_view(view_name)
+
+    def process_response(self, request, response):
+        instrumentation.set_response_code(response.status_code)
+        instrumentation.request_end()
+        return response

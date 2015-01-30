@@ -15,10 +15,11 @@ from __future__ import absolute_import
 
 import sys
 import logging
-import warnings
-from opbeat.utils import six
 
+import warnings
 from django.conf import settings as django_settings
+
+from opbeat.utils import six
 
 
 logger = logging.getLogger('opbeat.errors.client')
@@ -107,6 +108,13 @@ client = ProxyClient()
 
 
 def get_client(client=None):
+    """
+    Get an Opbeat client.
+
+    :param client:
+    :return:
+    :rtype: opbeat.base.Client
+    """
     global _client
 
     tmp_client = client is not None
@@ -186,6 +194,7 @@ def opbeat_exception_handler(request=None, **kwargs):
 
     return actually_do_stuff(request, **kwargs)
 
+
 def register_handlers():
     from django.core.signals import got_request_exception
 
@@ -203,3 +212,5 @@ def register_handlers():
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
+else:
+    print "not in installed app"

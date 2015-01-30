@@ -156,6 +156,8 @@ def iter_stack_frames(frames=None):
     """
     if not frames:
         frames = inspect.stack()[1:]
+
+    # print len(frames)
     for frame, lineno in ((f[0], f[2]) for f in frames):
         f_locals = getattr(frame, 'f_locals', {})
         if _getitem_from_frame(f_locals, '__traceback_hide__'):
@@ -163,7 +165,7 @@ def iter_stack_frames(frames=None):
         yield frame, lineno
 
 
-def get_stack_info(frames):
+def get_stack_info(frames, extended=True):
     """
     Given a list of frames, returns a list of stack information
     dictionary objects that are JSON-ready.
@@ -173,7 +175,6 @@ def get_stack_info(frames):
     of the information we want.
     """
     results = []
-    # print list(frames)[0]
     for frame, lineno in frames:
         # Support hidden frames
         f_locals = getattr(frame, 'f_locals', {})
@@ -195,11 +196,6 @@ def get_stack_info(frames):
         if lineno:
             lineno -= 1
 
-        if lineno is not None and abs_path:
-            pre_context, context_line, post_context = get_lines_from_file(abs_path, lineno, 3, loader, module_name)
-        else:
-            pre_context, context_line, post_context = [], None, []
-
         # Try to pull a relative file path
         # This changes /foo/site-packages/baz/bar.py into baz/bar.py
         try:
@@ -211,28 +207,36 @@ def get_stack_info(frames):
         if not filename:
             filename = abs_path
 
-        if f_locals is not None and not isinstance(f_locals, dict):
-            # XXX: Genshi (and maybe others) have broken implementations of
-            # f_locals that are not actually dictionaries
-            try:
-                f_locals = to_dict(f_locals)
-            except Exception:
-                f_locals = '<invalid local scope>'
-
         frame_result = {
             'abs_path': abs_path,
             'filename': filename,
             'module': module_name,
             'function': function,
             'lineno': lineno + 1,
-            'vars': transform(f_locals),
         }
-        if context_line:
-            frame_result.update({
-                'pre_context': pre_context,
-                'context_line': context_line,
-                'post_context': post_context,
-            })
+
+        if extended:
+            if lineno is not None and abs_path:
+                pre_context, context_line, post_context = get_lines_from_file(abs_path, lineno, 3, loader, module_name)
+            else:
+                pre_context, context_line, post_context = [], None, []
+
+
+            if f_locals is not None and not isinstance(f_locals, dict):
+                # XXX: Genshi (and maybe others) have broken implementations of
+                # f_locals that are not actually dictionaries
+                try:
+                    f_locals = to_dict(f_locals)
+                except Exception:
+                    f_locals = '<invalid local scope>'
+
+            if context_line:
+                frame_result.update({
+                    'pre_context': pre_context,
+                    'context_line': context_line,
+                    'post_context': post_context,
+                    'vars': transform(f_locals),
+                })
 
         results.append(frame_result)
     return results
