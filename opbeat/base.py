@@ -38,9 +38,9 @@ from opbeat.utils import opbeat_json as json, varmap
 
 from opbeat.utils.encoding import transform, shorten
 from opbeat.utils.metrics import MetricsStore
-from opbeat.utils.stacks import get_stack_info, iter_stack_frames, \
-  get_culprit
-from opbeat.transport import TransportRegistry
+from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
+from opbeat.transport import default as default_transports
+from opbeat.transport.registry import TransportRegistry
 
 __all__ = ('Client',)
 
@@ -123,13 +123,13 @@ class Client(object):
     logger = logging.getLogger('opbeat')
     protocol_version = '1.0'
 
-    _registry = TransportRegistry()
+    _registry = TransportRegistry(default_transports)
 
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
                  include_paths=None, exclude_paths=None,
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
-                 processors=None, servers=None, api_path=None,
+                 processors=None, servers=None, api_path=None, async=None,
                  metrics_send_freq_secs=None,
                  **kwargs):
         # configure loggers first
@@ -150,6 +150,8 @@ class Client(object):
             secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
         self.servers = servers or defaults.SERVERS
+        if async is True or (defaults.ASYNC and async is not False):
+            self.servers = ['async+' + server for server in self.servers]
 
         # servers may be set to a NoneType (for Django)
         if self.servers and not (organization_id and app_id and secret_token):
@@ -384,7 +386,14 @@ class Client(object):
             headers = {}
         parsed = urlparse.urlparse(url)
         transport = self._registry.get_transport(parsed)
-        return transport.send(data, headers, timeout=self.timeout)
+        if transport.async:
+            transport.send_async(
+                data, headers,
+                success_callback=self.state.set_success,
+                fail_callback=self.state.set_fail
+            )
+        else:
+            transport.send(data, headers, timeout=self.timeout)
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
@@ -574,8 +583,6 @@ class Client(object):
         )
 
         data['servers'] = [server+api_path for server in self.servers]
-        import pprint
-        pprint.pprint(data)
         self.send(**data)
 
     def _metrics_thread_shutdown(self, *args, **kwargs):

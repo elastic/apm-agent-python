@@ -77,8 +77,7 @@ class OpbeatMetricsMiddleware(object):
                 'Exception during metrics tracking',
                 exc_info=True,
             )
-        finally:
-            return response
+        return response
 
 
 class OpbeatResponseErrorIdMiddleware(object):
