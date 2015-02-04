@@ -11,14 +11,12 @@ Large portions are
 
 from __future__ import absolute_import
 
-import atexit
 import datetime
 import logging
 import socket
 import os
 import sys
 import time
-import threading
 import zlib
 from opbeat.utils import six
 try:
@@ -176,21 +174,8 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._metrics_store = MetricsStore()
-        self._metrics_thread = threading.Thread(target=self._metrics_loop)
-        self._metrics_thread.daemon = True
+        self._metrics_store = MetricsStore(self)
 
-        # if we run under uwsgi, use its atexit machinery, otherwise Python's
-        # native "atexit"
-        try:
-            import uwsgi
-            orig = getattr(uwsgi, 'atexit', lambda: None)
-            def uwsgi_atexit():
-                orig()
-                self._metrics_thread_shutdown()
-            uwsgi.atexit = uwsgi_atexit
-        except ImportError:
-            atexit.register(self._metrics_thread_shutdown)
 
     def get_processors(self):
         for processor in self.processors:
@@ -550,22 +535,6 @@ class Client(object):
             "timestamp": time.time()
         }
         self._metrics_store.add(data)
-        if not self._metrics_thread.is_alive():
-            self._metrics_thread.start()
-
-    def _metrics_loop(self):
-        _last_sent = time.time()
-        while 1:
-            with self._metrics_store.cond:
-                wait_time = max(
-                    0,
-                    self.metrics_send_freq_secs - (time.time() - _last_sent)
-                )
-                if wait_time:
-                    self._metrics_store.cond.wait(wait_time)
-                else:
-                    self._metrics_collect()
-                    _last_sent = time.time()
 
     def _metrics_collect(self):
         items = self._metrics_store.get_all()
@@ -581,10 +550,6 @@ class Client(object):
 
         data['servers'] = [server+api_path for server in self.servers]
         self.send(**data)
-
-    def _metrics_thread_shutdown(self, *args, **kwargs):
-        with self._metrics_store.cond:
-            self._metrics_collect()
 
 
 class DummyClient(Client):

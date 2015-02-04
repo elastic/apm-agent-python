@@ -1,16 +1,24 @@
 import threading
 import time
 
+from opbeat.utils.compat import atexit_register
+
 
 class MetricsStore(object):
-    def __init__(self):
+    def __init__(self, client):
         self.cond = threading.Condition()
         self.items = []
+        self.client = client
+        self._thread = threading.Thread(target=self._consume)
+        self._thread.daemon = True
+        atexit_register(self.client._metrics_collect)
 
     def add(self, item):
         with self.cond:
             self.items.append(item)
             self.cond.notify()
+        if not self._thread.is_alive():
+            self._thread.start()
 
     def get_all(self, blocking=False):
         with self.cond:
@@ -24,30 +32,16 @@ class MetricsStore(object):
         with self.cond:
             return len(self.items)
 
-
-class Aggregator(object):
-    interval = 0
-    gauge_name = None
-    aggregate_over_gauges = ()
-    _last_read = None
-    _value = None
-
-    def __init__(self):
-        self._value = self.init_value()
-
-    def init_value(self):
-        return 0
-
-    def add(self, *points):
-        raise NotImplementedError()
-
-    def prepare(self, value):
-        raise NotImplementedError()
-
-    def get(self):
-        if not self._last_read:
-            self._last_read = time.time()
-        if time.time() - self._last_read >= self.interval:
-            value, self._value = self._value, None
-            return value
-
+    def _consume(self):
+        _last_sent = time.time()
+        while 1:
+            with self.cond:
+                wait_time = max(
+                    0,
+                    self.client.metrics_send_freq_secs - (time.time() - _last_sent)
+                )
+                if wait_time:
+                    self.cond.wait(wait_time)
+                else:
+                    self.client._metrics_collect()
+                    _last_sent = time.time()
