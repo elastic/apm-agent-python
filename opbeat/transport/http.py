@@ -65,7 +65,7 @@ class HTTPTransport(Transport):
 
 
 class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
-    scheme = ['async+http', 'async+https']
+    scheme = ['http', 'https']
     async = True
     _worker = None
 
@@ -87,7 +87,6 @@ class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
                 success_callback()
         except Exception:
             if callable(fail_callback):
-                raise
                 fail_callback()
 
     def send_async(self, data, headers, success_callback=None, fail_callback=None):

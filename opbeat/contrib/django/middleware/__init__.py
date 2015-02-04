@@ -10,13 +10,14 @@ Large portions are
 """
 
 from __future__ import absolute_import
-from collections import defaultdict
 from datetime import datetime
-from django.conf import settings
-from opbeat.contrib.django.models import client, get_client
-from opbeat.utils.metrics import Aggregator
-import threading
 import logging
+import threading
+
+from django.conf import settings
+
+from opbeat.contrib.django.models import client, get_client
+
 
 def _is_ignorable_404(uri):
     """

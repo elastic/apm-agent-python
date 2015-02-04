@@ -39,8 +39,7 @@ from opbeat.utils import opbeat_json as json, varmap
 from opbeat.utils.encoding import transform, shorten
 from opbeat.utils.metrics import MetricsStore
 from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
-from opbeat.transport import default as default_transports
-from opbeat.transport.registry import TransportRegistry
+from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
 __all__ = ('Client',)
 
@@ -123,8 +122,6 @@ class Client(object):
     logger = logging.getLogger('opbeat')
     protocol_version = '1.0'
 
-    _registry = TransportRegistry(default_transports)
-
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
                  include_paths=None, exclude_paths=None,
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
@@ -150,8 +147,9 @@ class Client(object):
             secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
         self.servers = servers or defaults.SERVERS
-        if async is True or (defaults.ASYNC and async is not False):
-            self.servers = ['async+' + server for server in self.servers]
+        self.async = async is True or (defaults.ASYNC and async is not False)
+        self._transport_class = AsyncHTTPTransport if self.async else HTTPTransport
+        self._transports = {}
 
         # servers may be set to a NoneType (for Django)
         if self.servers and not (organization_id and app_id and secret_token):
@@ -194,11 +192,6 @@ class Client(object):
         except ImportError:
             atexit.register(self._metrics_thread_shutdown)
 
-
-    @classmethod
-    def register_scheme(cls, scheme, transport_class):
-        cls._registry.register_scheme(scheme, transport_class)
-
     def get_processors(self):
         for processor in self.processors:
             yield self.module_cache[processor](self)
@@ -236,7 +229,7 @@ class Client(object):
         self.build_msg(data=data)
 
         # if '.' not in event_type:
-            # Assume it's a builtin
+        # Assume it's a builtin
         event_type = 'opbeat.events.%s' % event_type
 
         handler = self.get_handler(event_type)
@@ -314,8 +307,7 @@ class Client(object):
 
         return data
 
-    def build_msg(self, data=None,
-            **kwargs):
+    def build_msg(self, data=None, **kwargs):
         data.setdefault('machine', {'hostname': self.hostname})
         data.setdefault('organization_id', self.organization_id)
         data.setdefault('app_id', self.app_id)
@@ -385,7 +377,7 @@ class Client(object):
         if headers is None:
             headers = {}
         parsed = urlparse.urlparse(url)
-        transport = self._registry.get_transport(parsed)
+        transport = self._get_transport(parsed)
         if transport.async:
             transport.send_async(
                 data, headers,
@@ -404,6 +396,11 @@ class Client(object):
         else:
             message = data.pop('message', '<no message value>')
         return message
+
+    def _get_transport(self, parsed_url):
+        if parsed_url not in self._transports:
+            self._transports[parsed_url] = self._transport_class(parsed_url)
+        return self._transports[parsed_url]
 
     def send_remote(self, url, data, headers=None):
         if not self.state.should_try():
