@@ -34,6 +34,7 @@ import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
 
+from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
 from opbeat.utils.metrics import MetricsStore
 from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
@@ -175,6 +176,7 @@ class Client(object):
         self.module_cache = ModuleProxyCache()
 
         self._metrics_store = MetricsStore(self)
+        atexit_register(self._metrics_collect())
 
 
     def get_processors(self):
@@ -517,24 +519,33 @@ class Client(object):
 
     def captureRequest(self, elapsed, response_code, view_name):
         """
-        Captures request metrics. This method is non-blocking and returns
-        immediately
+        Captures request metrics.
 
         :param elapsed: time elapsed for the whole response, in seconds
         :param response_code: HTTP response code
         :param view_name: name of the view
 
         """
-        data = {
-            "name": "opbeat.apm.response_time",
-            "value": elapsed,
-            "segments": {
-                "response_code": response_code,
-                "transaction_name": view_name
-            },
-            "timestamp": time.time()
+        segments = {
+            "response_code": response_code,
+            "transaction_name": view_name
         }
+        self.captureTrace('opbeat.apm.response_time', elapsed, segments)
+
+    def captureTrace(self, name, value, segments, **kwargs):
+        """
+        Captures a trace
+        """
+        data = {
+            'name': name,
+            'value': value,
+            'segments': segments,
+            'timestamp': time.time()
+        }
+        data.update(kwargs)
         self._metrics_store.add(data)
+        if self._metrics_store.should_collect():
+            self._metrics_collect()
 
     def _metrics_collect(self):
         items = self._metrics_store.get_all()
