@@ -186,15 +186,17 @@ def opbeat_exception_handler(request=None, **kwargs):
 
     return actually_do_stuff(request, **kwargs)
 
+
 def register_handlers():
     from django.core.signals import got_request_exception, request_started, \
         request_finished
 
     # Connect to Django's internal signal handler
     got_request_exception.connect(opbeat_exception_handler)
-
-    django_settings.MIDDLEWARE_CLASSES.insert(
-        0, "opbeat.contrib.django.middleware.OpbeatMetricsMiddleware")
+    if ("opbeat.contrib.django.middleware.OpbeatMetricsMiddleware"
+            not in django_settings.MIDDLEWARE_CLASSES):
+        django_settings.MIDDLEWARE_CLASSES.insert(
+            0, "opbeat.contrib.django.middleware.OpbeatMetricsMiddleware")
 
 
     # If Celery is installed, register a signal handler
