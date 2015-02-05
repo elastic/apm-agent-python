@@ -318,9 +318,9 @@ class ClientTest(TestCase):
         )
         for i in range(7):
             client.captureRequest(0.1, 200, 'test')
-        self.assertEqual(len(client._metrics_store), 7)
+        self.assertEqual(len(client._traces_store), 7)
         time.sleep(0.15)
-        self.assertEqual(len(client._metrics_store), 0)
+        self.assertEqual(len(client._traces_store), 0)
         self.assertEqual(mock_send.call_count, 1)
 
     # def test_long_server_name(self):

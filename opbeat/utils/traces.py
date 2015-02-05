@@ -1,13 +1,12 @@
 import threading
 import time
 
-from opbeat.conf import defaults
 
-class MetricsStore(object):
-    def __init__(self, client):
+class TracesStore(object):
+    def __init__(self, collect_frequency):
         self.cond = threading.Condition()
         self.items = []
-        self.client = client
+        self.collect_frequency = collect_frequency
         self._last_collect = time.time()
 
     def add(self, item):
@@ -27,7 +26,7 @@ class MetricsStore(object):
     def should_collect(self):
         return (
             (time.time() - self._last_collect)
-            >= defaults.METRICS_SEND_FREQ_SECS
+            >= self.collect_frequency
         )
 
     def __len__(self):

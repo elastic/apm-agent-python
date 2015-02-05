@@ -36,7 +36,7 @@ from opbeat.utils import opbeat_json as json, varmap
 
 from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.metrics import MetricsStore
+from opbeat.utils.traces import TracesStore
 from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
 from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
@@ -126,7 +126,7 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
-                 metrics_send_freq_secs=None,
+                 traces_send_freq_secs=None,
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -160,13 +160,13 @@ class Client(object):
         self.timeout = int(timeout or defaults.TIMEOUT)
         self.hostname = six.text_type(hostname or defaults.HOSTNAME)
         self.auto_log_stacks = bool(auto_log_stacks or
-                defaults.AUTO_LOG_STACKS)
+                                    defaults.AUTO_LOG_STACKS)
 
         self.string_max_length = int(string_max_length or
-                defaults.MAX_LENGTH_STRING)
+                                     defaults.MAX_LENGTH_STRING)
         self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
-        self.metrics_send_freq_secs = (metrics_send_freq_secs or
-                                       defaults.METRICS_SEND_FREQ_SECS)
+        self.traces_send_freq_secs = (traces_send_freq_secs or
+                                      defaults.TRACES_SEND_FREQ_SECS)
 
         self.organization_id = organization_id
         self.app_id = app_id
@@ -175,9 +175,8 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._metrics_store = MetricsStore(self)
-        atexit_register(self._metrics_collect())
-
+        self._traces_store = TracesStore(self.traces_send_freq_secs)
+        atexit_register(self._traces_collect())
 
     def get_processors(self):
         for processor in self.processors:
@@ -196,8 +195,8 @@ class Client(object):
         return self.module_cache[name](self)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
-            extra=None, stack=None,
-            **kwargs):
+                              extra=None, stack=None,
+                              **kwargs):
         """
         Captures, processes and serializes an event into a dict object
         """
@@ -347,7 +346,7 @@ class Client(object):
         """
 
         data = self.build_msg_for_logging(event_type, data, date,
-                extra, stack, **kwargs)
+                                          extra, stack, **kwargs)
 
         if not api_path:
             api_path = defaults.ERROR_API_PATH.format(
@@ -515,7 +514,7 @@ class Client(object):
         >>> client.captureQuery('SELECT * FROM foo')
         """
         return self.capture('Query', query=query, params=params, engine=engine,
-                **kwargs)
+                            **kwargs)
 
     def captureRequest(self, elapsed, response_code, view_name):
         """
@@ -543,12 +542,12 @@ class Client(object):
             'timestamp': time.time()
         }
         data.update(kwargs)
-        self._metrics_store.add(data)
-        if self._metrics_store.should_collect():
-            self._metrics_collect()
+        self._traces_store.add(data)
+        if self._traces_store.should_collect():
+            self._traces_collect()
 
-    def _metrics_collect(self):
-        items = self._metrics_store.get_all()
+    def _traces_collect(self):
+        items = self._traces_store.get_all()
         if not items:
             return
         data = self.build_msg({
