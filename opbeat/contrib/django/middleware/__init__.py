@@ -11,8 +11,8 @@ Large portions are
 
 from __future__ import absolute_import
 
-import threading
 import logging
+import threading
 
 from django.conf import settings
 

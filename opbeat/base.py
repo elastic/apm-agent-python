@@ -11,14 +11,12 @@ Large portions are
 
 from __future__ import absolute_import
 
-import atexit
 import datetime
 import logging
 import socket
 import os
 import sys
 import time
-import threading
 import zlib
 from opbeat.utils import six
 try:
@@ -36,11 +34,11 @@ import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
 
+from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.metrics import MetricsStore
-from opbeat.utils.stacks import get_stack_info, iter_stack_frames, \
-  get_culprit
-from opbeat.transport import TransportRegistry
+from opbeat.utils.traces import TracesStore
+from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
+from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
 __all__ = ('Client',)
 
@@ -123,14 +121,12 @@ class Client(object):
     logger = logging.getLogger('opbeat')
     protocol_version = '1.0'
 
-    _registry = TransportRegistry()
-
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
                  include_paths=None, exclude_paths=None,
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
-                 processors=None, servers=None, api_path=None,
-                 metrics_send_freq_secs=None,
+                 processors=None, servers=None, api_path=None, async=None,
+                 traces_send_freq_secs=None,
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -150,6 +146,9 @@ class Client(object):
             secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
         self.servers = servers or defaults.SERVERS
+        self.async = async is True or (defaults.ASYNC and async is not False)
+        self._transport_class = AsyncHTTPTransport if self.async else HTTPTransport
+        self._transports = {}
 
         # servers may be set to a NoneType (for Django)
         if self.servers and not (organization_id and app_id and secret_token):
@@ -161,13 +160,13 @@ class Client(object):
         self.timeout = int(timeout or defaults.TIMEOUT)
         self.hostname = six.text_type(hostname or defaults.HOSTNAME)
         self.auto_log_stacks = bool(auto_log_stacks or
-                defaults.AUTO_LOG_STACKS)
+                                    defaults.AUTO_LOG_STACKS)
 
         self.string_max_length = int(string_max_length or
-                defaults.MAX_LENGTH_STRING)
+                                     defaults.MAX_LENGTH_STRING)
         self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
-        self.metrics_send_freq_secs = (metrics_send_freq_secs or
-                                       defaults.METRICS_SEND_FREQ_SECS)
+        self.traces_send_freq_secs = (traces_send_freq_secs or
+                                      defaults.TRACES_SEND_FREQ_SECS)
 
         self.organization_id = organization_id
         self.app_id = app_id
@@ -176,26 +175,8 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._metrics_store = MetricsStore()
-        self._metrics_thread = threading.Thread(target=self._metrics_loop)
-        self._metrics_thread.daemon = True
-
-        # if we run under uwsgi, use its atexit machinery, otherwise Python's
-        # native "atexit"
-        try:
-            import uwsgi
-            orig = getattr(uwsgi, 'atexit', lambda: None)
-            def uwsgi_atexit():
-                orig()
-                self._metrics_thread_shutdown()
-            uwsgi.atexit = uwsgi_atexit
-        except ImportError:
-            atexit.register(self._metrics_thread_shutdown)
-
-
-    @classmethod
-    def register_scheme(cls, scheme, transport_class):
-        cls._registry.register_scheme(scheme, transport_class)
+        self._traces_store = TracesStore(self.traces_send_freq_secs)
+        atexit_register(self._traces_collect())
 
     def get_processors(self):
         for processor in self.processors:
@@ -214,8 +195,8 @@ class Client(object):
         return self.module_cache[name](self)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
-            extra=None, stack=None,
-            **kwargs):
+                              extra=None, stack=None,
+                              **kwargs):
         """
         Captures, processes and serializes an event into a dict object
         """
@@ -234,7 +215,7 @@ class Client(object):
         self.build_msg(data=data)
 
         # if '.' not in event_type:
-            # Assume it's a builtin
+        # Assume it's a builtin
         event_type = 'opbeat.events.%s' % event_type
 
         handler = self.get_handler(event_type)
@@ -312,8 +293,7 @@ class Client(object):
 
         return data
 
-    def build_msg(self, data=None,
-            **kwargs):
+    def build_msg(self, data=None, **kwargs):
         data.setdefault('machine', {'hostname': self.hostname})
         data.setdefault('organization_id', self.organization_id)
         data.setdefault('app_id', self.app_id)
@@ -366,7 +346,7 @@ class Client(object):
         """
 
         data = self.build_msg_for_logging(event_type, data, date,
-                extra, stack, **kwargs)
+                                          extra, stack, **kwargs)
 
         if not api_path:
             api_path = defaults.ERROR_API_PATH.format(
@@ -383,8 +363,15 @@ class Client(object):
         if headers is None:
             headers = {}
         parsed = urlparse.urlparse(url)
-        transport = self._registry.get_transport(parsed)
-        return transport.send(data, headers, timeout=self.timeout)
+        transport = self._get_transport(parsed)
+        if transport.async:
+            transport.send_async(
+                data, headers,
+                success_callback=self.state.set_success,
+                fail_callback=self.state.set_fail
+            )
+        else:
+            transport.send(data, headers, timeout=self.timeout)
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
@@ -395,6 +382,11 @@ class Client(object):
         else:
             message = data.pop('message', '<no message value>')
         return message
+
+    def _get_transport(self, parsed_url):
+        if parsed_url not in self._transports:
+            self._transports[parsed_url] = self._transport_class(parsed_url)
+        return self._transports[parsed_url]
 
     def send_remote(self, url, data, headers=None):
         if not self.state.should_try():
@@ -522,47 +514,40 @@ class Client(object):
         >>> client.captureQuery('SELECT * FROM foo')
         """
         return self.capture('Query', query=query, params=params, engine=engine,
-                **kwargs)
+                            **kwargs)
 
     def captureRequest(self, elapsed, response_code, view_name):
         """
-        Captures request metrics. This method is non-blocking and returns
-        immediately
+        Captures request metrics.
 
         :param elapsed: time elapsed for the whole response, in seconds
         :param response_code: HTTP response code
         :param view_name: name of the view
 
         """
-        data = {
-            "name": "opbeat.apm.response_time",
-            "value": elapsed,
-            "segments": {
-                "response_code": response_code,
-                "transaction_name": view_name
-            },
-            "timestamp": time.time()
+        segments = {
+            "response_code": response_code,
+            "transaction_name": view_name
         }
-        self._metrics_store.add(data)
-        if not self._metrics_thread.is_alive():
-            self._metrics_thread.start()
+        self.captureTrace('opbeat.apm.response_time', elapsed, segments)
 
-    def _metrics_loop(self):
-        _last_sent = time.time()
-        while 1:
-            with self._metrics_store.cond:
-                wait_time = max(
-                    0,
-                    self.metrics_send_freq_secs - (time.time() - _last_sent)
-                )
-                if wait_time:
-                    self._metrics_store.cond.wait(wait_time)
-                else:
-                    self._metrics_collect()
-                    _last_sent = time.time()
+    def captureTrace(self, name, value, segments, **kwargs):
+        """
+        Captures a trace
+        """
+        data = {
+            'name': name,
+            'value': value,
+            'segments': segments,
+            'timestamp': time.time()
+        }
+        data.update(kwargs)
+        self._traces_store.add(data)
+        if self._traces_store.should_collect():
+            self._traces_collect()
 
-    def _metrics_collect(self):
-        items = self._metrics_store.get_all()
+    def _traces_collect(self):
+        items = self._traces_store.get_all()
         if not items:
             return
         data = self.build_msg({
@@ -574,13 +559,7 @@ class Client(object):
         )
 
         data['servers'] = [server+api_path for server in self.servers]
-        import pprint
-        pprint.pprint(data)
         self.send(**data)
-
-    def _metrics_thread_shutdown(self, *args, **kwargs):
-        with self._metrics_store.cond:
-            self._metrics_collect()
 
 
 class DummyClient(Client):
