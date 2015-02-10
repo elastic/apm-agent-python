@@ -26,8 +26,8 @@ SERVERS = ['https://opbeat.com']
 # Error API path
 ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
 
-# Error API path
-METRICS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/metrics/'
+# Traces API path
+TRACES_API_PATH = '/api/v1/organizations/{0}/apps/{1}/traces/'
 
 TIMEOUT = 5
 

@@ -1,17 +1,15 @@
 from django.core import cache
 from django.core.cache import cache as original_cache, get_cache as original_get_cache
 from django.core.cache.backends.base import BaseCache
-import time
-from opbeat.contrib.django.instruments.aggr import instrumentation, TimedCall
-from opbeat.utils.stacks import get_stack_info
-from opbeat.utils.stacks import iter_stack_frames
 
 
 def send_signal(method):
     def wrapped(self, *args, **kwargs):
-        with instrumentation.time(method.__name__, "cache", None,
-                                  {"args": args,
-                                   "kwargs": kwargs}):
+        from opbeat.contrib.django.models import get_client
+
+        with get_client().captureTrace(method.__name__, "cache",
+                                       {"args": args,
+                                         "kwargs": kwargs}):
             return method(self, *args, **kwargs)
 
     return wrapped

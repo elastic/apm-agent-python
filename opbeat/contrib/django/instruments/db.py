@@ -1,11 +1,5 @@
-import json
-from time import time
 from django.db import connections
 from threading import local
-from opbeat.contrib.django.instruments.aggr import TimedCall, instrumentation
-from opbeat.utils import six, varmap
-from opbeat.utils.encoding import force_text, shorten
-from opbeat.utils.stacks import iter_stack_frames, get_stack_info
 
 
 class ThreadLocalState(local):
@@ -57,9 +51,11 @@ class NormalCursorWrapper(object):
         return list(map(self._quote_expr, params))
 
     def _record(self, name, method, sql, params):
+        from opbeat.contrib.django.models import get_client
+
         alias = getattr(self.db, 'alias', 'default')
         # TODO: normalize/generalize the SQL here.
-        with instrumentation.time(name, "sql", (sql, ), {"alias": alias, "params": params}):
+        with get_client().captureTrace(sql[:200], "sql", {"alias": alias}):
             return method(sql, params)
 
     def callproc(self, procname, params=()):

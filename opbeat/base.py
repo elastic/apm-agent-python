@@ -11,6 +11,7 @@ Large portions are
 
 from __future__ import absolute_import
 
+import contextlib
 import datetime
 import logging
 import socket
@@ -176,7 +177,26 @@ class Client(object):
         self.module_cache = ModuleProxyCache()
 
         self._traces_store = TracesStore(self.traces_send_freq_secs)
+        self._sig_stack = []
         atexit_register(self._traces_collect())
+
+    def begin_transaction(self):
+        self._traces_store.request_start()
+
+    def set_transaction_name(self, transaction_name):
+        self._traces_store.set_transaction_name(transaction_name)
+
+    def end_transaction(self):
+        self._traces_store.request_end()
+        should_collect = self._traces_store.should_collect()
+
+        if should_collect:
+            self._traces_collect()
+
+    @contextlib.contextmanager
+    def captureTrace(self, signature, kind, collateral=None):
+        with self._traces_store.trace(signature, kind, collateral):
+            yield
 
     def get_processors(self):
         for processor in self.processors:
@@ -349,10 +369,7 @@ class Client(object):
                                           extra, stack, **kwargs)
 
         if not api_path:
-            api_path = defaults.ERROR_API_PATH.format(
-                data['organization_id'],
-                data['app_id']
-            )
+            api_path = defaults.ERROR_API_PATH.format()
 
         data['servers'] = [server+api_path for server in self.servers]
         self.send(**data)
@@ -516,49 +533,39 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
 
-    def captureRequest(self, elapsed, response_code, view_name):
-        """
-        Captures request metrics.
-
-        :param elapsed: time elapsed for the whole response, in seconds
-        :param response_code: HTTP response code
-        :param view_name: name of the view
-
-        """
-        segments = {
-            "response_code": response_code,
-            "transaction_name": view_name
-        }
-        self.captureTrace('opbeat.apm.response_time', elapsed, segments)
-
-    def captureTrace(self, name, value, segments, **kwargs):
-        """
-        Captures a trace
-        """
-        data = {
-            'name': name,
-            'value': value,
-            'segments': segments,
-            'timestamp': time.time()
-        }
-        data.update(kwargs)
-        self._traces_store.add(data)
-        if self._traces_store.should_collect():
-            self._traces_collect()
-
     def _traces_collect(self):
-        items = self._traces_store.get_all()
-        if not items:
+        traces = self._traces_store.get_all()
+        # print type(traces), traces
+        if not traces:
+            # print "No traces"
             return
+
+        ts = datetime.datetime.now().isoformat() + "Z"
+        packets = []
+
+        for trace in traces:
+            # print trace.start_time_list
+            avg_start_time = min(trace.start_time_list)
+                # (sum(trace.start_time_list)
+                #               / float(len(trace.start_time_list)))
+            packets.append({
+                "transaction": trace.transaction,
+                "durations": trace.duration_list,
+                "avg_start_time": avg_start_time,
+                "signature": trace.signature,
+                "kind": trace.kind,
+                "parents": trace.parents or [],
+                "collateral": trace.collateral,
+            })
+
         data = self.build_msg({
-            'gauges': items,
+            'traces': packets,
         })
-        api_path = defaults.METRICS_API_PATH.format(
-            self.organization_id,
-            self.app_id,
-        )
+        api_path = defaults.TRACES_API_PATH.format(self.organization_id,
+                                                   self.app_id)
 
         data['servers'] = [server+api_path for server in self.servers]
+        # print "send", data
         self.send(**data)
 
 
