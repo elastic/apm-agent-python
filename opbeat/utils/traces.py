@@ -21,7 +21,7 @@ class _RequestList(object):
     def as_dict(self):
         return {
             "transaction": self.transaction,
-            "response_code": self.response_code,
+            "result": self.response_code,
             "timestamp": datetime.utcfromtimestamp(self.minute).isoformat() + "Z",
             "durations": self.durations
         }
@@ -38,7 +38,7 @@ class RequestsStore(object):
         with self.cond:
 
             requestlist = _RequestList(transaction, response_code,
-                                      int(time.time()/60))
+                                       int(time.time()/60))
 
             if requestlist.fingerprint not in self.items:
                 self.items[requestlist.fingerprint] = requestlist

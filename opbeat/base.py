@@ -536,7 +536,7 @@ class Client(object):
         data = self.build_msg({
             'transactions': items,
         })
-        api_path = defaults.METRICS_API_PATH.format(
+        api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,
             self.app_id,
         )
