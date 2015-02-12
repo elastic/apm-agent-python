@@ -38,7 +38,7 @@ class RequestsStore(object):
         with self.cond:
 
             requestlist = _RequestList(transaction, response_code,
-                                       int(time.time()/60))
+                                       int(time.time()/60)*60)
 
             if requestlist.fingerprint not in self.items:
                 self.items[requestlist.fingerprint] = requestlist
