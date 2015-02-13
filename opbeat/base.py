@@ -176,7 +176,7 @@ class Client(object):
         self.module_cache = ModuleProxyCache()
 
         self._requests_store = RequestsStore(self.traces_send_freq_secs)
-        atexit_register(self._traces_collect())
+        atexit_register(self._traces_collect)
 
     def get_processors(self):
         for processor in self.processors:
