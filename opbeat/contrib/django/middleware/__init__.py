@@ -65,7 +65,7 @@ class OpbeatAPMMiddleware(object):
                     .total_seconds()*1000
 
                 # If no view was set we ignore the request
-                if hasattr(self.thread_local, "view_func"):
+                if getattr(self.thread_local, "view_func", False):
                     view_func = "{}.{}".format(
                         self.thread_local.view_func.__module__,
                         self.thread_local.view_func.__name__)
