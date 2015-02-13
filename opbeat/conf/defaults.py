@@ -69,7 +69,7 @@ PROCESSORS = (
 )
 
 # how often we send data to the metrics backend
-TRACES_SEND_FREQ_SECS = 10
+TRACES_SEND_FREQ_SECS = 30
 
 # should errors be sent asynchronously in a separate thread
 ASYNC = True
