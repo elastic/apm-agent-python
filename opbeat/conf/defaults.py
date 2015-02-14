@@ -26,8 +26,8 @@ SERVERS = ['https://opbeat.com']
 # Error API path
 ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
 
-# Error API path
-METRICS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/metrics/'
+# Transactions API path
+TRANSACTIONS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/transactions/'
 
 TIMEOUT = 5
 
@@ -69,7 +69,7 @@ PROCESSORS = (
 )
 
 # how often we send data to the metrics backend
-TRACES_SEND_FREQ_SECS = 10
+TRACES_SEND_FREQ_SECS = 30
 
 # should errors be sent asynchronously in a separate thread
 ASYNC = True

@@ -36,7 +36,7 @@ from opbeat.utils import opbeat_json as json, varmap
 
 from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.traces import TracesStore
+from opbeat.utils.traces import RequestsStore
 from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
 from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
@@ -175,8 +175,8 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._traces_store = TracesStore(self.traces_send_freq_secs)
-        atexit_register(self._traces_collect())
+        self._requests_store = RequestsStore(self.traces_send_freq_secs)
+        atexit_register(self._traces_collect)
 
     def get_processors(self):
         for processor in self.processors:
@@ -525,35 +525,18 @@ class Client(object):
         :param view_name: name of the view
 
         """
-        segments = {
-            "response_code": response_code,
-            "transaction_name": view_name
-        }
-        self.captureTrace('opbeat.apm.response_time', elapsed, segments)
-
-    def captureTrace(self, name, value, segments, **kwargs):
-        """
-        Captures a trace
-        """
-        data = {
-            'name': name,
-            'value': value,
-            'segments': segments,
-            'timestamp': time.time()
-        }
-        data.update(kwargs)
-        self._traces_store.add(data)
-        if self._traces_store.should_collect():
+        self._requests_store.add(elapsed, view_name, response_code)
+        if self._requests_store.should_collect():
             self._traces_collect()
 
     def _traces_collect(self):
-        items = self._traces_store.get_all()
+        items = self._requests_store.get_all()
         if not items:
             return
         data = self.build_msg({
-            'gauges': items,
+            'transactions': items,
         })
-        api_path = defaults.METRICS_API_PATH.format(
+        api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,
             self.app_id,
         )

@@ -44,7 +44,7 @@ class Opbeat404CatchMiddleware(object):
         return response
 
 
-class OpbeatMetricsMiddleware(object):
+class OpbeatAPMMiddleware(object):
     # Create a threadlocal variable to store the session in for logging
     thread_local = threading.local()
 
@@ -64,15 +64,18 @@ class OpbeatMetricsMiddleware(object):
                 elapsed = (datetime.now() - self.thread_local.request_start)\
                     .total_seconds()*1000
 
-                if hasattr(self.thread_local, "view_func"):
+                # If no view was set we ignore the request
+                if getattr(self.thread_local, "view_func", False):
                     view_func = "{}.{}".format(
                         self.thread_local.view_func.__module__,
                         self.thread_local.view_func.__name__)
                 else:
-                    view_func = None
+                    view_func = ""
 
                 status_code = response.status_code
                 self.client.captureRequest(elapsed, status_code, view_func)
+
+                self.thread_local.view_func = None
         except Exception:
             self.client.error_logger.error(
                 'Exception during metrics tracking',
