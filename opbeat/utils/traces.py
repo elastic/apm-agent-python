@@ -36,7 +36,6 @@ class RequestsStore(object):
 
     def add(self, elapsed, transaction, response_code):
         with self.cond:
-
             requestlist = _RequestList(transaction, response_code,
                                        int(time.time()/60)*60)
 
@@ -63,4 +62,4 @@ class RequestsStore(object):
 
     def __len__(self):
         with self.cond:
-            return len(self.items)
+            return sum([len(v.durations) for v in self.items.values()])

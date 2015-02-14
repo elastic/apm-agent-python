@@ -113,12 +113,6 @@ def transform(value, stack=None, context=None):
     elif not isinstance(value, six.class_types) and \
             _has_opbeat_metadata(value):
         ret = transform_rec(value.__opbeat__())
-    # elif isinstance(value, Promise):
-    #     # EPIC HACK
-    #     # handles lazy model instances (which are proxy values that dont easily give you the actual function)
-    #     pre = value.__class__.__name__[1:]
-    #     value = getattr(value, '%s__func' % pre)(*getattr(value, '%s__args' % pre), **getattr(value, '%s__kw' % pre))
-    #     return transform(value)
     elif isinstance(value, bool):
         ret = bool(value)
     elif isinstance(value, float):

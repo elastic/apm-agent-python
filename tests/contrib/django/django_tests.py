@@ -448,11 +448,12 @@ class DjangoClientTest(TestCase):
     #         self.opbeat.events.pop(0)
 
     def test_request_metrics(self):
-        print self.opbeat._metrics_store.get_all()
-        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatMetricsMiddleware']):
-            self.assertEqual(len(self.opbeat._metrics_store), 0)
+        self.opbeat._requests_store.get_all()  # clear the store
+        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            self.assertEqual(len(self.opbeat._requests_store), 0)
             self.client.get(reverse('opbeat-no-error'))
-            self.assertEqual(len(self.opbeat._metrics_store), 1)
+            self.assertEqual(len(self.opbeat._requests_store), 1)
+
 
 class DjangoLoggingTest(TestCase):
     def setUp(self):
@@ -530,12 +531,6 @@ class CeleryIntegratedClientTest(TestCase):
             app_id='app',
             secret_token='secret',
         )
-
-    @mock.patch('opbeat.contrib.django.celery.CeleryClient.send_raw_integrated')
-    def test_send_encoded(self, send_raw):
-        self.client.send_integrated('foo')
-
-        send_raw.delay.assert_called_once_with('foo')
 
     @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
     @with_eager_tasks
