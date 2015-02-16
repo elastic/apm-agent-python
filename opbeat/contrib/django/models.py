@@ -188,8 +188,7 @@ def opbeat_exception_handler(request=None, **kwargs):
 
 
 def register_handlers():
-    from django.core.signals import got_request_exception, request_started, \
-        request_finished
+    from django.core.signals import got_request_exception
 
     # Connect to Django's internal signal handler
     got_request_exception.connect(opbeat_exception_handler)
