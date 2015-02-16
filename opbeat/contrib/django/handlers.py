@@ -30,6 +30,7 @@ class OpbeatHandler(BaseOpbeatHandler):
         from opbeat.contrib.django.middleware import OpbeatLogMiddleware
 
         # Fetch the request from a threadlocal variable, if available
-        request = getattr(record, 'request', getattr(OpbeatLogMiddleware.thread, 'request', None))
+        request = getattr(OpbeatLogMiddleware.thread, 'request', None)
+        request = getattr(record, 'request', request)
 
         return super(OpbeatHandler, self)._emit(record, request=request)

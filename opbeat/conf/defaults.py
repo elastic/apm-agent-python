@@ -71,5 +71,5 @@ PROCESSORS = (
 # how often we send data to the metrics backend
 TRACES_SEND_FREQ_SECS = 30
 
-# should errors be sent asynchronously in a separate thread
+# should data should be sent to Opbeat asynchronously in a separate thread
 ASYNC = True

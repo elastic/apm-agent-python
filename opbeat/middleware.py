@@ -37,7 +37,8 @@ class Opbeat(object):
             raise
 
     def handle_exception(self, exc_info, environ):
-        event_id = self.client.capture('Exception',
+        event_id = self.client.capture(
+            'Exception',
             exc_info=exc_info,
             data={
                 'http': {

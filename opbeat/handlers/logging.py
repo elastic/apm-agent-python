@@ -30,10 +30,12 @@ class OpbeatHandler(logging.Handler, object):
             if isinstance(arg, Client):
                 self.client = arg
             else:
-                raise ValueError('The first argument to %s must be a Client instance, got %r instead.' % (
-                    self.__class__.__name__,
-                    arg,
-                ))
+                raise ValueError(
+                    'The first argument to %s must be a Client instance, '
+                    'got %r instead.' % (
+                        self.__class__.__name__,
+                        arg,
+                    ))
         elif 'client' in kwargs:
             self.client = kwargs['client']
         else:
@@ -42,11 +44,6 @@ class OpbeatHandler(logging.Handler, object):
         logging.Handler.__init__(self)
 
     def emit(self, record):
-        # from sentry.client.middleware import SentryLogMiddleware
-
-        # # Fetch the request from a threadlocal variable, if available
-        # request = getattr(SentryLogMiddleware.thread, 'request', None)
-
         self.format(record)
 
         # Avoid typical config issues by overriding loggers behavior
@@ -57,7 +54,10 @@ class OpbeatHandler(logging.Handler, object):
         try:
             return self._emit(record)
         except Exception:
-            six.print_("Top level Opbeat exception caught - failed creating log record", sys.stderr)
+            six.print_(
+                "Top level Opbeat exception caught - "
+                "failed creating log record",
+                sys.stderr)
             six.print_(to_string(record.msg), sys.stderr)
             six.print_(to_string(traceback.format_exc()), sys.stderr)
 
@@ -91,7 +91,9 @@ class OpbeatHandler(logging.Handler, object):
                 if not started:
                     f_globals = getattr(frame, 'f_globals', {})
                     module_name = f_globals.get('__name__', '')
-                    if last_mod.startswith('logging') and not module_name.startswith('logging'):
+                    if last_mod.startswith(
+                            'logging') and not module_name.startswith(
+                            'logging'):
                         started = True
                     else:
                         last_mod = module_name
@@ -102,7 +104,10 @@ class OpbeatHandler(logging.Handler, object):
         extra = getattr(record, 'data', {})
         # Add in all of the data from the record that we aren't already capturing
         for k in record.__dict__.keys():
-            if k in ('stack', 'name', 'args', 'msg', 'levelno', 'exc_text', 'exc_info', 'data', 'created', 'levelname', 'msecs', 'relativeCreated'):
+            if k in (
+                    'stack', 'name', 'args', 'msg', 'levelno', 'exc_text',
+                    'exc_info', 'data', 'created', 'levelname', 'msecs',
+                    'relativeCreated'):
                 continue
             if k.startswith('_'):
                 continue
@@ -110,7 +115,8 @@ class OpbeatHandler(logging.Handler, object):
 
         date = datetime.datetime.utcfromtimestamp(record.created)
 
-        # If there's no exception being processed, exc_info may be a 3-tuple of None
+        # If there's no exception being processed,
+        # exc_info may be a 3-tuple of None
         # http://docs.python.org/library/sys.html#sys.exc_info
         if record.exc_info and all(record.exc_info):
             handler = self.client.get_handler('opbeat.events.Exception')
@@ -121,6 +127,8 @@ class OpbeatHandler(logging.Handler, object):
         data['level'] = record.levelno
         data['logger'] = record.name
 
-        return self.client.capture('Message', param_message={'message':record.msg,'params':record.args},
-                            stack=stack, data=data, extra=extra,
-                            date=date, **kwargs)
+        return self.client.capture('Message',
+                                   param_message={'message': record.msg,
+                                                  'params': record.args},
+                                   stack=stack, data=data, extra=extra,
+                                   date=date, **kwargs)

@@ -308,43 +308,24 @@ class ClientTest(TestCase):
         self.assertTrue(len(event['logger']) < 61, len(event['logger']))
 
     @mock.patch('opbeat.base.Client.send')
-    def test_metrics_collection(self, mock_send):
+    @mock.patch('opbeat.base.RequestsStore.should_collect')
+    def test_metrics_collection(self, should_collect, mock_send):
+        print mock_send
         client = Client(
             servers=['http://example.com'],
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            metrics_send_freq_secs=0.1
         )
+        should_collect.return_value = False
         for i in range(7):
             client.captureRequest(0.1, 200, 'test')
+
         self.assertEqual(len(client._requests_store), 7)
-        time.sleep(0.15)
+        self.assertEqual(mock_send.call_count, 0)
+        should_collect.return_value = True
+
+        client.captureRequest(0.1, 200, 'test')
         self.assertEqual(len(client._requests_store), 0)
         self.assertEqual(mock_send.call_count, 1)
 
-    # def test_long_server_name(self):
-    #     message = 's' * 201
-
-    #     self.client.capture('Message', message=message,)
-
-    #     self.assertEquals(len(self.client.events), 1)
-    #     event = self.client.events.pop(0)
-    #     self.assertTrue(len(event['server_name']) < 201)
-
-# class ClientUDPTest(TestCase):
-#     def setUp(self):
-#         self.server_socket = socket(AF_INET, SOCK_DGRAM)
-#         self.server_socket.bind(('127.0.0.1', 0))
-#         self.client = Client(servers=["udp://%s:%s" % self.server_socket.getsockname()], key='BassOmatic')
-
-#     def test_delivery(self):
-#         self.client.create_from_text('test')
-#         data, address = self.server_socket.recvfrom(2**16)
-#         self.assertTrue("\n\n" in data)
-#         header, payload = data.split("\n\n")
-#         for substring in ("sentry_timestamp=", "sentry_client="):
-#             self.assertTrue(substring in header)
-
-#     def tearDown(self):
-#         self.server_socket.close()
