@@ -131,7 +131,8 @@ def get_client(client=None):
             organization_id=config.get('ORGANIZATION_ID', None),
             app_id=config.get('APP_ID', None),
             secret_token=config.get('SECRET_TOKEN', None),
-            processors=config.get('PROCESSORS', None)
+            processors=config.get('PROCESSORS', None),
+            async=config.get('ASYNC', None),
         )
         if not tmp_client:
             _client = (client, instance)
