@@ -192,15 +192,6 @@ def register_handlers():
 
     # Connect to Django's internal signal handler
     got_request_exception.connect(opbeat_exception_handler)
-    middleware_class = "opbeat.contrib.django.middleware.OpbeatAPMMiddleware"
-    if middleware_class not in django_settings.MIDDLEWARE_CLASSES:
-        if isinstance(django_settings.MIDDLEWARE_CLASSES, tuple):
-            django_settings.MIDDLEWARE_CLASSES = (
-                (middleware_class,) + django_settings.MIDDLEWARE_CLASSES
-            )
-        else:
-            django_settings.MIDDLEWARE_CLASSES.insert(0, middleware_class)
-
 
     # If Celery is installed, register a signal handler
     if 'djcelery' in django_settings.INSTALLED_APPS:
