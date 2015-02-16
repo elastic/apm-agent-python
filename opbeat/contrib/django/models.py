@@ -139,40 +139,17 @@ def get_client(client=None):
     return _client[1]
 
 
-def get_transaction_wrapper(client):
-    if client.servers:
-        class MockTransaction(object):
-            def commit_on_success(self, func):
-                return func
-
-            def is_dirty(self):
-                return False
-
-            def rollback(self):
-                pass
-
-        transaction = MockTransaction()
-    else:
-        from django.db import transaction
-
-    return transaction
-
-
 def opbeat_exception_handler(request=None, **kwargs):
-    transaction = get_transaction_wrapper(client)
-
-    @transaction.commit_on_success
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
         try:
             config = getattr(django_settings, 'OPBEAT', {})
-            if (django_settings.DEBUG and not config.get('DEBUG', False)) or getattr(exc_info[1], 'skip_opbeat', False):
+            if ((django_settings.DEBUG and not config.get('DEBUG', False))
+                    or getattr(exc_info[1], 'skip_opbeat', False)):
                 return
 
-            if transaction.is_dirty():
-                transaction.rollback()
-
-            get_client().capture('Exception', exc_info=exc_info, request=request)
+            get_client().capture('Exception', exc_info=exc_info,
+                                 request=request)
         except Exception as exc:
             try:
                 logger.exception(u'Unable to process log entry: %s' % (exc,))
