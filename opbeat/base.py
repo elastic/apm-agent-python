@@ -465,7 +465,7 @@ class Client(object):
             headers = {
                 'Authorization': auth_header,
                 'Content-Type': 'application/octet-stream',
-                'User-Agent': 'opbeat/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
             }
 
             self.send_remote(url=url, data=message, headers=headers)
