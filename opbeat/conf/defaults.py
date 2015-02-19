@@ -68,8 +68,8 @@ PROCESSORS = (
     'opbeat.processors.SanitizePasswordsProcessor',
 )
 
-# how often we send data to the metrics backend
-TRACES_SEND_FREQ_SECS = 30
+# How often we send data to the metrics backend
+TRACES_SEND_FREQ_SECS = 60
 
-# should data should be sent to Opbeat asynchronously in a separate thread
+# Should data should be sent to Opbeat asynchronously in a separate thread
 ASYNC = True
