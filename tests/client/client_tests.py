@@ -97,7 +97,7 @@ class ClientTest(TestCase):
             headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': 'Bearer %s' % (access_token),
-                'User-Agent': 'opbeat/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
             },
         )
 
@@ -143,7 +143,7 @@ class ClientTest(TestCase):
             headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': 'foo',
-                'User-Agent': 'opbeat/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
 
             },
         )
