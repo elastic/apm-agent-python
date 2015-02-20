@@ -10,7 +10,7 @@ Large portions are
 """
 
 from __future__ import absolute_import
-from datetime import datetime
+import time
 import logging
 import threading
 
