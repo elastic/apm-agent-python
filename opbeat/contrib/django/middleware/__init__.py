@@ -52,7 +52,7 @@ class OpbeatAPMMiddleware(object):
         self.client = get_client()
 
     def process_request(self, request):
-        self.thread_local.request_start = datetime.now()
+        self.thread_local.request_start = time.time()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         self.thread_local.view_func = view_func
@@ -61,8 +61,7 @@ class OpbeatAPMMiddleware(object):
         try:
             if (hasattr(self.thread_local, "request_start")
                     and hasattr(response, "status_code")):
-                elapsed = (datetime.now() - self.thread_local.request_start)\
-                    .total_seconds()*1000
+                elapsed = (time.time() - self.thread_local.request_start)*1000
 
                 # If no view was set we ignore the request
                 if getattr(self.thread_local, "view_func", False):

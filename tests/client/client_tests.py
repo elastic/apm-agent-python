@@ -310,7 +310,6 @@ class ClientTest(TestCase):
     @mock.patch('opbeat.base.Client.send')
     @mock.patch('opbeat.base.RequestsStore.should_collect')
     def test_metrics_collection(self, should_collect, mock_send):
-        print mock_send
         client = Client(
             servers=['http://example.com'],
             organization_id='organization_id',
