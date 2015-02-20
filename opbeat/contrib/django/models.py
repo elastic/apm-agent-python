@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import sys
 import logging
 import warnings
+from opbeat.contrib.django.utils import disabled_due_to_debug
 from opbeat.utils import six
 
 from django.conf import settings as django_settings
@@ -144,8 +145,7 @@ def opbeat_exception_handler(request=None, **kwargs):
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
         try:
-            config = getattr(django_settings, 'OPBEAT', {})
-            if ((django_settings.DEBUG and not config.get('DEBUG', False))
+            if (disabled_due_to_debug()
                     or getattr(exc_info[1], 'skip_opbeat', False)):
                 return
 

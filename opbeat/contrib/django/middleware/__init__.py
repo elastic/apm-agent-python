@@ -17,6 +17,7 @@ import threading
 from django.conf import settings
 
 from opbeat.contrib.django.models import client, get_client
+from opbeat.contrib.django.utils import disabled_due_to_debug
 
 
 def _is_ignorable_404(uri):
@@ -52,7 +53,8 @@ class OpbeatAPMMiddleware(object):
         self.client = get_client()
 
     def process_request(self, request):
-        self.thread_local.request_start = time.time()
+        if not disabled_due_to_debug():
+            self.thread_local.request_start = time.time()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         self.thread_local.view_func = view_func
