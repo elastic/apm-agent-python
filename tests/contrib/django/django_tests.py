@@ -453,6 +453,16 @@ class DjangoClientTest(TestCase):
             self.assertEqual(len(self.opbeat._requests_store), 0)
             self.client.get(reverse('opbeat-no-error'))
             self.assertEqual(len(self.opbeat._requests_store), 1)
+            timed_requests = self.opbeat._requests_store.get_all()
+
+            self.assertEqual(len(timed_requests), 1)
+            timing = timed_requests[0]
+            self.assertTrue('durations' in timing)
+            self.assertEqual(len(timing['durations']), 1)
+            self.assertEqual(timing['transaction'],
+                             'tests.contrib.django.views.no_error')
+            self.assertEqual(timing['result'],
+                             200)
 
 
 class DjangoLoggingTest(TestCase):
