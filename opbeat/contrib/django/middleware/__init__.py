@@ -46,11 +46,22 @@ class Opbeat404CatchMiddleware(object):
 
 
 class OpbeatAPMMiddleware(object):
-    # Create a threadlocal variable to store the session in for logging
+    # Create a thread local variable to store the session in for logging
     thread_local = threading.local()
 
     def __init__(self):
         self.client = get_client()
+
+    def _get_name_from_view_func(self, view_func):
+        # If no view was set we ignore the request
+        module = self.thread_local.view_func.__module__
+
+        if hasattr(self.thread_local.view_func, '__name__'):
+            view_name = self.thread_local.view_func.__name__
+        else:  # Fall back if there's no __name__
+            view_name = self.thread_local.view_func._class__.__name__
+
+        return "{0}.{1}".format(module, view_name)
 
     def process_request(self, request):
         if not disabled_due_to_debug():
@@ -65,11 +76,9 @@ class OpbeatAPMMiddleware(object):
                     and hasattr(response, "status_code")):
                 elapsed = (time.time() - self.thread_local.request_start)*1000
 
-                # If no view was set we ignore the request
                 if getattr(self.thread_local, "view_func", False):
-                    view_func = "{0}.{1}".format(
-                        self.thread_local.view_func.__module__,
-                        self.thread_local.view_func.__name__)
+                    view_func = self._get_name_from_view_func(
+                        self.thread_local.view_func)
                 else:
                     view_func = ""
 
@@ -79,7 +88,7 @@ class OpbeatAPMMiddleware(object):
                 self.thread_local.view_func = None
         except Exception:
             self.client.error_logger.error(
-                'Exception during metrics tracking',
+                'Exception during timing of request',
                 exc_info=True,
             )
         return response
@@ -98,7 +107,7 @@ class OpbeatResponseErrorIdMiddleware(object):
 
 
 class OpbeatLogMiddleware(object):
-    # Create a threadlocal variable to store the session in for logging
+    # Create a thread local variable to store the session in for logging
     thread = threading.local()
 
     def process_request(self, request):
