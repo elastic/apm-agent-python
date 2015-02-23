@@ -1,3 +1,9 @@
+## 2.0 ##
+ * Async support was refactored, removed old AsyncClient classes
+ * OpbeatAPMMiddleware was added to time requests
+ * `APP_ID` now configurable from environment
+ * Lots of cleanups 
+
 ## 1.4 ##
  * added preliminary support for Django 1.8
  * dropped support for Django 1.3

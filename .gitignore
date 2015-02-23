@@ -5,6 +5,7 @@
 *.pid
 .coverage
 .DS_Store
+.idea
 pip-log.txt
 /*.egg-info
 /build

@@ -8,15 +8,16 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from opbeat.utils import six
-try:
-    from Queue import Queue
-except ImportError:
-    from queue import Queue
-from opbeat.base import Client
-from threading import Thread, Lock
-import atexit
+import logging
 import os
+import time
+from threading import Thread, Lock
+
+from opbeat.utils.compat import atexit_register
+from opbeat.utils import six
+from opbeat.utils.six.moves import queue
+
+logger = logging.getLogger('opbeat')
 
 OPBEAT_WAIT_SECONDS = 10
 
@@ -25,7 +26,7 @@ class AsyncWorker(object):
     _terminator = object()
 
     def __init__(self):
-        self._queue = Queue(-1)
+        self._queue = queue.Queue(-1)
         self._lock = Lock()
         self._thread = None
         self.start()
@@ -53,7 +54,7 @@ class AsyncWorker(object):
                 self._thread.start()
         finally:
             self._lock.release()
-            atexit.register(self.main_thread_terminated)
+            atexit_register(self.main_thread_terminated)
 
     def stop(self, timeout=None):
         """
@@ -77,22 +78,13 @@ class AsyncWorker(object):
             if record is self._terminator:
                 break
             callback, kwargs = record
-            callback(**kwargs)
-
-
-class AsyncClient(Client):
-    """
-    This client uses a single background thread to dispatch errors.
-    """
-    def __init__(self, worker=None, *args, **kwargs):
-        self.worker = worker or AsyncWorker()
-        super(AsyncClient, self).__init__(*args, **kwargs)
-
-    def send_sync(self, **kwargs):
-        super(AsyncClient, self).send(**kwargs)
-
-    def send(self, **kwargs):
-        self.worker.queue(self.send_sync, kwargs)
+            try:
+                callback(**kwargs)
+            except Exception:
+                logger.error('Error while sending', exc_info=True)
+            finally:
+                self._queue.task_done()
+            time.sleep(0)
 
 
 class OpbeatWorker(object):

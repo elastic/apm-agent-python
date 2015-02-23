@@ -15,6 +15,7 @@ import datetime
 import logging
 import socket
 import os
+import sys
 import time
 import zlib
 from opbeat.utils import six
@@ -33,10 +34,11 @@ import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
 
+from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.stacks import get_stack_info, iter_stack_frames, \
-  get_culprit
-from opbeat.transport import TransportRegistry
+from opbeat.utils.traces import RequestsStore
+from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
+from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
 __all__ = ('Client',)
 
@@ -119,14 +121,13 @@ class Client(object):
     logger = logging.getLogger('opbeat')
     protocol_version = '1.0'
 
-    _registry = TransportRegistry()
-
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
-            include_paths=None, exclude_paths=None,
-            timeout=None, hostname=None, auto_log_stacks=None, key=None,
-            string_max_length=None, list_max_length=None,
-            processors=None, servers=None, api_path=None,
-            **kwargs):
+                 include_paths=None, exclude_paths=None,
+                 timeout=None, hostname=None, auto_log_stacks=None, key=None,
+                 string_max_length=None, list_max_length=None,
+                 processors=None, servers=None, api_path=None, async=None,
+                 traces_send_freq_secs=None,
+                 **kwargs):
         # configure loggers first
         cls = self.__class__
         self.state = ClientState()
@@ -150,6 +151,9 @@ class Client(object):
             secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
         self.servers = servers or defaults.SERVERS
+        self.async = async is True or (defaults.ASYNC and async is not False)
+        self._transport_class = AsyncHTTPTransport if self.async else HTTPTransport
+        self._transports = {}
 
         # servers may be set to a NoneType (for Django)
         if self.servers and not (organization_id and app_id and secret_token):
@@ -161,11 +165,13 @@ class Client(object):
         self.timeout = int(timeout or defaults.TIMEOUT)
         self.hostname = six.text_type(hostname or defaults.HOSTNAME)
         self.auto_log_stacks = bool(auto_log_stacks or
-                defaults.AUTO_LOG_STACKS)
+                                    defaults.AUTO_LOG_STACKS)
 
         self.string_max_length = int(string_max_length or
-                defaults.MAX_LENGTH_STRING)
+                                     defaults.MAX_LENGTH_STRING)
         self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
+        self.traces_send_freq_secs = (traces_send_freq_secs or
+                                      defaults.TRACES_SEND_FREQ_SECS)
 
         self.organization_id = organization_id
         self.app_id = app_id
@@ -174,9 +180,8 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-    @classmethod
-    def register_scheme(cls, scheme, transport_class):
-        cls._registry.register_scheme(scheme, transport_class)
+        self._requests_store = RequestsStore(self.traces_send_freq_secs)
+        atexit_register(self._traces_collect)
 
     def get_processors(self):
         for processor in self.processors:
@@ -195,8 +200,8 @@ class Client(object):
         return self.module_cache[name](self)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
-            extra=None, stack=None,
-            **kwargs):
+                              extra=None, stack=None,
+                              **kwargs):
         """
         Captures, processes and serializes an event into a dict object
         """
@@ -215,7 +220,7 @@ class Client(object):
         self.build_msg(data=data)
 
         # if '.' not in event_type:
-            # Assume it's a builtin
+        # Assume it's a builtin
         event_type = 'opbeat.events.%s' % event_type
 
         handler = self.get_handler(event_type)
@@ -293,8 +298,7 @@ class Client(object):
 
         return data
 
-    def build_msg(self, data=None,
-            **kwargs):
+    def build_msg(self, data=None, **kwargs):
         data.setdefault('machine', {'hostname': self.hostname})
         data.setdefault('organization_id', self.organization_id)
         data.setdefault('app_id', self.app_id)
@@ -347,7 +351,7 @@ class Client(object):
         """
 
         data = self.build_msg_for_logging(event_type, data, date,
-                extra, stack, **kwargs)
+                                          extra, stack, **kwargs)
 
         if not api_path:
             api_path = defaults.ERROR_API_PATH.format(
@@ -364,8 +368,15 @@ class Client(object):
         if headers is None:
             headers = {}
         parsed = urlparse.urlparse(url)
-        transport = self._registry.get_transport(parsed)
-        return transport.send(data, headers, timeout=self.timeout)
+        transport = self._get_transport(parsed)
+        if transport.async:
+            transport.send_async(
+                data, headers,
+                success_callback=self.state.set_success,
+                fail_callback=self.state.set_fail
+            )
+        else:
+            transport.send(data, headers, timeout=self.timeout)
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
@@ -376,6 +387,11 @@ class Client(object):
         else:
             message = data.pop('message', '<no message value>')
         return message
+
+    def _get_transport(self, parsed_url):
+        if parsed_url not in self._transports:
+            self._transports[parsed_url] = self._transport_class(parsed_url)
+        return self._transports[parsed_url]
 
     def send_remote(self, url, data, headers=None):
         if not self.state.should_try():
@@ -454,7 +470,7 @@ class Client(object):
             headers = {
                 'Authorization': auth_header,
                 'Content-Type': 'application/octet-stream',
-                'User-Agent': 'opbeat/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
             }
 
             self.send_remote(url=url, data=message, headers=headers)
@@ -503,10 +519,38 @@ class Client(object):
         >>> client.captureQuery('SELECT * FROM foo')
         """
         return self.capture('Query', query=query, params=params, engine=engine,
-                **kwargs)
+                            **kwargs)
+
+    def captureRequest(self, elapsed, response_code, view_name):
+        """
+        Captures request metrics.
+
+        :param elapsed: time elapsed for the whole response, in seconds
+        :param response_code: HTTP response code
+        :param view_name: name of the view
+
+        """
+        self._requests_store.add(elapsed, view_name, response_code)
+        if self._requests_store.should_collect():
+            self._traces_collect()
+
+    def _traces_collect(self):
+        items = self._requests_store.get_all()
+        if not items:
+            return
+        data = self.build_msg({
+            'transactions': items,
+        })
+        api_path = defaults.TRANSACTIONS_API_PATH.format(
+            self.organization_id,
+            self.app_id,
+        )
+
+        data['servers'] = [server+api_path for server in self.servers]
+        self.send(**data)
 
 
 class DummyClient(Client):
-    "Sends messages into an empty void"
+    """Sends messages into an empty void"""
     def send(self, **kwargs):
         return None
