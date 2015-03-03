@@ -59,7 +59,7 @@ class OpbeatAPMMiddleware(object):
         if hasattr(self.thread_local.view_func, '__name__'):
             view_name = self.thread_local.view_func.__name__
         else:  # Fall back if there's no __name__
-            view_name = self.thread_local.view_func._class__.__name__
+            view_name = self.thread_local.view_func.__class__.__name__
 
         return "{0}.{1}".format(module, view_name)
 
