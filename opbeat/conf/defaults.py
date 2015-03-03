@@ -21,7 +21,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir))
 DEBUG = False
 
 # This should be the schema+host of the Opbeat server
-SERVERS = ['https://opbeat.com']
+SERVERS = ['https://intake.opbeat.com']
 
 # Error API path
 ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
