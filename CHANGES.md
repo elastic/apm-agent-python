@@ -1,5 +1,5 @@
 ## 2.0.1 ##
- * Fixed a bug when __name__ does not exist for view_func given to OpbeatAPMMiddleware
+ * Fixed a bug when `__name__` does not exist for view_func given to OpbeatAPMMiddleware
 
 ## 2.0 ##
  * Async support was refactored, removed old AsyncClient classes
