@@ -132,8 +132,8 @@ class Opbeat(object):
             return
 
         if disabled_due_to_debug(
-                self.app.config.get('OPBEAT', {}),
-                self.app.config.get('DEBUG', False)
+            self.app.config.get('OPBEAT', {}),
+            self.app.config.get('DEBUG', False)
         ):
             return
 

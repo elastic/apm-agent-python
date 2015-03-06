@@ -65,8 +65,8 @@ class OpbeatAPMMiddleware(object):
 
     def process_request(self, request):
         if disabled_due_to_debug(
-                getattr(django_settings, 'OPBEAT', {}),
-                getattr(django_settings, 'OPBEAT', {}).get('DEBUG', False)
+            getattr(django_settings, 'OPBEAT', {}),
+            getattr(django_settings, 'OPBEAT', {}).get('DEBUG', False)
         ):
             return
 
