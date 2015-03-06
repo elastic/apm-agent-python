@@ -32,3 +32,11 @@ def varmap(func, var, context=None, name=None):
     del context[objid]
     return ret
 
+def disabled_due_to_debug(opbeat_config, debug):
+    """
+    Compares configs to determine whether to log to Opbeat
+    :param opbeat_config:
+    :param debug:
+    :return: boolean
+    """
+    return debug and not opbeat_config.get('DEBUG', False)
