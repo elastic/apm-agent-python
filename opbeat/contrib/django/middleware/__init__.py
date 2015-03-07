@@ -11,6 +11,7 @@ Large portions are
 
 from __future__ import absolute_import
 
+import time
 import logging
 import threading
 
@@ -20,6 +21,7 @@ from opbeat.contrib.django.instruments.db import enable_instrumentation as db_en
 from opbeat.contrib.django.instruments.cache import enable_instrumentation as cache_enable_instrumentation
 from opbeat.contrib.django.instruments.template import enable_instrumentation as template_enable_instrumentation
 from opbeat.contrib.django.models import client, get_client
+from opbeat.contrib.django.utils import disabled_due_to_debug
 
 
 def _is_ignorable_404(uri):
@@ -47,6 +49,55 @@ class Opbeat404CatchMiddleware(object):
         return response
 
 
+class OpbeatAPMMiddleware(object):
+    # Create a thread local variable to store the session in for logging
+    thread_local = threading.local()
+
+    def __init__(self):
+        self.client = get_client()
+
+    def _get_name_from_view_func(self, view_func):
+        # If no view was set we ignore the request
+        module = self.thread_local.view_func.__module__
+
+        if hasattr(self.thread_local.view_func, '__name__'):
+            view_name = self.thread_local.view_func.__name__
+        else:  # Fall back if there's no __name__
+            view_name = self.thread_local.view_func.__class__.__name__
+
+        return "{0}.{1}".format(module, view_name)
+
+    def process_request(self, request):
+        if not disabled_due_to_debug():
+            self.thread_local.request_start = time.time()
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        self.thread_local.view_func = view_func
+
+    def process_response(self, request, response):
+        try:
+            if (hasattr(self.thread_local, "request_start")
+                    and hasattr(response, "status_code")):
+                elapsed = (time.time() - self.thread_local.request_start)*1000
+
+                if getattr(self.thread_local, "view_func", False):
+                    view_func = self._get_name_from_view_func(
+                        self.thread_local.view_func)
+                else:
+                    view_func = ""
+
+                status_code = response.status_code
+                self.client.captureRequest(elapsed, status_code, view_func)
+
+                self.thread_local.view_func = None
+        except Exception:
+            self.client.error_logger.error(
+                'Exception during timing of request',
+                exc_info=True,
+            )
+        return response
+
+
 class OpbeatResponseErrorIdMiddleware(object):
     """
     Appends the X-Opbeat-ID response header for referencing a message within
@@ -60,7 +111,7 @@ class OpbeatResponseErrorIdMiddleware(object):
 
 
 class OpbeatLogMiddleware(object):
-    # Create a threadlocal variable to store the session in for logging
+    # Create a thread local variable to store the session in for logging
     thread = threading.local()
 
     def process_request(self, request):

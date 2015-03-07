@@ -15,6 +15,10 @@ from __future__ import absolute_import
 
 import sys
 import logging
+import warnings
+from opbeat.contrib.django.utils import disabled_due_to_debug
+from opbeat.utils import six
+
 
 import warnings
 from django.conf import settings as django_settings
@@ -139,7 +143,8 @@ def get_client(client=None):
             organization_id=config.get('ORGANIZATION_ID', None),
             app_id=config.get('APP_ID', None),
             secret_token=config.get('SECRET_TOKEN', None),
-            processors=config.get('PROCESSORS', None)
+            processors=config.get('PROCESSORS', None),
+            async=config.get('ASYNC', None),
         )
         if not tmp_client:
             _client = (client, instance)
@@ -147,40 +152,16 @@ def get_client(client=None):
     return _client[1]
 
 
-def get_transaction_wrapper(client):
-    if client.servers:
-        class MockTransaction(object):
-            def commit_on_success(self, func):
-                return func
-
-            def is_dirty(self):
-                return False
-
-            def rollback(self):
-                pass
-
-        transaction = MockTransaction()
-    else:
-        from django.db import transaction
-
-    return transaction
-
-
 def opbeat_exception_handler(request=None, **kwargs):
-    transaction = get_transaction_wrapper(client)
-
-    @transaction.commit_on_success
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
         try:
-            config = getattr(django_settings, 'OPBEAT', {})
-            if (django_settings.DEBUG and not config.get('DEBUG', False)) or getattr(exc_info[1], 'skip_opbeat', False):
+            if (disabled_due_to_debug()
+                    or getattr(exc_info[1], 'skip_opbeat', False)):
                 return
 
-            if transaction.is_dirty():
-                transaction.rollback()
-
-            get_client().capture('Exception', exc_info=exc_info, request=request)
+            get_client().capture('Exception', exc_info=exc_info,
+                                 request=request)
         except Exception as exc:
             try:
                 logger.exception(u'Unable to process log entry: %s' % (exc,))
@@ -196,20 +177,10 @@ def opbeat_exception_handler(request=None, **kwargs):
 
 
 def register_handlers():
-    from django.core.signals import got_request_exception, request_started, \
-        request_finished
+    from django.core.signals import got_request_exception
 
     # Connect to Django's internal signal handler
     got_request_exception.connect(opbeat_exception_handler)
-    middleware_class = "opbeat.contrib.django.middleware.OpbeatMetricsMiddleware"
-    if middleware_class not in django_settings.MIDDLEWARE_CLASSES:
-        if isinstance(django_settings.MIDDLEWARE_CLASSES, tuple):
-            django_settings.MIDDLEWARE_CLASSES = (
-                (middleware_class,) + django_settings.MIDDLEWARE_CLASSES
-            )
-        else:
-            django_settings.MIDDLEWARE_CLASSES.insert(0, middleware_class)
-
 
     # If Celery is installed, register a signal handler
     if 'djcelery' in django_settings.INSTALLED_APPS:

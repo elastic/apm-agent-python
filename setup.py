@@ -80,7 +80,7 @@ setup(
     author='Ron Cohen',
     author_email='ron@opbeat.com',
     url='https://github.com/opbeat/opbeat_python',
-    description='opbeat is a client for Opbeat (https://www.opbeat.com)',
+    description='The official Python module for Opbeat.com',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     packages=find_packages(exclude=("tests",)),
     zip_safe=False,

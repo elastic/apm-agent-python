@@ -37,7 +37,7 @@ from opbeat.utils import opbeat_json as json, varmap
 
 from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.traces import TracesStore
+from opbeat.utils.traces import RequestsStore
 from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
 from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
@@ -141,6 +141,11 @@ class Client(object):
             self.logger.info(msg)
             organization_id = os.environ['OPBEAT_ORGANIZATION_ID']
 
+        if app_id is None and os.environ.get('OPBEAT_APP_ID'):
+            msg = "Configuring opbeat from environment variable 'OPBEAT_APP_ID'"
+            self.logger.info(msg)
+            app_id = os.environ['OPBEAT_APP_ID']
+
         if secret_token is None and os.environ.get('OPBEAT_SECRET_TOKEN'):
             msg = "Configuring opbeat from environment variable 'OPBEAT_SECRET_TOKEN'"
             self.logger.info(msg)
@@ -176,9 +181,8 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._traces_store = TracesStore(self.traces_send_freq_secs)
-        self._sig_stack = []
-        atexit_register(self._traces_collect())
+        self._requests_store = RequestsStore(self.traces_send_freq_secs)
+        atexit_register(self._traces_collect)
 
     def begin_transaction(self):
         self._traces_store.request_start()
@@ -369,7 +373,10 @@ class Client(object):
                                           extra, stack, **kwargs)
 
         if not api_path:
-            api_path = defaults.ERROR_API_PATH.format()
+            api_path = defaults.ERROR_API_PATH.format(
+                data['organization_id'],
+                data['app_id']
+            )
 
         data['servers'] = [server+api_path for server in self.servers]
         self.send(**data)
@@ -482,7 +489,7 @@ class Client(object):
             headers = {
                 'Authorization': auth_header,
                 'Content-Type': 'application/octet-stream',
-                'User-Agent': 'opbeat/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
             }
 
             self.send_remote(url=url, data=message, headers=headers)
@@ -533,36 +540,31 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
 
+    def captureRequest(self, elapsed, response_code, view_name):
+        """
+        Captures request metrics.
+
+        :param elapsed: time elapsed for the whole response, in seconds
+        :param response_code: HTTP response code
+        :param view_name: name of the view
+
+        """
+        self._requests_store.add(elapsed, view_name, response_code)
+        if self._requests_store.should_collect():
+            self._traces_collect()
+
     def _traces_collect(self):
-        traces = self._traces_store.get_all()
-        # print type(traces), traces
-        if not traces:
-            # print "No traces"
+        items = self._requests_store.get_all()
+        if not items:
             return
 
-        ts = datetime.datetime.now().isoformat() + "Z"
-        packets = []
-
-        for trace in traces:
-            # print trace.start_time_list
-            avg_start_time = min(trace.start_time_list)
-                # (sum(trace.start_time_list)
-                #               / float(len(trace.start_time_list)))
-            packets.append({
-                "transaction": trace.transaction,
-                "durations": trace.duration_list,
-                "avg_start_time": avg_start_time,
-                "signature": trace.signature,
-                "kind": trace.kind,
-                "parents": trace.parents or [],
-                "collateral": trace.collateral,
-            })
-
         data = self.build_msg({
-            'traces': packets,
+            'transactions': items,
         })
-        api_path = defaults.TRACES_API_PATH.format(self.organization_id,
-                                                   self.app_id)
+        api_path = defaults.TRANSACTIONS_API_PATH.format(
+            self.organization_id,
+            self.app_id,
+        )
 
         data['servers'] = [server+api_path for server in self.servers]
         # print "send", data

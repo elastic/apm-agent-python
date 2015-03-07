@@ -1,3 +1,6 @@
+from django.conf import settings as django_settings
+
+
 def linebreak_iter(template_source):
     yield 0
     p = template_source.find('\n')
@@ -38,3 +41,8 @@ def get_data_from_template(source):
         },
         'culprit': origin.loadname,
     }
+
+
+def disabled_due_to_debug():
+    config = getattr(django_settings, 'OPBEAT', {})
+    return django_settings.DEBUG and not config.get('DEBUG', False)

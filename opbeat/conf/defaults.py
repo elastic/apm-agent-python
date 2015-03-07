@@ -21,13 +21,13 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir))
 DEBUG = False
 
 # This should be the schema+host of the Opbeat server
-SERVERS = ['https://opbeat.com']
+SERVERS = ['https://intake.opbeat.com']
 
 # Error API path
 ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
 
-# Traces API path
-TRACES_API_PATH = '/api/v1/organizations/{0}/apps/{1}/traces/'
+# Transactions API path
+TRANSACTIONS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/transactions/'
 
 TIMEOUT = 5
 
@@ -68,8 +68,8 @@ PROCESSORS = (
     'opbeat.processors.SanitizePasswordsProcessor',
 )
 
-# how often we send data to the metrics backend
-TRACES_SEND_FREQ_SECS = 10
+# How often we send data to the metrics backend
+TRACES_SEND_FREQ_SECS = 60
 
-# should errors be sent asynchronously in a separate thread
+# Should data should be sent to Opbeat asynchronously in a separate thread
 ASYNC = True

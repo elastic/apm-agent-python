@@ -38,31 +38,6 @@ class HTTPTransport(Transport):
             response = urlopen(req, data).read()
         return response
 
-    def compute_scope(self, url, scope):
-        netloc = url.hostname
-        if url.port and (url.scheme, url.port) not in \
-                (('http', 80), ('https', 443)):
-            netloc += ':%s' % url.port
-
-        path_bits = url.path.rsplit('/', 1)
-        if len(path_bits) > 1:
-            path = path_bits[0]
-        else:
-            path = ''
-        project = path_bits[-1]
-
-        if not all([netloc, project, url.username, url.password]):
-            raise ValueError('Invalid Opbeat DSN: %r' % url.geturl())
-
-        server = '%s://%s%s/api/store/' % (url.scheme, netloc, path)
-        scope.update({
-            'SENTRY_SERVERS': [server],
-            'SENTRY_PROJECT': project,
-            'SENTRY_PUBLIC_KEY': url.username,
-            'SENTRY_SECRET_KEY': url.password,
-        })
-        return scope
-
 
 class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
     scheme = ['http', 'https']
