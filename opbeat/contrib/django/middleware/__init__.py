@@ -58,12 +58,12 @@ class OpbeatAPMMiddleware(object):
 
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
-        module = self.thread_local.view_func.__module__
+        module = view_func.__module__
 
-        if hasattr(self.thread_local.view_func, '__name__'):
-            view_name = self.thread_local.view_func.__name__
+        if hasattr(view_func, '__name__'):
+            view_name = view_func.__name__
         else:  # Fall back if there's no __name__
-            view_name = self.thread_local.view_func.__class__.__name__
+            view_name = view_func.__class__.__name__
 
         return "{0}.{1}".format(module, view_name)
 
