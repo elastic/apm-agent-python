@@ -41,7 +41,8 @@ tests_require = [
     'mock',
     'pep8',
     'webob',
-    'pytz'
+    'pytz',
+    'wrapt',
 ]
 
 if sys.version_info[0] == 2:

@@ -134,6 +134,7 @@ def get_client(client=None):
             secret_token=config.get('SECRET_TOKEN', None),
             processors=config.get('PROCESSORS', None),
             async=config.get('ASYNC', None),
+            wrap_django_middleware=config.get('WRAP_DJANGO_MIDDLEWARE'),
         )
         if not tmp_client:
             _client = (client, instance)

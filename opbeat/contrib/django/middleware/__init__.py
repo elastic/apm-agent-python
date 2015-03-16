@@ -13,8 +13,17 @@ from __future__ import absolute_import
 import time
 import logging
 import threading
+import wrapt
+
+from django.http.request import HttpRequest
 
 from django.conf import settings
+
+
+try:
+    from importlib import import_module
+except ImportError:
+    from django.utils.importlib import import_module
 
 from opbeat.contrib.django.models import client, get_client
 from opbeat.contrib.django.utils import disabled_due_to_debug
@@ -45,12 +54,49 @@ class Opbeat404CatchMiddleware(object):
         return response
 
 
+def process_request_wrapper(wrapped, instance, args, kwargs):
+    response = wrapped(*args, **kwargs)
+    try:
+        if response is not None:
+            request = None
+            if args and isinstance(args[0], HttpRequest):
+                request = args[0]
+            elif 'request' in kwargs and isinstance(kwargs['request'], HttpRequest):
+                request = kwargs['request']
+            if request is not None:
+                name = [type(instance).__name__, wrapped.__name__]
+                if type(instance).__module__:
+                    name.insert(0, type(instance).__module__)
+                request.__opbeat_transaction_name = '.'.join(name)
+    finally:
+        return response
+
+
 class OpbeatAPMMiddleware(object):
     # Create a thread local variable to store the session in for logging
     thread_local = threading.local()
 
     def __init__(self):
         self.client = get_client()
+        if self.client.wrap_django_middleware:
+            for middleware_path in settings.MIDDLEWARE_CLASSES:
+                module_path, class_name = middleware_path.rsplit('.', 1)
+                try:
+                    module = import_module(module_path)
+                    middleware_class = getattr(module, class_name)
+                    if middleware_class == type(self):
+                        # don't patch ourselves
+                        continue
+                    if hasattr(middleware_class, 'process_request'):
+                        wrapt.wrap_function_wrapper(
+                            middleware_class,
+                            'process_request',
+                            process_request_wrapper
+                        )
+                except ImportError:
+                    client.logger.info(
+                        "Can't instrument middleware %s", middleware_path
+                    )
 
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
@@ -80,7 +126,11 @@ class OpbeatAPMMiddleware(object):
                     view_func = self._get_name_from_view_func(
                         self.thread_local.view_func)
                 else:
-                    view_func = ""
+                    view_func = getattr(
+                        request,
+                        '__opbeat_transaction_name',
+                        ''
+                    )
 
                 status_code = response.status_code
                 self.client.captureRequest(elapsed, status_code, view_func)

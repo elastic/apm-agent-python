@@ -71,5 +71,8 @@ PROCESSORS = (
 # How often we send data to the metrics backend
 TRACES_SEND_FREQ_SECS = 60
 
-# Should data should be sent to Opbeat asynchronously in a separate thread
+# Should data be sent to Opbeat asynchronously in a separate thread
 ASYNC = True
+
+# Should opbeat wrap middleware for better metrics detection
+WRAP_DJANGO_MIDDLEWARE = False
