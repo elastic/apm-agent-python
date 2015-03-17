@@ -1,3 +1,6 @@
+### 2.0.3 ###
+ * fixed bug in collecting Django POST data
+
 ### 2.0.2 ###
  * start using the new intake URL
  * Flask: module now adheres to the Flask.debug option and does not log to
