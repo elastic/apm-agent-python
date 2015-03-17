@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core.signals import got_request_exception
 from django.core.handlers.wsgi import WSGIRequest
+from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -405,12 +406,52 @@ class DjangoClientTest(TestCase):
         self.assertEquals(http['method'], 'POST')
         self.assertEquals(http['data'], '<unavailable>')
 
+    def test_post_data(self):
+        request = WSGIRequest(environ={
+            'wsgi.input': BytesIO(),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/octet-stream',
+            'ACCEPT': 'application/json',
+        })
+        request.POST = QueryDict("x=1&y=2")
+        self.opbeat.capture('Message', message='foo', request=request)
+
+        self.assertEquals(len(self.opbeat.events), 1)
+        event = self.opbeat.events.pop(0)
+
+        self.assertTrue('http' in event)
+        http = event['http']
+        self.assertEquals(http['method'], 'POST')
+        self.assertEquals(http['data'], {'x': '1', 'y': '2'})
+
+    def test_post_raw_data(self):
+        request = WSGIRequest(environ={
+            'wsgi.input': BytesIO(six.b('foobar')),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/octet-stream',
+            'ACCEPT': 'application/json',
+            'CONTENT_LENGTH': '6',
+        })
+        self.opbeat.capture('Message', message='foo', request=request)
+
+        self.assertEquals(len(self.opbeat.events), 1)
+        event = self.opbeat.events.pop(0)
+
+        self.assertTrue('http' in event)
+        http = event['http']
+        self.assertEquals(http['method'], 'POST')
+        self.assertEquals(http['data'], six.b('foobar'))
+
     # This test only applies to Django 1.3+
     def test_request_capture(self):
         if django.VERSION[:2] < (1, 3):
             return
         request = WSGIRequest(environ={
-            'wsgi.input': StringIO(),
+            'wsgi.input': BytesIO(),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
