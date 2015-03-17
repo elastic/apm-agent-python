@@ -2,7 +2,7 @@
 opbeat.utils
 ~~~~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2011-2012 Opbeat
+:copyright: (c) 2011-2015 Opbeat
 
 Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
@@ -32,3 +32,11 @@ def varmap(func, var, context=None, name=None):
     del context[objid]
     return ret
 
+def disabled_due_to_debug(opbeat_config, debug):
+    """
+    Compares module and app configs to determine whether to log to Opbeat
+    :param opbeat_config: Dictionary containing module config
+    :param debug: Boolean denoting app DEBUG state
+    :return: Boolean True if logging is disabled
+    """
+    return debug and not opbeat_config.get('DEBUG', False)

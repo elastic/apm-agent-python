@@ -23,25 +23,25 @@ for m in ('multiprocessing', 'billiard'):
 import sys
 import os
 
-from setuptools import find_packages
+from setuptools import setup, find_packages, Extension
 from opbeat.version import VERSION
 from setuptools.command.test import test as TestCommand
 
-from distutils.core import setup
-from distutils.core import Extension
 from distutils.command.build_ext import build_ext
 from distutils.errors import (CCompilerError, DistutilsExecError,
-                DistutilsPlatformError)
+                              DistutilsPlatformError)
 
 if sys.platform == 'win32':
     build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError, IOError)
+                        DistutilsPlatformError, IOError)
 else:
     build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError)
+                        DistutilsPlatformError)
+
 
 class BuildExtFailed(Exception):
     pass
+
 
 class optional_build_ext(build_ext):
     def run(self):
@@ -142,9 +142,10 @@ def run_setup(with_extensions):
     setup_kwargs_tmp = dict(setup_kwargs)
 
     if with_extensions:
-        setup_kwargs_tmp['ext_modules'] = [
-                Extension("opbeat.utils.wrapt._wrappers", ["opbeat/utils/wrapt/_wrappers.c"])]
-        setup_kwargs_tmp['cmdclass'] = dict(build_ext=optional_build_ext)
+        setup_kwargs_tmp['ext_modules'] = [Extension(
+            'opbeat.utils.wrapt._wrappers', ['opbeat/utils/wrapt/_wrappers.c']
+        )]
+        setup_kwargs_tmp['cmdclass']['build_ext'] = optional_build_ext
 
     setup(**setup_kwargs_tmp)
 

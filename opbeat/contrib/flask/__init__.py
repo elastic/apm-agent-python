@@ -19,6 +19,7 @@ from flask.signals import got_request_exception
 from opbeat.conf import setup_logging
 from opbeat.base import Client
 from opbeat.contrib.flask.utils import get_data_from_request
+from opbeat.utils import disabled_due_to_debug
 from opbeat.handlers.logging import OpbeatHandler
 
 
@@ -128,6 +129,12 @@ class Opbeat(object):
 
     def handle_exception(self, *args, **kwargs):
         if not self.client:
+            return
+
+        if disabled_due_to_debug(
+            self.app.config.get('OPBEAT', {}),
+            self.app.config.get('DEBUG', False)
+        ):
             return
 
         self.client.capture('Exception', exc_info=kwargs.get('exc_info'),

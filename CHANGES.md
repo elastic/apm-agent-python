@@ -1,9 +1,15 @@
-## 2.0.1 ##
- * Fixed a bug when `__name__` does not exist for view_func given to OpbeatAPMMiddleware
+### 2.0.2 ###
+ * start using the new intake URL
+ * Flask: module now adheres to the Flask.debug option and does not log to
+   Opbeat unless it is False
 
-## 2.0 ##
- * Async support was refactored, removed old AsyncClient classes
- * OpbeatAPMMiddleware was added to time requests
+### 2.0.1 ###
+ * Fixed a bug when `__name__` does not exist for `view_func` given to
+   `OpbeatAPMMiddleware`
+
+# 2.0 #
+ * Async support was refactored, removed old `AsyncClient` classes
+ * `OpbeatAPMMiddleware` was added to time requests
  * `APP_ID` now configurable from environment
  * Lots of cleanups 
 
