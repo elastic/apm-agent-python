@@ -17,7 +17,7 @@ import wrapt
 
 from django.http.request import HttpRequest
 
-from django.conf import settings
+from django.conf import settings as django_settings
 
 
 try:
@@ -26,14 +26,14 @@ except ImportError:
     from django.utils.importlib import import_module
 
 from opbeat.contrib.django.models import client, get_client
-from opbeat.contrib.django.utils import disabled_due_to_debug
+from opbeat.utils import disabled_due_to_debug
 
 
 def _is_ignorable_404(uri):
     """
     Returns True if the given request *shouldn't* notify the site managers.
     """
-    urls = getattr(settings, 'IGNORABLE_404_URLS', ())
+    urls = getattr(django_settings, 'IGNORABLE_404_URLS', ())
     return any(pattern.search(uri) for pattern in urls)
 
 
@@ -110,8 +110,13 @@ class OpbeatAPMMiddleware(object):
         return "{0}.{1}".format(module, view_name)
 
     def process_request(self, request):
-        if not disabled_due_to_debug():
-            self.thread_local.request_start = time.time()
+        if disabled_due_to_debug(
+            getattr(django_settings, 'OPBEAT', {}),
+            getattr(django_settings, 'OPBEAT', {}).get('DEBUG', False)
+        ):
+            return
+
+        self.thread_local.request_start = time.time()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         self.thread_local.view_func = view_func
