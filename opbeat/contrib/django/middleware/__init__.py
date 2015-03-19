@@ -75,7 +75,7 @@ def process_request_wrapper(wrapped, instance, args, kwargs):
                 name = [type(instance).__name__, wrapped.__name__]
                 if type(instance).__module__:
                     name.insert(0, type(instance).__module__)
-                request.__opbeat_transaction_name = '.'.join(name)
+                request._opbeat_transaction_name = '.'.join(name)
     finally:
         return response
 
@@ -120,28 +120,26 @@ class OpbeatAPMMiddleware(object):
             getattr(django_settings, 'OPBEAT', {}).get('DEBUG', False)
         ):
             return
-
-        request.__opbeat_request_start = time.time()
+        request._opbeat_request_start = time.time()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        request.__opbeat_view_func = view_func
+        request._opbeat_view_func = view_func
 
     def process_response(self, request, response):
         try:
-            if (hasattr(request, 'request_start')
+            if (hasattr(request, '_opbeat_request_start')
                     and hasattr(response, 'status_code')):
-                elapsed = (time.time() - request.__opbeat_request_start) * 1000
+                elapsed = (time.time() - request._opbeat_request_start) * 1000
 
-                if getattr(request, '__opbeat_view_func', False):
+                if getattr(request, '_opbeat_view_func', False):
                     view_func = self._get_name_from_view_func(
-                        request.__opbeat_view_func)
+                        request._opbeat_view_func)
                 else:
                     view_func = getattr(
                         request,
-                        '__opbeat_transaction_name',
+                        '_opbeat_transaction_name',
                         ''
                     )
-
                 status_code = response.status_code
                 self.client.captureRequest(elapsed, status_code, view_func)
         except Exception:
