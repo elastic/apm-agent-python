@@ -39,14 +39,22 @@ def _is_ignorable_404(uri):
 
 class Opbeat404CatchMiddleware(object):
     def process_response(self, request, response):
-        if response.status_code != 404 or _is_ignorable_404(request.get_full_path()):
+        if response.status_code != 404 or _is_ignorable_404(
+                request.get_full_path()
+        ):
             return response
         data = client.get_data_from_request(request)
         data.update({
             'level': logging.INFO,
             'logger': 'http404',
         })
-        result = client.capture('Message', param_message={'message':'Page Not Found: %s','params':[request.build_absolute_uri()]}, data=data)
+        result = client.capture(
+            'Message',
+            param_message={
+                'message': 'Page Not Found: %s',
+                'params': [request.build_absolute_uri()]
+            }, data=data
+        )
         request.opbeat = {
             'app_id': data.get('app_id', client.app_id),
             'id': client.get_ident(result),
@@ -82,7 +90,7 @@ class OpbeatAPMMiddleware(object):
                     module = import_module(module_path)
                     middleware_class = getattr(module, class_name)
                     if middleware_class == type(self):
-                        # don't patch ourselves
+                        # don't instrument ourselves
                         continue
                     if hasattr(middleware_class, 'process_request'):
                         wrapt.wrap_function_wrapper(
@@ -104,7 +112,7 @@ class OpbeatAPMMiddleware(object):
         else:  # Fall back if there's no __name__
             view_name = view_func.__class__.__name__
 
-        return "{0}.{1}".format(module, view_name)
+        return '{0}.{1}'.format(module, view_name)
 
     def process_request(self, request):
         if disabled_due_to_debug(
@@ -120,11 +128,11 @@ class OpbeatAPMMiddleware(object):
 
     def process_response(self, request, response):
         try:
-            if (hasattr(request, "request_start")
-                    and hasattr(response, "status_code")):
-                elapsed = (time.time() - request.__opbeat_request_start)*1000
+            if (hasattr(request, 'request_start')
+                    and hasattr(response, 'status_code')):
+                elapsed = (time.time() - request.__opbeat_request_start) * 1000
 
-                if getattr(request, "__opbeat_view_func", False):
+                if getattr(request, '__opbeat_view_func', False):
                     view_func = self._get_name_from_view_func(
                         request.__opbeat_view_func)
                 else:
