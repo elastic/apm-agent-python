@@ -73,13 +73,10 @@ def process_request_wrapper(wrapped, instance, args, kwargs):
 
 
 class OpbeatAPMMiddleware(object):
-    # Create a thread local variable to store the session in for logging
-    thread_local = threading.local()
-
     def __init__(self):
         self.client = get_client()
         if self.client.wrap_django_middleware:
-            for middleware_path in settings.MIDDLEWARE_CLASSES:
+            for middleware_path in django_settings.MIDDLEWARE_CLASSES:
                 module_path, class_name = middleware_path.rsplit('.', 1)
                 try:
                     module = import_module(module_path)
@@ -100,12 +97,12 @@ class OpbeatAPMMiddleware(object):
 
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
-        module = self.thread_local.view_func.__module__
+        module = view_func.__module__
 
-        if hasattr(self.thread_local.view_func, '__name__'):
-            view_name = self.thread_local.view_func.__name__
+        if hasattr(view_func, '__name__'):
+            view_name = view_func.__name__
         else:  # Fall back if there's no __name__
-            view_name = self.thread_local.view_func.__class__.__name__
+            view_name = view_func.__class__.__name__
 
         return "{0}.{1}".format(module, view_name)
 
@@ -116,20 +113,20 @@ class OpbeatAPMMiddleware(object):
         ):
             return
 
-        self.thread_local.request_start = time.time()
+        request.__opbeat_request_start = time.time()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        self.thread_local.view_func = view_func
+        request.__opbeat_view_func = view_func
 
     def process_response(self, request, response):
         try:
-            if (hasattr(self.thread_local, "request_start")
+            if (hasattr(request, "request_start")
                     and hasattr(response, "status_code")):
-                elapsed = (time.time() - self.thread_local.request_start)*1000
+                elapsed = (time.time() - request.__opbeat_request_start)*1000
 
-                if getattr(self.thread_local, "view_func", False):
+                if getattr(request, "__opbeat_view_func", False):
                     view_func = self._get_name_from_view_func(
-                        self.thread_local.view_func)
+                        request.__opbeat_view_func)
                 else:
                     view_func = getattr(
                         request,
@@ -139,8 +136,6 @@ class OpbeatAPMMiddleware(object):
 
                 status_code = response.status_code
                 self.client.captureRequest(elapsed, status_code, view_func)
-
-                self.thread_local.view_func = None
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',
