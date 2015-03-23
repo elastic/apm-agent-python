@@ -115,12 +115,11 @@ class OpbeatAPMMiddleware(object):
         return '{0}.{1}'.format(module, view_name)
 
     def process_request(self, request):
-        if disabled_due_to_debug(
+        if not disabled_due_to_debug(
             getattr(django_settings, 'OPBEAT', {}),
-            getattr(django_settings, 'OPBEAT', {}).get('DEBUG', False)
+            django_settings.DEBUG
         ):
-            return
-        request._opbeat_request_start = time.time()
+            request._opbeat_request_start = time.time()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._opbeat_view_func = view_func

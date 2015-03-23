@@ -148,7 +148,7 @@ def opbeat_exception_handler(request=None, **kwargs):
             if (
                 disabled_due_to_debug(
                     getattr(django_settings, 'OPBEAT', {}),
-                    getattr(django_settings, 'OPBEAT', {}).get('DEBUG', False)
+                    django_settings.DEBUG
                 )
                 or getattr(exc_info[1], 'skip_opbeat', False)
             ):

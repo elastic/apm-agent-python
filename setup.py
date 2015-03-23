@@ -23,9 +23,38 @@ for m in ('multiprocessing', 'billiard'):
 import sys
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 from opbeat.version import VERSION
 from setuptools.command.test import test as TestCommand
+
+from distutils.command.build_ext import build_ext
+from distutils.errors import (CCompilerError, DistutilsExecError,
+                              DistutilsPlatformError)
+
+if sys.platform == 'win32':
+    build_ext_errors = (CCompilerError, DistutilsExecError,
+                        DistutilsPlatformError, IOError)
+else:
+    build_ext_errors = (CCompilerError, DistutilsExecError,
+                        DistutilsPlatformError)
+
+
+class BuildExtFailed(Exception):
+    pass
+
+
+class optional_build_ext(build_ext):
+    def run(self):
+        try:
+            build_ext.run(self)
+        except DistutilsPlatformError:
+            raise BuildExtFailed()
+
+    def build_extension(self, ext):
+        try:
+            build_ext.build_extension(self, ext)
+        except build_ext_errors:
+            raise BuildExtFailed()
 
 tests_require = [
     'py==1.4.26',
@@ -42,7 +71,6 @@ tests_require = [
     'pep8',
     'webob',
     'pytz',
-    'wrapt',
 ]
 
 if sys.version_info[0] == 2:
@@ -75,7 +103,7 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-setup(
+setup_kwargs = dict(
     name='opbeat',
     version=VERSION,
     author='Ron Cohen',
@@ -108,3 +136,21 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
 )
+
+
+def run_setup(with_extensions):
+    setup_kwargs_tmp = dict(setup_kwargs)
+
+    if with_extensions:
+        setup_kwargs_tmp['ext_modules'] = [Extension(
+            'opbeat.utils.wrapt._wrappers', ['opbeat/utils/wrapt/_wrappers.c']
+        )]
+        setup_kwargs_tmp['cmdclass']['build_ext'] = optional_build_ext
+
+    setup(**setup_kwargs_tmp)
+
+try:
+    run_setup(with_extensions=True)
+
+except BuildExtFailed:
+    run_setup(with_extensions=False)

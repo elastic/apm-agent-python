@@ -1,3 +1,6 @@
+### 2.0.4 ###
+ * fixed bug with Django and `DEBUG = True`
+
 ### 2.0.3 ###
  * fixed bug in collecting Django POST data
 

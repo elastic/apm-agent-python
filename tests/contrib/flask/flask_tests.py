@@ -1,10 +1,10 @@
-import logging
 from flask import Flask
-from opbeat.base import Client
+
 from opbeat.contrib.flask import Opbeat
 from opbeat.utils.compat import TestCase
 
 from tests.helpers import get_tempstoreclient
+
 
 def create_app():
     app = Flask(__name__)
@@ -66,6 +66,23 @@ class FlaskTest(TestCase):
         self.assertEquals(env['SERVER_NAME'], 'localhost')
         self.assertTrue('SERVER_PORT' in env, env.keys())
         self.assertEquals(env['SERVER_PORT'], '80')
+
+    def test_get_debug(self):
+        client = get_tempstoreclient()
+        opbeat = Opbeat(self.app, client=client)
+        self.app.config['DEBUG'] = True
+        self.app.config['TESTING'] = False
+        self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
+        self.assertEquals(len(client.events), 0)
+
+    def test_get_debug_opbeat(self):
+        client = get_tempstoreclient()
+        opbeat = Opbeat(self.app, client=client)
+        self.app.config['DEBUG'] = True
+        self.app.config['TESTING'] = True
+        self.app.config['OPBEAT'] = {'DEBUG': True}
+        self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
+        self.assertEquals(len(client.events), 1)
 
     def test_post(self):
         client = get_tempstoreclient()

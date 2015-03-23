@@ -140,6 +140,28 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['message'], 'Exception: view exception')
         self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
 
+    def test_view_exception_debug(self):
+        with self.settings(DEBUG=True):
+            self.assertRaises(
+                Exception,
+                self.client.get, reverse('opbeat-raise-exc')
+            )
+        self.assertEquals(len(self.opbeat.events), 0)
+
+    def test_view_exception_opbeat_debug(self):
+        with self.settings(
+            DEBUG=True,
+            OPBEAT={
+                'DEBUG': True,
+                'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'
+            },
+        ):
+            self.assertRaises(
+                Exception,
+                self.client.get, reverse('opbeat-raise-exc')
+            )
+        self.assertEquals(len(self.opbeat.events), 1)
+
     def test_user_info(self):
         user = User(username='admin', email='admin@example.com')
         user.set_password('admin')
