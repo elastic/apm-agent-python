@@ -96,9 +96,12 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
 
 
 class OpbeatAPMMiddleware(object):
+    _opbeat_instrumented = False
+
     def __init__(self):
         self.client = get_client()
-        if self.client.wrap_django_middleware:
+        if (self.client.wrap_django_middleware
+                and not self._opbeat_instrumented):
             for middleware_path in django_settings.MIDDLEWARE_CLASSES:
                 module_path, class_name = middleware_path.rsplit('.', 1)
                 try:
@@ -123,6 +126,7 @@ class OpbeatAPMMiddleware(object):
                     client.logger.info(
                         "Can't instrument middleware %s", middleware_path
                     )
+            OpbeatAPMMiddleware._opbeat_instrumented = True
 
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
