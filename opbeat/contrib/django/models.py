@@ -119,7 +119,7 @@ def get_client(client=None):
 
         config = getattr(django_settings, 'OPBEAT', {})
 
-        instance = getattr(__import__(module, {}, {}, class_name), class_name)(
+        kwargs = dict(
             servers=config.get('SERVERS', None),
             include_paths=set(config.get('INCLUDE_PATHS', [])) | get_installed_apps(),
             exclude_paths=config.get('EXCLUDE_PATHS', None),
@@ -135,6 +135,8 @@ def get_client(client=None):
             async=config.get('ASYNC', None),
             wrap_django_middleware=config.get('WRAP_DJANGO_MIDDLEWARE'),
         )
+        client_class = getattr(__import__(module, {}, {}, class_name), class_name)
+        instance = client_class(**kwargs)
         if not tmp_client:
             _client = (client, instance)
         return instance

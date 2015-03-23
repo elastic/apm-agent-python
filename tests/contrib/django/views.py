@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 
@@ -8,6 +9,8 @@ import logging
 
 def no_error(request):
     return HttpResponse('')
+
+login_required_view = login_required(no_error)
 
 
 def fake_login(request):

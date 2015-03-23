@@ -13,9 +13,6 @@ from __future__ import absolute_import
 import time
 import logging
 import threading
-import wrapt
-
-from django.http.request import HttpRequest
 
 from django.conf import settings as django_settings
 
@@ -27,6 +24,7 @@ except ImportError:
 
 from opbeat.contrib.django.models import client, get_client
 from opbeat.utils import disabled_due_to_debug
+from opbeat.utils import wrapt
 
 
 def _is_ignorable_404(uri):
@@ -62,20 +60,37 @@ class Opbeat404CatchMiddleware(object):
         return response
 
 
+def get_name_from_middleware(wrapped, instance):
+    name = [type(instance).__name__, wrapped.__name__]
+    if type(instance).__module__:
+        name.insert(0, type(instance).__module__)
+    return '.'.join(name)
+
+
 def process_request_wrapper(wrapped, instance, args, kwargs):
     response = wrapped(*args, **kwargs)
     try:
         if response is not None:
-            request = None
-            if args and isinstance(args[0], HttpRequest):
-                request = args[0]
-            elif 'request' in kwargs and isinstance(kwargs['request'], HttpRequest):
-                request = kwargs['request']
-            if request is not None:
-                name = [type(instance).__name__, wrapped.__name__]
-                if type(instance).__module__:
-                    name.insert(0, type(instance).__module__)
-                request._opbeat_transaction_name = '.'.join(name)
+            request = args[0]
+            request._opbeat_transaction_name = get_name_from_middleware(
+                wrapped, instance
+            )
+    finally:
+        return response
+
+
+def process_response_wrapper(wrapped, instance, args, kwargs):
+    response = wrapped(*args, **kwargs)
+    try:
+        request, original_response = args
+        # if there's no view_func on the request, and this middleware created
+        # a new response object, it's logged as the responsible transaction
+        # name
+        if (not hasattr(request, '_opbeat_view_func')
+                and response is not original_response):
+            request._opbeat_transaction_name = get_name_from_middleware(
+                wrapped, instance
+            )
     finally:
         return response
 
@@ -96,7 +111,13 @@ class OpbeatAPMMiddleware(object):
                         wrapt.wrap_function_wrapper(
                             middleware_class,
                             'process_request',
-                            process_request_wrapper
+                            process_request_wrapper,
+                        )
+                    if hasattr(middleware_class, 'process_response'):
+                        wrapt.wrap_function_wrapper(
+                            middleware_class,
+                            'process_response',
+                            process_response_wrapper,
                         )
                 except ImportError:
                     client.logger.info(
