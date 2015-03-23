@@ -1,8 +1,9 @@
 import logbook
+
 from opbeat.utils.compat import TestCase
-from opbeat.base import Client
 from opbeat.handlers.logbook import OpbeatHandler
 from tests.helpers import get_tempstoreclient
+
 
 class LogbookHandlerTest(TestCase):
     def setUp(self):
