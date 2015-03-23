@@ -586,7 +586,6 @@ class DjangoClientTest(TestCase):
         with self.settings(
             MIDDLEWARE_CLASSES=[
                 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
-                'django.contrib.sites.middleware.CurrentSiteMiddleware',
                 'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
             ],
         ):
