@@ -30,7 +30,8 @@ except ImportError:
         return app_name in settings.INSTALLED_APPS
 
 from opbeat.base import Client
-from opbeat.contrib.django.utils import get_data_from_template
+from opbeat.contrib.django.utils import (get_data_from_template_source,
+                                         get_data_from_template_debug)
 from opbeat.utils.wsgi import get_headers, get_environ
 
 __all__ = ('DjangoClient',)
@@ -129,7 +130,9 @@ class DjangoClient(Client):
                 source = getattr(exc_value, 'django_template_source', getattr(exc_value, 'source', None))
                 if source is None:
                     self.logger.info('Unable to get template source from exception')
-                data.update(get_data_from_template(source))
+                data.update(get_data_from_template_source(source))
+            elif hasattr(exc_value, 'template_debug'):  # Django 1.9+
+                data.update(get_data_from_template_debug(exc_value.template_debug))
 
         result = super(DjangoClient, self).capture(event_type, **kwargs)
 

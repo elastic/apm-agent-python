@@ -326,12 +326,19 @@ class DjangoClientTest(TestCase):
         self.opbeat.include_paths = include_paths
 
     def test_template_name_as_view(self):
-        self.assertRaises(TemplateSyntaxError, self.client.get, reverse('opbeat-template-exc'))
+        self.assertRaises(
+            TemplateSyntaxError,
+            self.client.get, reverse('opbeat-template-exc')
+        )
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
 
         self.assertEquals(event['culprit'], 'error.html')
+        self.assertEquals(
+            event['template']['context_line'],
+            '{% invalid template tag %}\n'
+        )
 
     # def test_request_in_logging(self):
     #     resp = self.client.get(reverse('opbeat-log-request-exc'))
