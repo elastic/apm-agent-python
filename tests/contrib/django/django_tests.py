@@ -579,6 +579,8 @@ class DjangoClientTest(TestCase):
         # enable middleware wrapping
         client = get_client()
         client.wrap_django_middleware = True
+        from opbeat.contrib.django.middleware import OpbeatAPMMiddleware
+        OpbeatAPMMiddleware._opbeat_instrumented = False
 
         s = Site.objects.get(pk=1)
         Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
