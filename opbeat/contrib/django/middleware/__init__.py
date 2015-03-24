@@ -97,36 +97,41 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
 
 class OpbeatAPMMiddleware(object):
     _opbeat_instrumented = False
+    _wrapping_lock = threading.Lock()
 
     def __init__(self):
         self.client = get_client()
-        if (self.client.wrap_django_middleware
-                and not self._opbeat_instrumented):
-            for middleware_path in django_settings.MIDDLEWARE_CLASSES:
-                module_path, class_name = middleware_path.rsplit('.', 1)
-                try:
-                    module = import_module(module_path)
-                    middleware_class = getattr(module, class_name)
-                    if middleware_class == type(self):
-                        # don't instrument ourselves
-                        continue
-                    if hasattr(middleware_class, 'process_request'):
-                        wrapt.wrap_function_wrapper(
-                            middleware_class,
-                            'process_request',
-                            process_request_wrapper,
-                        )
-                    if hasattr(middleware_class, 'process_response'):
-                        wrapt.wrap_function_wrapper(
-                            middleware_class,
-                            'process_response',
-                            process_response_wrapper,
-                        )
-                except ImportError:
-                    client.logger.info(
-                        "Can't instrument middleware %s", middleware_path
+        with self._wrapping_lock:
+            if (self.client.wrap_django_middleware
+                    and not self._opbeat_instrumented):
+                self.wrap_middlewares()
+                OpbeatAPMMiddleware._opbeat_instrumented = True
+
+    def wrap_middlewares(self):
+        for middleware_path in django_settings.MIDDLEWARE_CLASSES:
+            module_path, class_name = middleware_path.rsplit('.', 1)
+            try:
+                module = import_module(module_path)
+                middleware_class = getattr(module, class_name)
+                if middleware_class == type(self):
+                    # don't instrument ourselves
+                    continue
+                if hasattr(middleware_class, 'process_request'):
+                    wrapt.wrap_function_wrapper(
+                        middleware_class,
+                        'process_request',
+                        process_request_wrapper,
                     )
-            OpbeatAPMMiddleware._opbeat_instrumented = True
+                if hasattr(middleware_class, 'process_response'):
+                    wrapt.wrap_function_wrapper(
+                        middleware_class,
+                        'process_response',
+                        process_response_wrapper,
+                    )
+            except ImportError:
+                client.logger.info(
+                    "Can't instrument middleware %s", middleware_path
+                )
 
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
