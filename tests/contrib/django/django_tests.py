@@ -534,7 +534,7 @@ class DjangoClientTest(TestCase):
 
         # enable middleware wrapping
         client = get_client()
-        client.wrap_django_middleware = True
+        client.instrument_django_middleware = True
 
         with self.settings(
             MIDDLEWARE_CLASSES=[
@@ -556,7 +556,7 @@ class DjangoClientTest(TestCase):
 
         # enable middleware wrapping
         client = get_client()
-        client.wrap_django_middleware = True
+        client.instrument_django_middleware = True
 
         with self.settings(
             MIDDLEWARE_CLASSES=[
@@ -578,7 +578,7 @@ class DjangoClientTest(TestCase):
 
         # enable middleware wrapping
         client = get_client()
-        client.wrap_django_middleware = True
+        client.instrument_django_middleware = True
         from opbeat.contrib.django.middleware import OpbeatAPMMiddleware
         OpbeatAPMMiddleware._opbeat_instrumented = False
 

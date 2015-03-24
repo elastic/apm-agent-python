@@ -126,7 +126,7 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
-                 traces_send_freq_secs=None, wrap_django_middleware=None,
+                 traces_send_freq_secs=None,
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -179,10 +179,6 @@ class Client(object):
 
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
-        if wrap_django_middleware is not None:
-            self.wrap_django_middleware = wrap_django_middleware
-        else:
-            self.wrap_django_middleware = defaults.WRAP_DJANGO_MIDDLEWARE
 
         self._requests_store = RequestsStore(self.traces_send_freq_secs)
         atexit_register(self._traces_collect)

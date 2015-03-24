@@ -133,7 +133,7 @@ def get_client(client=None):
             secret_token=config.get('SECRET_TOKEN', None),
             processors=config.get('PROCESSORS', None),
             async=config.get('ASYNC', None),
-            wrap_django_middleware=config.get('WRAP_DJANGO_MIDDLEWARE'),
+            instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
         )
         client_class = getattr(__import__(module, {}, {}, class_name), class_name)
         instance = client_class(**kwargs)

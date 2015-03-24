@@ -37,9 +37,8 @@ def _is_ignorable_404(uri):
 
 class Opbeat404CatchMiddleware(object):
     def process_response(self, request, response):
-        if response.status_code != 404 or _is_ignorable_404(
-                request.get_full_path()
-        ):
+        if (response.status_code != 404
+                or _is_ignorable_404(request.get_full_path())):
             return response
         data = client.get_data_from_request(request)
         data.update({
@@ -63,7 +62,7 @@ class Opbeat404CatchMiddleware(object):
 def get_name_from_middleware(wrapped, instance):
     name = [type(instance).__name__, wrapped.__name__]
     if type(instance).__module__:
-        name.insert(0, type(instance).__module__)
+        name = [type(instance).__module__] + name
     return '.'.join(name)
 
 
@@ -97,17 +96,18 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
 
 class OpbeatAPMMiddleware(object):
     _opbeat_instrumented = False
-    _wrapping_lock = threading.Lock()
+    _instrumenting_lock = threading.Lock()
 
     def __init__(self):
         self.client = get_client()
-        with self._wrapping_lock:
-            if (self.client.wrap_django_middleware
-                    and not self._opbeat_instrumented):
-                self.wrap_middlewares()
-                OpbeatAPMMiddleware._opbeat_instrumented = True
+        if not self._opbeat_instrumented:
+            with self._instrumenting_lock:
+                if (self.client.instrument_django_middleware
+                        and not self._opbeat_instrumented):
+                    self.instrument_middlewares()
+                    OpbeatAPMMiddleware._opbeat_instrumented = True
 
-    def wrap_middlewares(self):
+    def instrument_middlewares(self):
         for middleware_path in django_settings.MIDDLEWARE_CLASSES:
             module_path, class_name = middleware_path.rsplit('.', 1)
             try:
