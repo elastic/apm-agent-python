@@ -17,6 +17,8 @@ from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 
 from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
@@ -42,7 +44,7 @@ def get_client(*args, **kwargs):
     config = {
         'APP_ID': 'key',
         'ORGANIZATION_ID': 'org',
-        'SECRET_TOKEN': '99'
+        'SECRET_TOKEN': '99',
     }
     config.update(settings.OPBEAT)
 
@@ -533,6 +535,78 @@ class DjangoClientTest(TestCase):
                              'tests.contrib.django.views.no_error')
             self.assertEqual(timing['result'],
                              200)
+
+    def test_request_metrics_301_append_slash(self):
+        self.opbeat._requests_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.middleware.common.CommonMiddleware',
+            ],
+            APPEND_SLASH=True,
+        ):
+            self.client.get(reverse('opbeat-no-error-slash')[:-1])
+        timed_requests = self.opbeat._requests_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'django.middleware.common.CommonMiddleware.process_request'
+        )
+
+    def test_request_metrics_301_prepend_www(self):
+        self.opbeat._requests_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.middleware.common.CommonMiddleware',
+            ],
+            PREPEND_WWW=True,
+        ):
+            self.client.get(reverse('opbeat-no-error'))
+        timed_requests = self.opbeat._requests_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'django.middleware.common.CommonMiddleware.process_request'
+        )
+
+    def test_request_metrics_contrib_redirect(self):
+        self.opbeat._requests_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+        from opbeat.contrib.django.middleware import OpbeatAPMMiddleware
+        OpbeatAPMMiddleware._opbeat_instrumented = False
+
+        s = Site.objects.get(pk=1)
+        Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
+            ],
+        ):
+            response = self.client.get('/redirect/me/')
+
+        timed_requests = self.opbeat._requests_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
+            '.process_response'
+        )
 
 
 class DjangoLoggingTest(TestCase):

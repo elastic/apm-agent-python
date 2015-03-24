@@ -32,6 +32,7 @@ except ImportError:
 from opbeat.base import Client
 from opbeat.contrib.django.utils import (get_data_from_template_source,
                                          get_data_from_template_debug)
+from opbeat.conf import defaults
 from opbeat.utils.wsgi import get_headers, get_environ
 
 __all__ = ('DjangoClient',)
@@ -39,6 +40,17 @@ __all__ = ('DjangoClient',)
 
 class DjangoClient(Client):
     logger = logging.getLogger('opbeat.errors.client.django')
+
+    def __init__(self, **kwargs):
+        instrument_django_middleware = kwargs.pop(
+            'instrument_django_middleware',
+            None
+        )
+        if instrument_django_middleware is not None:
+            self.instrument_django_middleware = instrument_django_middleware
+        else:
+            self.instrument_django_middleware = defaults.INSTRUMENT_DJANGO_MIDDLEWARE
+        super(DjangoClient, self).__init__(**kwargs)
 
     def get_user_info(self, request):
         if request.user.is_authenticated():
