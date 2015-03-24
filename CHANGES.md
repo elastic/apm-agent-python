@@ -1,3 +1,8 @@
+### 2.1 ###
+ * fixed issue with template debug in Django 1.9 (unreleased)
+ * added experimental support for instrumenting Django middleware for
+   better metrics data
+
 ### 2.0.4 ###
  * fixed bug with Django and `DEBUG = True`
 
