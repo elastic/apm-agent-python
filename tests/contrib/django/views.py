@@ -1,9 +1,8 @@
 from __future__ import absolute_import
+import logging
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
-
-import logging
 
 
 def no_error(request):

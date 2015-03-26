@@ -15,33 +15,47 @@ import time
 import logging
 import threading
 
-from django.conf import settings
+from django.conf import settings as django_settings
+
+
+try:
+    from importlib import import_module
+except ImportError:
+    from django.utils.importlib import import_module
 
 from opbeat.contrib.django.instruments.db import enable_instrumentation as db_enable_instrumentation
 from opbeat.contrib.django.instruments.cache import enable_instrumentation as cache_enable_instrumentation
 from opbeat.contrib.django.instruments.template import enable_instrumentation as template_enable_instrumentation
 from opbeat.contrib.django.models import client, get_client
-from opbeat.contrib.django.utils import disabled_due_to_debug
+from opbeat.utils import disabled_due_to_debug
+from opbeat.utils import wrapt
 
 
 def _is_ignorable_404(uri):
     """
     Returns True if the given request *shouldn't* notify the site managers.
     """
-    urls = getattr(settings, 'IGNORABLE_404_URLS', ())
+    urls = getattr(django_settings, 'IGNORABLE_404_URLS', ())
     return any(pattern.search(uri) for pattern in urls)
 
 
 class Opbeat404CatchMiddleware(object):
     def process_response(self, request, response):
-        if response.status_code != 404 or _is_ignorable_404(request.get_full_path()):
+        if (response.status_code != 404
+                or _is_ignorable_404(request.get_full_path())):
             return response
         data = client.get_data_from_request(request)
         data.update({
             'level': logging.INFO,
             'logger': 'http404',
         })
-        result = client.capture('Message', param_message={'message': 'Page Not Found: %s','params':[request.build_absolute_uri()]}, data=data)
+        result = client.capture(
+            'Message',
+            param_message={
+                'message': 'Page Not Found: %s',
+                'params': [request.build_absolute_uri()]
+            }, data=data
+        )
         request.opbeat = {
             'app_id': data.get('app_id', client.app_id),
             'id': client.get_ident(result),
@@ -49,16 +63,84 @@ class Opbeat404CatchMiddleware(object):
         return response
 
 
+def get_name_from_middleware(wrapped, instance):
+    name = [type(instance).__name__, wrapped.__name__]
+    if type(instance).__module__:
+        name = [type(instance).__module__] + name
+    return '.'.join(name)
+
+
+def process_request_wrapper(wrapped, instance, args, kwargs):
+    response = wrapped(*args, **kwargs)
+    try:
+        if response is not None:
+            request = args[0]
+            request._opbeat_transaction_name = get_name_from_middleware(
+                wrapped, instance
+            )
+    finally:
+        return response
+
+
+def process_response_wrapper(wrapped, instance, args, kwargs):
+    response = wrapped(*args, **kwargs)
+    try:
+        request, original_response = args
+        # if there's no view_func on the request, and this middleware created
+        # a new response object, it's logged as the responsible transaction
+        # name
+        if (not hasattr(request, '_opbeat_view_func')
+                and response is not original_response):
+            request._opbeat_transaction_name = get_name_from_middleware(
+                wrapped, instance
+            )
+    finally:
+        return response
+
+
 class OpbeatAPMMiddleware(object):
-    # Create a thread local variable to store the session in for logging
-    thread_local = threading.local()
+    _opbeat_instrumented = False
+    _instrumenting_lock = threading.Lock()
 
     def __init__(self):
         self.client = get_client()
-
+        if not self._opbeat_instrumented:
+            with self._instrumenting_lock:
+                if (self.client.instrument_django_middleware
+                        and not self._opbeat_instrumented):
+                    self.instrument_middlewares()
+                    OpbeatAPMMiddleware._opbeat_instrumented = True
         db_enable_instrumentation()
         cache_enable_instrumentation()
         template_enable_instrumentation()
+
+
+    def instrument_middlewares(self):
+        for middleware_path in django_settings.MIDDLEWARE_CLASSES:
+            module_path, class_name = middleware_path.rsplit('.', 1)
+            try:
+                module = import_module(module_path)
+                middleware_class = getattr(module, class_name)
+                if middleware_class == type(self):
+                    # don't instrument ourselves
+                    continue
+                if hasattr(middleware_class, 'process_request'):
+                    wrapt.wrap_function_wrapper(
+                        middleware_class,
+                        'process_request',
+                        process_request_wrapper,
+                    )
+                if hasattr(middleware_class, 'process_response'):
+                    wrapt.wrap_function_wrapper(
+                        middleware_class,
+                        'process_response',
+                        process_response_wrapper,
+                    )
+            except ImportError:
+                client.logger.info(
+                    "Can't instrument middleware %s", middleware_path
+                )
+
 
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
@@ -69,20 +151,33 @@ class OpbeatAPMMiddleware(object):
         else:  # Fall back if there's no __name__
             view_name = view_func.__class__.__name__
 
-        return "{0}.{1}".format(module, view_name)
+        return '{0}.{1}'.format(module, view_name)
 
     def process_request(self, request):
-        if not disabled_due_to_debug():
-            self.client.instrumentation_store.transaction_start()
+        if not disabled_due_to_debug(
+            getattr(django_settings, 'OPBEAT', {}),
+            django_settings.DEBUG
+        ):
+            self.client.begin_transaction()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        view_name = self._get_name_from_view_func(view_func)
-        self.client.instrumentation_store.set_transaction_name(view_name)
+        request._opbeat_view_func = view_func
 
     def process_response(self, request, response):
         try:
-            self.client.instrumentation_store.transaction_end(response.status_code)
-            self.client.transaction_end()
+            if hasattr(response, 'status_code'):
+                if getattr(request, '_opbeat_view_func', False):
+                    view_func = self._get_name_from_view_func(
+                        request._opbeat_view_func)
+                else:
+                    view_func = getattr(
+                        request,
+                        '_opbeat_transaction_name',
+                        ''
+                    )
+                status_code = response.status_code
+
+                self.client.end_transaction(status_code, view_func)
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',

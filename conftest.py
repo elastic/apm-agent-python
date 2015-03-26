@@ -32,6 +32,7 @@ def pytest_configure(config):
                 'django.contrib.admin',
                 'django.contrib.sessions',
                 'django.contrib.sites',
+                'django.contrib.redirects',
 
                 'django.contrib.contenttypes',
 
@@ -40,7 +41,7 @@ def pytest_configure(config):
                 'opbeat.contrib.django',
                 'tests.contrib.django.testapp',
             ],
-            ROOT_URLCONF='',
+            ROOT_URLCONF='tests.contrib.django.urls',
             DEBUG=False,
             SITE_ID=1,
             BROKER_HOST="localhost",
@@ -56,7 +57,7 @@ def pytest_configure(config):
                 'django.contrib.sessions.middleware.SessionMiddleware',
                 'django.contrib.auth.middleware.AuthenticationMiddleware',
                 'django.contrib.messages.middleware.MessageMiddleware',
-            ]
+            ],
         )
         import django
         if hasattr(django, 'setup'):

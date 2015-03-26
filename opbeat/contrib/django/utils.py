@@ -1,4 +1,4 @@
-from django.conf import settings as django_settings
+import os
 
 
 def linebreak_iter(template_source):
@@ -10,7 +10,7 @@ def linebreak_iter(template_source):
     yield len(template_source) + 1
 
 
-def get_data_from_template(source):
+def get_data_from_template_source(source):
     origin, (start, end) = source
     template_source = origin.reload()
 
@@ -43,6 +43,25 @@ def get_data_from_template(source):
     }
 
 
-def disabled_due_to_debug():
-    config = getattr(django_settings, 'OPBEAT', {})
-    return django_settings.DEBUG and not config.get('DEBUG', False)
+def get_data_from_template_debug(template_debug):
+    pre_context = []
+    post_context = []
+    context_line = None
+    for lineno, line in template_debug['source_lines']:
+        if lineno < template_debug['line']:
+            pre_context.append(line)
+        elif lineno > template_debug['line']:
+            post_context.append(line)
+        else:
+            context_line = line
+    return {
+        'template': {
+            'filename': os.path.basename(template_debug['name']),
+            'abs_path': template_debug['name'],
+            'pre_context': pre_context,
+            'context_line': context_line,
+            'lineno': template_debug['line'],
+            'post_context': post_context,
+        },
+        'culprit': os.path.basename(template_debug['name']),
+    }

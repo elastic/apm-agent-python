@@ -13,9 +13,12 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core.signals import got_request_exception
 from django.core.handlers.wsgi import WSGIRequest
+from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 
 from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
@@ -41,7 +44,7 @@ def get_client(*args, **kwargs):
     config = {
         'APP_ID': 'key',
         'ORGANIZATION_ID': 'org',
-        'SECRET_TOKEN': '99'
+        'SECRET_TOKEN': '99',
     }
     config.update(settings.OPBEAT)
 
@@ -138,6 +141,28 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['level'], 'error')
         self.assertEquals(event['message'], 'Exception: view exception')
         self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+
+    def test_view_exception_debug(self):
+        with self.settings(DEBUG=True):
+            self.assertRaises(
+                Exception,
+                self.client.get, reverse('opbeat-raise-exc')
+            )
+        self.assertEquals(len(self.opbeat.events), 0)
+
+    def test_view_exception_opbeat_debug(self):
+        with self.settings(
+            DEBUG=True,
+            OPBEAT={
+                'DEBUG': True,
+                'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'
+            },
+        ):
+            self.assertRaises(
+                Exception,
+                self.client.get, reverse('opbeat-raise-exc')
+            )
+        self.assertEquals(len(self.opbeat.events), 1)
 
     def test_user_info(self):
         user = User(username='admin', email='admin@example.com')
@@ -303,12 +328,19 @@ class DjangoClientTest(TestCase):
         self.opbeat.include_paths = include_paths
 
     def test_template_name_as_view(self):
-        self.assertRaises(TemplateSyntaxError, self.client.get, reverse('opbeat-template-exc'))
+        self.assertRaises(
+            TemplateSyntaxError,
+            self.client.get, reverse('opbeat-template-exc')
+        )
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)
 
         self.assertEquals(event['culprit'], 'error.html')
+        self.assertEquals(
+            event['template']['context_line'],
+            '{% invalid template tag %}\n'
+        )
 
     # def test_request_in_logging(self):
     #     resp = self.client.get(reverse('opbeat-log-request-exc'))
@@ -405,12 +437,52 @@ class DjangoClientTest(TestCase):
         self.assertEquals(http['method'], 'POST')
         self.assertEquals(http['data'], '<unavailable>')
 
+    def test_post_data(self):
+        request = WSGIRequest(environ={
+            'wsgi.input': BytesIO(),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/octet-stream',
+            'ACCEPT': 'application/json',
+        })
+        request.POST = QueryDict("x=1&y=2")
+        self.opbeat.capture('Message', message='foo', request=request)
+
+        self.assertEquals(len(self.opbeat.events), 1)
+        event = self.opbeat.events.pop(0)
+
+        self.assertTrue('http' in event)
+        http = event['http']
+        self.assertEquals(http['method'], 'POST')
+        self.assertEquals(http['data'], {'x': '1', 'y': '2'})
+
+    def test_post_raw_data(self):
+        request = WSGIRequest(environ={
+            'wsgi.input': BytesIO(six.b('foobar')),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/octet-stream',
+            'ACCEPT': 'application/json',
+            'CONTENT_LENGTH': '6',
+        })
+        self.opbeat.capture('Message', message='foo', request=request)
+
+        self.assertEquals(len(self.opbeat.events), 1)
+        event = self.opbeat.events.pop(0)
+
+        self.assertTrue('http' in event)
+        http = event['http']
+        self.assertEquals(http['method'], 'POST')
+        self.assertEquals(http['data'], six.b('foobar'))
+
     # This test only applies to Django 1.3+
     def test_request_capture(self):
         if django.VERSION[:2] < (1, 3):
             return
         request = WSGIRequest(environ={
-            'wsgi.input': StringIO(),
+            'wsgi.input': BytesIO(),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -463,6 +535,78 @@ class DjangoClientTest(TestCase):
                              'tests.contrib.django.views.no_error')
             self.assertEqual(timing['result'],
                              200)
+
+    def test_request_metrics_301_append_slash(self):
+        self.opbeat._requests_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.middleware.common.CommonMiddleware',
+            ],
+            APPEND_SLASH=True,
+        ):
+            self.client.get(reverse('opbeat-no-error-slash')[:-1])
+        timed_requests = self.opbeat._requests_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'django.middleware.common.CommonMiddleware.process_request'
+        )
+
+    def test_request_metrics_301_prepend_www(self):
+        self.opbeat._requests_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.middleware.common.CommonMiddleware',
+            ],
+            PREPEND_WWW=True,
+        ):
+            self.client.get(reverse('opbeat-no-error'))
+        timed_requests = self.opbeat._requests_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'django.middleware.common.CommonMiddleware.process_request'
+        )
+
+    def test_request_metrics_contrib_redirect(self):
+        self.opbeat._requests_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+        from opbeat.contrib.django.middleware import OpbeatAPMMiddleware
+        OpbeatAPMMiddleware._opbeat_instrumented = False
+
+        s = Site.objects.get(pk=1)
+        Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
+            ],
+        ):
+            response = self.client.get('/redirect/me/')
+
+        timed_requests = self.opbeat._requests_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
+            '.process_response'
+        )
 
 
 class DjangoLoggingTest(TestCase):

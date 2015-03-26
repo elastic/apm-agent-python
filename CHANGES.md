@@ -1,9 +1,26 @@
-## 2.0.1 ##
- * Fixed a bug when `__name__` does not exist for view_func given to OpbeatAPMMiddleware
+### 2.1 ###
+ * fixed issue with template debug in Django 1.9 (unreleased)
+ * added experimental support for instrumenting Django middleware for
+   better metrics data
 
-## 2.0 ##
- * Async support was refactored, removed old AsyncClient classes
- * OpbeatAPMMiddleware was added to time requests
+### 2.0.4 ###
+ * fixed bug with Django and `DEBUG = True`
+
+### 2.0.3 ###
+ * fixed bug in collecting Django POST data
+
+### 2.0.2 ###
+ * start using the new intake URL
+ * Flask: module now adheres to the Flask.debug option and does not log to
+   Opbeat unless it is False
+
+### 2.0.1 ###
+ * Fixed a bug when `__name__` does not exist for `view_func` given to
+   `OpbeatAPMMiddleware`
+
+# 2.0 #
+ * Async support was refactored, removed old `AsyncClient` classes
+ * `OpbeatAPMMiddleware` was added to time requests
  * `APP_ID` now configurable from environment
  * Lots of cleanups 
 

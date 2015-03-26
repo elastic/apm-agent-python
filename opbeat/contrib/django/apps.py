@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
+
 class OpbeatConfig(AppConfig):
     name = 'opbeat.contrib.django'
     label = 'opbeat.contrib.django'

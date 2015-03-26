@@ -30,7 +30,9 @@ except ImportError:
         return app_name in settings.INSTALLED_APPS
 
 from opbeat.base import Client
-from opbeat.contrib.django.utils import get_data_from_template
+from opbeat.contrib.django.utils import (get_data_from_template_source,
+                                         get_data_from_template_debug)
+from opbeat.conf import defaults
 from opbeat.utils.wsgi import get_headers, get_environ
 
 __all__ = ('DjangoClient',)
@@ -38,6 +40,17 @@ __all__ = ('DjangoClient',)
 
 class DjangoClient(Client):
     logger = logging.getLogger('opbeat.errors.client.django')
+
+    def __init__(self, **kwargs):
+        instrument_django_middleware = kwargs.pop(
+            'instrument_django_middleware',
+            None
+        )
+        if instrument_django_middleware is not None:
+            self.instrument_django_middleware = instrument_django_middleware
+        else:
+            self.instrument_django_middleware = defaults.INSTRUMENT_DJANGO_MIDDLEWARE
+        super(DjangoClient, self).__init__(**kwargs)
 
     def get_user_info(self, request):
         if request.user.is_authenticated():
@@ -77,7 +90,12 @@ class DjangoClient(Client):
 
         if request.method != 'GET':
             try:
-                data = request.raw_post_data and request.raw_post_data or request.POST
+                if hasattr(request, 'body'):
+                    # Django 1.4+
+                    raw_data = request.body
+                else:
+                    raw_data = request.raw_post_data
+                data = raw_data if raw_data else request.POST
             except Exception:
                 # assume we had a partial read:
                 data = '<unavailable>'
@@ -124,7 +142,9 @@ class DjangoClient(Client):
                 source = getattr(exc_value, 'django_template_source', getattr(exc_value, 'source', None))
                 if source is None:
                     self.logger.info('Unable to get template source from exception')
-                data.update(get_data_from_template(source))
+                data.update(get_data_from_template_source(source))
+            elif hasattr(exc_value, 'template_debug'):  # Django 1.9+
+                data.update(get_data_from_template_debug(exc_value.template_debug))
 
         result = super(DjangoClient, self).capture(event_type, **kwargs)
 

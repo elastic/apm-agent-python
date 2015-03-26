@@ -34,7 +34,7 @@ class AsyncWorker(object):
     def main_thread_terminated(self):
         size = self._queue.qsize()
         if size:
-            six.print_("Opbeat attempts to send %s error messages" % size)
+            six.print_("Opbeat attempts to send %s messages" % size)
             six.print_("Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS)
             if os.name == 'nt':
                 six.print_("Press Ctrl-Break to quit")

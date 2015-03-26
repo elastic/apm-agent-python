@@ -16,14 +16,12 @@ from __future__ import absolute_import
 import sys
 import logging
 import warnings
-from opbeat.contrib.django.utils import disabled_due_to_debug
 from opbeat.utils import six
 
+from opbeat.utils import disabled_due_to_debug
 
-import warnings
 from django.conf import settings as django_settings
 
-from opbeat.utils import six
 
 
 logger = logging.getLogger('opbeat.errors.client')
@@ -131,7 +129,7 @@ def get_client(client=None):
 
         config = getattr(django_settings, 'OPBEAT', {})
 
-        instance = getattr(__import__(module, {}, {}, class_name), class_name)(
+        kwargs = dict(
             servers=config.get('SERVERS', None),
             include_paths=set(config.get('INCLUDE_PATHS', [])) | get_installed_apps(),
             exclude_paths=config.get('EXCLUDE_PATHS', None),
@@ -146,7 +144,10 @@ def get_client(client=None):
             processors=config.get('PROCESSORS', None),
             traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
             async=config.get('ASYNC', None),
+            instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
         )
+        client_class = getattr(__import__(module, {}, {}, class_name), class_name)
+        instance = client_class(**kwargs)
         if not tmp_client:
             _client = (client, instance)
         return instance
@@ -157,8 +158,13 @@ def opbeat_exception_handler(request=None, **kwargs):
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
         try:
-            if (disabled_due_to_debug()
-                    or getattr(exc_info[1], 'skip_opbeat', False)):
+            if (
+                disabled_due_to_debug(
+                    getattr(django_settings, 'OPBEAT', {}),
+                    django_settings.DEBUG
+                )
+                or getattr(exc_info[1], 'skip_opbeat', False)
+            ):
                 return
 
             get_client().capture('Exception', exc_info=exc_info,

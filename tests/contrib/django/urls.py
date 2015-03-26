@@ -15,6 +15,7 @@ def handler500(request):
 
 urlpatterns = patterns('',
     url(r'^no-error$', 'tests.contrib.django.views.no_error', name='opbeat-no-error'),
+    url(r'^no-error-slash/$', 'tests.contrib.django.views.no_error', name='opbeat-no-error-slash'),
     url(r'^fake-login$', 'tests.contrib.django.views.fake_login', name='opbeat-fake-login'),
     url(r'^trigger-500$', 'tests.contrib.django.views.raise_exc', name='opbeat-raise-exc'),
     url(r'^trigger-500-ioerror$', 'tests.contrib.django.views.raise_ioerror', name='opbeat-raise-ioerror'),
