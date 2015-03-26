@@ -144,6 +144,7 @@ def get_client(client=None):
             app_id=config.get('APP_ID', None),
             secret_token=config.get('SECRET_TOKEN', None),
             processors=config.get('PROCESSORS', None),
+            traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
             async=config.get('ASYNC', None),
         )
         if not tmp_client:

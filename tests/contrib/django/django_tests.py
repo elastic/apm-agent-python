@@ -447,16 +447,16 @@ class DjangoClientTest(TestCase):
     #         self.assertEquals(len(self.opbeat.events), 1)
     #         self.opbeat.events.pop(0)
 
-    def test_request_metrics(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+    def test_transction_metrics(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
         with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
-            self.assertEqual(len(self.opbeat._requests_store), 0)
+            self.assertEqual(len(self.opbeat.instrumentation_store), 0)
             self.client.get(reverse('opbeat-no-error'))
-            self.assertEqual(len(self.opbeat._requests_store), 1)
-            timed_requests = self.opbeat._requests_store.get_all()
+            self.assertEqual(len(self.opbeat.instrumentation_store), 1)
+            transactions, traces = self.opbeat.instrumentation_store.get_all()
 
-            self.assertEqual(len(timed_requests), 1)
-            timing = timed_requests[0]
+            self.assertEqual(len(transactions), 1)
+            timing = transactions[0]
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],

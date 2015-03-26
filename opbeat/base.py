@@ -181,25 +181,13 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._requests_store = RequestsStore(self.traces_send_freq_secs)
+        self.instrumentation_store = RequestsStore(self.traces_send_freq_secs)
         atexit_register(self._traces_collect)
-
-    def begin_transaction(self):
-        self._traces_store.request_start()
-
-    def set_transaction_name(self, transaction_name):
-        self._traces_store.set_transaction_name(transaction_name)
-
-    def end_transaction(self):
-        self._traces_store.request_end()
-        should_collect = self._traces_store.should_collect()
-
-        if should_collect:
-            self._traces_collect()
+    #gollect()
 
     @contextlib.contextmanager
     def captureTrace(self, signature, kind, collateral=None):
-        with self._traces_store.trace(signature, kind, collateral):
+        with self.instrumentation_store.trace(signature, kind, collateral):
             yield
 
     def get_processors(self):
@@ -540,26 +528,18 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
 
-    def captureRequest(self, elapsed, response_code, view_name):
-        """
-        Captures request metrics.
-
-        :param elapsed: time elapsed for the whole response, in seconds
-        :param response_code: HTTP response code
-        :param view_name: name of the view
-
-        """
-        self._requests_store.add(elapsed, view_name, response_code)
-        if self._requests_store.should_collect():
+    def transaction_end(self):
+        if self.instrumentation_store.should_collect():
             self._traces_collect()
 
     def _traces_collect(self):
-        items = self._requests_store.get_all()
-        if not items:
+        transactions, traces = self.instrumentation_store.get_all()
+        if not transactions or not traces:
             return
 
         data = self.build_msg({
-            'transactions': items,
+            'transactions': transactions,
+            'traces': traces,
         })
         api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,
@@ -567,7 +547,6 @@ class Client(object):
         )
 
         data['servers'] = [server+api_path for server in self.servers]
-        # print "send", data
         self.send(**data)
 
 

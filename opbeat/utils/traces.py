@@ -1,42 +1,70 @@
+from collections import namedtuple
 import contextlib
 import threading
 import time
 from datetime import datetime
+from collections import defaultdict
+
 from opbeat.utils.encoding import force_text
 
-from collections import defaultdict
-import threading
-import time
-from datetime import datetime
+# Trace = namedtuple("Trace", ["start_time", "trace_duration",
+#                              "transaction_duration", "parents", "sigantur"])
 
 
-class Trace(object):
+class AbstractTrace(object):
+    def __init__(self, signature, kind, parents, collateral, transaction=None,
+                 transaction_duration=True):
+        self.transaction = transaction
+        self.transaction_duration = transaction_duration
+        self.signature = signature
+        self.kind = kind
+        self.parents = tuple(parents)
+        self.collateral = collateral
+
+    @property
+    def fingerprint(self):
+        return self.transaction, self.parents, self.signature, self.kind
+
+
+class Trace(AbstractTrace):
+    def __init__(self, start_time, trace_duration, signature, kind, parents,
+                 collateral, transaction=None, transaction_duration=None):
+        self.start_time = start_time
+        self.trace_duration = trace_duration
+        super(Trace, self).__init__(signature, kind, parents, collateral,
+                                    transaction, transaction_duration)
+
+
+class TraceGroup(AbstractTrace):
     def _decode(self, param):
         try:
             return force_text(param, strings_only=True)
         except UnicodeDecodeError:
             return '(encoded string)'
 
-    def __init__(self, duration_list, start_time_list, transaction, signature,
-                 kind, parents, collateral):
-        self.duration_list = duration_list
-        self.start_time_list = start_time_list
-        self.transaction = transaction
-        self.signature = signature
-        self.kind = kind
-        self.parents = tuple(parents)
-        self.collateral = collateral
+    def __init__(self, trace):
+        self.traces = []
+        super(TraceGroup, self).__init__(trace.signature, trace.kind,
+                                         trace.parents, trace.collateral,
+                                         trace.transaction)
 
-    def merge(self, trace):
-        self.duration_list.extend(trace.duration_list)
-        self.start_time_list.extend(trace.start_time_list)
+    def add(self, trace):
+        self.traces.append(trace)
 
-    @property
-    def fingerprint(self):
-        return (self.transaction, self.parents, self.signature, self.kind)
+    def as_dict(self):
+        return {
+            "transaction": self.transaction,
+            "durations": [(t.trace_duration, t.transaction_duration)
+                          for t in self.traces],
+            "signature": self.signature,
+            "kind": self.kind,
+            "parents": self.parents,
+            "collateral": self.collateral,
+            "start_time": min([t.start_time for t in self.traces]),
+        }
 
 
-class _RequestList(object):
+class _RequestGroup(object):
     def __init__(self, transaction, response_code, minute):
         self.transaction = transaction
         self.response_code = response_code
@@ -45,7 +73,7 @@ class _RequestList(object):
 
     @property
     def fingerprint(self):
-        return (self.transaction, self.response_code, self.minute)
+        return self.transaction, self.response_code, self.minute
 
     def add(self, elapsed):
         self.durations.append(elapsed)
@@ -63,20 +91,21 @@ class RequestsStore(object):
     def __init__(self, collect_frequency):
         self.cond = threading.Condition()
         self.thread_local = threading.local()
-        self.items = {}
-        self._traces = {}
+        self.thread_local.transaction_traces = []
+        self._transactions = {}
+        self._traces = defaultdict(list)
         self.collect_frequency = collect_frequency
         self._last_collect = time.time()
 
-    def add(self, elapsed, transaction, response_code):
+    def _add_transaction(self, elapsed, transaction, response_code):
         with self.cond:
-            requestlist = _RequestList(transaction, response_code,
-                                       int(time.time()/60)*60)
+            requestgroup = _RequestGroup(transaction, response_code,
+                                        int(time.time()/60)*60)
 
-            if requestlist.fingerprint not in self.items:
-                self.items[requestlist.fingerprint] = requestlist
+            if requestgroup.fingerprint not in self._transactions:
+                self._transactions[requestgroup.fingerprint] = requestgroup
 
-            self.items[requestlist.fingerprint].add(elapsed)
+            self._transactions[requestgroup.fingerprint].add(elapsed)
             self.cond.notify()
 
     def get_all(self, blocking=False):
@@ -84,9 +113,11 @@ class RequestsStore(object):
             # If blocking is true, always return at least 1 item
             while blocking and len(self._traces) == 0:
                 self.cond.wait()
-            items, self.items = self.items, {}
+            transactions, self._transactions = self._transactions, {}
+            traces, self._traces = self._traces, {}
         self._last_collect = time.time()
-        return [v.as_dict() for v in items.values()]
+        return ([v.as_dict() for v in transactions.values()],
+                [v.as_dict() for v in traces.values()],)
 
     def should_collect(self):
         return (
@@ -96,57 +127,72 @@ class RequestsStore(object):
 
     def __len__(self):
         with self.cond:
-            return sum([len(v.durations) for v in self.items.values()])
+            return sum([len(v.durations) for v in self._transactions.values()])
 
-    def request_start(self):
+    def transaction_start(self):
         self.thread_local.transaction_start = time.time()
-        self.thread_local.transaction_name = "Web Request"
-        self.thread_local.sig_stack = []
+        self.thread_local.transaction_name = ""
+        self.thread_local.transaction_traces = []
+        self.thread_local.signature_stack = []
 
     def set_transaction_name(self, transaction_name):
         self.thread_local.transaction_name = transaction_name
 
-    def request_end(self, response_code):
+    def _add_trace(self, trace):
+        with self.cond:
+            if trace.fingerprint not in self._traces:
+                self._traces[trace.fingerprint] = TraceGroup(trace)
+            self._traces[trace.fingerprint].add(trace)
+            self.cond.notify()
+
+    def transaction_end(self, response_code):
         if hasattr(self.thread_local, "transaction_start"):
             start = self.thread_local.transaction_start
             elapsed = (time.time() - start)*1000
+            transaction = self.thread_local.transaction_name
+            # Take all the transactions accumulated during the transaction,
+            # set the transaction name on them and merge them into the dict
+            for trace in self.thread_local.transaction_traces:
+                trace.transaction = transaction
+                trace.transaction_duration = elapsed
 
-            self.add(elapsed, self.thread_local.transaction_name, response_code)
+                self._add_trace(trace)
+
+            # Add the transaction itself
+            transaction_trace = Trace(0.0, elapsed, "transaction",
+                                      "transaction", [], None, transaction,
+                                      elapsed)
+            self._add_trace(transaction_trace)
+            self.thread_local.transaction_traces = []
+            self._add_transaction(elapsed, self.thread_local.transaction_name,
+                                  response_code)
 
     @contextlib.contextmanager
     def trace(self, signature, kind, collateral):
         abs_start_time = time.time()
-        sig_stack = self.thread_local.sig_stack
+        signature_stack = self.thread_local.signature_stack
 
-        if len(sig_stack):
-            parent_start_time, parent_signature = sig_stack[-1]
+        if len(signature_stack):
+            parent_start_time = signature_stack[-1][0]
         else:
-            parent_start_time, parent_signature = self.thread_local.transaction_start, "request"
+            parent_start_time = self.thread_local.transaction_start
 
         rel_start_time = (abs_start_time - parent_start_time)*1000
 
-        sig_stack.append((abs_start_time, signature))
+        signature_stack.append((abs_start_time, signature))
 
         yield
 
-        sig_stack.pop()
-        parents = [s[1] for s in sig_stack]
-        elapsed = (time.time() - abs_start_time)*1000
+        signature_stack.pop()
+        parents = [s[1] for s in signature_stack]
+        duration = (time.time() - abs_start_time)*1000
 
-        self.add_trace(elapsed, rel_start_time, signature, kind,
-                       ("request", ) + tuple(parents), collateral)
+        self.add_trace(rel_start_time,duration,  signature, kind,
+                       ("transaction", ) + tuple(parents), collateral)
 
-    def add_trace(self, duration, relative_start, signature, kind, parents,
+    def add_trace(self, relative_start, duration, signature, kind, parents,
                   collateral):
-        transaction = getattr(self.thread_local, 'transaction_name', None)
-        print signature[:20], relative_start, duration
-        trace = Trace([duration], [relative_start], transaction, signature,
+        trace = Trace(relative_start, duration, signature,
                       kind, parents, collateral)
 
-        with self.cond:
-            if trace.fingerprint in self._traces:
-                self._traces[trace.fingerprint].merge(trace)
-            else:
-                self._traces[trace.fingerprint] = trace
-
-            self.cond.notify()
+        self.thread_local.transaction_traces.append(trace)

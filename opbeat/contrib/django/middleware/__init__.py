@@ -56,6 +56,10 @@ class OpbeatAPMMiddleware(object):
     def __init__(self):
         self.client = get_client()
 
+        db_enable_instrumentation()
+        cache_enable_instrumentation()
+        template_enable_instrumentation()
+
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
         module = view_func.__module__
@@ -69,27 +73,16 @@ class OpbeatAPMMiddleware(object):
 
     def process_request(self, request):
         if not disabled_due_to_debug():
-            self.thread_local.request_start = time.time()
+            self.client.instrumentation_store.transaction_start()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        self.thread_local.view_func = view_func
+        view_name = self._get_name_from_view_func(view_func)
+        self.client.instrumentation_store.set_transaction_name(view_name)
 
     def process_response(self, request, response):
         try:
-            if (hasattr(self.thread_local, "request_start")
-                    and hasattr(response, "status_code")):
-                elapsed = (time.time() - self.thread_local.request_start)*1000
-
-                if getattr(self.thread_local, "view_func", False):
-                    view_func = self._get_name_from_view_func(
-                        self.thread_local.view_func)
-                else:
-                    view_func = ""
-
-                status_code = response.status_code
-                self.client.captureRequest(elapsed, status_code, view_func)
-
-                self.thread_local.view_func = None
+            self.client.instrumentation_store.transaction_end(response.status_code)
+            self.client.transaction_end()
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',
@@ -116,29 +109,3 @@ class OpbeatLogMiddleware(object):
 
     def process_request(self, request):
         self.thread.request = request
-
-
-class OpbeatMetricsMiddleware(object):
-    def __init__(self):
-        self.client = get_client()
-
-    def process_request(self, request):
-        self.client._traces_store.request_start()
-        db_enable_instrumentation()
-        cache_enable_instrumentation()
-        template_enable_instrumentation()
-
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        view_name = "{}.{}".format(view_func.__module__, view_func.__name__)
-        self.client._traces_store.set_transaction_name(view_name)
-
-    def process_response(self, request, response):
-        try:
-            self.client._traces_store.set_response_code(response.status_code)
-            self.client.end_transaction()
-        except Exception:
-            self.client.error_logger.error(
-                'Exception during metrics tracking',
-                exc_info=True,
-            )
-        return response
