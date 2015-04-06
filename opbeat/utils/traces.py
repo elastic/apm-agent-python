@@ -1,4 +1,3 @@
-from collections import namedtuple
 import contextlib
 import threading
 import time
@@ -6,20 +5,20 @@ from datetime import datetime
 from collections import defaultdict
 
 from opbeat.utils.encoding import force_text
-
-# Trace = namedtuple("Trace", ["start_time", "trace_duration",
-#                              "transaction_duration", "parents", "sigantur"])
+from opbeat.utils.lru import LRUCache
+from opbeat.utils.stacks import get_stack_info, iter_stack_frames
 
 
 class AbstractTrace(object):
-    def __init__(self, signature, kind, parents, collateral, transaction=None,
-                 transaction_duration=True):
+    def __init__(self, signature, kind, parents, frames, extra,
+                 transaction=None, transaction_duration=True):
         self.transaction = transaction
         self.transaction_duration = transaction_duration
         self.signature = signature
         self.kind = kind
         self.parents = tuple(parents)
-        self.collateral = collateral
+        self.frames = frames
+        self.extra = extra
 
     @property
     def fingerprint(self):
@@ -28,10 +27,11 @@ class AbstractTrace(object):
 
 class Trace(AbstractTrace):
     def __init__(self, start_time, trace_duration, signature, kind, parents,
-                 collateral, transaction=None, transaction_duration=None):
+                 frames, extra,
+                 transaction=None, transaction_duration=None):
         self.start_time = start_time
         self.trace_duration = trace_duration
-        super(Trace, self).__init__(signature, kind, parents, collateral,
+        super(Trace, self).__init__(signature, kind, parents, frames, extra,
                                     transaction, transaction_duration)
 
 
@@ -45,13 +45,18 @@ class TraceGroup(AbstractTrace):
     def __init__(self, trace):
         self.traces = []
         super(TraceGroup, self).__init__(trace.signature, trace.kind,
-                                         trace.parents, trace.collateral,
-                                         trace.transaction)
+                                         trace.parents, trace.frames,
+                                         trace.extra, trace.transaction)
 
     def add(self, trace):
         self.traces.append(trace)
 
     def as_dict(self):
+        # Merge frames into extra
+        extra = dict(self.extra or {})
+        if self.frames:
+            extra['_frames'] = self.frames
+
         return {
             "transaction": self.transaction,
             "durations": [(t.trace_duration, t.transaction_duration)
@@ -59,7 +64,7 @@ class TraceGroup(AbstractTrace):
             "signature": self.signature,
             "kind": self.kind,
             "parents": self.parents,
-            "collateral": self.collateral,
+            "extra": extra,
             "start_time": min([t.start_time for t in self.traces]),
         }
 
@@ -96,6 +101,7 @@ class RequestsStore(object):
         self._traces = defaultdict(list)
         self.collect_frequency = collect_frequency
         self._last_collect = time.time()
+        self._lrucache = LRUCache(maxsize=1000)
 
     def _add_transaction(self, elapsed, transaction, response_code):
         with self.cond:
@@ -131,12 +137,8 @@ class RequestsStore(object):
 
     def transaction_start(self):
         self.thread_local.transaction_start = time.time()
-        self.thread_local.transaction_name = ""
         self.thread_local.transaction_traces = []
         self.thread_local.signature_stack = []
-
-    def set_transaction_name(self, transaction_name):
-        self.thread_local.transaction_name = transaction_name
 
     def _add_trace(self, trace):
         with self.cond:
@@ -145,30 +147,30 @@ class RequestsStore(object):
             self._traces[trace.fingerprint].add(trace)
             self.cond.notify()
 
-    def transaction_end(self, response_code):
+    def transaction_end(self, response_code, transaction_name):
         if hasattr(self.thread_local, "transaction_start"):
             start = self.thread_local.transaction_start
             elapsed = (time.time() - start)*1000
-            transaction = self.thread_local.transaction_name
-            # Take all the transactions accumulated during the transaction,
+
+            # Take all the traces accumulated during the transaction,
             # set the transaction name on them and merge them into the dict
             for trace in self.thread_local.transaction_traces:
-                trace.transaction = transaction
+                trace.transaction = transaction_name
                 trace.transaction_duration = elapsed
 
                 self._add_trace(trace)
 
             # Add the transaction itself
             transaction_trace = Trace(0.0, elapsed, "transaction",
-                                      "transaction", [], None, transaction,
-                                      elapsed)
+                                      "transaction", [], [], None,
+                                      transaction_name, elapsed)
             self._add_trace(transaction_trace)
             self.thread_local.transaction_traces = []
-            self._add_transaction(elapsed, self.thread_local.transaction_name,
+            self._add_transaction(elapsed, transaction_name,
                                   response_code)
 
     @contextlib.contextmanager
-    def trace(self, signature, kind, collateral):
+    def trace(self, signature, kind, extra, skip_frames=0):
         abs_start_time = time.time()
         signature_stack = self.thread_local.signature_stack
 
@@ -187,12 +189,21 @@ class RequestsStore(object):
         parents = [s[1] for s in signature_stack]
         duration = (time.time() - abs_start_time)*1000
 
-        self.add_trace(rel_start_time,duration,  signature, kind,
-                       ("transaction", ) + tuple(parents), collateral)
+        self.add_trace(rel_start_time, duration,  signature, kind,
+                       ("transaction", ) + tuple(parents), skip_frames,
+                       extra)
 
     def add_trace(self, relative_start, duration, signature, kind, parents,
-                  collateral):
+                  skip_frames, extra):
+
+        skip_frames += 8
+
         trace = Trace(relative_start, duration, signature,
-                      kind, parents, collateral)
+                      kind, parents, None, extra)
+
+        if not self._lrucache.has_key(trace.fingerprint):
+            self._lrucache.set(trace.fingerprint)
+            frames = get_stack_info(iter_stack_frames(), False)[skip_frames:]
+            trace.frames = frames
 
         self.thread_local.transaction_traces.append(trace)

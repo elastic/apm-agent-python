@@ -183,7 +183,6 @@ class Client(object):
 
         self.instrumentation_store = RequestsStore(self.traces_send_freq_secs)
         atexit_register(self._traces_collect)
-    #gollect()
 
     @contextlib.contextmanager
     def captureTrace(self, signature, kind, collateral=None):
@@ -528,7 +527,11 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
 
-    def transaction_end(self):
+    def begin_transaction(self):
+        self.instrumentation_store.transaction_start()
+
+    def end_transaction(self, status_code, name):
+        self.instrumentation_store.transaction_end(status_code, name)
         if self.instrumentation_store.should_collect():
             self._traces_collect()
 

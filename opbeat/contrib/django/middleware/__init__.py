@@ -104,15 +104,17 @@ class OpbeatAPMMiddleware(object):
 
     def __init__(self):
         self.client = get_client()
+
         if not self._opbeat_instrumented:
             with self._instrumenting_lock:
-                if (self.client.instrument_django_middleware
-                        and not self._opbeat_instrumented):
-                    self.instrument_middlewares()
+                if not self._opbeat_instrumented:
+                    cache_enable_instrumentation()
+                    template_enable_instrumentation()
+
+                    if self.client.instrument_django_middleware:
+                        self.instrument_middlewares()
+
                     OpbeatAPMMiddleware._opbeat_instrumented = True
-        db_enable_instrumentation()
-        cache_enable_instrumentation()
-        template_enable_instrumentation()
 
 
     def instrument_middlewares(self):
@@ -154,6 +156,8 @@ class OpbeatAPMMiddleware(object):
         return '{0}.{1}'.format(module, view_name)
 
     def process_request(self, request):
+        db_enable_instrumentation()
+
         if not disabled_due_to_debug(
             getattr(django_settings, 'OPBEAT', {}),
             django_settings.DEBUG
