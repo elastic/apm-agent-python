@@ -23,9 +23,6 @@ try:
 except ImportError:
     from django.utils.importlib import import_module
 
-from opbeat.contrib.django.instruments.db import enable_instrumentation as db_enable_instrumentation
-from opbeat.contrib.django.instruments.cache import enable_instrumentation as cache_enable_instrumentation
-from opbeat.contrib.django.instruments.template import enable_instrumentation as template_enable_instrumentation
 from opbeat.contrib.django.models import client, get_client
 from opbeat.utils import disabled_due_to_debug
 from opbeat.utils import wrapt
@@ -108,14 +105,10 @@ class OpbeatAPMMiddleware(object):
         if not self._opbeat_instrumented:
             with self._instrumenting_lock:
                 if not self._opbeat_instrumented:
-                    cache_enable_instrumentation()
-                    template_enable_instrumentation()
-
                     if self.client.instrument_django_middleware:
                         self.instrument_middlewares()
 
                     OpbeatAPMMiddleware._opbeat_instrumented = True
-
 
     def instrument_middlewares(self):
         for middleware_path in django_settings.MIDDLEWARE_CLASSES:
@@ -156,8 +149,6 @@ class OpbeatAPMMiddleware(object):
         return '{0}.{1}'.format(module, view_name)
 
     def process_request(self, request):
-        db_enable_instrumentation()
-
         if not disabled_due_to_debug(
             getattr(django_settings, 'OPBEAT', {}),
             django_settings.DEBUG

@@ -17,7 +17,7 @@ import sys
 import logging
 import warnings
 from opbeat.utils import six
-
+import opbeat.instrumentation.control
 from opbeat.utils import disabled_due_to_debug
 
 from django.conf import settings as django_settings
@@ -197,6 +197,10 @@ def register_handlers():
             register_signal(client)
         except Exception as e:
             logger.exception('Failed installing django-celery hook: %s' % e)
+
+    # Instrument stuff
+    opbeat.instrumentation.control.instrument(get_client())
+
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
