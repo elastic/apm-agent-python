@@ -38,7 +38,8 @@ from opbeat.utils import opbeat_json as json, varmap
 from opbeat.utils.compat import atexit_register
 from opbeat.utils.encoding import transform, shorten
 from opbeat.utils.traces import RequestsStore
-from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
+from opbeat.utils.stacks import iter_stack_frames, get_culprit
+from opbeat.utils import stacks
 from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
 __all__ = ('Client',)
@@ -181,7 +182,9 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self.instrumentation_store = RequestsStore(self.traces_send_freq_secs)
+        self.instrumentation_store = RequestsStore(
+            lambda: self.get_stack_info(iter_stack_frames(), False),
+            self.traces_send_freq_secs)
         atexit_register(self._traces_collect)
 
     @contextlib.contextmanager
@@ -204,6 +207,9 @@ class Client(object):
 
     def get_handler(self, name):
         return self.module_cache[name](self)
+
+    def get_stack_info(self, frames, extended=True):
+        return stacks.get_stack_info(frames, extended)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
                               extra=None, stack=None,
@@ -253,7 +259,7 @@ class Client(object):
                     'frames': varmap(lambda k, v: shorten(v,
                         string_length=self.string_max_length,
                         list_length=self.list_max_length),
-                    get_stack_info(frames))
+                    self.get_stack_info(frames))
                 },
             })
 

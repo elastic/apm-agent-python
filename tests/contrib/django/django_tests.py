@@ -537,7 +537,7 @@ class DjangoClientTest(TestCase):
                              200)
 
     def test_request_metrics_301_append_slash(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+        self.opbeat.instrumentation_store.get_all()  # clear the store
 
         # enable middleware wrapping
         client = get_client()
@@ -551,7 +551,7 @@ class DjangoClientTest(TestCase):
             APPEND_SLASH=True,
         ):
             self.client.get(reverse('opbeat-no-error-slash')[:-1])
-        timed_requests = self.opbeat._requests_store.get_all()
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -559,7 +559,7 @@ class DjangoClientTest(TestCase):
         )
 
     def test_request_metrics_301_prepend_www(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+        self.opbeat.instrumentation_store.get_all()  # clear the store
 
         # enable middleware wrapping
         client = get_client()
@@ -573,7 +573,7 @@ class DjangoClientTest(TestCase):
             PREPEND_WWW=True,
         ):
             self.client.get(reverse('opbeat-no-error'))
-        timed_requests = self.opbeat._requests_store.get_all()
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -581,7 +581,7 @@ class DjangoClientTest(TestCase):
         )
 
     def test_request_metrics_contrib_redirect(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+        self.opbeat.instrumentation_store.get_all()  # clear the store
 
         # enable middleware wrapping
         client = get_client()
@@ -600,7 +600,7 @@ class DjangoClientTest(TestCase):
         ):
             response = self.client.get('/redirect/me/')
 
-        timed_requests = self.opbeat._requests_store.get_all()
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],

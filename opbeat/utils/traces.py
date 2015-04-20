@@ -93,8 +93,9 @@ class _RequestGroup(object):
 
 
 class RequestsStore(object):
-    def __init__(self, collect_frequency):
+    def __init__(self, get_frames, collect_frequency):
         self.cond = threading.Condition()
+        self._get_frames = get_frames
         self.thread_local = threading.local()
         self.thread_local.transaction_traces = []
         self._transactions = {}
@@ -208,7 +209,7 @@ class RequestsStore(object):
 
         if not self._lrucache.has_key(trace.fingerprint):
             self._lrucache.set(trace.fingerprint)
-            frames = get_stack_info(iter_stack_frames(), False)[skip_frames:]
+            frames = self._get_frames()[skip_frames:]
             trace.frames = frames
 
         self.thread_local.transaction_traces.append(trace)

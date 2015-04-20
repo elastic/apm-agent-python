@@ -14,8 +14,9 @@ from __future__ import absolute_import
 import logging
 
 from django.http import HttpRequest
-from django.template import TemplateSyntaxError
+from django.template import TemplateSyntaxError, Node
 from django.template.loader import LoaderOrigin
+from opbeat.utils import stacks
 
 try:
     # Attempt to use the Django 1.7+ apps sub-framework.
@@ -31,7 +32,8 @@ except ImportError:
 
 from opbeat.base import Client
 from opbeat.contrib.django.utils import (get_data_from_template_source,
-                                         get_data_from_template_debug)
+                                         get_data_from_template_debug,
+                                         iterate_with_template_sources)
 from opbeat.conf import defaults
 from opbeat.utils.wsgi import get_headers, get_environ
 
@@ -157,6 +159,9 @@ class DjangoClient(Client):
 
         return result
 
+    def get_stack_info(self, frames, extended=True):
+        return list(iterate_with_template_sources(frames, extended))
+
     def send(self, **kwargs):
         """
         Serializes and signs ``data`` and passes the payload off to ``send_remote``
@@ -164,6 +169,7 @@ class DjangoClient(Client):
         If ``servers`` was passed into the constructor, this will serialize the data and pipe it to
         each server using ``send_remote()``.
         """
+        print "!!!", kwargs
         if self.servers:
             return super(DjangoClient, self).send(**kwargs)
         else:
