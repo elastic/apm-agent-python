@@ -71,13 +71,21 @@ class CursorProxy(wrapt.ObjectProxy):
 
     def _trace_sql(self, method, sql, params):
         parsed = sqlparse.parse(sql)[0]
-        if parsed.get_type() == 'SELECT':
+        sql_type = parsed.get_type()
+
+        if sql_type == 'SELECT':
             signature = "SELECT " + ", ".join(
                 extract_table_identifiers(extract_from_part(parsed)))
-        elif parsed.get_type() != 'UNKNOWN':
-            signature = parsed.get_type() + " " + parsed.get_name()
+        elif sql_type and sql_type != 'UNKNOWN':
+            signature = parsed.get_type()
+
+            if parsed.get_name():
+                signature += " " + parsed.get_name()
         else:
-            signature = parsed.get_name()
+            if parsed.get_name():
+                signature = parsed.get_name()
+            else:
+                signature = "SQL"
 
         with self._self_client.captureTrace(signature, "db.sql.postgresql",
                                             {"sql": sql}):
