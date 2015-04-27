@@ -72,7 +72,6 @@ def get_data_from_template_debug(template_debug):
 
 def iterate_with_template_sources(frames, extended=True):
     for frame, lineno in frames:
-        f_globals = getattr(frame, 'f_globals', {})
         f_code = getattr(frame, 'f_code', None)
         if f_code:
             function = frame.f_code.co_name

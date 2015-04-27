@@ -14,9 +14,8 @@ from __future__ import absolute_import
 import logging
 
 from django.http import HttpRequest
-from django.template import TemplateSyntaxError, Node
+from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
-from opbeat.utils import stacks
 
 try:
     # Attempt to use the Django 1.7+ apps sub-framework.
