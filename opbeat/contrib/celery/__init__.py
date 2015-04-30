@@ -43,7 +43,7 @@ class CeleryFilter(object):
 def register_signal(client):
     def process_failure_signal(sender, task_id, exception, args, kwargs,
                                traceback, einfo, **kw):
-        client.captureException(
+        client.capture_exception(
             extra={
                 'task_id': task_id,
                 'task': sender,

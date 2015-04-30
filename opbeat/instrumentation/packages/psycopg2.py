@@ -87,8 +87,8 @@ class CursorProxy(wrapt.ObjectProxy):
             else:
                 signature = "SQL"
 
-        with self._self_client.captureTrace(signature, "db.sql.postgresql",
-                                            {"sql": sql}):
+        with self._self_client.capture_trace(signature, "db.sql.postgresql",
+                                             {"sql": sql}):
             return method(sql, params)
 
 

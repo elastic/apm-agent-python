@@ -168,7 +168,6 @@ class DjangoClient(Client):
         If ``servers`` was passed into the constructor, this will serialize the data and pipe it to
         each server using ``send_remote()``.
         """
-        print "!!!", kwargs
         if self.servers:
             return super(DjangoClient, self).send(**kwargs)
         else:

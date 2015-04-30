@@ -204,5 +204,3 @@ def register_handlers():
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()
-else:
-    print "not in installed app"

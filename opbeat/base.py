@@ -20,6 +20,8 @@ import sys
 import time
 import zlib
 from opbeat.utils import six
+from opbeat.utils.deprecation import deprecated
+
 try:
     from urllib2 import HTTPError
 except ImportError:
@@ -117,7 +119,7 @@ class Client(object):
     >>> try:
     >>>     1/0
     >>> except ZeroDivisionError:
-    >>>     ident = client.get_ident(client.captureException())
+    >>>     ident = client.get_ident(client.capture_exception())
     >>>     print "Exception caught; reference is %%s" %% ident
     """
     logger = logging.getLogger('opbeat')
@@ -188,7 +190,7 @@ class Client(object):
         atexit_register(self._traces_collect)
 
     @contextlib.contextmanager
-    def captureTrace(self, signature, kind, collateral=None):
+    def capture_trace(self, signature, kind, collateral=None):
         with self.instrumentation_store.trace(signature, kind, collateral):
             yield
 
@@ -324,7 +326,7 @@ class Client(object):
 
         To use structured data (interfaces) with capture:
 
-        >>> capture('Message', message='foo', data={
+        >>> client.capture('Message', message='foo', data={
         >>>     'http': {
         >>>         'url': '...',
         >>>         'data': {},
@@ -500,21 +502,34 @@ class Client(object):
         """
         return json.loads(zlib.decompress(data).decode('utf8'))
 
-    def captureMessage(self, message, **kwargs):
+    def capture_message(self, message, **kwargs):
         """
         Creates an event from ``message``.
 
-        >>> client.captureMessage('My event just happened!')
+        >>> client.capture_message('My event just happened!')
         """
         return self.capture('Message', message=message, **kwargs)
 
-    def captureException(self, exc_info=None, **kwargs):
+    @deprecated
+    def captureMessage(self, message, **kwargs):
+        """
+        Deprecated
+        :param message:
+        :type message:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        self.capture_message(message, **kwargs)
+
+    def capture_exception(self, exc_info=None, **kwargs):
         """
         Creates an event from an exception.
 
         >>> try:
         >>>     exc_info = sys.exc_info()
-        >>>     client.captureException(exc_info)
+        >>>     client.capture_exception(exc_info)
         >>> finally:
         >>>     del exc_info
 
@@ -524,14 +539,27 @@ class Client(object):
         """
         return self.capture('Exception', exc_info=exc_info, **kwargs)
 
-    def captureQuery(self, query, params=(), engine=None, **kwargs):
+    @deprecated
+    def captureException(self, exc_info=None, **kwargs):
+        """
+        Deprecated
+        """
+        self.capture_exception(exc_info, **kwargs)
+
+    def capture_query(self, query, params=(), engine=None, **kwargs):
         """
         Creates an event for a SQL query.
 
-        >>> client.captureQuery('SELECT * FROM foo')
+        >>> client.capture_query('SELECT * FROM foo')
         """
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
+
+    def captureQuery(self, *args, **kwargs):
+        """
+        Deprecated
+        """
+        self.capture_query(*args, **kwargs)
 
     def begin_transaction(self):
         self.instrumentation_store.transaction_start()

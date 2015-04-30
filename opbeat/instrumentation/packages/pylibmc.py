@@ -24,7 +24,7 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
         ]
 
     def call(self, wrapped, instance, args, kwargs):
-        with self.client.captureTrace(wrapped.__name__, "cache.memcached"):
+        with self.client.capture_trace(wrapped.__name__, "cache.memcached"):
             return wrapped(*args, **kwargs)
 
 

@@ -9,7 +9,7 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
     ]
 
     def call(self, wrapped, instance, args, kwargs):
-        with self.client.captureTrace(instance.name, "template.django"):
+        with self.client.capture_trace(instance.name, "template.django"):
             return wrapped(*args, **kwargs)
 
 

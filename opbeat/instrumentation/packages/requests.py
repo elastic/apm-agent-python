@@ -26,7 +26,7 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         host = urlparse.urlparse(url).netloc
         signature += " " + host
 
-        with self.client.captureTrace(signature, "ext.http", {'url': url}):
+        with self.client.capture_trace(signature, "ext.http", {'url': url}):
             return wrapped(*args, **kwargs)
 
 
