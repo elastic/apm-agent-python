@@ -91,6 +91,7 @@ class ClientTest(TestCase):
         )
 
     @mock.patch('opbeat.base.Client._send_remote')
+    @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
     def test_send_remote_failover(self, should_try, send_remote):
         should_try.return_value = True

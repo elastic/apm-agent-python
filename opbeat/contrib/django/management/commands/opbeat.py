@@ -83,6 +83,8 @@ class Command(BaseCommand):
         client = client_class(**config)
         client.error_logger = Logger(self.stderr)
         client.logger = Logger(self.stderr)
+        client.state.logger = client.logger
+        client.state.error_logger = client.error_logger
         self.stdout.write(
             "Trying to send a test error to Opbeat using these settings:\n\n"
             "ORGANIZATION_ID:\t%s\n"

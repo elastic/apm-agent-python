@@ -59,7 +59,7 @@ class ClientState(object):
     ONLINE = 1
     ERROR = 0
 
-    def __init__(self, logger, error_logger):
+    def __init__(self, logger=None, error_logger=None):
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = 0
@@ -77,16 +77,19 @@ class ClientState(object):
 
         return False
 
-    def set_fail(self, e):
+    def set_fail(self, e=None):
         self.status = self.ERROR
         self.retry_number += 1
         self.last_check = time.time()
 
-    def set_success(self, response):
+    def set_success(self, response=None):
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = 0
-        self.logger.info('Logged error at ' + response.info().getheader('Location'))
+        if self.logger and hasattr(response, 'info'):
+            url = response.info().getheader('Location')
+            if url:
+                self.logger.info('Logged error at ' + url)
 
     def did_fail(self):
         return self.status == self.ERROR
@@ -380,7 +383,7 @@ class Client(object):
             )
         else:
             response = transport.send(data, headers, timeout=self.timeout)
-            self.logger.info('Logged error at ' + response.info().getheader('Location'))
+            self.state.set_success(response)
             return response
 
     def _get_log_message(self, data):
@@ -403,9 +406,8 @@ class Client(object):
             message = self._get_log_message(data)
             self.error_logger.error(message)
             return
-        response = None
         try:
-            response = self._send_remote(url=url, data=data, headers=headers)
+            self._send_remote(url=url, data=data, headers=headers)
         except Exception as e:
             if isinstance(e, socket.timeout):
                 self.error_logger.error(
@@ -439,8 +441,6 @@ class Client(object):
             message = self._get_log_message(data)
             self.error_logger.error('Failed to submit message: %r', message)
             self.state.set_fail(e)
-        if response:
-            self.state.set_success(response)
 
     def send(self, organization_id=None, app_id=None, secret_token=None,
              auth_header=None, servers=None, **data):
