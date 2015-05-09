@@ -1,7 +1,7 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 from opbeat.utils import wrapt
-import sqlparse
-from sqlparse import tokens, sql
+from opbeat.utils import sqlparse
+from opbeat.utils.sqlparse import tokens, sql
 
 
 
