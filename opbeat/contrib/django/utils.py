@@ -78,7 +78,8 @@ def iterate_with_template_sources(frames, extended=True):
             if function == 'render':
                 renderer = getattr(frame, 'f_locals', {}).get('self')
                 if renderer and isinstance(renderer, Node):
-                    if hasattr(renderer, "token"):
+                    if (hasattr(renderer, "token")
+                            and hasattr(renderer, "source")):
                         lineno = renderer.token.lineno
                         source = renderer.source[0].name
 
