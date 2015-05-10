@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from sqlparse.sql import Statement, Token
-from sqlparse import tokens as T
+from opbeat.utils.sqlparse.sql import Statement, Token
+from opbeat.utils.sqlparse import tokens as T
 
 
 class StatementFilter:

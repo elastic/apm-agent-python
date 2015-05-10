@@ -5,9 +5,9 @@
 
 """filter"""
 
-from sqlparse import lexer
-from sqlparse.engine import grouping
-from sqlparse.engine.filter import StatementFilter
+from opbeat.utils.sqlparse import lexer
+from opbeat.utils.sqlparse.engine import grouping
+from opbeat.utils.sqlparse.engine.filter import StatementFilter
 
 # XXX remove this when cleanup is complete
 Filter = object

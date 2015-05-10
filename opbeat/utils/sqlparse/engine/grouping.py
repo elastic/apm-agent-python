@@ -2,8 +2,8 @@
 
 import itertools
 
-from sqlparse import sql
-from sqlparse import tokens as T
+from opbeat.utils.sqlparse import sql
+from opbeat.utils.sqlparse import tokens as T
 
 try:
     next

@@ -6,9 +6,9 @@ Created on 17/05/2012
 Several utility functions to extract info from the SQL sentences
 '''
 
-from sqlparse.filters import ColumnsSelect, Limit
-from sqlparse.pipeline import Pipeline
-from sqlparse.tokens import Keyword, Whitespace
+from opbeat.utils.sqlparse.filters import ColumnsSelect, Limit
+from opbeat.utils.sqlparse.pipeline import Pipeline
+from opbeat.utils.sqlparse.tokens import Keyword, Whitespace
 
 
 def getlimit(stream):

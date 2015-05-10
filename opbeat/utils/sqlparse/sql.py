@@ -5,7 +5,7 @@
 import re
 import sys
 
-from sqlparse import tokens as T
+from opbeat.utils.sqlparse import tokens as T
 
 
 class Token(object):

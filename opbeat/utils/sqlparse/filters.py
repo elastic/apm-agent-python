@@ -4,14 +4,14 @@ import re
 
 from os.path import abspath, join
 
-from sqlparse import sql, tokens as T
-from sqlparse.engine import FilterStack
-from sqlparse.lexer import tokenize
-from sqlparse.pipeline import Pipeline
-from sqlparse.tokens import (Comment, Comparison, Keyword, Name, Punctuation,
+from opbeat.utils.sqlparse import sql, tokens as T
+from opbeat.utils.sqlparse.engine import FilterStack
+from opbeat.utils.sqlparse.lexer import tokenize
+from opbeat.utils.sqlparse.pipeline import Pipeline
+from opbeat.utils.sqlparse.tokens import (Comment, Comparison, Keyword, Name, Punctuation,
                              String, Whitespace)
-from sqlparse.utils import memoize_generator
-from sqlparse.utils import split_unquoted_newlines
+from opbeat.utils.sqlparse.utils import memoize_generator
+from opbeat.utils.sqlparse.utils import split_unquoted_newlines
 
 
 # --------------------------

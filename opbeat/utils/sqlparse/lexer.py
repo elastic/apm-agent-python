@@ -15,8 +15,8 @@
 import re
 import sys
 
-from sqlparse import tokens
-from sqlparse.keywords import KEYWORDS, KEYWORDS_COMMON
+from opbeat.utils.sqlparse import tokens
+from opbeat.utils.sqlparse.keywords import KEYWORDS, KEYWORDS_COMMON
 from cStringIO import StringIO
 
 
@@ -223,7 +223,7 @@ class Lexer(object):
         self.filters = []
 
     def add_filter(self, filter_, **options):
-        from sqlparse.filters import Filter
+        from opbeat.utils.sqlparse.filters import Filter
         if not isinstance(filter_, Filter):
             filter_ = filter_(**options)
         self.filters.append(filter_)

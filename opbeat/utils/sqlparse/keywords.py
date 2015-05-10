@@ -1,4 +1,4 @@
-from sqlparse import tokens
+from opbeat.utils.sqlparse import tokens
 
 KEYWORDS = {
     'ABORT': tokens.Keyword,

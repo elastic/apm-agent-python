@@ -10,12 +10,12 @@ __version__ = '0.1.15'
 
 
 # Setup namespace
-from sqlparse import engine
-from sqlparse import filters
-from sqlparse import formatter
+from opbeat.utils.sqlparse import engine
+from opbeat.utils.sqlparse import filters
+from opbeat.utils.sqlparse import formatter
 
 # Deprecated in 0.1.5. Will be removed in 0.2.0
-from sqlparse.exceptions import SQLParseError
+from opbeat.utils.sqlparse.exceptions import SQLParseError
 
 
 def parse(sql, encoding=None):
@@ -70,7 +70,7 @@ def split(sql, encoding=None):
     return [unicode(stmt).strip() for stmt in stack.run(sql, encoding)]
 
 
-from sqlparse.engine.filter import StatementFilter
+from opbeat.utils.sqlparse.engine.filter import StatementFilter
 
 
 def split2(stream):

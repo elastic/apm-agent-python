@@ -5,8 +5,8 @@
 
 """SQL formatter"""
 
-from sqlparse import filters
-from sqlparse.exceptions import SQLParseError
+from opbeat.utils.sqlparse import filters
+from opbeat.utils.sqlparse.exceptions import SQLParseError
 
 
 def validate_options(options):
