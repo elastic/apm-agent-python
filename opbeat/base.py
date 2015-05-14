@@ -190,8 +190,9 @@ class Client(object):
         atexit_register(self._traces_collect)
 
     @contextlib.contextmanager
-    def capture_trace(self, signature, kind, collateral=None):
-        with self.instrumentation_store.trace(signature, kind, collateral):
+    def capture_trace(self, signature, kind, extra=None, skip_frames=0):
+        with self.instrumentation_store.trace(signature, kind, extra,
+                                              skip_frames):
             yield
 
     def get_processors(self):
@@ -510,7 +511,7 @@ class Client(object):
         """
         return self.capture('Message', message=message, **kwargs)
 
-    @deprecated
+    @deprecated(alternative="capture_message()")
     def captureMessage(self, message, **kwargs):
         """
         Deprecated
@@ -539,7 +540,7 @@ class Client(object):
         """
         return self.capture('Exception', exc_info=exc_info, **kwargs)
 
-    @deprecated
+    @deprecated(alternative="capture_exception()")
     def captureException(self, exc_info=None, **kwargs):
         """
         Deprecated
@@ -555,6 +556,7 @@ class Client(object):
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
 
+    @deprecated(alternative="capture_query()")
     def captureQuery(self, *args, **kwargs):
         """
         Deprecated

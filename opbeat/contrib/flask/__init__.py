@@ -166,10 +166,10 @@ class Opbeat(object):
         assert self.client, 'capture_message called before application configured'
         return self.client.capture_message(*args, **kwargs)
 
-    @deprecated
+    @deprecated(alternative="capture_exception()")
     def captureException(self, *args, **kwargs):
         return self.capture_exception(*args, **kwargs)
 
-    @deprecated
+    @deprecated(alternative="capture_message()")
     def captureMessage(self, *args, **kwargs):
         return self.capture_message(*args, **kwargs)
