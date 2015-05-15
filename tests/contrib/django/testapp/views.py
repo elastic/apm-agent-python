@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import logging
 
+from django.template.response import TemplateResponse
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 

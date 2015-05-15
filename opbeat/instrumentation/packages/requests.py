@@ -29,4 +29,3 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         with self.client.capture_trace(signature, "ext.http", {'url': url}):
             return wrapped(*args, **kwargs)
 
-

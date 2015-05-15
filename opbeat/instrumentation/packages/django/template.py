@@ -12,4 +12,3 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
         with self.client.capture_trace(instance.name, "template.django"):
             return wrapped(*args, **kwargs)
 
-

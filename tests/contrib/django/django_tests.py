@@ -94,7 +94,7 @@ class ClientProxyTest(TestCase):
 
 class DjangoClientTest(TestCase):
     ## Fixture setup/teardown
-    urls = 'tests.contrib.django.urls'
+    urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
         self.opbeat = get_client()
@@ -140,7 +140,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(exc['value'], 'view exception')
         self.assertEquals(event['level'], 'error')
         self.assertEquals(event['message'], 'Exception: view exception')
-        self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 
     def test_view_exception_debug(self):
         with self.settings(DEBUG=True):
@@ -230,7 +230,7 @@ class DjangoClientTest(TestCase):
             self.assertFalse('user' in event)
 
     def test_request_middleware_exception(self):
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -242,12 +242,12 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'request')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ImportError: request')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_request')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_request')
 
     def test_response_middlware_exception(self):
         if django.VERSION[:2] < (1, 3):
             return
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenResponseMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-no-error'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -259,7 +259,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'response')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ImportError: response')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_response')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_response')
 
     def test_broken_500_handler_with_middleware(self):
         with self.settings(BREAK_THAT_500=True):
@@ -277,7 +277,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'view exception')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'Exception: view exception')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 
             event = self.opbeat.events.pop(0)
 
@@ -287,10 +287,10 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'handler500')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ValueError: handler500')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.urls.handler500')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.urls.handler500')
 
     def test_view_middleware_exception(self):
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenViewMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenViewMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -302,7 +302,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'view')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ImportError: view')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_view')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_view')
 
     def test_exclude_modules_view(self):
         exclude_paths = self.opbeat.exclude_paths
@@ -312,7 +312,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat.events), 1, self.opbeat.events)
         event = self.opbeat.events.pop(0)
 
-        self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
         self.opbeat.exclude_paths = exclude_paths
 
     def test_include_modules(self):
@@ -519,7 +519,7 @@ class DjangoClientTest(TestCase):
     #         self.assertEquals(len(self.opbeat.events), 1)
     #         self.opbeat.events.pop(0)
 
-    def test_transction_metrics(self):
+    def test_transaction_metrics(self):
         self.opbeat.instrumentation_store.get_all()  # clear the store
         with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
             self.assertEqual(len(self.opbeat.instrumentation_store), 0)
@@ -532,7 +532,7 @@ class DjangoClientTest(TestCase):
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],
-                             'tests.contrib.django.views.no_error')
+                             'tests.contrib.django.testapp.views.no_error')
             self.assertEqual(timing['result'],
                              200)
 

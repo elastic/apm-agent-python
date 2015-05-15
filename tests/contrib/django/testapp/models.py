@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 from django.db import models
 from django import VERSION as DJANGO_VERSION
+from django.db.models import Model
+
+from opbeat.utils import six
+
 
 if DJANGO_VERSION >= (1, 5):
     from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
