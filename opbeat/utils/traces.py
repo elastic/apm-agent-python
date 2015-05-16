@@ -141,11 +141,12 @@ class RequestsStore(object):
         self.thread_local.transaction_traces = []
         self.thread_local.signature_stack = []
 
-    def _add_trace(self, trace):
+    def _add_traces(self, traces):
         with self.cond:
-            if trace.fingerprint not in self._traces:
-                self._traces[trace.fingerprint] = TraceGroup(trace)
-            self._traces[trace.fingerprint].add(trace)
+            for trace in traces:
+                if trace.fingerprint not in self._traces:
+                    self._traces[trace.fingerprint] = TraceGroup(trace)
+                self._traces[trace.fingerprint].add(trace)
             self.cond.notify()
 
     def transaction_end(self, response_code, transaction_name):
@@ -153,20 +154,25 @@ class RequestsStore(object):
             start = self.thread_local.transaction_start
             elapsed = (time.time() - start)*1000
 
+            transaction_traces = self.thread_local.transaction_traces
+
             # Take all the traces accumulated during the transaction,
             # set the transaction name on them and merge them into the dict
-            for trace in self.thread_local.transaction_traces:
+            for trace in transaction_traces:
                 trace.transaction = transaction_name
                 trace.transaction_duration = elapsed
-
-                self._add_trace(trace)
 
             # Add the transaction itself
             transaction_trace = Trace(0.0, elapsed, "transaction",
                                       "transaction", [], [], None,
                                       transaction_name, elapsed)
-            self._add_trace(transaction_trace)
+            transaction_traces.append(transaction_trace)
+
+            self._add_traces(transaction_traces)
+
+            # Reset traces
             self.thread_local.transaction_traces = []
+
             self._add_transaction(elapsed, transaction_name,
                                   response_code)
 
