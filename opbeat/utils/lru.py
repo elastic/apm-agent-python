@@ -42,8 +42,6 @@ def _make_key(args, kwds, typed,
 class LRUCache(object):
     def __init__(self, maxsize=100):
         self.cache = dict()
-        self.stats = [0, 0]                  # make statistics updateable non-locally
-
         self.cache_get = self.cache.get           # bound method to lookup key or return None
         self._len = len                      # localize the global len() function
         self.lock = RLock()                  # because linkedlist updates aren't threadsafe

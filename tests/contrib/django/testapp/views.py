@@ -3,7 +3,8 @@ import logging
 
 from django.template.response import TemplateResponse
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404, render_to_response, render
+import opbeat
 
 
 def no_error(request):
@@ -41,3 +42,15 @@ def logging_request_exc(request):
     except Exception as e:
         logger.error(e, exc_info=True, extra={'request': request})
     return HttpResponse('')
+
+
+def render_template_view(request):
+    def something_expensive():
+        with opbeat.contrib.django.models.get_client().capture_trace("something_expensive", "code"):
+            c = 100
+            for i in range(100):
+                c = c - 1
+        return ['cod', 'salmon']
+
+    return render(request, "list_fish.html",
+                            {'fishes': something_expensive})

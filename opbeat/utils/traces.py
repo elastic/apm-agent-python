@@ -200,7 +200,7 @@ class RequestsStore(object):
                        extra)
 
     def add_trace(self, relative_start, duration, signature, kind, parents,
-                  skip_frames, extra):
+                  skip_frames, extra=None):
 
         skip_frames += 8
 

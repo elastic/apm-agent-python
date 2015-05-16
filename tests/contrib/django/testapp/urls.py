@@ -16,6 +16,7 @@ def handler500(request):
     return HttpResponse('')
 
 urlpatterns = patterns('',
+    url(r'^render-heavy-template$', views.render_template_view, name='render-heavy-template'),
     url(r'^no-error$', views.no_error, name='opbeat-no-error'),
     url(r'^no-error-slash/$', views.no_error, name='opbeat-no-error-slash'),
     url(r'^fake-login$', views.fake_login, name='opbeat-fake-login'),

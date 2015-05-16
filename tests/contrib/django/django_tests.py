@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import opbeat
 from opbeat.utils import six
 import datetime
 import django
@@ -697,3 +698,77 @@ class CeleryIntegratedClientTest(TestCase):
         self.client.capture('Message', message='test')
 
         self.assertEquals(send_encoded.call_count, 1)
+
+
+class TracesTest(TestCase):
+    def setUp(self):
+        self.logger = logging.getLogger(__name__)
+        self.opbeat = get_client()
+        opbeat.instrumentation.control.instrument(get_client())
+
+    def test_template_name_as_view(self):
+        with self.settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            self.client.get(reverse('render-heavy-template'))
+            self.client.get(reverse('render-heavy-template'))
+            self.client.get(reverse('render-heavy-template'))
+
+        transactions, traces = self.opbeat.instrumentation_store.get_all()
+
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual(len(traces), 3)
+
+        self.assertEqual(traces[0]['kind'], 'transaction')
+        self.assertEqual(traces[0]['signature'], 'transaction')
+        self.assertEqual(traces[0]['transaction'], 'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(len(traces[0]['durations']), 3)
+        self.assertEqual(len(traces[0]['parents']), 0)
+
+        self.assertEqual(traces[1]['kind'], 'code')
+        self.assertEqual(traces[1]['signature'], 'something_expensive')
+        self.assertEqual(traces[1]['transaction'],
+                         'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(len(traces[1]['durations']), 3)
+        self.assertEqual(traces[1]['parents'], ('transaction', 'list_fish.html'))
+
+        self.assertEqual(traces[2]['kind'], 'template.django')
+        self.assertEqual(traces[2]['signature'], 'list_fish.html')
+        self.assertEqual(traces[2]['transaction'],
+                         'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(len(traces[2]['durations']), 3)
+        self.assertEqual(traces[2]['parents'], ('transaction',))
+
+
+    def test_template_name_as_view(self):
+        with self.settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            self.client.get(reverse('render-heavy-template'))
+            self.client.get(reverse('render-heavy-template'))
+            self.client.get(reverse('render-heavy-template'))
+
+        transactions, traces = self.opbeat.instrumentation_store.get_all()
+
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual(len(traces), 3)
+
+        self.assertEqual(traces[0]['kind'], 'transaction')
+        self.assertEqual(traces[0]['signature'], 'transaction')
+        self.assertEqual(traces[0]['transaction'],
+                         'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(len(traces[0]['durations']), 3)
+        self.assertEqual(len(traces[0]['parents']), 0)
+
+        self.assertEqual(traces[1]['kind'], 'code')
+        self.assertEqual(traces[1]['signature'], 'something_expensive')
+        self.assertEqual(traces[1]['transaction'],
+                         'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(len(traces[1]['durations']), 3)
+        self.assertEqual(traces[1]['parents'], ('transaction', 'list_fish.html'))
+
+        self.assertEqual(traces[2]['kind'], 'template.django')
+        self.assertEqual(traces[2]['signature'], 'list_fish.html')
+        self.assertEqual(traces[2]['transaction'],
+                         'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(len(traces[2]['durations']), 3)
+        self.assertEqual(traces[2]['parents'], ('transaction',))
+

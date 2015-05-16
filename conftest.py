@@ -41,7 +41,7 @@ def pytest_configure(config):
                 'opbeat.contrib.django',
                 'tests.contrib.django.testapp',
             ],
-            ROOT_URLCONF='tests.contrib.django.urls',
+            ROOT_URLCONF='tests.contrib.django.testapp.urls',
             DEBUG=False,
             SITE_ID=1,
             BROKER_HOST="localhost",
