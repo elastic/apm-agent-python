@@ -80,3 +80,26 @@ class ExtractSignatureTest(TestCase):
 
         self.assertEqual("BEGIN", actual)
 
+    def test_create_index_with_name(self):
+        sql = """CREATE INDEX myindex ON mytable"""
+        actual = extract_signature(sql)
+
+        self.assertEqual("CREATE INDEX", actual)
+
+    def test_create_index_without_name(self):
+        sql = """CREATE INDEX ON mytable"""
+        actual = extract_signature(sql)
+
+        self.assertEqual("CREATE INDEX", actual)
+
+    def test_drop_table(self):
+        sql = """DROP TABLE mytable"""
+        actual = extract_signature(sql)
+
+        self.assertEqual("DROP TABLE", actual)
+
+    def test_multi_statement_sql(self):
+        sql = """CREATE TABLE mytable; SELECT * FROM mytable; DROP TABLE mytable"""
+        actual = extract_signature(sql)
+
+        self.assertEqual("CREATE TABLE", actual)

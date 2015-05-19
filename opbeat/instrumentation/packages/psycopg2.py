@@ -48,10 +48,15 @@ def extract_signature(sql):
 
     sql_type = sql[0:first_space].upper()
 
-    if sql_type in ['INSERT', 'DELETE', 'CREATE']:
-        # Name is 3rd word
+    if sql_type in ['INSERT', 'DELETE']:
+        # 2nd word is part of SQL type
         sql_type = sql_type + sql[first_space:second_space]
+        # Name is 3rd word
         table_name = sql[second_space+1:sql.index(' ', second_space+1)]
+    elif sql_type in ['CREATE', 'DROP']:
+        # 2nd word is part of SQL type
+        sql_type = sql_type + sql[first_space:second_space]
+        table_name = ''
     elif sql_type in ['UPDATE']:
         # Name is 2nd work
         table_name = sql[first_space+1:second_space]
@@ -64,6 +69,7 @@ def extract_signature(sql):
             table_name = lookfor_from(filtered_tokens)
         except IndexError:
             table_name = ''
+
     else:
         # No name
         table_name = ''
