@@ -1,46 +1,75 @@
+import re
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 from opbeat.utils import wrapt
-from opbeat.utils import sqlparse
-from opbeat.utils.sqlparse import tokens, sql
 
 
+def lookfor_from(tokens):
+    literal_opened = None
+    seen_from = False
 
-def is_subselect(parsed):
-    if not parsed.is_group():
-        return False
-    for item in parsed.tokens:
-        if item.ttype is tokens.DML and item.value.upper() == 'SELECT':
-            return True
-    return False
+    for idx, token in enumerate(tokens):
+        if literal_opened == "'" and token == "'":
+            literal_opened = None
+            continue
+        if literal_opened == "$" and token == "$" and tokens[idx+1] == "$":
+            literal_opened = None
+            continue
+
+        if literal_opened is None:
+            if token == "'":
+                literal_opened = "'" if literal_opened is None else None
+                continue
+
+            if token == "$" and tokens[idx+1] == "$":
+                literal_opened = "$" if literal_opened is None else None
+                continue
+
+            if token.upper() == 'FROM':
+                seen_from = True
+                continue
+
+            if seen_from:
+                if token == '(':
+                    return lookfor_from(tokens[idx+1:])
+                elif token == '"':
+                        end_idx = tokens.index('"', idx+1)
+                        return "".join(tokens[idx+1:end_idx])
+                elif re.match("\w", token):
+                    return token
 
 
-def extract_from_part(parsed):
-    from_seen = False
-    for item in parsed.tokens:
-        if from_seen:
-            if is_subselect(item):
-                for x in extract_from_part(item):
-                    yield x
-            elif item.ttype is tokens.Keyword:
-                raise StopIteration
-            else:
-                yield item
-        elif item.ttype is tokens.Keyword and item.value.upper() == 'FROM':
-            from_seen = True
+def extract_signature(sql):
+    sql = sql.strip()
+    first_space = sql.find(' ')
+    if first_space < 0:
+        return sql
 
+    second_space = sql.find(' ', first_space+1)
 
-def extract_table_identifiers(token_stream):
-    for item in token_stream:
-        if isinstance(item, sql.IdentifierList):
-            for identifier in item.get_identifiers():
-                yield identifier.get_name()
-        elif isinstance(item, sql.Identifier):
-            yield item.get_name()
-        # It's a bug to check for Keyword here, but in the example
-        # above some tables names are identified as keywords...
-        elif item.ttype is tokens.Keyword:
-            yield item.value
+    sql_type = sql[0:first_space].upper()
 
+    if sql_type in ['INSERT', 'DELETE', 'CREATE']:
+        # Name is 3rd word
+        sql_type = sql_type + sql[first_space:second_space]
+        table_name = sql[second_space+1:sql.index(' ', second_space+1)]
+    elif sql_type in ['UPDATE']:
+        # Name is 2nd work
+        table_name = sql[first_space+1:second_space]
+    elif sql_type in ['SELECT']:
+        # Name is first table
+        try:
+            tokens = re.split("(\W)", sql)
+            filtered_tokens = [token for token in tokens if token != '']
+            sql_type = 'SELECT FROM'
+            table_name = lookfor_from(filtered_tokens)
+        except IndexError:
+            table_name = ''
+    else:
+        # No name
+        table_name = ''
+
+    signature = ' '.join(filter(bool, [sql_type, table_name]))
+    return signature
 
 class ConnectionProxy(wrapt.ObjectProxy):
     def __init__(self, wrapped, client):
@@ -70,23 +99,7 @@ class CursorProxy(wrapt.ObjectProxy):
                             param_list)
 
     def _trace_sql(self, method, sql, params):
-        parsed = sqlparse.parse(sql)[0]
-        sql_type = parsed.get_type()
-
-        if sql_type == 'SELECT':
-            signature = "SELECT " + ", ".join(
-                extract_table_identifiers(extract_from_part(parsed)))
-        elif sql_type and sql_type != 'UNKNOWN':
-            signature = parsed.get_type()
-
-            if parsed.get_name():
-                signature += " " + parsed.get_name()
-        else:
-            if parsed.get_name():
-                signature = parsed.get_name()
-            else:
-                signature = "SQL"
-
+        signature = extract_signature(sql)
         with self._self_client.capture_trace(signature, "db.sql.postgresql",
                                              {"sql": sql}):
             return method(sql, params)

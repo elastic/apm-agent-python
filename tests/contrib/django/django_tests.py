@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import pytest
 import opbeat
 from opbeat.utils import six
 import datetime
@@ -771,4 +772,11 @@ class TracesTest(TestCase):
                          'tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[2]['durations']), 3)
         self.assertEqual(traces[2]['parents'], ('transaction',))
+
+
+class ServeRequestTest(TestCase):
+    @pytest.mark.bench('client.get')
+    def test_baseline(self):
+        self.opbeat = get_client()
+        opbeat.instrumentation.control.instrument(get_client())
 
