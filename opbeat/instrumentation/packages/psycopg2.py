@@ -3,39 +3,52 @@ from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 from opbeat.utils import wrapt
 
 
+def skip_to(start, tokens, value_sequence):
+    i = start
+    while i < len(tokens):
+        for idx, token in enumerate(value_sequence):
+            if tokens[i+idx] != token:
+                break
+        else:
+            # Match
+            return tokens[start:i+len(value_sequence)]
+        i += 1
+
+    # Not found
+    return None
+
 def lookfor_from(tokens):
     literal_opened = None
     seen_from = False
-
-    for idx, token in enumerate(tokens):
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
         if literal_opened == "'" and token == "'":
             literal_opened = None
-            continue
-        if literal_opened == "$" and token == "$" and tokens[idx+1] == "$":
-            literal_opened = None
-            continue
-
-        if literal_opened is None:
+        elif literal_opened is None:
             if token == "'":
-                literal_opened = "'" if literal_opened is None else None
-                continue
-
-            if token == "$" and tokens[idx+1] == "$":
-                literal_opened = "$" if literal_opened is None else None
-                continue
-
-            if token.upper() == 'FROM':
+                literal_opened = "'"
+            elif token == "$":
+                # Postgres can use arbitrary characters between two $'s as a
+                # literal separation token, e.g.: $fish$ literal $fish$
+                # This part will detect that and skip over the literal.
+                dollar_token = ['$'] + skip_to(i+1, tokens, ['$'])
+                i = i + len(dollar_token) + 1
+                skipped = skip_to(i, tokens, dollar_token)
+                if not skipped:  # end wasn't found
+                    return ""
+                i = i + len(skipped) + 1
+            elif token.upper() == 'FROM':
                 seen_from = True
-                continue
-
-            if seen_from:
+            elif seen_from:
                 if token == '(':
-                    return lookfor_from(tokens[idx+1:])
+                    return lookfor_from(tokens[i+1:])
                 elif token == '"':
-                        end_idx = tokens.index('"', idx+1)
-                        return "".join(tokens[idx+1:end_idx])
+                        end_idx = tokens.index('"', i+1)
+                        return "".join(tokens[i+1:end_idx])
                 elif re.match("\w", token):
                     return token
+        i += 1
 
 
 def extract_signature(sql):

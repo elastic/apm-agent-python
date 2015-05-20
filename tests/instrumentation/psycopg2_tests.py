@@ -42,6 +42,18 @@ class ExtractSignatureTest(TestCase):
 
         self.assertEqual("SELECT FROM mytable", actual)
 
+    def test_select_with_invalid_dollar_quotes(self):
+        sql = """SELECT id, $fish$some single doubles ' $$ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
+        actual = extract_signature(sql)
+
+        self.assertEqual("SELECT FROM", actual)
+
+    def test_select_with_dollar_quotes_custom_token(self):
+        sql = """SELECT id, $token $FROM $ FROM $ FROM single doubles ' $token $ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
+        actual = extract_signature(sql)
+
+        self.assertEqual("SELECT FROM mytable", actual)
+
     def test_select_with_difficult_table_name(self):
         sql = "SELECT id FROM \"myta\n-æøåble\" WHERE id = 2323"""
         actual = extract_signature(sql)
@@ -55,6 +67,28 @@ class ExtractSignatureTest(TestCase):
         actual = extract_signature(sql)
 
         self.assertEqual("SELECT FROM mytable", actual)
+
+    def test_select_subselect_with_alias(self):
+        sql = """
+        SELECT count(*)
+        FROM (
+            SELECT count(id) AS some_alias, some_column
+            FROM mytable
+            GROUP BY some_colun
+            HAVING count(id) > 1
+        ) AS foo
+        """
+        actual = extract_signature(sql)
+
+        self.assertEqual("SELECT FROM mytable", actual)
+
+    def test_select_with_multiple_tables(self):
+        sql = """SELECT count(table2.id)
+            FROM table1, table2, table2
+            WHERE table2.id = table1.table2_id
+        """
+        actual = extract_signature(sql)
+        self.assertEqual("SELECT FROM table1", actual)
 
     def test_select_with_invalid_subselect(self):
         sql = "SELECT id FROM (SELECT * FROM ..."""
