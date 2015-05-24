@@ -70,10 +70,10 @@ def extract_signature(sql):
         # 2nd word is part of SQL type
         sql_type = sql_type + sql[first_space:second_space]
         table_name = ''
-    elif sql_type in ['UPDATE']:
+    elif sql_type  == 'UPDATE':
         # Name is 2nd work
         table_name = sql[first_space+1:second_space]
-    elif sql_type in ['SELECT']:
+    elif sql_type == 'SELECT':
         # Name is first table
         try:
             tokens = re.split("(\W)", sql)
