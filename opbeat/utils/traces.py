@@ -177,7 +177,7 @@ class RequestsStore(object):
                                   response_code)
 
     @contextlib.contextmanager
-    def trace(self, signature, kind, extra, skip_frames=0):
+    def trace(self, signature, kind='code', extra=None, skip_frames=0):
         abs_start_time = time.time()
 
         if not hasattr(self.thread_local, 'signature_stack'):

@@ -29,7 +29,6 @@ from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 
-from django.test import TestCase
 
 try:
     from celery.tests.utils import with_eager_tasks

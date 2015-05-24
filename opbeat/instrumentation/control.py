@@ -1,3 +1,4 @@
+from opbeat.instrumentation.packages.redis import RedisInstrumentation
 from opbeat.instrumentation.packages.requests import RequestsInstrumentation
 from opbeat.instrumentation.packages.pylibmc import PyLibMcInstrumentation
 from opbeat.instrumentation.packages.django.template import DjangoTemplateInstrumentation
@@ -26,7 +27,8 @@ def wrapped_extend_nodelist(wrapped, instance, args, kwargs):
 
 def instrument(client):
     for cls in [RequestsInstrumentation, PyLibMcInstrumentation,
-                DjangoTemplateInstrumentation, Psycopg2Instrumentation]:
+                DjangoTemplateInstrumentation, Psycopg2Instrumentation,
+                RedisInstrumentation]:
 
         cls(client).instrument()
 
