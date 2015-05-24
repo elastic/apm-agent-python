@@ -1,5 +1,4 @@
-import urlparse
-
+from opbeat.utils.compat import urlparse
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
 
@@ -26,6 +25,6 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         host = urlparse.urlparse(url).netloc
         signature += " " + host
 
-        with self.client.capture_trace(signature, "ext.http", {'url': url}):
+        with self.client.capture_trace(signature, "ext.http.requests", {'url': url}):
             return wrapped(*args, **kwargs)
 

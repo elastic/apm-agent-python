@@ -1,4 +1,5 @@
-from opbeat.utils.compat import TestCase
+from django.test import TestCase
+
 from opbeat.middleware import Opbeat
 from ..helpers import get_tempstoreclient
 import webob

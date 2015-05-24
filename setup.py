@@ -63,7 +63,6 @@ tests_require = [
     'pytest-capturelog==0.7',
     'blinker>=1.1',
     'celery',
-    'Django>=1.2',
     'django-celery',
     'Flask>=0.8',
     'logbook',
@@ -79,6 +78,18 @@ if sys.version_info[0] == 2:
         'gevent',
         'zerorpc>=0.4.0',
     ]
+
+if sys.version_info[:2] == (2, 6):
+    tests_require += ['Django>=1.2,<1.7']
+else:
+    tests_require += ['Django>=1.2']
+
+try:
+    import __pypy__
+except ImportError:
+    if sys.version_info[0] == 2:
+        tests_require += ['zerorpc>=0.4.0']
+
 
 install_requires = []
 
@@ -106,8 +117,8 @@ class PyTest(TestCommand):
 setup_kwargs = dict(
     name='opbeat',
     version=VERSION,
-    author='Ron Cohen',
-    author_email='ron@opbeat.com',
+    author='Opbeat, Inc',
+    author_email='support@opbeat.com',
     url='https://github.com/opbeat/opbeat_python',
     description='The official Python module for Opbeat.com',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),

@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import inspect
 import mock
 import opbeat
 import time
-import string
+from django.test import TestCase
+
 from opbeat.utils import six
-from socket import socket, AF_INET, SOCK_DGRAM
-from opbeat.utils.compat import TestCase
-from opbeat.base import Client, ClientState, DummyClient
-from opbeat.utils.stacks import iter_stack_frames
+from opbeat.base import Client, ClientState
+
 
 from tests.helpers import get_tempstoreclient
 

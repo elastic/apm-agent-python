@@ -1,4 +1,4 @@
-from unittest import TestCase
+from django.test import TestCase
 from mock import Mock
 
 from opbeat.utils.traces import RequestsStore

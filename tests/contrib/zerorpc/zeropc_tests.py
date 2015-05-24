@@ -2,17 +2,22 @@ import os
 import random
 import shutil
 import tempfile
-from opbeat.utils import six
-if six.PY2:
+import pytest
+
+try:
     import zerorpc  # no python 3 support for zerorpc
+    has_zerorpc = True
+except (ImportError, OSError):
+    # pypy throws OSError
+    has_zerorpc = False
 
-from opbeat.utils.compat import TestCase
 from opbeat.contrib.zerorpc import OpbeatMiddleware
-from opbeat.utils.compat import skipIf
 
+from django.test import TestCase
 from tests.helpers import get_tempstoreclient
 
-@skipIf(six.PY3, "no zerorpc/gevent for Python3")
+@pytest.mark.skipif(not has_zerorpc,
+                    reason="no zerorpc/gevent available (python3/pypy)")
 class ZeroRPCTest(TestCase):
     def setUp(self):
         self._socket_dir = tempfile.mkdtemp(prefix='opbeatzerorpcunittest')

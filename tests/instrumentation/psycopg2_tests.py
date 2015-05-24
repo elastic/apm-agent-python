@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-from unittest import TestCase
+from django.test import TestCase
+
 from opbeat.instrumentation.packages.psycopg2 import extract_signature
 
 

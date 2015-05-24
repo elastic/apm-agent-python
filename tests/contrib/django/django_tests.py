@@ -28,7 +28,8 @@ from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-from opbeat.utils.compat import skipIf
+
+from django.test import TestCase
 
 try:
     from celery.tests.utils import with_eager_tasks
@@ -197,7 +198,8 @@ class DjangoClientTest(TestCase):
         self.assertTrue('email' in user_info)
         self.assertEquals(user_info['email'], 'admin@example.com')
 
-    @skipIf(django.VERSION < (1, 5), 'Custom user model was introduced with Django 1.5')
+    @pytest.mark.skipif(django.VERSION < (1, 5),
+                        reason='Custom user model was introduced with Django 1.5')
     def test_user_info_with_custom_user(self):
         with self.settings(AUTH_USER_MODEL='testapp.MyUser'):
             from django.contrib.auth import get_user_model
@@ -354,7 +356,7 @@ class DjangoClientTest(TestCase):
     #     self.assertEquals(event['culprit'], 'tests.contrib.django.views.logging_request_exc')
     #     self.assertEquals(event['data']['META']['REMOTE_ADDR'], '127.0.0.1')
 
-    @skipIf(six.PY3, 'see Python bug #10805')
+    @pytest.mark.skipif(six.PY3, reason='see Python bug #10805')
     def test_record_none_exc_info(self):
         # sys.exc_info can return (None, None, None) if no exception is being
         # handled anywhere on the stack. See:
@@ -666,7 +668,8 @@ class CeleryIsolatedClientTest(TestCase):
 
         self.assertEquals(send_raw.delay.call_count, 1)
 
-    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
+    @pytest.mark.skipif(not has_with_eager_tasks,
+                        reason='with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
     def test_with_eager(self, send_encoded):
@@ -688,7 +691,8 @@ class CeleryIntegratedClientTest(TestCase):
             secret_token='secret',
         )
 
-    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
+    @pytest.mark.skipif(not has_with_eager_tasks,
+                        reason='with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
     def test_with_eager(self, send_encoded):
@@ -718,6 +722,14 @@ class TracesTest(TestCase):
 
         self.assertEqual(len(transactions), 1)
         self.assertEqual(len(traces), 3)
+
+        kinds = ['transaction', 'code', 'template.django']
+        self.assertEqual(set([t['kind'] for t in traces]),
+                         set(kinds))
+
+        # Reorder according to the kinds list so we can just test them
+        kinds_dict = dict([(t['kind'], t) for t in traces])
+        traces = [kinds_dict[k] for k in kinds]
 
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['signature'], 'transaction')
@@ -751,6 +763,14 @@ class TracesTest(TestCase):
 
         self.assertEqual(len(transactions), 1)
         self.assertEqual(len(traces), 3)
+
+        kinds = ['transaction', 'code', 'template.django']
+        self.assertEqual(set([t['kind'] for t in traces]),
+                         set(kinds))
+
+        # Reorder according to the kinds list so we can just test them
+        kinds_dict = dict([(t['kind'], t) for t in traces])
+        traces = [kinds_dict[k] for k in kinds]
 
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['signature'], 'transaction')

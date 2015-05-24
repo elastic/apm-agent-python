@@ -22,22 +22,14 @@ import zlib
 from opbeat.utils import six
 from opbeat.utils.deprecation import deprecated
 
-try:
-    from urllib2 import HTTPError
-except ImportError:
-    from urllib.error import HTTPError
 import uuid
 import warnings
-try:
-    import urlparse
-except ImportError:
-    from urllib import parse as urlparse
 
 import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
 
-from opbeat.utils.compat import atexit_register
+from opbeat.utils.compat import atexit_register, HTTPError, urlparse
 from opbeat.utils.encoding import transform, shorten
 from opbeat.utils.traces import RequestsStore
 from opbeat.utils.stacks import iter_stack_frames, get_culprit
