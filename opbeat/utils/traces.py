@@ -102,7 +102,7 @@ class RequestsStore(object):
         self._traces = defaultdict(list)
         self.collect_frequency = collect_frequency
         self._last_collect = time.time()
-        self._lrucache = LRUCache(maxsize=1000)
+        self._lrucache = LRUCache(maxsize=5000)
 
     def _add_transaction(self, elapsed, transaction, response_code):
         with self.cond:
