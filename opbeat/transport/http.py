@@ -42,16 +42,16 @@ class HTTPTransport(Transport):
 class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
     scheme = ['http', 'https']
     async = True
-    _worker = None
 
     def __init__(self, parsed_url):
         super(AsyncHTTPTransport, self).__init__(parsed_url)
         if self._url.startswith('async+'):
             self._url = self._url[6:]
+        self._worker = None
 
     @property
     def worker(self):
-        if not self._worker:
+        if not self._worker or not self._worker.is_alive():
             self._worker = AsyncWorker()
         return self._worker
 

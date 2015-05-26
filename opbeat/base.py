@@ -546,7 +546,7 @@ class Client(object):
             self.app_id,
         )
 
-        data['servers'] = [server+api_path for server in self.servers]
+        data['servers'] = [server + api_path for server in self.servers]
         self.send(**data)
 
 

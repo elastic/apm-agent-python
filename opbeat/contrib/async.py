@@ -69,6 +69,9 @@ class AsyncWorker(object):
         finally:
             self._lock.release()
 
+    def is_alive(self):
+        return self._thread is not None and self._thread.is_alive()
+
     def queue(self, callback, kwargs):
         self._queue.put_nowait((callback, kwargs))
 
