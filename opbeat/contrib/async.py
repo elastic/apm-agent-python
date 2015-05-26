@@ -32,15 +32,58 @@ class AsyncWorker(object):
         self.start()
 
     def main_thread_terminated(self):
-        size = self._queue.qsize()
-        if size:
-            six.print_("Opbeat attempts to send %s messages" % size)
-            six.print_("Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS)
-            if os.name == 'nt':
-                six.print_("Press Ctrl-Break to quit")
-            else:
-                six.print_("Press Ctrl-C to quit")
-            self.stop(timeout=OPBEAT_WAIT_SECONDS)
+        self._lock.acquire()
+        try:
+            if not self._thread:
+                # thread not started or already stopped - nothing to do
+                return
+
+            # wake the processing thread up
+            self._queue.put_nowait(self._terminator)
+
+            # wait briefly, initially
+            initial_timeout = 0.1
+
+            if not self._timed_queue_join(initial_timeout):
+                # if that didn't work, wait a bit longer
+                # NB that size is an approximation, because other threads may
+                # add or remove items
+                size = self._queue.qsize()
+
+                six.print_(
+                    "Opbeat is attempting to send %i pending messages" % size
+                )
+                six.print_("Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS)
+                if os.name == 'nt':
+                    six.print_("Press Ctrl-Break to quit")
+                else:
+                    six.print_("Press Ctrl-C to quit")
+                self._timed_queue_join(OPBEAT_WAIT_SECONDS - initial_timeout)
+
+            self._thread = None
+
+        finally:
+            self._lock.release()
+
+    def _timed_queue_join(self, timeout):
+        """
+        implementation of Queue.join which takes a 'timeout' argument
+
+        returns True on success, False on timeout
+        """
+        deadline = time.time() + timeout
+        queue = self._queue
+
+        with queue.all_tasks_done:
+            while queue.unfinished_tasks:
+                delay = deadline - time.time()
+                if delay <= 0:
+                    # timed out
+                    return False
+
+                queue.all_tasks_done.wait(timeout=delay)
+
+            return True
 
     def start(self):
         """

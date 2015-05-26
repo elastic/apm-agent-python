@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-import time
-import threading
 
 try:
     from urllib2 import Request, urlopen
