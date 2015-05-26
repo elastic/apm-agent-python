@@ -76,15 +76,16 @@ class AsyncWorker(object):
         self._queue.put_nowait((callback, kwargs))
 
     def _target(self):
-        while 1:
-            record = self._queue.get()
-            if record is self._terminator:
-                break
-            callback, kwargs = record
+        while True:
             try:
-                callback(**kwargs)
-            except Exception:
-                logger.error('Error while sending', exc_info=True)
+                record = self._queue.get()
+                if record is self._terminator:
+                    break
+                callback, kwargs = record
+                try:
+                    callback(**kwargs)
+                except Exception:
+                    logger.error('Error while sending', exc_info=True)
             finally:
                 self._queue.task_done()
             time.sleep(0)
