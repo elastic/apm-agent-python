@@ -70,6 +70,8 @@ tests_require = [
     'pep8',
     'webob',
     'pytz',
+    'redis',
+    'urllib3'
 ]
 
 if sys.version_info[0] == 2:
