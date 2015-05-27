@@ -13,7 +13,6 @@ import os
 import time
 from threading import Thread, Lock
 
-from opbeat.utils.compat import atexit_register
 from opbeat.utils import six
 from opbeat.utils.six.moves import queue
 
@@ -97,7 +96,6 @@ class AsyncWorker(object):
                 self._thread.start()
         finally:
             self._lock.release()
-            atexit_register(self.main_thread_terminated)
 
     def stop(self, timeout=None):
         """

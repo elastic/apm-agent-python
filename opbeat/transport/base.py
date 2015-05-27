@@ -23,6 +23,13 @@ class Transport(object):
         """
         raise NotImplementedError
 
+    def close(self):
+        """
+        Cleans up ressources and closes connection
+        :return:
+        """
+        pass
+
 
 class AsyncTransport(Transport):
     async = True

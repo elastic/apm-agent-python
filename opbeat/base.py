@@ -181,7 +181,7 @@ class Client(object):
         self.module_cache = ModuleProxyCache()
 
         self._requests_store = RequestsStore(self.traces_send_freq_secs)
-        atexit_register(self._traces_collect)
+        atexit_register(self.close)
 
     def get_processors(self):
         for processor in self.processors:
@@ -533,6 +533,11 @@ class Client(object):
         self._requests_store.add(elapsed, view_name, response_code)
         if self._requests_store.should_collect():
             self._traces_collect()
+
+    def close(self):
+        self._traces_collect()
+        for url, transport in self._transports.items():
+            transport.close()
 
     def _traces_collect(self):
         items = self._requests_store.get_all()

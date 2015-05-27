@@ -70,3 +70,8 @@ class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
             'fail_callback': fail_callback,
         }
         self.worker.queue(self.send_sync, kwargs)
+
+    def close(self):
+        if self._worker:
+            self._worker.main_thread_terminated()
+
