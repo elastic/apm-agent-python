@@ -173,9 +173,9 @@ class Client(object):
         self.traces_send_freq_secs = (traces_send_freq_secs or
                                       defaults.TRACES_SEND_FREQ_SECS)
 
-        self.organization_id = organization_id
-        self.app_id = app_id
-        self.secret_token = secret_token
+        self.organization_id = six.text_type(organization_id)
+        self.app_id = six.text_type(app_id)
+        self.secret_token = six.text_type(secret_token)
 
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
