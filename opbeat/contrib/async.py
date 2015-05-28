@@ -50,15 +50,25 @@ class AsyncWorker(object):
                 size = self._queue.qsize()
 
                 six.print_(
-                    "Opbeat is attempting to send %i pending messages" % size
+                    "PID %i: Opbeat is attempting to send %i pending messages" % (
+                        os.getpid(),
+                        size,
+                    )
                 )
-                six.print_("Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS)
+                six.print_(
+                    "Waiting up to %s seconds, " % OPBEAT_WAIT_SECONDS,
+                    end=''
+                )
+                wait_start = time.time()
                 if os.name == 'nt':
-                    six.print_("Press Ctrl-Break to quit")
+                    six.print_("press Ctrl-Break to quit")
                 else:
-                    six.print_("Press Ctrl-C to quit")
+                    six.print_("press Ctrl-C to quit")
                 self._timed_queue_join(OPBEAT_WAIT_SECONDS - initial_timeout)
-
+                six.print_('PID %i: done, took %.2f seconds to complete' % (
+                    os.getpid(),
+                    time.time() - wait_start,
+                ))
             self._thread = None
 
         finally:
