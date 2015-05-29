@@ -90,10 +90,9 @@ class ClientTest(TestCase):
             kwargs['servers'][0]
         )
 
-    @mock.patch('opbeat.base.Client._send_remote')
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
-    def test_send_remote_failover(self, should_try, send_remote):
+    def test_send_remote_failover_sync(self, should_try, send_remote):
         should_try.return_value = True
 
         client = Client(
@@ -101,6 +100,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
+            async=False,
         )
 
         # test error
@@ -111,6 +111,31 @@ class ClientTest(TestCase):
         # test recovery
         send_remote.side_effect = None
         client.send_remote('http://example.com/api/store', 'foo')
+        self.assertEquals(client.state.status, client.state.ONLINE)
+
+    @mock.patch('opbeat.transport.http.HTTPTransport.send')
+    @mock.patch('opbeat.base.ClientState.should_try')
+    def test_send_remote_failover_async(self, should_try, send_remote):
+        should_try.return_value = True
+
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async=True,
+        )
+
+        # test error
+        send_remote.side_effect = Exception()
+        client.send_remote('http://example.com/api/store', 'foo')
+        time.sleep(0.01)
+        self.assertEquals(client.state.status, client.state.ERROR)
+
+        # test recovery
+        send_remote.side_effect = None
+        client.send_remote('http://example.com/api/store', 'foo')
+        time.sleep(0.01)
         self.assertEquals(client.state.status, client.state.ONLINE)
 
     @mock.patch('opbeat.base.Client.send_remote')
