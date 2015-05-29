@@ -1,5 +1,6 @@
 from django.test import TestCase
 from mock import Mock
+import time
 
 from opbeat.utils.traces import RequestsStore
 
@@ -81,9 +82,11 @@ class RequestStoreTest(TestCase):
         self.mock_get_frames.return_value = frames
         self.requests_store = RequestsStore(self.mock_get_frames, 99999)
 
-    def test_add_trace(self):
+    def test_lru_get_frames_cache(self):
+        self.requests_store.transaction_start()
+
         for i in range(10):
-            self.requests_store.add_trace(0.0, 10.0, "transaction",
-                                          "transaction", tuple(), 0)
+            with self.requests_store.trace("bleh"):
+                time.sleep(0.01)
 
         self.assertEqual(self.mock_get_frames.call_count, 1)

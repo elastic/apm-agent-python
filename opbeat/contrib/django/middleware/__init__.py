@@ -136,7 +136,6 @@ class OpbeatAPMMiddleware(object):
                     "Can't instrument middleware %s", middleware_path
                 )
 
-
     def _get_name_from_view_func(self, view_func):
         # If no view was set we ignore the request
         module = view_func.__module__

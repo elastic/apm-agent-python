@@ -18,6 +18,7 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
+from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 from django.test.utils import override_settings
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
@@ -37,7 +38,6 @@ except ImportError:
     from opbeat.utils.compat import noop_decorator as with_eager_tasks
     has_with_eager_tasks = False
 
-from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
@@ -741,10 +741,10 @@ class TracesTest(TestCase):
         self.assertEqual(traces[1]['transaction'],
                          'tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[1]['durations']), 3)
-        self.assertEqual(traces[1]['parents'], ('transaction', 'list_fish.html'))
+        self.assertEqual(traces[1]['parents'], ('transaction', 'list_users.html'))
 
         self.assertEqual(traces[2]['kind'], 'template.django')
-        self.assertEqual(traces[2]['signature'], 'list_fish.html')
+        self.assertEqual(traces[2]['signature'], 'list_users.html')
         self.assertEqual(traces[2]['transaction'],
                          'tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[2]['durations']), 3)
@@ -783,19 +783,82 @@ class TracesTest(TestCase):
         self.assertEqual(traces[1]['transaction'],
                          'tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[1]['durations']), 3)
-        self.assertEqual(traces[1]['parents'], ('transaction', 'list_fish.html'))
+        self.assertEqual(traces[1]['parents'], ('transaction', 'list_users.html'))
 
         self.assertEqual(traces[2]['kind'], 'template.django')
-        self.assertEqual(traces[2]['signature'], 'list_fish.html')
+        self.assertEqual(traces[2]['signature'], 'list_users.html')
         self.assertEqual(traces[2]['transaction'],
                          'tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[2]['durations']), 3)
         self.assertEqual(traces[2]['parents'], ('transaction',))
 
+def client_get(client, url):
+    return client.get(url)
 
-class ServeRequestTest(TestCase):
-    @pytest.mark.bench('client.get')
-    def test_baseline(self):
-        self.opbeat = get_client()
-        opbeat.instrumentation.control.instrument(get_client())
+
+@pytest.mark.bench('client_get', iterations=100)
+def test_perf_template_render(client):
+    opbeat = get_client()
+    with override_settings(MIDDLEWARE_CLASSES=[
+        'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+        resp = client_get(client, reverse("render-heavy-template"))
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    assert len(traces) == 3
+
+
+@pytest.mark.bench('client_get', iterations=100)
+@pytest.mark.django_db
+def test_perf_database_render():
+    opbeat = get_client()
+    client = TestClient()
+    with override_settings(MIDDLEWARE_CLASSES=[
+        'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+        resp = client_get(client, reverse("render-user-template"))
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    assert len(traces) == 3
+
+
+@pytest.mark.bench('client_get', iterations=100)
+@pytest.mark.django_db
+def test_perf_database_render_no_instrumentation():
+    opbeat = get_client()
+    client = TestClient()
+    resp = client_get(client, reverse("render-user-template"))
+
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+    assert len(transactions) == 0
+    assert len(traces) == 0
+
+
+@pytest.mark.bench('client_get', iterations=10)
+@pytest.mark.django_db
+def test_perf_database_end_transaction():
+    with mock.patch("opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        opbeat = get_client()
+        client = TestClient()
+
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+
+            for i in range(10):
+                resp = client_get(client, reverse("render-user-template"))
+                assert resp.status_code == 200
+
+        assert len(opbeat.events) == 0
+
+        should_collect.return_value = True
+
+        # Force collection
+        client_get(client, reverse("render-user-template"))
+
+        assert len(opbeat.events) == 1
 

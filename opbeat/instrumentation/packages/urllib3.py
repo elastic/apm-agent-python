@@ -1,6 +1,11 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
 
+_default_ports = {
+    "https": 433,
+    "http": 80
+}
+
 class Urllib3Instrumentation(AbstractInstrumentedModule):
     name = 'urllib3'
 
@@ -16,18 +21,17 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         host = instance.host
 
+        if instance.port != _default_ports.get(instance.scheme):
+            host += ":" + str(instance.port)
+
         if 'url' in kwargs:
             url = kwargs['url']
         else:
             url = args[1]
 
-        # print args, kwargs
-        signature = method.upper()
+        signature = method.upper() + " " + host
 
-        # host = urlparse.urlparse(url).netloc
-        signature += " " + host
-
-        url = instance.scheme + "://" + instance.host + url
+        url = instance.scheme + "://" + host + url
 
         with self.client.capture_trace(signature, "ext.http.urllib3", {'url': url}):
             return wrapped(*args, **kwargs)

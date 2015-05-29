@@ -30,7 +30,8 @@ class AbstractInstrumentedModule(object):
         methods = inspect.getmembers(cls, predicate=inspect.ismethod)
         methods = [cls.__name__ + "." + f[0] for f in methods
                    if not f[0].startswith("_")]
-        return zip([cls.__module__] * len(methods), methods)
+        # Python3 zip returns iterator
+        return list(zip([cls.__module__] * len(methods), methods))
 
     def get_instrument_list(self):
         return self.instrument_list
@@ -46,7 +47,7 @@ class AbstractInstrumentedModule(object):
 
             for module, method in instrument_list:
                     try:
-                        wrapt.wrap_function_wrapper(module, method, self.call)
+                        wrapt.wrap_function_wrapper(module, method, self.call_if_sampling)
                     except ImportError:
                         # Could not import thing
                         logger.debug("Skipping instrumentation of %s. Module %s not found",
@@ -54,6 +55,12 @@ class AbstractInstrumentedModule(object):
         except ImportError as ex:
             logger.debug("Skipping instrumentation of %s. %s",
                          self.name, ex)
+
+    def call_if_sampling(self, wrapped, instance, args, kwargs):
+        if not self.client.instrumentation_store.get_transaction():
+            return wrapped(*args, **kwargs)
+        else:
+            return self.call(wrapped, instance, args, kwargs)
 
     def call(self, wrapped, instance, args, kwargs):
         raise NotImplemented
