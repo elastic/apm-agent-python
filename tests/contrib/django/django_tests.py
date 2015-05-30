@@ -796,41 +796,28 @@ def client_get(client, url):
     return client.get(url)
 
 
-@pytest.mark.bench('client_get', iterations=100)
-def test_perf_template_render(client):
+def test_perf_template_render(benchmark):
+    client = TestClient()
     opbeat = get_client()
-    with override_settings(MIDDLEWARE_CLASSES=[
-        'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
-        resp = client_get(client, reverse("render-heavy-template"))
+    with mock.patch("opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            resp = benchmark(client_get, client, reverse("render-heavy-template"))
     assert resp.status_code == 200
 
     transactions, traces = opbeat.instrumentation_store.get_all()
     assert len(transactions) == 1
     assert len(traces) == 3
 
-
-@pytest.mark.bench('client_get', iterations=100)
-@pytest.mark.django_db
-def test_perf_database_render():
-    opbeat = get_client()
+def test_perf_template_render_no_middleware(benchmark):
     client = TestClient()
-    with override_settings(MIDDLEWARE_CLASSES=[
-        'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
-        resp = client_get(client, reverse("render-user-template"))
-    assert resp.status_code == 200
-
-    transactions, traces = opbeat.instrumentation_store.get_all()
-    assert len(transactions) == 1
-    assert len(traces) == 3
-
-
-@pytest.mark.bench('client_get', iterations=100)
-@pytest.mark.django_db
-def test_perf_database_render_no_instrumentation():
     opbeat = get_client()
-    client = TestClient()
-    resp = client_get(client, reverse("render-user-template"))
-
+    with mock.patch(
+            "opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        resp = benchmark(client_get, client,
+                         reverse("render-heavy-template"))
     assert resp.status_code == 200
 
     transactions, traces = opbeat.instrumentation_store.get_all()
@@ -838,12 +825,47 @@ def test_perf_database_render_no_instrumentation():
     assert len(traces) == 0
 
 
-@pytest.mark.bench('client_get', iterations=10)
 @pytest.mark.django_db
-def test_perf_database_end_transaction():
+def test_perf_database_render(benchmark):
+    client = TestClient()
+
+    with mock.patch("opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+
+        opbeat = get_client()
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            resp = benchmark(client_get, client, reverse("render-user-template"))
+        assert resp.status_code == 200
+
+        transactions, traces = opbeat.instrumentation_store.get_all()
+        assert len(transactions) == 1
+        assert len(traces) == 3
+
+
+@pytest.mark.django_db
+def test_perf_database_render_no_instrumentation(benchmark):
+    with mock.patch("opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+
+        opbeat = get_client()
+        client = TestClient()
+        resp = benchmark(client_get, client, reverse("render-user-template"))
+
+        assert resp.status_code == 200
+
+        transactions, traces = opbeat.instrumentation_store.get_all()
+        assert len(transactions) == 0
+        assert len(traces) == 0
+
+
+@pytest.mark.django_db
+def test_perf_transaction_with_collection(benchmark):
     with mock.patch("opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
         opbeat = get_client()
+        opbeat.events = []
+
         client = TestClient()
 
         with override_settings(MIDDLEWARE_CLASSES=[
@@ -857,8 +879,32 @@ def test_perf_database_end_transaction():
 
         should_collect.return_value = True
 
+        @benchmark
+        def result():
+            # Code to be measured
+            return client_get(client, reverse("render-user-template"))
         # Force collection
-        client_get(client, reverse("render-user-template"))
 
-        assert len(opbeat.events) == 1
+        assert result.status_code is 200
+        assert len(opbeat.events) > 0
 
+
+@pytest.mark.django_db
+def test_perf_transaction_without_middleware(benchmark):
+    with mock.patch("opbeat.utils.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        opbeat = get_client()
+        client = TestClient()
+        opbeat.events = []
+        for i in range(10):
+            resp = client_get(client, reverse("render-user-template"))
+            assert resp.status_code == 200
+
+        assert len(opbeat.events) == 0
+
+        @benchmark
+        def result():
+            # Code to be measured
+            return client_get(client, reverse("render-user-template"))
+
+        assert len(opbeat.events) == 0

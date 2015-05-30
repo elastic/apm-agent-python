@@ -49,8 +49,6 @@ def render_template_view(request):
     def something_expensive():
         with opbeat.contrib.django.models.get_client().capture_trace("something_expensive", "code"):
             c = 100
-            for i in range(100):
-                c = c - 1
         return [User(username='Ron'), User(username='Beni')]
 
     return render(request, "list_users.html",

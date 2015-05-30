@@ -71,7 +71,8 @@ tests_require = [
     'webob',
     'pytz',
     'redis',
-    'urllib3'
+    'urllib3',
+    'pytest-benchmark'
 ]
 
 if sys.version_info[0] == 2:
