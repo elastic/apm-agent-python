@@ -751,47 +751,6 @@ class TracesTest(TestCase):
         self.assertEqual(traces[2]['parents'], ('transaction',))
 
 
-    def test_template_name_as_view(self):
-        with self.settings(MIDDLEWARE_CLASSES=[
-            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
-            self.client.get(reverse('render-heavy-template'))
-            self.client.get(reverse('render-heavy-template'))
-            self.client.get(reverse('render-heavy-template'))
-
-        transactions, traces = self.opbeat.instrumentation_store.get_all()
-
-        self.assertEqual(len(transactions), 1)
-        self.assertEqual(len(traces), 3)
-
-        kinds = ['transaction', 'code', 'template.django']
-        self.assertEqual(set([t['kind'] for t in traces]),
-                         set(kinds))
-
-        # Reorder according to the kinds list so we can just test them
-        kinds_dict = dict([(t['kind'], t) for t in traces])
-        traces = [kinds_dict[k] for k in kinds]
-
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['transaction'],
-                         'tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[0]['durations']), 3)
-        self.assertEqual(len(traces[0]['parents']), 0)
-
-        self.assertEqual(traces[1]['kind'], 'code')
-        self.assertEqual(traces[1]['signature'], 'something_expensive')
-        self.assertEqual(traces[1]['transaction'],
-                         'tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[1]['durations']), 3)
-        self.assertEqual(traces[1]['parents'], ('transaction', 'list_users.html'))
-
-        self.assertEqual(traces[2]['kind'], 'template.django')
-        self.assertEqual(traces[2]['signature'], 'list_users.html')
-        self.assertEqual(traces[2]['transaction'],
-                         'tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[2]['durations']), 3)
-        self.assertEqual(traces[2]['parents'], ('transaction',))
-
 def client_get(client, url):
     return client.get(url)
 

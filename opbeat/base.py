@@ -182,9 +182,10 @@ class Client(object):
         atexit_register(self._traces_collect)
 
     @contextlib.contextmanager
-    def capture_trace(self, signature, kind, extra=None, skip_frames=0):
+    def capture_trace(self, signature, kind, extra=None, skip_frames=0,
+                      leaf=False):
         with self.instrumentation_store.trace(signature, kind, extra,
-                                              skip_frames):
+                                              skip_frames, leaf):
             yield
 
     def get_processors(self):

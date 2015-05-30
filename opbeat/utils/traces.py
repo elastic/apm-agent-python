@@ -16,6 +16,7 @@ class Transaction(object):
         self.transaction_traces = []
         self.trace_stack = []
         self.get_frames = get_frames
+        self.ignore_subtree = False
 
         # The transaction is a trace as well
         self.begin_trace("transaction", "transaction")
@@ -24,7 +25,16 @@ class Transaction(object):
         # End the "transaction" trace started above
         return self.end_trace(skip_frames)
 
-    def begin_trace(self, signature, kind, extra=None):
+    def begin_trace(self, signature, kind, extra=None, leaf=False):
+        # If we were already called with `leaf=True`, we'll just push
+        # a placeholder on the stack.
+        if self.ignore_subtree:
+            self.trace_stack.append(None)
+            return None
+
+        if leaf:
+            self.ignore_subtree = True
+
         abs_start = time.time()
         trace = Trace(signature, kind, abs_start, extra)
         self.trace_stack.append(trace)
@@ -32,6 +42,8 @@ class Transaction(object):
 
     def end_trace(self, skip_frames):
         trace = self.trace_stack.pop()
+        if trace is None:
+            return None
 
         duration = (time.time() - trace.abs_start_time)*1000
 
@@ -75,9 +87,10 @@ class AbstractTrace(object):
 
 
 class Trace(AbstractTrace):
-    def __init__(self, signature, kind, abs_start_time, extra=None):
+    def __init__(self, signature, kind, abs_start_time, extra=None, leaf=False):
         super(Trace, self).__init__(signature, kind, extra)
 
+        self.leaf = leaf
         self.abs_start_time = abs_start_time
         self.trace_duration = None
         self.rel_start_time = None
@@ -94,7 +107,6 @@ class TraceGroup(AbstractTrace):
         super(TraceGroup, self).__init__(trace.signature, trace.kind, trace.extra)
         self.parents = trace.parents
         self.frames = trace.frames
-        self.extra = trace.extra
         self.transaction = trace.transaction
 
         self.traces = []
@@ -230,15 +242,17 @@ class RequestsStore(object):
                                   response_code)
 
     @contextlib.contextmanager
-    def trace(self, signature, kind='code', extra=None, skip_frames=0):
+    def trace(self, signature, kind='code', extra=None, skip_frames=0,
+              leaf=False):
         transaction = self.get_transaction()
 
         if not transaction:
             yield
             return
 
-        transaction.begin_trace(signature, kind, extra)
+        transaction.begin_trace(signature, kind, extra, leaf)
 
         yield
 
         transaction.end_trace(skip_frames)
+

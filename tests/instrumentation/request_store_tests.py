@@ -90,3 +90,26 @@ class RequestStoreTest(TestCase):
                 time.sleep(0.01)
 
         self.assertEqual(self.mock_get_frames.call_count, 1)
+
+    def test_leaf_tracing(self):
+        self.requests_store.transaction_start()
+
+        with self.requests_store.trace("root"):
+            with self.requests_store.trace("child1-leaf", leaf=True):
+
+                # These two traces should not show up
+                with self.requests_store.trace("ignored-child1", leaf=True):
+                    time.sleep(0.01)
+
+                with self.requests_store.trace("ignored-child2", leaf=False):
+                    time.sleep(0.01)
+
+        self.requests_store.transaction_end(None, "transaction")
+
+        transactions, traces = self.requests_store.get_all()
+
+        self.assertEqual(len(traces), 3)
+
+        signatures = ['transaction', 'root', 'child1-leaf']
+        self.assertEqual(set([t['signature'] for t in traces]),
+                         set(signatures))

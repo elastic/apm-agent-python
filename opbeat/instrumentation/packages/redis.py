@@ -207,5 +207,5 @@ class RedisInstrumentation(AbstractInstrumentedModule):
 
     def call(self, wrapped, instance, args, kwargs):
         wrapped_name = instance.__class__.__name__ + "." + wrapped.__name__
-        with self.client.capture_trace(wrapped_name, "cache.redis"):
+        with self.client.capture_trace(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)
