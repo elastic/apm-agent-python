@@ -45,6 +45,8 @@ class Transaction(object):
         if trace is None:
             return None
 
+        self.ignore_subtree = False
+
         duration = (time.time() - trace.abs_start_time)*1000
 
         if self.trace_stack:
