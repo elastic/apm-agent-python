@@ -80,7 +80,7 @@ def extract_signature(sql):
             filtered_tokens = [token for token in tokens if token != '']
             sql_type = 'SELECT FROM'
             table_name = lookfor_from(filtered_tokens)
-        except IndexError:
+        except:
             table_name = ''
 
     else:
