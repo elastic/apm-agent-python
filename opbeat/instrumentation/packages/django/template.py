@@ -14,6 +14,3 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
                 return wrapped(*args, **kwargs)
         else:
             return wrapped(*args, **kwargs)
-
-
-

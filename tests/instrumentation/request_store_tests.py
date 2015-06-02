@@ -1,8 +1,9 @@
-from django.test import TestCase
-from mock import Mock
 import time
 
-from opbeat.utils.traces import RequestsStore
+from django.test import TestCase
+from mock import Mock
+
+from opbeat.traces import RequestsStore
 
 
 class RequestStoreTest(TestCase):
@@ -86,7 +87,7 @@ class RequestStoreTest(TestCase):
         self.requests_store.transaction_start()
 
         for i in range(10):
-            with self.requests_store.trace("bleh"):
+            with self.requests_store.trace("bleh", "custom"):
                 time.sleep(0.01)
 
         self.assertEqual(self.mock_get_frames.call_count, 1)
@@ -94,14 +95,14 @@ class RequestStoreTest(TestCase):
     def test_leaf_tracing(self):
         self.requests_store.transaction_start()
 
-        with self.requests_store.trace("root"):
-            with self.requests_store.trace("child1-leaf", leaf=True):
+        with self.requests_store.trace("root", "custom"):
+            with self.requests_store.trace("child1-leaf", "custom", leaf=True):
 
                 # These two traces should not show up
-                with self.requests_store.trace("ignored-child1", leaf=True):
+                with self.requests_store.trace("ignored-child1", "custom", leaf=True):
                     time.sleep(0.01)
 
-                with self.requests_store.trace("ignored-child2", leaf=False):
+                with self.requests_store.trace("ignored-child2", "custom", leaf=False):
                     time.sleep(0.01)
 
         self.requests_store.transaction_end(None, "transaction")

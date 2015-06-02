@@ -6,7 +6,8 @@ from collections import defaultdict
 
 from opbeat.utils.encoding import force_text
 from opbeat.utils.lru import LRUCache
-from opbeat.utils.stacks import get_stack_info, iter_stack_frames
+
+all = ('RequestStore', 'trace')
 
 class Transaction(object):
     _lrucache = LRUCache(maxsize=5000)
@@ -244,7 +245,7 @@ class RequestsStore(object):
                                   response_code)
 
     @contextlib.contextmanager
-    def trace(self, signature, kind='code', extra=None, skip_frames=0,
+    def trace(self, signature, kind, extra=None, skip_frames=0,
               leaf=False):
         transaction = self.get_transaction()
 
@@ -257,4 +258,3 @@ class RequestsStore(object):
         yield
 
         transaction.end_trace(skip_frames)
-

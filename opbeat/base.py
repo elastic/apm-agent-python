@@ -15,23 +15,22 @@ import contextlib
 import datetime
 import logging
 import socket
-import os
 import sys
 import time
 import zlib
-from opbeat.utils import six
-from opbeat.utils.deprecation import deprecated
-
 import uuid
+
+import os
 import warnings
 
+from opbeat.utils import six
+from opbeat.utils.deprecation import deprecated
 import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
-
 from opbeat.utils.compat import atexit_register, HTTPError, urlparse
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.traces import RequestsStore
+from opbeat.traces import RequestsStore
 from opbeat.utils.stacks import iter_stack_frames, get_culprit
 from opbeat.utils import stacks
 from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
@@ -182,7 +181,7 @@ class Client(object):
         atexit_register(self._traces_collect)
 
     @contextlib.contextmanager
-    def capture_trace(self, signature, kind, extra=None, skip_frames=0,
+    def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
                       leaf=False):
         with self.instrumentation_store.trace(signature, kind, extra,
                                               skip_frames, leaf):
