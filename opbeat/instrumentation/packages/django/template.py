@@ -9,6 +9,11 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
     ]
 
     def call(self, wrapped, instance, args, kwargs):
-        with self.client.capture_trace(instance.name, "template.django"):
+        if instance.name:
+            with self.client.capture_trace(instance.name, "template.django"):
+                return wrapped(*args, **kwargs)
+        else:
             return wrapped(*args, **kwargs)
+
+
 
