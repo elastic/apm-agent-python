@@ -4,7 +4,6 @@ http://code.activestate.com/recipes/578078-py26-and-py30-backport-of-python-33s-
 
 """
 from collections import namedtuple
-from functools import update_wrapper
 from threading import RLock
 
 _CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
@@ -46,7 +45,7 @@ class LRUCache(object):
         self._len = len                      # localize the global len() function
         self.lock = RLock()                  # because linkedlist updates aren't threadsafe
         self.root = []                       # root of the circular doubly linked list
-        self.root[:] = [self.root, self.root, None, None]      # initialize by pointing to self
+        self.root[:] = [self.root, self.root, None]      # initialize by pointing to self
         self.nonlocal_root = [self.root]                  # make updateable non-locally
         self.PREV, self.NEXT, self.KEY = 0, 1, 2    # names for the link fields
         self.maxsize = maxsize
