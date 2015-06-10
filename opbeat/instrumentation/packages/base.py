@@ -50,8 +50,13 @@ class AbstractInstrumentedModule(object):
                         wrapt.wrap_function_wrapper(module, method, self.call_if_sampling)
                     except ImportError:
                         # Could not import thing
-                        logger.debug("Skipping instrumentation of %s. Module %s not found",
+                        logger.debug("Skipping instrumentation of %s."
+                                     " Module %s not found",
                                      self.name, module)
+                    except AttributeError as ex:
+                        logger.debug("Skipping instrumentation of %s.%s: %s",
+                                     module, method, ex)
+
         except ImportError as ex:
             logger.debug("Skipping instrumentation of %s. %s",
                          self.name, ex)
