@@ -3,7 +3,7 @@ from opbeat.instrumentation.packages.requests import RequestsInstrumentation
 from opbeat.instrumentation.packages.pylibmc import PyLibMcInstrumentation
 from opbeat.instrumentation.packages.django.template import DjangoTemplateInstrumentation
 from opbeat.instrumentation.packages.psycopg2 import Psycopg2Instrumentation
-from opbeat.instrumentation.packages.sqlite import SQLLiteInstrumentation
+from opbeat.instrumentation.packages.sqlite import SQLiteInstrumentation
 from opbeat.instrumentation.packages.urllib3 import Urllib3Instrumentation
 from opbeat.utils import wrapt
 
@@ -32,7 +32,7 @@ def instrument(client):
         RequestsInstrumentation, PyLibMcInstrumentation,
                 DjangoTemplateInstrumentation, Psycopg2Instrumentation,
                 RedisInstrumentation, Urllib3Instrumentation,
-                SQLLiteInstrumentation]:
+                SQLiteInstrumentation]:
 
         cls(client).instrument()
 
