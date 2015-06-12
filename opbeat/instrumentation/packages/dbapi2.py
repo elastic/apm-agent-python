@@ -27,7 +27,6 @@ class CursorProxy(wrapt.ObjectProxy):
         """
         super(CursorProxy, self).__init__(wrapped)
         self._self_client = client
-        self._self_signature_extration = self.signature_extraction
 
     def callproc(self, procname, params=()):
         return self._trace_sql(self.__wrapped__.callproc, procname,
