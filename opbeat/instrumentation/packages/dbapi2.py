@@ -40,7 +40,7 @@ class CursorProxy(wrapt.ObjectProxy):
                                param_list)
 
     def _trace_sql(self, method, sql, params):
-        signature = self._extract_signature(sql)
+        signature = self.extract_signature(sql)
         with self._self_client.capture_trace(signature,
                                              "db.sql." + self.provider_name,
                                              {"sql": sql}):

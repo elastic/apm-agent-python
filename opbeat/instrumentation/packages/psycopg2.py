@@ -172,5 +172,5 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
     ]
 
     def call(self, wrapped, instance, args, kwargs):
-        return ConnectionProxy(wrapped(*args, **kwargs), self.client)
+        return PGConnectionProxy(wrapped(*args, **kwargs), self.client)
 
