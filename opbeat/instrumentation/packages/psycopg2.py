@@ -158,7 +158,7 @@ def extract_signature(sql):
 class PGCursorProxy(CursorProxy):
     provider_name = 'postgresql'
 
-    def _extract_signature(self, sql):
+    def extract_signature(self, sql):
         return extract_signature(sql)
 
 class PGConnectionProxy(ConnectionProxy):

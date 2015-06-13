@@ -7,7 +7,7 @@ from opbeat.instrumentation.packages.psycopg2 import extract_signature
 class SQLiteCursorProxy(CursorProxy):
     provider_name = 'sqlite'
 
-    def _extract_signature(self, sql):
+    def extract_signature(self, sql):
         return extract_signature(sql)
 
 class SQLiteConnectionProxy(ConnectionProxy):

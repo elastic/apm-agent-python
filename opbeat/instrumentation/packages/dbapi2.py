@@ -47,8 +47,8 @@ class CursorProxy(wrapt.ObjectProxy):
             return method(sql, params)
 
 
-    def _extract_signature(self, sql):
-        raise NotImplemented
+    def extract_signature(self, sql):
+        raise NotImplementedError()
 
 class ConnectionProxy(wrapt.ObjectProxy):
     cursor_proxy = CursorProxy
