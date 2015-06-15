@@ -1,3 +1,4 @@
+from opbeat.instrumentation.packages.jinja2 import Jinja2Instrumentation
 from opbeat.instrumentation.packages.redis import RedisInstrumentation
 from opbeat.instrumentation.packages.requests import RequestsInstrumentation
 from opbeat.instrumentation.packages.pylibmc import PyLibMcInstrumentation
@@ -32,7 +33,7 @@ def instrument(client):
         RequestsInstrumentation, PyLibMcInstrumentation,
                 DjangoTemplateInstrumentation, Psycopg2Instrumentation,
                 RedisInstrumentation, Urllib3Instrumentation,
-                SQLiteInstrumentation]:
+                SQLiteInstrumentation, Jinja2Instrumentation]:
 
         cls(client).instrument()
 
