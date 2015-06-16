@@ -202,7 +202,6 @@ class RedisInstrumentation(AbstractInstrumentedModule):
         ])
 
         instrument_list.append(("redis.client", "Script.__call__"))
-
         return instrument_list
 
     def call(self, wrapped, instance, args, kwargs):

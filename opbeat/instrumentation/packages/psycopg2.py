@@ -172,5 +172,21 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
     ]
 
     def call(self, wrapped, instance, args, kwargs):
-        return PGConnectionProxy(wrapped(*args, **kwargs), self.client)
+        signature = "psycopg2.connect"
+
+        host = kwargs.get('host')
+        if host:
+            signature += " " + str(host)
+
+            port = kwargs.get('port')
+            if port:
+                port = str(port)
+                if port != "5432":
+                    signature += ":" + port
+        else:
+            # Parse connection string and extract host/port
+            pass
+
+        with self.client.capture_trace(signature, "db.postgreql.connect"):
+            return PGConnectionProxy(wrapped(*args, **kwargs), self.client)
 

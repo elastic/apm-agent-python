@@ -17,9 +17,16 @@ class SQLiteInstrumentation(DbApi2Instrumentation):
     name = 'sqlite'
 
     instrument_list = [
+        ("sqlite3", "connect"),
         ("sqlite3.dbapi2", "connect"),
         ("pysqlite2.dbapi2", "connect"),
     ]
 
     def call(self, wrapped, instance, args, kwargs):
-        return SQLiteConnectionProxy(wrapped(*args, **kwargs), self.client)
+        signature = "sqlite.connect"
+
+        if len(args) == 1:
+            signature += " " + str(args[0])
+
+        with self.client.capture_trace(signature, "db.sqlite.connect"):
+            return SQLiteConnectionProxy(wrapped(*args, **kwargs), self.client)
