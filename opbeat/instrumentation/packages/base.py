@@ -71,7 +71,6 @@ class AbstractInstrumentedModule(object):
 
     def call_if_sampling(self, wrapped, instance, args, kwargs):
         if not self.client.instrumentation_store.get_transaction():
-            print "OUTSIDE TRANSACTION", wrapped
             return wrapped(*args, **kwargs)
         else:
             return self.call(wrapped, instance, args, kwargs)

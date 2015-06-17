@@ -1,3 +1,4 @@
+from opbeat.utils import default_ports
 from opbeat.utils.compat import urlparse
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
@@ -22,8 +23,13 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
 
         signature = method.upper()
 
-        host = urlparse.urlparse(url).netloc
+        parsed_url = urlparse.urlparse(url)
+        host = parsed_url.hostname
         signature += " " + host
+
+        if (parsed_url.port
+                and default_ports.get(parsed_url.scheme) != parsed_url.port):
+            signature += ":" + str(parsed_url.port)
 
         with self.client.capture_trace(signature, "ext.http.requests",
                                        {'url': url}):

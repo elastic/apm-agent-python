@@ -2,6 +2,7 @@ import re
 from opbeat.instrumentation.packages.dbapi2 import (ConnectionProxy,
                                                     CursorProxy,
                                                     DbApi2Instrumentation)
+from opbeat.utils import default_ports
 
 
 class Literal(object):
@@ -181,7 +182,7 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
             port = kwargs.get('port')
             if port:
                 port = str(port)
-                if port != "5432":
+                if int(port) != default_ports.get("postgresql"):
                     signature += ":" + port
         else:
             # Parse connection string and extract host/port

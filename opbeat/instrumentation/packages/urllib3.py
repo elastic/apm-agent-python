@@ -1,9 +1,6 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from opbeat.utils import default_ports
 
-_default_ports = {
-    "https": 433,
-    "http": 80
-}
 
 class Urllib3Instrumentation(AbstractInstrumentedModule):
     name = 'urllib3'
@@ -20,7 +17,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         host = instance.host
 
-        if instance.port != _default_ports.get(instance.scheme):
+        if instance.port != default_ports.get(instance.scheme):
             host += ":" + str(instance.port)
 
         if 'url' in kwargs:
