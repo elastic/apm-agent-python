@@ -2,8 +2,6 @@
 
 from __future__ import absolute_import
 import pytest
-import opbeat
-from opbeat.utils import six
 import datetime
 import django
 import logging
@@ -29,7 +27,8 @@ from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-
+from opbeat.utils import six
+from opbeat import instrumentation
 
 try:
     from celery.tests.utils import with_eager_tasks
@@ -101,6 +100,8 @@ class DjangoClientTest(TestCase):
     def setUp(self):
         self.opbeat = get_client()
         self.opbeat.events = []
+        instrumentation.control.instrument(self.opbeat)
+
 
     def test_basic(self):
         self.opbeat.capture('Message', message='foo')
@@ -340,6 +341,7 @@ class DjangoClientTest(TestCase):
         event = self.opbeat.events.pop(0)
 
         self.assertEquals(event['culprit'], 'error.html')
+
         self.assertEquals(
             event['template']['context_line'],
             '{% invalid template tag %}\n'
@@ -704,53 +706,6 @@ class CeleryIntegratedClientTest(TestCase):
         self.assertEquals(send_encoded.call_count, 1)
 
 
-class TracesTest(TestCase):
-    def setUp(self):
-        self.logger = logging.getLogger(__name__)
-        self.opbeat = get_client()
-        opbeat.instrumentation.control.instrument(get_client())
-
-    def test_template_name_as_view(self):
-        with self.settings(MIDDLEWARE_CLASSES=[
-            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
-            self.client.get(reverse('render-heavy-template'))
-            self.client.get(reverse('render-heavy-template'))
-            self.client.get(reverse('render-heavy-template'))
-
-        transactions, traces = self.opbeat.instrumentation_store.get_all()
-
-        self.assertEqual(len(transactions), 1)
-        self.assertEqual(len(traces), 3)
-
-        kinds = ['transaction', 'code', 'template.django']
-        self.assertEqual(set([t['kind'] for t in traces]),
-                         set(kinds))
-
-        # Reorder according to the kinds list so we can just test them
-        kinds_dict = dict([(t['kind'], t) for t in traces])
-        traces = [kinds_dict[k] for k in kinds]
-
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[0]['durations']), 3)
-        self.assertEqual(len(traces[0]['parents']), 0)
-
-        self.assertEqual(traces[1]['kind'], 'code')
-        self.assertEqual(traces[1]['signature'], 'something_expensive')
-        self.assertEqual(traces[1]['transaction'],
-                         'tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[1]['durations']), 3)
-        self.assertEqual(traces[1]['parents'], ('transaction', 'list_users.html'))
-
-        self.assertEqual(traces[2]['kind'], 'template.django')
-        self.assertEqual(traces[2]['signature'], 'list_users.html')
-        self.assertEqual(traces[2]['transaction'],
-                         'tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[2]['durations']), 3)
-        self.assertEqual(traces[2]['parents'], ('transaction',))
-
-
 def client_get(client, url):
     return client.get(url)
 
@@ -758,6 +713,7 @@ def client_get(client, url):
 def test_perf_template_render(benchmark):
     client = TestClient()
     opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
         with override_settings(MIDDLEWARE_CLASSES=[
@@ -767,11 +723,12 @@ def test_perf_template_render(benchmark):
 
     transactions, traces = opbeat.instrumentation_store.get_all()
     assert len(transactions) == 1
-    assert len(traces) == 3
+    assert len(traces) == 3, [t["signature"] for t in traces]
 
 def test_perf_template_render_no_middleware(benchmark):
     client = TestClient()
     opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
     with mock.patch(
             "opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -788,10 +745,12 @@ def test_perf_template_render_no_middleware(benchmark):
 def test_perf_database_render(benchmark):
     client = TestClient()
 
+    opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
+
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
 
-        opbeat = get_client()
         with override_settings(MIDDLEWARE_CLASSES=[
             'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
             resp = benchmark(client_get, client, reverse("render-user-template"))

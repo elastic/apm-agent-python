@@ -1,21 +1,24 @@
+import mock
 import os
 
 from django.test import TestCase
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
-from opbeat.contrib.django.models import get_client
+from opbeat.contrib.django.models import opbeat, get_client
 
 
 class InstrumentJinja2Test(TestCase):
     def setUp(self):
         self.client = get_client()
         filedir = os.path.dirname(__file__)
-        print filedir
         loader = FileSystemLoader(filedir)
         self.env = Environment(loader=loader)
+        opbeat.instrumentation.control.instrument(self.client)
 
-    def test_from_file(self):
+    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    def test_from_file(self, should_collect):
+        should_collect.return_value = False
         self.client.begin_transaction()
         template = self.env.get_template('mytemplate.html')
         template.render()

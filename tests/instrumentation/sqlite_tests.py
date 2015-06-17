@@ -1,13 +1,17 @@
 from django.test import TestCase
 import sqlite3
-from opbeat.contrib.django.models import get_client
+import mock
+from opbeat.contrib.django.models import get_client, opbeat
 
 
-class InstrumentRedisTest(TestCase):
+class InstrumentSQLiteTest(TestCase):
     def setUp(self):
         self.client = get_client()
+        opbeat.instrumentation.control.instrument(self.client)
 
-    def test_connect(self):
+    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    def test_connect(self, should_collect):
+        should_collect.return_value = False
         self.client.begin_transaction()
 
         conn = sqlite3.connect("testdb.sql")

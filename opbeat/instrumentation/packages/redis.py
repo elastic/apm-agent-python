@@ -1,10 +1,8 @@
-from importlib import import_module
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
 
 class RedisInstrumentation(AbstractInstrumentedModule):
     name = 'redis'
-
 
     # Generated using
     # inspect.getmembers(redis.Redis, predicate=inspect.ismethod)

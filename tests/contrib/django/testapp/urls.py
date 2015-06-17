@@ -15,7 +15,7 @@ def handler500(request):
         raise ValueError('handler500')
     return HttpResponse('')
 
-urlpatterns = patterns('',
+urls = (
     url(r'^render-heavy-template$', views.render_template_view, name='render-heavy-template'),
     url(r'^render-user-template$', views.render_user_view, name='render-user-template'),
     url(r'^no-error$', views.no_error, name='opbeat-no-error'),
@@ -28,3 +28,10 @@ urlpatterns = patterns('',
     url(r'^trigger-500-template$', views.template_exc, name='opbeat-template-exc'),
     url(r'^trigger-500-log-request$', views.logging_request_exc, name='opbeat-log-request-exc'),
 )
+
+
+if django.VERSION >= (1, 8):
+    urls += url(r'^render-jinja2-template$', views.render_jinja2_template,
+        name='render-jinja2-template'),
+
+urlpatterns = patterns('', *urls)

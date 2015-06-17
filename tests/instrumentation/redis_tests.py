@@ -1,14 +1,18 @@
 from django.test import TestCase
+import mock
 import redis
-from opbeat.contrib.django.models import get_client
+import opbeat
+from tests.contrib.django.django_tests import get_client
 
 
 class InstrumentRedisTest(TestCase):
     def setUp(self):
         self.client = get_client()
-        # self.client.request_store = RequestsStore(lambda: [], 99999)
+        opbeat.instrumentation.control.instrument(self.client)
 
-    def test_pipeline(self):
+    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    def test_pipeline(self, should_collect):
+        should_collect.return_value = False
         self.client.begin_transaction()
         with self.client.capture_trace("test_pipeline", "test"):
             conn = redis.StrictRedis()

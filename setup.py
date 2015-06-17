@@ -57,10 +57,10 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 tests_require = [
-    'py==1.4.26',
-    'pytest==2.6.4',
+    'py>=1.4.26',
+    'pytest>=2.6.4',
     'pytest-django==2.8.0',
-    'pytest-capturelog==0.7',
+    'pytest-capturelog>=0.7',
     'blinker>=1.1',
     'celery',
     'django-celery',
@@ -72,6 +72,7 @@ tests_require = [
     'pytz',
     'redis',
     'urllib3',
+    'jinja2',
     'pytest-benchmark'
 ]
 

@@ -189,4 +189,3 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
 
         with self.client.capture_trace(signature, "db.postgreql.connect"):
             return PGConnectionProxy(wrapped(*args, **kwargs), self.client)
-

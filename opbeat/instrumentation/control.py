@@ -1,11 +1,4 @@
-from opbeat.instrumentation.packages.jinja2 import Jinja2Instrumentation
-from opbeat.instrumentation.packages.redis import RedisInstrumentation
-from opbeat.instrumentation.packages.requests import RequestsInstrumentation
-from opbeat.instrumentation.packages.pylibmc import PyLibMcInstrumentation
-from opbeat.instrumentation.packages.django.template import DjangoTemplateInstrumentation
-from opbeat.instrumentation.packages.psycopg2 import Psycopg2Instrumentation
-from opbeat.instrumentation.packages.sqlite import SQLiteInstrumentation
-from opbeat.instrumentation.packages.urllib3 import Urllib3Instrumentation
+from opbeat.instrumentation import register
 from opbeat.utils import wrapt
 
 
@@ -29,13 +22,8 @@ def wrapped_extend_nodelist(wrapped, instance, args, kwargs):
 
 
 def instrument(client):
-    for cls in [
-        RequestsInstrumentation, PyLibMcInstrumentation,
-                DjangoTemplateInstrumentation, Psycopg2Instrumentation,
-                RedisInstrumentation, Urllib3Instrumentation,
-                SQLiteInstrumentation, Jinja2Instrumentation]:
-
-        cls(client).instrument()
+    for obj in register.get_instrumentation_objects():
+        obj.instrument(client)
 
     wrapt.wrap_function_wrapper('django.template.base',
                                 'Parser.extend_nodelist',

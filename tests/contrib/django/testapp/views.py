@@ -55,6 +55,10 @@ def render_template_view(request):
                             {'users': something_expensive})
 
 
+def render_jinja2_template(request):
+    return render(request, "jinja2_template.html")
+
+
 def render_user_view(request):
     def something_expensive():
         with opbeat.contrib.django.models.get_client().capture_trace("something_expensive", "code"):

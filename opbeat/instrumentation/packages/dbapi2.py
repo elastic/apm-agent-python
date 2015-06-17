@@ -10,7 +10,7 @@ from opbeat.utils import wrapt
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
 
-    def __init__(self, wrapped, client):
+    def __init__(self, wrapped, client=None):
         """
 
         :param wrapped:

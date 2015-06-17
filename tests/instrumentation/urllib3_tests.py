@@ -1,6 +1,8 @@
 import threading
+import mock
 import urllib3
 from django.test import TestCase
+import opbeat
 
 from opbeat.contrib.django.models import get_client
 
@@ -19,6 +21,7 @@ class InstrumentUrllib3Test(TestCase):
         self.client = get_client()
         self.port = 59990
         self.start_test_server()
+        opbeat.instrumentation.control.instrument(self.client)
 
     def tearDown(self):
         if self.httpd:
@@ -33,8 +36,9 @@ class InstrumentUrllib3Test(TestCase):
         self.httpd_thread.setDaemon(True)
         self.httpd_thread.start()
 
-    def test_urllib3(self):
-
+    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    def test_urllib3(self, should_collect):
+        should_collect.return_value = False
         self.client.begin_transaction()
         expected_sig = 'GET localhost:{0}'.format(self.port)
         with self.client.capture_trace("test_pipeline", "test"):

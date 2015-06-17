@@ -1,6 +1,5 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
-
 _default_ports = {
     "https": 433,
     "http": 80
@@ -35,4 +34,3 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         with self.client.capture_trace(signature, "ext.http.urllib3", {'url': url}):
             return wrapped(*args, **kwargs)
-
