@@ -10,7 +10,7 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         ("requests.sessions", "Session.request"),
     ]
 
-    def call(self, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         if 'method' in kwargs:
             method = kwargs['method']
         else:

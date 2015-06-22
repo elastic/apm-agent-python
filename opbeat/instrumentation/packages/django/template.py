@@ -8,7 +8,7 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
         ("django.template", "Template.render"),
     ]
 
-    def call(self, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         name = getattr(instance, 'name', None)
 
         if not name:

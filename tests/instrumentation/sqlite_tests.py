@@ -25,7 +25,7 @@ class InstrumentSQLiteTest(TestCase):
 
         transactions, traces = self.client.instrumentation_store.get_all()
 
-        expected_signatures = ['transaction', 'sqlite.connect testdb.sql',
+        expected_signatures = ['transaction', 'sqlite3.connect testdb.sql',
                                'CREATE TABLE', 'INSERT INTO testdb',
                                'DROP TABLE']
 
@@ -40,7 +40,7 @@ class InstrumentSQLiteTest(TestCase):
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['transaction'], 'test')
 
-        self.assertEqual(traces[1]['signature'], 'sqlite.connect testdb.sql')
+        self.assertEqual(traces[1]['signature'], 'sqlite3.connect testdb.sql')
         self.assertEqual(traces[1]['kind'], 'db.sqlite.connect')
         self.assertEqual(traces[1]['transaction'], 'test')
 

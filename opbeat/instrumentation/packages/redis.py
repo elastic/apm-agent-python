@@ -177,21 +177,20 @@ class RedisInstrumentation(AbstractInstrumentedModule):
         'zunionstore'
     ]
 
-
     def get_instrument_list(self):
         redis_client = ["redis.client"]*len(self.strictRedis)
 
-        strictRedisMethods = zip(redis_client,
-                                 ["StrictRedis." + method
-                                  for method in self.strictRedis])
+        strict_redis_methods = zip(redis_client,
+                                   ["StrictRedis." + method
+                                    for method in self.strictRedis])
 
-        redisMethods = zip(redis_client,
-                           ["Redis." + method
-                            for method in self.strictRedis])
+        redis_methods = zip(redis_client,
+                            ["Redis." + method
+                             for method in self.strictRedis])
 
         # python3 zip returns iterator
-        instrument_list = list(strictRedisMethods)
-        instrument_list.extend(redisMethods)
+        instrument_list = list(strict_redis_methods)
+        instrument_list.extend(redis_methods)
 
         instrument_list.extend([
             ("redis.client", "BasePipeline.execute"),
@@ -202,7 +201,7 @@ class RedisInstrumentation(AbstractInstrumentedModule):
         instrument_list.append(("redis.client", "Script.__call__"))
         return instrument_list
 
-    def call(self, wrapped, instance, args, kwargs):
-        wrapped_name = instance.__class__.__name__ + "." + wrapped.__name__
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        wrapped_name = self.get_wrapped_name(wrapped, instance, method)
         with self.client.capture_trace(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)

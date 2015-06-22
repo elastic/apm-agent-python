@@ -8,7 +8,7 @@ class Jinja2Instrumentation(AbstractInstrumentedModule):
         ("jinja2", "Template.render"),
     ]
 
-    def call(self, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         signature = instance.name or instance.filename
         with self.client.capture_trace(signature, "template.jinja2"):
             return wrapped(*args, **kwargs)

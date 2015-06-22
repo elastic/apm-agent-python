@@ -22,8 +22,8 @@ class SQLiteInstrumentation(DbApi2Instrumentation):
         ("pysqlite2.dbapi2", "connect"),
     ]
 
-    def call(self, wrapped, instance, args, kwargs):
-        signature = "sqlite.connect"
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        signature = ".".join([module, method])
 
         if len(args) == 1:
             signature += " " + str(args[0])

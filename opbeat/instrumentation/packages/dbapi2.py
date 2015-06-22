@@ -45,7 +45,6 @@ class CursorProxy(wrapt.ObjectProxy):
         with self._self_client.capture_trace(signature, kind, {"sql": sql}):
             return method(sql, params)
 
-
     def extract_signature(self, sql):
         raise NotImplementedError()
 
@@ -64,5 +63,5 @@ class ConnectionProxy(wrapt.ObjectProxy):
 class DbApi2Instrumentation(AbstractInstrumentedModule):
     connect_method = None
 
-    def call(self, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         return ConnectionProxy(wrapped(*args, **kwargs), self.client)

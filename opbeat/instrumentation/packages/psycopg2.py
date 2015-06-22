@@ -172,7 +172,7 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
         ("psycopg2", "connect")
     ]
 
-    def call(self, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         signature = "psycopg2.connect"
 
         host = kwargs.get('host')

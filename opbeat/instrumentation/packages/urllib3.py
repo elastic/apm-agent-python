@@ -9,7 +9,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
         ("urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
     ]
 
-    def call(self, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         if 'method' in kwargs:
             method = kwargs['method']
         else:
