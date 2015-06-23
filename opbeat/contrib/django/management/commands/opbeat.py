@@ -48,6 +48,20 @@ class Logger(object):
         kwargs['style'] = green
         self.log('info', *args, **kwargs)
 
+LOGO = """
+
+                              .o8                               .
+                             "888                             .o8
+         .ooooo.  oo.ooooo.   888oooo.   .ooooo.   .oooo.   .o888oo
+        d88' `88b  888' `88b  d88' `88b d88' `88b `P  )88b    888
+        888   888  888   888  888   888 888ooo888  .oP"888    888
+        888   888  888   888  888   888 888    .o d8(  888    888 .
+        `Y8bod8P'  888bod8P'  `Y8bod8P' `Y8bod8P' `Y888""8o   "888"
+                   888
+                  o888o
+
+"""
+
 CONFIG_EXAMPLE = """
 
 You can set it in your settings file:
@@ -93,6 +107,7 @@ class Command(BaseCommand):
         )(args[0], **options)
 
     def handle_test(self, command, **options):
+        self.stdout.write(LOGO, cyan)
         config = get_client_config()
         # can't be async for testing
         config['async'] = False
@@ -131,6 +146,7 @@ class Command(BaseCommand):
     def handle_check(self, command, **options):
         """TODO: ideally, this would call a check endpoint at the intake that
                 does some more involved checking"""
+        self.stdout.write(LOGO, cyan)
         passed = True
         config = get_client_config()
         client_class = get_client_class()
@@ -143,12 +159,17 @@ class Command(BaseCommand):
             )
         else:
             passed = False
+            self.stdout.write(
+                'Configuration errors detected!', red, ending='\n\n'
+            )
             if not client.organization_id:
-                self.stdout.write("Organization not set! ", red, ending='')
+                self.stdout.write(
+                    "  * Organization not set! ", red, ending='\n'
+                )
             if not client.app_id:
-                self.stdout.write("Application not set! ", red, ending='')
+                self.stdout.write("  * Application not set! ", red, ending='\n')
             if not client.secret_token:
-                self.stdout.write("Secret token not set!", red, ending='')
+                self.stdout.write("  * Secret token not set!", red, ending='\n')
             self.stdout.write(CONFIG_EXAMPLE)
         self.stdout.write('')
 
