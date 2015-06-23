@@ -87,7 +87,7 @@ class ClientState(object):
         self.last_check = None
         self.retry_number = 0
         if self.logger and hasattr(response, 'info'):
-            url = response.info().getheader('Location')
+            url = response.info()['Location']
             if url:
                 self.logger.info('Logged error at ' + url)
 
