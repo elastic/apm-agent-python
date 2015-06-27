@@ -1,7 +1,7 @@
 from opbeat.instrumentation.packages.dbapi2 import (CursorProxy,
                                                     ConnectionProxy,
-                                                    DbApi2Instrumentation)
-from opbeat.instrumentation.packages.psycopg2 import extract_signature
+                                                    DbApi2Instrumentation,
+                                                    extract_signature)
 
 
 class SQLiteCursorProxy(CursorProxy):

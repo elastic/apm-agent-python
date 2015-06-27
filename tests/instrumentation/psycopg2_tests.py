@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from opbeat.instrumentation.packages.psycopg2 import (extract_signature, scan,
-                                                      Literal, tokenize)
+from opbeat.instrumentation.packages.psycopg2 import extract_signature
 
 
 def test_insert():
@@ -168,35 +167,3 @@ def test_multi_statement_sql():
     actual = extract_signature(sql)
 
     assert "CREATE TABLE" == actual
-
-
-def test_scan_simple():
-    sql = "Hello 'Peter Pan' at Disney World"
-    tokens = tokenize(sql)
-    actual = [t[1] for t in scan(tokens)]
-    expected = ["Hello", Literal("'", "Peter Pan"), "at", "Disney", "World"]
-    assert actual == expected
-
-
-def test_scan_with_escape_single_quote():
-    sql = "Hello 'Peter\\' Pan' at Disney World"
-    tokens = tokenize(sql)
-    actual = [t[1] for t in scan(tokens)]
-    expected = ["Hello", Literal("'", "Peter' Pan"), "at", "Disney", "World"]
-    assert actual == expected
-
-
-def test_scan_with_escape_slash():
-    sql = "Hello 'Peter Pan\\\\' at Disney World"
-    tokens = tokenize(sql)
-    actual = [t[1] for t in scan(tokens)]
-    expected = ["Hello", Literal("'", "Peter Pan\\"), "at", "Disney", "World"]
-    assert actual == expected
-
-
-def test_scan_double_quotes():
-    sql = """Hello 'Peter'' Pan''' at Disney World"""
-    tokens = tokenize(sql)
-    actual = [t[1] for t in scan(tokens)]
-    expected = ["Hello", Literal("'", "Peter' Pan'"), "at", "Disney", "World"]
-    assert actual == expected
