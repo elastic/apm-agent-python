@@ -758,7 +758,7 @@ def test_perf_database_render(benchmark):
 
         transactions, traces = opbeat.instrumentation_store.get_all()
         assert len(transactions) == 1
-        assert len(traces) == 4, [t["signature"] for t in traces]
+        assert len(traces) == 5, [t["signature"] for t in traces]
 
 
 @pytest.mark.django_db

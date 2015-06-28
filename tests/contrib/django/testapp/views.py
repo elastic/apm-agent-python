@@ -61,7 +61,6 @@ def render_jinja2_template(request):
 def render_user_view(request):
     def something_expensive():
         with opbeat.contrib.django.models.get_client().capture_trace("something_expensive", "code"):
-            c = 100
             for i in range(100):
                 users = list(User.objects.all())
         return users
