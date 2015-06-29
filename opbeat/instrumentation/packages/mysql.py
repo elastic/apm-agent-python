@@ -7,7 +7,7 @@ from opbeat.instrumentation.packages.dbapi2 import (CursorProxy,
 class MySQLCursorProxy(CursorProxy):
     provider_name = 'mysql'
 
-    def _extract_signature(self, sql):
+    def extract_signature(self, sql):
         return extract_signature(sql)
 
 class MySQLConnectionProxy(ConnectionProxy):
