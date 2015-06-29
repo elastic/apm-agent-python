@@ -80,7 +80,7 @@ if sys.version_info[0] == 2:
     tests_require += [
         'unittest2',
         'gevent',
-        'zerorpc>=0.4.0',
+        'zerorpc>=0.4.0<0.5',
     ]
 
 if sys.version_info[:2] == (2, 6):
@@ -92,7 +92,7 @@ try:
     import __pypy__
 except ImportError:
     if sys.version_info[0] == 2:
-        tests_require += ['zerorpc>=0.4.0']
+        tests_require += ['zerorpc>=0.4.0<0.5']
 
 
 install_requires = []
