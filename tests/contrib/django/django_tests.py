@@ -102,7 +102,6 @@ class DjangoClientTest(TestCase):
         self.opbeat.events = []
         instrumentation.control.instrument(self.opbeat)
 
-
     def test_basic(self):
         self.opbeat.capture('Message', message='foo')
         self.assertEquals(len(self.opbeat.events), 1)
@@ -741,7 +740,7 @@ def test_perf_template_render_no_middleware(benchmark):
     assert len(traces) == 0
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_perf_database_render(benchmark):
     client = TestClient()
 
