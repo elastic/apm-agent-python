@@ -13,7 +13,6 @@ import os
 import time
 from threading import Thread, Lock
 
-from opbeat.utils.compat import atexit_register
 from opbeat.utils import six
 from opbeat.utils.six.moves import queue
 
@@ -32,15 +31,68 @@ class AsyncWorker(object):
         self.start()
 
     def main_thread_terminated(self):
-        size = self._queue.qsize()
-        if size:
-            six.print_("Opbeat attempts to send %s messages" % size)
-            six.print_("Waiting up to %s seconds" % OPBEAT_WAIT_SECONDS)
-            if os.name == 'nt':
-                six.print_("Press Ctrl-Break to quit")
-            else:
-                six.print_("Press Ctrl-C to quit")
-            self.stop(timeout=OPBEAT_WAIT_SECONDS)
+        self._lock.acquire()
+        try:
+            if not self._thread:
+                # thread not started or already stopped - nothing to do
+                return
+
+            # wake the processing thread up
+            self._queue.put_nowait(self._terminator)
+
+            # wait briefly, initially
+            initial_timeout = 0.1
+
+            if not self._timed_queue_join(initial_timeout):
+                # if that didn't work, wait a bit longer
+                # NB that size is an approximation, because other threads may
+                # add or remove items
+                size = self._queue.qsize()
+
+                six.print_(
+                    "PID %i: Opbeat is attempting to send %i pending messages" % (
+                        os.getpid(),
+                        size,
+                    )
+                )
+                six.print_(
+                    "Waiting up to %s seconds, " % OPBEAT_WAIT_SECONDS,
+                    end=''
+                )
+                wait_start = time.time()
+                if os.name == 'nt':
+                    six.print_("press Ctrl-Break to quit")
+                else:
+                    six.print_("press Ctrl-C to quit")
+                self._timed_queue_join(OPBEAT_WAIT_SECONDS - initial_timeout)
+                six.print_('PID %i: done, took %.2f seconds to complete' % (
+                    os.getpid(),
+                    time.time() - wait_start,
+                ))
+            self._thread = None
+
+        finally:
+            self._lock.release()
+
+    def _timed_queue_join(self, timeout):
+        """
+        implementation of Queue.join which takes a 'timeout' argument
+
+        returns True on success, False on timeout
+        """
+        deadline = time.time() + timeout
+        queue = self._queue
+
+        with queue.all_tasks_done:
+            while queue.unfinished_tasks:
+                delay = deadline - time.time()
+                if delay <= 0:
+                    # timed out
+                    return False
+
+                queue.all_tasks_done.wait(timeout=delay)
+
+            return True
 
     def start(self):
         """
@@ -54,7 +106,6 @@ class AsyncWorker(object):
                 self._thread.start()
         finally:
             self._lock.release()
-            atexit_register(self.main_thread_terminated)
 
     def stop(self, timeout=None):
         """
@@ -69,19 +120,23 @@ class AsyncWorker(object):
         finally:
             self._lock.release()
 
+    def is_alive(self):
+        return self._thread is not None and self._thread.is_alive()
+
     def queue(self, callback, kwargs):
         self._queue.put_nowait((callback, kwargs))
 
     def _target(self):
-        while 1:
-            record = self._queue.get()
-            if record is self._terminator:
-                break
-            callback, kwargs = record
+        while True:
             try:
-                callback(**kwargs)
-            except Exception:
-                logger.error('Error while sending', exc_info=True)
+                record = self._queue.get()
+                if record is self._terminator:
+                    break
+                callback, kwargs = record
+                try:
+                    callback(**kwargs)
+                except Exception:
+                    logger.error('Error while sending', exc_info=True)
             finally:
                 self._queue.task_done()
             time.sleep(0)

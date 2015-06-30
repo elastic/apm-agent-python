@@ -1,4 +1,8 @@
-### 2.1 ###
+### 2.1.1 ##
+ * refactored AyncWorker, should now be better behaved when shutting down
+ * fixed bug with django-configurations
+
+## 2.1 ##
  * fixed issue with template debug in Django 1.9 (unreleased)
  * added experimental support for instrumenting Django middleware for
    better metrics data

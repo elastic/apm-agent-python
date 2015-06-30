@@ -13,10 +13,6 @@ Opbeat
     :target: https://pypi.python.org/pypi/opbeat/
     :alt: Supported Python versions
 
-.. image:: https://pypip.in/wheel/opbeat/badge.svg?style=flat
-    :target: https://pypi.python.org/pypi/opbeat/
-    :alt: Wheel Status
-
 
 This is the official Python module for `Opbeat <https://opbeat.com/>`_.
 It provides full out-of-the-box support for many of the popular frameworks,

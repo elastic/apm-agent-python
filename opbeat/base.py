@@ -168,9 +168,9 @@ class Client(object):
         self.traces_send_freq_secs = (traces_send_freq_secs or
                                       defaults.TRACES_SEND_FREQ_SECS)
 
-        self.organization_id = organization_id
-        self.app_id = app_id
-        self.secret_token = secret_token
+        self.organization_id = six.text_type(organization_id)
+        self.app_id = six.text_type(app_id)
+        self.secret_token = six.text_type(secret_token)
 
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
@@ -178,7 +178,8 @@ class Client(object):
         self.instrumentation_store = RequestsStore(
             lambda: self.get_stack_info(iter_stack_frames(), False),
             self.traces_send_freq_secs)
-        atexit_register(self._traces_collect)
+        atexit_register(self.close)
+
 
     @contextlib.contextmanager
     def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
@@ -563,6 +564,11 @@ class Client(object):
         if self.instrumentation_store.should_collect():
             self._traces_collect()
 
+    def close(self):
+        self._traces_collect()
+        for url, transport in self._transports.items():
+            transport.close()
+
     def _traces_collect(self):
         transactions, traces = self.instrumentation_store.get_all()
         if not transactions or not traces:
@@ -577,7 +583,7 @@ class Client(object):
             self.app_id,
         )
 
-        data['servers'] = [server+api_path for server in self.servers]
+        data['servers'] = [server + api_path for server in self.servers]
         self.send(**data)
 
 

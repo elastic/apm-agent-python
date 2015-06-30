@@ -7,8 +7,7 @@ from django.test import TestCase
 
 from opbeat.utils import six
 from opbeat.base import Client, ClientState
-
-
+from opbeat.conf import defaults
 from tests.helpers import get_tempstoreclient
 
 class ClientStateTest(TestCase):
@@ -63,6 +62,35 @@ class ClientTest(TestCase):
             self.assertEqual(client.app_id, 'app')
             self.assertEqual(client.secret_token, 'token')
 
+    @mock.patch('opbeat.base.Client.send')
+    def test_config_non_string_types(self, mock_send):
+        """
+        tests if we can handle non string types as configuration, e.g.
+        Value types from django-configuration
+        """
+        class MyValue(object):
+            def __init__(self, content):
+                self.content = content
+
+            def __str__(self):
+                return str(self.content)
+
+            def __repr__(self):
+                return repr(self.content)
+
+        client = Client(
+            servers=['localhost'],
+            organization_id=MyValue('foo'),
+            app_id=MyValue('bar'),
+            secret_token=MyValue('bay')
+        )
+        client.capture('Message', message='foo')
+        args, kwargs = mock_send.call_args
+        self.assertEqual(
+            'localhost' + defaults.ERROR_API_PATH.format('foo', 'bar'),
+            kwargs['servers'][0]
+        )
+
     @mock.patch('opbeat.base.Client._send_remote')
     @mock.patch('opbeat.base.ClientState.should_try')
     def test_send_remote_failover(self, should_try, send_remote):
@@ -110,29 +138,6 @@ class ClientTest(TestCase):
             },
         )
 
-    # @mock.patch('opbeat.base.Client.send_remote')
-    # @mock.patch('opbeat.base.time.time')
-    # def test_send_with_public_key(self, time, send_remote):
-    #     time.return_value = 1328055286.51
-    #     client = Client(
-    #         servers=['http://example.com'],
-    #         public_key='public',
-    #         secret_key='secret',
-    #         project=1,
-    #     )
-    #     client.send(public_key='foo', **{
-    #         'foo': 'bar',
-    #     })
-    #     send_remote.assert_called_once_with(
-    #         url='http://example.com',
-    #         data='eJyrVkrLz1eyUlBKSixSqgUAIJgEVA==',
-    #         headers={
-    #             'Content-Type': 'application/octet-stream',
-    #             'X-Sentry-Auth': 'Sentry sentry_timestamp=1328055286.51, '
-    #             'sentry_client=opbeat-python/%s, sentry_version=2.0, sentry_key=foo' % (opbeat.VERSION,)
-    #         },
-    #     )
-
     @mock.patch('opbeat.base.Client.send_remote')
     @mock.patch('opbeat.base.time.time')
     def test_send_with_auth_header(self, time, send_remote):
@@ -157,35 +162,49 @@ class ClientTest(TestCase):
             },
         )
 
+    @mock.patch('opbeat.base.HTTPTransport.send')
+    @mock.patch('opbeat.base.HTTPTransport.close')
+    @mock.patch('opbeat.base.Client._traces_collect')
+    def test_client_shutdown_sync(self, mock_traces_collect, mock_close,
+                                  mock_send):
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async=False,
+        )
+        client.send(auth_header='foo', **{
+            'foo': 'bar',
+        })
+        client.close()
+        self.assertEqual(mock_close.call_count, 1)
+        self.assertEqual(mock_traces_collect.call_count, 1)
+
+    @mock.patch('opbeat.base.AsyncHTTPTransport.send')
+    @mock.patch('opbeat.contrib.async.AsyncWorker.main_thread_terminated')
+    @mock.patch('opbeat.base.Client._traces_collect')
+    def test_client_shutdown_async(self, mock_traces_collect,
+                                  mock_main_thread_terminated, mock_send):
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async=True,
+        )
+        client.send(auth_header='foo', **{
+            'foo': 'bar',
+        })
+        client.close()
+        self.assertEqual(mock_traces_collect.call_count, 1)
+        self.assertEqual(mock_main_thread_terminated.call_count, 1)
+
     def test_encode_decode(self):
         data = {'foo': 'bar'}
         encoded = self.client.encode(data)
         self.assertTrue(type(encoded), str)
         self.assertEquals(data, self.client.decode(encoded))
-
-    # def test_dsn(self):
-    #     client = Client(dsn='http://public:secret@example.com/1')
-    #     self.assertEquals(client.servers, ['http://example.com/api/store/'])
-    #     self.assertEquals(client.project, '1')
-    #     self.assertEquals(client.public_key, 'public')
-    #     self.assertEquals(client.secret_key, 'secret')
-
-    # def test_dsn_as_first_arg(self):
-    #     client = Client('http://public:secret@example.com/1')
-    #     self.assertEquals(client.servers, ['http://example.com/api/store/'])
-    #     self.assertEquals(client.project, '1')
-    #     self.assertEquals(client.public_key, 'public')
-    #     self.assertEquals(client.secret_key, 'secret')
-
-    # def test_slug_in_dsn(self):
-    #     client = Client('http://public:secret@example.com/slug-name')
-    #     self.assertEquals(client.servers, ['http://example.com/api/store/'])
-    #     self.assertEquals(client.project, 'slug-name')
-    #     self.assertEquals(client.public_key, 'public')
-    #     self.assertEquals(client.secret_key, 'secret')
-
-    # def test_invalid_servers_with_dsn(self):
-    #     self.assertRaises(ValueError, Client, 'foo', dsn='http://public:secret@example.com/1')
 
     def test_explicit_message_on_message_event(self):
         self.client.capture('Message', message='test', data={
