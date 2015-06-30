@@ -12,6 +12,7 @@ Large portions are
 """
 
 from __future__ import absolute_import
+import os
 
 import sys
 import logging
@@ -198,8 +199,12 @@ def register_handlers():
         except Exception as e:
             logger.exception('Failed installing django-celery hook: %s' % e)
 
-    # Instrument stuff
-    opbeat.instrumentation.control.instrument(get_client())
+    # Instrument to get traces
+    skip_env_var = 'SKIP_INSTRUMENT'
+    if skip_env_var in os.environ:
+        logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
+    else:
+        opbeat.instrumentation.control.instrument(get_client())
 
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:
