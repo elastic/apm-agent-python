@@ -1,3 +1,8 @@
+### 3.0 ##
+ * introduced instrumentation to enable in-depth performance monitoring
+ * began deprecation of camelCase style `capture` methods on `Client.
+   Full deprecation in 4.0.
+
 ### 2.1.1 ##
  * refactored AyncWorker, should now be better behaved when shutting down
  * fixed bug with django-configurations
