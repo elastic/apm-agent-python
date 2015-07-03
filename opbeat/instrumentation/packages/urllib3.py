@@ -29,5 +29,6 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         url = instance.scheme + "://" + host + url
 
-        with self.client.capture_trace(signature, "ext.http.urllib3", {'url': url}):
+        with self.client.capture_trace(signature, "ext.http.urllib3",
+                                       {'url': url}, leaf=True):
             return wrapped(*args, **kwargs)
