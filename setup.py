@@ -73,7 +73,8 @@ tests_require = [
     'redis',
     'urllib3',
     'jinja2',
-    'pytest-benchmark'
+    'pytest-benchmark',
+    'python-memcached'
 ]
 
 if sys.version_info[0] == 2:
