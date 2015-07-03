@@ -8,8 +8,6 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
         'add',
         'append',
         'cas',
-        'check_key',
-        'debuglog',
         'decr',
         'delete',
         'delete_multi',
@@ -23,13 +21,12 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
         'incr',
         'prepend',
         'replace',
-        'reset_cas',
         'set',
         'set_multi',
         'touch'
     ]
-    # Took out 'set_servers', 'reset_cas', 'debuglog' and 'forget_dead_hosts'
-    # because they involve no communication.
+    # Took out 'set_servers', 'reset_cas', 'debuglog', 'check_key' and
+    # 'forget_dead_hosts' because they involve no communication.
 
     def get_instrument_list(self):
         return [("memcache", "Client." + method) for method in self.method_list]
