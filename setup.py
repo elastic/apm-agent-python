@@ -74,7 +74,6 @@ tests_require = [
     'urllib3',
     'jinja2',
     'pytest-benchmark',
-    'python-memcached'
 ]
 
 if sys.version_info[0] == 2:
@@ -82,7 +81,11 @@ if sys.version_info[0] == 2:
         'unittest2',
         'gevent',
         'zerorpc>=0.4.0,<0.5',
+        'python-memcached'
     ]
+else:
+    tests_require += ['python3-memcached']
+
 
 if sys.version_info[:2] == (2, 6):
     tests_require += ['Django>=1.2,<1.7']
