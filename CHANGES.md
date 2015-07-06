@@ -1,3 +1,7 @@
+### 3.0.1 ##
+ * instrument python-memcached
+ * Make sure only one of urllib3 and requests will show up on traces
+
 ### 3.0 ##
  * introduced instrumentation to enable in-depth performance monitoring
  * began deprecation of camelCase style `capture` methods on `Client.
