@@ -32,5 +32,5 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
             signature += ":" + str(parsed_url.port)
 
         with self.client.capture_trace(signature, "ext.http.requests",
-                                       {'url': url}):
+                                       {'url': url}, leaf=True):
             return wrapped(*args, **kwargs)
