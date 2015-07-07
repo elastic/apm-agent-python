@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import sys
 
 from optparse import make_option
 from django.conf import settings
@@ -97,16 +98,18 @@ class Command(BaseCommand):
     args = 'test check'
 
     def handle(self, *args, **options):
-        dispatch = {
-            'test': self.handle_test,
-            'check': self.handle_check,
-        }
-        dispatch.get(
-            args[0],
-            self.handle_command_not_found
-        )(args[0], **options)
+        if not args:
+            self.handle_command_not_found('No command specified.')
+        elif args[0] not in self.dispatch:
+            self.handle_command_not_found('No such command "%s".' % args[0])
+        else:
+            self.dispatch.get(
+                args[0],
+                self.handle_command_not_found
+            )(self, args[0], **options)
 
     def handle_test(self, command, **options):
+        """Send a test error to Opbeat"""
         self.stdout.write(LOGO, cyan)
         config = get_client_config()
         # can't be async for testing
@@ -139,20 +142,21 @@ class Command(BaseCommand):
             result = client.captureException()
             if not client.error_logger.errors:
                 self.stdout.write(
-                    'Success! We tracked the error successfully! You should be able'
-                    ' to see it in a few seconds at the above URL'
+                    'Success! We tracked the error successfully! You should be'
+                    ' able to see it in a few seconds at the above URL'
                 )
 
     def handle_check(self, command, **options):
-        """TODO: ideally, this would call a check endpoint at the intake that
-                does some more involved checking"""
+        """Check your settings for common misconfigurations"""
         self.stdout.write(LOGO, cyan)
         passed = True
         config = get_client_config()
         client_class = get_client_class()
         client = client_class(**config)
         # check if org/app and token are set:
-        if all([client.organization_id, client.app_id, client.secret_token]):
+        is_set = lambda x: x and x != 'None'
+        values = [client.organization_id, client.app_id, client.secret_token]
+        if all(map(is_set, values)):
             self.stdout.write(
                 'Organization, app and secret token are set, good job!',
                 green
@@ -162,13 +166,13 @@ class Command(BaseCommand):
             self.stdout.write(
                 'Configuration errors detected!', red, ending='\n\n'
             )
-            if not client.organization_id:
+            if not is_set(client.organization_id):
                 self.stdout.write(
                     "  * Organization not set! ", red, ending='\n'
                 )
-            if not client.app_id:
+            if not is_set(client.app_id):
                 self.stdout.write("  * Application not set! ", red, ending='\n')
-            if not client.secret_token:
+            if not is_set(client.secret_token):
                 self.stdout.write("  * Secret token not set!", red, ending='\n')
             self.stdout.write(CONFIG_EXAMPLE)
         self.stdout.write('')
@@ -230,7 +234,7 @@ class Command(BaseCommand):
                     yellow
                 )
                 self.stdout.write(
-                    'Opbeat APM work best if you add it at the top of your '
+                    'Opbeat APM works best if you add it at the top of your '
                     'MIDDLEWARE_CLASSES'
                 )
         except ValueError:
@@ -257,6 +261,27 @@ class Command(BaseCommand):
         self.stdout.write('')
         return passed
 
-    def handle_command_not_found(self, command, **options):
-        # TODO make this nicer
-        raise CommandError('Command %s not found' % command)
+    def handle_command_not_found(self, message):
+        self.stdout.write(LOGO, cyan)
+        self.stdout.write(message, red, ending='')
+        self.stdout.write(
+            ' Please use one of the following commands:\n\n',
+            red
+        )
+        self.stdout.write(
+            ''.join(
+                ' * %s\t%s\n' % (k.ljust(8), v.__doc__)
+                for k, v in self.dispatch.items()
+            )
+        )
+        self.stdout.write('\n')
+        self.stdout.write(
+            'Usage:\n\t%s opbeat <command>' % (
+                ' '.join(sys.argv[:sys.argv.index('opbeat')])
+            )
+        )
+
+    dispatch = {
+        'test': handle_test,
+        'check': handle_check,
+    }
