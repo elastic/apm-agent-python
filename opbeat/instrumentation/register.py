@@ -12,6 +12,7 @@ _cls_register = set([
     'opbeat.instrumentation.packages.urllib3.Urllib3Instrumentation',
 
     'opbeat.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
+    'opbeat.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',
 ])
 
 def register(cls):
