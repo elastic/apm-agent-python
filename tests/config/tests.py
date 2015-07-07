@@ -1,7 +1,10 @@
 import logging
 import mock
+from django.test import TestCase
+
+
 from opbeat.conf import setup_logging
-from opbeat.utils.compat import TestCase
+
 
 
 class SetupLoggingTest(TestCase):

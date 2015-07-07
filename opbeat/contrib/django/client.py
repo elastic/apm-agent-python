@@ -31,7 +31,8 @@ except ImportError:
 
 from opbeat.base import Client
 from opbeat.contrib.django.utils import (get_data_from_template_source,
-                                         get_data_from_template_debug)
+                                         get_data_from_template_debug,
+                                         iterate_with_template_sources)
 from opbeat.conf import defaults
 from opbeat.utils.wsgi import get_headers, get_environ
 
@@ -156,6 +157,9 @@ class DjangoClient(Client):
             }
 
         return result
+
+    def get_stack_info(self, frames, extended=True):
+        return list(iterate_with_template_sources(frames, extended))
 
     def send(self, **kwargs):
         """

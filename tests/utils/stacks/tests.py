@@ -2,7 +2,7 @@
 
 from opbeat.utils import six
 from mock import Mock
-from opbeat.utils.compat import TestCase
+from django.test import TestCase
 
 from opbeat.utils.stacks import get_culprit, get_stack_info
 

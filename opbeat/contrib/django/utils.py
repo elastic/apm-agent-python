@@ -1,4 +1,7 @@
 import os
+from django.template.base import Node
+import sys
+from opbeat.utils.stacks import get_frame_info
 
 
 def linebreak_iter(template_source):
@@ -65,3 +68,26 @@ def get_data_from_template_debug(template_debug):
         },
         'culprit': os.path.basename(template_debug['name']),
     }
+
+
+def iterate_with_template_sources(frames, extended=True):
+    for frame, lineno in frames:
+        f_code = getattr(frame, 'f_code', None)
+        if f_code:
+            function = frame.f_code.co_name
+            if function == 'render':
+                renderer = getattr(frame, 'f_locals', {}).get('self')
+                if renderer and isinstance(renderer, Node):
+                    if (hasattr(renderer, "token")
+                            and hasattr(renderer, "source")):
+                        lineno = renderer.token.lineno
+                        source = renderer.source[0].name
+
+                        template = {
+                            'filename': source,
+                            'lineno': lineno,
+                        }
+
+                        yield template
+
+        yield get_frame_info(frame, lineno, extended)

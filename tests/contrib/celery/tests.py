@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import mock
+import pytest
+from django.test import TestCase
+
 from opbeat.contrib.celery import CeleryClient
-from opbeat.utils.compat import skipIf, TestCase
+
+
 
 try:
     from celery.tests.utils import with_eager_tasks
@@ -36,7 +40,8 @@ class ClientTest(TestCase):
 
         self.assertEquals(send_raw.delay.call_count, 1)
 
-    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
+    @pytest.mark.skipif(not has_with_eager_tasks,
+                        reason='with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.base.Client.send_encoded')
     def test_with_eager(self, send_encoded):

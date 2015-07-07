@@ -21,6 +21,7 @@ from opbeat.base import Client
 from opbeat.contrib.flask.utils import get_data_from_request
 from opbeat.utils import disabled_due_to_debug
 from opbeat.handlers.logging import OpbeatHandler
+from opbeat.utils.deprecation import deprecated
 
 
 def make_client(client_cls, app, organization_id=None, app_id=None, secret_token=None):
@@ -108,7 +109,7 @@ class Opbeat(object):
     >>> try:
     >>>     1 / 0
     >>> except ZeroDivisionError:
-    >>>     opbeat.captureException()
+    >>>     opbeat.capture_exception()
 
     Capture a message::
 
@@ -157,10 +158,18 @@ class Opbeat(object):
 
         got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 
-    def captureException(self, *args, **kwargs):
-        assert self.client, 'captureException called before application configured'
-        return self.client.captureException(*args, **kwargs)
+    def capture_exception(self, *args, **kwargs):
+        assert self.client, 'capture_exception called before application configured'
+        return self.client.capture_exception(*args, **kwargs)
 
+    def capture_message(self, *args, **kwargs):
+        assert self.client, 'capture_message called before application configured'
+        return self.client.capture_message(*args, **kwargs)
+
+    @deprecated(alternative="capture_exception()")
+    def captureException(self, *args, **kwargs):
+        return self.capture_exception(*args, **kwargs)
+
+    @deprecated(alternative="capture_message()")
     def captureMessage(self, *args, **kwargs):
-        assert self.client, 'captureMessage called before application configured'
-        return self.client.captureMessage(*args, **kwargs)
+        return self.capture_message(*args, **kwargs)

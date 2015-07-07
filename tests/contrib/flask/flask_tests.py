@@ -1,7 +1,9 @@
 from flask import Flask
 
+from django.test import TestCase
+
+
 from opbeat.contrib.flask import Opbeat
-from opbeat.utils.compat import TestCase
 
 from tests.helpers import get_tempstoreclient
 

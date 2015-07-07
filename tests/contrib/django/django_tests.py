@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from opbeat.utils import six
+import pytest
 import datetime
 import django
 import logging
@@ -16,6 +16,7 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
+from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 from django.test.utils import override_settings
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
@@ -26,7 +27,8 @@ from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-from opbeat.utils.compat import skipIf
+from opbeat.utils import six
+from opbeat import instrumentation
 
 try:
     from celery.tests.utils import with_eager_tasks
@@ -35,7 +37,6 @@ except ImportError:
     from opbeat.utils.compat import noop_decorator as with_eager_tasks
     has_with_eager_tasks = False
 
-from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
 
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
@@ -94,11 +95,12 @@ class ClientProxyTest(TestCase):
 
 class DjangoClientTest(TestCase):
     ## Fixture setup/teardown
-    urls = 'tests.contrib.django.urls'
+    urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
         self.opbeat = get_client()
         self.opbeat.events = []
+        instrumentation.control.instrument(self.opbeat)
 
     def test_basic(self):
         self.opbeat.capture('Message', message='foo')
@@ -140,7 +142,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(exc['value'], 'view exception')
         self.assertEquals(event['level'], 'error')
         self.assertEquals(event['message'], 'Exception: view exception')
-        self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 
     def test_view_exception_debug(self):
         with self.settings(DEBUG=True):
@@ -195,7 +197,8 @@ class DjangoClientTest(TestCase):
         self.assertTrue('email' in user_info)
         self.assertEquals(user_info['email'], 'admin@example.com')
 
-    @skipIf(django.VERSION < (1, 5), 'Custom user model was introduced with Django 1.5')
+    @pytest.mark.skipif(django.VERSION < (1, 5),
+                        reason='Custom user model was introduced with Django 1.5')
     def test_user_info_with_custom_user(self):
         with self.settings(AUTH_USER_MODEL='testapp.MyUser'):
             from django.contrib.auth import get_user_model
@@ -230,7 +233,7 @@ class DjangoClientTest(TestCase):
             self.assertFalse('user' in event)
 
     def test_request_middleware_exception(self):
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenRequestMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -242,12 +245,12 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'request')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ImportError: request')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_request')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_request')
 
     def test_response_middlware_exception(self):
         if django.VERSION[:2] < (1, 3):
             return
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenResponseMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-no-error'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -259,7 +262,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'response')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ImportError: response')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_response')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_response')
 
     def test_broken_500_handler_with_middleware(self):
         with self.settings(BREAK_THAT_500=True):
@@ -277,7 +280,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'view exception')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'Exception: view exception')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 
             event = self.opbeat.events.pop(0)
 
@@ -287,10 +290,10 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'handler500')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ValueError: handler500')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.urls.handler500')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.urls.handler500')
 
     def test_view_middleware_exception(self):
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.BrokenViewMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenViewMiddleware']):
             self.assertRaises(ImportError, self.client.get, reverse('opbeat-raise-exc'))
 
             self.assertEquals(len(self.opbeat.events), 1)
@@ -302,7 +305,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(exc['value'], 'view')
             self.assertEquals(event['level'], 'error')
             self.assertEquals(event['message'], 'ImportError: view')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.middleware.process_view')
+            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_view')
 
     def test_exclude_modules_view(self):
         exclude_paths = self.opbeat.exclude_paths
@@ -312,7 +315,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.opbeat.events), 1, self.opbeat.events)
         event = self.opbeat.events.pop(0)
 
-        self.assertEquals(event['culprit'], 'tests.contrib.django.views.raise_exc')
+        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
         self.opbeat.exclude_paths = exclude_paths
 
     def test_include_modules(self):
@@ -337,6 +340,7 @@ class DjangoClientTest(TestCase):
         event = self.opbeat.events.pop(0)
 
         self.assertEquals(event['culprit'], 'error.html')
+
         self.assertEquals(
             event['template']['context_line'],
             '{% invalid template tag %}\n'
@@ -352,7 +356,7 @@ class DjangoClientTest(TestCase):
     #     self.assertEquals(event['culprit'], 'tests.contrib.django.views.logging_request_exc')
     #     self.assertEquals(event['data']['META']['REMOTE_ADDR'], '127.0.0.1')
 
-    @skipIf(six.PY3, 'see Python bug #10805')
+    @pytest.mark.skipif(six.PY3, reason='see Python bug #10805')
     def test_record_none_exc_info(self):
         # sys.exc_info can return (None, None, None) if no exception is being
         # handled anywhere on the stack. See:
@@ -519,25 +523,25 @@ class DjangoClientTest(TestCase):
     #         self.assertEquals(len(self.opbeat.events), 1)
     #         self.opbeat.events.pop(0)
 
-    def test_request_metrics(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+    def test_transaction_metrics(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
         with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
-            self.assertEqual(len(self.opbeat._requests_store), 0)
+            self.assertEqual(len(self.opbeat.instrumentation_store), 0)
             self.client.get(reverse('opbeat-no-error'))
-            self.assertEqual(len(self.opbeat._requests_store), 1)
-            timed_requests = self.opbeat._requests_store.get_all()
+            self.assertEqual(len(self.opbeat.instrumentation_store), 1)
+            transactions, traces = self.opbeat.instrumentation_store.get_all()
 
-            self.assertEqual(len(timed_requests), 1)
-            timing = timed_requests[0]
+            self.assertEqual(len(transactions), 1)
+            timing = transactions[0]
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],
-                             'tests.contrib.django.views.no_error')
+                             'tests.contrib.django.testapp.views.no_error')
             self.assertEqual(timing['result'],
                              200)
 
     def test_request_metrics_301_append_slash(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+        self.opbeat.instrumentation_store.get_all()  # clear the store
 
         # enable middleware wrapping
         client = get_client()
@@ -551,7 +555,7 @@ class DjangoClientTest(TestCase):
             APPEND_SLASH=True,
         ):
             self.client.get(reverse('opbeat-no-error-slash')[:-1])
-        timed_requests = self.opbeat._requests_store.get_all()
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -559,7 +563,7 @@ class DjangoClientTest(TestCase):
         )
 
     def test_request_metrics_301_prepend_www(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+        self.opbeat.instrumentation_store.get_all()  # clear the store
 
         # enable middleware wrapping
         client = get_client()
@@ -573,7 +577,7 @@ class DjangoClientTest(TestCase):
             PREPEND_WWW=True,
         ):
             self.client.get(reverse('opbeat-no-error'))
-        timed_requests = self.opbeat._requests_store.get_all()
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -581,7 +585,7 @@ class DjangoClientTest(TestCase):
         )
 
     def test_request_metrics_contrib_redirect(self):
-        self.opbeat._requests_store.get_all()  # clear the store
+        self.opbeat.instrumentation_store.get_all()  # clear the store
 
         # enable middleware wrapping
         client = get_client()
@@ -600,7 +604,7 @@ class DjangoClientTest(TestCase):
         ):
             response = self.client.get('/redirect/me/')
 
-        timed_requests = self.opbeat._requests_store.get_all()
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -664,7 +668,8 @@ class CeleryIsolatedClientTest(TestCase):
 
         self.assertEquals(send_raw.delay.call_count, 1)
 
-    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
+    @pytest.mark.skipif(not has_with_eager_tasks,
+                        reason='with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
     def test_with_eager(self, send_encoded):
@@ -686,7 +691,8 @@ class CeleryIntegratedClientTest(TestCase):
             secret_token='secret',
         )
 
-    @skipIf(not has_with_eager_tasks, 'with_eager_tasks is not available')
+    @pytest.mark.skipif(not has_with_eager_tasks,
+                        reason='with_eager_tasks is not available')
     @with_eager_tasks
     @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
     def test_with_eager(self, send_encoded):
@@ -697,3 +703,125 @@ class CeleryIntegratedClientTest(TestCase):
         self.client.capture('Message', message='test')
 
         self.assertEquals(send_encoded.call_count, 1)
+
+
+def client_get(client, url):
+    return client.get(url)
+
+
+def test_perf_template_render(benchmark):
+    client = TestClient()
+    opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
+    with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            resp = benchmark(client_get, client, reverse("render-heavy-template"))
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    assert len(traces) == 3, [t["signature"] for t in traces]
+
+def test_perf_template_render_no_middleware(benchmark):
+    client = TestClient()
+    opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
+    with mock.patch(
+            "opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        resp = benchmark(client_get, client,
+                         reverse("render-heavy-template"))
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+    assert len(transactions) == 0
+    assert len(traces) == 0
+
+
+@pytest.mark.django_db(transaction=True)
+def test_perf_database_render(benchmark):
+    client = TestClient()
+
+    opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
+
+    with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            resp = benchmark(client_get, client, reverse("render-user-template"))
+        assert resp.status_code == 200
+
+        transactions, traces = opbeat.instrumentation_store.get_all()
+        assert len(transactions) == 1
+        assert len(traces) == 5, [t["signature"] for t in traces]
+
+
+@pytest.mark.django_db
+def test_perf_database_render_no_instrumentation(benchmark):
+    with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+
+        opbeat = get_client()
+        client = TestClient()
+        resp = benchmark(client_get, client, reverse("render-user-template"))
+
+        assert resp.status_code == 200
+
+        transactions, traces = opbeat.instrumentation_store.get_all()
+        assert len(transactions) == 0
+        assert len(traces) == 0
+
+
+@pytest.mark.django_db
+def test_perf_transaction_with_collection(benchmark):
+    with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        opbeat = get_client()
+        opbeat.events = []
+
+        client = TestClient()
+
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+
+            for i in range(10):
+                resp = client_get(client, reverse("render-user-template"))
+                assert resp.status_code == 200
+
+        assert len(opbeat.events) == 0
+
+        # Force collection on next request
+        should_collect.return_value = True
+
+        @benchmark
+        def result():
+            # Code to be measured
+            return client_get(client, reverse("render-user-template"))
+
+        assert result.status_code is 200
+        assert len(opbeat.events) > 0
+
+
+@pytest.mark.django_db
+def test_perf_transaction_without_middleware(benchmark):
+    with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        opbeat = get_client()
+        client = TestClient()
+        opbeat.events = []
+        for i in range(10):
+            resp = client_get(client, reverse("render-user-template"))
+            assert resp.status_code == 200
+
+        assert len(opbeat.events) == 0
+
+        @benchmark
+        def result():
+            # Code to be measured
+            return client_get(client, reverse("render-user-template"))
+
+        assert len(opbeat.events) == 0

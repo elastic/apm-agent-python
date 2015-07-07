@@ -155,7 +155,8 @@ def iter_stack_frames(frames=None):
     local variable.
     """
     if not frames:
-        frames = inspect.stack()[1:]
+        frames = inspect.stack(0)[1:]
+
     for frame, lineno in ((f[0], f[2]) for f in frames):
         f_locals = getattr(frame, 'f_locals', {})
         if _getitem_from_frame(f_locals, '__traceback_hide__'):
@@ -163,53 +164,52 @@ def iter_stack_frames(frames=None):
         yield frame, lineno
 
 
-def get_stack_info(frames):
-    """
-    Given a list of frames, returns a list of stack information
-    dictionary objects that are JSON-ready.
+def get_frame_info(frame, lineno, extended=True):
+    # Support hidden frames
+    f_locals = getattr(frame, 'f_locals', {})
+    if _getitem_from_frame(f_locals, '__traceback_hide__'):
+        return None
 
-    We have to be careful here as certain implementations of the
-    _Frame class do not contain the nescesary data to lookup all
-    of the information we want.
-    """
-    results = []
-    # print list(frames)[0]
-    for frame, lineno in frames:
-        # Support hidden frames
-        f_locals = getattr(frame, 'f_locals', {})
-        if _getitem_from_frame(f_locals, '__traceback_hide__'):
-            continue
+    f_globals = getattr(frame, 'f_globals', {})
+    loader = f_globals.get('__loader__')
+    module_name = f_globals.get('__name__')
 
-        f_globals = getattr(frame, 'f_globals', {})
-        loader = f_globals.get('__loader__')
-        module_name = f_globals.get('__name__')
+    f_code = getattr(frame, 'f_code', None)
+    if f_code:
+        abs_path = frame.f_code.co_filename
+        function = frame.f_code.co_name
+    else:
+        abs_path = None
+        function = None
 
-        f_code = getattr(frame, 'f_code', None)
-        if f_code:
-            abs_path = frame.f_code.co_filename
-            function = frame.f_code.co_name
-        else:
-            abs_path = None
-            function = None
+    if lineno:
+        lineno -= 1
 
-        if lineno:
-            lineno -= 1
+    # Try to pull a relative file path
+    # This changes /foo/site-packages/baz/bar.py into baz/bar.py
+    try:
+        base_filename = sys.modules[module_name.split('.', 1)[0]].__file__
+        filename = abs_path.split(base_filename.rsplit('/', 2)[0], 1)[-1][1:]
+    except:
+        filename = abs_path
 
+    if not filename:
+        filename = abs_path
+
+    frame_result = {
+        'abs_path': abs_path,
+        'filename': filename,
+        'module': module_name,
+        'function': function,
+        'lineno': lineno + 1,
+    }
+
+    if extended:
         if lineno is not None and abs_path:
-            pre_context, context_line, post_context = get_lines_from_file(abs_path, lineno, 3, loader, module_name)
+            pre_context, context_line, post_context = get_lines_from_file(
+                abs_path, lineno, 3, loader, module_name)
         else:
             pre_context, context_line, post_context = [], None, []
-
-        # Try to pull a relative file path
-        # This changes /foo/site-packages/baz/bar.py into baz/bar.py
-        try:
-            base_filename = sys.modules[module_name.split('.', 1)[0]].__file__
-            filename = abs_path.split(base_filename.rsplit('/', 2)[0], 1)[-1][1:]
-        except:
-            filename = abs_path
-
-        if not filename:
-            filename = abs_path
 
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of
@@ -219,20 +219,28 @@ def get_stack_info(frames):
             except Exception:
                 f_locals = '<invalid local scope>'
 
-        frame_result = {
-            'abs_path': abs_path,
-            'filename': filename,
-            'module': module_name,
-            'function': function,
-            'lineno': lineno + 1,
-            'vars': transform(f_locals),
-        }
         if context_line:
             frame_result.update({
                 'pre_context': pre_context,
                 'context_line': context_line,
                 'post_context': post_context,
+                'vars': transform(f_locals),
             })
+    return frame_result
 
-        results.append(frame_result)
+
+def get_stack_info(frames, extended=True):
+    """
+    Given a list of frames, returns a list of stack information
+    dictionary objects that are JSON-ready.
+
+    We have to be careful here as certain implementations of the
+    _Frame class do not contain the necessary data to lookup all
+    of the information we want.
+    """
+    results = []
+    for frame, lineno in frames:
+        result = get_frame_info(frame, lineno, extended)
+        if result:
+            results.append(result)
     return results

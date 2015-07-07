@@ -71,7 +71,7 @@ class Exception(BaseEvent):
             frames = varmap(lambda k, v: shorten(v,
                 string_length=self.client.string_max_length,
                 list_length=self.client.list_max_length),
-            get_stack_info(iter_traceback_frames(exc_traceback)))
+            self.client.get_stack_info(iter_traceback_frames(exc_traceback)))
 
             culprit = get_culprit(frames, self.client.include_paths,
                                   self.client.exclude_paths)

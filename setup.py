@@ -57,13 +57,12 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 tests_require = [
-    'py==1.4.26',
-    'pytest==2.6.4',
+    'py>=1.4.26',
+    'pytest>=2.6.4',
     'pytest-django==2.8.0',
-    'pytest-capturelog==0.7',
+    'pytest-capturelog>=0.7',
     'blinker>=1.1',
     'celery',
-    'Django>=1.2',
     'django-celery',
     'Flask>=0.8',
     'logbook',
@@ -71,14 +70,34 @@ tests_require = [
     'pep8',
     'webob',
     'pytz',
+    'redis',
+    'urllib3',
+    'jinja2',
+    'pytest-benchmark',
 ]
 
 if sys.version_info[0] == 2:
     tests_require += [
         'unittest2',
         'gevent',
-        'zerorpc>=0.4.0',
+        'zerorpc>=0.4.0,<0.5',
+        'python-memcached'
     ]
+else:
+    tests_require += ['python3-memcached']
+
+
+if sys.version_info[:2] == (2, 6):
+    tests_require += ['Django>=1.2,<1.7']
+else:
+    tests_require += ['Django>=1.2']
+
+try:
+    import __pypy__
+except ImportError:
+    if sys.version_info[0] == 2:
+        tests_require += ['zerorpc>=0.4.0,<0.5']
+
 
 install_requires = []
 
@@ -106,8 +125,8 @@ class PyTest(TestCommand):
 setup_kwargs = dict(
     name='opbeat',
     version=VERSION,
-    author='Ron Cohen',
-    author_email='ron@opbeat.com',
+    author='Opbeat, Inc',
+    author_email='support@opbeat.com',
     url='https://github.com/opbeat/opbeat_python',
     description='The official Python module for Opbeat.com',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),

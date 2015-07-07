@@ -3,9 +3,10 @@
 import mock
 import opbeat
 import time
+from django.test import TestCase
+
 from opbeat.utils import six
-from opbeat.utils.compat import TestCase
-from opbeat.base import Client, ClientState, DummyClient
+from opbeat.base import Client, ClientState
 from opbeat.conf import defaults
 from tests.helpers import get_tempstoreclient
 
@@ -371,13 +372,15 @@ class ClientTest(TestCase):
         )
         should_collect.return_value = False
         for i in range(7):
-            client.captureRequest(0.1, 200, 'test')
+            client.begin_transaction()
+            client.end_transaction(200, 'test-transaction')
 
-        self.assertEqual(len(client._requests_store), 7)
+        self.assertEqual(len(client.instrumentation_store), 7)
         self.assertEqual(mock_send.call_count, 0)
         should_collect.return_value = True
 
-        client.captureRequest(0.1, 200, 'test')
-        self.assertEqual(len(client._requests_store), 0)
+        client.begin_transaction()
+        client.end_transaction(200, 'my-other-transaction')
+        self.assertEqual(len(client.instrumentation_store), 0)
         self.assertEqual(mock_send.call_count, 1)
 

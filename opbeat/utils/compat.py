@@ -3,11 +3,14 @@ import atexit
 import functools
 
 try:
-    from unittest2 import TestCase
-    from unittest2 import skipIf
+    import urlparse
 except ImportError:
-    from unittest import TestCase
-    from unittest import skipIf
+    from urllib import parse as urlparse
+
+try:
+    from urllib2 import HTTPError
+except ImportError:
+    from urllib.error import HTTPError
 
 
 def noop_decorator(func):

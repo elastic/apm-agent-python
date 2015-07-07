@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-from opbeat.utils import six
+
 import uuid
 
-from opbeat.utils.compat import TestCase, skipIf
+from django.test import TestCase
+
 from opbeat.utils.encoding import transform, shorten
+from opbeat.utils import six
 
 
 class TransformTest(TestCase):

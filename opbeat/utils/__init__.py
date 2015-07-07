@@ -11,6 +11,12 @@ Large portions are
 
 from opbeat.utils import six
 
+default_ports = {
+    "https": 433,
+    "http": 80,
+    "postgresql": 5432
+}
+
 def varmap(func, var, context=None, name=None):
     """
     Executes ``func(key_name, value)`` on all values

@@ -1,4 +1,4 @@
-from opbeat.utils.compat import TestCase
+from django.test import TestCase
 from opbeat.utils.wsgi import get_headers, get_host, get_environ
 
 

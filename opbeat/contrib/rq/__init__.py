@@ -13,7 +13,7 @@ def register_opbeat(client, worker):
 
     """
     def send_to_opbeat(job, *exc_info):
-        client.captureException(
+        client.capture_exception(
             exc_info=exc_info,
             extra={
                 'job_id': job.id,

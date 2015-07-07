@@ -59,7 +59,7 @@ class OpbeatMiddleware(object):
                     break
                 traceback = traceback.tb_next
 
-        self._opbeat_client.captureException(
+        self._opbeat_client.capture_exception(
             exc_info,
             extra=task_ctx
         )

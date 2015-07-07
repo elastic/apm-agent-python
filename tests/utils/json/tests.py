@@ -2,7 +2,8 @@
 
 import datetime
 import uuid
-from opbeat.utils.compat import TestCase
+
+from django.test import TestCase
 
 from opbeat.utils import opbeat_json as json
 from opbeat.utils import six

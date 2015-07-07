@@ -7,6 +7,9 @@ from django.conf import settings
 
 where_am_i = dirname(abspath(__file__))
 
+BASE_TEMPLATE_DIR = join(where_am_i, 'tests', 'contrib', 'django', 'testapp',
+                         'templates')
+
 sys.path.insert(0, where_am_i)
 
 # don't run tests of dependencies that land in "build" and "src"
@@ -41,7 +44,7 @@ def pytest_configure(config):
                 'opbeat.contrib.django',
                 'tests.contrib.django.testapp',
             ],
-            ROOT_URLCONF='tests.contrib.django.urls',
+            ROOT_URLCONF='tests.contrib.django.testapp.urls',
             DEBUG=False,
             SITE_ID=1,
             BROKER_HOST="localhost",
@@ -51,7 +54,7 @@ def pytest_configure(config):
             BROKER_VHOST="/",
             CELERY_ALWAYS_EAGER=True,
             TEMPLATE_DEBUG=True,
-            TEMPLATE_DIRS=[join(where_am_i, 'tests', 'contrib', 'django', 'templates')],
+            TEMPLATE_DIRS=[BASE_TEMPLATE_DIR],
             ALLOWED_HOSTS=['*'],
             MIDDLEWARE_CLASSES=[
                 'django.contrib.sessions.middleware.SessionMiddleware',

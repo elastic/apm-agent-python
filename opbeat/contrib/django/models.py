@@ -12,13 +12,17 @@ Large portions are
 """
 
 from __future__ import absolute_import
+import os
 
 import sys
 import logging
 import warnings
 from opbeat.utils import six
+import opbeat.instrumentation.control
 from opbeat.utils import disabled_due_to_debug
+
 from django.conf import settings as django_settings
+
 
 
 logger = logging.getLogger('opbeat.errors.client')
@@ -129,12 +133,20 @@ def get_client_config():
         app_id=config.get('APP_ID', None),
         secret_token=config.get('SECRET_TOKEN', None),
         processors=config.get('PROCESSORS', None),
+        traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
         async=config.get('ASYNC', None),
         instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
     )
 
 
 def get_client(client=None):
+    """
+    Get an Opbeat client.
+
+    :param client:
+    :return:
+    :rtype: opbeat.base.Client
+    """
     global _client
 
     tmp_client = client is not None
@@ -194,6 +206,14 @@ def register_handlers():
             register_signal(client)
         except Exception as e:
             logger.exception('Failed installing django-celery hook: %s' % e)
+
+    # Instrument to get traces
+    skip_env_var = 'SKIP_INSTRUMENT'
+    if skip_env_var in os.environ:
+        logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
+    else:
+        opbeat.instrumentation.control.instrument(get_client())
+
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:
     register_handlers()

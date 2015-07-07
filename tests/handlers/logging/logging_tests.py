@@ -1,8 +1,9 @@
 import logging
-from opbeat.utils.compat import TestCase
-from opbeat.base import Client
+
 from opbeat.handlers.logging import OpbeatHandler
 from opbeat.utils.stacks import iter_stack_frames
+
+from django.test import TestCase
 
 from tests.helpers import get_tempstoreclient
 

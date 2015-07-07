@@ -11,33 +11,28 @@ Large portions are
 
 from __future__ import absolute_import
 
+import contextlib
 import datetime
 import logging
 import socket
-import os
 import sys
 import time
 import zlib
-from opbeat.utils import six
-try:
-    from urllib2 import HTTPError
-except ImportError:
-    from urllib.error import HTTPError
 import uuid
-import warnings
-try:
-    import urlparse
-except ImportError:
-    from urllib import parse as urlparse
 
+import os
+import warnings
+
+from opbeat.utils import six
+from opbeat.utils.deprecation import deprecated
 import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
-
-from opbeat.utils.compat import atexit_register
+from opbeat.utils.compat import atexit_register, HTTPError, urlparse
 from opbeat.utils.encoding import transform, shorten
-from opbeat.utils.traces import RequestsStore
-from opbeat.utils.stacks import get_stack_info, iter_stack_frames, get_culprit
+from opbeat.traces import RequestsStore
+from opbeat.utils.stacks import iter_stack_frames, get_culprit
+from opbeat.utils import stacks
 from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
 
 __all__ = ('Client',)
@@ -121,7 +116,7 @@ class Client(object):
     >>> try:
     >>>     1/0
     >>> except ZeroDivisionError:
-    >>>     ident = client.get_ident(client.captureException())
+    >>>     ident = client.get_ident(client.capture_exception())
     >>>     print "Exception caught; reference is %%s" %% ident
     """
     logger = logging.getLogger('opbeat')
@@ -186,8 +181,18 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._requests_store = RequestsStore(self.traces_send_freq_secs)
+        self.instrumentation_store = RequestsStore(
+            lambda: self.get_stack_info(iter_stack_frames(), False),
+            self.traces_send_freq_secs)
         atexit_register(self.close)
+
+
+    @contextlib.contextmanager
+    def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
+                      leaf=False):
+        with self.instrumentation_store.trace(signature, kind, extra,
+                                              skip_frames, leaf):
+            yield
 
     def get_processors(self):
         for processor in self.processors:
@@ -204,6 +209,9 @@ class Client(object):
 
     def get_handler(self, name):
         return self.module_cache[name](self)
+
+    def get_stack_info(self, frames, extended=True):
+        return stacks.get_stack_info(frames, extended)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
                               extra=None, stack=None,
@@ -253,7 +261,7 @@ class Client(object):
                     'frames': varmap(lambda k, v: shorten(v,
                         string_length=self.string_max_length,
                         list_length=self.list_max_length),
-                    get_stack_info(frames))
+                    self.get_stack_info(frames))
                 },
             })
 
@@ -318,7 +326,7 @@ class Client(object):
 
         To use structured data (interfaces) with capture:
 
-        >>> capture('Message', message='foo', data={
+        >>> client.capture('Message', message='foo', data={
         >>>     'http': {
         >>>         'url': '...',
         >>>         'data': {},
@@ -512,21 +520,34 @@ class Client(object):
         """
         return json.loads(zlib.decompress(data).decode('utf8'))
 
-    def captureMessage(self, message, **kwargs):
+    def capture_message(self, message, **kwargs):
         """
         Creates an event from ``message``.
 
-        >>> client.captureMessage('My event just happened!')
+        >>> client.capture_message('My event just happened!')
         """
         return self.capture('Message', message=message, **kwargs)
 
-    def captureException(self, exc_info=None, **kwargs):
+    @deprecated(alternative="capture_message()")
+    def captureMessage(self, message, **kwargs):
+        """
+        Deprecated
+        :param message:
+        :type message:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        self.capture_message(message, **kwargs)
+
+    def capture_exception(self, exc_info=None, **kwargs):
         """
         Creates an event from an exception.
 
         >>> try:
         >>>     exc_info = sys.exc_info()
-        >>>     client.captureException(exc_info)
+        >>>     client.capture_exception(exc_info)
         >>> finally:
         >>>     del exc_info
 
@@ -536,26 +557,35 @@ class Client(object):
         """
         return self.capture('Exception', exc_info=exc_info, **kwargs)
 
-    def captureQuery(self, query, params=(), engine=None, **kwargs):
+    @deprecated(alternative="capture_exception()")
+    def captureException(self, exc_info=None, **kwargs):
+        """
+        Deprecated
+        """
+        self.capture_exception(exc_info, **kwargs)
+
+    def capture_query(self, query, params=(), engine=None, **kwargs):
         """
         Creates an event for a SQL query.
 
-        >>> client.captureQuery('SELECT * FROM foo')
+        >>> client.capture_query('SELECT * FROM foo')
         """
         return self.capture('Query', query=query, params=params, engine=engine,
                             **kwargs)
 
-    def captureRequest(self, elapsed, response_code, view_name):
+    @deprecated(alternative="capture_query()")
+    def captureQuery(self, *args, **kwargs):
         """
-        Captures request metrics.
-
-        :param elapsed: time elapsed for the whole response, in seconds
-        :param response_code: HTTP response code
-        :param view_name: name of the view
-
+        Deprecated
         """
-        self._requests_store.add(elapsed, view_name, response_code)
-        if self._requests_store.should_collect():
+        self.capture_query(*args, **kwargs)
+
+    def begin_transaction(self):
+        self.instrumentation_store.transaction_start()
+
+    def end_transaction(self, status_code, name):
+        self.instrumentation_store.transaction_end(status_code, name)
+        if self.instrumentation_store.should_collect():
             self._traces_collect()
 
     def close(self):
@@ -564,11 +594,13 @@ class Client(object):
             transport.close()
 
     def _traces_collect(self):
-        items = self._requests_store.get_all()
-        if not items:
+        transactions, traces = self.instrumentation_store.get_all()
+        if not transactions or not traces:
             return
+
         data = self.build_msg({
-            'transactions': items,
+            'transactions': transactions,
+            'traces': traces,
         })
         api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,

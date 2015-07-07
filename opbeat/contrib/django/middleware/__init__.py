@@ -10,6 +10,7 @@ Large portions are
 """
 
 from __future__ import absolute_import
+
 import time
 import logging
 import threading
@@ -100,11 +101,13 @@ class OpbeatAPMMiddleware(object):
 
     def __init__(self):
         self.client = get_client()
+
         if not self._opbeat_instrumented:
             with self._instrumenting_lock:
-                if (self.client.instrument_django_middleware
-                        and not self._opbeat_instrumented):
-                    self.instrument_middlewares()
+                if not self._opbeat_instrumented:
+                    if self.client.instrument_django_middleware:
+                        self.instrument_middlewares()
+
                     OpbeatAPMMiddleware._opbeat_instrumented = True
 
     def instrument_middlewares(self):
@@ -149,17 +152,14 @@ class OpbeatAPMMiddleware(object):
             getattr(django_settings, 'OPBEAT', {}),
             django_settings.DEBUG
         ):
-            request._opbeat_request_start = time.time()
+            self.client.begin_transaction()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._opbeat_view_func = view_func
 
     def process_response(self, request, response):
         try:
-            if (hasattr(request, '_opbeat_request_start')
-                    and hasattr(response, 'status_code')):
-                elapsed = (time.time() - request._opbeat_request_start) * 1000
-
+            if hasattr(response, 'status_code'):
                 if getattr(request, '_opbeat_view_func', False):
                     view_func = self._get_name_from_view_func(
                         request._opbeat_view_func)
@@ -170,7 +170,8 @@ class OpbeatAPMMiddleware(object):
                         ''
                     )
                 status_code = response.status_code
-                self.client.captureRequest(elapsed, status_code, view_func)
+
+                self.client.end_transaction(status_code, view_func)
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',
