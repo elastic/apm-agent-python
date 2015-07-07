@@ -180,7 +180,6 @@ class Client(object):
             self.traces_send_freq_secs)
         atexit_register(self.close)
 
-
     @contextlib.contextmanager
     def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
                       leaf=False):
