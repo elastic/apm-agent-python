@@ -253,8 +253,9 @@ class RequestsStore(object):
             yield
             return
 
-        transaction.begin_trace(signature, kind, extra, leaf)
-
-        yield
-
-        transaction.end_trace(skip_frames)
+        try:
+            trace = transaction.begin_trace(signature, kind, extra, leaf)
+            yield
+        finally:
+            if trace:
+                transaction.end_trace(skip_frames)
