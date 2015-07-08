@@ -176,13 +176,13 @@ class Client(object):
         self.module_cache = ModuleProxyCache()
 
         self.instrumentation_store = RequestsStore(
-            lambda: self.get_stack_info(iter_stack_frames(), False),
+            lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
             self.traces_send_freq_secs)
         atexit_register(self.close)
 
     @contextlib.contextmanager
-    def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
-                      leaf=False):
+    def capture_trace(self, signature, kind='code.custom', extra=None,
+                      skip_frames=0, leaf=False):
         with self.instrumentation_store.trace(signature, kind, extra,
                                               skip_frames, leaf):
             yield
@@ -203,10 +203,9 @@ class Client(object):
     def get_handler(self, name):
         return self.module_cache[name](self)
 
-    def get_stack_info(self, frames, extended=True):
+    def get_stack_info_for_trace(self, frames, extended=True):
         """Overrideable in derived clients to add frames/info, e.g. templates
 
-        Only used for trace frames at the moment.
         4.0: Use for error frames too.
         """
         return stacks.get_stack_info(frames, extended)
