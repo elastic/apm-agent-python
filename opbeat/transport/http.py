@@ -31,9 +31,9 @@ class HTTPTransport(Transport):
         if timeout is None:
             timeout = defaults.TIMEOUT
         try:
-            response = urlopen(req, data, timeout).read()
+            response = urlopen(req, data, timeout)
         except TypeError:
-            response = urlopen(req, data).read()
+            response = urlopen(req, data)
         return response
 
 
@@ -53,16 +53,18 @@ class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
             self._worker = AsyncWorker()
         return self._worker
 
-    def send_sync(self, data=None, headers=None, success_callback=None, fail_callback=None):
+    def send_sync(self, data=None, headers=None, success_callback=None,
+                  fail_callback=None):
         try:
-            HTTPTransport.send(self, data, headers)
+            response = HTTPTransport.send(self, data, headers)
             if callable(success_callback):
-                success_callback()
-        except Exception:
+                success_callback(url=response.info().get('Location'))
+        except Exception as e:
             if callable(fail_callback):
-                fail_callback()
+                fail_callback(exception=e)
 
-    def send_async(self, data, headers, success_callback=None, fail_callback=None):
+    def send_async(self, data, headers, success_callback=None,
+                   fail_callback=None):
         kwargs = {
             'data': data,
             'headers': headers,
@@ -74,4 +76,3 @@ class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
     def close(self):
         if self._worker:
             self._worker.main_thread_terminated()
-
