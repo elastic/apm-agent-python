@@ -130,13 +130,13 @@ class ClientTest(TestCase):
         # test error
         send_remote.side_effect = Exception()
         client.send_remote('http://example.com/api/store', 'foo')
-        time.sleep(0.01)
+        client.close()
         self.assertEquals(client.state.status, client.state.ERROR)
 
         # test recovery
         send_remote.side_effect = None
         client.send_remote('http://example.com/api/store', 'foo')
-        time.sleep(0.01)
+        client.close()
         self.assertEquals(client.state.status, client.state.ONLINE)
 
     @mock.patch('opbeat.base.Client.send_remote')
