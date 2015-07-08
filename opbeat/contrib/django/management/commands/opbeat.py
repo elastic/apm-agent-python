@@ -23,7 +23,7 @@ class OpbeatTestException(Exception):
     pass
 
 
-class Logger(object):
+class ColoredLogger(object):
     def __init__(self, stream):
         self.stream = stream
         self.errors = []
@@ -49,6 +49,7 @@ class Logger(object):
         kwargs['style'] = green
         self.log('info', *args, **kwargs)
 
+
 LOGO = """
 
                               .o8                               .
@@ -62,6 +63,7 @@ LOGO = """
                   o888o
 
 """
+
 
 CONFIG_EXAMPLE = """
 
@@ -119,8 +121,8 @@ class Command(BaseCommand):
                 config[key] = options[key]
         client_class = get_client_class()
         client = client_class(**config)
-        client.error_logger = Logger(self.stderr)
-        client.logger = Logger(self.stderr)
+        client.error_logger = ColoredLogger(self.stderr)
+        client.logger = ColoredLogger(self.stderr)
         client.state.logger = client.logger
         client.state.error_logger = client.error_logger
         self.stdout.write(
