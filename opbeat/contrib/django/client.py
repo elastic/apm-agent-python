@@ -168,7 +168,6 @@ class DjangoClient(Client):
                     frames[i]['module'].startswith('opbeat.') or
                     frames[i]['module'] == 'contextlib'
             ):
-                print frames[i]['module']
                 return frames[i:]
             i += 1
         return frames
