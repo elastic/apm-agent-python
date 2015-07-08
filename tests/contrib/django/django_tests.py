@@ -6,7 +6,7 @@ import datetime
 import django
 import logging
 import mock
-from opbeat.utils.six import StringIO, BytesIO
+
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -25,6 +25,7 @@ from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
 from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
+from opbeat.contrib.django.management.commands.opbeat import Command as DjangoCommand
 from opbeat.contrib.django.models import client, get_client as orig_get_client
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 from opbeat.utils import six
@@ -421,7 +422,7 @@ class DjangoClientTest(TestCase):
             return
         v = six.b('{"foo": "bar"}')
         request = WSGIRequest(environ={
-            'wsgi.input': BytesIO(v + six.b('\r\n\r\n')),
+            'wsgi.input': six.BytesIO(v + six.b('\r\n\r\n')),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -443,7 +444,7 @@ class DjangoClientTest(TestCase):
 
     def test_post_data(self):
         request = WSGIRequest(environ={
-            'wsgi.input': BytesIO(),
+            'wsgi.input': six.BytesIO(),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -463,7 +464,7 @@ class DjangoClientTest(TestCase):
 
     def test_post_raw_data(self):
         request = WSGIRequest(environ={
-            'wsgi.input': BytesIO(six.b('foobar')),
+            'wsgi.input': six.BytesIO(six.b('foobar')),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -486,7 +487,7 @@ class DjangoClientTest(TestCase):
         if django.VERSION[:2] < (1, 3):
             return
         request = WSGIRequest(environ={
-            'wsgi.input': BytesIO(),
+            'wsgi.input': six.BytesIO(),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -627,7 +628,7 @@ class DjangoLoggingTest(TestCase):
 
         logger.error('This is a test error', extra={
             'request': WSGIRequest(environ={
-                'wsgi.input': StringIO(),
+                'wsgi.input': six.StringIO(),
                 'REQUEST_METHOD': 'POST',
                 'SERVER_NAME': 'testserver',
                 'SERVER_PORT': '80',
@@ -825,3 +826,70 @@ def test_perf_transaction_without_middleware(benchmark):
             return client_get(client, reverse("render-user-template"))
 
         assert len(opbeat.events) == 0
+
+
+class DjangoManagementCommandTest(TestCase):
+    @mock.patch('opbeat.contrib.django.management.commands.opbeat.Command._get_argv')
+    def test_subcommand_not_set(self, argv_mock):
+        stdout = six.StringIO()
+        command = DjangoCommand()
+        argv_mock.return_value = ['manage.py', 'opbeat']
+        command.execute(stdout=stdout)
+        output = stdout.getvalue()
+        assert 'No command specified' in output
+
+    @mock.patch('opbeat.contrib.django.management.commands.opbeat.Command._get_argv')
+    def test_subcommand_not_known(self, argv_mock):
+        stdout = six.StringIO()
+        command = DjangoCommand()
+        argv_mock.return_value = ['manage.py', 'opbeat']
+        command.execute('foo', stdout=stdout)
+        output = stdout.getvalue()
+        assert 'No such command "foo"' in output
+
+    def test_settings_missing(self):
+        stdout = six.StringIO()
+        command = DjangoCommand()
+        with self.settings(OPBEAT={}):
+            command.execute('check', stdout=stdout)
+        output = stdout.getvalue()
+        assert 'Configuration errors detected' in output
+        assert 'ORGANIZATION_ID not set' in output
+        assert 'APP_ID not set' in output
+        assert 'SECRET_TOKEN not set' in output
+
+    def test_middleware_not_set(self):
+        stdout = six.StringIO()
+        command = DjangoCommand()
+        with self.settings(MIDDLEWARE_CLASSES=()):
+            command.execute('check', stdout=stdout)
+        output = stdout.getvalue()
+        assert 'Opbeat APM middleware not set!' in output
+
+    def test_middleware_not_first(self):
+        stdout = six.StringIO()
+        command = DjangoCommand()
+        with self.settings(MIDDLEWARE_CLASSES=(
+            'foo',
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
+        )):
+            command.execute('check', stdout=stdout)
+        output = stdout.getvalue()
+        assert 'not at the first position' in output
+
+    @mock.patch('opbeat.transport.http.urlopen')
+    def test_test_exception(self, urlopen_mock):
+        stdout = six.StringIO()
+        command = DjangoCommand()
+        resp = six.moves.urllib.response.addinfo(
+            mock.Mock(),
+            headers={'Location': 'http://example.com'}
+        )
+        urlopen_mock.return_value = resp
+        with self.settings(MIDDLEWARE_CLASSES=(
+                'foo',
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
+        )):
+            command.execute('test', stdout=stdout, stderr=stdout)
+        output = stdout.getvalue()
+        assert 'http://example.com' in output

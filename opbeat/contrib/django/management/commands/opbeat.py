@@ -170,12 +170,12 @@ class Command(BaseCommand):
             )
             if not is_set(client.organization_id):
                 self.stdout.write(
-                    "  * Organization not set! ", red, ending='\n'
+                    "  * ORGANIZATION_ID not set! ", red, ending='\n'
                 )
             if not is_set(client.app_id):
-                self.stdout.write("  * Application not set! ", red, ending='\n')
+                self.stdout.write("  * APP_ID not set! ", red, ending='\n')
             if not is_set(client.secret_token):
-                self.stdout.write("  * Secret token not set!", red, ending='\n')
+                self.stdout.write("  * SECRET_TOKEN not set!", red, ending='\n')
             self.stdout.write(CONFIG_EXAMPLE)
         self.stdout.write('')
 
@@ -203,9 +203,9 @@ class Command(BaseCommand):
                     red,
                 )
                 self.stdout.write(
-                    'If you want to test Opbeat while DEBUG is set to True, you '
-                    'can force Opbeat to gather data by setting OPBEAT["DEBUG"] '
-                    'to True, like this\n\n'
+                    'If you want to test Opbeat while DEBUG is set to True, you'
+                    ' can force Opbeat to gather data by setting'
+                    ' OPBEAT["DEBUG"] to True, like this\n\n'
                     '   OPBEAT = {\n'
                     '       "DEBUG": True,\n'
                     '       # your other OPBEAT settings\n'
@@ -214,7 +214,7 @@ class Command(BaseCommand):
                 passed = False
         else:
             self.stdout.write(
-                'DEBUG mode is disabled! Lookin\' good!',
+                'DEBUG mode is disabled! Looking good!',
                 green
             )
         self.stdout.write('')
@@ -232,7 +232,8 @@ class Command(BaseCommand):
                 )
             else:
                 self.stdout.write(
-                    'Opbeat APM middleware is set, but not at the first position\n',
+                    'Opbeat APM middleware is set, but not at the first '
+                    'position\n',
                     yellow
                 )
                 self.stdout.write(
@@ -277,11 +278,16 @@ class Command(BaseCommand):
             )
         )
         self.stdout.write('\n')
+        argv = self._get_argv()
         self.stdout.write(
             'Usage:\n\t%s opbeat <command>' % (
-                ' '.join(sys.argv[:sys.argv.index('opbeat')])
+                ' '.join(argv[:argv.index('opbeat')])
             )
         )
+
+    def _get_argv(self):
+        """allow cleaner mocking of sys.argv"""
+        return sys.argv
 
     dispatch = {
         'test': handle_test,
