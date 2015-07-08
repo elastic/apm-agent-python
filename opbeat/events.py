@@ -15,7 +15,7 @@ import sys
 from opbeat.utils import varmap
 from opbeat.utils.encoding import shorten, to_unicode
 from opbeat.utils.stacks import get_stack_info, iter_traceback_frames, \
-                               get_culprit
+    get_culprit
 
 __all__ = ('BaseEvent', 'Exception', 'Message', 'Query')
 
@@ -68,10 +68,13 @@ class Exception(BaseEvent):
         try:
             exc_type, exc_value, exc_traceback = exc_info
 
-            frames = varmap(lambda k, v: shorten(v,
-                string_length=self.client.string_max_length,
-                list_length=self.client.list_max_length),
-            self.client.get_stack_info(iter_traceback_frames(exc_traceback)))
+            frames = varmap(
+                lambda k, v: shorten(v,
+                                     string_length=self.client.string_max_length,
+                                     list_length=self.client.list_max_length
+                                     ),
+                get_stack_info((iter_traceback_frames(exc_traceback)))
+            )
 
             culprit = get_culprit(frames, self.client.include_paths,
                                   self.client.exclude_paths)
@@ -122,11 +125,11 @@ class Message(BaseEvent):
         msg = data['param_message']
         return [msg['message']]
 
-    def capture(self, param_message = None, message = None, **kwargs):
+    def capture(self, param_message=None, message=None, **kwargs):
         if message:
-            param_message = {'message':message}
+            param_message = {'message': message}
 
-        params = param_message.get('params',())
+        params = param_message.get('params', ())
         data = {
             'param_message': {
                 'message': param_message['message'],
@@ -143,6 +146,7 @@ class Query(BaseEvent):
     - query: 'SELECT * FROM table'
     - engine: 'postgesql_psycopg2'
     """
+
     def to_string(self, data):
         sql = data['query']
         return sql['query']
