@@ -791,7 +791,7 @@ def test_perf_database_render(benchmark):
         assert resp.status_code == 200
 
         transactions, traces = opbeat.instrumentation_store.get_all()
-        assert len(transactions) == 1
+        assert len(transactions) == 1, [t["transaction"] for t in transactions]
         assert len(traces) == 5, [t["signature"] for t in traces]
 
 
