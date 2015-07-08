@@ -781,6 +781,7 @@ def test_perf_database_render(benchmark):
 
     opbeat = get_client()
     instrumentation.control.instrument(opbeat)
+    opbeat.instrumentation_store.get_all()
 
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -797,10 +798,11 @@ def test_perf_database_render(benchmark):
 
 @pytest.mark.django_db
 def test_perf_database_render_no_instrumentation(benchmark):
+    opbeat = get_client()
+    opbeat.instrumentation_store.get_all()
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
 
-        opbeat = get_client()
         client = TestClient()
         resp = benchmark(client_get, client, reverse("render-user-template"))
 
@@ -813,9 +815,10 @@ def test_perf_database_render_no_instrumentation(benchmark):
 
 @pytest.mark.django_db
 def test_perf_transaction_with_collection(benchmark):
+    opbeat = get_client()
+    opbeat.instrumentation_store.get_all()
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        opbeat = get_client()
         opbeat.events = []
 
         client = TestClient()
@@ -843,9 +846,10 @@ def test_perf_transaction_with_collection(benchmark):
 
 @pytest.mark.django_db
 def test_perf_transaction_without_middleware(benchmark):
+    opbeat = get_client()
+    opbeat.instrumentation_store.get_all()
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        opbeat = get_client()
         client = TestClient()
         opbeat.events = []
         for i in range(10):
