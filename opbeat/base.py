@@ -72,19 +72,17 @@ class ClientState(object):
 
         return False
 
-    def set_fail(self, e=None):
+    def set_fail(self, exception=None):
         self.status = self.ERROR
         self.retry_number += 1
         self.last_check = time.time()
 
-    def set_success(self, response=None):
+    def set_success(self, url=None):
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = 0
-        if self.logger and hasattr(response, 'info'):
-            url = response.info()['Location']
-            if url:
-                self.logger.info('Logged error at ' + url)
+        if self.logger and url:
+            self.logger.info('Logged error at ' + url)
 
     def did_fail(self):
         return self.status == self.ERROR
@@ -391,7 +389,7 @@ class Client(object):
             )
         else:
             response = transport.send(data, headers, timeout=self.timeout)
-            self.state.set_success(response)
+            self.state.set_success(url=response.info().get('Location'))
             return response
 
     def _get_log_message(self, data):
