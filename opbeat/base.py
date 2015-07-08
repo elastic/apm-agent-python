@@ -54,12 +54,10 @@ class ClientState(object):
     ONLINE = 1
     ERROR = 0
 
-    def __init__(self, logger=None, error_logger=None):
+    def __init__(self):
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = 0
-        self.logger = logger
-        self.error_logger = error_logger
 
     def should_try(self):
         if self.status == self.ONLINE:
@@ -72,17 +70,15 @@ class ClientState(object):
 
         return False
 
-    def set_fail(self, exception=None):
+    def set_fail(self):
         self.status = self.ERROR
         self.retry_number += 1
         self.last_check = time.time()
 
-    def set_success(self, url=None):
+    def set_success(self):
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = 0
-        if self.logger and url:
-            self.logger.info('Logged error at ' + url)
 
     def did_fail(self):
         return self.status == self.ERROR
@@ -132,7 +128,7 @@ class Client(object):
         self.logger = logging.getLogger('%s.%s' % (cls.__module__,
             cls.__name__))
         self.error_logger = logging.getLogger('opbeat.errors')
-        self.state = ClientState(self.logger, self.error_logger)
+        self.state = ClientState()
 
         if organization_id is None and os.environ.get('OPBEAT_ORGANIZATION_ID'):
             msg = "Configuring opbeat from environment variable 'OPBEAT_ORGANIZATION_ID'"
@@ -183,7 +179,6 @@ class Client(object):
             lambda: self.get_stack_info(iter_stack_frames(), False),
             self.traces_send_freq_secs)
         atexit_register(self.close)
-
 
     @contextlib.contextmanager
     def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
@@ -384,12 +379,12 @@ class Client(object):
         if transport.async:
             transport.send_async(
                 data, headers,
-                success_callback=self.state.set_success,
-                fail_callback=self.state.set_fail
+                success_callback=self.handle_transport_success,
+                fail_callback=self.handle_transport_fail
             )
         else:
             response = transport.send(data, headers, timeout=self.timeout)
-            self.state.set_success(url=response.info().get('Location'))
+            self.handle_transport_success(url=response.info().get('Location'))
             return response
 
     def _get_log_message(self, data):
@@ -446,7 +441,7 @@ class Client(object):
 
             message = self._get_log_message(data)
             self.error_logger.error('Failed to submit message: %r', message)
-            self.state.set_fail(e)
+            self.handle_transport_fail(exception=e)
 
     def send(self, organization_id=None, app_id=None, secret_token=None,
              auth_header=None, servers=None, **data):
@@ -590,6 +585,20 @@ class Client(object):
         self._traces_collect()
         for url, transport in self._transports.items():
             transport.close()
+
+    def handle_transport_success(self, **kwargs):
+        """
+        Success handler called by the transport
+        """
+        if kwargs.get('url'):
+            self.logger.info('Logged error at ' + kwargs['url'])
+        self.state.set_success()
+
+    def handle_transport_fail(self, **kwargs):
+        """
+        Failure handler called by the transport
+        """
+        self.state.set_fail()
 
     def _traces_collect(self):
         transactions, traces = self.instrumentation_store.get_all()
