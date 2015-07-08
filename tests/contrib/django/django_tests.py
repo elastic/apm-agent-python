@@ -6,6 +6,8 @@ import datetime
 import django
 import logging
 import mock
+from opbeat.traces import Transaction
+from opbeat.utils.lru import LRUCache
 from opbeat.utils.six import StringIO, BytesIO
 
 from django.conf import settings
@@ -713,6 +715,10 @@ def test_stacktraces_have_templates():
     client = TestClient()
     opbeat = get_client()
     instrumentation.control.instrument(opbeat)
+
+    # Clear the LRU frame cache
+    Transaction._lrucache = LRUCache(maxsize=5000)
+
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
         with override_settings(MIDDLEWARE_CLASSES=[
@@ -747,6 +753,10 @@ def test_stacktrace_filtered_for_opbeat():
     client = TestClient()
     opbeat = get_client()
     instrumentation.control.instrument(opbeat)
+
+    # Clear the LRU frame cache
+    Transaction._lrucache = LRUCache(maxsize=5000)
+
     with mock.patch(
             "opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
