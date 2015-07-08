@@ -204,6 +204,11 @@ class Client(object):
         return self.module_cache[name](self)
 
     def get_stack_info(self, frames, extended=True):
+        """Overrideable in derived clients to add frames/info, e.g. templates
+
+        Only used for trace frames at the moment.
+        4.0: Use for error frames too.
+        """
         return stacks.get_stack_info(frames, extended)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
@@ -254,7 +259,7 @@ class Client(object):
                     'frames': varmap(lambda k, v: shorten(v,
                         string_length=self.string_max_length,
                         list_length=self.list_max_length),
-                    self.get_stack_info(frames))
+                                     stacks.get_stack_info(frames))
                 },
             })
 
