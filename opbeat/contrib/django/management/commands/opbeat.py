@@ -9,6 +9,11 @@ from django.utils import termcolors
 
 from opbeat.contrib.django.models import get_client_config, get_client_class
 
+try:
+    from django.core.management.base import OutputWrapper
+except ImportError:
+    OutputWrapper = None
+
 
 blue = termcolors.make_style(opts=('bold',), fg='blue')
 cyan = termcolors.make_style(opts=('bold',), fg='cyan')
@@ -31,10 +36,11 @@ class ColoredLogger(object):
 
     def log(self, level, *args, **kwargs):
         style = kwargs.pop('style', self.color.NOTICE)
-        self.stream.write(
-            ' '.join((level.upper(), args[0] % args[1:], '\n')),
-            style_func=style
-        )
+        msg = ' '.join((level.upper(), args[0] % args[1:], '\n'))
+        if OutputWrapper is None:
+            self.stream.write(msg)
+        else:
+            self.stream.write(msg, style_func=style)
 
     def error(self, *args, **kwargs):
         kwargs['style'] = red
@@ -112,7 +118,7 @@ class Command(BaseCommand):
 
     def handle_test(self, command, **options):
         """Send a test error to Opbeat"""
-        self.stdout.write(LOGO, cyan)
+        self.write(LOGO, cyan)
         config = get_client_config()
         # can't be async for testing
         config['async'] = False
@@ -125,7 +131,7 @@ class Command(BaseCommand):
         client.logger = ColoredLogger(self.stderr)
         client.state.logger = client.logger
         client.state.error_logger = client.error_logger
-        self.stdout.write(
+        self.write(
             "Trying to send a test error to Opbeat using these settings:\n\n"
             "ORGANIZATION_ID:\t%s\n"
             "APP_ID:\t\t\t%s\n"
@@ -141,16 +147,16 @@ class Command(BaseCommand):
         try:
             raise OpbeatTestException('Hi there!')
         except OpbeatTestException as e:
-            result = client.captureException()
+            result = client.capture_exception()
             if not client.error_logger.errors:
-                self.stdout.write(
+                self.write(
                     'Success! We tracked the error successfully! You should be'
                     ' able to see it in a few seconds at the above URL'
                 )
 
     def handle_check(self, command, **options):
         """Check your settings for common misconfigurations"""
-        self.stdout.write(LOGO, cyan)
+        self.write(LOGO, cyan)
         passed = True
         config = get_client_config()
         client_class = get_client_class()
@@ -159,37 +165,37 @@ class Command(BaseCommand):
         is_set = lambda x: x and x != 'None'
         values = [client.organization_id, client.app_id, client.secret_token]
         if all(map(is_set, values)):
-            self.stdout.write(
+            self.write(
                 'Organization, app and secret token are set, good job!',
                 green
             )
         else:
             passed = False
-            self.stdout.write(
+            self.write(
                 'Configuration errors detected!', red, ending='\n\n'
             )
             if not is_set(client.organization_id):
-                self.stdout.write(
+                self.write(
                     "  * ORGANIZATION_ID not set! ", red, ending='\n'
                 )
             if not is_set(client.app_id):
-                self.stdout.write("  * APP_ID not set! ", red, ending='\n')
+                self.write("  * APP_ID not set! ", red, ending='\n')
             if not is_set(client.secret_token):
-                self.stdout.write("  * SECRET_TOKEN not set!", red, ending='\n')
-            self.stdout.write(CONFIG_EXAMPLE)
-        self.stdout.write('')
+                self.write("  * SECRET_TOKEN not set!", red, ending='\n')
+            self.write(CONFIG_EXAMPLE)
+        self.write('')
 
         # check if we're disabled due to DEBUG:
         if settings.DEBUG:
             if getattr(settings, 'OPBEAT', {}).get('DEBUG'):
-                self.stdout.write(
+                self.write(
                     'Note: even though you are running in DEBUG mode, we will '
                     'send data to Opbeat, because you set OPBEAT["DEBUG"] to '
                     'True. You can disable Opbeat while in DEBUG mode like this'
                     '\n\n',
                     yellow
                 )
-                self.stdout.write(
+                self.write(
                     '   OPBEAT = {\n'
                     '       "DEBUG": False,\n'
                     '       # your other OPBEAT settings\n'
@@ -197,12 +203,12 @@ class Command(BaseCommand):
 
                 )
             else:
-                self.stdout.write(
+                self.write(
                     'Looks like you\'re running in DEBUG mode. Opbeat will NOT '
                     'gather any data while DEBUG is set to True.\n\n',
                     red,
                 )
-                self.stdout.write(
+                self.write(
                     'If you want to test Opbeat while DEBUG is set to True, you'
                     ' can force Opbeat to gather data by setting'
                     ' OPBEAT["DEBUG"] to True, like this\n\n'
@@ -213,11 +219,11 @@ class Command(BaseCommand):
                 )
                 passed = False
         else:
-            self.stdout.write(
+            self.write(
                 'DEBUG mode is disabled! Looking good!',
                 green
             )
-        self.stdout.write('')
+        self.write('')
 
         # check if middleware is set, and if it is at the first position
         middleware = list(settings.MIDDLEWARE_CLASSES)
@@ -226,25 +232,25 @@ class Command(BaseCommand):
                 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
             )
             if pos == 0:
-                self.stdout.write(
+                self.write(
                     'Opbeat APM middleware is set! Awesome!',
                     green
                 )
             else:
-                self.stdout.write(
+                self.write(
                     'Opbeat APM middleware is set, but not at the first '
                     'position\n',
                     yellow
                 )
-                self.stdout.write(
+                self.write(
                     'Opbeat APM works best if you add it at the top of your '
                     'MIDDLEWARE_CLASSES'
                 )
         except ValueError:
-            self.stdout.write(
+            self.write(
                 'Opbeat APM middleware not set!', red
             )
-            self.stdout.write(
+            self.write(
                 '\n'
                 'Add it to your MIDDLEWARE_CLASSES like this:\n\n'
                 '    MIDDLEWARE_CLASSES = (\n'
@@ -252,38 +258,51 @@ class Command(BaseCommand):
                 '        # your other middleware classes\n'
                 '    )\n'
             )
-        self.stdout.write('')
+        self.write('')
         if passed:
-            self.stdout.write('Looks like everything should be ready!', green)
+            self.write('Looks like everything should be ready!', green)
         else:
-            self.stdout.write(
+            self.write(
                 'Please fix the above errors. If you have any questions, write '
                 'us at support@opbeat.com!',
                 red
             )
-        self.stdout.write('')
+        self.write('')
         return passed
 
     def handle_command_not_found(self, message):
-        self.stdout.write(LOGO, cyan)
-        self.stdout.write(message, red, ending='')
-        self.stdout.write(
+        self.write(LOGO, cyan)
+        self.write(message, red, ending='')
+        self.write(
             ' Please use one of the following commands:\n\n',
             red
         )
-        self.stdout.write(
+        self.write(
             ''.join(
                 ' * %s\t%s\n' % (k.ljust(8), v.__doc__)
                 for k, v in self.dispatch.items()
             )
         )
-        self.stdout.write('\n')
+        self.write('\n')
         argv = self._get_argv()
-        self.stdout.write(
+        self.write(
             'Usage:\n\t%s opbeat <command>' % (
                 ' '.join(argv[:argv.index('opbeat')])
             )
         )
+
+    def write(self, msg, style_func=None, ending=None, stream=None):
+        """
+        wrapper around self.stdout/stderr to ensure Django 1.4 compatibility
+        """
+        if stream is None:
+            stream = self.stdout
+        if OutputWrapper is None:
+            ending = '\n' if ending is None else ending
+            msg += ending
+            stream.write(msg)
+        else:
+            stream.write(msg, style_func=style_func, ending=ending)
 
     def _get_argv(self):
         """allow cleaner mocking of sys.argv"""
