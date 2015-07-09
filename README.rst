@@ -5,11 +5,11 @@ Opbeat
     :target: https://travis-ci.org/opbeat/opbeat_python
     :alt: Build Status
     
-.. image:: https://pypip.in/version/opbeat/badge.svg?style=flat
+.. image:: https://img.shields.io/pypi/v/opbeat.svg?style=flat
     :target: https://pypi.python.org/pypi/opbeat/
     :alt: Latest Version
 
-.. image:: https://pypip.in/py_versions/opbeat/badge.svg?style=flat
+.. image:: https://img.shields.io/pypi/pyversions/opbeat.svg?style=flat
     :target: https://pypi.python.org/pypi/opbeat/
     :alt: Supported Python versions
 
