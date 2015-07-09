@@ -3,6 +3,7 @@ import functools
 
 
 # https://wiki.python.org/moin/PythonDecoratorLibrary#Smart_deprecation_warnings_.28with_valid_filenames.2C_line_numbers.2C_etc..29
+# Updated to work with 2.6 and 3+.
 from opbeat.utils import six
 
 
