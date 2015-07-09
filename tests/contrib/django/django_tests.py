@@ -710,6 +710,40 @@ def client_get(client, url):
     return client.get(url)
 
 
+def test_stacktraces_have_templates():
+    client = TestClient()
+    opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
+    with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            resp = client.get(reverse("render-heavy-template"))
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    assert len(traces) == 3, [t["signature"] for t in traces]
+
+    expected_signatures = ['transaction', 'list_users.html',
+                           'something_expensive']
+
+    assert set([t['signature'] for t in traces]) == set(expected_signatures)
+
+    # Reorder according to the kinds list so we can just test them
+    sig_dict = dict([(t['signature'], t) for t in traces])
+    traces = [sig_dict[k] for k in expected_signatures]
+
+    assert traces[2]['signature'] == 'something_expensive'
+
+    # Find the template
+    for frame in traces[2]['extra']['_frames']:
+        if frame['lineno'] == 4 and frame['filename'].endswith('django/testapp/templates/list_users.html'):
+            break
+    else:
+        assert False is True, "Template was not found"
+
+
 def test_perf_template_render(benchmark):
     client = TestClient()
     opbeat = get_client()
@@ -724,6 +758,7 @@ def test_perf_template_render(benchmark):
     transactions, traces = opbeat.instrumentation_store.get_all()
     assert len(transactions) == 1
     assert len(traces) == 3, [t["signature"] for t in traces]
+
 
 def test_perf_template_render_no_middleware(benchmark):
     client = TestClient()
