@@ -11,9 +11,9 @@ def deprecated(alternative=None):
     def real_decorator(func):
         @functools.wraps(func)
         def new_func(*args, **kwargs):
-            msg = "Call to deprecated function {}.".format(func.__name__)
+            msg = "Call to deprecated function {0}.".format(func.__name__)
             if alternative:
-                msg += " Use {} instead".format(alternative)
+                msg += " Use {0} instead".format(alternative)
             warnings.warn_explicit(
                 msg,
                 category=DeprecationWarning,
