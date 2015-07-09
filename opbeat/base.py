@@ -125,10 +125,10 @@ class Client(object):
                  **kwargs):
         # configure loggers first
         cls = self.__class__
-        self.state = ClientState()
         self.logger = logging.getLogger('%s.%s' % (cls.__module__,
             cls.__name__))
         self.error_logger = logging.getLogger('opbeat.errors')
+        self.state = ClientState()
 
         if organization_id is None and os.environ.get('OPBEAT_ORGANIZATION_ID'):
             msg = "Configuring opbeat from environment variable 'OPBEAT_ORGANIZATION_ID'"
@@ -179,7 +179,6 @@ class Client(object):
             lambda: self.get_stack_info(iter_stack_frames(), False),
             self.traces_send_freq_secs)
         atexit_register(self.close)
-
 
     @contextlib.contextmanager
     def capture_trace(self, signature, kind='code.custom', extra=None, skip_frames=0,
@@ -380,11 +379,13 @@ class Client(object):
         if transport.async:
             transport.send_async(
                 data, headers,
-                success_callback=self.state.set_success,
-                fail_callback=self.state.set_fail
+                success_callback=self.handle_transport_success,
+                fail_callback=self.handle_transport_fail
             )
         else:
-            transport.send(data, headers, timeout=self.timeout)
+            response = transport.send(data, headers, timeout=self.timeout)
+            self.handle_transport_success(url=response.info().get('Location'))
+            return response
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
@@ -406,29 +407,41 @@ class Client(object):
             message = self._get_log_message(data)
             self.error_logger.error(message)
             return
-
         try:
             self._send_remote(url=url, data=data, headers=headers)
         except Exception as e:
             if isinstance(e, socket.timeout):
-                self.error_logger.error("Connection to Opbeat server timed out (url: %s, timeout: %d seconds)" % (
-                    url,
-                    self.timeout,
-                ), exc_info=True, extra={'data': {'remote_url': url}})
+                self.error_logger.error(
+                    "Connection to Opbeat server timed out (url: %s, timeout: "
+                    "%d seconds)" % (
+                        url,
+                        self.timeout,
+                    ),
+                    exc_info=True,
+                    extra={'data': {'remote_url': url}}
+                )
             elif isinstance(e, HTTPError):
                 body = e.read()
-                self.error_logger.error('Unable to reach Opbeat server: %s (url: %%s, body: %%s)' % (e,), url, body,
-                    exc_info=True, extra={'data': {'body': body, 'remote_url': url}})
+                self.error_logger.error(
+                    'Unable to reach Opbeat server: '
+                    '%s (url: %%s, body: %%s)' % e,
+                    url,
+                    body,
+                    exc_info=True,
+                    extra={'data': {'body': body, 'remote_url': url}}
+                )
             else:
                 tmpl = 'Unable to reach Opbeat server: %s (url: %%s)'
-                self.error_logger.error(tmpl % (e,), url, exc_info=True,
-                        extra={'data': {'remote_url': url}})
+                self.error_logger.error(
+                    tmpl % e,
+                    url,
+                    exc_info=True,
+                    extra={'data': {'remote_url': url}}
+                )
 
             message = self._get_log_message(data)
             self.error_logger.error('Failed to submit message: %r', message)
-            self.state.set_fail()
-        else:
-            self.state.set_success()
+            self.handle_transport_fail(exception=e)
 
     def send(self, organization_id=None, app_id=None, secret_token=None,
              auth_header=None, servers=None, **data):
@@ -446,8 +459,12 @@ class Client(object):
                                      servers=servers)
         except TypeError:
             # Make the assumption that public_key wasnt supported
-            warnings.warn('%s.send_encoded needs updated to support ``**kwargs``' % (type(self).__name__,),
-                DeprecationWarning)
+            warnings.warn(
+                '%s.send_encoded needs updated to support ``**kwargs``' % (
+                    type(self).__name__,
+                ),
+                DeprecationWarning
+            )
             return self.send_encoded(message)
 
     def send_encoded(self, message, organization_id, app_id, secret_token,
@@ -568,6 +585,20 @@ class Client(object):
         self._traces_collect()
         for url, transport in self._transports.items():
             transport.close()
+
+    def handle_transport_success(self, **kwargs):
+        """
+        Success handler called by the transport
+        """
+        if kwargs.get('url'):
+            self.logger.info('Logged error at ' + kwargs['url'])
+        self.state.set_success()
+
+    def handle_transport_fail(self, **kwargs):
+        """
+        Failure handler called by the transport
+        """
+        self.state.set_fail()
 
     def _traces_collect(self):
         transactions, traces = self.instrumentation_store.get_all()
