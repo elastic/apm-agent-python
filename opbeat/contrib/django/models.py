@@ -109,6 +109,35 @@ class ProxyClient(object):
 
 client = ProxyClient()
 
+default_client_class = 'opbeat.contrib.django.DjangoClient'
+
+
+def get_client_class(client_path=default_client_class):
+    module, class_name = client_path.rsplit('.', 1)
+    return getattr(__import__(module, {}, {}, class_name), class_name)
+
+
+def get_client_config():
+    config = getattr(django_settings, 'OPBEAT', {})
+    return dict(
+        servers=config.get('SERVERS', None),
+        include_paths=set(
+            config.get('INCLUDE_PATHS', [])) | get_installed_apps(),
+        exclude_paths=config.get('EXCLUDE_PATHS', None),
+        timeout=config.get('TIMEOUT', None),
+        hostname=config.get('HOSTNAME', None),
+        auto_log_stacks=config.get('AUTO_LOG_STACKS', None),
+        string_max_length=config.get('MAX_LENGTH_STRING', None),
+        list_max_length=config.get('MAX_LENGTH_LIST', None),
+        organization_id=config.get('ORGANIZATION_ID', None),
+        app_id=config.get('APP_ID', None),
+        secret_token=config.get('SECRET_TOKEN', None),
+        processors=config.get('PROCESSORS', None),
+        traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
+        async=config.get('ASYNC', None),
+        instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
+    )
+
 
 def get_client(client=None):
     """
@@ -123,32 +152,11 @@ def get_client(client=None):
     tmp_client = client is not None
     if not tmp_client:
         config = getattr(django_settings, 'OPBEAT', {})
-        client = config.get('CLIENT', 'opbeat.contrib.django.DjangoClient')
+        client = config.get('CLIENT', default_client_class)
 
     if _client[0] != client:
-        module, class_name = client.rsplit('.', 1)
-
-        config = getattr(django_settings, 'OPBEAT', {})
-
-        kwargs = dict(
-            servers=config.get('SERVERS', None),
-            include_paths=set(config.get('INCLUDE_PATHS', [])) | get_installed_apps(),
-            exclude_paths=config.get('EXCLUDE_PATHS', None),
-            timeout=config.get('TIMEOUT', None),
-            hostname=config.get('HOSTNAME', None),
-            auto_log_stacks=config.get('AUTO_LOG_STACKS', None),
-            string_max_length=config.get('MAX_LENGTH_STRING', None),
-            list_max_length=config.get('MAX_LENGTH_LIST', None),
-            organization_id=config.get('ORGANIZATION_ID', None),
-            app_id=config.get('APP_ID', None),
-            secret_token=config.get('SECRET_TOKEN', None),
-            processors=config.get('PROCESSORS', None),
-            traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
-            async=config.get('ASYNC', None),
-            instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
-        )
-        client_class = getattr(__import__(module, {}, {}, class_name), class_name)
-        instance = client_class(**kwargs)
+        client_class = get_client_class(client)
+        instance = client_class(**get_client_config())
         if not tmp_client:
             _client = (client, instance)
         return instance
