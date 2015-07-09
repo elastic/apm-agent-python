@@ -14,8 +14,8 @@ import sys
 
 from opbeat.utils import varmap
 from opbeat.utils.encoding import shorten, to_unicode
-from opbeat.utils.stacks import get_stack_info, iter_traceback_frames, \
-    get_culprit
+from opbeat.utils.stacks import (get_stack_info, iter_traceback_frames,
+                                 get_culprit)
 
 __all__ = ('BaseEvent', 'Exception', 'Message', 'Query')
 

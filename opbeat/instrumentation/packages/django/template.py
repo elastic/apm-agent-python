@@ -26,14 +26,14 @@ class DjangoTemplateSourceInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         ret = wrapped(*args, **kwargs)
 
-        if len(args) > 0:
+        if len(args) > 1:
             node = args[1]
         elif 'node' in kwargs:
             node = kwargs['node']
         else:
             return ret
 
-        if len(args) > 1:
+        if len(args) > 2:
             token = args[2]
         elif 'token' in kwargs:
             token = kwargs['token']
