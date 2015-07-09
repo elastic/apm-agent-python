@@ -3,6 +3,8 @@ import functools
 
 
 # https://wiki.python.org/moin/PythonDecoratorLibrary#Smart_deprecation_warnings_.28with_valid_filenames.2C_line_numbers.2C_etc..29
+from opbeat.utils import six
+
 
 def deprecated(alternative=None):
     '''This is a decorator which can be used to mark functions
@@ -17,8 +19,8 @@ def deprecated(alternative=None):
             warnings.warn_explicit(
                 msg,
                 category=DeprecationWarning,
-                filename=func.func_code.co_filename,
-                lineno=func.func_code.co_firstlineno + 1
+                filename=six.get_function_code(func).co_filename,
+                lineno=six.get_function_code(func).co_firstlineno + 1
             )
             return func(*args, **kwargs)
         return new_func
