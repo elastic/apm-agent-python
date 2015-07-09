@@ -6,7 +6,8 @@ import datetime
 import django
 import logging
 import mock
-
+from opbeat.traces import Transaction
+from opbeat.utils.lru import LRUCache
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -714,6 +715,10 @@ def test_stacktraces_have_templates():
     client = TestClient()
     opbeat = get_client()
     instrumentation.control.instrument(opbeat)
+
+    # Clear the LRU frame cache
+    Transaction._lrucache = LRUCache(maxsize=5000)
+
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
         with override_settings(MIDDLEWARE_CLASSES=[
@@ -742,6 +747,38 @@ def test_stacktraces_have_templates():
             break
     else:
         assert False is True, "Template was not found"
+
+
+def test_stacktrace_filtered_for_opbeat():
+    client = TestClient()
+    opbeat = get_client()
+    instrumentation.control.instrument(opbeat)
+
+    # Clear the LRU frame cache
+    Transaction._lrucache = LRUCache(maxsize=5000)
+
+    with mock.patch(
+            "opbeat.traces.RequestsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        with override_settings(MIDDLEWARE_CLASSES=[
+            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            resp = client.get(reverse("render-heavy-template"))
+    assert resp.status_code == 200
+
+    transactions, traces = opbeat.instrumentation_store.get_all()
+
+    expected_signatures = ['transaction', 'list_users.html',
+                           'something_expensive']
+
+    # Reorder according to the kinds list so we can just test them
+    sig_dict = dict([(t['signature'], t) for t in traces])
+    traces = [sig_dict[k] for k in expected_signatures]
+
+    assert traces[1]['signature'] == 'list_users.html'
+    frames = traces[1]['extra']['_frames']
+
+    # Top frame should be inside django rendering
+    assert frames[0]['module'].startswith('django.template')
 
 
 def test_perf_template_render(benchmark):

@@ -158,8 +158,19 @@ class DjangoClient(Client):
 
         return result
 
-    def get_stack_info(self, frames, extended=True):
-        return list(iterate_with_template_sources(frames, extended))
+    def get_stack_info_for_trace(self, frames, extended=True):
+        """If the stacktrace originates within the Opbeat module, it will skip
+        frames until some other module comes up."""
+        frames = list(iterate_with_template_sources(frames, extended))
+        i = 0
+        while len(frames) > i:
+            if 'module' in frames[i] and not (
+                    frames[i]['module'].startswith('opbeat.') or
+                    frames[i]['module'] == 'contextlib'
+            ):
+                return frames[i:]
+            i += 1
+        return frames
 
     def send(self, **kwargs):
         """
