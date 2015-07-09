@@ -1,3 +1,10 @@
+### 3.0.2 ##
+ * Fix a bug in trace reporting that occurred if the traced code would raise
+ * Introduce a management command to test out local Opbeat configuration and
+   send a test exception.
+ * Include templates in stackframes in traces.
+ * Various bug fixes related to stackframes in traces.
+
 ### 3.0.1 ##
  * instrument python-memcached
  * Make sure only one of urllib3 and requests will show up on traces
