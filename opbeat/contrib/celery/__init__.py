@@ -58,7 +58,7 @@ def register_signal(client):
 
     def end_transaction(task_id, task, *args, **kwargs):
         name = get_name_from_func(task)
-        client.end_transaction(None, name)
+        client.end_transaction(name)
 
     signals.task_prerun.connect(begin_transaction, weak=False)
     signals.task_postrun.connect(end_transaction, weak=False)
