@@ -12,7 +12,7 @@ all = ('RequestStore', 'trace')
 class Transaction(object):
     _lrucache = LRUCache(maxsize=5000)
 
-    def __init__(self, start_time, get_frames):
+    def __init__(self, start_time, get_frames, kind="transaction.django"):
         self.start_time = start_time
         self.transaction_traces = []
         self.trace_stack = []
@@ -20,7 +20,7 @@ class Transaction(object):
         self.ignore_subtree = False
 
         # The transaction is a trace as well
-        self.begin_trace("transaction", "transaction")
+        self.begin_trace("transaction", kind)
 
     def end_transaction(self, skip_frames=8):
         # End the "transaction" trace started above
@@ -208,13 +208,16 @@ class RequestsStore(object):
         """
         return getattr(self.thread_local, "transaction", None)
 
-    def transaction_start(self):
+    def transaction_start(self, kind):
         """
         Start a new transactions and bind it in a thread-local variable
 
         """
-        self.thread_local.transaction = Transaction(time.time(),
-                                                    self._get_frames)
+        self.thread_local.transaction = Transaction(
+            time.time(),
+            self._get_frames,
+            kind,
+        )
 
     def _add_traces(self, traces):
         with self.cond:

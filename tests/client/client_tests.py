@@ -372,14 +372,14 @@ class ClientTest(TestCase):
         )
         should_collect.return_value = False
         for i in range(7):
-            client.begin_transaction()
+            client.begin_transaction("transaction.test")
             client.end_transaction(200, 'test-transaction')
 
         self.assertEqual(len(client.instrumentation_store), 7)
         self.assertEqual(mock_send.call_count, 0)
         should_collect.return_value = True
 
-        client.begin_transaction()
+        client.begin_transaction("transaction.test")
         client.end_transaction(200, 'my-other-transaction')
         self.assertEqual(len(client.instrumentation_store), 0)
         self.assertEqual(mock_send.call_count, 1)

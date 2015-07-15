@@ -577,10 +577,10 @@ class Client(object):
         """
         self.capture_query(*args, **kwargs)
 
-    def begin_transaction(self):
-        self.instrumentation_store.transaction_start()
+    def begin_transaction(self, kind):
+        self.instrumentation_store.transaction_start(kind)
 
-    def end_transaction(self, status_code, name):
+    def end_transaction(self, name, status_code=None):
         self.instrumentation_store.transaction_end(status_code, name)
         if self.instrumentation_store.should_collect():
             self._traces_collect()

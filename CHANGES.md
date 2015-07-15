@@ -1,3 +1,5 @@
+ * Celery support
+
 ### 3.0.2 ##
  * Fix a bug in trace reporting that occurred if the traced code would raise
  * Introduce a management command to test out local Opbeat configuration and
