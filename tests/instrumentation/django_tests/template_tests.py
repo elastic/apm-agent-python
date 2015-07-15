@@ -92,7 +92,7 @@ class TracesTest(TestCase):
         self.assertEqual(len(transactions), 1)
         self.assertEqual(len(traces), 2, [t['signature'] for t in traces])
 
-        kinds = ['transaction', 'template.jinja2']
+        kinds = ['transaction.django', 'template.jinja2']
         self.assertEqual(set([t['kind'] for t in traces]),
                          set(kinds))
 
@@ -100,7 +100,7 @@ class TracesTest(TestCase):
         kinds_dict = dict([(t['kind'], t) for t in traces])
         traces = [kinds_dict[k] for k in kinds]
 
-        self.assertEqual(traces[0]['kind'], 'transaction.django.view')
+        self.assertEqual(traces[0]['kind'], 'transaction.django')
         self.assertEqual(traces[0]['signature'], 'transaction')
         self.assertEqual(traces[0]['transaction'],
                          'tests.contrib.django.testapp.views.render_jinja2_template')
