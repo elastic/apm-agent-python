@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from mock import Mock
+
 from django.test import TestCase
-from opbeat.processors import SanitizePasswordsProcessor, RemovePostDataProcessor, \
-  RemoveStackLocalsProcessor
+
+from opbeat.utils import six
+from opbeat.processors import (SanitizePasswordsProcessor,
+                               RemovePostDataProcessor,
+                               RemoveStackLocalsProcessor)
+from opbeat.utils.encoding import force_text
 
 
 class SantizePasswordsProcessorTest(TestCase):
@@ -88,6 +93,18 @@ class SantizePasswordsProcessorTest(TestCase):
             self.assertEquals(vars['the_secret'], proc.MASK)
             self.assertTrue('a_password_here' in vars)
             self.assertEquals(vars['a_password_here'], proc.MASK)
+
+    def test_post_as_string(self):
+        data = {
+            'http': {
+                'data': six.b('password=evil&api_key=evil&harmless=bar'),
+            }
+        }
+        proc = SanitizePasswordsProcessor(Mock())
+        result = proc.process(data)
+        self.assertTrue('http' in result)
+        http = result['http']
+        assert 'evil' not in force_text(http['data'])
 
     def test_querystring_as_string(self):
         data = {
