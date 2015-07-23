@@ -13,6 +13,7 @@ import re
 from opbeat.utils import six
 
 from opbeat.utils import varmap
+from opbeat.utils.encoding import force_text
 
 
 class Processor(object):
@@ -58,7 +59,15 @@ class SanitizePasswordsProcessor(Processor):
     and basic extra data.
     """
     MASK = '*' * 8
-    FIELDS = frozenset(['password', 'secret', 'passwd'])
+    FIELDS = frozenset([
+        'password',
+        'secret',
+        'passwd',
+        'token',
+        'api_key',
+        'access_token',
+        'sessionid',
+    ])
     VALUES_RE = re.compile(r'^\d{16}$')
 
     def sanitize(self, key, value):
@@ -91,19 +100,21 @@ class SanitizePasswordsProcessor(Processor):
             if n not in data:
                 continue
 
-            if isinstance(data[n], six.string_types) and '=' in data[n]:
-                # at this point we've assumed it's a standard HTTP query
-                querybits = []
-                for bit in data[n].split('&'):
-                    chunk = bit.split('=')
-                    if len(chunk) == 2:
-                        querybits.append((chunk[0], self.sanitize(*chunk)))
-                    else:
-                        querybits.append(chunk)
+            if isinstance(data[n], (six.binary_type,) + six.string_types):
+                text_data = force_text(data[n])
+                if '=' in text_data:
+                    # at this point we've assumed it's a standard HTTP query
+                    querybits = []
+                    for bit in text_data.split('&'):
+                        chunk = bit.split('=')
+                        if len(chunk) == 2:
+                            querybits.append((chunk[0], self.sanitize(*chunk)))
+                        else:
+                            querybits.append(chunk)
 
-                data[n] = '&'.join('='.join(k) for k in querybits)
-            else:
-                data[n] = varmap(self.sanitize, data[n])
+                    data[n] = '&'.join('='.join(k) for k in querybits)
+                    continue
+            data[n] = varmap(self.sanitize, data[n])
 
     def process(self, data, **kwargs):
         if 'stacktrace' in data:
