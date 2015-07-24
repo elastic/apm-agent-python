@@ -1,3 +1,4 @@
 gevent
 zerorpc
 unittest2
+python-memcached

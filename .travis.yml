@@ -15,11 +15,7 @@ env:
     - DJANGO=1.8
     - DJANGO=master
   global:
-    - secure: "ScEu5IeXfRMymD3VoXz2ywVhz0xTLQggyuTGyn8T2jfrDEfeDUDnMSsYbpd/9EvIsb6tx7BtKw1nJrZ7exaOfeV9lRp/97GUYQcea+VgWTfelrOviPzaaokeKTP5HS28Hq1diub6/aTboblj+v619shSDbcYN37Fov/DDt2vAnQ=" # AWS_ACCESS_KEY_ID
-    - secure: "RFTgp9a4+oPy/OwjQZO0eWw0gdFSxYELWaawGiIb1kT5+prh7Qbw2sgQ1G3HWZkNS4gzDAme/jFm8ipA5PsDi4eaQIIS+f6nhpITawEWi5OCHs3xuoCo+E4wDzZACuiNpj/5ko6/99TBgw88SrTd+Yk/wZYGCfWbFS+IeMuZWxY=" # AWS_SECRET_ACCESS_KEY
-    - secure: "UnuweITmskgNFQeKsWrKWubTztLPtwsDOZeRKO7p1VsEi3mnNlCV6gdQC5bONDsr/kB0GKLJopBKDzLJU33VnFDOyyPl52X0mtGGi/hKxpdKwtNrrz0DksaPaYGGTalO6qJQ9B+FwpdLvYROFrcqTrpRJ2H1Oy3Q25Vz0ScCulA=" # PIP_ACCEL_S3_READONLY 
-    - PIP_ACCEL_S3_BUCKET=travisci.pip-cache.opbeat.com
-    - PIP_ACCEL_S3_PREFIX=travis
+    - PIP_CACHE="$HOME/.pip_cache"'
 
 matrix:
   exclude:
@@ -42,10 +38,17 @@ addons:
       - libevent-dev
       - libzmq3-dev
 
+cache:
+  directories:
+    - $HOME/.pip_cache
+
+before_install:
+  - mkdir -p $PIP_CACHE
+
 install:
-- pip install 'pip-accel[s3]'
-- pip-accel install -r test_requirements/requirements-django-$DJANGO.txt --use-mirrors
-- python -c "import sys; sys.exit(sys.version_info[0] == 3)" && pip-accel install -r test_requirements/requirements-python-2.txt || true 
+- pip install -U pip
+- pip install -r test_requirements/requirements-django-$DJANGO.txt --cache-dir $PIP_CACHE
+- pip install -r test_requirements/requirements-python-$(python --version 2>&1 | awk -F'[ |.]' 'NR==1{ print $2 }').txt --cache-dir $PIP_CACHE
 
 script:
 - make test
