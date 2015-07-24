@@ -27,7 +27,8 @@ from opbeat.contrib.django import DjangoClient
 from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.management.commands.opbeat import Command as DjangoCommand
-from opbeat.contrib.django.models import client, get_client as orig_get_client
+from opbeat.contrib.django.models import (client, get_client as orig_get_client,
+                                          get_client_config)
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 from opbeat.utils import six
 from opbeat import instrumentation
@@ -613,6 +614,16 @@ class DjangoClientTest(TestCase):
             'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
             '.process_response'
         )
+
+    def test_ASYNC_config_raises_deprecation(self):
+        config = {
+            'ORGANIZATION_ID': '1',
+            'APP_ID': '1',
+            'SECRET_TOKEN': '1',
+            'ASYNC': True,
+        }
+        with self.settings(OPBEAT=config):
+            pytest.deprecated_call(get_client_config)
 
 
 class DjangoLoggingTest(TestCase):

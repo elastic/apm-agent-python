@@ -1,5 +1,5 @@
 """
-opbeat.contrib.async
+opbeat.contrib.async_worker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :copyright: (c) 2011-2012 Opbeat

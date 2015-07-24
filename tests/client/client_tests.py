@@ -3,12 +3,17 @@
 import mock
 import opbeat
 import time
+
+
 from django.test import TestCase
+import pytest
 
 from opbeat.utils import six
 from opbeat.base import Client, ClientState
 from opbeat.conf import defaults
+
 from tests.helpers import get_tempstoreclient
+
 
 class ClientStateTest(TestCase):
     def test_should_try_online(self):
@@ -101,7 +106,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=False,
+            async_mode=False,
         )
 
         # test error
@@ -124,7 +129,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=True,
+            async_mode=True,
         )
 
         # test error
@@ -198,7 +203,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=False,
+            async_mode=False,
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -208,7 +213,7 @@ class ClientTest(TestCase):
         self.assertEqual(mock_traces_collect.call_count, 1)
 
     @mock.patch('opbeat.base.AsyncHTTPTransport.send')
-    @mock.patch('opbeat.contrib.async.AsyncWorker.main_thread_terminated')
+    @mock.patch('opbeat.contrib.async_worker.AsyncWorker.main_thread_terminated')
     @mock.patch('opbeat.base.Client._traces_collect')
     def test_client_shutdown_async(self, mock_traces_collect,
                                   mock_main_thread_terminated, mock_send):
@@ -217,7 +222,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=True,
+            async_mode=True,
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -384,3 +389,12 @@ class ClientTest(TestCase):
         self.assertEqual(len(client.instrumentation_store), 0)
         self.assertEqual(mock_send.call_count, 1)
 
+    def test_async_arg_deprecation(self):
+        pytest.deprecated_call(
+            Client,
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async=True,
+        )

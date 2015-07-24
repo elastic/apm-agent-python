@@ -7,7 +7,7 @@ except ImportError:
     from urllib.request import Request, urlopen
 
 from opbeat.conf import defaults
-from opbeat.contrib.async import AsyncWorker
+from opbeat.contrib.async_worker import AsyncWorker
 from opbeat.transport.base import Transport, AsyncTransport
 
 logger = logging.getLogger('opbeat')
@@ -39,7 +39,7 @@ class HTTPTransport(Transport):
 
 class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
     scheme = ['http', 'https']
-    async = True
+    async_mode = True
 
     def __init__(self, parsed_url):
         super(AsyncHTTPTransport, self).__init__(parsed_url)
