@@ -1,4 +1,5 @@
 import os
+import sys
 import random
 import shutil
 import tempfile
@@ -11,6 +12,9 @@ from opbeat.contrib.zerorpc import OpbeatMiddleware
 
 from django.test import TestCase
 from tests.helpers import get_tempstoreclient
+
+has_unsupported_pypy = (hasattr(sys, 'pypy_version_info')
+                        and sys.pypy_version_info < (2, 6))
 
 
 class ZeroRPCTest(TestCase):
@@ -25,6 +29,7 @@ class ZeroRPCTest(TestCase):
                     client=self._opbeat
         ))
 
+    @pytest.mark.skipif(has_unsupported_pypy, reason='Failure with pypy < 2.6')
     def test_zerorpc_middleware_with_reqrep(self):
         self._server = zerorpc.Server(random)
         self._server.bind(self._server_endpoint)
