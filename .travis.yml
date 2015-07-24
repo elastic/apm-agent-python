@@ -1,9 +1,11 @@
+sudo: false
 language: python
 python:
 - 2.6
 - 2.7
 - 3.3
 - 3.4
+
 env:
   matrix:
     - DJANGO=1.4
@@ -18,6 +20,7 @@ env:
     - secure: "UnuweITmskgNFQeKsWrKWubTztLPtwsDOZeRKO7p1VsEi3mnNlCV6gdQC5bONDsr/kB0GKLJopBKDzLJU33VnFDOyyPl52X0mtGGi/hKxpdKwtNrrz0DksaPaYGGTalO6qJQ9B+FwpdLvYROFrcqTrpRJ2H1Oy3Q25Vz0ScCulA=" # PIP_ACCEL_S3_READONLY 
     - PIP_ACCEL_S3_BUCKET=travisci.pip-cache.opbeat.com
     - PIP_ACCEL_S3_PREFIX=travis
+
 matrix:
   exclude:
   - python: 2.6
@@ -32,19 +35,26 @@ matrix:
     env: DJANGO=1.4
   allow_failures:
   - env: DJANGO=master
+
+addons:
+  apt:
+    packages:
+      - libevent-dev
+      - libzmq3-dev
+
 install:
-- sudo apt-get install libevent-dev
-- sudo apt-get install libzmq3-dev
 - pip install 'pip-accel[s3]'
 - pip-accel install -r test_requirements/requirements-django-$DJANGO.txt --use-mirrors
 - python -c "import sys; sys.exit(sys.version_info[0] == 3)" && pip-accel install -r test_requirements/requirements-python-2.txt || true 
 
 script:
 - make test
+
 notifications:
   email: false
   slack:
     secure: LcTTbTj0Px0/9Bs/S/uwbhkdULlj1YVdHnU8F/kOa3bq2QdCTptqB719r6BnzHvW+QGyADvDZ25UncVXFuLuHY67ZYfmyZ/H2cj0nrRSuYdPct0avhVbT/3s50GlNWK5qkfZDuqw6szYTFrgFWJcr5dl7Zf6Vovcvd38uaYOdno=
+
 services:
   - redis-server
   - memcached
