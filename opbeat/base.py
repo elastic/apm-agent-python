@@ -14,7 +14,6 @@ from __future__ import absolute_import
 import contextlib
 import datetime
 import logging
-import socket
 import sys
 import time
 import zlib
@@ -28,7 +27,7 @@ from opbeat.utils.deprecation import deprecated
 import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
-from opbeat.utils.compat import atexit_register, HTTPError, urlparse
+from opbeat.utils.compat import atexit_register, urlparse
 from opbeat.utils.encoding import transform, shorten
 from opbeat.traces import RequestsStore
 from opbeat.utils.stacks import iter_stack_frames, get_culprit
@@ -422,37 +421,6 @@ class Client(object):
         try:
             self._send_remote(url=url, data=data, headers=headers)
         except Exception as e:
-            if isinstance(e, socket.timeout):
-                self.error_logger.error(
-                    "Connection to Opbeat server timed out (url: %s, timeout: "
-                    "%d seconds)" % (
-                        url,
-                        self.timeout,
-                    ),
-                    exc_info=True,
-                    extra={'data': {'remote_url': url}}
-                )
-            elif isinstance(e, HTTPError):
-                body = e.read()
-                self.error_logger.error(
-                    'Unable to reach Opbeat server: '
-                    '%s (url: %%s, body: %%s)' % e,
-                    url,
-                    body,
-                    exc_info=True,
-                    extra={'data': {'body': body, 'remote_url': url}}
-                )
-            else:
-                tmpl = 'Unable to reach Opbeat server: %s (url: %%s)'
-                self.error_logger.error(
-                    tmpl % e,
-                    url,
-                    exc_info=True,
-                    extra={'data': {'remote_url': url}}
-                )
-
-            message = self._get_log_message(data)
-            self.error_logger.error('Failed to submit message: %r', message)
             self.handle_transport_fail(exception=e)
 
     def send(self, organization_id=None, app_id=None, secret_token=None,
@@ -610,6 +578,14 @@ class Client(object):
         """
         Failure handler called by the transport
         """
+        exception = kwargs.get('exception')
+        message = self._get_log_message(exception.data)
+        self.error_logger.error(exception.args[0])
+        self.error_logger.error(
+            'Failed to submit message: %r',
+            message,
+            exc_info=True
+        )
         self.state.set_fail()
 
     def _traces_collect(self):

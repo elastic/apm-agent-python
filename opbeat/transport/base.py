@@ -3,6 +3,12 @@
 from opbeat.transport.exceptions import InvalidScheme
 
 
+class TransportException(Exception):
+    def __init__(self, message, data=None):
+        super(TransportException, self).__init__(message)
+        self.data = data
+
+
 class Transport(object):
     """
     All transport implementations need to subclass this class

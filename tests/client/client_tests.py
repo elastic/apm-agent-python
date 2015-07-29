@@ -7,6 +7,7 @@ import time
 
 from django.test import TestCase
 import pytest
+from opbeat.transport.base import TransportException
 
 from opbeat.utils import six
 from opbeat.base import Client, ClientState
@@ -98,7 +99,7 @@ class ClientTest(TestCase):
 
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
-    def test_send_remote_failover_sync(self, should_try, send_remote):
+    def test_send_remote_failover_sync(self, should_try, http_send):
         should_try.return_value = True
 
         client = Client(
@@ -108,20 +109,26 @@ class ClientTest(TestCase):
             secret_token='secret',
             async_mode=False,
         )
+        logger = mock.Mock()
+        client.error_logger.error = logger
 
         # test error
-        send_remote.side_effect = Exception()
-        client.send_remote('http://example.com/api/store', 'foo')
-        self.assertEquals(client.state.status, client.state.ERROR)
+        encoded_data = client.encode({'message': 'oh no'})
+        http_send.side_effect = TransportException('oopsie', encoded_data)
+        client.send_remote('http://example.com/api/store', data=encoded_data)
+        assert client.state.status == client.state.ERROR
+        assert len(logger.call_args_list) == 2
+        assert 'oopsie' in logger.call_args_list[0][0][0]
+        assert 'oh no' in logger.call_args_list[1][0][1]
 
         # test recovery
-        send_remote.side_effect = None
+        http_send.side_effect = None
         client.send_remote('http://example.com/api/store', 'foo')
-        self.assertEquals(client.state.status, client.state.ONLINE)
+        assert client.state.status == client.state.ONLINE
 
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
-    def test_send_remote_failover_async(self, should_try, send_remote):
+    def test_send_remote_failover_async(self, should_try, http_send):
         should_try.return_value = True
 
         client = Client(
@@ -131,18 +138,24 @@ class ClientTest(TestCase):
             secret_token='secret',
             async_mode=True,
         )
+        logger = mock.Mock()
+        client.error_logger.error = logger
 
         # test error
-        send_remote.side_effect = Exception()
-        client.send_remote('http://example.com/api/store', 'foo')
+        encoded_data = client.encode({'message': 'oh no'})
+        http_send.side_effect = TransportException('oopsie', encoded_data)
+        client.send_remote('http://example.com/api/store', data=encoded_data)
         client.close()
-        self.assertEquals(client.state.status, client.state.ERROR)
+        assert client.state.status == client.state.ERROR
+        assert len(logger.call_args_list) == 2
+        assert 'oopsie' in logger.call_args_list[0][0][0]
+        assert 'oh no' in logger.call_args_list[1][0][1]
 
         # test recovery
-        send_remote.side_effect = None
+        http_send.side_effect = None
         client.send_remote('http://example.com/api/store', 'foo')
         client.close()
-        self.assertEquals(client.state.status, client.state.ONLINE)
+        assert client.state.status == client.state.ONLINE
 
     @mock.patch('opbeat.base.Client.send_remote')
     @mock.patch('opbeat.base.time.time')
