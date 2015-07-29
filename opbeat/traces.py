@@ -1,4 +1,5 @@
 import contextlib
+import logging
 import threading
 import time
 from datetime import datetime
@@ -7,7 +8,11 @@ from collections import defaultdict
 from opbeat.utils.encoding import force_text
 from opbeat.utils.lru import LRUCache
 
+error_logger = logging.getLogger('opbeat.errors')
+
+
 all = ('RequestStore', 'trace')
+
 
 class Transaction(object):
     _lrucache = LRUCache(maxsize=5000)
@@ -243,6 +248,14 @@ class RequestsStore(object):
 
             self._add_transaction(elapsed, transaction_name,
                                   response_code)
+
+            # Reset thread local transaction to subsequent call to this method
+            # behaves as expected.
+            self.thread_local.transaction = None
+        else:
+            error_logger.warn("transaction_end called without corresponding"
+                              " call to transaction_begin. Hint: Is the"
+                              " middleware added twice?")
 
     @contextlib.contextmanager
     def trace(self, signature, kind, extra=None, skip_frames=0,

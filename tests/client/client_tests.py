@@ -384,3 +384,17 @@ class ClientTest(TestCase):
         self.assertEqual(len(client.instrumentation_store), 0)
         self.assertEqual(mock_send.call_count, 1)
 
+    @mock.patch('opbeat.base.Client.send')
+    @mock.patch('opbeat.base.RequestsStore.should_collect')
+    def test_call_end_twice(self, should_collect, mock_send):
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+        )
+        should_collect.return_value = False
+        client.begin_transaction()
+
+        client.end_transaction(200, 'test-transaction')
+        client.end_transaction(200, 'test-transaction')
