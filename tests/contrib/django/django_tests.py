@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+from django.db import OperationalError
 import pytest
 import datetime
 import django
@@ -198,6 +199,25 @@ class DjangoClientTest(TestCase):
         self.assertEquals(user_info['username'], 'admin')
         self.assertTrue('email' in user_info)
         self.assertEquals(user_info['email'], 'admin@example.com')
+
+    def test_user_info_raises_operational_error(self):
+        user = User(username='admin', email='admin@example.com')
+        user.set_password('admin')
+        user.save()
+
+        self.assertTrue(
+            self.client.login(username='admin', password='admin'))
+
+        with mock.patch("django.contrib.auth.models.User.get_username") as mock_get_username:
+            mock_get_username.side_effect = OperationalError("Test Exception")
+            self.assertRaises(Exception, self.client.get,
+                              reverse('opbeat-raise-exc'))
+
+        self.assertEquals(len(self.opbeat.events), 1)
+        event = self.opbeat.events.pop(0)
+        self.assertTrue('user' in event)
+        user_info = event['user']
+        self.assertEquals(user_info, {})
 
     @pytest.mark.skipif(django.VERSION < (1, 5),
                         reason='Custom user model was introduced with Django 1.5')
