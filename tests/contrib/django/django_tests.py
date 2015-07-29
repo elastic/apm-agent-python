@@ -850,7 +850,10 @@ def test_perf_database_render(benchmark):
         assert resp.status_code == 200
 
         transactions, traces = opbeat.instrumentation_store.get_all()
-        assert len(transactions) == 1, [t["transaction"] for t in transactions]
+
+        # If the test falls right at the change from one minute to another
+        # this will have two items.
+        assert 0 < len(transactions) < 3, [t["transaction"] for t in transactions]
         assert len(traces) == 5, [t["signature"] for t in traces]
 
 
