@@ -75,4 +75,4 @@ TRACES_SEND_FREQ_SECS = 60
 ASYNC_MODE = True
 
 # Should opbeat wrap middleware for better metrics detection
-INSTRUMENT_DJANGO_MIDDLEWARE = False
+INSTRUMENT_DJANGO_MIDDLEWARE = True
