@@ -121,7 +121,7 @@ class Command(BaseCommand):
         self.write(LOGO, cyan)
         config = get_client_config()
         # can't be async for testing
-        config['async'] = False
+        config['async_mode'] = False
         for key in ('organization_id', 'app_id', 'secret_token'):
             if options.get(key):
                 config[key] = options[key]
