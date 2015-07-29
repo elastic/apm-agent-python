@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
+import socket
+import sys
 
 try:
     from urllib2 import Request, urlopen
@@ -8,7 +10,9 @@ except ImportError:
 
 from opbeat.conf import defaults
 from opbeat.contrib.async_worker import AsyncWorker
-from opbeat.transport.base import Transport, AsyncTransport
+from opbeat.transport.base import Transport, AsyncTransport, TransportException
+from opbeat.utils import six
+from opbeat.utils.compat import HTTPError
 
 logger = logging.getLogger('opbeat')
 
@@ -31,9 +35,27 @@ class HTTPTransport(Transport):
         if timeout is None:
             timeout = defaults.TIMEOUT
         try:
-            response = urlopen(req, data, timeout)
-        except TypeError:
-            response = urlopen(req, data)
+            try:
+                response = urlopen(req, data, timeout)
+            except TypeError:
+                response = urlopen(req, data)
+        except Exception as e:
+            if isinstance(e, socket.timeout):
+                message = (
+                    "Connection to Opbeat server timed out "
+                    "(url: %s, timeout: %d seconds)" % (self._url, timeout)
+                )
+            elif isinstance(e, HTTPError):
+                body = e.read()
+                message = (
+                    'Unable to reach Opbeat server: '
+                    '%s (url: %s, body: %s)' % (e, self._url, body)
+                )
+            else:
+                message = 'Unable to reach Opbeat server: %s (url: %s)' % (
+                    e, self._url
+                )
+            raise TransportException(message, data)
         return response
 
 
