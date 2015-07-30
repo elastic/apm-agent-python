@@ -121,7 +121,7 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
-                 traces_send_freq_secs=None,
+                 async_mode=None, traces_send_freq_secs=None,
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -146,8 +146,16 @@ class Client(object):
             secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
         self.servers = servers or defaults.SERVERS
-        self.async = async is True or (defaults.ASYNC and async is not False)
-        self._transport_class = AsyncHTTPTransport if self.async else HTTPTransport
+        if async is not None and async_mode is None:
+            warnings.warn(
+                'Usage of "async" argument is deprecated. Use "async_mode"',
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            async_mode = async
+        self.async_mode = (async_mode is True
+                           or (defaults.ASYNC_MODE and async_mode is not False))
+        self._transport_class = AsyncHTTPTransport if self.async_mode else HTTPTransport
         self._transports = {}
 
         # servers may be set to a NoneType (for Django)
@@ -380,7 +388,7 @@ class Client(object):
             headers = {}
         parsed = urlparse.urlparse(url)
         transport = self._get_transport(parsed)
-        if transport.async:
+        if transport.async_mode:
             transport.send_async(
                 data, headers,
                 success_callback=self.handle_transport_success,

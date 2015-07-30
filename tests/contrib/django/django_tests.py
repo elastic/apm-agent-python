@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from django.db import OperationalError
+from django.db import DatabaseError
 import pytest
 import datetime
 import django
@@ -28,7 +28,8 @@ from opbeat.contrib.django import DjangoClient
 from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.management.commands.opbeat import Command as DjangoCommand
-from opbeat.contrib.django.models import client, get_client as orig_get_client
+from opbeat.contrib.django.models import (client, get_client as orig_get_client,
+                                          get_client_config)
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 from opbeat.utils import six
 from opbeat import instrumentation
@@ -200,7 +201,7 @@ class DjangoClientTest(TestCase):
         self.assertTrue('email' in user_info)
         self.assertEquals(user_info['email'], 'admin@example.com')
 
-    def test_user_info_raises_operational_error(self):
+    def test_user_info_raises_database_error(self):
         user = User(username='admin', email='admin@example.com')
         user.set_password('admin')
         user.save()
@@ -209,7 +210,7 @@ class DjangoClientTest(TestCase):
             self.client.login(username='admin', password='admin'))
 
         with mock.patch("django.contrib.auth.models.User.get_username") as mock_get_username:
-            mock_get_username.side_effect = OperationalError("Test Exception")
+            mock_get_username.side_effect = DatabaseError("Test Exception")
             self.assertRaises(Exception, self.client.get,
                               reverse('opbeat-raise-exc'))
 
@@ -633,6 +634,16 @@ class DjangoClientTest(TestCase):
             'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
             '.process_response'
         )
+
+    def test_ASYNC_config_raises_deprecation(self):
+        config = {
+            'ORGANIZATION_ID': '1',
+            'APP_ID': '1',
+            'SECRET_TOKEN': '1',
+            'ASYNC': True,
+        }
+        with self.settings(OPBEAT=config):
+            pytest.deprecated_call(get_client_config)
 
 
 class DjangoLoggingTest(TestCase):
