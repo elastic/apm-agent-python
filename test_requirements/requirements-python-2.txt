@@ -1,3 +1,4 @@
-gevent
+gevent==1.1b1
 zerorpc
 unittest2
+python-memcached

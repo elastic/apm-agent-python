@@ -3,13 +3,19 @@
 from opbeat.transport.exceptions import InvalidScheme
 
 
+class TransportException(Exception):
+    def __init__(self, message, data=None):
+        super(TransportException, self).__init__(message)
+        self.data = data
+
+
 class Transport(object):
     """
     All transport implementations need to subclass this class
 
     You must implement a send method..
     """
-    async = False
+    async_mode = False
     scheme = []
 
     def check_scheme(self, url):
@@ -32,7 +38,7 @@ class Transport(object):
 
 
 class AsyncTransport(Transport):
-    async = True
+    async_mode = True
 
     def send_async(self, data, headers, success_callback=None, fail_callback=None):
         raise NotImplementedError

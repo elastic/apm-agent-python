@@ -252,10 +252,7 @@ class RequestsStore(object):
             # Reset thread local transaction to subsequent call to this method
             # behaves as expected.
             self.thread_local.transaction = None
-        else:
-            error_logger.warn("transaction_end called without corresponding"
-                              " call to transaction_begin. Hint: Is the"
-                              " middleware added twice?")
+
 
     @contextlib.contextmanager
     def trace(self, signature, kind, extra=None, skip_frames=0,

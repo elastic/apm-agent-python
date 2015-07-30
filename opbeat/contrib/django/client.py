@@ -12,8 +12,8 @@ Large portions are
 from __future__ import absolute_import
 
 import logging
-from django.db import OperationalError
 
+from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
@@ -76,7 +76,7 @@ class DjangoClient(Client):
                 user_info = {
                     'is_authenticated': False,
                 }
-        except OperationalError:
+        except DatabaseError:
             # If the connection is closed or similar, we'll just skip this
             return {}
 

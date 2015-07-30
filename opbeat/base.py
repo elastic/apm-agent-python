@@ -14,7 +14,6 @@ from __future__ import absolute_import
 import contextlib
 import datetime
 import logging
-import socket
 import sys
 import time
 import zlib
@@ -28,7 +27,7 @@ from opbeat.utils.deprecation import deprecated
 import opbeat
 from opbeat.conf import defaults
 from opbeat.utils import opbeat_json as json, varmap
-from opbeat.utils.compat import atexit_register, HTTPError, urlparse
+from opbeat.utils.compat import atexit_register, urlparse
 from opbeat.utils.encoding import transform, shorten
 from opbeat.traces import RequestsStore
 from opbeat.utils.stacks import iter_stack_frames, get_culprit
@@ -121,7 +120,7 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
-                 traces_send_freq_secs=None,
+                 async_mode=None, traces_send_freq_secs=None,
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -146,8 +145,16 @@ class Client(object):
             secret_token = os.environ['OPBEAT_SECRET_TOKEN']
 
         self.servers = servers or defaults.SERVERS
-        self.async = async is True or (defaults.ASYNC and async is not False)
-        self._transport_class = AsyncHTTPTransport if self.async else HTTPTransport
+        if async is not None and async_mode is None:
+            warnings.warn(
+                'Usage of "async" argument is deprecated. Use "async_mode"',
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            async_mode = async
+        self.async_mode = (async_mode is True
+                           or (defaults.ASYNC_MODE and async_mode is not False))
+        self._transport_class = AsyncHTTPTransport if self.async_mode else HTTPTransport
         self._transports = {}
 
         # servers may be set to a NoneType (for Django)
@@ -380,7 +387,7 @@ class Client(object):
             headers = {}
         parsed = urlparse.urlparse(url)
         transport = self._get_transport(parsed)
-        if transport.async:
+        if transport.async_mode:
             transport.send_async(
                 data, headers,
                 success_callback=self.handle_transport_success,
@@ -414,37 +421,6 @@ class Client(object):
         try:
             self._send_remote(url=url, data=data, headers=headers)
         except Exception as e:
-            if isinstance(e, socket.timeout):
-                self.error_logger.error(
-                    "Connection to Opbeat server timed out (url: %s, timeout: "
-                    "%d seconds)" % (
-                        url,
-                        self.timeout,
-                    ),
-                    exc_info=True,
-                    extra={'data': {'remote_url': url}}
-                )
-            elif isinstance(e, HTTPError):
-                body = e.read()
-                self.error_logger.error(
-                    'Unable to reach Opbeat server: '
-                    '%s (url: %%s, body: %%s)' % e,
-                    url,
-                    body,
-                    exc_info=True,
-                    extra={'data': {'body': body, 'remote_url': url}}
-                )
-            else:
-                tmpl = 'Unable to reach Opbeat server: %s (url: %%s)'
-                self.error_logger.error(
-                    tmpl % e,
-                    url,
-                    exc_info=True,
-                    extra={'data': {'remote_url': url}}
-                )
-
-            message = self._get_log_message(data)
-            self.error_logger.error('Failed to submit message: %r', message)
             self.handle_transport_fail(exception=e)
 
     def send(self, organization_id=None, app_id=None, secret_token=None,
@@ -602,6 +578,14 @@ class Client(object):
         """
         Failure handler called by the transport
         """
+        exception = kwargs.get('exception')
+        message = self._get_log_message(exception.data)
+        self.error_logger.error(exception.args[0])
+        self.error_logger.error(
+            'Failed to submit message: %r',
+            message,
+            exc_info=True
+        )
         self.state.set_fail()
 
     def _traces_collect(self):

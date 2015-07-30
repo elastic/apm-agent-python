@@ -3,12 +3,18 @@
 import mock
 import opbeat
 import time
+
+
 from django.test import TestCase
+import pytest
+from opbeat.transport.base import TransportException
 
 from opbeat.utils import six
 from opbeat.base import Client, ClientState
 from opbeat.conf import defaults
+
 from tests.helpers import get_tempstoreclient
+
 
 class ClientStateTest(TestCase):
     def test_should_try_online(self):
@@ -93,7 +99,7 @@ class ClientTest(TestCase):
 
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
-    def test_send_remote_failover_sync(self, should_try, send_remote):
+    def test_send_remote_failover_sync(self, should_try, http_send):
         should_try.return_value = True
 
         client = Client(
@@ -101,22 +107,28 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=False,
+            async_mode=False,
         )
+        logger = mock.Mock()
+        client.error_logger.error = logger
 
         # test error
-        send_remote.side_effect = Exception()
-        client.send_remote('http://example.com/api/store', 'foo')
-        self.assertEquals(client.state.status, client.state.ERROR)
+        encoded_data = client.encode({'message': 'oh no'})
+        http_send.side_effect = TransportException('oopsie', encoded_data)
+        client.send_remote('http://example.com/api/store', data=encoded_data)
+        assert client.state.status == client.state.ERROR
+        assert len(logger.call_args_list) == 2
+        assert 'oopsie' in logger.call_args_list[0][0][0]
+        assert 'oh no' in logger.call_args_list[1][0][1]
 
         # test recovery
-        send_remote.side_effect = None
+        http_send.side_effect = None
         client.send_remote('http://example.com/api/store', 'foo')
-        self.assertEquals(client.state.status, client.state.ONLINE)
+        assert client.state.status == client.state.ONLINE
 
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
-    def test_send_remote_failover_async(self, should_try, send_remote):
+    def test_send_remote_failover_async(self, should_try, http_send):
         should_try.return_value = True
 
         client = Client(
@@ -124,20 +136,26 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=True,
+            async_mode=True,
         )
+        logger = mock.Mock()
+        client.error_logger.error = logger
 
         # test error
-        send_remote.side_effect = Exception()
-        client.send_remote('http://example.com/api/store', 'foo')
+        encoded_data = client.encode({'message': 'oh no'})
+        http_send.side_effect = TransportException('oopsie', encoded_data)
+        client.send_remote('http://example.com/api/store', data=encoded_data)
         client.close()
-        self.assertEquals(client.state.status, client.state.ERROR)
+        assert client.state.status == client.state.ERROR
+        assert len(logger.call_args_list) == 2
+        assert 'oopsie' in logger.call_args_list[0][0][0]
+        assert 'oh no' in logger.call_args_list[1][0][1]
 
         # test recovery
-        send_remote.side_effect = None
+        http_send.side_effect = None
         client.send_remote('http://example.com/api/store', 'foo')
         client.close()
-        self.assertEquals(client.state.status, client.state.ONLINE)
+        assert client.state.status == client.state.ONLINE
 
     @mock.patch('opbeat.base.Client.send_remote')
     @mock.patch('opbeat.base.time.time')
@@ -198,7 +216,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=False,
+            async_mode=False,
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -208,7 +226,7 @@ class ClientTest(TestCase):
         self.assertEqual(mock_traces_collect.call_count, 1)
 
     @mock.patch('opbeat.base.AsyncHTTPTransport.send')
-    @mock.patch('opbeat.contrib.async.AsyncWorker.main_thread_terminated')
+    @mock.patch('opbeat.contrib.async_worker.AsyncWorker.main_thread_terminated')
     @mock.patch('opbeat.base.Client._traces_collect')
     def test_client_shutdown_async(self, mock_traces_collect,
                                   mock_main_thread_terminated, mock_send):
@@ -217,7 +235,7 @@ class ClientTest(TestCase):
             organization_id='organization_id',
             app_id='app_id',
             secret_token='secret',
-            async=True,
+            async_mode=True,
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -393,8 +411,20 @@ class ClientTest(TestCase):
             app_id='app_id',
             secret_token='secret',
         )
+
         should_collect.return_value = False
         client.begin_transaction()
 
         client.end_transaction(200, 'test-transaction')
         client.end_transaction(200, 'test-transaction')
+
+    def test_async_arg_deprecation(self):
+        pytest.deprecated_call(
+            Client,
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async=True,
+        )
+

@@ -119,6 +119,13 @@ def get_client_class(client_path=default_client_class):
 
 def get_client_config():
     config = getattr(django_settings, 'OPBEAT', {})
+    if 'ASYNC' in config:
+        warnings.warn(
+            'Usage of "ASYNC" configuration is deprecated. Use "ASYNC_MODE"',
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        config['ASYNC_MODE'] = 'ASYNC'
     return dict(
         servers=config.get('SERVERS', None),
         include_paths=set(
@@ -134,7 +141,7 @@ def get_client_config():
         secret_token=config.get('SECRET_TOKEN', None),
         processors=config.get('PROCESSORS', None),
         traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
-        async=config.get('ASYNC', None),
+        async_mode=config.get('ASYNC_MODE', None),
         instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
     )
 
