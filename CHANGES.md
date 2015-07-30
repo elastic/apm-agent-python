@@ -1,5 +1,6 @@
 ### 3.0.3 ##
  * Fix a problem that occurs when `end_transaction` gets called twice in a row
+ * Silently ignore `DatabaseError` when collecting user info for Django.
  * Better error logging with `async=True`
  * Renamed `async` keyword in anticipation of Python 3.5+
  * Instruments Django middleware by default to give better insights in APM
