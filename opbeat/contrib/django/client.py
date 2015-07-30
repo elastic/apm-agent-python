@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 import logging
 
+from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 from django.template.loader import LoaderOrigin
@@ -54,26 +55,31 @@ class DjangoClient(Client):
         super(DjangoClient, self).__init__(**kwargs)
 
     def get_user_info(self, request):
-        if request.user.is_authenticated():
-            user_info = {
-                'is_authenticated': True,
-                'id': request.user.pk,
-            }
-            if hasattr(request.user, 'get_username'):
-                user_info['username'] = request.user.get_username()
-            elif hasattr(request.user, 'username'):
-                user_info['username'] = request.user.username
-            else:
-                # this only happens if the project uses custom user models, but
-                # doesn't correctly inherit from AbstractBaseUser
-                user_info['username'] = ''
+        try:
+            if request.user.is_authenticated():
+                user_info = {
+                    'is_authenticated': True,
+                    'id': request.user.pk,
+                }
+                if hasattr(request.user, 'get_username'):
+                    user_info['username'] = request.user.get_username()
+                elif hasattr(request.user, 'username'):
+                    user_info['username'] = request.user.username
+                else:
+                    # this only happens if the project uses custom user models, but
+                    # doesn't correctly inherit from AbstractBaseUser
+                    user_info['username'] = ''
 
-            if hasattr(request.user, 'email'):
-                user_info['email'] = request.user.email
-        else:
-            user_info = {
-                'is_authenticated': False,
-            }
+                if hasattr(request.user, 'email'):
+                    user_info['email'] = request.user.email
+            else:
+                user_info = {
+                    'is_authenticated': False,
+                }
+        except DatabaseError:
+            # If the connection is closed or similar, we'll just skip this
+            return {}
+
         return user_info
 
     def get_data_from_request(self, request):
