@@ -1,3 +1,6 @@
+### 3.0.4 ##
+ * Only log one line per module we failed to instrument
+
 ### 3.0.3 ##
  * Fix a problem that occurs when `end_transaction` gets called twice in a row
  * Silently ignore `DatabaseError` when collecting user info for Django.
