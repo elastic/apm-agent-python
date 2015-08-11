@@ -177,7 +177,8 @@ def test_multi_statement_sql():
     assert "CREATE TABLE" == actual
 
 
-@pytest.mark.skipif('TRAVIS' not in os.environ)
+@pytest.mark.skipif('TRAVIS' not in os.environ,
+                    reason="Requires postgres server. Only runs  ontravisci.")
 def test_psycopg2_register_type():
     client = get_client()
     control.instrument(client)
