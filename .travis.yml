@@ -1,9 +1,13 @@
+sudo: false
 language: python
 python:
 - 2.6
 - 2.7
 - 3.3
 - 3.4
+- nightly
+- pypy
+
 env:
   matrix:
     - DJANGO=1.4
@@ -13,11 +17,8 @@ env:
     - DJANGO=1.8
     - DJANGO=master
   global:
-    - secure: "ScEu5IeXfRMymD3VoXz2ywVhz0xTLQggyuTGyn8T2jfrDEfeDUDnMSsYbpd/9EvIsb6tx7BtKw1nJrZ7exaOfeV9lRp/97GUYQcea+VgWTfelrOviPzaaokeKTP5HS28Hq1diub6/aTboblj+v619shSDbcYN37Fov/DDt2vAnQ=" # AWS_ACCESS_KEY_ID
-    - secure: "RFTgp9a4+oPy/OwjQZO0eWw0gdFSxYELWaawGiIb1kT5+prh7Qbw2sgQ1G3HWZkNS4gzDAme/jFm8ipA5PsDi4eaQIIS+f6nhpITawEWi5OCHs3xuoCo+E4wDzZACuiNpj/5ko6/99TBgw88SrTd+Yk/wZYGCfWbFS+IeMuZWxY=" # AWS_SECRET_ACCESS_KEY
-    - secure: "UnuweITmskgNFQeKsWrKWubTztLPtwsDOZeRKO7p1VsEi3mnNlCV6gdQC5bONDsr/kB0GKLJopBKDzLJU33VnFDOyyPl52X0mtGGi/hKxpdKwtNrrz0DksaPaYGGTalO6qJQ9B+FwpdLvYROFrcqTrpRJ2H1Oy3Q25Vz0ScCulA=" # PIP_ACCEL_S3_READONLY 
-    - PIP_ACCEL_S3_BUCKET=travisci.pip-cache.opbeat.com
-    - PIP_ACCEL_S3_PREFIX=travis
+    - PIP_CACHE="$HOME/.pip_cache"'
+
 matrix:
   exclude:
   - python: 2.6
@@ -30,21 +31,42 @@ matrix:
     env: DJANGO=1.4
   - python: 3.4
     env: DJANGO=1.4
+  - python: nightly
+    env: DJANGO=1.4
   allow_failures:
   - env: DJANGO=master
+  - python: nightly
+
+addons:
+  apt:
+    packages:
+      - libevent-dev
+      - libzmq3-dev
+  postgresql: "9.3"
+
+cache:
+  directories:
+    - $HOME/.pip_cache
+
+before_install:
+  - mkdir -p $PIP_CACHE
+
 install:
-- sudo apt-get install libevent-dev
-- sudo apt-get install libzmq3-dev
-- pip install 'pip-accel[s3]'
-- pip-accel install -r test_requirements/requirements-django-$DJANGO.txt --use-mirrors
-- python -c "import sys; sys.exit(sys.version_info[0] == 3)" && pip-accel install -r test_requirements/requirements-python-2.txt || true 
+- pip install -U pip
+- pip install -r test_requirements/requirements-django-$DJANGO.txt --cache-dir $PIP_CACHE
+- pip install -r test_requirements/requirements-python-$(python --version 2>&1 | awk -F'[ |.]' 'NR==1{ print $2 }').txt --cache-dir $PIP_CACHE
+
+before_script:
+  - psql -c 'create database opbeat_test;' -U postgres
 
 script:
 - make test
+
 notifications:
   email: false
   slack:
     secure: LcTTbTj0Px0/9Bs/S/uwbhkdULlj1YVdHnU8F/kOa3bq2QdCTptqB719r6BnzHvW+QGyADvDZ25UncVXFuLuHY67ZYfmyZ/H2cj0nrRSuYdPct0avhVbT/3s50GlNWK5qkfZDuqw6szYTFrgFWJcr5dl7Zf6Vovcvd38uaYOdno=
+
 services:
   - redis-server
   - memcached

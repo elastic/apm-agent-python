@@ -130,6 +130,7 @@ class OriginalNamesFunctionWrapper(wrapt.FunctionWrapper):
                                   self.__wrapped__, self._self_instance,
                                   args, kwargs)
 
+
 class AbstractInstrumentedModule(object):
     name = None
 
@@ -182,9 +183,13 @@ class AbstractInstrumentedModule(object):
 
         try:
             instrument_list = self.get_instrument_list()
+            skipped_modules = set()
 
             for module, method in instrument_list:
                 try:
+                    # Skip modules we already failed to load
+                    if module in skipped_modules:
+                        continue
                     # We jump through hoop here to get the original
                     # `module`/`method` in the call to `call_if_sampling`
                     (parent, attribute, original) = resolve_path(module, method)
@@ -196,11 +201,16 @@ class AbstractInstrumentedModule(object):
                     )
                     wrapt.apply_patch(parent, attribute, wrapper)
                 except ImportError:
-                    # Could not import thing
+                    # Could not import module
                     logger.debug("Skipping instrumentation of %s."
                                  " Module %s not found",
                                  self.name, module)
+
+                    # Keep track of modules we couldn't load so we don't
+                    # try to instrument anything in that module again
+                    skipped_modules.add(module)
                 except AttributeError as ex:
+                    # Could not find thing in module
                     logger.debug("Skipping instrumentation of %s.%s: %s",
                                  module, method, ex)
 

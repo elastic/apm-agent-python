@@ -40,3 +40,17 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
 
         with self.client.capture_trace(signature, "db.postgreql.connect"):
             return PGConnectionProxy(wrapped(*args, **kwargs), self.client)
+
+
+class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
+    name = 'psycopg2-register-type'
+
+    instrument_list = [
+        ("psycopg2.extensions", "register_type")
+    ]
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        if len(args) == 2 or hasattr(args[1], "__wrapped__"):
+                args = (args[0], args[1].__wrapped__)
+
+        return wrapped(*args, **kwargs)

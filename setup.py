@@ -97,6 +97,7 @@ try:
 except ImportError:
     if sys.version_info[0] == 2:
         tests_require += ['zerorpc>=0.4.0,<0.5']
+    tests_require += ['psycopg2']
 
 
 install_requires = []

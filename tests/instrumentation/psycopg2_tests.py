@@ -1,6 +1,19 @@
 # -*- coding: utf-8 -*-
+import os
+import pytest
 
+from opbeat.instrumentation import control
 from opbeat.instrumentation.packages.psycopg2 import extract_signature
+
+from tests.contrib.django.django_tests import get_client
+
+try:
+    import psycopg2
+    has_psycopg2 = True
+except ImportError:
+    has_psycopg2 = False
+
+travis_and_psycopg2 = 'TRAVIS' not in os.environ or not has_psycopg2
 
 
 def test_insert():
@@ -167,3 +180,23 @@ def test_multi_statement_sql():
     actual = extract_signature(sql)
 
     assert "CREATE TABLE" == actual
+
+@pytest.mark.skipif(travis_and_psycopg2,
+                    reason="Requires postgres server. Only runs  ontravisci.")
+def test_psycopg2_register_type():
+    import psycopg2.extras
+
+    client = get_client()
+    control.instrument(client)
+
+    try:
+        client.begin_transaction()
+        conn = psycopg2.connect(database="opbeat_test", user="postgres")
+        new_type = psycopg2.extras.register_uuid(None, conn)
+        client.end_transaction(None, "test-transaction")
+    finally:
+        # make sure we've cleared out the traces for the other tests.
+        client.instrumentation_store.get_all()
+
+    assert new_type is not None
+

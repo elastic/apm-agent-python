@@ -2,7 +2,7 @@ from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
 
 class Jinja2Instrumentation(AbstractInstrumentedModule):
-    name = 'pylibmc'
+    name = 'jinja2'
 
     instrument_list = [
         ("jinja2", "Template.render"),

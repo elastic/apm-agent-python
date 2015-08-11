@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+from django.db import DatabaseError
 import pytest
 import datetime
 import django
@@ -27,7 +28,8 @@ from opbeat.contrib.django import DjangoClient
 from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.management.commands.opbeat import Command as DjangoCommand
-from opbeat.contrib.django.models import client, get_client as orig_get_client
+from opbeat.contrib.django.models import (client, get_client as orig_get_client,
+                                          get_client_config)
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 from opbeat.utils import six
 from opbeat import instrumentation
@@ -198,6 +200,25 @@ class DjangoClientTest(TestCase):
         self.assertEquals(user_info['username'], 'admin')
         self.assertTrue('email' in user_info)
         self.assertEquals(user_info['email'], 'admin@example.com')
+
+    def test_user_info_raises_database_error(self):
+        user = User(username='admin', email='admin@example.com')
+        user.set_password('admin')
+        user.save()
+
+        self.assertTrue(
+            self.client.login(username='admin', password='admin'))
+
+        with mock.patch("django.contrib.auth.models.User.is_authenticated") as is_authenticated:
+            is_authenticated.side_effect = DatabaseError("Test Exception")
+            self.assertRaises(Exception, self.client.get,
+                              reverse('opbeat-raise-exc'))
+
+        self.assertEquals(len(self.opbeat.events), 1)
+        event = self.opbeat.events.pop(0)
+        self.assertTrue('user' in event)
+        user_info = event['user']
+        self.assertEquals(user_info, {})
 
     @pytest.mark.skipif(django.VERSION < (1, 5),
                         reason='Custom user model was introduced with Django 1.5')
@@ -614,6 +635,16 @@ class DjangoClientTest(TestCase):
             '.process_response'
         )
 
+    def test_ASYNC_config_raises_deprecation(self):
+        config = {
+            'ORGANIZATION_ID': '1',
+            'APP_ID': '1',
+            'SECRET_TOKEN': '1',
+            'ASYNC': True,
+        }
+        with self.settings(OPBEAT=config):
+            pytest.deprecated_call(get_client_config)
+
 
 class DjangoLoggingTest(TestCase):
     def setUp(self):
@@ -793,7 +824,10 @@ def test_perf_template_render(benchmark):
     assert resp.status_code == 200
 
     transactions, traces = opbeat.instrumentation_store.get_all()
-    assert len(transactions) == 1
+
+    # If the test falls right at the change from one minute to another
+    # this will have two items.
+    assert 0 < len(transactions) < 3, [t["transaction"] for t in transactions]
     assert len(traces) == 3, [t["signature"] for t in traces]
 
 
@@ -830,7 +864,10 @@ def test_perf_database_render(benchmark):
         assert resp.status_code == 200
 
         transactions, traces = opbeat.instrumentation_store.get_all()
-        assert len(transactions) == 1, [t["transaction"] for t in transactions]
+
+        # If the test falls right at the change from one minute to another
+        # this will have two items.
+        assert 0 < len(transactions) < 3, [t["transaction"] for t in transactions]
         assert len(traces) == 5, [t["signature"] for t in traces]
 
 
