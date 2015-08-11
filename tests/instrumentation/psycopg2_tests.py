@@ -10,6 +10,14 @@ from opbeat.instrumentation.packages.psycopg2 import extract_signature
 
 from tests.contrib.django.django_tests import get_client
 
+try:
+    import psycopg2
+    has_psycopg2 = True
+except ImportError:
+    has_psycopg2 = False
+
+travis_and_psycopg2 = 'TRAVIS' not in os.environ and has_psycopg2
+
 
 def test_insert():
     sql = """INSERT INTO mytable (id, name) VALUE ('2323', 'Ron')"""
@@ -176,8 +184,7 @@ def test_multi_statement_sql():
 
     assert "CREATE TABLE" == actual
 
-
-@pytest.mark.skipif('TRAVIS' not in os.environ,
+@pytest.mark.skipif(travis_and_psycopg2,
                     reason="Requires postgres server. Only runs  ontravisci.")
 def test_psycopg2_register_type():
     client = get_client()
