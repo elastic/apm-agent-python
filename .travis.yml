@@ -42,6 +42,7 @@ addons:
     packages:
       - libevent-dev
       - libzmq3-dev
+  postgresql: "9.3"
 
 cache:
   directories:
@@ -54,6 +55,9 @@ install:
 - pip install -U pip
 - pip install -r test_requirements/requirements-django-$DJANGO.txt --cache-dir $PIP_CACHE
 - pip install -r test_requirements/requirements-python-$(python --version 2>&1 | awk -F'[ |.]' 'NR==1{ print $2 }').txt --cache-dir $PIP_CACHE
+
+before_script:
+  - psql -c 'create database opbeat_test;' -U postgres
 
 script:
 - make test

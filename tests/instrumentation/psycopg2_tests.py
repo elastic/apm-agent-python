@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
-from opbeat.instrumentation import control
+import os
 
+import psycopg2
+import psycopg2.extras
+import pytest
+
+from opbeat.instrumentation import control
 from opbeat.instrumentation.packages.psycopg2 import extract_signature
+
 from tests.contrib.django.django_tests import get_client
 
 
@@ -170,17 +176,14 @@ def test_multi_statement_sql():
 
     assert "CREATE TABLE" == actual
 
-
+@pytest.mark.skipif('TRAVIS' not in os.environ)
 def test_psycopg2_register_type():
     client = get_client()
     control.instrument(client)
-    import psycopg2
-    import psycopg2.extras
 
     try:
         client.begin_transaction()
-        conn = psycopg2.connect(database="opbeat_test", user="opbeat_test",
-                                host="localhost", password="opbeat_test")
+        conn = psycopg2.connect(database="opbeat_test", user="postgres")
         new_type = psycopg2.extras.register_uuid(None, conn)
         client.end_transaction(None, "test-transaction")
     finally:
