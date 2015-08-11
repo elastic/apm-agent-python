@@ -130,6 +130,7 @@ class OriginalNamesFunctionWrapper(wrapt.FunctionWrapper):
                                   self.__wrapped__, self._self_instance,
                                   args, kwargs)
 
+
 class AbstractInstrumentedModule(object):
     name = None
 
