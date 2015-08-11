@@ -73,6 +73,7 @@ tests_require = [
     'redis',
     'urllib3',
     'jinja2',
+    'psycopg2',
     'pytest-benchmark',
 ]
 

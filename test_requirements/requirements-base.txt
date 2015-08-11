@@ -25,6 +25,7 @@ msgpack-python
 pep8
 redis
 urllib3
+psycopg2
 
 pytz
 pyzmq==13.1.0

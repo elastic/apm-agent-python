@@ -176,6 +176,7 @@ def test_multi_statement_sql():
 
     assert "CREATE TABLE" == actual
 
+
 @pytest.mark.skipif('TRAVIS' not in os.environ)
 def test_psycopg2_register_type():
     client = get_client()
