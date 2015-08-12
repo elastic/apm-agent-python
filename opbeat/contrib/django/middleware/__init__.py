@@ -11,12 +11,10 @@ Large portions are
 
 from __future__ import absolute_import
 
-import time
 import logging
 import threading
 
 from django.conf import settings as django_settings
-
 
 try:
     from importlib import import_module
@@ -24,7 +22,7 @@ except ImportError:
     from django.utils.importlib import import_module
 
 from opbeat.contrib.django.models import client, get_client
-from opbeat.utils import disabled_due_to_debug
+from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.utils import wrapt
 
 
@@ -65,17 +63,6 @@ def get_name_from_middleware(wrapped, instance):
     if type(instance).__module__:
         name = [type(instance).__module__] + name
     return '.'.join(name)
-
-def get_name_from_func(func):
-    # If no view was set we ignore the request
-    module = func.__module__
-
-    if hasattr(func, '__name__'):
-        view_name = func.__name__
-    else:  # Fall back if there's no __name__
-        view_name = func.__class__.__name__
-
-    return '{0}.{1}'.format(module, view_name)
 
 
 def process_request_wrapper(wrapped, instance, args, kwargs):
