@@ -51,7 +51,7 @@ class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        if len(args) == 2 or hasattr(args[1], "__wrapped__"):
+        if len(args) == 2 and hasattr(args[1], "__wrapped__"):
                 args = (args[0], args[1].__wrapped__)
 
         return wrapped(*args, **kwargs)
