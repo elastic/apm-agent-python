@@ -1,4 +1,3 @@
-import contextlib
 import functools
 import logging
 import threading
@@ -11,8 +10,7 @@ from opbeat.utils.lru import LRUCache
 
 error_logger = logging.getLogger('opbeat.errors')
 
-
-all = ('RequestStore', 'trace')
+all = ('trace', )
 
 thread_local = threading.local()
 thread_local.transaction_traces = []
