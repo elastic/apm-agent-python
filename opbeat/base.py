@@ -187,13 +187,6 @@ class Client(object):
             self.traces_send_freq_secs)
         atexit_register(self.close)
 
-    @contextlib.contextmanager
-    def capture_trace(self, signature, kind='code.custom', extra=None,
-                      skip_frames=0, leaf=False):
-        with self.instrumentation_store.trace(signature, kind, extra,
-                                              skip_frames, leaf):
-            yield
-
     def get_processors(self):
         for processor in self.processors:
             yield self.module_cache[processor](self)
@@ -554,7 +547,7 @@ class Client(object):
         self.capture_query(*args, **kwargs)
 
     def begin_transaction(self, kind):
-        self.instrumentation_store.transaction_start(kind)
+        self.instrumentation_store.transaction_start(self, kind)
 
     def end_transaction(self, name, status_code=None):
         self.instrumentation_store.transaction_end(status_code, name)

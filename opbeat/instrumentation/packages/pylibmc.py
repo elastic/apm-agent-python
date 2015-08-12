@@ -1,4 +1,5 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from opbeat.traces import trace
 
 
 class PyLibMcInstrumentation(AbstractInstrumentedModule):
@@ -25,5 +26,5 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
-        with self.client.capture_trace(wrapped_name, "cache.memcached"):
+        with trace(wrapped_name, "cache.memcached"):
             return wrapped(*args, **kwargs)

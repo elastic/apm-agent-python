@@ -4,6 +4,7 @@ import mock
 import memcache
 
 import opbeat
+from opbeat.traces import trace
 from tests.contrib.django.django_tests import get_client
 
 
@@ -16,7 +17,7 @@ class InstrumentMemcachedTest(TestCase):
     def test_memcached(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
-        with self.client.capture_trace("test_memcached", "test"):
+        with trace("test_memcached", "test"):
             conn = memcache.Client(['127.0.0.1:11211'], debug=0)
             conn.set("mykey", "a")
             assert "a" == conn.get("mykey")

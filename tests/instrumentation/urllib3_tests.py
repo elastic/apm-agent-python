@@ -5,6 +5,7 @@ from django.test import TestCase
 import opbeat
 
 from opbeat.contrib.django.models import get_client
+from opbeat.traces import trace
 
 try:
     from http import server as SimpleHTTPServer
@@ -41,7 +42,7 @@ class InstrumentUrllib3Test(TestCase):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
         expected_sig = 'GET localhost:{0}'.format(self.port)
-        with self.client.capture_trace("test_pipeline", "test"):
+        with trace("test_pipeline", "test"):
             pool = urllib3.PoolManager(timeout=0.1)
 
             url = 'http://localhost:{0}/hello_world'.format(self.port)

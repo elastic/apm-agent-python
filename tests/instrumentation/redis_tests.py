@@ -4,6 +4,7 @@ import mock
 import redis
 from redis.client import StrictRedis
 import opbeat
+from opbeat.traces import trace
 from tests.contrib.django.django_tests import get_client
 
 
@@ -16,7 +17,7 @@ class InstrumentRedisTest(TestCase):
     def test_pipeline(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
-        with self.client.capture_trace("test_pipeline", "test"):
+        with trace("test_pipeline", "test"):
             conn = redis.StrictRedis()
             pipeline = conn.pipeline()
             pipeline.rpush("mykey", "a", "b")
@@ -61,7 +62,7 @@ class InstrumentRedisTest(TestCase):
         conn._pipeline = partial(StrictRedis.pipeline, conn)
 
         self.client.begin_transaction("transaction.test")
-        with self.client.capture_trace("test_pipeline", "test"):
+        with trace("test_pipeline", "test"):
             # conn = redis.StrictRedis()
             pipeline = conn._pipeline()
             pipeline.rpush("mykey", "a", "b")

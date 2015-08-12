@@ -413,7 +413,7 @@ class ClientTest(TestCase):
         )
 
         should_collect.return_value = False
-        client.begin_transaction()
+        client.begin_transaction("celery")
 
         client.end_transaction(200, 'test-transaction')
         client.end_transaction(200, 'test-transaction')
