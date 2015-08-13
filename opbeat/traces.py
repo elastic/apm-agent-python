@@ -4,6 +4,7 @@ import threading
 import time
 from datetime import datetime
 from collections import defaultdict
+from opbeat.utils import get_name_from_func
 
 from opbeat.utils.encoding import force_text
 from opbeat.utils.lru import LRUCache
@@ -263,9 +264,8 @@ class RequestsStore(object):
 
 
 class trace(object):
-    def __init__(self, signature, kind, extra=None, skip_frames=0,
-                 leaf=False
-                 ):
+    def __init__(self, signature=None, kind='code.custom', extra=None,
+                 skip_frames=0, leaf=False):
         self.signature = signature
         self.kind = kind
         self.extra = extra
@@ -275,6 +275,8 @@ class trace(object):
         self.transaction = None
 
     def __call__(self, func):
+        self.signature = self.signature or get_name_from_func(func)
+
         @functools.wraps(func)
         def decorated(*args, **kwds):
             with self:
