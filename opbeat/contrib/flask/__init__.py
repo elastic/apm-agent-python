@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 import os
 import warnings
+import logging
 
 from flask import request, signals
 
@@ -23,6 +24,8 @@ from opbeat.contrib.flask.utils import get_data_from_request
 from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.handlers.logging import OpbeatHandler
 from opbeat.utils.deprecation import deprecated
+
+logger = logging.getLogger('opbeat.errors.client')
 
 
 def make_client(client_cls, app, organization_id=None, app_id=None, secret_token=None):
@@ -178,7 +181,7 @@ class Opbeat(object):
         if endpoint in app.view_functions:
             view_name = get_name_from_func(app.view_functions[endpoint])
 
-        self.client.end_transaction(view_name, response.status)
+        self.client.end_transaction(view_name, response.status_code)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'
