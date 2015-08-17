@@ -14,12 +14,13 @@ from __future__ import absolute_import
 import os
 import warnings
 
-from flask import request
-from flask.signals import got_request_exception
+from flask import request, signals
+
+import opbeat.instrumentation.control
 from opbeat.conf import setup_logging
 from opbeat.base import Client
 from opbeat.contrib.flask.utils import get_data_from_request
-from opbeat.utils import disabled_due_to_debug
+from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.handlers.logging import OpbeatHandler
 from opbeat.utils.deprecation import deprecated
 
@@ -156,7 +157,28 @@ class Opbeat(object):
         if self.logging:
             setup_logging(OpbeatHandler(self.client))
 
-        got_request_exception.connect(self.handle_exception, sender=app, weak=False)
+        signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
+
+        # Instrument to get traces
+        skip_env_var = 'SKIP_INSTRUMENT'
+        if skip_env_var in os.environ:
+            logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
+        else:
+            opbeat.instrumentation.control.instrument(self.client)
+
+            signals.request_started.connect(self.request_started)
+            signals.request_finished.connect(self.request_finished)
+
+    def request_started(self, app):
+        self.client.begin_transaction("transaction.flask")
+
+    def request_finished(self, app, response):
+        endpoint = request.url_rule.endpoint
+        view_name = ""
+        if endpoint in app.view_functions:
+            view_name = get_name_from_func(app.view_functions[endpoint])
+
+        self.client.end_transaction(view_name, response.status)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'

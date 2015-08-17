@@ -1,12 +1,14 @@
-from flask import Flask
+import os
+from flask import Flask, render_template
 
 from django.test import TestCase
-
+import mock
 
 from opbeat.contrib.flask import Opbeat
 
 from tests.helpers import get_tempstoreclient
 
+template_dir = os.path.join(os.path.dirname(__file__), "templates")
 
 def create_app():
     app = Flask(__name__)
@@ -14,6 +16,11 @@ def create_app():
     @app.route('/an-error/', methods=['GET', 'POST'])
     def an_error():
         raise ValueError('hello world')
+
+    @app.route('/users/', methods=['GET', 'POST'])
+    def users():
+        return render_template('users.html',
+                               users=['Ron', 'Rasmus'])
 
     return app
 
@@ -114,3 +121,40 @@ class FlaskTest(TestCase):
         self.assertEquals(env['SERVER_NAME'], 'localhost')
         self.assertTrue('SERVER_PORT' in env, env.keys())
         self.assertEquals(env['SERVER_PORT'], '80')
+
+    def test_instrumentation(self):
+        client = get_tempstoreclient()
+        opbeat = Opbeat(self.app, client=client)
+
+        with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+            should_collect.return_value = False
+            resp = self.client.post('/users/')
+
+        assert resp.status_code == 200, resp.response
+
+        transactions, traces = client.instrumentation_store.get_all()
+
+        # If the test falls right at the change from one minute to another
+        # this will have two items.
+        assert 0 < len(transactions) < 3, [t["transaction"] for t in transactions]
+        assert len(traces) == 2, [t["signature"] for t in traces]
+
+        expected_signatures = ['transaction', 'users.html']
+        expected_transaction = 'tests.contrib.flask.flask_tests.users'
+
+        assert set([t['signature'] for t in traces]) == set(expected_signatures)
+
+        # Reorder according to the kinds list so we can just test them
+        sig_dict = dict([(t['signature'], t) for t in traces])
+        traces = [sig_dict[k] for k in expected_signatures]
+
+        assert traces[0]['signature'] == 'transaction'
+        assert traces[0]['transaction'] == expected_transaction
+        assert traces[0]['kind'] == 'transaction.flask'
+
+        assert traces[1]['signature'] == 'users.html'
+        assert traces[1]['transaction'] == expected_transaction
+        assert traces[1]['kind'] == 'template.jinja2'
+
+
+
