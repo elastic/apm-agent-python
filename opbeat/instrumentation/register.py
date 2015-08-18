@@ -5,20 +5,15 @@ _cls_register = set([
     'opbeat.instrumentation.packages.psycopg2.Psycopg2Instrumentation',
     'opbeat.instrumentation.packages.psycopg2.Psycopg2RegisterTypeInstrumentation',
     'opbeat.instrumentation.packages.mysql.MySQLInstrumentation',
-
     'opbeat.instrumentation.packages.pylibmc.PyLibMcInstrumentation',
     'opbeat.instrumentation.packages.python_memcached.PythonMemcachedInstrumentation',
     'opbeat.instrumentation.packages.redis.RedisInstrumentation',
-
     'opbeat.instrumentation.packages.requests.RequestsInstrumentation',
     'opbeat.instrumentation.packages.sqlite.SQLiteInstrumentation',
     'opbeat.instrumentation.packages.urllib3.Urllib3Instrumentation',
 
     'opbeat.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
     'opbeat.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',
-
-    'opbeat.instrumentation.packages.celery.CelerySendTaskInstrumentation',
-    'opbeat.instrumentation.packages.celery.CeleryApplyAsyncInstrumentation',
 ])
 
 def register(cls):
