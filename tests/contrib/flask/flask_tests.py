@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, signals
 
 from django.test import TestCase
 import mock
@@ -8,7 +8,6 @@ from opbeat.contrib.flask import Opbeat
 
 from tests.helpers import get_tempstoreclient
 
-template_dir = os.path.join(os.path.dirname(__file__), "templates")
 
 def create_app():
     app = Flask(__name__)
@@ -30,14 +29,19 @@ class FlaskTest(TestCase):
         self.app = create_app()
         self.client = self.app.test_client()
 
+        self.opbeat_client = get_tempstoreclient()
+        self.opbeat = Opbeat(self.app, client=self.opbeat_client)
+
+    def tearDown(self):
+        signals.request_started.disconnect(self.opbeat.request_started)
+        signals.request_finished.disconnect(self.opbeat.request_finished)
+
     def test_error_handler(self):
-        client = get_tempstoreclient()
-        opbeat = Opbeat(self.app, client=client)
         response = self.client.get('/an-error/')
         self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(client.events), 1)
+        self.assertEquals(len(self.opbeat_client.events), 1)
 
-        event = client.events.pop(0)
+        event = self.opbeat_client.events.pop(0)
 
         self.assertTrue('exception' in event)
         exc = event['exception']
@@ -48,13 +52,11 @@ class FlaskTest(TestCase):
         self.assertEquals(event['culprit'], 'tests.contrib.flask.flask_tests.an_error')
 
     def test_get(self):
-        client = get_tempstoreclient()
-        opbeat = Opbeat(self.app, client=client)
         response = self.client.get('/an-error/?foo=bar')
         self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(client.events), 1)
+        self.assertEquals(len(self.opbeat_client.events), 1)
 
-        event = client.events.pop(0)
+        event = self.opbeat_client.events.pop(0)
 
         self.assertTrue('http' in event)
         http = event['http']
@@ -77,30 +79,24 @@ class FlaskTest(TestCase):
         self.assertEquals(env['SERVER_PORT'], '80')
 
     def test_get_debug(self):
-        client = get_tempstoreclient()
-        opbeat = Opbeat(self.app, client=client)
         self.app.config['DEBUG'] = True
         self.app.config['TESTING'] = False
         self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
-        self.assertEquals(len(client.events), 0)
+        self.assertEquals(len(self.opbeat_client.events), 0)
 
     def test_get_debug_opbeat(self):
-        client = get_tempstoreclient()
-        opbeat = Opbeat(self.app, client=client)
         self.app.config['DEBUG'] = True
         self.app.config['TESTING'] = True
         self.app.config['OPBEAT'] = {'DEBUG': True}
         self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
-        self.assertEquals(len(client.events), 1)
+        self.assertEquals(len(self.opbeat_client.events), 1)
 
     def test_post(self):
-        client = get_tempstoreclient()
-        opbeat = Opbeat(self.app, client=client)
         response = self.client.post('/an-error/?biz=baz', data={'foo': 'bar'})
         self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(client.events), 1)
+        self.assertEquals(len(self.opbeat_client.events), 1)
 
-        event = client.events.pop(0)
+        event = self.opbeat_client.events.pop(0)
 
         self.assertTrue('http' in event)
         http = event['http']
@@ -123,16 +119,13 @@ class FlaskTest(TestCase):
         self.assertEquals(env['SERVER_PORT'], '80')
 
     def test_instrumentation(self):
-        client = get_tempstoreclient()
-        opbeat = Opbeat(self.app, client=client)
-
         with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
             should_collect.return_value = False
             resp = self.client.post('/users/')
 
         assert resp.status_code == 200, resp.response
 
-        transactions, traces = client.instrumentation_store.get_all()
+        transactions, traces = self.opbeat_client.instrumentation_store.get_all()
 
         # If the test falls right at the change from one minute to another
         # this will have two items.
