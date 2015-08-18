@@ -176,12 +176,7 @@ class Opbeat(object):
         self.client.begin_transaction("transaction.flask")
 
     def request_finished(self, app, response):
-        endpoint = request.url_rule.endpoint
-        view_name = ""
-        if endpoint in app.view_functions:
-            view_name = get_name_from_func(app.view_functions[endpoint])
-
-        self.client.end_transaction(view_name, response.status_code)
+        self.client.end_transaction(request.url_rule.rule, response.status_code)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'
