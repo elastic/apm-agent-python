@@ -1,7 +1,6 @@
 import logging
 import functools
 import os
-import inspect
 from opbeat.traces import get_transaction
 
 from opbeat.utils import wrapt
