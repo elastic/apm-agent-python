@@ -142,7 +142,8 @@ class Opbeat(object):
         ):
             return
 
-        self.client.capture('Exception', exc_info=kwargs.get('exc_info'),
+        self.client.capture(
+            'Exception', exc_info=kwargs.get('exc_info'),
             data=get_data_from_request(request),
             extra={
                 'app': self.app,
@@ -176,7 +177,8 @@ class Opbeat(object):
         self.client.begin_transaction("transaction.flask")
 
     def request_finished(self, app, response):
-        self.client.end_transaction(request.url_rule.rule, response.status_code)
+        rule = request.url_rule.rule if request.url_rule is not None else ""
+        self.client.end_transaction(rule, response.status_code)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'

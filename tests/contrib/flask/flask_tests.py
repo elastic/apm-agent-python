@@ -133,7 +133,7 @@ class FlaskTest(TestCase):
         assert len(traces) == 2, [t["signature"] for t in traces]
 
         expected_signatures = ['transaction', 'users.html']
-        expected_transaction = 'tests.contrib.flask.flask_tests.users'
+        expected_transaction = '/users/'
 
         assert set([t['signature'] for t in traces]) == set(expected_signatures)
 
@@ -149,5 +149,32 @@ class FlaskTest(TestCase):
         assert traces[1]['transaction'] == expected_transaction
         assert traces[1]['kind'] == 'template.jinja2'
 
+    def test_instrumentation_404(self):
+        with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
+            should_collect.return_value = False
+            resp = self.client.post('/no-such-page/')
 
+        assert resp.status_code == 404, resp.response
 
+        transactions, traces = self.opbeat_client.instrumentation_store.get_all()
+
+        # If the test falls right at the change from one minute to another
+        # this will have two items.
+        assert 0 < len(transactions) < 3, [t["transaction"] for t in transactions]
+
+        assert transactions[0]['result'] == 404
+        assert transactions[0]['transaction'] == ''
+        assert len(traces) == 1, [t["signature"] for t in traces]
+
+        expected_signatures = ['transaction']
+        expected_transaction = ''
+
+        assert set([t['signature'] for t in traces]) == set(expected_signatures)
+
+        # Reorder according to the kinds list so we can just test them
+        sig_dict = dict([(t['signature'], t) for t in traces])
+        traces = [sig_dict[k] for k in expected_signatures]
+
+        assert traces[0]['signature'] == 'transaction'
+        assert traces[0]['transaction'] == expected_transaction
+        assert traces[0]['kind'] == 'transaction.flask'
