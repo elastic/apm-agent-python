@@ -53,7 +53,7 @@ def register_signal(client):
     signals.task_failure.connect(process_failure_signal, weak=False)
 
     def begin_transaction(*args, **kwargs):
-        client.begin_transaction("transaction.celery")
+        client.begin_transaction("task.celery")
 
     def end_transaction(task_id, task, *args, **kwargs):
         name = get_name_from_func(task)
