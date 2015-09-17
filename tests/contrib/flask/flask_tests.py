@@ -143,7 +143,7 @@ class FlaskTest(TestCase):
 
         assert traces[0]['signature'] == 'transaction'
         assert traces[0]['transaction'] == expected_transaction
-        assert traces[0]['kind'] == 'transaction.flask'
+        assert traces[0]['kind'] == 'transaction'
 
         assert traces[1]['signature'] == 'users.html'
         assert traces[1]['transaction'] == expected_transaction
@@ -177,4 +177,4 @@ class FlaskTest(TestCase):
 
         assert traces[0]['signature'] == 'transaction'
         assert traces[0]['transaction'] == expected_transaction
-        assert traces[0]['kind'] == 'transaction.flask'
+        assert traces[0]['kind'] == 'transaction'

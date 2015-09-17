@@ -42,7 +42,7 @@ class Transaction(object):
         self.ignore_subtree = False
 
         # The transaction is a trace as well
-        self.begin_trace("transaction", kind)
+        self.begin_trace("transaction", "transaction")
 
     def end_transaction(self, skip_frames=8):
         # End the "transaction" trace started above

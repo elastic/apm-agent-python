@@ -40,7 +40,7 @@ class InstrumentRedisTest(TestCase):
         traces = [sig_dict[k] for k in expected_signatures]
 
         self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['kind'], 'transaction.test')
+        self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['transaction'], 'MyView')
 
         self.assertEqual(traces[1]['signature'], 'test_pipeline')
@@ -85,7 +85,7 @@ class InstrumentRedisTest(TestCase):
         traces = [sig_dict[k] for k in expected_signatures]
 
         self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['kind'], 'transaction.test')
+        self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['transaction'], 'MyView')
 
         self.assertEqual(traces[1]['signature'], 'test_pipeline')

@@ -40,7 +40,7 @@ class InstrumentUrllib3Test(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_urllib3(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction("transaction.test")
+        self.client.begin_transaction("transaction")
         expected_sig = 'GET localhost:{0}'.format(self.port)
         with trace("test_pipeline", "test"):
             pool = urllib3.PoolManager(timeout=0.1)
@@ -64,7 +64,7 @@ class InstrumentUrllib3Test(TestCase):
         self.assertEqual(len(traces), 3)
 
         self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['kind'], 'transaction.test')
+        self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['transaction'], 'MyView')
 
         self.assertEqual(traces[1]['signature'], 'test_pipeline')
