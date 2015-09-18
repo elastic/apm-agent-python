@@ -11,7 +11,7 @@ from tests.contrib.django.django_tests import get_client
 class InstrumentMemcachedTest(TestCase):
     def setUp(self):
         self.client = get_client()
-        opbeat.instrumentation.control.instrument(self.client)
+        opbeat.instrumentation.control.instrument()
 
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_memcached(self, should_collect):

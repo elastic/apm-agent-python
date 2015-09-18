@@ -28,9 +28,8 @@ TEMPLATES = (
 
 class TracesTest(TestCase):
     def setUp(self):
-        # self.logger = logging.getLogger(__name__)
         self.opbeat = get_client()
-        opbeat.instrumentation.control.instrument(self.opbeat)
+        opbeat.instrumentation.control.instrument()
 
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_template_rendering(self, should_collect):

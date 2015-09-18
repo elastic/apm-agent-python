@@ -22,7 +22,7 @@ class InstrumentUrllib3Test(TestCase):
         self.client = get_client()
         self.port = 59990
         self.start_test_server()
-        opbeat.instrumentation.control.instrument(self.client)
+        opbeat.instrumentation.control.instrument()
 
     def tearDown(self):
         if self.httpd:

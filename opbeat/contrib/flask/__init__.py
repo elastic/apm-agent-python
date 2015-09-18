@@ -74,6 +74,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         or os.environ.get('OPBEAT_SECRET_TOKEN')  # environment
         or os.environ.get('SECRET_TOKEN')  # deprecated fallback
     )
+    processors = opbeat_config.get('PROCESSORS')
     return client_cls(
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
@@ -83,6 +84,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         organization_id=organization_id,
         app_id=app_id,
         secret_token=secret_token,
+        processors=processors
     )
 
 
@@ -168,7 +170,7 @@ class Opbeat(object):
         if skip_env_var in os.environ:
             logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
         else:
-            opbeat.instrumentation.control.instrument(self.client)
+            opbeat.instrumentation.control.instrument()
 
             signals.request_started.connect(self.request_started)
             signals.request_finished.connect(self.request_finished)

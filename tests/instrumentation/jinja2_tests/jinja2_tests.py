@@ -14,7 +14,7 @@ class InstrumentJinja2Test(TestCase):
         filedir = os.path.dirname(__file__)
         loader = FileSystemLoader(filedir)
         self.env = Environment(loader=loader)
-        opbeat.instrumentation.control.instrument(self.client)
+        opbeat.instrumentation.control.instrument()
 
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_from_file(self, should_collect):
