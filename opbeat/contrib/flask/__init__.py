@@ -74,7 +74,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         or os.environ.get('OPBEAT_SECRET_TOKEN')  # environment
         or os.environ.get('SECRET_TOKEN')  # deprecated fallback
     )
-    processors = opbeat_config.get('PROCESSORS')
+
     return client_cls(
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
@@ -84,7 +84,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         organization_id=organization_id,
         app_id=app_id,
         secret_token=secret_token,
-        processors=processors
+        processors=opbeat_config.get('PROCESSORS', None)
     )
 
 
