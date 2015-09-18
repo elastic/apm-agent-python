@@ -76,15 +76,20 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
     )
 
     return client_cls(
+        organization_id=organization_id,
+        app_id=app_id,
+        secret_token=secret_token,
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
         servers=opbeat_config.get('SERVERS'),
         hostname=opbeat_config.get('HOSTNAME'),
+        auto_log_stacks=opbeat_config.get('AUTO_LOG_STACKS'),
         timeout=opbeat_config.get('TIMEOUT'),
-        organization_id=organization_id,
-        app_id=app_id,
-        secret_token=secret_token,
-        processors=opbeat_config.get('PROCESSORS', None)
+        string_max_length=opbeat_config.get('STRING_MAX_LENGTH'),
+        list_max_length=opbeat_config.get('LIST_MAX_LENGTH'),
+        traces_freq_send=opbeat_config.get('TRACES_FREQ_SEND'),
+        processors=opbeat_config.get('PROCESSORS'),
+        async_mode=opbeat_config.get('ASYNC')
     )
 
 
