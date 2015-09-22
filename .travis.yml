@@ -10,12 +10,15 @@ python:
 
 env:
   matrix:
-    - DJANGO=1.4
-    - DJANGO=1.5
-    - DJANGO=1.6
-    - DJANGO=1.7
-    - DJANGO=1.8
-    - DJANGO=master
+    - WEBFRAMEWORK=django-1.4
+    - WEBFRAMEWORK=django-1.5
+    - WEBFRAMEWORK=django-1.6
+    - WEBFRAMEWORK=django-1.7
+    - WEBFRAMEWORK=django-1.8
+    - WEBFRAMEWORK=django-master
+    - WEBFRAMEWORK=flask-0.8
+    - WEBFRAMEWORK=flask-0.9
+    - WEBFRAMEWORK=flask-0.10
   global:
     - PIP_CACHE="$HOME/.pip_cache"'
 
@@ -53,7 +56,7 @@ before_install:
 
 install:
 - pip install -U pip
-- pip install -r test_requirements/requirements-django-$DJANGO.txt --cache-dir $PIP_CACHE
+- pip install -r test_requirements/requirements-$WEBFRAMEWORK.txt --cache-dir $PIP_CACHE
 - pip install -r test_requirements/requirements-python-$(python --version 2>&1 | awk -F'[ |.]' 'NR==1{ print $2 }').txt --cache-dir $PIP_CACHE
 
 before_script:
