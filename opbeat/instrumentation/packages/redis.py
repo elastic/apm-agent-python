@@ -5,204 +5,31 @@ from opbeat.traces import trace
 class RedisInstrumentation(AbstractInstrumentedModule):
     name = 'redis'
 
-    # Generated using
-    # inspect.getmembers(redis.Redis, predicate=inspect.ismethod)
-    # Manually removed "parse_response".
-    strictRedis = [
-        'append',
-        'bgrewriteaof',
-        'bgsave',
-        'bitcount',
-        'bitop',
-        'bitpos',
-        'blpop',
-        'brpop',
-        'brpoplpush',
-        'client_getname',
-        'client_kill',
-        'client_list',
-        'client_setname',
-        'config_get',
-        'config_resetstat',
-        'config_rewrite',
-        'config_set',
-        'dbsize',
-        'debug_object',
-        'decr',
-        'delete',
-        'dump',
-        'echo',
-        'eval',
-        'evalsha',
-        'execute_command',
-        'exists',
-        'expire',
-        'expireat',
-        'flushall',
-        'flushdb',
-        'from_url',
-        'get',
-        'getbit',
-        'getrange',
-        'getset',
-        'hdel',
-        'hexists',
-        'hget',
-        'hgetall',
-        'hincrby',
-        'hincrbyfloat',
-        'hkeys',
-        'hlen',
-        'hmget',
-        'hmset',
-        'hscan',
-        'hscan_iter',
-        'hset',
-        'hsetnx',
-        'hvals',
-        'incr',
-        'incrby',
-        'incrbyfloat',
-        'info',
-        'keys',
-        'lastsave',
-        'lindex',
-        'linsert',
-        'llen',
-        'lock',
-        'lpop',
-        'lpush',
-        'lpushx',
-        'lrange',
-        'lrem',
-        'lset',
-        'ltrim',
-        'mget',
-        'move',
-        'mset',
-        'msetnx',
-        'object',
-        'persist',
-        'pexpire',
-        'pexpireat',
-        'pfadd',
-        'pfcount',
-        'pfmerge',
-        'ping',
-        'pipeline',
-        'psetex',
-        'pttl',
-        'publish',
-        'pubsub',
-        'randomkey',
-        'register_script',
-        'rename',
-        'renamenx',
-        'restore',
-        'rpop',
-        'rpoplpush',
-        'rpush',
-        'rpushx',
-        'sadd',
-        'save',
-        'scan',
-        'scan_iter',
-        'scard',
-        'script_exists',
-        'script_flush',
-        'script_kill',
-        'script_load',
-        'sdiff',
-        'sdiffstore',
-        'sentinel',
-        'sentinel_get_master_addr_by_name',
-        'sentinel_master',
-        'sentinel_masters',
-        'sentinel_monitor',
-        'sentinel_remove',
-        'sentinel_sentinels',
-        'sentinel_set',
-        'sentinel_slaves',
-        'set',
-        'set_response_callback',
-        'setbit',
-        'setex',
-        'setnx',
-        'setrange',
-        'shutdown',
-        'sinter',
-        'sinterstore',
-        'sismember',
-        'slaveof',
-        'slowlog_get',
-        'slowlog_len',
-        'slowlog_reset',
-        'smembers',
-        'smove',
-        'sort',
-        'spop',
-        'srandmember',
-        'srem',
-        'sscan',
-        'sscan_iter',
-        'strlen',
-        'substr',
-        'sunion',
-        'sunionstore',
-        'time',
-        'transaction',
-        'ttl',
-        'type',
-        'unwatch',
-        'watch',
-        'zadd',
-        'zcard',
-        'zcount',
-        'zincrby',
-        'zinterstore',
-        'zlexcount',
-        'zrange',
-        'zrangebylex',
-        'zrangebyscore',
-        'zrank',
-        'zrem',
-        'zremrangebylex',
-        'zremrangebyrank',
-        'zremrangebyscore',
-        'zrevrange',
-        'zrevrangebyscore',
-        'zrevrank',
-        'zscan',
-        'zscan_iter',
-        'zscore',
-        'zunionstore'
+    instrument_list = [
+        ("redis.client", "Redis.execute_command"),
+        ("redis.client", "StrictRedis.execute_command"),
     ]
 
-    def get_instrument_list(self):
-        redis_client = ["redis.client"]*len(self.strictRedis)
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        if len(args) > 0:
+            wrapped_name = str(args[0])
+        else:
+            wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        strict_redis_methods = zip(redis_client,
-                                   ["StrictRedis." + method
-                                    for method in self.strictRedis])
+        with self.client.capture_trace(wrapped_name, "cache.redis", leaf=True):
+            return wrapped(*args, **kwargs)
 
-        redis_methods = zip(redis_client,
-                            ["Redis." + method
-                             for method in self.strictRedis])
 
-        # python3 zip returns iterator
-        instrument_list = list(strict_redis_methods)
-        instrument_list.extend(redis_methods)
+class RedisPipelineInstrumentation(AbstractInstrumentedModule):
+    name = 'redis'
 
-        instrument_list.extend([
-            ("redis.client", "BasePipeline.execute"),
-            ("redis.client", "BasePipeline.watch"),
-            ("redis.client", "BasePipeline.unwatch"),
-        ])
-
-        instrument_list.append(("redis.client", "Script.__call__"))
-        return instrument_list
+    instrument_list = [
+        ("redis.client", "BasePipeline.execute"),
+    ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
         with trace(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)
+
+
