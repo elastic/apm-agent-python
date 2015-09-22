@@ -1,4 +1,5 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from opbeat.traces import trace
 
 
 class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
@@ -13,7 +14,7 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
 
         if not name:
             name = '<template string>'
-        with self.client.capture_trace(name, "template.django"):
+        with trace(name, "template.django"):
             return wrapped(*args, **kwargs)
 
 

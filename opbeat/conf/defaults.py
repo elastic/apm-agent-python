@@ -29,7 +29,7 @@ ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
 # Transactions API path
 TRANSACTIONS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/transactions/'
 
-TIMEOUT = 5
+TIMEOUT = 20
 
 # TODO: this is specific to Django
 CLIENT = 'opbeat.contrib.django.DjangoClient'

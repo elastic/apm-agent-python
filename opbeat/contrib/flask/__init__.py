@@ -13,15 +13,19 @@ from __future__ import absolute_import
 
 import os
 import warnings
+import logging
 
-from flask import request
-from flask.signals import got_request_exception
+from flask import request, signals
+
+import opbeat.instrumentation.control
 from opbeat.conf import setup_logging
 from opbeat.base import Client
 from opbeat.contrib.flask.utils import get_data_from_request
-from opbeat.utils import disabled_due_to_debug
+from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.handlers.logging import OpbeatHandler
 from opbeat.utils.deprecation import deprecated
+
+logger = logging.getLogger('opbeat.errors.client')
 
 
 def make_client(client_cls, app, organization_id=None, app_id=None, secret_token=None):
@@ -70,15 +74,22 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         or os.environ.get('OPBEAT_SECRET_TOKEN')  # environment
         or os.environ.get('SECRET_TOKEN')  # deprecated fallback
     )
+
     return client_cls(
+        organization_id=organization_id,
+        app_id=app_id,
+        secret_token=secret_token,
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
         servers=opbeat_config.get('SERVERS'),
         hostname=opbeat_config.get('HOSTNAME'),
+        auto_log_stacks=opbeat_config.get('AUTO_LOG_STACKS'),
         timeout=opbeat_config.get('TIMEOUT'),
-        organization_id=organization_id,
-        app_id=app_id,
-        secret_token=secret_token,
+        string_max_length=opbeat_config.get('STRING_MAX_LENGTH'),
+        list_max_length=opbeat_config.get('LIST_MAX_LENGTH'),
+        traces_freq_send=opbeat_config.get('TRACES_FREQ_SEND'),
+        processors=opbeat_config.get('PROCESSORS'),
+        async_mode=opbeat_config.get('ASYNC')
     )
 
 
@@ -138,7 +149,8 @@ class Opbeat(object):
         ):
             return
 
-        self.client.capture('Exception', exc_info=kwargs.get('exc_info'),
+        self.client.capture(
+            'Exception', exc_info=kwargs.get('exc_info'),
             data=get_data_from_request(request),
             extra={
                 'app': self.app,
@@ -156,7 +168,24 @@ class Opbeat(object):
         if self.logging:
             setup_logging(OpbeatHandler(self.client))
 
-        got_request_exception.connect(self.handle_exception, sender=app, weak=False)
+        signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
+
+        # Instrument to get traces
+        skip_env_var = 'SKIP_INSTRUMENT'
+        if skip_env_var in os.environ:
+            logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
+        else:
+            opbeat.instrumentation.control.instrument()
+
+            signals.request_started.connect(self.request_started)
+            signals.request_finished.connect(self.request_finished)
+
+    def request_started(self, app):
+        self.client.begin_transaction("web.flask")
+
+    def request_finished(self, app, response):
+        rule = request.url_rule.rule if request.url_rule is not None else ""
+        self.client.end_transaction(rule, response.status_code)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'

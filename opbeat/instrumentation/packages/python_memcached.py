@@ -1,4 +1,5 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from opbeat.traces import trace
 
 
 class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
@@ -34,5 +35,5 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = self.get_wrapped_name(wrapped, instance, method)
 
-        with self.client.capture_trace(name, "cache.memcached"):
+        with trace(name, "cache.memcached"):
             return wrapped(*args, **kwargs)

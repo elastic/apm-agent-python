@@ -4,25 +4,26 @@ import mock
 import redis
 from redis.client import StrictRedis
 import opbeat
+from opbeat.traces import trace
 from tests.contrib.django.django_tests import get_client
 
 
 class InstrumentRedisTest(TestCase):
     def setUp(self):
         self.client = get_client()
-        opbeat.instrumentation.control.instrument(self.client)
+        opbeat.instrumentation.control.instrument()
 
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_pipeline(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction()
-        with self.client.capture_trace("test_pipeline", "test"):
+        self.client.begin_transaction("transaction.test")
+        with trace("test_pipeline", "test"):
             conn = redis.StrictRedis()
             pipeline = conn.pipeline()
             pipeline.rpush("mykey", "a", "b")
             pipeline.expire("mykey", 1000)
             pipeline.execute()
-        self.client.end_transaction(None, "test")
+        self.client.end_transaction("MyView")
 
         transactions, traces = self.client.instrumentation_store.get_all()
 
@@ -40,15 +41,15 @@ class InstrumentRedisTest(TestCase):
 
         self.assertEqual(traces[0]['signature'], 'transaction')
         self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'test')
+        self.assertEqual(traces[0]['transaction'], 'MyView')
 
         self.assertEqual(traces[1]['signature'], 'test_pipeline')
         self.assertEqual(traces[1]['kind'], 'test')
-        self.assertEqual(traces[1]['transaction'], 'test')
+        self.assertEqual(traces[1]['transaction'], 'MyView')
 
         self.assertEqual(traces[2]['signature'], 'StrictRedis.pipeline')
         self.assertEqual(traces[2]['kind'], 'cache.redis')
-        self.assertEqual(traces[2]['transaction'], 'test')
+        self.assertEqual(traces[2]['transaction'], 'MyView')
 
         self.assertEqual(len(traces), 6)
 
@@ -60,14 +61,14 @@ class InstrumentRedisTest(TestCase):
         conn = redis.StrictRedis()
         conn._pipeline = partial(StrictRedis.pipeline, conn)
 
-        self.client.begin_transaction()
-        with self.client.capture_trace("test_pipeline", "test"):
+        self.client.begin_transaction("transaction.test")
+        with trace("test_pipeline", "test"):
             # conn = redis.StrictRedis()
             pipeline = conn._pipeline()
             pipeline.rpush("mykey", "a", "b")
             pipeline.expire("mykey", 1000)
             pipeline.execute()
-        self.client.end_transaction(None, "test")
+        self.client.end_transaction("MyView")
 
         transactions, traces = self.client.instrumentation_store.get_all()
 
@@ -85,15 +86,15 @@ class InstrumentRedisTest(TestCase):
 
         self.assertEqual(traces[0]['signature'], 'transaction')
         self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'test')
+        self.assertEqual(traces[0]['transaction'], 'MyView')
 
         self.assertEqual(traces[1]['signature'], 'test_pipeline')
         self.assertEqual(traces[1]['kind'], 'test')
-        self.assertEqual(traces[1]['transaction'], 'test')
+        self.assertEqual(traces[1]['transaction'], 'MyView')
 
         self.assertEqual(traces[2]['signature'], 'StrictRedis.pipeline')
         self.assertEqual(traces[2]['kind'], 'cache.redis')
-        self.assertEqual(traces[2]['transaction'], 'test')
+        self.assertEqual(traces[2]['transaction'], 'MyView')
 
         self.assertEqual(len(traces), 6)
 

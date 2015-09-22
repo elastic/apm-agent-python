@@ -8,35 +8,6 @@ from threading import RLock
 
 _CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
 
-class _HashedSeq(list):
-    __slots__ = 'hashvalue'
-
-    def __init__(self, tup, hash=hash):
-        self[:] = tup
-        self.hashvalue = hash(tup)
-
-    def __hash__(self):
-        return self.hashvalue
-
-def _make_key(args, kwds, typed,
-             kwd_mark = (object(),),
-             fasttypes = set([int, str, frozenset, type(None)]),
-             sorted=sorted, tuple=tuple, type=type, len=len):
-    'Make a cache key from optionally typed positional and keyword arguments'
-    key = args
-    if kwds:
-        sorted_items = sorted(kwds.items())
-        key += kwd_mark
-        for item in sorted_items:
-            key += item
-    if typed:
-        key += tuple(type(v) for v in args)
-        if kwds:
-            key += tuple(type(v) for k, v in sorted_items)
-    elif len(key) == 1 and type(key[0]) in fasttypes:
-        return key[0]
-    return _HashedSeq(key)
-
 
 class LRUCache(object):
     def __init__(self, maxsize=100):

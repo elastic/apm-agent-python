@@ -5,6 +5,7 @@ https://www.python.org/dev/peps/pep-0249/
 import re
 
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from opbeat.traces import trace
 from opbeat.utils import wrapt
 
 
@@ -62,6 +63,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
 def tokenize(sql):
     return [t for t in re.split("(\W)", sql) if t != '']
 
+
 def scan(tokens):
     literal_start_idx = None
     literal_started = None
@@ -79,7 +81,7 @@ def scan(tokens):
 
                 if token == literal_started:
                     if (literal_started == "'" and len(tokens) >= i+1
-                        and tokens[i+1] == "'"):  # double quotes
+                            and tokens[i+1] == "'"):  # double quotes
                         i += 1
                         lexeme.append("'")
                     else:
@@ -159,24 +161,6 @@ def extract_signature(sql):
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
 
-    def __init__(self, wrapped, client=None):
-        """
-
-        :param wrapped:
-        :type wrapped:
-        :param client:
-        :type client:
-        :param provider_name: "postgresql", "sqlite" etc.
-        :type provider_name: str
-        :param signature_extraction: callable that returns a trace signature
-        and takes SQL
-        :type signature_extraction: str
-        :return:
-        :rtype:
-        """
-        super(CursorProxy, self).__init__(wrapped)
-        self._self_client = client
-
     def callproc(self, procname, params=()):
         return self._trace_sql(self.__wrapped__.callproc, procname,
                                params)
@@ -191,26 +175,23 @@ class CursorProxy(wrapt.ObjectProxy):
     def _trace_sql(self, method, sql, params):
         signature = self.extract_signature(sql)
         kind = "db.{0}.sql".format(self.provider_name)
-        with self._self_client.capture_trace(signature, kind, {"sql": sql}):
+        with trace(signature, kind, {"sql": sql}):
             return method(sql, params)
 
     def extract_signature(self, sql):
         raise NotImplementedError()
 
+
 class ConnectionProxy(wrapt.ObjectProxy):
     cursor_proxy = CursorProxy
 
-    def __init__(self, wrapped, client):
-        super(ConnectionProxy, self).__init__(wrapped)
-        self._self_client = client
-
     def cursor(self, *args, **kwargs):
-        return self.cursor_proxy(self.__wrapped__.cursor(*args, **kwargs),
-                                 self._self_client)
+        return self.cursor_proxy(self.__wrapped__.cursor(*args, **kwargs))
 
 
 class DbApi2Instrumentation(AbstractInstrumentedModule):
     connect_method = None
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        return ConnectionProxy(wrapped(*args, **kwargs), self.client)
+        return ConnectionProxy(wrapped(*args, **kwargs))
+

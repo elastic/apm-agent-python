@@ -5,6 +5,7 @@ from django.test import TestCase
 import opbeat
 
 from opbeat.contrib.django.models import get_client
+from opbeat.traces import trace
 
 try:
     from http import server as SimpleHTTPServer
@@ -21,7 +22,7 @@ class InstrumentUrllib3Test(TestCase):
         self.client = get_client()
         self.port = 59990
         self.start_test_server()
-        opbeat.instrumentation.control.instrument(self.client)
+        opbeat.instrumentation.control.instrument()
 
     def tearDown(self):
         if self.httpd:
@@ -39,15 +40,15 @@ class InstrumentUrllib3Test(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_urllib3(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction()
+        self.client.begin_transaction("transaction")
         expected_sig = 'GET localhost:{0}'.format(self.port)
-        with self.client.capture_trace("test_pipeline", "test"):
+        with trace("test_pipeline", "test"):
             pool = urllib3.PoolManager(timeout=0.1)
 
             url = 'http://localhost:{0}/hello_world'.format(self.port)
             r = pool.request('GET', url)
 
-        self.client.end_transaction(None, "test")
+        self.client.end_transaction("MyView")
 
         transactions, traces = self.client.instrumentation_store.get_all()
 
@@ -64,15 +65,15 @@ class InstrumentUrllib3Test(TestCase):
 
         self.assertEqual(traces[0]['signature'], 'transaction')
         self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'test')
+        self.assertEqual(traces[0]['transaction'], 'MyView')
 
         self.assertEqual(traces[1]['signature'], 'test_pipeline')
         self.assertEqual(traces[1]['kind'], 'test')
-        self.assertEqual(traces[1]['transaction'], 'test')
+        self.assertEqual(traces[1]['transaction'], 'MyView')
 
         self.assertEqual(traces[2]['signature'], expected_sig)
         self.assertEqual(traces[2]['kind'], 'ext.http.urllib3')
-        self.assertEqual(traces[2]['transaction'], 'test')
+        self.assertEqual(traces[2]['transaction'], 'MyView')
 
         self.assertEqual(traces[2]['extra']['url'], url)
 

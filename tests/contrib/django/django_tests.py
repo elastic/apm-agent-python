@@ -104,7 +104,7 @@ class DjangoClientTest(TestCase):
     def setUp(self):
         self.opbeat = get_client()
         self.opbeat.events = []
-        instrumentation.control.instrument(self.opbeat)
+        instrumentation.control.instrument()
 
     def test_basic(self):
         self.opbeat.capture('Message', message='foo')
@@ -745,7 +745,7 @@ def client_get(client, url):
 def test_stacktraces_have_templates():
     client = TestClient()
     opbeat = get_client()
-    instrumentation.control.instrument(opbeat)
+    instrumentation.control.instrument()
 
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
@@ -783,7 +783,7 @@ def test_stacktraces_have_templates():
 def test_stacktrace_filtered_for_opbeat():
     client = TestClient()
     opbeat = get_client()
-    instrumentation.control.instrument(opbeat)
+    instrumentation.control.instrument()
 
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
@@ -815,7 +815,7 @@ def test_stacktrace_filtered_for_opbeat():
 def test_perf_template_render(benchmark):
     client = TestClient()
     opbeat = get_client()
-    instrumentation.control.instrument(opbeat)
+    instrumentation.control.instrument()
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
         with override_settings(MIDDLEWARE_CLASSES=[
@@ -834,7 +834,7 @@ def test_perf_template_render(benchmark):
 def test_perf_template_render_no_middleware(benchmark):
     client = TestClient()
     opbeat = get_client()
-    instrumentation.control.instrument(opbeat)
+    instrumentation.control.instrument()
     with mock.patch(
             "opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -852,7 +852,7 @@ def test_perf_database_render(benchmark):
     client = TestClient()
 
     opbeat = get_client()
-    instrumentation.control.instrument(opbeat)
+    instrumentation.control.instrument()
     opbeat.instrumentation_store.get_all()
 
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:

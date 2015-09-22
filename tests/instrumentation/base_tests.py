@@ -19,8 +19,8 @@ class TestInstrumentNonExistingMethod(AbstractInstrumentedModule):
 
 
 def test_instrument_nonexisting_method_on_module():
-    TestInstrumentNonExistingFunctionOnModule(get_client()).instrument()
+    TestInstrumentNonExistingFunctionOnModule().instrument()
 
 
 def test_instrument_nonexisting_method():
-    TestInstrumentNonExistingMethod(get_client()).instrument()
+    TestInstrumentNonExistingMethod().instrument()

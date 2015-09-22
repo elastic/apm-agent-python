@@ -219,7 +219,7 @@ def register_handlers():
     if skip_env_var in os.environ:
         logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
     else:
-        opbeat.instrumentation.control.instrument(get_client())
+        opbeat.instrumentation.control.instrument()
 
 
 if 'opbeat.contrib.django' in django_settings.INSTALLED_APPS:

@@ -8,9 +8,9 @@ from opbeat.utils import six
 
 
 def deprecated(alternative=None):
-    '''This is a decorator which can be used to mark functions
+    """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
-    when the function is used.'''
+    when the function is used."""
     def real_decorator(func):
         @functools.wraps(func)
         def new_func(*args, **kwargs):
