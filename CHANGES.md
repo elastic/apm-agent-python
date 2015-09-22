@@ -1,3 +1,6 @@
+### 3.1.1 ###
+ * Fixed bug in Redis instrumentation introduced in 3.1 refactor.
+
 ## 3.1 ##
  * Flask APM support. Install as opbeat[flask] to ensure flask deps are installed.
  * Introduce @opbeat.trace decorator for better insights into custom code
