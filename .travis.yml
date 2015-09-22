@@ -16,8 +16,6 @@ env:
     - WEBFRAMEWORK=django-1.7
     - WEBFRAMEWORK=django-1.8
     - WEBFRAMEWORK=django-master
-    - WEBFRAMEWORK=flask-0.8
-    - WEBFRAMEWORK=flask-0.9
     - WEBFRAMEWORK=flask-0.10
   global:
     - PIP_CACHE="$HOME/.pip_cache"'
