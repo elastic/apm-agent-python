@@ -187,7 +187,7 @@ def test_psycopg2_register_type():
     import psycopg2.extras
 
     client = get_client()
-    control.instrument(client)
+    control.instrument()
 
     try:
         client.begin_transaction("web.django")
