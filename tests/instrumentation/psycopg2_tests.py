@@ -182,7 +182,7 @@ def test_multi_statement_sql():
     assert "CREATE TABLE" == actual
 
 @pytest.mark.skipif(travis_and_psycopg2,
-                    reason="Requires postgres server. Only runs  ontravisci.")
+                    reason="Requires postgres server. Only runs on travisci.")
 def test_psycopg2_register_type():
     import psycopg2.extras
 
@@ -190,7 +190,7 @@ def test_psycopg2_register_type():
     control.instrument(client)
 
     try:
-        client.begin_transaction()
+        client.begin_transaction("web.django")
         conn = psycopg2.connect(database="opbeat_test", user="postgres")
         new_type = psycopg2.extras.register_uuid(None, conn)
         client.end_transaction(None, "test-transaction")

@@ -1,3 +1,8 @@
+## 3.2 ##
+ * Flask APM support. Install as opbeat[flask] to ensure flask deps are installed.
+ * Introduce @opbeat.trace decorator for better insights into custom code
+ * Internal refactoring to support the decorator.
+ 
 ### 3.0.4 ##
  * Only log one line per module we failed to instrument
 

@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render_to_response, render
 import opbeat
 
 from django.contrib.auth.models import User
+from opbeat.traces import trace
 
 
 def no_error(request):
@@ -47,7 +48,7 @@ def logging_request_exc(request):
 
 def render_template_view(request):
     def something_expensive():
-        with opbeat.contrib.django.models.get_client().capture_trace("something_expensive", "code"):
+        with trace("something_expensive", "code"):
             return [User(username='Ron'), User(username='Beni')]
 
     return render(request, "list_users.html",
@@ -60,7 +61,7 @@ def render_jinja2_template(request):
 
 def render_user_view(request):
     def something_expensive():
-        with opbeat.contrib.django.models.get_client().capture_trace("something_expensive", "code"):
+        with trace("something_expensive", "code"):
             for i in range(100):
                 users = list(User.objects.all())
         return users

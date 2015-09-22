@@ -1,4 +1,5 @@
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from opbeat.traces import trace
 
 
 class ZLibInstrumentation(AbstractInstrumentedModule):
@@ -10,5 +11,5 @@ class ZLibInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = module + "." + method
-        with self.client.capture_trace(wrapped_name, "compression.zlib"):
+        with trace(wrapped_name, "compression.zlib"):
             return wrapped(*args, **kwargs)

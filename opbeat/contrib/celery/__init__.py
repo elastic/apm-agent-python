@@ -8,14 +8,12 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-
 try:
     from celery.task import task
 except ImportError:
     from celery.decorators import task
-from celery.signals import task_failure
+from celery import signals
 from opbeat.base import Client
-from opbeat.handlers.logging import OpbeatHandler
 
 
 class CeleryMixin(object):
@@ -50,4 +48,4 @@ def register_signal(client):
                 'args': args,
                 'kwargs': kwargs,
             })
-    task_failure.connect(process_failure_signal, weak=False)
+    signals.task_failure.connect(process_failure_signal, weak=False)

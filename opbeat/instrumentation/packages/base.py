@@ -1,7 +1,7 @@
 import logging
 import functools
 import os
-import inspect
+from opbeat.traces import get_transaction
 
 from opbeat.utils import wrapt
 from opbeat.utils.wrapt import resolve_path
@@ -139,14 +139,13 @@ class AbstractInstrumentedModule(object):
         # ("requests.sessions", "Session.send"),
     ]
 
-    def __init__(self, client=None):
+    def __init__(self):
         """
 
         :param client: opbeat.base.Client
         """
         self.wrapped = None
         self.instrumented = False
-        self.client = client
 
         assert self.name is not None
 
@@ -168,10 +167,7 @@ class AbstractInstrumentedModule(object):
     def get_instrument_list(self):
         return self.instrument_list
 
-    def instrument(self, client=None):
-        if client:
-            self.client = client
-
+    def instrument(self):
         if self.instrumented:
             return
 
@@ -220,7 +216,7 @@ class AbstractInstrumentedModule(object):
         self.instrumented = True
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
-        if not self.client.instrumentation_store.get_transaction():
+        if not get_transaction():
             return wrapped(*args, **kwargs)
         else:
             return self.call(module, method, wrapped, instance, args, kwargs)

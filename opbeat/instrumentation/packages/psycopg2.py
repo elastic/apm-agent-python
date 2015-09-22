@@ -2,6 +2,7 @@ from opbeat.instrumentation.packages.dbapi2 import (ConnectionProxy,
                                                     CursorProxy,
                                                     DbApi2Instrumentation,
                                                     extract_signature)
+from opbeat.traces import trace
 from opbeat.utils import default_ports
 
 
@@ -38,8 +39,8 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
             # Parse connection string and extract host/port
             pass
 
-        with self.client.capture_trace(signature, "db.postgreql.connect"):
-            return PGConnectionProxy(wrapped(*args, **kwargs), self.client)
+        with trace(signature, "db.postgreql.connect"):
+            return PGConnectionProxy(wrapped(*args, **kwargs))
 
 
 class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):

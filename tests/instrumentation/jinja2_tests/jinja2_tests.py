@@ -19,10 +19,10 @@ class InstrumentJinja2Test(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_from_file(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction()
+        self.client.begin_transaction("transaction.test")
         template = self.env.get_template('mytemplate.html')
         template.render()
-        self.client.end_transaction(None, "test")
+        self.client.end_transaction("MyView")
 
         transactions, traces = self.client.instrumentation_store.get_all()
 
@@ -37,13 +37,13 @@ class InstrumentJinja2Test(TestCase):
 
         self.assertEqual(traces[1]['signature'], 'mytemplate.html')
         self.assertEqual(traces[1]['kind'], 'template.jinja2')
-        self.assertEqual(traces[1]['transaction'], 'test')
+        self.assertEqual(traces[1]['transaction'], 'MyView')
 
     def test_from_string(self):
-        self.client.begin_transaction()
+        self.client.begin_transaction("transaction.test")
         template = Template("<html></html")
         template.render()
-        self.client.end_transaction(None, "test")
+        self.client.end_transaction("test")
 
         transactions, traces = self.client.instrumentation_store.get_all()
 

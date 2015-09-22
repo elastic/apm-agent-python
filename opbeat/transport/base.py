@@ -31,7 +31,7 @@ class Transport(object):
 
     def close(self):
         """
-        Cleans up ressources and closes connection
+        Cleans up resources and closes connection
         :return:
         """
         pass

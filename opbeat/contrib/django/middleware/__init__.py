@@ -11,12 +11,10 @@ Large portions are
 
 from __future__ import absolute_import
 
-import time
 import logging
 import threading
 
 from django.conf import settings as django_settings
-
 
 try:
     from importlib import import_module
@@ -24,7 +22,7 @@ except ImportError:
     from django.utils.importlib import import_module
 
 from opbeat.contrib.django.models import client, get_client
-from opbeat.utils import disabled_due_to_debug
+from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.utils import wrapt
 
 
@@ -136,23 +134,12 @@ class OpbeatAPMMiddleware(object):
                     "Can't instrument middleware %s", middleware_path
                 )
 
-    def _get_name_from_view_func(self, view_func):
-        # If no view was set we ignore the request
-        module = view_func.__module__
-
-        if hasattr(view_func, '__name__'):
-            view_name = view_func.__name__
-        else:  # Fall back if there's no __name__
-            view_name = view_func.__class__.__name__
-
-        return '{0}.{1}'.format(module, view_name)
-
     def process_request(self, request):
         if not disabled_due_to_debug(
             getattr(django_settings, 'OPBEAT', {}),
             django_settings.DEBUG
         ):
-            self.client.begin_transaction()
+            self.client.begin_transaction("web.django")
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._opbeat_view_func = view_func
@@ -161,7 +148,7 @@ class OpbeatAPMMiddleware(object):
         try:
             if hasattr(response, 'status_code'):
                 if getattr(request, '_opbeat_view_func', False):
-                    view_func = self._get_name_from_view_func(
+                    view_func = get_name_from_func(
                         request._opbeat_view_func)
                 else:
                     view_func = getattr(
@@ -171,7 +158,7 @@ class OpbeatAPMMiddleware(object):
                     )
                 status_code = response.status_code
 
-                self.client.end_transaction(status_code, view_func)
+                self.client.end_transaction(view_func, status_code)
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',

@@ -1,27 +1,44 @@
-import contextlib
+import functools
 import logging
 import threading
 import time
 from datetime import datetime
 from collections import defaultdict
+from opbeat.utils import get_name_from_func
 
 from opbeat.utils.encoding import force_text
 from opbeat.utils.lru import LRUCache
 
 error_logger = logging.getLogger('opbeat.errors')
 
+all = ('trace', )
 
-all = ('RequestStore', 'trace')
+thread_local = threading.local()
+thread_local.transaction_traces = []
+thread_local.transaction = None
+
+
+def get_transaction():
+    """
+    Get the transaction registered for the current thread.
+
+    :return:
+    :rtype: Transaction
+    """
+    return getattr(thread_local, "transaction", None)
 
 
 class Transaction(object):
     _lrucache = LRUCache(maxsize=5000)
 
-    def __init__(self, start_time, get_frames):
+    def __init__(self, start_time, get_frames, client,
+                 kind="transaction.django"):
         self.start_time = start_time
+        self.get_frames = get_frames
+        self.client = client
+
         self.transaction_traces = []
         self.trace_stack = []
-        self.get_frames = get_frames
         self.ignore_subtree = False
 
         # The transaction is a trace as well
@@ -119,7 +136,6 @@ class TraceGroup(AbstractTrace):
 
         self.traces = []
 
-
     def add(self, trace):
         self.traces.append(trace)
 
@@ -168,8 +184,6 @@ class RequestsStore(object):
     def __init__(self, get_frames, collect_frequency):
         self.cond = threading.Condition()
         self._get_frames = get_frames
-        self.thread_local = threading.local()
-        self.thread_local.transaction_traces = []
         self._transactions = {}
         self._traces = defaultdict(list)
         self.collect_frequency = collect_frequency
@@ -204,22 +218,17 @@ class RequestsStore(object):
         with self.cond:
             return sum([len(v.durations) for v in self._transactions.values()])
 
-    def get_transaction(self):
-        """
-        Get the transaction registered for the current thread.
-
-        :return:
-        :rtype: Transaction
-        """
-        return getattr(self.thread_local, "transaction", None)
-
-    def transaction_start(self):
+    def transaction_start(self, client, kind):
         """
         Start a new transactions and bind it in a thread-local variable
 
         """
-        self.thread_local.transaction = Transaction(time.time(),
-                                                    self._get_frames)
+        thread_local.transaction = Transaction(
+            time.time(),
+            self._get_frames,
+            client,
+            kind,
+        )
 
     def _add_traces(self, traces):
         with self.cond:
@@ -230,7 +239,7 @@ class RequestsStore(object):
             self.cond.notify()
 
     def transaction_end(self, response_code, transaction_name):
-        transaction = self.get_transaction()
+        transaction = get_transaction()
         if transaction:
             elapsed = (time.time() - transaction.start_time)*1000
 
@@ -251,20 +260,38 @@ class RequestsStore(object):
 
             # Reset thread local transaction to subsequent call to this method
             # behaves as expected.
-            self.thread_local.transaction = None
+            thread_local.transaction = None
 
 
-    @contextlib.contextmanager
-    def trace(self, signature, kind, extra=None, skip_frames=0,
-              leaf=False):
-        transaction = self.get_transaction()
+class trace(object):
+    def __init__(self, signature=None, kind='code.custom', extra=None,
+                 skip_frames=0, leaf=False):
+        self.signature = signature
+        self.kind = kind
+        self.extra = extra
+        self.skip_frames = skip_frames
+        self.leaf = leaf
 
-        if not transaction:
-            yield
-            return
+        self.transaction = None
 
-        try:
-            transaction.begin_trace(signature, kind, extra, leaf)
-            yield
-        finally:
-            transaction.end_trace(skip_frames)
+    def __call__(self, func):
+        self.signature = self.signature or get_name_from_func(func)
+
+        @functools.wraps(func)
+        def decorated(*args, **kwds):
+            with self:
+                return func(*args, **kwds)
+
+        return decorated
+
+    def __enter__(self):
+        self.transaction = get_transaction()
+
+        if self.transaction:
+            self.transaction.begin_trace(self.signature, self.kind, self.extra,
+                                         self.leaf)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.transaction:
+            self.transaction.end_trace(self.skip_frames)
+

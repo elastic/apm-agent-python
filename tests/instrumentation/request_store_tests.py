@@ -3,7 +3,7 @@ import time
 from django.test import TestCase
 from mock import Mock
 
-from opbeat.traces import RequestsStore
+from opbeat.traces import RequestsStore, trace
 
 
 class RequestStoreTest(TestCase):
@@ -84,25 +84,25 @@ class RequestStoreTest(TestCase):
         self.requests_store = RequestsStore(self.mock_get_frames, 99999)
 
     def test_lru_get_frames_cache(self):
-        self.requests_store.transaction_start()
+        self.requests_store.transaction_start(None, "transaction.test")
 
         for i in range(10):
-            with self.requests_store.trace("bleh", "custom"):
+            with trace("bleh", "custom"):
                 time.sleep(0.01)
 
         self.assertEqual(self.mock_get_frames.call_count, 1)
 
     def test_leaf_tracing(self):
-        self.requests_store.transaction_start()
+        self.requests_store.transaction_start(None, "transaction.test")
 
-        with self.requests_store.trace("root", "custom"):
-            with self.requests_store.trace("child1-leaf", "custom", leaf=True):
+        with trace("root", "custom"):
+            with trace("child1-leaf", "custom", leaf=True):
 
                 # These two traces should not show up
-                with self.requests_store.trace("ignored-child1", "custom", leaf=True):
+                with trace("ignored-child1", "custom", leaf=True):
                     time.sleep(0.01)
 
-                with self.requests_store.trace("ignored-child2", "custom", leaf=False):
+                with trace("ignored-child2", "custom", leaf=False):
                     time.sleep(0.01)
 
         self.requests_store.transaction_end(None, "transaction")

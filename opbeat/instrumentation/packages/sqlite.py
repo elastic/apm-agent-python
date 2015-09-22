@@ -2,6 +2,7 @@ from opbeat.instrumentation.packages.dbapi2 import (CursorProxy,
                                                     ConnectionProxy,
                                                     DbApi2Instrumentation,
                                                     extract_signature)
+from opbeat.traces import trace
 
 
 class SQLiteCursorProxy(CursorProxy):
@@ -10,8 +11,10 @@ class SQLiteCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+
 class SQLiteConnectionProxy(ConnectionProxy):
     cursor_proxy = SQLiteCursorProxy
+
 
 class SQLiteInstrumentation(DbApi2Instrumentation):
     name = 'sqlite'
@@ -28,5 +31,5 @@ class SQLiteInstrumentation(DbApi2Instrumentation):
         if len(args) == 1:
             signature += " " + str(args[0])
 
-        with self.client.capture_trace(signature, "db.sqlite.connect"):
-            return SQLiteConnectionProxy(wrapped(*args, **kwargs), self.client)
+        with trace(signature, "db.sqlite.connect"):
+            return SQLiteConnectionProxy(wrapped(*args, **kwargs))
