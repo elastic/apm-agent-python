@@ -16,7 +16,7 @@ class RedisInstrumentation(AbstractInstrumentedModule):
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with self.client.capture_trace(wrapped_name, "cache.redis", leaf=True):
+        with trace(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)
 
 
