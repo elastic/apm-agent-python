@@ -1,2 +1,2 @@
-Django>=0.8,<0.9
+Flask>=0.8,<0.9
 -r requirements-base.txt
