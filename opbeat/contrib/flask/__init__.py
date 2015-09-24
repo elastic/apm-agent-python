@@ -28,7 +28,7 @@ from opbeat.utils.deprecation import deprecated
 logger = logging.getLogger('opbeat.errors.client')
 
 
-def make_client(client_cls, app, organization_id=None, app_id=None, secret_token=None):
+def make_client(client_cls, app, organization_id=None, app_id=None, secret_token=None, is_enabled=None):
     opbeat_config = app.config.get('OPBEAT', {})
     # raise a warning if OPBEAT_ORGANIZATION_ID is set in the config, but not
     # ORGANIZATION_ID. Until 1.3.1, we erroneously checked only
@@ -57,28 +57,33 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
             DeprecationWarning,
         )
     organization_id = (
-        organization_id
-        or opbeat_config.get('ORGANIZATION_ID')  # config
-        or os.environ.get('OPBEAT_ORGANIZATION_ID')  # environment
-        or opbeat_config.get('OPBEAT_ORGANIZATION_ID')  # deprecated fallback
+        organization_id or
+        opbeat_config.get('ORGANIZATION_ID') or  # config
+        os.environ.get('OPBEAT_ORGANIZATION_ID') or  # environment
+        opbeat_config.get('OPBEAT_ORGANIZATION_ID')  # deprecated fallback
     )
     app_id = (
-        app_id
-        or opbeat_config.get('APP_ID')  # config
-        or os.environ.get('OPBEAT_APP_ID')  # environment
-        or os.environ.get('APP_ID')  # deprecated fallback
+        app_id or
+        opbeat_config.get('APP_ID') or  # config
+        os.environ.get('OPBEAT_APP_ID') or  # environment
+        os.environ.get('APP_ID')  # deprecated fallback
     )
     secret_token = (
-        secret_token
-        or opbeat_config.get('SECRET_TOKEN')  # config
-        or os.environ.get('OPBEAT_SECRET_TOKEN')  # environment
-        or os.environ.get('SECRET_TOKEN')  # deprecated fallback
+        secret_token or
+        opbeat_config.get('SECRET_TOKEN') or  # config
+        os.environ.get('OPBEAT_SECRET_TOKEN') or  # environment
+        os.environ.get('SECRET_TOKEN')  # deprecated fallback
+    )
+    is_enabled = (
+        is_enabled or
+        opbeat_config.get('IS_ENABLED')
     )
 
     return client_cls(
         organization_id=organization_id,
         app_id=app_id,
         secret_token=secret_token,
+        is_enabled=is_enabled,
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
         servers=opbeat_config.get('SERVERS'),
@@ -127,11 +132,12 @@ class Opbeat(object):
     >>> opbeat.captureMessage('hello, world!')
     """
     def __init__(self, app=None, organization_id=None, app_id=None,
-                 secret_token=None, client=None,
-                 client_cls=Client, logging=False):
+                 secret_token=None, client=None, client_cls=Client,
+                 logging=False, is_enabled=None):
         self.organization_id = organization_id
         self.app_id = app_id
         self.secret_token = secret_token
+        self.is_enabled = is_enabled
         self.logging = logging
         self.client_cls = client_cls
         self.client = client
@@ -161,8 +167,8 @@ class Opbeat(object):
         self.app = app
         if not self.client:
             self.client = make_client(
-                self.client_cls, app,
-                self.organization_id, self.app_id, self.secret_token
+                self.client_cls, app, self.organization_id,
+                self.app_id, self.secret_token, self.is_enabled
             )
 
         if self.logging:
