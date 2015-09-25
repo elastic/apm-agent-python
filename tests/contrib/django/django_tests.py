@@ -580,9 +580,13 @@ class DjangoClientTest(TestCase):
             self.client.get(reverse('opbeat-no-error-slash')[:-1])
         timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
-        self.assertEqual(
-            timing['transaction'],
-            'django.middleware.common.CommonMiddleware.process_request'
+        self.assertIn(
+            timing['transaction'], (
+                # django <= 1.8
+                'django.middleware.common.CommonMiddleware.process_request',
+                # django 1.9+
+                'django.middleware.common.CommonMiddleware.process_response',
+            )
         )
 
     def test_request_metrics_301_prepend_www(self):
