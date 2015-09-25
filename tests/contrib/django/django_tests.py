@@ -354,10 +354,12 @@ class DjangoClientTest(TestCase):
         self.opbeat.include_paths = include_paths
 
     def test_template_name_as_view(self):
-        self.assertRaises(
-            TemplateSyntaxError,
-            self.client.get, reverse('opbeat-template-exc')
-        )
+        # TODO this test passes only with TEMPLATE_DEBUG=True
+        with override_settings(TEMPLATE_DEBUG=True):
+            self.assertRaises(
+                TemplateSyntaxError,
+                self.client.get, reverse('opbeat-template-exc')
+            )
 
         self.assertEquals(len(self.opbeat.events), 1)
         event = self.opbeat.events.pop(0)

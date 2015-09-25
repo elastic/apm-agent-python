@@ -61,7 +61,7 @@ def pytest_configure(config):
             BROKER_PASSWORD="guest",
             BROKER_VHOST="/",
             CELERY_ALWAYS_EAGER=True,
-            TEMPLATE_DEBUG=True,
+            TEMPLATE_DEBUG=False,
             TEMPLATE_DIRS=[BASE_TEMPLATE_DIR],
             ALLOWED_HOSTS=['*'],
             MIDDLEWARE_CLASSES=[
