@@ -16,7 +16,10 @@ import logging
 from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
-from django.template.loader import LoaderOrigin
+try:
+    from django.template.loader import LoaderOrigin  # Django < 1.9
+except ImportError:
+    from django.template.base import Origin as LoaderOrigin  # Django >= 1.9
 
 try:
     # Attempt to use the Django 1.7+ apps sub-framework.
