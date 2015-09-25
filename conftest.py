@@ -16,6 +16,13 @@ sys.path.insert(0, where_am_i)
 collect_ignore = ['build', 'src']
 
 
+try:
+    from psycopg2cffi import compat
+    compat.register()
+except ImportError:
+    pass
+
+
 def pytest_configure(config):
     if not settings.configured:
         import django
