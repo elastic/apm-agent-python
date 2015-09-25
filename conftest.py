@@ -18,6 +18,13 @@ collect_ignore = ['build', 'src']
 
 def pytest_configure(config):
     if not settings.configured:
+        import django
+
+        # django-celery does not work well with Django 1.8+
+        if django.VERSION < (1, 8):
+            djcelery = ['djcelery']
+        else:
+            djcelery = []
         settings.configure(
             DATABASE_ENGINE='sqlite3',
             DATABASES={
@@ -39,11 +46,9 @@ def pytest_configure(config):
 
                 'django.contrib.contenttypes',
 
-                'djcelery',  # celery client
-
                 'opbeat.contrib.django',
                 'tests.contrib.django.testapp',
-            ],
+            ] + djcelery,
             ROOT_URLCONF='tests.contrib.django.testapp.urls',
             DEBUG=False,
             SITE_ID=1,
@@ -62,8 +67,8 @@ def pytest_configure(config):
                 'django.contrib.messages.middleware.MessageMiddleware',
             ],
         )
-        import django
         if hasattr(django, 'setup'):
             django.setup()
-        import djcelery
-        djcelery.setup_loader()
+        if django.VERSION < (1, 8):
+            import djcelery
+            djcelery.setup_loader()
