@@ -750,10 +750,19 @@ def test_stacktraces_have_templates():
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
 
+    # only Django 1.9+ have the necessary information stored on Node/Template
+    # instances when TEMPLATE_DEBUG = False
+
+    TEMPLATE_DEBUG = django.VERSION < (1, 9)
+
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        with override_settings(MIDDLEWARE_CLASSES=[
-            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+        with override_settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
+            ],
+            TEMPLATE_DEBUG=TEMPLATE_DEBUG,
+        ):
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
