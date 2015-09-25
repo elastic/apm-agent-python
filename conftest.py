@@ -26,15 +26,18 @@ def pytest_configure(config):
         else:
             djcelery = []
         settings.configure(
-            DATABASE_ENGINE='sqlite3',
             DATABASES={
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',
-                    'TEST_NAME': 'opbeat_tests.db',
                     'NAME': 'opbeat_tests.db',
+                    'TEST_NAME': 'opbeat_tests.db',
+                    'TEST': {
+                        'NAME': 'opbeat_tests.db',
+                    }
                 },
             },
             # HACK: this fixes our threaded runserver remote tests
+            DATABASE_ENGINE='sqlite3',
             DATABASE_NAME='opbeat_tests.db',
             TEST_DATABASE_NAME='opbeat_tests.db',
             INSTALLED_APPS=[
