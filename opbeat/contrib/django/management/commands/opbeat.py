@@ -92,18 +92,32 @@ or with environment variables:
 
 
 class Command(BaseCommand):
-    option_list = BaseCommand.option_list + (
-        make_option('-o', '--organization-id', default=None,
-                    dest='organization_id',
-                    help='Specifies the organization ID.'),
-        make_option('-a', '--app-id', default=None,
-                    dest='app_id',
-                    help='Specifies the app ID.'),
-        make_option('-t', '--token', default=None,
-                    dest='secret_token',
-                    help='Specifies the secret token.'),
+    arguments = (
+        (('-o', '--organization-id'),
+         {'default': None, 'dest': 'organization_id',
+          'help': 'Specifies the organization ID.'}
+         ),
+
+        (('-a', '--app-id'),
+         {'default': None, 'dest': 'app_id', 'help': 'Specifies the app ID.'}
+        ),
+
+        (('-t', '--token'),
+         {'default': None, 'dest': 'secret_token',
+          'help': 'Specifies the secret token.'}
+         )
     )
+    if not hasattr(BaseCommand, 'add_arguments'):
+        # Django <= 1.7
+        option_list = BaseCommand.option_list + tuple(
+            make_option(*args, **kwargs) for args, kwargs in arguments
+        )
     args = 'test check'
+
+    # Django 1.8+
+    def add_arguments(self, parser):
+        for args, kwargs in self.arguments:
+            parser.add_argument(*args, **kwargs)
 
     def handle(self, *args, **options):
         if not args:
