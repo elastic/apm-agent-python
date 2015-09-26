@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-import logging
-import sys
 from os.path import dirname, abspath, join, splitext
-from os import listdir
-from django.conf import settings
+import sys
+
+from django import conf
 
 where_am_i = dirname(abspath(__file__))
 
@@ -24,7 +23,7 @@ except ImportError:
 
 
 def pytest_configure(config):
-    if not settings.configured:
+    if not conf.settings.configured:
         import django
 
         # django-celery does not work well with Django 1.8+
@@ -32,7 +31,7 @@ def pytest_configure(config):
             djcelery = ['djcelery']
         else:
             djcelery = []
-        settings.configure(
+        conf.settings.configure(
             DATABASES={
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',

@@ -1,5 +1,5 @@
-py==1.4.26
-pytest==2.6.4
+py==1.4.30
+pytest==2.8.0
 pytest-capturelog==0.7
 pytest-django==2.8.0
 pytest-benchmark==2.5.0
