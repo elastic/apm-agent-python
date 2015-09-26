@@ -1,21 +1,20 @@
 from __future__ import absolute_import
 
 import django
+from django.conf import settings
+from django.conf.urls import url
+from django.http import HttpResponse
+
 from tests.contrib.django.testapp import views
 
-from django.conf import settings
-if django.VERSION < (1, 4):
-    from django.conf.urls.defaults import *  # Django 1.3
-else:
-    from django.conf.urls import url, patterns
-from django.http import HttpResponse
 
 def handler500(request):
     if getattr(settings, 'BREAK_THAT_500', False):
         raise ValueError('handler500')
     return HttpResponse('')
 
-urls = (
+
+urlpatterns = (
     url(r'^render-heavy-template$', views.render_template_view, name='render-heavy-template'),
     url(r'^render-user-template$', views.render_user_view, name='render-user-template'),
     url(r'^no-error$', views.no_error, name='opbeat-no-error'),
@@ -31,7 +30,6 @@ urls = (
 
 
 if django.VERSION >= (1, 8):
-    urls += url(r'^render-jinja2-template$', views.render_jinja2_template,
+    urlpatterns += url(r'^render-jinja2-template$', views.render_jinja2_template,
         name='render-jinja2-template'),
 
-urlpatterns = patterns('', *urls)
