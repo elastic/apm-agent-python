@@ -355,7 +355,20 @@ class DjangoClientTest(TestCase):
 
     def test_template_name_as_view(self):
         # TODO this test passes only with TEMPLATE_DEBUG=True
-        with override_settings(TEMPLATE_DEBUG=True):
+        with override_settings(
+            TEMPLATE_DEBUG=True,
+            TEMPLATES=[
+                {
+                    'BACKEND': settings.TEMPLATES[0]['BACKEND'],
+                    'DIRS': settings.TEMPLATES[0]['DIRS'],
+                    'OPTIONS': {
+                        'context_processors': settings.TEMPLATES[0]['OPTIONS']['context_processors'],
+                        'loaders': settings.TEMPLATES[0]['OPTIONS']['loaders'],
+                        'debug': True,
+                    },
+                },
+            ]
+        ):
             self.assertRaises(
                 TemplateSyntaxError,
                 self.client.get, reverse('opbeat-template-exc')

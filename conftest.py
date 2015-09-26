@@ -75,6 +75,22 @@ def pytest_configure(config):
                 'django.contrib.auth.middleware.AuthenticationMiddleware',
                 'django.contrib.messages.middleware.MessageMiddleware',
             ],
+            TEMPLATES=[
+                {
+                    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                    'DIRS': [BASE_TEMPLATE_DIR],
+                    'OPTIONS': {
+                        'context_processors': [
+                            'django.contrib.auth.context_processors.auth',
+                        ],
+                        'loaders': [
+                            'django.template.loaders.filesystem.Loader',
+                        ],
+                        'debug': False,
+                    },
+                },
+            ]
+
         )
         if hasattr(django, 'setup'):
             django.setup()
