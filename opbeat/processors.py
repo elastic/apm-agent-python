@@ -101,7 +101,7 @@ class SanitizePasswordsProcessor(Processor):
                 continue
 
             if isinstance(data[n], (six.binary_type,) + six.string_types):
-                text_data = force_text(data[n])
+                text_data = force_text(data[n], errors='replace')
                 if '=' in text_data:
                     # at this point we've assumed it's a standard HTTP query
                     querybits = []
