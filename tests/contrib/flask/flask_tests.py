@@ -1,3 +1,6 @@
+import pytest # isort:skip
+pytest.importorskip("flask") # isort:skip
+
 from django.test import TestCase
 
 import mock

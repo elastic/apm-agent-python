@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import absolute_import
+
+import pytest  # isort:skip
+pytest.importorskip("django")  # isort:skip
 
 import datetime
 import logging
