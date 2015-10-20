@@ -2,13 +2,14 @@ import sqlite3
 
 import mock
 
-from opbeat.contrib.django.models import get_client, opbeat
+import opbeat.instrumentation.control
+from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
 
 class InstrumentSQLiteTest(TestCase):
     def setUp(self):
-        self.client = get_client()
+        self.client = get_tempstoreclient()
         opbeat.instrumentation.control.instrument()
 
     @mock.patch("opbeat.traces.RequestsStore.should_collect")

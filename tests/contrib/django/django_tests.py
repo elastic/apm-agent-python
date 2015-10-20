@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 import pytest  # isort:skip
-pytest.importorskip("django")  # isort:skip
+django = pytest.importorskip("django")  # isort:skip
 
 import datetime
 import logging
 
-import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.redirects.models import Redirect

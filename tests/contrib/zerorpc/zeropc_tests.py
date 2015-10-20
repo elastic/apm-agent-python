@@ -10,7 +10,6 @@ from opbeat.contrib.zerorpc import OpbeatMiddleware
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
-
 zerorpc = pytest.importorskip("zerorpc")
 gevent = pytest.importorskip("gevent")
 

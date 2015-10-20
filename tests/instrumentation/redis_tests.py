@@ -5,14 +5,15 @@ import redis
 from redis.client import StrictRedis
 
 import opbeat
+import opbeat.instrumentation.control
 from opbeat.traces import trace
-from tests.contrib.django.django_tests import get_client
+from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
 
 class InstrumentRedisTest(TestCase):
     def setUp(self):
-        self.client = get_client()
+        self.client = get_tempstoreclient()
         opbeat.instrumentation.control.instrument()
 
     @mock.patch("opbeat.traces.RequestsStore.should_collect")

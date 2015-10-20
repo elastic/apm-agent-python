@@ -2,8 +2,6 @@
 import sys
 from os.path import abspath, dirname, join
 
-from django.conf import settings
-
 where_am_i = dirname(abspath(__file__))
 
 BASE_TEMPLATE_DIR = join(where_am_i, 'tests', 'contrib', 'django', 'testapp',
@@ -16,7 +14,11 @@ collect_ignore = ['build', 'src']
 
 
 def pytest_configure(config):
-    if not settings.configured:
+    try:
+        from django.conf import settings
+    except ImportError:
+        settings = None
+    if settings is not None and not settings.configured:
         import django
 
         # django-celery does not work well with Django 1.8+

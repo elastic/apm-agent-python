@@ -4,10 +4,10 @@ import mock
 import urllib3
 
 import opbeat
-from opbeat.contrib.django.models import get_client
+import opbeat.instrumentation.control
 from opbeat.traces import trace
+from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
-
 
 try:
     from http import server as SimpleHTTPServer
@@ -21,7 +21,7 @@ class MyTCPServer(TCPServer):
 
 class InstrumentUrllib3Test(TestCase):
     def setUp(self):
-        self.client = get_client()
+        self.client = get_tempstoreclient()
         self.port = 59990
         self.start_test_server()
         opbeat.instrumentation.control.instrument()

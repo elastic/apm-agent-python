@@ -4,13 +4,14 @@ import mock
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
-from opbeat.contrib.django.models import get_client, opbeat
+import opbeat.instrumentation.control
+from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
 
 class InstrumentJinja2Test(TestCase):
     def setUp(self):
-        self.client = get_client()
+        self.client = get_tempstoreclient()
         filedir = os.path.dirname(__file__)
         loader = FileSystemLoader(filedir)
         self.env = Environment(loader=loader)

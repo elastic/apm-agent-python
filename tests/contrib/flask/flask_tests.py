@@ -1,5 +1,5 @@
-import pytest # isort:skip
-pytest.importorskip("flask") # isort:skip
+import pytest  # isort:skip
+pytest.importorskip("flask")  # isort:skip
 
 import mock
 from flask import Flask, render_template, signals

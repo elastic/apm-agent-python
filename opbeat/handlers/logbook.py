@@ -16,7 +16,6 @@ import traceback
 import logbook
 
 from opbeat.base import Client
-from opbeat.contrib.django.middleware import OpbeatLogMiddleware
 from opbeat.utils import six
 from opbeat.utils.encoding import to_string
 
