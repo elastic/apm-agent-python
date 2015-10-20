@@ -139,6 +139,16 @@ class SantizePasswordsProcessorTest(TestCase):
         result = proc.sanitize('foo', '4242424242424242')
         self.assertEquals(result, proc.MASK)
 
+    def test_non_utf8_encoding(self):
+        data = {
+            'http': {
+                'query_string': six.b('broken=') + u"aéöüa".encode('latin-1')
+            }
+        }
+        proc = SanitizePasswordsProcessor(Mock())
+        result = proc.process(data)
+        assert result['http']['query_string'] == u'broken=a\ufffd\ufffd\ufffda'
+
 
 class RemovePostDataProcessorTest(TestCase):
     def test_does_remove_data(self):
