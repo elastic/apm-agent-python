@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-
-from django.test import TestCase
+from __future__ import absolute_import
 
 import mock
 import pytest
 
 from opbeat.contrib.celery import CeleryClient
+from tests.utils.compat import TestCase
 
 try:
     from celery.tests.utils import with_eager_tasks

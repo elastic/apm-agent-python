@@ -1,13 +1,13 @@
 import threading
 
-from django.test import TestCase
-
 import mock
 import urllib3
 
 import opbeat
 from opbeat.contrib.django.models import get_client
 from opbeat.traces import trace
+from tests.utils.compat import TestCase
+
 
 try:
     from http import server as SimpleHTTPServer

@@ -1,13 +1,12 @@
 import pytest # isort:skip
 pytest.importorskip("flask") # isort:skip
 
-from django.test import TestCase
-
 import mock
 from flask import Flask, render_template, signals
 
 from opbeat.contrib.flask import Opbeat
 from tests.helpers import get_tempstoreclient
+from tests.utils.compat import TestCase
 
 
 def create_app():

@@ -1,10 +1,9 @@
 import time
 
-from django.test import TestCase
-
 from mock import Mock
 
 from opbeat.traces import RequestsStore, trace
+from tests.utils.compat import TestCase
 
 
 class RequestStoreTest(TestCase):

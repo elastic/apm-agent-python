@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
 import datetime
 import uuid
 
-from django.test import TestCase
-
 from opbeat.utils import opbeat_json as json
 from opbeat.utils import six
+from tests.utils.compat import TestCase
 
 
 class JSONTest(TestCase):

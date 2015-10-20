@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
 import uuid
 
-from django.test import TestCase
-
 from opbeat.utils import six
 from opbeat.utils.encoding import shorten, transform
+from tests.utils.compat import TestCase
 
 
 class TransformTest(TestCase):

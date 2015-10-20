@@ -1,6 +1,7 @@
-from django.test import TestCase
+from __future__ import absolute_import
 
 from opbeat.utils.lru import LRUCache
+from tests.utils.compat import TestCase
 
 
 class LRUTest(TestCase):

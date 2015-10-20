@@ -1,10 +1,9 @@
 import sqlite3
 
-from django.test import TestCase
-
 import mock
 
 from opbeat.contrib.django.models import get_client, opbeat
+from tests.utils.compat import TestCase
 
 
 class InstrumentSQLiteTest(TestCase):

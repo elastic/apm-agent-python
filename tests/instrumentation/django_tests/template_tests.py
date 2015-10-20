@@ -1,3 +1,6 @@
+import pytest  # isort:skip
+pytest.importorskip("django")  # isort:skip
+
 from os.path import join
 
 import django

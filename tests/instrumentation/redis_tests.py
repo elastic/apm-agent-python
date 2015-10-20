@@ -1,7 +1,5 @@
 from functools import partial
 
-from django.test import TestCase
-
 import mock
 import redis
 from redis.client import StrictRedis
@@ -9,6 +7,7 @@ from redis.client import StrictRedis
 import opbeat
 from opbeat.traces import trace
 from tests.contrib.django.django_tests import get_client
+from tests.utils.compat import TestCase
 
 
 class InstrumentRedisTest(TestCase):

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-
 import time
-
-from django.test import TestCase
 
 import mock
 import pytest
@@ -13,6 +10,7 @@ from opbeat.conf import defaults
 from opbeat.transport.base import TransportException
 from opbeat.utils import six
 from tests.helpers import get_tempstoreclient
+from tests.utils.compat import TestCase
 
 
 class ClientStateTest(TestCase):

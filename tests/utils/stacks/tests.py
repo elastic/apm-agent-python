@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-
-from django.test import TestCase
+from __future__ import absolute_import
 
 from mock import Mock
 
 from opbeat.utils import six
 from opbeat.utils.stacks import get_culprit, get_stack_info
+from tests.utils.compat import TestCase
 
 
 class Context(object):

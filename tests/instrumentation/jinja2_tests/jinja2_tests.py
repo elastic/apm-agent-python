@@ -1,12 +1,11 @@
 import os
 
-from django.test import TestCase
-
 import mock
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
 from opbeat.contrib.django.models import get_client, opbeat
+from tests.utils.compat import TestCase
 
 
 class InstrumentJinja2Test(TestCase):

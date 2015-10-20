@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-
-from django.test import TestCase
+from __future__ import absolute_import
 
 from mock import Mock
 
 from opbeat.events import Message
+from tests.utils.compat import TestCase
 
 
 class MessageTest(TestCase):
-
     def test_to_string(self):
         unformatted_message = 'My message from %s about %s'
         client = Mock()

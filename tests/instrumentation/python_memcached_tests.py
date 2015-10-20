@@ -1,13 +1,10 @@
-from functools import partial
-
-from django.test import TestCase
-
 import memcache
 import mock
 
 import opbeat
 from opbeat.traces import trace
 from tests.contrib.django.django_tests import get_client
+from tests.utils.compat import TestCase
 
 
 class InstrumentMemcachedTest(TestCase):

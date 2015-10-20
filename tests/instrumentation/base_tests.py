@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
-from tests.contrib.django.django_tests import get_client
 
 
 class TestInstrumentNonExistingFunctionOnModule(AbstractInstrumentedModule):

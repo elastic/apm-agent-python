@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-
-from django.test import TestCase
+from __future__ import absolute_import
 
 from mock import Mock
 
@@ -9,6 +8,7 @@ from opbeat.processors import (RemovePostDataProcessor,
                                SanitizePasswordsProcessor)
 from opbeat.utils import six
 from opbeat.utils.encoding import force_text
+from tests.utils.compat import TestCase
 
 
 class SantizePasswordsProcessorTest(TestCase):
