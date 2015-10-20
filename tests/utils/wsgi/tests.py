@@ -1,5 +1,6 @@
 from django.test import TestCase
-from opbeat.utils.wsgi import get_headers, get_host, get_environ
+
+from opbeat.utils.wsgi import get_environ, get_headers, get_host
 
 
 class GetHeadersTest(TestCase):

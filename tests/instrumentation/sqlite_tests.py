@@ -1,6 +1,9 @@
-from django.test import TestCase
 import sqlite3
+
+from django.test import TestCase
+
 import mock
+
 from opbeat.contrib.django.models import get_client, opbeat
 
 
@@ -57,6 +60,3 @@ class InstrumentSQLiteTest(TestCase):
         self.assertEqual(traces[4]['transaction'], 'MyView')
 
         self.assertEqual(len(traces), 5)
-
-
-

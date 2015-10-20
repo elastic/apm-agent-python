@@ -9,15 +9,15 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 from __future__ import absolute_import
-from opbeat.contrib.django.middleware import OpbeatLogMiddleware
 
-from opbeat.utils import six
-
-import logbook
 import sys
 import traceback
 
+import logbook
+
 from opbeat.base import Client
+from opbeat.contrib.django.middleware import OpbeatLogMiddleware
+from opbeat.utils import six
 from opbeat.utils.encoding import to_string
 
 LOOKBOOK_LEVELS = {

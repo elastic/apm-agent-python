@@ -1,5 +1,7 @@
 import os
+
 from django.template.base import Node
+
 from opbeat.utils.stacks import get_frame_info
 
 

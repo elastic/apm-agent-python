@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from opbeat.utils import six
-from mock import Mock
 from django.test import TestCase
 
+from mock import Mock
+
+from opbeat.utils import six
 from opbeat.utils.stacks import get_culprit, get_stack_info
 
 

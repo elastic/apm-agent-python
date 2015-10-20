@@ -3,16 +3,17 @@ import logging
 import socket
 import sys
 
+from opbeat.conf import defaults
+from opbeat.contrib.async_worker import AsyncWorker
+from opbeat.transport.base import AsyncTransport, Transport, TransportException
+from opbeat.utils import six
+from opbeat.utils.compat import HTTPError
+
 try:
     from urllib2 import Request, urlopen
 except ImportError:
     from urllib.request import Request, urlopen
 
-from opbeat.conf import defaults
-from opbeat.contrib.async_worker import AsyncWorker
-from opbeat.transport.base import Transport, AsyncTransport, TransportException
-from opbeat.utils import six
-from opbeat.utils.compat import HTTPError
 
 logger = logging.getLogger('opbeat')
 

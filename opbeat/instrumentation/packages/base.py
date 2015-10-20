@@ -1,8 +1,8 @@
-import logging
 import functools
+import logging
 import os
-from opbeat.traces import get_transaction
 
+from opbeat.traces import get_transaction
 from opbeat.utils import wrapt
 from opbeat.utils.wrapt import resolve_path
 

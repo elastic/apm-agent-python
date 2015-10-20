@@ -16,14 +16,14 @@ import threading
 
 from django.conf import settings as django_settings
 
+from opbeat.contrib.django.models import client, get_client
+from opbeat.utils import disabled_due_to_debug, get_name_from_func, wrapt
+
 try:
     from importlib import import_module
 except ImportError:
     from django.utils.importlib import import_module
 
-from opbeat.contrib.django.models import client, get_client
-from opbeat.utils import disabled_due_to_debug, get_name_from_func
-from opbeat.utils import wrapt
 
 
 def _is_ignorable_404(uri):

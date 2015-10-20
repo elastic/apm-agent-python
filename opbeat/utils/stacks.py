@@ -8,11 +8,11 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from opbeat.utils import six
 import inspect
 import re
 import sys
 
+from opbeat.utils import six
 from opbeat.utils.encoding import transform
 
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')

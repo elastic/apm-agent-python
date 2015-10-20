@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+
 import pytest
 
 from opbeat.instrumentation import control
 from opbeat.instrumentation.packages.psycopg2 import extract_signature
-
 from tests.contrib.django.django_tests import get_client
 
 try:
@@ -199,4 +199,3 @@ def test_psycopg2_register_type():
         client.instrumentation_store.get_all()
 
     assert new_type is not None
-

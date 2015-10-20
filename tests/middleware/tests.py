@@ -1,8 +1,10 @@
 from django.test import TestCase
 
-from opbeat.middleware import Opbeat
-from ..helpers import get_tempstoreclient
 import webob
+
+from opbeat.middleware import Opbeat
+
+from ..helpers import get_tempstoreclient
 
 
 def example_app(environ, start_response):

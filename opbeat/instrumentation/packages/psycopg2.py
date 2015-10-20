@@ -6,7 +6,6 @@ from opbeat.traces import trace
 from opbeat.utils import default_ports
 
 
-
 class PGCursorProxy(CursorProxy):
     provider_name = 'postgresql'
 

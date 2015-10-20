@@ -8,8 +8,8 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from opbeat.middleware import Opbeat as Middleware
 from opbeat.base import Client
+from opbeat.middleware import Opbeat as Middleware
 
 
 def list_from_setting(config, setting):

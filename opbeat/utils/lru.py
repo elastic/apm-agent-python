@@ -63,4 +63,3 @@ class LRUCache(object):
                 last = root[self.PREV]
                 link = [last, root, key]
                 last[self.NEXT] = root[self.PREV] = self.cache[key] = link
-

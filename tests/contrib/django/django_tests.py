@@ -1,38 +1,42 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from django.db import DatabaseError
-import pytest
-import datetime
-import django
-import logging
-import mock
-from opbeat.traces import Transaction
-from opbeat.utils.lru import LRUCache
 
+import datetime
+import logging
+
+import django
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
-from django.core.signals import got_request_exception
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from django.core.handlers.wsgi import WSGIRequest
+from django.core.signals import got_request_exception
+from django.core.urlresolvers import reverse
+from django.db import DatabaseError
 from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
-from django.test.client import Client as TestClient, ClientHandler as TestClientHandler
+from django.test.client import Client as TestClient
+from django.test.client import ClientHandler as TestClientHandler
 from django.test.utils import override_settings
-from django.contrib.redirects.models import Redirect
-from django.contrib.sites.models import Site
 
+import mock
+import pytest
+
+from opbeat import instrumentation
 from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
 from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
-from opbeat.contrib.django.management.commands.opbeat import Command as DjangoCommand
-from opbeat.contrib.django.models import (client, get_client as orig_get_client,
-                                          get_client_config)
+from opbeat.contrib.django.management.commands.opbeat import \
+    Command as DjangoCommand
 from opbeat.contrib.django.middleware.wsgi import Opbeat
+from opbeat.contrib.django.models import get_client as orig_get_client
+from opbeat.contrib.django.models import client, get_client_config
+from opbeat.traces import Transaction
 from opbeat.utils import six
-from opbeat import instrumentation
+from opbeat.utils.lru import LRUCache
 
 try:
     from celery.tests.utils import with_eager_tasks

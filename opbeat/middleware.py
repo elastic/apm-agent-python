@@ -10,8 +10,8 @@ Large portions are
 """
 
 import sys
-from opbeat.utils.wsgi import get_current_url, get_headers, \
-  get_environ
+
+from opbeat.utils.wsgi import get_current_url, get_environ, get_headers
 
 
 class Opbeat(object):

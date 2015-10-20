@@ -1,11 +1,9 @@
-import os
+from django.test import TestCase
+
+import mock
 from flask import Flask, render_template, signals
 
-from django.test import TestCase
-import mock
-
 from opbeat.contrib.flask import Opbeat
-
 from tests.helpers import get_tempstoreclient
 
 

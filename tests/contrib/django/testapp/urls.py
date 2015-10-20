@@ -1,14 +1,15 @@
 from __future__ import absolute_import
 
 import django
+from django.conf import settings
+from django.http import HttpResponse
+
 from tests.contrib.django.testapp import views
 
-from django.conf import settings
 if django.VERSION < (1, 4):
     from django.conf.urls.defaults import *  # Django 1.3
 else:
     from django.conf.urls import url, patterns
-from django.http import HttpResponse
 
 def handler500(request):
     if getattr(settings, 'BREAK_THAT_500', False):

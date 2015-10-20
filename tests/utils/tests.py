@@ -1,5 +1,6 @@
 from opbeat.utils.deprecation import deprecated
 
+
 @deprecated("alternative")
 def deprecated_function():
     pass

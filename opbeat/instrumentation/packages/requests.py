@@ -1,7 +1,7 @@
+from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 from opbeat.traces import trace
 from opbeat.utils import default_ports
 from opbeat.utils.compat import urlparse
-from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 
 
 class RequestsInstrumentation(AbstractInstrumentedModule):

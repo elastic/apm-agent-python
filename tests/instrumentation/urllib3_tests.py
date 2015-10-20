@@ -1,9 +1,11 @@
 import threading
+
+from django.test import TestCase
+
 import mock
 import urllib3
-from django.test import TestCase
-import opbeat
 
+import opbeat
 from opbeat.contrib.django.models import get_client
 from opbeat.traces import trace
 
@@ -76,8 +78,3 @@ class InstrumentUrllib3Test(TestCase):
         self.assertEqual(traces[2]['transaction'], 'MyView')
 
         self.assertEqual(traces[2]['extra']['url'], url)
-
-
-
-
-

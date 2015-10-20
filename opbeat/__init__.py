@@ -18,6 +18,5 @@ except Exception as e:
     VERSION = 'unknown'
 
 from opbeat.base import *
-from opbeat.traces import *
 from opbeat.conf import *
-
+from opbeat.traces import *

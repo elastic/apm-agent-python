@@ -2,6 +2,7 @@
 
 
 from django.test import TestCase
+
 from opbeat.instrumentation.packages.mysql import extract_signature
 
 

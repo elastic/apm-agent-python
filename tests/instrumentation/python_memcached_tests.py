@@ -1,7 +1,9 @@
 from functools import partial
+
 from django.test import TestCase
-import mock
+
 import memcache
+import mock
 
 import opbeat
 from opbeat.traces import trace

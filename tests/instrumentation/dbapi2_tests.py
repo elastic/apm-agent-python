@@ -1,4 +1,4 @@
-from opbeat.instrumentation.packages.dbapi2 import tokenize, scan, Literal
+from opbeat.instrumentation.packages.dbapi2 import Literal, scan, tokenize
 
 
 def test_scan_simple():

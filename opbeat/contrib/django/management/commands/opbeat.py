@@ -1,13 +1,14 @@
 from __future__ import absolute_import
-import sys
 
+import sys
 from optparse import make_option
+
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management.color import color_style
 from django.utils import termcolors
 
-from opbeat.contrib.django.models import get_client_config, get_client_class
+from opbeat.contrib.django.models import get_client_class, get_client_config
 
 try:
     from django.core.management.base import OutputWrapper

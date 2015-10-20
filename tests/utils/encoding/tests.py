@@ -4,8 +4,8 @@ import uuid
 
 from django.test import TestCase
 
-from opbeat.utils.encoding import transform, shorten
 from opbeat.utils import six
+from opbeat.utils.encoding import shorten, transform
 
 
 class TransformTest(TestCase):

@@ -3,7 +3,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-from opbeat.utils.wsgi import get_headers, get_environ
+from opbeat.utils.wsgi import get_environ, get_headers
 
 
 def get_data_from_request(request):

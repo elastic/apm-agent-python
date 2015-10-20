@@ -12,18 +12,16 @@ Large portions are
 """
 
 from __future__ import absolute_import
-import os
 
-import sys
 import logging
+import os
+import sys
 import warnings
-from opbeat.utils import six
-import opbeat.instrumentation.control
-from opbeat.utils import disabled_due_to_debug
 
 from django.conf import settings as django_settings
 
-
+import opbeat.instrumentation.control
+from opbeat.utils import disabled_due_to_debug, six
 
 logger = logging.getLogger('opbeat.errors.client')
 

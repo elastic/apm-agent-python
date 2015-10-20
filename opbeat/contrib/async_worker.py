@@ -11,7 +11,7 @@ Large portions are
 import logging
 import os
 import time
-from threading import Thread, Lock
+from threading import Lock, Thread
 
 from opbeat.utils import six
 from opbeat.utils.six.moves import queue

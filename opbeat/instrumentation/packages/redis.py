@@ -31,5 +31,3 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
         with trace(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)
-
-
