@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 from django.db import DatabaseError
+from copy import deepcopy
 import pytest
 import datetime
 import django
@@ -776,11 +777,14 @@ def test_stacktraces_have_templates():
 
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
+        TEMPLATES_copy = deepcopy(settings.TEMPLATES)
+        TEMPLATES_copy[0]['OPTIONS']['debug'] = TEMPLATE_DEBUG
         with override_settings(
             MIDDLEWARE_CLASSES=[
                 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
             ],
             TEMPLATE_DEBUG=TEMPLATE_DEBUG,
+            TEMPLATES=TEMPLATES_copy
         ):
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
