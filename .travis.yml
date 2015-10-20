@@ -42,12 +42,23 @@ matrix:
     env: WEBFRAMEWORK=django-1.4
   - python: 3.5
     env: WEBFRAMEWORK=django-1.4
+  - python: 3.5
+    env: WEBFRAMEWORK=django-1.5
+  - python: 3.5
+    env: WEBFRAMEWORK=django-1.6
+  - python: 3.5
+    env: WEBFRAMEWORK=django-1.7
   - python: nightly
     env: WEBFRAMEWORK=django-1.4
+  - python: nightly
+    env: WEBFRAMEWORK=django-1.5
+  - python: nightly
+    env: WEBFRAMEWORK=django-1.6
+  - python: nightly
+    env: WEBFRAMEWORK=django-1.7
   allow_failures:
   - env: WEBFRAMEWORK=django-master
   - python: nightly
-  - python: 3.5
 
 addons:
   apt:
