@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import absolute_import
+
+import pytest
+pytest.importorskip("django")
+
 from django.db import DatabaseError
 from copy import deepcopy
 import pytest

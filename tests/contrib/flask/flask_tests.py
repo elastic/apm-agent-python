@@ -1,4 +1,6 @@
-import os
+import pytest
+pytest.importorskip("flask")
+
 from flask import Flask, render_template, signals
 
 from django.test import TestCase
