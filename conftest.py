@@ -2,8 +2,6 @@
 import sys
 from os.path import abspath, dirname, join
 
-from django import conf
-
 where_am_i = dirname(abspath(__file__))
 
 BASE_TEMPLATE_DIR = join(where_am_i, 'tests', 'contrib', 'django', 'testapp',
@@ -35,7 +33,7 @@ def pytest_configure(config):
             djcelery = ['djcelery']
         else:
             djcelery = []
-        conf.settings.configure(
+        settings.configure(
             DATABASES={
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',
