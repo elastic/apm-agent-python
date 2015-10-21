@@ -41,6 +41,7 @@ class HTTPTransport(Transport):
             except TypeError:
                 response = urlopen(req, data)
         except Exception as e:
+            print_trace = True
             if isinstance(e, socket.timeout):
                 message = (
                     "Connection to Opbeat server timed out "
@@ -48,15 +49,17 @@ class HTTPTransport(Transport):
                 )
             elif isinstance(e, HTTPError):
                 body = e.read()
-                message = (
-                    'Unable to reach Opbeat server: '
-                    '%s (url: %s, body: %s)' % (e, self._url, body)
-                )
+                if e.code == 429:  # rate-limited
+                    message = 'Temporarily rate limited: '
+                    print_trace = False
+                else:
+                    message = 'Unable to reach Opbeat server: '
+                message += '%s (url: %s, body: %s)' % (e, self._url, body)
             else:
                 message = 'Unable to reach Opbeat server: %s (url: %s)' % (
                     e, self._url
                 )
-            raise TransportException(message, data)
+            raise TransportException(message, data, print_trace=print_trace)
         return response
 
 

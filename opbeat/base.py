@@ -592,7 +592,7 @@ class Client(object):
         self.error_logger.error(
             'Failed to submit message: %r',
             message,
-            exc_info=True
+            exc_info=getattr(exception, 'print_trace', True)
         )
         self.state.set_fail()
 
