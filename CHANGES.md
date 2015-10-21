@@ -1,3 +1,10 @@
+### 3.1.2 ###
+ * preliminary support for Django 1.9
+ * support for Python 3.5
+ * added OPBEAT_DISABLE_SEND environment variable to completely stop sending
+   data to Opbeat
+ * improved test suite
+  
 ### 3.1.1 ###
  * Fixed bug in Redis instrumentation introduced in 3.1 refactor.
 
