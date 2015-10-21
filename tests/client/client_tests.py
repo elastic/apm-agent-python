@@ -245,11 +245,9 @@ class ClientTest(TestCase):
         self.assertEqual(mock_close.call_count, 1)
         self.assertEqual(mock_traces_collect.call_count, 1)
 
-    @mock.patch('opbeat.base.AsyncHTTPTransport.send')
-    @mock.patch('opbeat.contrib.async_worker.AsyncWorker.main_thread_terminated')
+    @mock.patch('opbeat.base.HTTPTransport.send')
     @mock.patch('opbeat.base.Client._traces_collect')
-    def test_client_shutdown_async(self, mock_traces_collect,
-                                  mock_main_thread_terminated, mock_send):
+    def test_client_shutdown_async(self, mock_traces_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
             organization_id='organization_id',
@@ -262,7 +260,7 @@ class ClientTest(TestCase):
         })
         client.close()
         self.assertEqual(mock_traces_collect.call_count, 1)
-        self.assertEqual(mock_main_thread_terminated.call_count, 1)
+        self.assertEqual(mock_send.call_count, 1)
 
     def test_encode_decode(self):
         data = {'foo': 'bar'}
@@ -425,12 +423,7 @@ class ClientTest(TestCase):
     @mock.patch('opbeat.base.Client.send')
     @mock.patch('opbeat.base.RequestsStore.should_collect')
     def test_call_end_twice(self, should_collect, mock_send):
-        client = Client(
-            servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
-            secret_token='secret',
-        )
+        client = get_tempstoreclient()
 
         should_collect.return_value = False
         client.begin_transaction("celery")
