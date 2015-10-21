@@ -1,14 +1,13 @@
 import socket
-import mock
 
+import mock
 import pytest
 
-from django.test import TestCase
 from opbeat.transport.base import TransportException
-
 from opbeat.transport.http import HTTPTransport
 from opbeat.utils import six
-from opbeat.utils.compat import urlparse, HTTPError
+from opbeat.utils.compat import HTTPError, urlparse
+from tests.utils.compat import TestCase
 
 
 class TestHttpFailures(TestCase):

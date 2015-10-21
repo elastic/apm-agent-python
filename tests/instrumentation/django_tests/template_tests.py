@@ -1,12 +1,16 @@
+import pytest  # isort:skip
+pytest.importorskip("django")  # isort:skip
+
+from os.path import join
+
 import django
 from django.core.urlresolvers import reverse
-
 from django.test import TestCase
-import mock
-from os.path import join
-import pytest
-from conftest import BASE_TEMPLATE_DIR
 
+import mock
+import pytest
+
+from conftest import BASE_TEMPLATE_DIR
 from opbeat.contrib.django.models import get_client, opbeat
 
 # Testing Django 1.8+ backends
@@ -112,4 +116,3 @@ class TracesTest(TestCase):
                          'tests.contrib.django.testapp.views.render_jinja2_template')
         self.assertEqual(len(traces[1]['durations']), 3)
         self.assertEqual(traces[1]['parents'], ('transaction',))
-

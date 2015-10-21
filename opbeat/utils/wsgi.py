@@ -5,6 +5,7 @@ This module implements WSGI related helpers adapted from ``werkzeug.wsgi``
 :license: BSD, see LICENSE for more details.
 """
 from opbeat.utils import six
+
 try:
     from urllib import quote
 except ImportError:

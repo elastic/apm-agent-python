@@ -2,10 +2,9 @@ import logging
 
 from opbeat.handlers.logging import OpbeatHandler
 from opbeat.utils.stacks import iter_stack_frames
-
-from django.test import TestCase
-
 from tests.helpers import get_tempstoreclient
+from tests.utils.compat import TestCase
+
 
 class LoggingIntegrationTest(TestCase):
     def setUp(self):

@@ -10,6 +10,7 @@ Large portions are
 """
 
 import uuid
+
 from opbeat.utils import six
 
 

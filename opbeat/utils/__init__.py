@@ -11,6 +11,7 @@ Large portions are
 
 from opbeat.utils import six
 
+
 default_ports = {
     "https": 433,
     "http": 80,

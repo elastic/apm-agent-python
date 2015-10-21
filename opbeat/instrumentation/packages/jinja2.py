@@ -13,4 +13,3 @@ class Jinja2Instrumentation(AbstractInstrumentedModule):
         signature = instance.name or instance.filename
         with trace(signature, "template.jinja2"):
             return wrapped(*args, **kwargs)
-

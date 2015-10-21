@@ -14,25 +14,23 @@ from __future__ import absolute_import
 import contextlib
 import datetime
 import logging
+import os
 import sys
 import time
-import zlib
 import uuid
-
-import os
 import warnings
+import zlib
 
-from opbeat.utils import six
-from opbeat.utils.deprecation import deprecated
 import opbeat
 from opbeat.conf import defaults
-from opbeat.utils import opbeat_json as json, varmap
-from opbeat.utils.compat import atexit_register, urlparse
-from opbeat.utils.encoding import transform, shorten
 from opbeat.traces import RequestsStore
-from opbeat.utils.stacks import iter_stack_frames, get_culprit
-from opbeat.utils import stacks
-from opbeat.transport.http import HTTPTransport, AsyncHTTPTransport
+from opbeat.transport.http import AsyncHTTPTransport, HTTPTransport
+from opbeat.utils import opbeat_json as json
+from opbeat.utils import six, stacks, varmap
+from opbeat.utils.compat import atexit_register, urlparse
+from opbeat.utils.deprecation import deprecated
+from opbeat.utils.encoding import shorten, transform
+from opbeat.utils.stacks import get_culprit, iter_stack_frames
 
 __all__ = ('Client',)
 

@@ -1,5 +1,8 @@
+from __future__ import absolute_import
+
 from opbeat.contrib.pylons import Opbeat
-from django.test import TestCase
+from tests.utils.compat import TestCase
+
 
 def example_app(environ, start_response):
     raise ValueError('hello world')

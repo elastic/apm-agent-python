@@ -12,5 +12,6 @@ Large portions are
 from opbeat.contrib.celery import CeleryMixin
 from opbeat.contrib.django import DjangoClient
 
+
 class CeleryClient(CeleryMixin, DjangoClient):
     pass

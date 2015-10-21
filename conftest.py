@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from os.path import dirname, abspath, join, splitext
 import sys
+from os.path import abspath, dirname, join
 
 from django import conf
 
@@ -23,7 +23,11 @@ except ImportError:
 
 
 def pytest_configure(config):
-    if not conf.settings.configured:
+    try:
+        from django.conf import settings
+    except ImportError:
+        settings = None
+    if settings is not None and not settings.configured:
         import django
 
         # django-celery does not work well with Django 1.8+

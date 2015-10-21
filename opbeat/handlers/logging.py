@@ -15,9 +15,9 @@ import datetime
 import logging
 import sys
 import traceback
-from opbeat.utils import six
 
 from opbeat.base import Client
+from opbeat.utils import six
 from opbeat.utils.encoding import to_string
 from opbeat.utils.stacks import iter_stack_frames
 

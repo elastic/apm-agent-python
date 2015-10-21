@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-
-
-from django.test import TestCase
 from opbeat.instrumentation.packages.mysql import extract_signature
+from tests.utils.compat import TestCase
 
 
 class ExtractSignatureTest(TestCase):

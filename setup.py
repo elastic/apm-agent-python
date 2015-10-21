@@ -74,6 +74,13 @@ tests_require = [
     'urllib3',
     'jinja2',
     'pytest-benchmark',
+
+    # isort
+    'apipkg',
+    'execnet',
+    'isort',
+    'pytest-cache',
+    'pytest-isort',
 ]
 
 if sys.version_info[0] == 2:

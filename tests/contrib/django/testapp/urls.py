@@ -32,4 +32,3 @@ urlpatterns = (
 if django.VERSION >= (1, 8):
     urlpatterns += url(r'^render-jinja2-template$', views.render_jinja2_template,
         name='render-jinja2-template'),
-

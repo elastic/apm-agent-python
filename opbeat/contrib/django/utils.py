@@ -1,11 +1,15 @@
 import os
+
 from django.template.base import Node
+
+from opbeat.utils.stacks import get_frame_info
+
 try:
     from django.template.base import Template
 except ImportError:
-    class Template(object): pass
+    class Template(object):
+        pass
 
-from opbeat.utils.stacks import get_frame_info
 
 
 def linebreak_iter(template_source):

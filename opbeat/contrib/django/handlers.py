@@ -12,6 +12,7 @@ Large portions are
 from __future__ import absolute_import
 
 import logging
+
 from opbeat.handlers.logging import OpbeatHandler as BaseOpbeatHandler
 
 

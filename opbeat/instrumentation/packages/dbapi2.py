@@ -194,4 +194,3 @@ class DbApi2Instrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         return ConnectionProxy(wrapped(*args, **kwargs))
-

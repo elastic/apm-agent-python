@@ -2,10 +2,10 @@ import functools
 import logging
 import threading
 import time
-from datetime import datetime
 from collections import defaultdict
-from opbeat.utils import get_name_from_func
+from datetime import datetime
 
+from opbeat.utils import get_name_from_func
 from opbeat.utils.encoding import force_text
 from opbeat.utils.lru import LRUCache
 
@@ -294,4 +294,3 @@ class trace(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.transaction:
             self.transaction.end_trace(self.skip_frames)
-

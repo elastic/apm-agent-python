@@ -10,9 +10,8 @@ Large portions are
 """
 
 import re
-from opbeat.utils import six
 
-from opbeat.utils import varmap
+from opbeat.utils import six, varmap
 from opbeat.utils.encoding import force_text
 
 

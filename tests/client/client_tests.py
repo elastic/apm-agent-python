@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
-
-import mock
-import opbeat
 import time
 
-
-from django.test import TestCase
+import mock
 import pytest
-from opbeat.transport.base import TransportException
 
-from opbeat.utils import six
+import opbeat
 from opbeat.base import Client, ClientState
 from opbeat.conf import defaults
-
+from opbeat.transport.base import TransportException
+from opbeat.utils import six
 from tests.helpers import get_tempstoreclient
+from tests.utils.compat import TestCase
 
 
 class ClientStateTest(TestCase):
@@ -427,4 +424,3 @@ class ClientTest(TestCase):
             secret_token='secret',
             async=True,
         )
-

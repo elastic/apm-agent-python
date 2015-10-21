@@ -12,4 +12,3 @@ Large portions are
 default_app_config = 'opbeat.contrib.django.apps.OpbeatConfig'
 
 from opbeat.contrib.django.client import *
-

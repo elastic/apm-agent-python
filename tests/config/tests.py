@@ -1,10 +1,11 @@
-import logging
-import mock
-from django.test import TestCase
+from __future__ import absolute_import
 
+import logging
+
+import mock
 
 from opbeat.conf import setup_logging
-
+from tests.utils.compat import TestCase
 
 
 class SetupLoggingTest(TestCase):

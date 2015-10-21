@@ -1,5 +1,7 @@
-from django.test import TestCase
-from opbeat.utils.wsgi import get_headers, get_host, get_environ
+from __future__ import absolute_import
+
+from opbeat.utils.wsgi import get_environ, get_headers, get_host
+from tests.utils.compat import TestCase
 
 
 class GetHeadersTest(TestCase):

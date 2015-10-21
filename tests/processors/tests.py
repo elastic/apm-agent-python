@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
 from mock import Mock
 
-from django.test import TestCase
-
+from opbeat.processors import (RemovePostDataProcessor,
+                               RemoveStackLocalsProcessor,
+                               SanitizePasswordsProcessor)
 from opbeat.utils import six
-from opbeat.processors import (SanitizePasswordsProcessor,
-                               RemovePostDataProcessor,
-                               RemoveStackLocalsProcessor)
 from opbeat.utils.encoding import force_text
+from tests.utils.compat import TestCase
 
 
 class SantizePasswordsProcessorTest(TestCase):

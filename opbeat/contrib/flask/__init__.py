@@ -11,18 +11,18 @@ Large portions are
 
 from __future__ import absolute_import
 
+import logging
 import os
 import warnings
-import logging
 
 from flask import request, signals
 
 import opbeat.instrumentation.control
-from opbeat.conf import setup_logging
 from opbeat.base import Client
+from opbeat.conf import setup_logging
 from opbeat.contrib.flask.utils import get_data_from_request
-from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.handlers.logging import OpbeatHandler
+from opbeat.utils import disabled_due_to_debug, get_name_from_func
 from opbeat.utils.deprecation import deprecated
 
 logger = logging.getLogger('opbeat.errors.client')

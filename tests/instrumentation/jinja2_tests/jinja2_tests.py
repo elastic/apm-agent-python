@@ -1,16 +1,17 @@
-import mock
 import os
 
-from django.test import TestCase
+import mock
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
-from opbeat.contrib.django.models import opbeat, get_client
+import opbeat.instrumentation.control
+from tests.helpers import get_tempstoreclient
+from tests.utils.compat import TestCase
 
 
 class InstrumentJinja2Test(TestCase):
     def setUp(self):
-        self.client = get_client()
+        self.client = get_tempstoreclient()
         filedir = os.path.dirname(__file__)
         loader = FileSystemLoader(filedir)
         self.env = Environment(loader=loader)
@@ -59,5 +60,3 @@ class InstrumentJinja2Test(TestCase):
         self.assertEqual(traces[1]['signature'], '<template>')
         self.assertEqual(traces[1]['kind'], 'template.jinja2')
         self.assertEqual(traces[1]['transaction'], 'test')
-
-

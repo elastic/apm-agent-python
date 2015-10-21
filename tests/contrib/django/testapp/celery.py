@@ -1,8 +1,11 @@
 from __future__ import absolute_import
 
+from django.conf import settings
+
 from celery import Celery
 
-from django.conf import settings
+from opbeat.contrib.celery import register_signal
+from opbeat.contrib.django.models import client, logger, register_handlers
 
 app = Celery('testapp')
 
@@ -12,8 +15,6 @@ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 # hook up Opbeat
 
-from opbeat.contrib.django.models import client, logger, register_handlers
-from opbeat.contrib.celery import register_signal
 
 try:
     register_signal(client)

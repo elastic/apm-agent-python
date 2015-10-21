@@ -16,10 +16,19 @@ import logging
 from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
+
+from opbeat.base import Client
+from opbeat.conf import defaults
+from opbeat.contrib.django.utils import (get_data_from_template_debug,
+                                         get_data_from_template_source,
+                                         iterate_with_template_sources)
+from opbeat.utils.wsgi import get_environ, get_headers
+
 try:
     from django.template.loader import LoaderOrigin  # Django < 1.9
 except ImportError:
     from django.template.base import Origin as LoaderOrigin  # Django >= 1.9
+
 
 try:
     # Attempt to use the Django 1.7+ apps sub-framework.
@@ -33,12 +42,6 @@ except ImportError:
     def is_app_installed(app_name):
         return app_name in settings.INSTALLED_APPS
 
-from opbeat.base import Client
-from opbeat.contrib.django.utils import (get_data_from_template_source,
-                                         get_data_from_template_debug,
-                                         iterate_with_template_sources)
-from opbeat.conf import defaults
-from opbeat.utils.wsgi import get_headers, get_environ
 
 __all__ = ('DjangoClient',)
 

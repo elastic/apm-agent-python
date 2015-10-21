@@ -13,6 +13,7 @@ try:
 except ImportError:
     from celery.decorators import task
 from celery import signals
+
 from opbeat.base import Client
 
 

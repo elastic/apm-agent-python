@@ -1,17 +1,19 @@
 import os
-import sys
 import random
 import shutil
+import sys
 import tempfile
+
 import pytest
+
+from opbeat.contrib.zerorpc import OpbeatMiddleware
+from tests.helpers import get_tempstoreclient
+from tests.utils.compat import TestCase
 
 zerorpc = pytest.importorskip("zerorpc")
 gevent = pytest.importorskip("gevent")
 
-from opbeat.contrib.zerorpc import OpbeatMiddleware
 
-from django.test import TestCase
-from tests.helpers import get_tempstoreclient
 
 has_unsupported_pypy = (hasattr(sys, 'pypy_version_info')
                         and sys.pypy_version_info < (2, 6))
