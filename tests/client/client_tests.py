@@ -59,13 +59,17 @@ class ClientTest(TestCase):
             'OPBEAT_ORGANIZATION_ID': 'org',
             'OPBEAT_APP_ID': 'app',
             'OPBEAT_SECRET_TOKEN': 'token',
-            'OPBEAT_IS_ENABLED': 'False',
         }):
             client = Client()
             self.assertEqual(client.organization_id, 'org')
             self.assertEqual(client.app_id, 'app')
             self.assertEqual(client.secret_token, 'token')
-            self.assertEqual(client.is_enabled, False)
+            self.assertEqual(client.is_send_disabled, False)
+        with mock.patch.dict('os.environ', {
+            'OPBEAT_DISABLE_SEND': 'true',
+        }):
+            client = Client()
+            self.assertEqual(client.is_send_disabled, True)
 
     @mock.patch('opbeat.base.Client.send')
     def test_config_non_string_types(self, mock_send):
@@ -185,13 +189,13 @@ class ClientTest(TestCase):
     @mock.patch('opbeat.base.time.time')
     def test_send_not_enabled(self, time, send_remote):
         time.return_value = 1328055286.51
-        client = Client(
-            servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
-            secret_token='secret',
-            is_enabled=False,
-        )
+        with mock.patch.dict('os.environ', {'OPBEAT_DISABLE_SEND': 'true'}):
+            client = Client(
+                servers=['http://example.com'],
+                organization_id='organization_id',
+                app_id='app_id',
+                secret_token='secret',
+            )
         client.send(**{
             'foo': 'bar',
         })

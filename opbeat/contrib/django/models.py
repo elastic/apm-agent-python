@@ -137,7 +137,6 @@ def get_client_config():
         organization_id=config.get('ORGANIZATION_ID', None),
         app_id=config.get('APP_ID', None),
         secret_token=config.get('SECRET_TOKEN', None),
-        is_enabled=config.get('IS_ENABLED', None),
         processors=config.get('PROCESSORS', None),
         traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
         async_mode=config.get('ASYNC_MODE', None),

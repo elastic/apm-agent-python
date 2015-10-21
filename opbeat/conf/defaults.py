@@ -76,6 +76,3 @@ ASYNC_MODE = True
 
 # Should opbeat wrap middleware for better metrics detection
 INSTRUMENT_DJANGO_MIDDLEWARE = True
-
-# Opbeat should be enabled by default
-IS_ENABLED = True

@@ -118,8 +118,7 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
-                 async_mode=None, traces_send_freq_secs=None, is_enabled=None,
-                 **kwargs):
+                 async_mode=None, traces_send_freq_secs=None, **kwargs):
         # configure loggers first
         cls = self.__class__
         self.logger = logging.getLogger('%s.%s' % (cls.__module__,
@@ -160,13 +159,14 @@ class Client(object):
             msg = 'Missing configuration for client. Please see documentation.'
             self.logger.info(msg)
 
-        if is_enabled is None and os.environ.get('OPBEAT_IS_ENABLED'):
-            msg = "Configuring opbeat from environment variable 'OPBEAT_IS_ENABLED'"
-            self.logger.info(msg)
-            is_enabled = os.environ['OPBEAT_IS_ENABLED'] == 'True'
-
-        self.is_enabled = (is_enabled is True or
-                           (defaults.IS_ENABLED and is_enabled is not False))
+        self.is_send_disabled = (
+            os.environ.get('OPBEAT_DISABLE_SEND', '').lower() == 'true'
+        )
+        if self.is_send_disabled:
+            self.logger.info(
+                'Not sending any data to Opbeat due to OPBEAT_DISABLE_SEND '
+                'environment variable'
+            )
 
         self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
         self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
@@ -428,7 +428,7 @@ class Client(object):
         Serializes the message and passes the payload onto ``send_encoded``.
         """
 
-        if not self.is_enabled:
+        if self.is_send_disabled:
             return
 
         message = self.encode(data)
