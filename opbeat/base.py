@@ -160,7 +160,7 @@ class Client(object):
             self.logger.info(msg)
 
         self.is_send_disabled = (
-            os.environ.get('OPBEAT_DISABLE_SEND', '').lower() == 'true'
+            os.environ.get('OPBEAT_DISABLE_SEND', '').lower() in ('1', 'true')
         )
         if self.is_send_disabled:
             self.logger.info(
