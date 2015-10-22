@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
 import socket
-import sys
 
 from opbeat.conf import defaults
 from opbeat.contrib.async_worker import AsyncWorker
 from opbeat.transport.base import AsyncTransport, Transport, TransportException
-from opbeat.utils import six
 from opbeat.utils.compat import HTTPError
 
 try:
@@ -31,10 +29,13 @@ class HTTPTransport(Transport):
     def send(self, data, headers, timeout=None):
         """
         Sends a request to a remote webserver using HTTP POST.
+
+        Returns the shortcut URL of the recorded error on Opbeat
         """
         req = Request(self._url, headers=headers)
         if timeout is None:
             timeout = defaults.TIMEOUT
+        response = None
         try:
             try:
                 response = urlopen(req, data, timeout)
@@ -60,7 +61,11 @@ class HTTPTransport(Transport):
                     e, self._url
                 )
             raise TransportException(message, data, print_trace=print_trace)
-        return response
+        finally:
+            if response:
+                response.close()
+
+        return response.info().get('Location')
 
 
 class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
@@ -82,9 +87,9 @@ class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
     def send_sync(self, data=None, headers=None, success_callback=None,
                   fail_callback=None):
         try:
-            response = HTTPTransport.send(self, data, headers)
+            url = HTTPTransport.send(self, data, headers)
             if callable(success_callback):
-                success_callback(url=response.info().get('Location'))
+                success_callback(url=url)
         except Exception as e:
             if callable(fail_callback):
                 fail_callback(exception=e)
