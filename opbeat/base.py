@@ -393,9 +393,8 @@ class Client(object):
                 fail_callback=self.handle_transport_fail
             )
         else:
-            response = transport.send(data, headers, timeout=self.timeout)
-            self.handle_transport_success(url=response.info().get('Location'))
-            return response
+            url = transport.send(data, headers, timeout=self.timeout)
+            self.handle_transport_success(url=url)
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
