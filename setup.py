@@ -176,8 +176,25 @@ def run_setup(with_extensions):
 
     setup(**setup_kwargs_tmp)
 
-try:
-    run_setup(with_extensions=True)
+# Figure out if we should build the wrapt C extensions
 
+with_extensions = os.environ.get('OPBEAT_WRAPT_EXTENSIONS', None)
+
+if with_extensions:
+    if with_extensions.lower() == 'true':
+        with_extensions = True
+    elif with_extensions.lower() == 'false':
+        with_extensions = False
+    else:
+        with_extensions = None
+
+if hasattr(sys, 'pypy_version_info'):
+    with_extensions = False
+
+if with_extensions is None:
+    with_extensions = True
+
+try:
+    run_setup(with_extensions=with_extensions)
 except BuildExtFailed:
     run_setup(with_extensions=False)
