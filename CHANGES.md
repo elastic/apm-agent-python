@@ -1,3 +1,8 @@
+### 3.1.3 ###
+ * fixed an issue where SSL connections would not get closed on the client
+ * added support for OPBEAT_WRAPT_EXTENSIONS to override building of the
+   wrapt C extension module during installation.
+
 ### 3.1.2 ###
  * preliminary support for Django 1.9
  * support for Python 3.5
