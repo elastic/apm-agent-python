@@ -438,6 +438,17 @@ class DjangoClientTest(TestCase):
             self.assertEquals(http['query_string'], '')
             self.assertEquals(http['data'], None)
 
+    def test_404_middleware_with_debug(self):
+        with self.settings(
+                MIDDLEWARE_CLASSES=[
+                    'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware'
+                ],
+                DEBUG=True,
+        ):
+            resp = self.client.get('/non-existant-page')
+            self.assertEquals(resp.status_code, 404)
+            self.assertEquals(len(self.opbeat.events), 0)
+
     # def test_response_error_id_middleware(self):
     #     # TODO: test with 500s
     #     with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
