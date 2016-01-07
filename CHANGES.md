@@ -1,3 +1,7 @@
+### 3.1.4 ###
+ * added possibility to override the transport class used by the client
+ * fixed a regression in our frame walker for Django templates in Django 1.9+
+
 ### 3.1.3 ###
  * fixed an issue where SSL connections would not get closed on the client
  * added support for OPBEAT_WRAPT_EXTENSIONS to override building of the
