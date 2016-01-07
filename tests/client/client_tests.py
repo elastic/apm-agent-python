@@ -7,7 +7,7 @@ import pytest
 import opbeat
 from opbeat.base import Client, ClientState
 from opbeat.conf import defaults
-from opbeat.transport.base import TransportException
+from opbeat.transport.base import Transport, TransportException
 from opbeat.utils import six
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
@@ -48,6 +48,11 @@ class ClientStateTest(TestCase):
         self.assertEquals(state.status, state.ONLINE)
         self.assertEquals(state.last_check, None)
         self.assertEquals(state.retry_number, 0)
+
+
+class DummyTransport(Transport):
+    def send(self, data, headers):
+        pass
 
 
 class ClientTest(TestCase):
@@ -99,6 +104,16 @@ class ClientTest(TestCase):
             'localhost' + defaults.ERROR_API_PATH.format('foo', 'bar'),
             kwargs['servers'][0]
         )
+
+    def test_custom_transport(self):
+        client = Client(
+            servers=['localhost'],
+            organization_id='foo',
+            app_id='bar',
+            secret_token='baz',
+            transport_class='tests.client.client_tests.DummyTransport',
+        )
+        self.assertEqual(client._transport_class, DummyTransport)
 
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
