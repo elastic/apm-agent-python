@@ -59,7 +59,7 @@ class TracesTest(TestCase):
 
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(traces[0]['transaction'], 'tests.contrib.django.testapp.views.render_template_view__HTTP_METHOD__GET')
         self.assertEqual(len(traces[0]['durations']), 3)
         self.assertEqual(len(traces[0]['parents']), 0)
 
@@ -106,7 +106,7 @@ class TracesTest(TestCase):
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['signature'], 'transaction')
         self.assertEqual(traces[0]['transaction'],
-                         'tests.contrib.django.testapp.views.render_jinja2_template')
+                         'tests.contrib.django.testapp.views.render_jinja2_template__HTTP_METHOD__GET')
         self.assertEqual(len(traces[0]['durations']), 3)
         self.assertEqual(len(traces[0]['parents']), 0)
 

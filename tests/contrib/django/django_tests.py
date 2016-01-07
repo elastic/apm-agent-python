@@ -32,8 +32,7 @@ from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.management.commands.opbeat import \
     Command as DjangoCommand
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-from opbeat.contrib.django.models import get_client as orig_get_client
-from opbeat.contrib.django.models import client, get_client_config
+from opbeat.contrib.django.models import client, get_client_config, get_client
 from opbeat.traces import Transaction
 from opbeat.utils import six
 from opbeat.utils.lru import LRUCache
@@ -49,17 +48,10 @@ except ImportError:
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
 
-def get_client(*args, **kwargs):
-    config = {
-        'APP_ID': 'key',
-        'ORGANIZATION_ID': 'org',
-        'SECRET_TOKEN': '99',
-    }
-    config.update(settings.OPBEAT)
-
-    with override_settings(OPBEAT=config):
-        cli = orig_get_client(*args, **kwargs)
-        return cli
+def get_custom_client():
+    custom_client = get_client()
+    custom_client._append_http_method_names = True
+    return custom_client
 
 
 class MockClientHandler(TestClientHandler):
@@ -106,7 +98,7 @@ class DjangoClientTest(TestCase):
     urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
-        self.opbeat = get_client()
+        self.opbeat = get_custom_client()
         self.opbeat.events = []
         instrumentation.control.instrument()
 
@@ -582,6 +574,7 @@ class DjangoClientTest(TestCase):
             self.assertEqual(len(self.opbeat.instrumentation_store), 0)
             self.client.get(reverse('opbeat-no-error'))
             self.assertEqual(len(self.opbeat.instrumentation_store), 1)
+
             transactions, traces = self.opbeat.instrumentation_store.get_all()
 
             self.assertEqual(len(transactions), 1)
@@ -589,7 +582,7 @@ class DjangoClientTest(TestCase):
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],
-                             'tests.contrib.django.testapp.views.no_error')
+                             'tests.contrib.django.testapp.views.no_error__HTTP_METHOD__GET')
             self.assertEqual(timing['result'],
                              200)
 
@@ -613,9 +606,9 @@ class DjangoClientTest(TestCase):
         self.assertIn(
             timing['transaction'], (
                 # django <= 1.8
-                'django.middleware.common.CommonMiddleware.process_request',
+                'django.middleware.common.CommonMiddleware.process_request__HTTP_METHOD__GET',
                 # django 1.9+
-                'django.middleware.common.CommonMiddleware.process_response',
+                'django.middleware.common.CommonMiddleware.process_response__HTTP_METHOD__GET',
             )
         )
 
@@ -638,7 +631,7 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'django.middleware.common.CommonMiddleware.process_request'
+            'django.middleware.common.CommonMiddleware.process_request__HTTP_METHOD__GET'
         )
 
     def test_request_metrics_contrib_redirect(self):
@@ -666,7 +659,7 @@ class DjangoClientTest(TestCase):
         self.assertEqual(
             timing['transaction'],
             'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
-            '.process_response'
+            '.process_response__HTTP_METHOD__GET'
         )
 
     def test_ASYNC_config_raises_deprecation(self):

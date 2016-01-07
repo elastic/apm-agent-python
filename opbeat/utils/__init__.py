@@ -61,3 +61,7 @@ def get_name_from_func(func):
         view_name = func.__class__.__name__
 
     return '{0}.{1}'.format(module, view_name)
+
+
+def build_name_with_http_method_suffix(name, request):
+    return name + "__HTTP_METHOD__" + request.method
