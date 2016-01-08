@@ -48,12 +48,6 @@ except ImportError:
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
 
-def get_custom_client():
-    custom_client = get_client()
-    custom_client._append_http_method_names = True
-    return custom_client
-
-
 class MockClientHandler(TestClientHandler):
     def __call__(self, environ, start_response=[]):
         # this pretends doesnt require start_response
@@ -98,7 +92,7 @@ class DjangoClientTest(TestCase):
     urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
-        self.opbeat = get_custom_client()
+        self.opbeat = get_client()
         self.opbeat.events = []
         instrumentation.control.instrument()
 
@@ -582,7 +576,7 @@ class DjangoClientTest(TestCase):
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],
-                             'tests.contrib.django.testapp.views.no_error__HTTP_METHOD__GET')
+                             'GET  tests.contrib.django.testapp.views.no_error')
             self.assertEqual(timing['result'],
                              200)
 
@@ -606,9 +600,9 @@ class DjangoClientTest(TestCase):
         self.assertIn(
             timing['transaction'], (
                 # django <= 1.8
-                'django.middleware.common.CommonMiddleware.process_request__HTTP_METHOD__GET',
+                'GET  django.middleware.common.CommonMiddleware.process_request',
                 # django 1.9+
-                'django.middleware.common.CommonMiddleware.process_response__HTTP_METHOD__GET',
+                'GET  django.middleware.common.CommonMiddleware.process_response',
             )
         )
 
@@ -631,7 +625,7 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'django.middleware.common.CommonMiddleware.process_request__HTTP_METHOD__GET'
+            'GET  django.middleware.common.CommonMiddleware.process_request'
         )
 
     def test_request_metrics_contrib_redirect(self):
@@ -658,8 +652,8 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
-            '.process_response__HTTP_METHOD__GET'
+            'GET  django.contrib.redirects.middleware.RedirectFallbackMiddleware'
+            '.process_response'
         )
 
     def test_ASYNC_config_raises_deprecation(self):

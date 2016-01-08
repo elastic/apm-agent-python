@@ -133,7 +133,7 @@ class FlaskTest(TestCase):
         assert len(traces) == 2, [t["signature"] for t in traces]
 
         expected_signatures = ['transaction', 'users.html']
-        expected_transaction = '/users/__HTTP_METHOD__POST'
+        expected_transaction = 'POST  /users/'
 
         assert set([t['signature'] for t in traces]) == set(expected_signatures)
 
@@ -159,7 +159,7 @@ class FlaskTest(TestCase):
         transactions, traces = self.opbeat_client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction']
-        expected_transaction = '__HTTP_METHOD__POST'
+        expected_transaction = ''
 
         # If the test falls right at the change from one minute to another
         # this will have two items.

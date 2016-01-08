@@ -11,7 +11,6 @@ Large portions are
 
 from __future__ import absolute_import
 
-import contextlib
 import datetime
 import logging
 import os
@@ -118,8 +117,7 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
-                 async_mode=None, traces_send_freq_secs=None,
-                 append_http_method_names=False, **kwargs):
+                 async_mode=None, traces_send_freq_secs=None, **kwargs):
         # configure loggers first
         cls = self.__class__
         self.logger = logging.getLogger('%s.%s' % (cls.__module__,
@@ -189,16 +187,10 @@ class Client(object):
         self.processors = processors or defaults.PROCESSORS
         self.module_cache = ModuleProxyCache()
 
-        self._append_http_method_names = append_http_method_names
-
         self.instrumentation_store = RequestsStore(
             lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
             self.traces_send_freq_secs)
         atexit_register(self.close)
-
-    @property
-    def should_append_http_method_name(self):
-        return self._append_http_method_names is True
 
     def get_processors(self):
         for processor in self.processors:

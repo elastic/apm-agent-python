@@ -141,7 +141,6 @@ def get_client_config():
         traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
         async_mode=config.get('ASYNC_MODE', None),
         instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
-        append_http_method_names=config.get('APPEND_HTTP_METHOD_NAMES', False),
     )
 
 

@@ -17,7 +17,7 @@ import threading
 from django.conf import settings as django_settings
 
 from opbeat.contrib.django.models import client, get_client
-from opbeat.utils import (build_name_with_http_method_suffix,
+from opbeat.utils import (build_name_with_http_method_prefix,
                           disabled_due_to_debug, get_name_from_func, wrapt)
 
 try:
@@ -162,8 +162,7 @@ class OpbeatAPMMiddleware(object):
                         ''
                     )
                 status_code = response.status_code
-                if self.client.should_append_http_method_name:
-                    view_func = build_name_with_http_method_suffix(view_func, request)
+                view_func = build_name_with_http_method_prefix(view_func, request)
 
                 self.client.end_transaction(view_func, status_code)
         except Exception:
