@@ -22,7 +22,7 @@ from opbeat.base import Client
 from opbeat.conf import setup_logging
 from opbeat.contrib.flask.utils import get_data_from_request
 from opbeat.handlers.logging import OpbeatHandler
-from opbeat.utils import disabled_due_to_debug, get_name_from_func, build_name_with_http_method_suffix
+from opbeat.utils import (build_name_with_http_method_suffix, disabled_due_to_debug)
 from opbeat.utils.deprecation import deprecated
 
 logger = logging.getLogger('opbeat.errors.client')

@@ -32,7 +32,7 @@ from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.management.commands.opbeat import \
     Command as DjangoCommand
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-from opbeat.contrib.django.models import client, get_client_config, get_client
+from opbeat.contrib.django.models import client, get_client, get_client_config
 from opbeat.traces import Transaction
 from opbeat.utils import six
 from opbeat.utils.lru import LRUCache

@@ -17,7 +17,8 @@ import threading
 from django.conf import settings as django_settings
 
 from opbeat.contrib.django.models import client, get_client
-from opbeat.utils import disabled_due_to_debug, get_name_from_func, wrapt, build_name_with_http_method_suffix
+from opbeat.utils import (build_name_with_http_method_suffix,
+                          disabled_due_to_debug, get_name_from_func, wrapt)
 
 try:
     from importlib import import_module
