@@ -87,7 +87,7 @@ def iterate_with_template_sources(frames, extended=True):
             if function == 'render':
                 renderer = getattr(frame, 'f_locals', {}).get('self')
                 if renderer and isinstance(renderer, Node):
-                    if hasattr(renderer, "token"):
+                    if getattr(renderer, "token", None) is not None:
                         if hasattr(renderer, "source"):
                             # up to Django 1.8
                             yield {

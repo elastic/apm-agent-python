@@ -29,6 +29,7 @@ from opbeat.utils import six, stacks, varmap
 from opbeat.utils.compat import atexit_register, urlparse
 from opbeat.utils.deprecation import deprecated
 from opbeat.utils.encoding import shorten, transform
+from opbeat.utils.module_import import import_string
 from opbeat.utils.stacks import get_culprit, iter_stack_frames
 
 __all__ = ('Client',)
@@ -113,7 +114,7 @@ class Client(object):
     protocol_version = '1.0'
 
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
-                 include_paths=None, exclude_paths=None,
+                 transport_class=None, include_paths=None, exclude_paths=None,
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None,
                  processors=None, servers=None, api_path=None, async=None,
@@ -150,7 +151,12 @@ class Client(object):
             async_mode = async
         self.async_mode = (async_mode is True
                            or (defaults.ASYNC_MODE and async_mode is not False))
-        self._transport_class = AsyncHTTPTransport if self.async_mode else HTTPTransport
+        if transport_class:
+            self._transport_class = import_string(transport_class)
+        else:
+            self._transport_class = (
+                AsyncHTTPTransport if self.async_mode else HTTPTransport
+            )
         self._transports = {}
 
         # servers may be set to a NoneType (for Django)

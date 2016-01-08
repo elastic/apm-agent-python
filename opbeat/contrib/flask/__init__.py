@@ -83,6 +83,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
         servers=opbeat_config.get('SERVERS'),
+        transport_class=opbeat_config.get('TRANSPORT_CLASS', None),
         hostname=opbeat_config.get('HOSTNAME'),
         auto_log_stacks=opbeat_config.get('AUTO_LOG_STACKS'),
         timeout=opbeat_config.get('TIMEOUT'),
