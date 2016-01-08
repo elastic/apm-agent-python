@@ -19,7 +19,7 @@ class InstrumentRedisTest(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_pipeline(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction("transaction.test")
+        self.client.begin_transaction()
         with trace("test_pipeline", "test"):
             conn = redis.StrictRedis()
             pipeline = conn.pipeline()
@@ -62,7 +62,7 @@ class InstrumentRedisTest(TestCase):
         conn = redis.StrictRedis()
         conn._pipeline = partial(StrictRedis.pipeline, conn)
 
-        self.client.begin_transaction("transaction.test")
+        self.client.begin_transaction()
         with trace("test_pipeline", "test"):
             # conn = redis.StrictRedis()
             pipeline = conn._pipeline()
@@ -100,7 +100,7 @@ class InstrumentRedisTest(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_redis_client(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction("transaction.test")
+        self.client.begin_transaction()
         with trace("test_redis_client", "test"):
             conn = redis.StrictRedis()
             conn.rpush("mykey", "a", "b")

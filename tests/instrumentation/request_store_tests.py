@@ -84,7 +84,7 @@ class RequestStoreTest(TestCase):
         self.requests_store = RequestsStore(self.mock_get_frames, 99999)
 
     def test_lru_get_frames_cache(self):
-        self.requests_store.transaction_start(None, "transaction.test")
+        self.requests_store.transaction_start(None)
 
         for i in range(10):
             with trace("bleh", "custom"):
@@ -93,7 +93,7 @@ class RequestStoreTest(TestCase):
         self.assertEqual(self.mock_get_frames.call_count, 1)
 
     def test_leaf_tracing(self):
-        self.requests_store.transaction_start(None, "transaction.test")
+        self.requests_store.transaction_start(None)
 
         with trace("root", "custom"):
             with trace("child1-leaf", "custom", leaf=True):

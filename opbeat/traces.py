@@ -31,8 +31,7 @@ def get_transaction():
 class Transaction(object):
     _lrucache = LRUCache(maxsize=5000)
 
-    def __init__(self, start_time, get_frames, client,
-                 kind="transaction.django"):
+    def __init__(self, start_time, get_frames, client):
         self.start_time = start_time
         self.get_frames = get_frames
         self.client = client
@@ -218,7 +217,7 @@ class RequestsStore(object):
         with self.cond:
             return sum([len(v.durations) for v in self._transactions.values()])
 
-    def transaction_start(self, client, kind):
+    def transaction_start(self, client):
         """
         Start a new transactions and bind it in a thread-local variable
 
@@ -227,7 +226,6 @@ class RequestsStore(object):
             time.time(),
             self._get_frames,
             client,
-            kind,
         )
 
     def _add_traces(self, traces):

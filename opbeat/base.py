@@ -554,13 +554,10 @@ class Client(object):
         """
         self.capture_query(*args, **kwargs)
 
-    def begin_transaction(self, kind):
+    def begin_transaction(self):
         """Register the start of a transaction on the client
-
-        'kind' should follow the convention of '<transaction-kind>.<provider>'
-        e.g. 'web.django', 'task.celery'.
         """
-        self.instrumentation_store.transaction_start(self, kind)
+        self.instrumentation_store.transaction_start(self)
 
     def end_transaction(self, name, status_code=None):
         self.instrumentation_store.transaction_end(status_code, name)

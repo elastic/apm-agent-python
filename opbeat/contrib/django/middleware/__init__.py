@@ -144,7 +144,7 @@ class OpbeatAPMMiddleware(object):
             getattr(django_settings, 'OPBEAT', {}),
             django_settings.DEBUG
         ):
-            self.client.begin_transaction("web.django")
+            self.client.begin_transaction()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._opbeat_view_func = view_func

@@ -88,7 +88,7 @@ class ClientProxyTest(TestCase):
 
 
 class DjangoClientTest(TestCase):
-    ## Fixture setup/teardown
+
     urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
@@ -374,16 +374,6 @@ class DjangoClientTest(TestCase):
             '{% invalid template tag %}\n'
         )
 
-    # def test_request_in_logging(self):
-    #     resp = self.client.get(reverse('opbeat-log-request-exc'))
-    #     self.assertEquals(resp.status_code, 200)
-
-    #     self.assertEquals(len(self.opbeat.events), 1)
-    #     event = self.opbeat.events.pop(0)
-
-    #     self.assertEquals(event['culprit'], 'tests.contrib.django.views.logging_request_exc')
-    #     self.assertEquals(event['data']['META']['REMOTE_ADDR'], '127.0.0.1')
-
     @pytest.mark.skipif(six.PY3, reason='see Python bug #10805')
     def test_record_none_exc_info(self):
         # sys.exc_info can return (None, None, None) if no exception is being
@@ -435,16 +425,15 @@ class DjangoClientTest(TestCase):
             self.assertEquals(resp.status_code, 404)
             self.assertEquals(len(self.opbeat.events), 0)
 
-    # def test_response_error_id_middleware(self):
-    #     # TODO: test with 500s
-    #     with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
-    #         resp = self.client.get('/non-existant-page')
-    #         self.assertEquals(resp.status_code, 404)
-    #         headers = dict(resp.items())
-    #         self.assertTrue('X-Opbeat-ID' in headers)
-    #         self.assertEquals(len(self.opbeat.events), 1)
-    #         event = self.opbeat.events.pop(0)
-    #         self.assertEquals('$'.join([event['client_supplied_id'], event['checksum']]), headers['X-Opbeat-ID'])
+    def test_response_error_id_middleware(self):
+        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+            resp = self.client.get('/non-existant-page')
+            self.assertEquals(resp.status_code, 404)
+            headers = dict(resp.items())
+            self.assertTrue('X-Opbeat-ID' in headers)
+            self.assertEquals(len(self.opbeat.events), 1)
+            event = self.opbeat.events.pop(0)
+            self.assertEquals('$'.join(event['client_supplied_id']), headers['X-Opbeat-ID'])
 
     def test_get_client(self):
         self.assertEquals(get_client(), get_client())
@@ -552,15 +541,6 @@ class DjangoClientTest(TestCase):
         self.assertEquals(env['SERVER_NAME'], 'testserver')
         self.assertTrue('SERVER_PORT' in env, env.keys())
         self.assertEquals(env['SERVER_PORT'], '80')
-
-    ## TODO: Find out why this is broken
-    # def test_filtering_middleware(self):
-    #     with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.FilteringMiddleware']):
-    #         self.assertRaises(IOError, self.client.get, reverse('opbeat-raise-ioerror'))
-    #         self.assertEquals(len(self.opbeat.events), 0)
-    #         self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
-    #         self.assertEquals(len(self.opbeat.events), 1)
-    #         self.opbeat.events.pop(0)
 
     def test_transaction_metrics(self):
         self.opbeat.instrumentation_store.get_all()  # clear the store
