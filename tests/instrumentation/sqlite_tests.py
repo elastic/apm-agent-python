@@ -15,7 +15,7 @@ class InstrumentSQLiteTest(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_connect(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction()
+        self.client.begin_transaction("transaction.test")
 
         conn = sqlite3.connect("testdb.sql")
         cursor = conn.cursor()

@@ -182,7 +182,7 @@ class Opbeat(object):
             signals.request_finished.connect(self.request_finished)
 
     def request_started(self, app):
-        self.client.begin_transaction()
+        self.client.begin_transaction("web.flask")
 
     def request_finished(self, app, response):
         rule = request.url_rule.rule if request.url_rule is not None else ""

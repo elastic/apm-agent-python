@@ -16,7 +16,7 @@ class InstrumentMemcachedTest(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_memcached(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction()
+        self.client.begin_transaction("transaction.test")
         with trace("test_memcached", "test"):
             conn = memcache.Client(['127.0.0.1:11211'], debug=0)
             conn.set("mykey", "a")

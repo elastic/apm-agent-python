@@ -42,7 +42,7 @@ class InstrumentUrllib3Test(TestCase):
     @mock.patch("opbeat.traces.RequestsStore.should_collect")
     def test_urllib3(self, should_collect):
         should_collect.return_value = False
-        self.client.begin_transaction()
+        self.client.begin_transaction("transaction")
         expected_sig = 'GET localhost:{0}'.format(self.port)
         with trace("test_pipeline", "test"):
             pool = urllib3.PoolManager(timeout=0.1)

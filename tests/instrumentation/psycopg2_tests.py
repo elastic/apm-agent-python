@@ -190,7 +190,7 @@ def test_psycopg2_register_type():
     control.instrument()
 
     try:
-        client.begin_transaction()
+        client.begin_transaction("web.django")
         conn = psycopg2.connect(database="opbeat_test", user="postgres")
         new_type = psycopg2.extras.register_uuid(None, conn)
         client.end_transaction(None, "test-transaction")
