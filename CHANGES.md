@@ -1,3 +1,6 @@
+### 3.1.5 ###
+ * prefixed Django and Flask transaction names with HTTP methods names
+
 ### 3.1.4 ###
  * added possibility to override the transport class used by the client
  * fixed a regression in our frame walker for Django templates in Django 1.9+
