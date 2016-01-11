@@ -32,8 +32,7 @@ from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.management.commands.opbeat import \
     Command as DjangoCommand
 from opbeat.contrib.django.middleware.wsgi import Opbeat
-from opbeat.contrib.django.models import get_client as orig_get_client
-from opbeat.contrib.django.models import client, get_client_config
+from opbeat.contrib.django.models import client, get_client, get_client_config
 from opbeat.traces import Transaction
 from opbeat.utils import six
 from opbeat.utils.lru import LRUCache
@@ -47,19 +46,6 @@ except ImportError:
 
 
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
-
-
-def get_client(*args, **kwargs):
-    config = {
-        'APP_ID': 'key',
-        'ORGANIZATION_ID': 'org',
-        'SECRET_TOKEN': '99',
-    }
-    config.update(settings.OPBEAT)
-
-    with override_settings(OPBEAT=config):
-        cli = orig_get_client(*args, **kwargs)
-        return cli
 
 
 class MockClientHandler(TestClientHandler):
@@ -102,7 +88,7 @@ class ClientProxyTest(TestCase):
 
 
 class DjangoClientTest(TestCase):
-    ## Fixture setup/teardown
+
     urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
@@ -388,16 +374,6 @@ class DjangoClientTest(TestCase):
             '{% invalid template tag %}\n'
         )
 
-    # def test_request_in_logging(self):
-    #     resp = self.client.get(reverse('opbeat-log-request-exc'))
-    #     self.assertEquals(resp.status_code, 200)
-
-    #     self.assertEquals(len(self.opbeat.events), 1)
-    #     event = self.opbeat.events.pop(0)
-
-    #     self.assertEquals(event['culprit'], 'tests.contrib.django.views.logging_request_exc')
-    #     self.assertEquals(event['data']['META']['REMOTE_ADDR'], '127.0.0.1')
-
     @pytest.mark.skipif(six.PY3, reason='see Python bug #10805')
     def test_record_none_exc_info(self):
         # sys.exc_info can return (None, None, None) if no exception is being
@@ -449,16 +425,15 @@ class DjangoClientTest(TestCase):
             self.assertEquals(resp.status_code, 404)
             self.assertEquals(len(self.opbeat.events), 0)
 
-    # def test_response_error_id_middleware(self):
-    #     # TODO: test with 500s
-    #     with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
-    #         resp = self.client.get('/non-existant-page')
-    #         self.assertEquals(resp.status_code, 404)
-    #         headers = dict(resp.items())
-    #         self.assertTrue('X-Opbeat-ID' in headers)
-    #         self.assertEquals(len(self.opbeat.events), 1)
-    #         event = self.opbeat.events.pop(0)
-    #         self.assertEquals('$'.join([event['client_supplied_id'], event['checksum']]), headers['X-Opbeat-ID'])
+    def test_response_error_id_middleware(self):
+        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+            resp = self.client.get('/non-existant-page')
+            self.assertEquals(resp.status_code, 404)
+            headers = dict(resp.items())
+            self.assertTrue('X-Opbeat-ID' in headers)
+            self.assertEquals(len(self.opbeat.events), 1)
+            event = self.opbeat.events.pop(0)
+            self.assertEquals('$'.join(event['client_supplied_id']), headers['X-Opbeat-ID'])
 
     def test_get_client(self):
         self.assertEquals(get_client(), get_client())
@@ -567,21 +542,13 @@ class DjangoClientTest(TestCase):
         self.assertTrue('SERVER_PORT' in env, env.keys())
         self.assertEquals(env['SERVER_PORT'], '80')
 
-    ## TODO: Find out why this is broken
-    # def test_filtering_middleware(self):
-    #     with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.middleware.FilteringMiddleware']):
-    #         self.assertRaises(IOError, self.client.get, reverse('opbeat-raise-ioerror'))
-    #         self.assertEquals(len(self.opbeat.events), 0)
-    #         self.assertRaises(Exception, self.client.get, reverse('opbeat-raise-exc'))
-    #         self.assertEquals(len(self.opbeat.events), 1)
-    #         self.opbeat.events.pop(0)
-
     def test_transaction_metrics(self):
         self.opbeat.instrumentation_store.get_all()  # clear the store
         with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
             self.assertEqual(len(self.opbeat.instrumentation_store), 0)
             self.client.get(reverse('opbeat-no-error'))
             self.assertEqual(len(self.opbeat.instrumentation_store), 1)
+
             transactions, traces = self.opbeat.instrumentation_store.get_all()
 
             self.assertEqual(len(transactions), 1)
@@ -589,7 +556,7 @@ class DjangoClientTest(TestCase):
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],
-                             'tests.contrib.django.testapp.views.no_error')
+                             'GET tests.contrib.django.testapp.views.no_error')
             self.assertEqual(timing['result'],
                              200)
 
@@ -613,9 +580,9 @@ class DjangoClientTest(TestCase):
         self.assertIn(
             timing['transaction'], (
                 # django <= 1.8
-                'django.middleware.common.CommonMiddleware.process_request',
+                'GET django.middleware.common.CommonMiddleware.process_request',
                 # django 1.9+
-                'django.middleware.common.CommonMiddleware.process_response',
+                'GET django.middleware.common.CommonMiddleware.process_response',
             )
         )
 
@@ -638,7 +605,7 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'django.middleware.common.CommonMiddleware.process_request'
+            'GET django.middleware.common.CommonMiddleware.process_request'
         )
 
     def test_request_metrics_contrib_redirect(self):
@@ -665,7 +632,7 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'django.contrib.redirects.middleware.RedirectFallbackMiddleware'
+            'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware'
             '.process_response'
         )
 
