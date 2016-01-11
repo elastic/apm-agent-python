@@ -1,5 +1,8 @@
 ### 3.2 ###
  * prefixed Django and Flask transaction names with HTTP methods names
+ * Note: This means views in the "Views" list on the Opbeat performance tab will 
+   change their name and you will have both non-prefixed names and http method 
+   prefixed names in the list until the old names fall out of the selected timeframe
 
 ### 3.1.4 ###
  * added possibility to override the transport class used by the client
