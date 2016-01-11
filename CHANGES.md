@@ -1,4 +1,4 @@
-### 3.1.5 ###
+### 3.2 ###
  * prefixed Django and Flask transaction names with HTTP methods names
 
 ### 3.1.4 ###
