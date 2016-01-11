@@ -556,7 +556,7 @@ class DjangoClientTest(TestCase):
             self.assertTrue('durations' in timing)
             self.assertEqual(len(timing['durations']), 1)
             self.assertEqual(timing['transaction'],
-                             'GET  tests.contrib.django.testapp.views.no_error')
+                             'GET tests.contrib.django.testapp.views.no_error')
             self.assertEqual(timing['result'],
                              200)
 
@@ -580,9 +580,9 @@ class DjangoClientTest(TestCase):
         self.assertIn(
             timing['transaction'], (
                 # django <= 1.8
-                'GET  django.middleware.common.CommonMiddleware.process_request',
+                'GET django.middleware.common.CommonMiddleware.process_request',
                 # django 1.9+
-                'GET  django.middleware.common.CommonMiddleware.process_response',
+                'GET django.middleware.common.CommonMiddleware.process_response',
             )
         )
 
@@ -605,7 +605,7 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'GET  django.middleware.common.CommonMiddleware.process_request'
+            'GET django.middleware.common.CommonMiddleware.process_request'
         )
 
     def test_request_metrics_contrib_redirect(self):
@@ -632,7 +632,7 @@ class DjangoClientTest(TestCase):
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
-            'GET  django.contrib.redirects.middleware.RedirectFallbackMiddleware'
+            'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware'
             '.process_response'
         )
 

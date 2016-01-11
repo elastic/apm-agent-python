@@ -59,21 +59,21 @@ class TracesTest(TestCase):
 
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'GET  tests.contrib.django.testapp.views.render_template_view')
+        self.assertEqual(traces[0]['transaction'], 'GET tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[0]['durations']), 3)
         self.assertEqual(len(traces[0]['parents']), 0)
 
         self.assertEqual(traces[1]['kind'], 'code')
         self.assertEqual(traces[1]['signature'], 'something_expensive')
         self.assertEqual(traces[1]['transaction'],
-                         'GET  tests.contrib.django.testapp.views.render_template_view')
+                         'GET tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[1]['durations']), 3)
         self.assertEqual(traces[1]['parents'], ('transaction', 'list_users.html'))
 
         self.assertEqual(traces[2]['kind'], 'template.django')
         self.assertEqual(traces[2]['signature'], 'list_users.html')
         self.assertEqual(traces[2]['transaction'],
-                         'GET  tests.contrib.django.testapp.views.render_template_view')
+                         'GET tests.contrib.django.testapp.views.render_template_view')
         self.assertEqual(len(traces[2]['durations']), 3)
         self.assertEqual(traces[2]['parents'], ('transaction',))
 
@@ -106,13 +106,13 @@ class TracesTest(TestCase):
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['signature'], 'transaction')
         self.assertEqual(traces[0]['transaction'],
-                         'GET  tests.contrib.django.testapp.views.render_jinja2_template')
+                         'GET tests.contrib.django.testapp.views.render_jinja2_template')
         self.assertEqual(len(traces[0]['durations']), 3)
         self.assertEqual(len(traces[0]['parents']), 0)
 
         self.assertEqual(traces[1]['kind'], 'template.jinja2')
         self.assertEqual(traces[1]['signature'], 'jinja2_template.html')
         self.assertEqual(traces[1]['transaction'],
-                         'GET  tests.contrib.django.testapp.views.render_jinja2_template')
+                         'GET tests.contrib.django.testapp.views.render_jinja2_template')
         self.assertEqual(len(traces[1]['durations']), 3)
         self.assertEqual(traces[1]['parents'], ('transaction',))

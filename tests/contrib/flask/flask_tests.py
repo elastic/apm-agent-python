@@ -133,7 +133,7 @@ class FlaskTest(TestCase):
         assert len(traces) == 2, [t["signature"] for t in traces]
 
         expected_signatures = ['transaction', 'users.html']
-        expected_transaction = 'POST  /users/'
+        expected_transaction = 'POST /users/'
 
         assert set([t['signature'] for t in traces]) == set(expected_signatures)
 
