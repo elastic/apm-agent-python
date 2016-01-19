@@ -191,7 +191,12 @@ class Client(object):
         self.secret_token = six.text_type(secret_token)
 
         self.processors = processors or defaults.PROCESSORS
-        self.filter_exception_types = filter_exception_types or []
+
+        self.filter_exception_types_dict = {}
+        for exc_to_filter in (filter_exception_types or []):
+            exc_to_filter_type = exc_to_filter.split(".")[-1]
+            exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
+            self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
 
         self.module_cache = ModuleProxyCache()
 
@@ -425,11 +430,9 @@ class Client(object):
         if exc_module == 'None':
             exc_module = None
 
-        for exc_to_filter in self.filter_exception_types:
-            exc_to_filter_type = exc_to_filter.split(".")[-1]
-            exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
-            if exc_to_filter_type == exc_type:
-                if not exc_to_filter_module or exc_to_filter_module == exc_module:
+        if exc_type in self.filter_exception_types_dict:
+            exc_to_filter_module = self.filter_exception_types_dict[exc_type]
+            if not exc_to_filter_module or exc_to_filter_module == exc_module:
                     return True
 
         return False
