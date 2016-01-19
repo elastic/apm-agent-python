@@ -647,6 +647,65 @@ class DjangoClientTest(TestCase):
             pytest.deprecated_call(get_client_config)
 
 
+class DjangoClientNoTempTest(TestCase):
+    def setUp(self):
+        self.client = DjangoClient(
+            servers=['http://example.com'],
+            organization_id='org',
+            app_id='app',
+            secret_token='secret',
+            filter_exception_types=['KeyError', 'tests.contrib.django.fake1.FakeException']
+        )
+
+    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
+    def test_filter_no_match(self, send_encoded):
+        try:
+            raise ValueError('foo')
+        except:
+            self.client.capture('Exception')
+
+        self.assertEquals(send_encoded.call_count, 1)
+
+    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
+    def test_filter_matches_type(self, send_encoded):
+        try:
+            raise KeyError('foo')
+        except:
+            self.client.capture('Exception')
+
+        self.assertEquals(send_encoded.call_count, 0)
+
+    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
+    def test_filter_matches_type_but_not_module(self, send_encoded):
+        try:
+            from tests.contrib.django.fake2 import FakeException
+            raise FakeException('foo')
+        except:
+            self.client.capture('Exception')
+
+        self.assertEquals(send_encoded.call_count, 1)
+
+    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
+    def test_filter_matches_type_and_module(self, send_encoded):
+        try:
+            from tests.contrib.django.fake1 import FakeException
+            raise FakeException('foo')
+        except:
+            self.client.capture('Exception')
+
+        self.assertEquals(send_encoded.call_count, 0)
+
+    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
+    def test_filter_matches_module_only(self, send_encoded):
+        try:
+            from tests.contrib.django.fake1 import OtherFakeException
+            raise OtherFakeException('foo')
+        except:
+            self.client.capture('Exception')
+
+        self.assertEquals(send_encoded.call_count, 1)
+
+
 class DjangoLoggingTest(TestCase):
     def setUp(self):
         self.logger = logging.getLogger(__name__)

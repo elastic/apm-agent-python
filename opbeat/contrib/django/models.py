@@ -129,6 +129,7 @@ def get_client_config():
         include_paths=set(
             config.get('INCLUDE_PATHS', [])) | get_installed_apps(),
         exclude_paths=config.get('EXCLUDE_PATHS', None),
+        filter_exception_types=config.get('FILTER_EXCEPTION_TYPES', None),
         timeout=config.get('TIMEOUT', None),
         hostname=config.get('HOSTNAME', None),
         auto_log_stacks=config.get('AUTO_LOG_STACKS', None),
