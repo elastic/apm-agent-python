@@ -444,8 +444,8 @@ class Client(object):
         except Exception as e:
             self.handle_transport_fail(exception=e)
 
-    def send(self, organization_id=None, app_id=None, secret_token=None,
-             auth_header=None, servers=None, **data):
+    def send(self, secret_token=None, auth_header=None,
+             servers=None, **data):
         """
         Serializes the message and passes the payload onto ``send_encoded``.
         """
@@ -457,8 +457,6 @@ class Client(object):
 
         try:
             return self.send_encoded(message,
-                                     organization_id=organization_id,
-                                     app_id=app_id,
                                      secret_token=secret_token,
                                      auth_header=auth_header,
                                      servers=servers)
@@ -472,8 +470,8 @@ class Client(object):
             )
             return self.send_encoded(message)
 
-    def send_encoded(self, message, organization_id, app_id, secret_token,
-                     auth_header=None, servers = None, **kwargs):
+    def send_encoded(self, message, secret_token, auth_header=None,
+                     servers = None, **kwargs):
         """
         Given an already serialized message, signs the message and passes the
         payload off to ``send_remote`` for each server specified in the servers
@@ -485,12 +483,6 @@ class Client(object):
             return
 
         if not auth_header:
-            if not organization_id:
-                organization_id = self.organization_id
-
-            if not app_id:
-                app_id = self.app_id
-
             if not secret_token:
                 secret_token = self.secret_token
 

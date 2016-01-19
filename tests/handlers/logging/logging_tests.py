@@ -35,7 +35,6 @@ class LoggingIntegrationTest(TestCase):
         event = self.client.events.pop(0)
         self.assertEquals(event['logger'], __name__)
         self.assertEquals(event['level'], "warning")
-        # self.assertEquals(event['message'], 'This is a test warning')
         self.assertFalse('stacktrace' in event)
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event)
@@ -174,22 +173,6 @@ class LoggingHandlerTest(TestCase):
         client = get_tempstoreclient(include_paths=['tests'])
         handler = OpbeatHandler(client=client)
         self.assertEquals(handler.client, client)
-
-    # def test_args_as_servers_and_keys(self):
-    #     handler = OpbeatHandler(['http://sentry.local/api/store/'], project_id="project_id", access_token="key")
-    #     self.assertTrue(isinstance(handler.client, Client))
-
-    # def test_args_as_servers_and_key(self):
-    #     handler = OpbeatHandler(['http://sentry.local/api/store/'], 'KEY')
-    #     self.assertTrue(isinstance(handler.client, Client))
-
-    # def test_first_arg_as_dsn(self):
-    #     handler = OpbeatHandler('http://public:secret@example.com/1')
-    #     self.assertTrue(isinstance(handler.client, Client))
-
-    # def test_custom_client_class(self):
-    #     handler = OpbeatHandler('http://public:secret@example.com/1', client_cls=TempStoreClient)
-    #     self.assertTrue(type(handler.client), TempStoreClient)
 
     def test_invalid_first_arg_type(self):
         self.assertRaises(ValueError, OpbeatHandler, object)
