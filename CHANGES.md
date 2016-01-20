@@ -1,3 +1,7 @@
+### 3.2.1 ###
+ * added a FILTER_EXCEPTION_TYPES attribute in the OPBEAT dict in Django / Flask settings
+   that allows the user to filter out specific exception types
+
 ### 3.2 ###
  * prefixed Django and Flask transaction names with HTTP methods names
  * Note: This means views in the "Views" list on the Opbeat performance tab will 
