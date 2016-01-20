@@ -116,9 +116,9 @@ class Client(object):
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
                  transport_class=None, include_paths=None, exclude_paths=None,
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
-                 string_max_length=None, list_max_length=None,
-                 processors=None, servers=None, api_path=None, async=None,
-                 async_mode=None, traces_send_freq_secs=None, **kwargs):
+                 string_max_length=None, list_max_length=None, processors=None,
+                 filter_exception_types=None, servers=None, api_path=None,
+                 async=None, async_mode=None, traces_send_freq_secs=None, **kwargs):
         # configure loggers first
         cls = self.__class__
         self.logger = logging.getLogger('%s.%s' % (cls.__module__,
@@ -191,6 +191,13 @@ class Client(object):
         self.secret_token = six.text_type(secret_token)
 
         self.processors = processors or defaults.PROCESSORS
+
+        self.filter_exception_types_dict = {}
+        for exc_to_filter in (filter_exception_types or []):
+            exc_to_filter_type = exc_to_filter.split(".")[-1]
+            exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
+            self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
+
         self.module_cache = ModuleProxyCache()
 
         self.instrumentation_store = RequestsStore(
@@ -365,10 +372,7 @@ class Client(object):
                            path.
         :param data: the data base
         :param date: the datetime of this event
-        :param client_supplied_id: a 32-length unique string identifying this event
         :param extra: a dictionary of additional standard metadata
-        :param culprit: a string representing the cause of this event
-                        (generally a path to a function)
         :return: a 32-length string identifying this event
         """
 
@@ -416,6 +420,23 @@ class Client(object):
             self._transports[parsed_url] = self._transport_class(parsed_url)
         return self._transports[parsed_url]
 
+    def _filter_exception_type(self, data):
+        exception = data.get('exception')
+        if not exception:
+            return False
+
+        exc_type = exception.get('type')
+        exc_module = exception.get('module')
+        if exc_module == 'None':
+            exc_module = None
+
+        if exc_type in self.filter_exception_types_dict:
+            exc_to_filter_module = self.filter_exception_types_dict[exc_type]
+            if not exc_to_filter_module or exc_to_filter_module == exc_module:
+                    return True
+
+        return False
+
     def send_remote(self, url, data, headers=None):
         if not self.state.should_try():
             message = self._get_log_message(data)
@@ -426,21 +447,19 @@ class Client(object):
         except Exception as e:
             self.handle_transport_fail(exception=e)
 
-    def send(self, organization_id=None, app_id=None, secret_token=None,
-             auth_header=None, servers=None, **data):
+    def send(self, secret_token=None, auth_header=None,
+             servers=None, **data):
         """
         Serializes the message and passes the payload onto ``send_encoded``.
         """
 
-        if self.is_send_disabled:
+        if self.is_send_disabled or self._filter_exception_type(data):
             return
 
         message = self.encode(data)
 
         try:
             return self.send_encoded(message,
-                                     organization_id=organization_id,
-                                     app_id=app_id,
                                      secret_token=secret_token,
                                      auth_header=auth_header,
                                      servers=servers)
@@ -454,8 +473,8 @@ class Client(object):
             )
             return self.send_encoded(message)
 
-    def send_encoded(self, message, organization_id, app_id, secret_token,
-                     auth_header=None, servers = None, **kwargs):
+    def send_encoded(self, message, secret_token, auth_header=None,
+                     servers = None, **kwargs):
         """
         Given an already serialized message, signs the message and passes the
         payload off to ``send_remote`` for each server specified in the servers
@@ -467,12 +486,6 @@ class Client(object):
             return
 
         if not auth_header:
-            if not organization_id:
-                organization_id = self.organization_id
-
-            if not app_id:
-                app_id = self.app_id
-
             if not secret_token:
                 secret_token = self.secret_token
 
@@ -491,7 +504,6 @@ class Client(object):
         """
         Serializes ``data`` into a raw string.
         """
-        # return json.dumps(data).encode('zlib')
         return zlib.compress(json.dumps(data).encode('utf8'))
 
     def decode(self, data):
