@@ -106,6 +106,12 @@ except ImportError:
         tests_require += ['zerorpc>=0.4.0,<0.5']
     tests_require += ['psycopg2']
 
+if sys.version_info >= (3, 5):
+    tests_require += [
+        'aiohttp',
+        'pytest-asyncio',
+        'pytest-mock',
+    ]
 
 install_requires = []
 
@@ -117,6 +123,11 @@ except ImportError:
 
 
 class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
 
     def finalize_options(self):
         TestCommand.finalize_options(self)
@@ -126,7 +137,7 @@ class PyTest(TestCommand):
     def run_tests(self):
         #import here, cause outside the eggs aren't loaded
         import pytest
-        errno = pytest.main(self.test_args)
+        errno = pytest.main(self.pytest_args)
         sys.exit(errno)
 
 
@@ -142,7 +153,9 @@ setup_kwargs = dict(
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
-    extras_require={'tests': tests_require, 'flask': ['blinker']},
+    extras_require={'tests': tests_require,
+                    'flask': ['blinker'],
+                    'asyncio': ['aiohttp']},
     cmdclass={'test': PyTest},
     test_suite='tests',
     include_package_data=True,
