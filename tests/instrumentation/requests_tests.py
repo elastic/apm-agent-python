@@ -1,6 +1,6 @@
+import mock
 import requests
 from requests.exceptions import InvalidURL, MissingSchema
-from urllib3.exceptions import ConnectionError
 
 import opbeat
 import opbeat.instrumentation.control
@@ -14,26 +14,22 @@ class InstrumentRequestsTest(TestCase):
         self.client = get_tempstoreclient()
         opbeat.instrumentation.control.instrument()
 
-    def test_requests_instrumentation(self):
+    @mock.patch("requests.sessions.Session.send")
+    def test_requests_instrumentation(self, _):
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
-            try:
-                requests.get('http://example.com')
-            except ConnectionError:
-                pass
+            requests.get('http://example.com')
         self.client.end_transaction("MyView")
 
         _, traces = self.client.instrumentation_store.get_all()
         self.assertIn('GET example.com', map(lambda x: x['signature'], traces))
 
-    def test_requests_instrumentation_via_session(self):
+    @mock.patch("requests.sessions.Session.send")
+    def test_requests_instrumentation_via_session(self, _):
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             s = requests.Session()
-            try:
-                s.get('http://example.com')
-            except ConnectionError:
-                pass
+            s.get('http://example.com')
         self.client.end_transaction("MyView")
 
         _, traces = self.client.instrumentation_store.get_all()
@@ -53,5 +49,3 @@ class InstrumentRequestsTest(TestCase):
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             self.assertRaises(InvalidURL, requests.get, 'http://')
-
-
