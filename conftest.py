@@ -44,9 +44,6 @@ def pytest_configure(config):
                     }
                 },
             },
-            # HACK: this fixes our threaded runserver remote tests
-            DATABASE_ENGINE='sqlite3',
-            DATABASE_NAME='opbeat_tests.db',
             TEST_DATABASE_NAME='opbeat_tests.db',
             INSTALLED_APPS=[
                 'django.contrib.auth',
