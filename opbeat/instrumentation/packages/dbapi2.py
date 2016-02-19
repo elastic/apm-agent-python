@@ -161,11 +161,11 @@ def extract_signature(sql):
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
 
-    def callproc(self, procname, params=None):
+    def callproc(self, procname, params=()):
         return self._trace_sql(self.__wrapped__.callproc, procname,
                                params)
 
-    def execute(self, sql, params=None):
+    def execute(self, sql, params=()):
         return self._trace_sql(self.__wrapped__.execute, sql, params)
 
     def executemany(self, sql, param_list):
