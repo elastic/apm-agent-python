@@ -10,6 +10,13 @@ class MySQLCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    def callproc(self, procname, params=None):
+        return self._trace_sql(self.__wrapped__.callproc, procname,
+                               params)
+
+    def execute(self, sql, params=None):
+        return self._trace_sql(self.__wrapped__.execute, sql, params)
+
 
 class MySQLConnectionProxy(ConnectionProxy):
     cursor_proxy = MySQLCursorProxy
