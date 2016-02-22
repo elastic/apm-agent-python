@@ -29,6 +29,7 @@ mock
 msgpack-python
 pep8
 redis
+requests
 urllib3
 
 pytz

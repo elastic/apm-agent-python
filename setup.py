@@ -71,6 +71,7 @@ tests_require = [
     'webob',
     'pytz',
     'redis',
+    'requests',
     'urllib3',
     'jinja2',
     'pytest-benchmark',

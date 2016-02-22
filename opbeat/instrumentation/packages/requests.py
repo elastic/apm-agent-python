@@ -24,13 +24,14 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
 
         signature = method.upper()
 
-        parsed_url = urlparse.urlparse(url)
-        host = parsed_url.hostname
-        signature += " " + host
+        if url:
+            parsed_url = urlparse.urlparse(url)
+            host = parsed_url.hostname or " "
+            signature += " " + host
 
-        if (parsed_url.port
-            and default_ports.get(parsed_url.scheme) != parsed_url.port):
-            signature += ":" + str(parsed_url.port)
+            if parsed_url.port and \
+               default_ports.get(parsed_url.scheme) != parsed_url.port:
+                signature += ":" + str(parsed_url.port)
 
         with trace(signature, "ext.http.requests",
                    {'url': url}, leaf=True):
