@@ -1,3 +1,7 @@
+### 3.2.2 ###
+ * fixed bug in MySQL instrumentation: https://github.com/opbeat/opbeat_python/issues/94
+ * fixed bug in requests instrumentation: https://github.com/opbeat/opbeat_python/issues/95
+
 ### 3.2.1 ###
  * added a FILTER_EXCEPTION_TYPES attribute in the OPBEAT dict in Django / Flask settings
    that allows the user to filter out specific exception types
