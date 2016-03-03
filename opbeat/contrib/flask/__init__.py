@@ -57,6 +57,13 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
             'in the environment',
             DeprecationWarning,
         )
+    if 'ASYNC' in opbeat_config:
+        warnings.warn(
+            'Usage of "ASYNC" configuration is deprecated. Use "ASYNC_MODE"',
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        opbeat_config['ASYNC_MODE'] = opbeat_config['ASYNC']
     organization_id = (
         organization_id or
         opbeat_config.get('ORGANIZATION_ID') or  # config
@@ -92,7 +99,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         list_max_length=opbeat_config.get('LIST_MAX_LENGTH'),
         traces_freq_send=opbeat_config.get('TRACES_FREQ_SEND'),
         processors=opbeat_config.get('PROCESSORS'),
-        async_mode=opbeat_config.get('ASYNC')
+        async_mode=opbeat_config.get('ASYNC_MODE')
     )
 
 
