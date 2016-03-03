@@ -24,9 +24,10 @@ from opbeat.utils.stacks import iter_stack_frames
 
 class OpbeatHandler(logging.Handler, object):
     def __init__(self, *args, **kwargs):
-        client = kwargs.get('client_cls', Client)
+        client = kwargs.pop('client_cls', Client)
         if len(args) == 1:
             arg = args[0]
+            args = args[1:]
             if isinstance(arg, Client):
                 self.client = arg
             else:
@@ -37,11 +38,11 @@ class OpbeatHandler(logging.Handler, object):
                         arg,
                     ))
         elif 'client' in kwargs:
-            self.client = kwargs['client']
+            self.client = kwargs.pop('client')
         else:
             self.client = client(*args, **kwargs)
 
-        logging.Handler.__init__(self)
+        super(OpbeatHandler, self).__init__(*args, **kwargs)
 
     def emit(self, record):
         self.format(record)
