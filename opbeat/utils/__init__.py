@@ -8,6 +8,7 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
+import os
 
 from opbeat.utils import six
 
@@ -68,3 +69,12 @@ def build_name_with_http_method_prefix(name, request):
         return request.method + " " + name
     else:
         return name  # 404
+
+
+def is_master_process():
+    # currently only recognizes uwsgi master process
+    try:
+        import uwsgi
+        return os.getpid() == uwsgi.masterpid()
+    except ImportError:
+        return False

@@ -25,7 +25,7 @@ from opbeat.conf import defaults
 from opbeat.traces import RequestsStore
 from opbeat.transport.http import AsyncHTTPTransport, HTTPTransport
 from opbeat.utils import opbeat_json as json
-from opbeat.utils import six, stacks, varmap
+from opbeat.utils import is_master_process, six, stacks, varmap
 from opbeat.utils.compat import atexit_register, urlparse
 from opbeat.utils.deprecation import deprecated
 from opbeat.utils.encoding import shorten, transform
@@ -416,6 +416,10 @@ class Client(object):
         return message
 
     def _get_transport(self, parsed_url):
+        if is_master_process():
+            # when in the master process, always use SYNC mode. This avoids
+            # the danger of being forked into an inconsistent threading state
+            return HTTPTransport(parsed_url)
         if parsed_url not in self._transports:
             self._transports[parsed_url] = self._transport_class(parsed_url)
         return self._transports[parsed_url]
