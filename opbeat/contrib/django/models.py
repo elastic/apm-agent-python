@@ -123,7 +123,7 @@ def get_client_config():
             category=DeprecationWarning,
             stacklevel=2,
         )
-        config['ASYNC_MODE'] = 'ASYNC'
+        config['ASYNC_MODE'] = config['ASYNC']
     return dict(
         servers=config.get('SERVERS', None),
         include_paths=set(
