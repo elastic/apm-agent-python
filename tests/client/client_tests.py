@@ -8,7 +8,9 @@ import opbeat
 from opbeat.base import Client, ClientState
 from opbeat.conf import defaults
 from opbeat.transport.base import Transport, TransportException
+from opbeat.transport.http import HTTPTransport
 from opbeat.utils import six
+from opbeat.utils.compat import urlparse
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -454,4 +456,21 @@ class ClientTest(TestCase):
             app_id='app_id',
             secret_token='secret',
             async=True,
+        )
+
+    @mock.patch('opbeat.utils.is_master_process')
+    def test_client_uses_sync_mode_when_master_process(self, is_master_process):
+        # when in the master process, the client should use the non-async
+        # HTTP transport, even if async_mode is True
+        is_master_process.return_value = True
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async_mode=True,
+        )
+        self.assertIsInstance(
+            client._get_transport(urlparse.urlparse('http://exampe.com')),
+            HTTPTransport
         )
