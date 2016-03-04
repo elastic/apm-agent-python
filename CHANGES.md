@@ -1,3 +1,9 @@
+## 3.3 ##
+ * added an asyncio transport (for Python 3.5 and up), thanks @ticosax!
+ * fixed a bug with uWSGI master mode which would stop the module from sending
+   errors to Opbeat if it was used before uWSGI forked the worker processes.
+   Thanks @dsanders11 for finding the bug and initial patch!
+
 ### 3.2.2 ###
  * fixed bug in MySQL instrumentation: https://github.com/opbeat/opbeat_python/issues/94
  * fixed bug in requests instrumentation: https://github.com/opbeat/opbeat_python/issues/95
@@ -6,7 +12,7 @@
  * added a FILTER_EXCEPTION_TYPES attribute in the OPBEAT dict in Django / Flask settings
    that allows the user to filter out specific exception types
 
-### 3.2 ###
+## 3.2 ##
  * prefixed Django and Flask transaction names with HTTP methods names
  * Note: This means views in the "Views" list on the Opbeat performance tab will 
    change their name and you will have both non-prefixed names and http method 
