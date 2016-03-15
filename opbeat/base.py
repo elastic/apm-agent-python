@@ -190,13 +190,16 @@ class Client(object):
         self.app_id = six.text_type(app_id)
         self.secret_token = six.text_type(secret_token)
 
-        self.processors = processors or defaults.PROCESSORS
-
         self.filter_exception_types_dict = {}
         for exc_to_filter in (filter_exception_types or []):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
             exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
             self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
+
+        if processors is None:
+            self.processors = defaults.PROCESSORS
+        else:
+            self.processors = processors
 
         self.module_cache = ModuleProxyCache()
 
