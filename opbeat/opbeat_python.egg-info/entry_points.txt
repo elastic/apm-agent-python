@@ -1,6 +1,0 @@
-[paste.filter_app_factory]
-opbeat = opbeat.contrib.paste:sentry_filter_factory
-
-[console_scripts]
-opbeat = opbeat.scripts.runner:main
-
