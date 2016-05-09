@@ -1,3 +1,13 @@
+### 3.3.1 ###
+ * setting `PROCESSORS` to an empty list now skips processing completely instead
+   of using the default processors
+ * setting `_opbeat_transaction_name` on the `request` object from a view or
+   middleware allows code to override the name used for the transaction
+ * experimental support for manylinux1 binary wheels. Note that the wheels will
+   not be uploaded to PyPI for now, but will be available on the 
+   [release page](https://github.com/opbeat/opbeat_python/releases/tag/3.3.1)
+   on GitHub.
+
 ## 3.3 ##
  * added an asyncio transport (for Python 3.5 and up), thanks @ticosax!
  * fixed a bug with uWSGI master mode which would stop the module from sending
