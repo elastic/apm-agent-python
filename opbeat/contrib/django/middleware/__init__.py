@@ -152,19 +152,23 @@ class OpbeatAPMMiddleware(object):
     def process_response(self, request, response):
         try:
             if hasattr(response, 'status_code'):
-                if getattr(request, '_opbeat_view_func', False):
-                    view_func = get_name_from_func(
-                        request._opbeat_view_func)
-                else:
-                    view_func = getattr(
-                        request,
-                        '_opbeat_transaction_name',
-                        ''
+                # check if _opbeat_transaction_name is set
+                if hasattr(request, '_opbeat_transaction_name'):
+                    transaction_name = request._opbeat_transaction_name
+                elif getattr(request, '_opbeat_view_func', False):
+                    transaction_name = get_name_from_func(
+                        request._opbeat_view_func
                     )
-                status_code = response.status_code
-                view_func = build_name_with_http_method_prefix(view_func, request)
+                else:
+                    transaction_name = ''
 
-                self.client.end_transaction(view_func, status_code)
+                status_code = response.status_code
+                transaction_name = build_name_with_http_method_prefix(
+                    transaction_name,
+                    request
+                )
+
+                self.client.end_transaction(transaction_name, status_code)
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',

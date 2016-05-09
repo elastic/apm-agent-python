@@ -646,6 +646,37 @@ class DjangoClientTest(TestCase):
         with self.settings(OPBEAT=config):
             pytest.deprecated_call(get_client_config)
 
+    def test_request_metrics_name_override(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
+        with self.settings(
+            MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'tests.contrib.django.testapp.middleware.MetricsNameOverrideMiddleware',
+            ]
+        ):
+            self.client.get(reverse('opbeat-no-error'))
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'GET foobar'
+        )
+
+    def test_request_metrics_404_resolve_error(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
+        with self.settings(
+                MIDDLEWARE_CLASSES=[
+                    'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                ]
+        ):
+            self.client.get('/i-dont-exist/')
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            ''
+        )
+
 
 class DjangoClientNoTempTest(TestCase):
     def setUp(self):
