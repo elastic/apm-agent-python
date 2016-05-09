@@ -20,8 +20,8 @@ env:
     - WEBFRAMEWORK=django-master
     - WEBFRAMEWORK=flask-0.10
   global:
-    - PIP_CACHE="$HOME/.pip_cache"'
-
+  - PIP_CACHE="$HOME/.pip_cache"'
+  - RUN_SCRIPT="./travis/run_tests.sh"
 matrix:
   exclude:
   - python: 2.6
@@ -56,43 +56,46 @@ matrix:
     env: WEBFRAMEWORK=django-1.6
   - python: nightly
     env: WEBFRAMEWORK=django-1.7
+  include:
+  - sudo: required
+    python: 3.4
+    services:
+    - docker
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 RUN_SCRIPT=./travis/run_docker.sh
+  - sudo: required
+    python: 3.4
+    services:
+    - docker
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 RUN_SCRIPT=./travis/run_docker.sh
+      PRE_CMD=linux32
   allow_failures:
   - env: WEBFRAMEWORK=django-master
   - python: nightly
-
 addons:
   apt:
     packages:
-      - libevent-dev
-      - libzmq3-dev
-  postgresql: "9.3"
-
+    - libevent-dev
+    - libzmq3-dev
+  postgresql: '9.3'
 cache:
   directories:
-    - $HOME/.pip_cache
-
-before_install:
-  - mkdir -p $PIP_CACHE
-
-install:
-- pip install -U pip
-- pip install -r test_requirements/requirements-$WEBFRAMEWORK.txt --cache-dir $PIP_CACHE
-- pip install -r test_requirements/requirements-python-$(python --version 2>&1 | awk -F'[ |.]' 'NR==1{ print $2 }').txt --cache-dir $PIP_CACHE
-- if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install -r test_requirements/requirements-asyncio.txt --cache-dir $PIP_CACHE; fi
-- if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r test_requirements/requirements-cpython.txt --cache-dir $PIP_CACHE; fi
-- if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r test_requirements/requirements-pypy.txt --cache-dir $PIP_CACHE; fi
-
-before_script:
-  - psql -c 'create database opbeat_test;' -U postgres
-
+  - "$HOME/.pip_cache"
 script:
-- make test
-
+- bash $RUN_SCRIPT
 notifications:
   email: false
   slack:
     secure: LcTTbTj0Px0/9Bs/S/uwbhkdULlj1YVdHnU8F/kOa3bq2QdCTptqB719r6BnzHvW+QGyADvDZ25UncVXFuLuHY67ZYfmyZ/H2cj0nrRSuYdPct0avhVbT/3s50GlNWK5qkfZDuqw6szYTFrgFWJcr5dl7Zf6Vovcvd38uaYOdno=
-
 services:
-  - redis-server
-  - memcached
+- redis-server
+- memcached
+deploy:
+  provider: releases
+  api_key:
+    secure: bixGjrReBq8ET47kpaZQNrBG9EFi6zNi8v6kL/10BQcEkC1YrBwbv1YyjHKZt2joB77QXpQlgEFkjfeR5uX7rjaK7Hp9Cu1l4zr+d2Rl6Q/P4BN346IPImdOjL8EF5aVTOFrSGLvrcFhTZ76IWoLpjgGubqCSw2k6S/+whysAhs=
+  skip_cleanup: true
+  file_glob: true
+  file: wheelhouse/opbeat*manylinux*.whl
+  on:
+    repo: opbeat/opbeat_python
+    tags: true

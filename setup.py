@@ -103,7 +103,7 @@ else:
 try:
     import __pypy__
 except ImportError:
-    if sys.version_info[0] == 2:
+    if sys.version_info[0] == 2 and 'SKIP_ZERORPC' not in os.environ:
         tests_require += ['zerorpc>=0.4.0,<0.5']
     tests_require += ['psycopg2']
 

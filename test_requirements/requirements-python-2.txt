@@ -1,4 +1,2 @@
-gevent==1.1b1
-zerorpc>=0.4.0,<0.5
 unittest2
 python-memcached

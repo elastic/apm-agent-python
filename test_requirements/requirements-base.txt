@@ -33,4 +33,3 @@ requests
 urllib3
 
 pytz
-pyzmq==13.1.0
