@@ -117,6 +117,17 @@ class ClientTest(TestCase):
         )
         self.assertEqual(client._transport_class, DummyTransport)
 
+    def test_empty_processor_list(self):
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            processors=[],
+        )
+
+        self.assertEqual(client.processors, [])
+
     @mock.patch('opbeat.transport.http.HTTPTransport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
     def test_send_remote_failover_sync(self, should_try, http_send):
