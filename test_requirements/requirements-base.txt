@@ -15,7 +15,7 @@ Logbook
 MarkupSafe
 WebOb
 Werkzeug
-amqp
+amqp==1.4.9
 anyjson
 argparse
 billiard
