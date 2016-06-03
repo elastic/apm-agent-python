@@ -1,3 +1,8 @@
+### 3.3.2 ###
+ * removed suprious print statement that made it into 3.3.1. Thanks @coagulant for
+   the heads up!
+ * updated README
+
 ### 3.3.1 ###
  * setting `PROCESSORS` to an empty list now skips processing completely instead
    of using the default processors
