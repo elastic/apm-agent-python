@@ -149,7 +149,7 @@ setup_kwargs = dict(
     author_email='support@opbeat.com',
     url='https://github.com/opbeat/opbeat_python',
     description='The official Python module for Opbeat.com',
-    long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
+    long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst'), encoding='utf-8').read(),
     packages=find_packages(exclude=("tests",)),
     zip_safe=False,
     install_requires=install_requires,
