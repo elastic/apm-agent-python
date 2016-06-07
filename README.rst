@@ -12,11 +12,6 @@ Opbeat for Python
 .. image:: https://img.shields.io/pypi/pyversions/opbeat.svg?style=flat
     :target: https://pypi.python.org/pypi/opbeat/
     :alt: Supported Python versions
-    
-.. image:: http://opbeat-brand-assets.s3-website-us-east-1.amazonaws.com/svg/logo/logo.svg
-    :target: https://opbeat.com
-    :align: right
-    :height: 25px
 
 
 This is the official Python module for `Opbeat <https://opbeat.com/>`_.
