@@ -1,3 +1,10 @@
+### 3.3.3 ###
+ * fixed an issue where Opbeat for Flask would listen for all signals, instead
+   of just signals from the app it has been initialized with. Thanks @tomlinton
+   for the fix.
+ * fixed an encoding issue when loading the README.rst in setup.py. Thanks
+   @apuyou for the fix.
+
 ### 3.3.2 ###
  * removed suprious print statement that made it into 3.3.1. Thanks @coagulant for
    the heads up!
