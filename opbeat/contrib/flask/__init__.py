@@ -187,8 +187,8 @@ class Opbeat(object):
         else:
             opbeat.instrumentation.control.instrument()
 
-            signals.request_started.connect(self.request_started)
-            signals.request_finished.connect(self.request_finished)
+            signals.request_started.connect(self.request_started, sender=app)
+            signals.request_finished.connect(self.request_finished, sender=app)
 
     def request_started(self, app):
         self.client.begin_transaction("web.flask")
