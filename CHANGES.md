@@ -1,3 +1,6 @@
+### 3.3.4 ###
+ * Introduce transactions ignore patterns. 
+
 ### 3.3.3 ###
  * fixed an issue where Opbeat for Flask would listen for all signals, instead
    of just signals from the app it has been initialized with. Thanks @tomlinton
