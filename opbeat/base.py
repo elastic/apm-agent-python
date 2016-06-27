@@ -118,7 +118,9 @@ class Client(object):
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None, processors=None,
                  filter_exception_types=None, servers=None, api_path=None,
-                 async=None, async_mode=None, traces_send_freq_secs=None, **kwargs):
+                 async=None, async_mode=None, traces_send_freq_secs=None,
+                 transactions_ignore_patterns=None,
+                 **kwargs):
         # configure loggers first
         cls = self.__class__
         self.logger = logging.getLogger('%s.%s' % (cls.__module__,
@@ -205,7 +207,9 @@ class Client(object):
 
         self.instrumentation_store = RequestsStore(
             lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
-            self.traces_send_freq_secs)
+            self.traces_send_freq_secs,
+            transactions_ignore_patterns
+        )
         atexit_register(self.close)
 
     def get_processors(self):

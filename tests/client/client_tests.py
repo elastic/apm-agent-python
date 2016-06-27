@@ -456,8 +456,8 @@ class ClientTest(TestCase):
         should_collect.return_value = False
         client.begin_transaction("celery")
 
-        client.end_transaction(200, 'test-transaction')
-        client.end_transaction(200, 'test-transaction')
+        client.end_transaction('test-transaction', 200)
+        client.end_transaction('test-transaction', 200)
 
     def test_async_arg_deprecation(self):
         pytest.deprecated_call(
@@ -485,3 +485,27 @@ class ClientTest(TestCase):
             client._get_transport(urlparse.urlparse('http://exampe.com')),
             HTTPTransport
         )
+
+    @mock.patch('opbeat.base.Client.send')
+    @mock.patch('opbeat.base.RequestsStore.should_collect')
+    def test_ignore_patterns(self, should_collect, mock_send):
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async_mode=True,
+            transactions_ignore_patterns=[
+                '^OPTIONS',
+                'views.api.v2'
+            ]
+        )
+
+        should_collect.return_value = False
+        client.begin_transaction("web")
+        client.end_transaction('OPTIONS views.healthcheck', 200)
+
+        client.begin_transaction("web")
+        client.end_transaction('GET views.users', 200)
+
+        self.assertEqual(len(client.instrumentation_store), 1)
