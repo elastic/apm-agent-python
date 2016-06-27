@@ -116,7 +116,7 @@ class Opbeat(object):
 
     Pass an arbitrary ORGANIZATION_ID, APP_ID and SECRET_TOKEN::
 
-    >>> opbeat = Opbeat(app, organiation_id='1', app_id='1', secret_token='asdasdasd')
+    >>> opbeat = Opbeat(app, organization_id='1', app_id='1', secret_token='asdasdasd')
 
     Pass an explicit client::
 
