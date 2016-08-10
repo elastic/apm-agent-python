@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest  # isort:skip
+
 django = pytest.importorskip("django")  # isort:skip
 
 import datetime
@@ -11,6 +12,7 @@ from django.contrib.auth.models import User
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
 from django.core.handlers.wsgi import WSGIRequest
+from django.core.management import call_command
 from django.core.signals import got_request_exception
 from django.core.urlresolvers import reverse
 from django.db import DatabaseError
@@ -29,8 +31,6 @@ from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
 from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
-from opbeat.contrib.django.management.commands.opbeat import \
-    Command as DjangoCommand
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 from opbeat.contrib.django.models import client, get_client, get_client_config
 from opbeat.traces import Transaction
@@ -1045,29 +1045,28 @@ def test_perf_transaction_without_middleware(benchmark):
 
 
 class DjangoManagementCommandTest(TestCase):
+    @pytest.mark.skipif(django.VERSION > (1, 7),
+                        reason='argparse raises CommandError in this case')
     @mock.patch('opbeat.contrib.django.management.commands.opbeat.Command._get_argv')
     def test_subcommand_not_set(self, argv_mock):
         stdout = six.StringIO()
-        command = DjangoCommand()
         argv_mock.return_value = ['manage.py', 'opbeat']
-        command.execute(stdout=stdout)
+        call_command('opbeat', stdout=stdout)
         output = stdout.getvalue()
         assert 'No command specified' in output
 
     @mock.patch('opbeat.contrib.django.management.commands.opbeat.Command._get_argv')
     def test_subcommand_not_known(self, argv_mock):
         stdout = six.StringIO()
-        command = DjangoCommand()
         argv_mock.return_value = ['manage.py', 'opbeat']
-        command.execute('foo', stdout=stdout)
+        call_command('opbeat', 'foo', stdout=stdout)
         output = stdout.getvalue()
         assert 'No such command "foo"' in output
 
     def test_settings_missing(self):
         stdout = six.StringIO()
-        command = DjangoCommand()
         with self.settings(OPBEAT={}):
-            command.execute('check', stdout=stdout)
+            call_command('opbeat', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'Configuration errors detected' in output
         assert 'ORGANIZATION_ID not set' in output
@@ -1076,27 +1075,24 @@ class DjangoManagementCommandTest(TestCase):
 
     def test_middleware_not_set(self):
         stdout = six.StringIO()
-        command = DjangoCommand()
         with self.settings(MIDDLEWARE_CLASSES=()):
-            command.execute('check', stdout=stdout)
+            call_command('opbeat', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'Opbeat APM middleware not set!' in output
 
     def test_middleware_not_first(self):
         stdout = six.StringIO()
-        command = DjangoCommand()
         with self.settings(MIDDLEWARE_CLASSES=(
             'foo',
             'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
         )):
-            command.execute('check', stdout=stdout)
+            call_command('opbeat', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'not at the first position' in output
 
     @mock.patch('opbeat.transport.http.urlopen')
     def test_test_exception(self, urlopen_mock):
         stdout = six.StringIO()
-        command = DjangoCommand()
         resp = six.moves.urllib.response.addinfo(
             mock.Mock(),
             headers={'Location': 'http://example.com'}
@@ -1106,6 +1102,6 @@ class DjangoManagementCommandTest(TestCase):
                 'foo',
                 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'
         )):
-            command.execute('test', stdout=stdout, stderr=stdout)
+            call_command('opbeat', 'test', stdout=stdout, stderr=stdout)
         output = stdout.getvalue()
         assert 'http://example.com' in output
