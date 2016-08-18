@@ -414,6 +414,27 @@ class DjangoClientTest(TestCase):
             self.assertEquals(http['query_string'], '')
             self.assertEquals(http['data'], None)
 
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_404_new_style_middleware(self):
+        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+                'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+            resp = self.client.get('/non-existant-page')
+            self.assertEquals(resp.status_code, 404)
+
+            self.assertEquals(len(self.opbeat.events), 1)
+            event = self.opbeat.events.pop(0)
+
+            self.assertEquals(event['level'], 'info')
+            self.assertEquals(event['logger'], 'http404')
+
+            self.assertTrue('http' in event)
+            http = event['http']
+            self.assertEquals(http['url'], u'http://testserver/non-existant-page')
+            self.assertEquals(http['method'], 'GET')
+            self.assertEquals(http['query_string'], '')
+            self.assertEquals(http['data'], None)
+
     def test_404_middleware_with_debug(self):
         with self.settings(
                 MIDDLEWARE_CLASSES=[
@@ -425,8 +446,38 @@ class DjangoClientTest(TestCase):
             self.assertEquals(resp.status_code, 404)
             self.assertEquals(len(self.opbeat.events), 0)
 
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_404_new_style_middleware_with_debug(self):
+        with self.settings(
+                MIDDLEWARE_CLASSES=None,
+                MIDDLEWARE=[
+                    'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware'
+                ],
+                DEBUG=True,
+        ):
+            resp = self.client.get('/non-existant-page')
+            self.assertEquals(resp.status_code, 404)
+            self.assertEquals(len(self.opbeat.events), 0)
+
     def test_response_error_id_middleware(self):
-        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware', 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware',
+                'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
+            resp = self.client.get('/non-existant-page')
+            self.assertEquals(resp.status_code, 404)
+            headers = dict(resp.items())
+            self.assertTrue('X-Opbeat-ID' in headers)
+            self.assertEquals(len(self.opbeat.events), 1)
+            event = self.opbeat.events.pop(0)
+            self.assertEquals('$'.join(event['client_supplied_id']), headers['X-Opbeat-ID'])
+
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_response_error_id_middleware(self):
+        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+                'opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware',
+                'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
             resp = self.client.get('/non-existant-page')
             self.assertEquals(resp.status_code, 404)
             headers = dict(resp.items())
@@ -544,7 +595,29 @@ class DjangoClientTest(TestCase):
 
     def test_transaction_metrics(self):
         self.opbeat.instrumentation_store.get_all()  # clear the store
-        with self.settings(MIDDLEWARE_CLASSES=['opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+        with self.settings(MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            self.assertEqual(len(self.opbeat.instrumentation_store), 0)
+            self.client.get(reverse('opbeat-no-error'))
+            self.assertEqual(len(self.opbeat.instrumentation_store), 1)
+
+            transactions, traces = self.opbeat.instrumentation_store.get_all()
+
+            self.assertEqual(len(transactions), 1)
+            timing = transactions[0]
+            self.assertTrue('durations' in timing)
+            self.assertEqual(len(timing['durations']), 1)
+            self.assertEqual(timing['transaction'],
+                             'GET tests.contrib.django.testapp.views.no_error')
+            self.assertEqual(timing['result'],
+                             200)
+
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_transaction_metrics_new_style_middleware(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
+        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
             self.assertEqual(len(self.opbeat.instrumentation_store), 0)
             self.client.get(reverse('opbeat-no-error'))
             self.assertEqual(len(self.opbeat.instrumentation_store), 1)
@@ -586,6 +659,35 @@ class DjangoClientTest(TestCase):
             )
         )
 
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_request_metrics_301_append_slash_new_style_middleware(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=None,
+            MIDDLEWARE=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.middleware.common.CommonMiddleware',
+            ],
+            APPEND_SLASH=True,
+        ):
+            self.client.get(reverse('opbeat-no-error-slash')[:-1])
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timing = timed_requests[0]
+        self.assertIn(
+            timing['transaction'], (
+                # django <= 1.8
+                'GET django.middleware.common.CommonMiddleware.process_request',
+                # django 1.9+
+                'GET django.middleware.common.CommonMiddleware.process_response',
+            )
+        )
+
     def test_request_metrics_301_prepend_www(self):
         self.opbeat.instrumentation_store.get_all()  # clear the store
 
@@ -595,6 +697,31 @@ class DjangoClientTest(TestCase):
 
         with self.settings(
             MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.middleware.common.CommonMiddleware',
+            ],
+            PREPEND_WWW=True,
+        ):
+            self.client.get(reverse('opbeat-no-error'))
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'GET django.middleware.common.CommonMiddleware.process_request'
+        )
+
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_request_metrics_301_prepend_www_new_style_middleware(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=None,
+            MIDDLEWARE=[
                 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
                 'django.middleware.common.CommonMiddleware',
             ],
@@ -622,6 +749,37 @@ class DjangoClientTest(TestCase):
 
         with self.settings(
             MIDDLEWARE_CLASSES=[
+                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+                'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
+            ],
+        ):
+            response = self.client.get('/redirect/me/')
+
+        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timing = timed_requests[0]
+        self.assertEqual(
+            timing['transaction'],
+            'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware'
+            '.process_response'
+        )
+
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='new-style middlewares')
+    def test_request_metrics_contrib_redirect_new_style_middleware(self):
+        self.opbeat.instrumentation_store.get_all()  # clear the store
+
+        # enable middleware wrapping
+        client = get_client()
+        client.instrument_django_middleware = True
+        from opbeat.contrib.django.middleware import OpbeatAPMMiddleware
+        OpbeatAPMMiddleware._opbeat_instrumented = False
+
+        s = Site.objects.get(pk=1)
+        Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
+
+        with self.settings(
+            MIDDLEWARE_CLASSES=None,
+            MIDDLEWARE=[
                 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
                 'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
             ],
