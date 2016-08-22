@@ -471,23 +471,13 @@ class Client(object):
 
         message = self.encode(data)
 
-        try:
-            return self.send_encoded(message,
-                                     secret_token=secret_token,
-                                     auth_header=auth_header,
-                                     servers=servers)
-        except TypeError:
-            # Make the assumption that public_key wasnt supported
-            warnings.warn(
-                '%s.send_encoded needs updated to support ``**kwargs``' % (
-                    type(self).__name__,
-                ),
-                DeprecationWarning
-            )
-            return self.send_encoded(message)
+        return self.send_encoded(message,
+                                 secret_token=secret_token,
+                                 auth_header=auth_header,
+                                 servers=servers)
 
     def send_encoded(self, message, secret_token, auth_header=None,
-                     servers = None, **kwargs):
+                     servers=None, **kwargs):
         """
         Given an already serialized message, signs the message and passes the
         payload off to ``send_remote`` for each server specified in the servers
