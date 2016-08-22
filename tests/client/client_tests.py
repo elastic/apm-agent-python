@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+import platform
 import time
 
 import mock
 import pytest
-import platform
 
 import opbeat
 from opbeat.base import Client, ClientState
