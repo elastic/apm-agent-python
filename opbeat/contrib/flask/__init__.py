@@ -99,7 +99,8 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         list_max_length=opbeat_config.get('LIST_MAX_LENGTH'),
         traces_freq_send=opbeat_config.get('TRACES_FREQ_SEND'),
         processors=opbeat_config.get('PROCESSORS'),
-        async_mode=opbeat_config.get('ASYNC_MODE')
+        async_mode=opbeat_config.get('ASYNC_MODE'),
+        transactions_ignore_patterns=opbeat_config.get('TRANSACTIONS_IGNORE_PATTERNS')
     )
 
 
@@ -115,7 +116,7 @@ class Opbeat(object):
 
     Pass an arbitrary ORGANIZATION_ID, APP_ID and SECRET_TOKEN::
 
-    >>> opbeat = Opbeat(app, organiation_id='1', app_id='1', secret_token='asdasdasd')
+    >>> opbeat = Opbeat(app, organization_id='1', app_id='1', secret_token='asdasdasd')
 
     Pass an explicit client::
 
