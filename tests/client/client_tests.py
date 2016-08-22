@@ -3,6 +3,7 @@ import time
 
 import mock
 import pytest
+import platform
 
 import opbeat
 from opbeat.base import Client, ClientState
@@ -60,6 +61,17 @@ class DummyTransport(Transport):
 class ClientTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
+
+    def test_platform_info(self):
+        platform_info = self.client.get_platform_info()
+        self.assertIn(
+            'lang=python/' + platform.python_version(),
+            platform_info,
+        )
+        self.assertIn(
+            'platform=' + platform.python_implementation(),
+            platform_info,
+        )
 
     def test_config_by_environment(self):
         with mock.patch.dict('os.environ', {
@@ -209,7 +221,8 @@ class ClientTest(TestCase):
             headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': 'Bearer %s' % (access_token),
-                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
+                'X-Opbeat-Platform': self.client.get_platform_info(),
             },
         )
 
@@ -249,8 +262,8 @@ class ClientTest(TestCase):
             headers={
                 'Content-Type': 'application/octet-stream',
                 'Authorization': 'foo',
-                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
-
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
+                'X-Opbeat-Platform': self.client.get_platform_info(),
             },
         )
 

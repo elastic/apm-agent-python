@@ -677,6 +677,11 @@ class DjangoClientTest(TestCase):
             ''
         )
 
+    def test_get_platform_info(self):
+        client = get_client()
+        platform_info = client.get_platform_info()
+        self.assertIn(django.__version__, platform_info)
+
 
 class DjangoClientNoTempTest(TestCase):
     def setUp(self):

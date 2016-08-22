@@ -13,6 +13,7 @@ from __future__ import absolute_import
 
 import logging
 
+import django
 from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
@@ -58,6 +59,7 @@ class DjangoClient(Client):
             self.instrument_django_middleware = instrument_django_middleware
         else:
             self.instrument_django_middleware = defaults.INSTRUMENT_DJANGO_MIDDLEWARE
+        kwargs['framework_version'] = 'django/' + django.__version__
         super(DjangoClient, self).__init__(**kwargs)
 
     def get_user_info(self, request):

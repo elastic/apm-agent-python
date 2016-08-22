@@ -15,6 +15,7 @@ import logging
 import os
 import warnings
 
+import flask
 from flask import request, signals
 
 import opbeat.instrumentation.control
@@ -82,6 +83,10 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         os.environ.get('OPBEAT_SECRET_TOKEN') or  # environment
         os.environ.get('SECRET_TOKEN')  # deprecated fallback
     )
+    if hasattr(flask, '__version__'):
+        framework_version = 'flask/' + flask.__version__
+    else:
+        framework_version = 'flask/<0.7'
 
     return client_cls(
         organization_id=organization_id,
@@ -100,7 +105,8 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         traces_freq_send=opbeat_config.get('TRACES_FREQ_SEND'),
         processors=opbeat_config.get('PROCESSORS'),
         async_mode=opbeat_config.get('ASYNC_MODE'),
-        transactions_ignore_patterns=opbeat_config.get('TRANSACTIONS_IGNORE_PATTERNS')
+        transactions_ignore_patterns=opbeat_config.get('TRANSACTIONS_IGNORE_PATTERNS'),
+        framework_version=framework_version,
     )
 
 
