@@ -164,7 +164,7 @@ class Client(object):
 
         # servers may be set to a NoneType (for Django)
         if self.servers and not (organization_id and app_id and secret_token):
-            msg = 'Missing configuration for client. Please see documentation.'
+            msg = 'Missing configuration for Opbeat client. Please see documentation.'
             self.logger.info(msg)
 
         self.is_send_disabled = (
