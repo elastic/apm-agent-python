@@ -14,6 +14,7 @@ from __future__ import absolute_import
 import datetime
 import logging
 import os
+import platform
 import sys
 import time
 import uuid
@@ -119,7 +120,7 @@ class Client(object):
                  string_max_length=None, list_max_length=None, processors=None,
                  filter_exception_types=None, servers=None, api_path=None,
                  async=None, async_mode=None, traces_send_freq_secs=None,
-                 transactions_ignore_patterns=None,
+                 transactions_ignore_patterns=None, framework_version='',
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -202,6 +203,8 @@ class Client(object):
             self.processors = defaults.PROCESSORS
         else:
             self.processors = processors
+
+        self._framework_version = framework_version
 
         self.module_cache = ModuleProxyCache()
 
@@ -498,7 +501,8 @@ class Client(object):
             headers = {
                 'Authorization': auth_header,
                 'Content-Type': 'application/octet-stream',
-                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION
+                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
+                'X-Opbeat-Platform': self.get_platform_info()
             }
 
             self.send_remote(url=url, data=message, headers=headers)
@@ -631,6 +635,16 @@ class Client(object):
 
         data['servers'] = [server + api_path for server in self.servers]
         self.send(**data)
+
+    def get_platform_info(self):
+        platform_bits = {'lang': 'python/' + platform.python_version()}
+        implementation = platform.python_implementation()
+        if implementation == 'PyPy':
+            implementation += '/' + '.'.join(map(str, sys.pypy_version_info[:3]))
+        platform_bits['platform'] = implementation
+        if self._framework_version:
+            platform_bits['framework'] = self._framework_version
+        return ' '.join('%s=%s' % item for item in platform_bits.items())
 
 
 class DummyClient(Client):

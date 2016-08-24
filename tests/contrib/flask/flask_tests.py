@@ -178,3 +178,7 @@ class FlaskTest(TestCase):
         assert traces[0]['signature'] == 'transaction'
         assert traces[0]['transaction'] == expected_transaction
         assert traces[0]['kind'] == 'transaction'
+
+    def test_framework_version(self):
+        opbeat = Opbeat(app=self.app)
+        self.assertIn('framework=flask', opbeat.client.get_platform_info())
