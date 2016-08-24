@@ -117,19 +117,26 @@ class Command(BaseCommand):
 
     # Django 1.8+
     def add_arguments(self, parser):
+        parser.add_argument('subcommand')
         for args, kwargs in self.arguments:
             parser.add_argument(*args, **kwargs)
 
     def handle(self, *args, **options):
-        if not args:
-            self.handle_command_not_found('No command specified.')
-        elif args[0] not in self.dispatch:
-            self.handle_command_not_found('No such command "%s".' % args[0])
+        if 'subcommand' in options:
+            # Django 1.8+, argparse
+            subcommand = options['subcommand']
+        elif not args:
+            return self.handle_command_not_found('No command specified.')
+        else:
+            # Django 1.7, optparse
+            subcommand = args[0]
+        if subcommand not in self.dispatch:
+            self.handle_command_not_found('No such command "%s".' % subcommand)
         else:
             self.dispatch.get(
-                args[0],
+                subcommand,
                 self.handle_command_not_found
-            )(self, args[0], **options)
+            )(self, subcommand, **options)
 
     def handle_test(self, command, **options):
         """Send a test error to Opbeat"""

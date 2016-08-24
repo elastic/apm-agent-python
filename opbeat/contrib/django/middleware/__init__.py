@@ -25,6 +25,13 @@ try:
 except ImportError:
     from django.utils.importlib import import_module
 
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    # no-op class for Django < 1.10
+    class MiddlewareMixin(object):
+        pass
+
 
 def _is_ignorable_404(uri):
     """
@@ -34,7 +41,7 @@ def _is_ignorable_404(uri):
     return any(pattern.search(uri) for pattern in urls)
 
 
-class Opbeat404CatchMiddleware(object):
+class Opbeat404CatchMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         if (response.status_code != 404 or
                 _is_ignorable_404(request.get_full_path())):
@@ -98,11 +105,12 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
         return response
 
 
-class OpbeatAPMMiddleware(object):
+class OpbeatAPMMiddleware(MiddlewareMixin):
     _opbeat_instrumented = False
     _instrumenting_lock = threading.Lock()
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super(OpbeatAPMMiddleware, self).__init__(*args, **kwargs)
         self.client = get_client()
 
         if not self._opbeat_instrumented:
@@ -114,30 +122,31 @@ class OpbeatAPMMiddleware(object):
                     OpbeatAPMMiddleware._opbeat_instrumented = True
 
     def instrument_middlewares(self):
-        for middleware_path in django_settings.MIDDLEWARE_CLASSES:
-            module_path, class_name = middleware_path.rsplit('.', 1)
-            try:
-                module = import_module(module_path)
-                middleware_class = getattr(module, class_name)
-                if middleware_class == type(self):
-                    # don't instrument ourselves
-                    continue
-                if hasattr(middleware_class, 'process_request'):
-                    wrapt.wrap_function_wrapper(
-                        middleware_class,
-                        'process_request',
-                        process_request_wrapper,
+        if getattr(django_settings, 'MIDDLEWARE_CLASSES', None):
+            for middleware_path in django_settings.MIDDLEWARE_CLASSES:
+                module_path, class_name = middleware_path.rsplit('.', 1)
+                try:
+                    module = import_module(module_path)
+                    middleware_class = getattr(module, class_name)
+                    if middleware_class == type(self):
+                        # don't instrument ourselves
+                        continue
+                    if hasattr(middleware_class, 'process_request'):
+                        wrapt.wrap_function_wrapper(
+                            middleware_class,
+                            'process_request',
+                            process_request_wrapper,
+                        )
+                    if hasattr(middleware_class, 'process_response'):
+                        wrapt.wrap_function_wrapper(
+                            middleware_class,
+                            'process_response',
+                            process_response_wrapper,
+                        )
+                except ImportError:
+                    client.logger.info(
+                        "Can't instrument middleware %s", middleware_path
                     )
-                if hasattr(middleware_class, 'process_response'):
-                    wrapt.wrap_function_wrapper(
-                        middleware_class,
-                        'process_response',
-                        process_response_wrapper,
-                    )
-            except ImportError:
-                client.logger.info(
-                    "Can't instrument middleware %s", middleware_path
-                )
 
     def process_request(self, request):
         if not disabled_due_to_debug(
@@ -177,7 +186,7 @@ class OpbeatAPMMiddleware(object):
         return response
 
 
-class OpbeatResponseErrorIdMiddleware(object):
+class OpbeatResponseErrorIdMiddleware(MiddlewareMixin):
     """
     Appends the X-Opbeat-ID response header for referencing a message within
     the Opbeat datastore.
@@ -189,7 +198,7 @@ class OpbeatResponseErrorIdMiddleware(object):
         return response
 
 
-class OpbeatLogMiddleware(object):
+class OpbeatLogMiddleware(MiddlewareMixin):
     # Create a thread local variable to store the session in for logging
     thread = threading.local()
 
