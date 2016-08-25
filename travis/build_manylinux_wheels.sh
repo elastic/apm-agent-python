@@ -7,6 +7,9 @@ export OPBEAT_WRAPT_EXTENSIONS="true"
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
+    if [[ $PYBIN == *cp26* ]]; then
+        continue
+    fi
     ${PYBIN}/pip install -r /io/test_requirements/requirements-base.txt
     ${PYBIN}/pip install -r /io/test_requirements/requirements-python-$($PYBIN/python -c "import sys; print(sys.version_info[0])").txt
     ${PYBIN}/pip wheel /io/ -w wheelhouse/
