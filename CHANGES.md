@@ -1,3 +1,7 @@
+## 3.4 ##
+ * Added support for Django 1.10
+ * Dropped official support for Python 2.6
+
 ### 3.3.4 ###
  * Introduce transactions ignore patterns. 
 
