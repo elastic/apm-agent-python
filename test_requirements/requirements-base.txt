@@ -9,7 +9,8 @@ isort==4.2.2
 pytest-cache==1.0
 pytest-isort==0.1.0
 
-
+urllib3
+certifi
 Jinja2
 Logbook
 MarkupSafe
@@ -30,6 +31,6 @@ msgpack-python
 pep8
 redis
 requests
-urllib3
+urllib3-mock
 
 pytz

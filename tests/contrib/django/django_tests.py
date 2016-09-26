@@ -1253,13 +1253,10 @@ class DjangoManagementCommandTest(TestCase):
         output = stdout.getvalue()
         assert 'not at the first position' in output
 
-    @mock.patch('opbeat.transport.http.urlopen')
+    @mock.patch('opbeat.transport.http_urllib3.urllib3.PoolManager.urlopen')
     def test_test_exception(self, urlopen_mock):
         stdout = six.StringIO()
-        resp = six.moves.urllib.response.addinfo(
-            mock.Mock(),
-            headers={'Location': 'http://example.com'}
-        )
+        resp = mock.Mock(status=200, getheader=lambda h: 'http://example.com')
         urlopen_mock.return_value = resp
         with self.settings(MIDDLEWARE_CLASSES=(
                 'foo',

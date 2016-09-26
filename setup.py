@@ -73,9 +73,9 @@ tests_require = [
     'pytz',
     'redis',
     'requests',
-    'urllib3',
     'jinja2',
     'pytest-benchmark',
+    'urllib3-mock',
 
     # isort
     'apipkg',
@@ -115,7 +115,7 @@ if sys.version_info >= (3, 5):
         'pytest-mock',
     ]
 
-install_requires = []
+install_requires = ['urllib3', 'certifi']
 
 try:
     # For Python >= 2.6

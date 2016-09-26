@@ -76,3 +76,7 @@ ASYNC_MODE = True
 
 # Should opbeat wrap middleware for better metrics detection
 INSTRUMENT_DJANGO_MIDDLEWARE = True
+
+SYNC_TRANSPORT_CLASS = 'opbeat.transport.http_urllib3.Urllib3Transport'
+
+ASYNC_TRANSPORT_CLASS = 'opbeat.transport.http_urllib3.AsyncUrllib3Transport'
