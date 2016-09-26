@@ -470,11 +470,11 @@ class DjangoClientTest(TestCase):
             self.assertTrue('X-Opbeat-ID' in headers)
             self.assertEquals(len(self.opbeat.events), 1)
             event = self.opbeat.events.pop(0)
-            self.assertEquals('$'.join(event['client_supplied_id']), headers['X-Opbeat-ID'])
+            self.assertEquals(event['client_supplied_id'], headers['X-Opbeat-ID'])
 
     @pytest.mark.skipif(django.VERSION < (1, 10),
                         reason='new-style middlewares')
-    def test_response_error_id_middleware(self):
+    def test_response_error_id_middleware_new_style(self):
         with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
                 'opbeat.contrib.django.middleware.OpbeatResponseErrorIdMiddleware',
                 'opbeat.contrib.django.middleware.Opbeat404CatchMiddleware']):
@@ -484,7 +484,7 @@ class DjangoClientTest(TestCase):
             self.assertTrue('X-Opbeat-ID' in headers)
             self.assertEquals(len(self.opbeat.events), 1)
             event = self.opbeat.events.pop(0)
-            self.assertEquals('$'.join(event['client_supplied_id']), headers['X-Opbeat-ID'])
+            self.assertEquals(event['client_supplied_id'], headers['X-Opbeat-ID'])
 
     def test_get_client(self):
         self.assertEquals(get_client(), get_client())
