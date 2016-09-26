@@ -67,9 +67,12 @@ matrix:
   - python: nightly
 addons:
   apt:
+    sources:
+     - mongodb-3.0-precise
     packages:
-    - libevent-dev
-    - libzmq3-dev
+     - libevent-dev
+     - libzmq3-dev
+     - mongodb-org-server
   postgresql: '9.3'
 cache:
   directories:
@@ -83,6 +86,7 @@ notifications:
 services:
 - redis-server
 - memcached
+- mongodb
 deploy:
   provider: releases
   api_key:

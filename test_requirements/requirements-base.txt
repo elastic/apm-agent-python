@@ -32,5 +32,6 @@ pep8
 redis
 requests
 urllib3-mock
+pymongo
 
 pytz

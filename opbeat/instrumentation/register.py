@@ -6,6 +6,9 @@ _cls_register = set([
     'opbeat.instrumentation.packages.psycopg2.Psycopg2RegisterTypeInstrumentation',
     'opbeat.instrumentation.packages.mysql.MySQLInstrumentation',
     'opbeat.instrumentation.packages.pylibmc.PyLibMcInstrumentation',
+    'opbeat.instrumentation.packages.pymongo.PyMongoInstrumentation',
+    'opbeat.instrumentation.packages.pymongo.PyMongoBulkInstrumentation',
+    'opbeat.instrumentation.packages.pymongo.PyMongoCursorInstrumentation',
     'opbeat.instrumentation.packages.python_memcached.PythonMemcachedInstrumentation',
     'opbeat.instrumentation.packages.redis.RedisInstrumentation',
     'opbeat.instrumentation.packages.redis.RedisPipelineInstrumentation',
@@ -16,6 +19,7 @@ _cls_register = set([
     'opbeat.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
     'opbeat.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',
 ])
+
 
 def register(cls):
     _cls_register.add(cls)
