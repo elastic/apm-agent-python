@@ -224,7 +224,7 @@ class Client(object):
         >>> result = client.process(**kwargs)
         >>> ident = client.get_ident(result)
         """
-        return '$'.join(result)
+        return result
 
     def get_handler(self, name):
         return self.module_cache[name](self)
