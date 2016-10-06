@@ -33,5 +33,6 @@ redis
 requests
 urllib3-mock
 pymongo
+Twisted
 
 pytz
