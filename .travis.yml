@@ -73,7 +73,7 @@ addons:
      - libevent-dev
      - libzmq3-dev
      - mongodb-org-server
-  postgresql: '9.3'
+  postgresql: '9.4'
 cache:
   directories:
   - "$HOME/.pip_cache"
@@ -84,9 +84,11 @@ notifications:
   slack:
     secure: LcTTbTj0Px0/9Bs/S/uwbhkdULlj1YVdHnU8F/kOa3bq2QdCTptqB719r6BnzHvW+QGyADvDZ25UncVXFuLuHY67ZYfmyZ/H2cj0nrRSuYdPct0avhVbT/3s50GlNWK5qkfZDuqw6szYTFrgFWJcr5dl7Zf6Vovcvd38uaYOdno=
 services:
-- redis-server
-- memcached
-- mongodb
+  - redis-server
+  - memcached
+  - mongodb
+  - mysql
+  - postgresql
 deploy:
   provider: releases
   api_key:

@@ -16,6 +16,16 @@ except ImportError:
 travis_and_psycopg2 = 'TRAVIS' not in os.environ or not has_psycopg2
 
 
+@pytest.fixture()
+def postgres_connection():
+    return lambda: psycopg2.connect(
+        database=os.environ.get('POSTGRES_DB', 'opbeat_test'),
+        user=os.environ.get('POSTGRES_USER', 'postgres'),
+        host=os.environ.get('POSTGRES_HOST', None),
+        port=os.environ.get('POSTGRES_PORT', None),
+    )
+
+
 def test_insert():
     sql = """INSERT INTO mytable (id, name) VALUE ('2323', 'Ron')"""
     actual = extract_signature(sql)
@@ -183,7 +193,7 @@ def test_multi_statement_sql():
 
 @pytest.mark.skipif(travis_and_psycopg2,
                     reason="Requires postgres server. Only runs on travisci.")
-def test_psycopg2_register_type():
+def test_psycopg2_register_type(postgres_connection):
     import psycopg2.extras
 
     client = get_client()
@@ -191,11 +201,36 @@ def test_psycopg2_register_type():
 
     try:
         client.begin_transaction("web.django")
-        conn = psycopg2.connect(database="opbeat_test", user="postgres")
-        new_type = psycopg2.extras.register_uuid(None, conn)
+        new_type = psycopg2.extras.register_uuid(None, postgres_connection())
         client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
         client.instrumentation_store.get_all()
 
     assert new_type is not None
+
+
+@pytest.mark.skipif(travis_and_psycopg2,
+                    reason="Requires postgres server. Only runs on travisci.")
+def test_psycopg2_register_json(postgres_connection):
+    # register_json bypasses register_type, so we have to test unwrapping
+    # separately
+    import psycopg2.extras
+
+    client = get_client()
+    control.instrument()
+
+    try:
+        client.begin_transaction("web.django")
+        # as arg
+        new_type = psycopg2.extras.register_json(postgres_connection(),
+                                                 loads=lambda x: x)
+        assert new_type is not None
+        # as kwarg
+        new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection(),
+                                                 loads=lambda x: x)
+        assert new_type is not None
+        client.end_transaction(None, "test-transaction")
+    finally:
+        # make sure we've cleared out the traces for the other tests.
+        client.instrumentation_store.get_all()
