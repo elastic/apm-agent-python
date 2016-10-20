@@ -194,3 +194,10 @@ class DbApi2Instrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         return ConnectionProxy(wrapped(*args, **kwargs))
+
+    def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
+        # Contrasting to the superclass implementation, we *always* want to
+        # return a proxied connection, even if there is no ongoing opbeat
+        # transaction yet. This ensures that we instrument the cursor once
+        # the transaction started.
+        return self.call(module, method, wrapped, instance, args, kwargs)
