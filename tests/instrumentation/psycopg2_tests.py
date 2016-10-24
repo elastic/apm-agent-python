@@ -27,8 +27,8 @@ def postgres_connection(request):
     )
     cursor = conn.cursor()
     cursor.execute(
-        'CREATE TABLE test(id int);'
-        'INSERT INTO test VALUES (1), (2), (3);'
+        "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
+        "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
     )
 
     yield conn
@@ -259,3 +259,25 @@ def test_psycopg2_tracing_outside_of_opbeat_transaction(postgres_connection):
     cursor.execute('SELECT 1')
     transactions = client.instrumentation_store.get_all()
     assert transactions == ([], [])
+
+
+@pytest.mark.skipif(travis_and_psycopg2,
+                    reason="Requires postgres server. Only runs on travisci.")
+def test_psycopg2_select_LIKE(postgres_connection):
+    """
+    Check that we pass queries with %-notation but without parameters
+    properly to the dbapi backend
+    """
+    client = get_client()
+    control.instrument()
+    cursor = postgres_connection.cursor()
+
+    try:
+        client.begin_transaction("web.django")
+        cursor.execute("SELECT * FROM test WHERE name LIKE 't%'")
+        cursor.fetchall()
+        client.end_transaction(None, "test-transaction")
+    finally:
+        # make sure we've cleared out the traces for the other tests.
+        transactions, traces = client.instrumentation_store.get_all()
+        assert traces[-1]['signature'] == 'SELECT FROM test'
