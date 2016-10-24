@@ -17,14 +17,24 @@ except ImportError:
 travis_and_psycopg2 = 'TRAVIS' not in os.environ or not has_psycopg2
 
 
-@pytest.fixture()
-def postgres_connection():
-    return lambda: psycopg2.connect(
+@pytest.yield_fixture(scope='function')
+def postgres_connection(request):
+    conn = psycopg2.connect(
         database=os.environ.get('POSTGRES_DB', 'opbeat_test'),
         user=os.environ.get('POSTGRES_USER', 'postgres'),
         host=os.environ.get('POSTGRES_HOST', None),
         port=os.environ.get('POSTGRES_PORT', None),
     )
+    cursor = conn.cursor()
+    cursor.execute(
+        "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
+        "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
+    )
+
+    yield conn
+
+    # cleanup
+    cursor.execute('ROLLBACK')
 
 
 def test_insert():
@@ -202,7 +212,7 @@ def test_psycopg2_register_type(postgres_connection):
 
     try:
         client.begin_transaction("web.django")
-        new_type = psycopg2.extras.register_uuid(None, postgres_connection())
+        new_type = psycopg2.extras.register_uuid(None, postgres_connection)
         client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
@@ -224,11 +234,11 @@ def test_psycopg2_register_json(postgres_connection):
     try:
         client.begin_transaction("web.django")
         # as arg
-        new_type = psycopg2.extras.register_json(postgres_connection(),
+        new_type = psycopg2.extras.register_json(postgres_connection,
                                                  loads=lambda x: x)
         assert new_type is not None
         # as kwarg
-        new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection(),
+        new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection,
                                                  loads=lambda x: x)
         assert new_type is not None
         client.end_transaction(None, "test-transaction")
@@ -242,10 +252,33 @@ def test_psycopg2_register_json(postgres_connection):
 def test_psycopg2_tracing_outside_of_opbeat_transaction(postgres_connection):
     client = get_client()
     control.instrument()
-    cursor = postgres_connection().cursor()
+    cursor = postgres_connection.cursor()
     # check that the cursor is a proxy, even though we're not in an opbeat
     # transaction
     assert isinstance(cursor, PGCursorProxy)
     cursor.execute('SELECT 1')
     transactions = client.instrumentation_store.get_all()
     assert transactions == ([], [])
+
+
+@pytest.mark.skipif(travis_and_psycopg2,
+                    reason="Requires postgres server. Only runs on travisci.")
+def test_psycopg2_select_LIKE(postgres_connection):
+    """
+    Check that we pass queries with %-notation but without parameters
+    properly to the dbapi backend
+    """
+    client = get_client()
+    control.instrument()
+    cursor = postgres_connection.cursor()
+
+    try:
+        client.begin_transaction("web.django")
+        cursor.execute("SELECT * FROM test WHERE name LIKE 't%'")
+        cursor.fetchall()
+        client.end_transaction(None, "test-transaction")
+    finally:
+        # make sure we've cleared out the traces for the other tests.
+        transactions, traces = client.instrumentation_store.get_all()
+        traces = [t for t in traces if t['parents']]
+        assert traces[0]['signature'] == 'SELECT FROM test'
