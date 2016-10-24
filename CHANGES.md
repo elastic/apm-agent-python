@@ -1,3 +1,10 @@
+## 3.5 ##
+ * Switched to urllib3 as default transport. This means that opbeat_python
+   now requires both urllib3 and certifi
+ * Added support for PyMongo/MongoDB instrumentation
+ * Added support for Twisted LogObservers, thanks @slav0nic
+ * fixed several bugs in dbapi2 instrumentation
+
 ## 3.4 ##
  * Added support for Django 1.10
  * Dropped official support for Python 2.6
