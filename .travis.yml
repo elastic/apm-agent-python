@@ -90,12 +90,15 @@ services:
   - mysql
   - postgresql
 deploy:
-  provider: releases
-  api_key:
-    secure: bixGjrReBq8ET47kpaZQNrBG9EFi6zNi8v6kL/10BQcEkC1YrBwbv1YyjHKZt2joB77QXpQlgEFkjfeR5uX7rjaK7Hp9Cu1l4zr+d2Rl6Q/P4BN346IPImdOjL8EF5aVTOFrSGLvrcFhTZ76IWoLpjgGubqCSw2k6S/+whysAhs=
+  provider: s3
+  access_key_id: AKIAIHY7VOHA6YNCCEYQ
+  secret_access_key:
+    secure: kb8Ho6JjTi3yTtdppw+fk6Zka0TLrFuEZU+O/b1YP4GEWUcf/aFKwtE8hi4SvsnjHGZxrAY9jRHKjVU02eEfbUTrCGu05ej9wEVC8IhevJMJljgInHWsG1PgPtNeD+uxWADXSXddjJ0U+N3Gh3I/PO530te2V2rQ1szJ2Hq79go=
+  bucket: wheels.opbeat.com
   skip_cleanup: true
   file_glob: true
   file: wheelhouse/opbeat*manylinux*.whl
+  local_dir: wheelhouse
   on:
     repo: opbeat/opbeat_python
     tags: true
