@@ -76,6 +76,7 @@ tests_require = [
     'jinja2',
     'pytest-benchmark',
     'urllib3-mock',
+    'Twisted',
 
     # isort
     'apipkg',
