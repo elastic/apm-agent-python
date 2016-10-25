@@ -96,9 +96,8 @@ deploy:
     secure: kb8Ho6JjTi3yTtdppw+fk6Zka0TLrFuEZU+O/b1YP4GEWUcf/aFKwtE8hi4SvsnjHGZxrAY9jRHKjVU02eEfbUTrCGu05ej9wEVC8IhevJMJljgInHWsG1PgPtNeD+uxWADXSXddjJ0U+N3Gh3I/PO530te2V2rQ1szJ2Hq79go=
   bucket: wheels.opbeat.com
   skip_cleanup: true
-  file_glob: true
-  file: wheelhouse/opbeat*manylinux*.whl
   local_dir: wheelhouse
+  acl: public_read
   on:
     repo: opbeat/opbeat_python
     tags: true
