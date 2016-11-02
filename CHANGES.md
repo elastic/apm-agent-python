@@ -1,3 +1,6 @@
+## 3.5.1 ##
+ * Fixed two bugs related to SQL parsing that could cause an IndexError.
+
 ## 3.5 ##
  * Switched to urllib3 as default transport. This means that opbeat_python
    now requires both urllib3 and certifi
