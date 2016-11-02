@@ -6,7 +6,7 @@ import re
 
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 from opbeat.traces import trace
-from opbeat.utils import wrapt, six
+from opbeat.utils import six, wrapt
 
 
 class Literal(object):
