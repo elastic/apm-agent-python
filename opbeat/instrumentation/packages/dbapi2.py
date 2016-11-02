@@ -80,7 +80,7 @@ def scan(tokens):
             else:
 
                 if token == literal_started:
-                    if (literal_started == "'" and len(tokens) >= i+1
+                    if (literal_started == "'" and len(tokens) > i+1
                             and tokens[i+1] == "'"):  # double quotes
                         i += 1
                         lexeme.append("'")

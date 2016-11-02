@@ -31,3 +31,11 @@ def test_scan_double_quotes():
     actual = [t[1] for t in scan(tokens)]
     expected = ["Hello", Literal("'", "Peter' Pan'"), "at", "Disney", "World"]
     assert actual == expected
+
+
+def test_scan_double_quotes_at_end():
+    sql = """Hello Peter Pan at Disney 'World'"""
+    tokens = tokenize(sql)
+    actual = [t[1] for t in scan(tokens)]
+    expected = ["Hello", "Peter", "Pan", "at", "Disney", Literal("'", "World")]
+    assert actual == expected
