@@ -6,7 +6,7 @@ import re
 
 from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
 from opbeat.traces import trace
-from opbeat.utils import wrapt
+from opbeat.utils import wrapt, six
 
 
 class Literal(object):
@@ -56,7 +56,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
             else:
                 return lexeme
 
-        if isinstance(lexeme, str) and lexeme.upper() == keyword:
+        if isinstance(lexeme, six.string_types) and lexeme.upper() == keyword:
             seen_keyword = True
 
 
