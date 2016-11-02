@@ -56,7 +56,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
             else:
                 return lexeme
 
-        if lexeme == keyword:
+        if isinstance(lexeme, str) and lexeme.upper() == keyword:
             seen_keyword = True
 
 

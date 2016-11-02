@@ -44,11 +44,18 @@ def test_insert():
     assert "INSERT INTO mytable" == actual
 
 
-def test_update():
+def test_update_with_quotes():
     sql = """UPDATE "my table" set name='Ron' WHERE id = 2323"""
     actual = extract_signature(sql)
 
     assert "UPDATE my table" == actual
+
+
+def test_update():
+    sql = """update mytable set name = 'Ron where id = 'a'"""
+    actual = extract_signature(sql)
+
+    assert "UPDATE mytable" == actual
 
 
 def test_delete_simple():
