@@ -25,7 +25,7 @@ celery
 django-celery
 greenlet
 itsdangerous
-kombu
+kombu<4
 mock
 msgpack-python
 pep8
