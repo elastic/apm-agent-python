@@ -543,6 +543,7 @@ class DjangoClientTest(TestCase):
     def test_post_raw_data(self):
         request = WSGIRequest(environ={
             'wsgi.input': six.BytesIO(six.b('foobar')),
+            'wsgi.url_scheme': 'http',
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -559,6 +560,21 @@ class DjangoClientTest(TestCase):
         http = event['http']
         self.assertEquals(http['method'], 'POST')
         self.assertEquals(http['data'], six.b('foobar'))
+
+    def test_disallowed_hosts_error(self):
+        request = WSGIRequest(environ={
+            'wsgi.input': six.BytesIO(),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/octet-stream',
+            'ACCEPT': 'application/json',
+        })
+        with self.settings(ALLOWED_HOSTS=['example.com']):
+            # this should not raise a DisallowedHost exception
+            self.opbeat.capture('Message', message='foo', request=request)
+        event = self.opbeat.events.pop(0)
+        self.assertEqual(event['http']['url'], 'http://testserver/')
 
     # This test only applies to Django 1.3+
     def test_request_capture(self):
