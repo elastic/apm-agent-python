@@ -1,3 +1,8 @@
+## 3.5.2 ##
+ * Fixed a threading bug (#144, thanks @rossgray for the report)
+ * Fixed a bug when handling `DisallowedHost` exceptions in Django 1.9+
+   (#143, thanks @blueyed for the report and patch)
+
 ## 3.5.1 ##
  * Fixed two bugs related to SQL parsing that could cause an IndexError.
 
