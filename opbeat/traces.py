@@ -283,8 +283,6 @@ class trace(object):
         self.skip_frames = skip_frames
         self.leaf = leaf
 
-        self.transaction = None
-
     def __call__(self, func):
         self.signature = self.signature or get_name_from_func(func)
 
@@ -296,12 +294,14 @@ class trace(object):
         return decorated
 
     def __enter__(self):
-        self.transaction = get_transaction()
+        transaction = get_transaction()
 
-        if self.transaction:
-            self.transaction.begin_trace(self.signature, self.kind, self.extra,
-                                         self.leaf)
+        if transaction:
+            transaction.begin_trace(self.signature, self.kind, self.extra,
+                                    self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.transaction:
-            self.transaction.end_trace(self.skip_frames)
+        transaction = get_transaction()
+
+        if transaction:
+            transaction.end_trace(self.skip_frames)
