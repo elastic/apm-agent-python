@@ -119,10 +119,19 @@ class DjangoClient(Client):
 
         environ = request.META
 
+        try:
+            # Django 1.9.
+            get_raw_uri = request.get_raw_uri
+        except AttributeError:
+            # Requires host to be in ALLOWED_HOSTS.
+            url = request.build_absolute_uri()
+        else:
+            url = get_raw_uri()
+
         result = {
             'http': {
                 'method': request.method,
-                'url': request.build_absolute_uri(),
+                'url': url,
                 'query_string': request.META.get('QUERY_STRING'),
                 'data': data,
                 'cookies': dict(request.COOKIES),
