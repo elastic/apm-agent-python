@@ -14,6 +14,7 @@ from __future__ import absolute_import
 import logging
 
 import django
+from django.core.exceptions import SuspiciousOperation
 from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
@@ -119,14 +120,20 @@ class DjangoClient(Client):
 
         environ = request.META
 
-        try:
-            # Django 1.9.
-            get_raw_uri = request.get_raw_uri
-        except AttributeError:
-            # Requires host to be in ALLOWED_HOSTS.
-            url = request.build_absolute_uri()
+        if hasattr(request, 'get_raw_uri'):
+            # added in Django 1.9
+            url = request.get_raw_uri()
         else:
-            url = get_raw_uri()
+            try:
+                # Requires host to be in ALLOWED_HOSTS, might throw a
+                # DisallowedHost exception
+                url = request.build_absolute_uri()
+            except SuspiciousOperation:
+                # catching SuspiciousOperation, as the more specific
+                # DisallowedHost has only been introduced in Django 1.6.
+                # We can't figure out the real URL, so we have to set it to
+                # None
+                url = None
 
         result = {
             'http': {

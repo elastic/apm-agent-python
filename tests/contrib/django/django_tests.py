@@ -561,9 +561,12 @@ class DjangoClientTest(TestCase):
         self.assertEquals(http['method'], 'POST')
         self.assertEquals(http['data'], six.b('foobar'))
 
-    def test_disallowed_hosts_error(self):
+    @pytest.mark.skipif(django.VERSION < (1, 9),
+                        reason='get-raw-uri-not-available')
+    def test_disallowed_hosts_error_django_19(self):
         request = WSGIRequest(environ={
             'wsgi.input': six.BytesIO(),
+            'wsgi.url_scheme': 'http',
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -575,6 +578,24 @@ class DjangoClientTest(TestCase):
             self.opbeat.capture('Message', message='foo', request=request)
         event = self.opbeat.events.pop(0)
         self.assertEqual(event['http']['url'], 'http://testserver/')
+
+    @pytest.mark.skipif(django.VERSION >= (1, 9),
+                        reason='get-raw-uri-available')
+    def test_disallowed_hosts_error_django_18(self):
+        request = WSGIRequest(environ={
+            'wsgi.input': six.BytesIO(),
+            'wsgi.url_scheme': 'http',
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/octet-stream',
+            'ACCEPT': 'application/json',
+        })
+        with self.settings(ALLOWED_HOSTS=['example.com']):
+            # this should not raise a DisallowedHost exception
+            self.opbeat.capture('Message', message='foo', request=request)
+        event = self.opbeat.events.pop(0)
+        self.assertEqual(event['http']['url'], None)
 
     # This test only applies to Django 1.3+
     def test_request_capture(self):
