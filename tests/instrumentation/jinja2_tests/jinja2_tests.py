@@ -25,7 +25,7 @@ class InstrumentJinja2Test(TestCase):
         template.render()
         self.client.end_transaction("MyView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'mytemplate.html']
 
@@ -46,7 +46,7 @@ class InstrumentJinja2Test(TestCase):
         template.render()
         self.client.end_transaction("test")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', '<template>']
 

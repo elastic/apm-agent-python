@@ -24,7 +24,7 @@ class InstrumentMemcachedTest(TestCase):
             assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])
         self.client.end_transaction("BillingView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'test_memcached',
                                'Client.set', 'Client.get',

@@ -21,7 +21,7 @@ class LRUCache(object):
         self.PREV, self.NEXT, self.KEY = 0, 1, 2    # names for the link fields
         self.maxsize = maxsize
 
-    def has_key(self, key):
+    def __contains__(self, key):
         with self.lock:
             link = self.cache_get(key)
             if link is not None:

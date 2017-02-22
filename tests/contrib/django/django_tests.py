@@ -638,7 +638,7 @@ class DjangoClientTest(TestCase):
             self.client.get(reverse('opbeat-no-error'))
             self.assertEqual(len(self.opbeat.instrumentation_store), 1)
 
-            transactions, traces = self.opbeat.instrumentation_store.get_all()
+            transactions, traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
 
             self.assertEqual(len(transactions), 1)
             timing = transactions[0]
@@ -659,7 +659,7 @@ class DjangoClientTest(TestCase):
             self.client.get(reverse('opbeat-no-error'))
             self.assertEqual(len(self.opbeat.instrumentation_store), 1)
 
-            transactions, traces = self.opbeat.instrumentation_store.get_all()
+            transactions, traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
 
             self.assertEqual(len(transactions), 1)
             timing = transactions[0]
@@ -685,7 +685,7 @@ class DjangoClientTest(TestCase):
             APPEND_SLASH=True,
         ):
             self.client.get(reverse('opbeat-no-error-slash')[:-1])
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertIn(
             timing['transaction'], (
@@ -714,7 +714,7 @@ class DjangoClientTest(TestCase):
             APPEND_SLASH=True,
         ):
             self.client.get(reverse('opbeat-no-error-slash')[:-1])
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertIn(
             timing['transaction'], (
@@ -740,7 +740,7 @@ class DjangoClientTest(TestCase):
             PREPEND_WWW=True,
         ):
             self.client.get(reverse('opbeat-no-error'))
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -765,7 +765,7 @@ class DjangoClientTest(TestCase):
             PREPEND_WWW=True,
         ):
             self.client.get(reverse('opbeat-no-error'))
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -792,7 +792,7 @@ class DjangoClientTest(TestCase):
         ):
             response = self.client.get('/redirect/me/')
 
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -823,7 +823,7 @@ class DjangoClientTest(TestCase):
         ):
             response = self.client.get('/redirect/me/')
 
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -850,7 +850,7 @@ class DjangoClientTest(TestCase):
             ]
         ):
             self.client.get(reverse('opbeat-no-error'))
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -865,7 +865,7 @@ class DjangoClientTest(TestCase):
                 ]
         ):
             self.client.get('/i-dont-exist/')
-        timed_requests, _traces = self.opbeat.instrumentation_store.get_all()
+        timed_requests, _traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
         timing = timed_requests[0]
         self.assertEqual(
             timing['transaction'],
@@ -1060,7 +1060,7 @@ def test_stacktraces_have_templates():
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
-    transactions, traces = opbeat.instrumentation_store.get_all()
+    transactions, traces, raw_transactions = opbeat.instrumentation_store.get_all()
     assert len(transactions) == 1
     assert len(traces) == 3, [t["signature"] for t in traces]
 
@@ -1099,7 +1099,7 @@ def test_stacktrace_filtered_for_opbeat():
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
-    transactions, traces = opbeat.instrumentation_store.get_all()
+    transactions, traces, raw_transactions = opbeat.instrumentation_store.get_all()
 
     expected_signatures = ['transaction', 'list_users.html',
                            'something_expensive']
@@ -1112,7 +1112,7 @@ def test_stacktrace_filtered_for_opbeat():
     frames = traces[1]['extra']['_frames']
 
     # Top frame should be inside django rendering
-    assert frames[0]['module'].startswith('django.template')
+    assert frames[-1]['module'].startswith('django.template')
 
 
 def test_perf_template_render(benchmark):
@@ -1126,7 +1126,7 @@ def test_perf_template_render(benchmark):
             resp = benchmark(client_get, client, reverse("render-heavy-template"))
     assert resp.status_code == 200
 
-    transactions, traces = opbeat.instrumentation_store.get_all()
+    transactions, traces, raw_transactions = opbeat.instrumentation_store.get_all()
 
     # If the test falls right at the change from one minute to another
     # this will have two items.
@@ -1145,7 +1145,7 @@ def test_perf_template_render_no_middleware(benchmark):
                          reverse("render-heavy-template"))
     assert resp.status_code == 200
 
-    transactions, traces = opbeat.instrumentation_store.get_all()
+    transactions, traces, raw_transactions = opbeat.instrumentation_store.get_all()
     assert len(transactions) == 0
     assert len(traces) == 0
 
@@ -1166,7 +1166,7 @@ def test_perf_database_render(benchmark):
             resp = benchmark(client_get, client, reverse("render-user-template"))
         assert resp.status_code == 200
 
-        transactions, traces = opbeat.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = opbeat.instrumentation_store.get_all()
 
         # If the test falls right at the change from one minute to another
         # this will have two items.
@@ -1186,7 +1186,7 @@ def test_perf_database_render_no_instrumentation(benchmark):
 
         assert resp.status_code == 200
 
-        transactions, traces = opbeat.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = opbeat.instrumentation_store.get_all()
         assert len(transactions) == 0
         assert len(traces) == 0
 

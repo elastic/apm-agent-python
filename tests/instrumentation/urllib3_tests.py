@@ -53,7 +53,7 @@ class InstrumentUrllib3Test(TestCase):
 
         self.client.end_transaction("MyView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'test_pipeline', expected_sig]
 

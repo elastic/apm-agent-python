@@ -36,7 +36,7 @@ class InstrumentPyMongoTest(TestCase):
         self.assertEqual(result.deleted_count, 1)
         self.assertEqual(result.upserted_count, 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -51,7 +51,7 @@ class InstrumentPyMongoTest(TestCase):
         count = self.db.blogposts.count()
         self.assertEqual(count, 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'], 'opbeat_test.blogposts.count')
@@ -65,7 +65,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.delete_one({'author': 'Tom'})
         self.assertEqual(r.deleted_count, 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -80,7 +80,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.delete_many({'author': 'Tom'})
         self.assertEqual(r.deleted_count, 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -93,7 +93,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.insert(blogpost)
         self.assertIsNotNone(r)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -107,7 +107,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.insert_one(blogpost)
         self.assertIsNotNone(r.inserted_id)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -121,7 +121,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.insert_many([blogpost])
         self.assertEqual(len(r.inserted_ids), 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
@@ -141,7 +141,7 @@ class InstrumentPyMongoTest(TestCase):
         r = list(self.db.blogposts.find({'comments': {'$gt': 995}}))
 
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -156,7 +156,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.find_one({'author': 'Tom'})
         self.assertEqual(r['author'], 'Tom')
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -170,7 +170,7 @@ class InstrumentPyMongoTest(TestCase):
         r = self.db.blogposts.remove({'author': 'Tom'})
         self.assertEqual(r['n'], 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -185,7 +185,7 @@ class InstrumentPyMongoTest(TestCase):
                                      {'$set': {'author': 'Jerry'}})
         self.assertEqual(r['n'], 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -201,7 +201,7 @@ class InstrumentPyMongoTest(TestCase):
                                      {'$set': {'author': 'Jerry'}})
         self.assertEqual(r.modified_count, 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -217,7 +217,7 @@ class InstrumentPyMongoTest(TestCase):
                                      {'$set': {'author': 'Jerry'}})
         self.assertEqual(r.modified_count, 1)
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],
@@ -232,7 +232,7 @@ class InstrumentPyMongoTest(TestCase):
         bulk.find({'x': 'y'}).replace_one({'x': 'z'})
         bulk.execute()
         self.client.end_transaction('transaction.test')
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(traces)
         self.assertEqual(trace['kind'], 'db.mongodb.query')
         self.assertEqual(trace['signature'],

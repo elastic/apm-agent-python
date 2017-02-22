@@ -125,7 +125,7 @@ class FlaskTest(TestCase):
 
         assert resp.status_code == 200, resp.response
 
-        transactions, traces = self.opbeat_client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.opbeat_client.instrumentation_store.get_all()
 
         # If the test falls right at the change from one minute to another
         # this will have two items.
@@ -156,7 +156,7 @@ class FlaskTest(TestCase):
 
         assert resp.status_code == 404, resp.response
 
-        transactions, traces = self.opbeat_client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.opbeat_client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction']
         expected_transaction = ''

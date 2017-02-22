@@ -622,13 +622,16 @@ class Client(object):
         self.state.set_fail()
 
     def _traces_collect(self):
-        transactions, traces = self.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.instrumentation_store.get_all()
         if not transactions or not traces:
             return
 
         data = self.build_msg({
             'transactions': transactions,
-            'traces': traces,
+            'traces': {
+                'groups': traces,
+                'raw': raw_transactions,
+            }
         })
         api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,

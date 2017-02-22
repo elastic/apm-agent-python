@@ -26,7 +26,7 @@ class InstrumentSQLiteTest(TestCase):
 
         self.client.end_transaction("MyView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'sqlite3.connect :memory:',
                                'CREATE TABLE', 'INSERT INTO testdb',

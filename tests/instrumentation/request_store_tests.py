@@ -107,7 +107,7 @@ class RequestStoreTest(TestCase):
 
         self.requests_store.transaction_end(None, "transaction")
 
-        transactions, traces = self.requests_store.get_all()
+        transactions, traces, raw_transactions = self.requests_store.get_all()
 
         self.assertEqual(len(traces), 3)
 

@@ -12,6 +12,6 @@ class LRUTest(TestCase):
         for x in range(6):
             lru.set(x)
 
-        self.assertFalse(lru.has_key(1))
+        self.assertNotIn(1, lru)
         for x in range(2, 6):
-            self.assertTrue(lru.has_key(x))
+            self.assertIn(x, lru)

@@ -30,7 +30,7 @@ class InstrumentRedisTest(TestCase):
             pipeline.execute()
         self.client.end_transaction("MyView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'test_pipeline',
                                'StrictPipeline.execute']
@@ -73,7 +73,7 @@ class InstrumentRedisTest(TestCase):
             pipeline.execute()
         self.client.end_transaction("MyView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'test_pipeline',
                                'StrictPipeline.execute']
@@ -109,7 +109,7 @@ class InstrumentRedisTest(TestCase):
             conn.expire("mykey", 1000)
         self.client.end_transaction("MyView")
 
-        transactions, traces = self.client.instrumentation_store.get_all()
+        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction', 'test_redis_client',
                                'RPUSH', 'EXPIRE']
