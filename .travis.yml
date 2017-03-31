@@ -5,6 +5,7 @@ python:
 - 3.3
 - 3.4
 - 3.5
+- 3.6
 - nightly
 - pypy
 
@@ -17,13 +18,18 @@ env:
     - WEBFRAMEWORK=django-1.8
     - WEBFRAMEWORK=django-1.9
     - WEBFRAMEWORK=django-1.10
+    - WEBFRAMEWORK=django-1.11
     - WEBFRAMEWORK=django-master
     - WEBFRAMEWORK=flask-0.10
+    - WEBFRAMEWORK=flask-0.11
+    - WEBFRAMEWORK=flask-0.12
   global:
   - PIP_CACHE="$HOME/.pip_cache"'
   - RUN_SCRIPT="./travis/run_tests.sh"
 matrix:
   exclude:
+  - python: 2.7
+    env: WEBFRAMEWORK=django-master
   - python: 3.3
     env: WEBFRAMEWORK=django-1.4
   - python: 3.3
@@ -41,6 +47,14 @@ matrix:
   - python: 3.5
     env: WEBFRAMEWORK=django-1.6
   - python: 3.5
+    env: WEBFRAMEWORK=django-1.7
+  - python: 3.6
+    env: WEBFRAMEWORK=django-1.4
+  - python: 3.6
+    env: WEBFRAMEWORK=django-1.5
+  - python: 3.6
+    env: WEBFRAMEWORK=django-1.6
+  - python: 3.6
     env: WEBFRAMEWORK=django-1.7
   - python: nightly
     env: WEBFRAMEWORK=django-1.4
