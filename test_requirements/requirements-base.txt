@@ -22,7 +22,6 @@ argparse
 billiard
 blinker>=1.1
 celery<4
-django-celery
 greenlet
 itsdangerous
 kombu<4

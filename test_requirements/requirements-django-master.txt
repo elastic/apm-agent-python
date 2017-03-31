@@ -1,2 +1,3 @@
 -e git://github.com/django/django.git@master#egg=Django
+django-celery
 -r requirements-base.txt
