@@ -89,7 +89,7 @@ class AsyncWorker(object):
                     # timed out
                     return False
 
-                    self._queue.all_tasks_done.wait(timeout=delay)
+                self._queue.all_tasks_done.wait(timeout=delay)
 
             return True
 
