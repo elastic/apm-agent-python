@@ -65,3 +65,28 @@ async def test_client_failure():
     with pytest.raises(TransportException):
         await task
     assert client.state.status == 0
+
+
+@pytest.mark.asyncio
+async def test_client_failure_stdlib_exception(mocker):
+    from opbeat.contrib.asyncio import Client
+    from opbeat.transport.base import TransportException
+
+    client = Client(
+        servers=['http://opbeat'],
+        organization_id='organization_id',
+        app_id='app_id',
+        secret_token='secret',
+        async_mode=False,
+        transport_class='opbeat.transport.asyncio.AsyncioHTTPTransport',
+    )
+    mock_client = mocker.Mock()
+    mock_client.post = mocker.Mock(side_effect=RuntimeError('oops'))
+    transport = client._get_transport(urlparse('http://opbeat'))
+    transport.client = mock_client
+    client.send(foo='bar')
+    tasks = asyncio.Task.all_tasks()
+    task = next(t for t in tasks if t is not asyncio.Task.current_task())
+    with pytest.raises(TransportException):
+        await task
+    assert client.state.status == 0
