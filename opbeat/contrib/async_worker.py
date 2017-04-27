@@ -81,16 +81,15 @@ class AsyncWorker(object):
         returns True on success, False on timeout
         """
         deadline = time.time() + timeout
-        queue = self._queue
 
-        with queue.all_tasks_done:
-            while queue.unfinished_tasks:
+        with self._queue.all_tasks_done:
+            while self._queue.unfinished_tasks:
                 delay = deadline - time.time()
                 if delay <= 0:
                     # timed out
                     return False
 
-                queue.all_tasks_done.wait(timeout=delay)
+                self._queue.all_tasks_done.wait(timeout=delay)
 
             return True
 
