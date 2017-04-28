@@ -3,10 +3,11 @@ import logging
 import re
 import threading
 import time
-from collections import OrderedDict
+from collections import defaultdict
 from datetime import datetime
 
 from opbeat.utils import get_name_from_func
+from opbeat.utils.encoding import force_text
 from opbeat.utils.lru import LRUCache
 
 error_logger = logging.getLogger('opbeat.errors')
@@ -78,7 +79,9 @@ class Transaction(object):
             parent_start_time = 0.0
         rel_start_time = (trace.abs_start_time - parent_start_time) * 1000
 
-        trace.parents = tuple(s.signature for s in self.trace_stack)
+        parents = [s.signature for s in self.trace_stack]
+
+        trace.parents = tuple(parents)
         trace.trace_duration = duration
         trace.rel_start_time = rel_start_time
 
@@ -103,6 +106,7 @@ class AbstractTrace(object):
         self.parents = None
         self.frames = None
 
+
     @property
     def fingerprint(self):
         return self.transaction, self.parents, self.signature, self.kind
@@ -119,25 +123,38 @@ class Trace(AbstractTrace):
 
 
 class TraceGroup(AbstractTrace):
-    def __init__(self, trace_obj):
-        super(TraceGroup, self).__init__(trace_obj.signature, trace_obj.kind,
-                                         trace_obj.extra)
-        self.parents = trace_obj.parents
-        self.frames = trace_obj.frames
-        self.transaction = trace_obj.transaction
+    def _decode(self, param):
+        try:
+            return force_text(param, strings_only=True)
+        except UnicodeDecodeError:
+            return '(encoded string)'
+
+    def __init__(self, trace):
+        super(TraceGroup, self).__init__(trace.signature, trace.kind, trace.extra)
+        self.parents = trace.parents
+        self.frames = trace.frames
+        self.transaction = trace.transaction
+
+        self.traces = []
+
+    def add(self, trace):
+        self.traces.append(trace)
 
     def as_dict(self):
-        # Merge frames into extra, reversing the order
+        # Merge frames into extra
         extra = dict(self.extra or {})
         if self.frames:
-            extra['_frames'] = list(reversed(self.frames))
+            extra['_frames'] = self.frames
 
         return {
             "transaction": self.transaction,
+            "durations": [(t.trace_duration, t.transaction_duration)
+                          for t in self.traces],
             "signature": self.signature,
             "kind": self.kind,
             "parents": self.parents,
             "extra": extra,
+            "start_time": min([t.rel_start_time for t in self.traces]),
         }
 
 
@@ -167,27 +184,22 @@ class _RequestGroup(object):
 class RequestsStore(object):
     def __init__(self, get_frames, collect_frequency, ignore_patterns=None):
         self.cond = threading.Condition()
-        self.collect_frequency = collect_frequency
         self._get_frames = get_frames
         self._transactions = {}
-        self._traces = OrderedDict()
-        self._raw_transactions = []
+        self._traces = defaultdict(list)
+        self.collect_frequency = collect_frequency
         self._last_collect = time.time()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
 
-    def _add_transaction(self, elapsed, transaction, transaction_name, response_code):
+    def _add_transaction(self, elapsed, transaction, response_code):
         with self.cond:
-            requestgroup = _RequestGroup(transaction_name, response_code,
+            requestgroup = _RequestGroup(transaction, response_code,
                                         int(time.time()/60)*60)
 
             if requestgroup.fingerprint not in self._transactions:
                 self._transactions[requestgroup.fingerprint] = requestgroup
 
             self._transactions[requestgroup.fingerprint].add(elapsed)
-            trace_keys = list(self._traces.keys())
-            self._raw_transactions.append(
-                [elapsed] + [[trace_keys.index(trace.fingerprint), trace.rel_start_time, trace.trace_duration] for trace in transaction.transaction_traces] + [transaction.extra]
-            )
             self.cond.notify()
 
     def get_all(self, blocking=False):
@@ -197,11 +209,9 @@ class RequestsStore(object):
                 self.cond.wait()
             transactions, self._transactions = self._transactions, {}
             traces, self._traces = self._traces, {}
-            raw_transactions, self._raw_transactions = self._raw_transactions, []
         self._last_collect = time.time()
-        transactions_dicts = [v.as_dict() for v in transactions.values()]
-        traces_dict = [t.as_dict() for t in traces.values()]
-        return transactions_dicts, traces_dict, raw_transactions
+        return ([v.as_dict() for v in transactions.values()],
+                [v.as_dict() for v in traces.values()],)
 
     def should_collect(self):
         return (time.time() - self._last_collect) >= self.collect_frequency
@@ -227,6 +237,7 @@ class RequestsStore(object):
             for trace in traces:
                 if trace.fingerprint not in self._traces:
                     self._traces[trace.fingerprint] = TraceGroup(trace)
+                self._traces[trace.fingerprint].add(trace)
             self.cond.notify()
 
     def _should_ignore(self, transaction_name):
@@ -258,8 +269,9 @@ class RequestsStore(object):
 
             self._add_traces(transaction_traces)
 
-            self._add_transaction(elapsed, transaction, transaction_name,
+            self._add_transaction(elapsed, transaction_name,
                                   response_code)
+
 
 
 class trace(object):

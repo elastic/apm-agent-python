@@ -23,7 +23,7 @@ import zlib
 
 import opbeat
 from opbeat.conf import defaults
-from opbeat.traces import RequestsStore
+from opbeat.traces import RequestsStore, get_transaction
 from opbeat.transport.base import TransportException
 from opbeat.utils import opbeat_json as json
 from opbeat.utils import is_master_process, six, stacks, varmap
@@ -591,6 +591,20 @@ class Client(object):
         if self.instrumentation_store.should_collect():
             self._traces_collect()
 
+    def set_transaction_name(self, name):
+        transaction = get_transaction()
+        if not transaction:
+            return
+        transaction._name = name
+
+    def set_transaction_extra_data(self, data, _key=None):
+        transaction = get_transaction()
+        if not transaction:
+            return
+        if not _key:
+            _key = 'extra'
+        transaction.extra[_key] = data
+
     def close(self):
         self._traces_collect()
         for url, transport in self._transports.items():
@@ -622,16 +636,13 @@ class Client(object):
         self.state.set_fail()
 
     def _traces_collect(self):
-        transactions, traces, raw_transactions = self.instrumentation_store.get_all()
+        transactions, traces = self.instrumentation_store.get_all()
         if not transactions or not traces:
             return
 
         data = self.build_msg({
             'transactions': transactions,
-            'traces': {
-                'groups': traces,
-                'raw': raw_transactions,
-            }
+            'traces': traces,
         })
         api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,
