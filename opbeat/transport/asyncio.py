@@ -48,6 +48,7 @@ class AsyncioHTTPTransport(HTTPTransport):
             raise TransportException(message, data,
                                      print_trace=print_trace) from e
         except Exception as e:
+            print_trace = True
             message = 'Unable to reach Opbeat server: %s (url: %s)' % (
                 e, self._url)
             raise TransportException(message, data,
