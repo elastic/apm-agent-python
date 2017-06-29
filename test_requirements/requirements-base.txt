@@ -21,6 +21,7 @@ anyjson
 argparse
 billiard
 blinker>=1.1
+boto3
 celery<4
 greenlet
 itsdangerous

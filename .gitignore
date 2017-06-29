@@ -17,3 +17,8 @@ pip-log.txt
 /example_project/*.db
 opbeat/utils/wrapt/_wrappers.so
 coverage
+.tox
+.eggs
+.cache
+/testdb.sql
+venv
