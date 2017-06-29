@@ -15,7 +15,12 @@ class InstrumentRequestsTest(TestCase):
         opbeat.instrumentation.control.instrument()
 
     @mock.patch("requests.adapters.HTTPAdapter.send")
-    def test_requests_instrumentation(self, _):
+    def test_requests_instrumentation(self, mock_send):
+        mock_send.return_value = mock.Mock(
+            url='http://example.com',
+            history=[],
+            headers={'location': ''},
+        )
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             # NOTE: The `allow_redirects` argument has to be set to `False`,
@@ -30,7 +35,12 @@ class InstrumentRequestsTest(TestCase):
         self.assertIn('GET example.com', map(lambda x: x['signature'], traces))
 
     @mock.patch("requests.adapters.HTTPAdapter.send")
-    def test_requests_instrumentation_via_session(self, _):
+    def test_requests_instrumentation_via_session(self, mock_send):
+        mock_send.return_value = mock.Mock(
+            url='http://example.com',
+            history=[],
+            headers={'location': ''},
+        )
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             s = requests.Session()
@@ -41,7 +51,12 @@ class InstrumentRequestsTest(TestCase):
         self.assertIn('GET example.com', map(lambda x: x['signature'], traces))
 
     @mock.patch("requests.adapters.HTTPAdapter.send")
-    def test_requests_instrumentation_via_prepared_request(self, _):
+    def test_requests_instrumentation_via_prepared_request(self, mock_send):
+        mock_send.return_value = mock.Mock(
+            url='http://example.com',
+            history=[],
+            headers={'location': ''},
+        )
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             r = requests.Request('get', 'http://example.com')

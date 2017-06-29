@@ -10,6 +10,7 @@ from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
 
+@pytest.mark.integrationtest
 class InstrumentPyMongoTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()

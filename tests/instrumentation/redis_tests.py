@@ -1,6 +1,7 @@
 from functools import partial
 
 import mock
+import pytest
 import redis
 from redis.client import StrictRedis
 
@@ -11,6 +12,7 @@ from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
 
+@pytest.mark.integrationtest
 class InstrumentRedisTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()

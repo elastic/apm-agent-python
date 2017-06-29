@@ -1,3 +1,4 @@
+import random
 import threading
 
 import mock
@@ -22,7 +23,7 @@ class MyTCPServer(TCPServer):
 class InstrumentUrllib3Test(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        self.port = 59990
+        self.port = random.randint(50000, 60000)
         self.start_test_server()
         opbeat.instrumentation.control.instrument()
 

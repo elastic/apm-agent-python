@@ -19,8 +19,8 @@ from django.db import DatabaseError
 from django.http import QueryDict
 from django.template import TemplateSyntaxError
 from django.test import TestCase
-from django.test.client import Client as TestClient
-from django.test.client import ClientHandler as TestClientHandler
+from django.test.client import Client as _TestClient
+from django.test.client import ClientHandler as _TestClientHandler
 from django.test.utils import override_settings
 
 import mock
@@ -48,7 +48,7 @@ except ImportError:
 settings.OPBEAT = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
 
-class MockClientHandler(TestClientHandler):
+class MockClientHandler(_TestClientHandler):
     def __call__(self, environ, start_response=[]):
         # this pretends doesnt require start_response
         return super(MockClientHandler, self).__call__(environ)
@@ -279,7 +279,7 @@ class DjangoClientTest(TestCase):
 
     def test_broken_500_handler_with_middleware(self):
         with self.settings(BREAK_THAT_500=True):
-            client = TestClient(REMOTE_ADDR='127.0.0.1')
+            client = _TestClient(REMOTE_ADDR='127.0.0.1')
             client.handler = MockOpbeatMiddleware(MockClientHandler())
 
             self.assertRaises(Exception, client.get, reverse('opbeat-raise-exc'))
@@ -1034,7 +1034,7 @@ def client_get(client, url):
 
 
 def test_stacktraces_have_templates():
-    client = TestClient()
+    client = _TestClient()
     opbeat = get_client()
     instrumentation.control.instrument()
 
@@ -1084,7 +1084,7 @@ def test_stacktraces_have_templates():
 
 
 def test_stacktrace_filtered_for_opbeat():
-    client = TestClient()
+    client = _TestClient()
     opbeat = get_client()
     instrumentation.control.instrument()
 
@@ -1116,7 +1116,7 @@ def test_stacktrace_filtered_for_opbeat():
 
 
 def test_perf_template_render(benchmark):
-    client = TestClient()
+    client = _TestClient()
     opbeat = get_client()
     instrumentation.control.instrument()
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
@@ -1135,7 +1135,7 @@ def test_perf_template_render(benchmark):
 
 
 def test_perf_template_render_no_middleware(benchmark):
-    client = TestClient()
+    client = _TestClient()
     opbeat = get_client()
     instrumentation.control.instrument()
     with mock.patch(
@@ -1152,7 +1152,7 @@ def test_perf_template_render_no_middleware(benchmark):
 
 @pytest.mark.django_db(transaction=True)
 def test_perf_database_render(benchmark):
-    client = TestClient()
+    client = _TestClient()
 
     opbeat = get_client()
     instrumentation.control.instrument()
@@ -1181,7 +1181,7 @@ def test_perf_database_render_no_instrumentation(benchmark):
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
 
-        client = TestClient()
+        client = _TestClient()
         resp = benchmark(client_get, client, reverse("render-user-template"))
 
         assert resp.status_code == 200
@@ -1199,7 +1199,7 @@ def test_perf_transaction_with_collection(benchmark):
         should_collect.return_value = False
         opbeat.events = []
 
-        client = TestClient()
+        client = _TestClient()
 
         with override_settings(MIDDLEWARE_CLASSES=[
             'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
@@ -1228,7 +1228,7 @@ def test_perf_transaction_without_middleware(benchmark):
     opbeat.instrumentation_store.get_all()
     with mock.patch("opbeat.traces.RequestsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        client = TestClient()
+        client = _TestClient()
         opbeat.events = []
         for i in range(10):
             resp = client_get(client, reverse("render-user-template"))

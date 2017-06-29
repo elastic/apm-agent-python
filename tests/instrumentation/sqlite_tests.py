@@ -17,7 +17,7 @@ class InstrumentSQLiteTest(TestCase):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
 
-        conn = sqlite3.connect("testdb.sql")
+        conn = sqlite3.connect(":memory:")
         cursor = conn.cursor()
 
         cursor.execute("""CREATE TABLE testdb (id integer, username text)""")
@@ -28,7 +28,7 @@ class InstrumentSQLiteTest(TestCase):
 
         transactions, traces = self.client.instrumentation_store.get_all()
 
-        expected_signatures = ['transaction', 'sqlite3.connect testdb.sql',
+        expected_signatures = ['transaction', 'sqlite3.connect :memory:',
                                'CREATE TABLE', 'INSERT INTO testdb',
                                'DROP TABLE']
 
@@ -43,7 +43,7 @@ class InstrumentSQLiteTest(TestCase):
         self.assertEqual(traces[0]['kind'], 'transaction')
         self.assertEqual(traces[0]['transaction'], 'MyView')
 
-        self.assertEqual(traces[1]['signature'], 'sqlite3.connect testdb.sql')
+        self.assertEqual(traces[1]['signature'], 'sqlite3.connect :memory:')
         self.assertEqual(traces[1]['kind'], 'db.sqlite.connect')
         self.assertEqual(traces[1]['transaction'], 'MyView')
 
