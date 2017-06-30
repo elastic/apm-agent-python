@@ -24,6 +24,7 @@ import zlib
 import opbeat
 from opbeat.conf import defaults
 from opbeat.traces import RequestsStore
+from opbeat.transport.base import TransportException
 from opbeat.utils import opbeat_json as json
 from opbeat.utils import is_master_process, six, stacks, varmap
 from opbeat.utils.compat import atexit_register, urlparse
@@ -417,7 +418,7 @@ class Client(object):
         # decode message so we can show the actual event
         try:
             data = self.decode(data)
-        except:
+        except Exception:
             message = '<failed decoding data>'
         else:
             message = data.pop('message', '<no message value>')
@@ -603,13 +604,16 @@ class Client(object):
             self.logger.info('Logged error at ' + kwargs['url'])
         self.state.set_success()
 
-    def handle_transport_fail(self, **kwargs):
+    def handle_transport_fail(self, exception=None, **kwargs):
         """
         Failure handler called by the transport
         """
-        exception = kwargs.get('exception')
-        message = self._get_log_message(exception.data)
-        self.error_logger.error(exception.args[0])
+        if isinstance(exception, TransportException):
+            message = self._get_log_message(exception.data)
+            self.error_logger.error(exception.args[0])
+        else:
+            # stdlib exception
+            message = str(exception)
         self.error_logger.error(
             'Failed to submit message: %r',
             message,

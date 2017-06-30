@@ -171,6 +171,34 @@ class ClientTest(TestCase):
 
     @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
     @mock.patch('opbeat.base.ClientState.should_try')
+    def test_send_remote_failover_sync_stdlib(self, should_try, http_send):
+        should_try.return_value = True
+
+        client = Client(
+            servers=['http://example.com'],
+            organization_id='organization_id',
+            app_id='app_id',
+            secret_token='secret',
+            async_mode=False,
+        )
+        logger = mock.Mock()
+        client.error_logger.error = logger
+
+        # test error
+        encoded_data = client.encode({'message': 'oh no'})
+        http_send.side_effect = ValueError('oopsie')
+        client.send_remote('http://example.com/api/store', data=encoded_data)
+        assert client.state.status == client.state.ERROR
+        assert len(logger.call_args_list) == 1
+        assert 'oopsie' in logger.call_args_list[0][0][1]
+
+        # test recovery
+        http_send.side_effect = None
+        client.send_remote('http://example.com/api/store', 'foo')
+        assert client.state.status == client.state.ONLINE
+
+    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
+    @mock.patch('opbeat.base.ClientState.should_try')
     def test_send_remote_failover_async(self, should_try, http_send):
         should_try.return_value = True
 
