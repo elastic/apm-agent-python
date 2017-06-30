@@ -54,7 +54,7 @@ class AsyncioHTTPTransport(HTTPTransport):
             raise TransportException(message, data,
                                      print_trace=print_trace) from e
         else:
-            return response.headers['Location']
+            return response.headers.get('Location')
 
     def __del__(self):
         self.client.close()
