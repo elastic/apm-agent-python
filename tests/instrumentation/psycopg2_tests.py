@@ -265,7 +265,7 @@ def test_psycopg2_tracing_outside_of_opbeat_transaction(postgres_connection):
     assert isinstance(cursor, PGCursorProxy)
     cursor.execute('SELECT 1')
     transactions = client.instrumentation_store.get_all()
-    assert transactions == ([], [])
+    assert transactions == []
 
 
 @pytest.mark.skipif(travis_and_psycopg2,
@@ -286,6 +286,6 @@ def test_psycopg2_select_LIKE(postgres_connection):
         client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
-        transactions, traces = client.instrumentation_store.get_all()
-        traces = [t for t in traces if t['parents']]
+        transactions = client.instrumentation_store.get_all()
+        traces = transactions['traces']
         assert traces[0]['name'] == 'SELECT FROM test'
