@@ -288,4 +288,4 @@ def test_psycopg2_select_LIKE(postgres_connection):
         # make sure we've cleared out the traces for the other tests.
         transactions, traces = client.instrumentation_store.get_all()
         traces = [t for t in traces if t['parents']]
-        assert traces[0]['signature'] == 'SELECT FROM test'
+        assert traces[0]['name'] == 'SELECT FROM test'

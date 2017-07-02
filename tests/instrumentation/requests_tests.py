@@ -31,8 +31,10 @@ class InstrumentRequestsTest(TestCase):
             requests.get('http://example.com', allow_redirects=False)
         self.client.end_transaction("MyView")
 
-        _, traces, raw_transactions = self.client.instrumentation_store.get_all()
-        self.assertIn('GET example.com', map(lambda x: x['signature'], traces))
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
+        self.assertEqual('GET example.com', traces[0]['name'])
+        self.assertEqual('http://example.com/', traces[0]['context']['url'])
 
     @mock.patch("requests.adapters.HTTPAdapter.send")
     def test_requests_instrumentation_via_session(self, mock_send):
@@ -47,8 +49,10 @@ class InstrumentRequestsTest(TestCase):
             s.get('http://example.com', allow_redirects=False)
         self.client.end_transaction("MyView")
 
-        _, traces = self.client.instrumentation_store.get_all()
-        self.assertIn('GET example.com', map(lambda x: x['signature'], traces))
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
+        self.assertEqual('GET example.com', traces[0]['name'])
+        self.assertEqual('http://example.com/', traces[0]['context']['url'])
 
     @mock.patch("requests.adapters.HTTPAdapter.send")
     def test_requests_instrumentation_via_prepared_request(self, mock_send):
@@ -65,8 +69,10 @@ class InstrumentRequestsTest(TestCase):
             s.send(pr, allow_redirects=False)
         self.client.end_transaction("MyView")
 
-        _, traces, raw_transactions = self.client.instrumentation_store.get_all()
-        self.assertIn('GET example.com', map(lambda x: x['signature'], traces))
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
+        self.assertEqual('GET example.com', traces[0]['name'])
+        self.assertEqual('http://example.com/', traces[0]['context']['url'])
 
     def test_requests_instrumentation_malformed_none(self):
         self.client.begin_transaction("transaction.test")

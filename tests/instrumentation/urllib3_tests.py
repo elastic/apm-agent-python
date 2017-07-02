@@ -40,7 +40,7 @@ class InstrumentUrllib3Test(TestCase):
         self.httpd_thread.setDaemon(True)
         self.httpd_thread.start()
 
-    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
     def test_urllib3(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction")
@@ -53,29 +53,23 @@ class InstrumentUrllib3Test(TestCase):
 
         self.client.end_transaction("MyView")
 
-        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
 
         expected_signatures = ['transaction', 'test_pipeline', expected_sig]
 
-        self.assertEqual(set([t['signature'] for t in traces]),
+        self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
-
-        # Reorder according to the kinds list so we can just test them
-        sig_dict = dict([(t['signature'], t) for t in traces])
-        traces = [sig_dict[k] for k in expected_signatures]
 
         self.assertEqual(len(traces), 3)
 
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'MyView')
+        self.assertEqual(traces[0]['name'], expected_sig)
+        self.assertEqual(traces[0]['type'], 'ext.http.urllib3')
+        self.assertEqual(traces[0]['context']['url'], url)
+        self.assertEqual(traces[0]['parent'], 1)
 
-        self.assertEqual(traces[1]['signature'], 'test_pipeline')
-        self.assertEqual(traces[1]['kind'], 'test')
-        self.assertEqual(traces[1]['transaction'], 'MyView')
+        self.assertEqual(traces[1]['name'], 'test_pipeline')
+        self.assertEqual(traces[1]['type'], 'test')
 
-        self.assertEqual(traces[2]['signature'], expected_sig)
-        self.assertEqual(traces[2]['kind'], 'ext.http.urllib3')
-        self.assertEqual(traces[2]['transaction'], 'MyView')
-
-        self.assertEqual(traces[2]['extra']['url'], url)
+        self.assertEqual(traces[2]['name'], 'transaction')
+        self.assertEqual(traces[2]['type'], 'transaction')

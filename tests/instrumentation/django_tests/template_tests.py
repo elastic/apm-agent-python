@@ -35,7 +35,7 @@ class TracesTest(TestCase):
         self.opbeat = get_client()
         opbeat.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
     def test_template_rendering(self, should_collect):
         should_collect.return_value = False
         with self.settings(MIDDLEWARE_CLASSES=[
@@ -44,39 +44,31 @@ class TracesTest(TestCase):
             self.client.get(reverse('render-heavy-template'))
             self.client.get(reverse('render-heavy-template'))
 
-        transactions, traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
+        transactions = self.opbeat.instrumentation_store.get_all()
 
-        self.assertEqual(len(transactions), 1)
-        self.assertEqual(len(traces), 3, [t['signature'] for t in traces])
+        self.assertEqual(len(transactions), 3)
+        traces = transactions[0]['traces']
+        self.assertEqual(len(traces), 3, [t['name'] for t in traces])
 
         kinds = ['transaction', 'code', 'template.django']
-        self.assertEqual(set([t['kind'] for t in traces]),
+        self.assertEqual(set([t['type'] for t in traces]),
                          set(kinds))
 
-        # Reorder according to the kinds list so we can just test them
-        kinds_dict = dict([(t['kind'], t) for t in traces])
-        traces = [kinds_dict[k] for k in kinds]
+        self.assertEqual(traces[0]['type'], 'code')
+        self.assertEqual(traces[0]['name'], 'something_expensive')
+        self.assertEqual(traces[0]['parent'], 1)
 
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'GET tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(len(traces[0]['parents']), 0)
+        self.assertEqual(traces[1]['type'], 'template.django')
+        self.assertEqual(traces[1]['name'], 'list_users.html')
+        self.assertEqual(traces[1]['parent'], 0)
 
-        self.assertEqual(traces[1]['kind'], 'code')
-        self.assertEqual(traces[1]['signature'], 'something_expensive')
-        self.assertEqual(traces[1]['transaction'],
-                         'GET tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(traces[1]['parents'], ('transaction', 'list_users.html'))
-
-        self.assertEqual(traces[2]['kind'], 'template.django')
-        self.assertEqual(traces[2]['signature'], 'list_users.html')
-        self.assertEqual(traces[2]['transaction'],
-                         'GET tests.contrib.django.testapp.views.render_template_view')
-        self.assertEqual(traces[2]['parents'], ('transaction',))
+        self.assertEqual(traces[2]['type'], 'transaction')
+        self.assertEqual(traces[2]['name'], 'transaction')
+        self.assertIsNone(traces[2]['parent'])
 
     @pytest.mark.skipif(django.VERSION < (1, 8),
                         reason='Jinja2 support introduced with Django 1.8')
-    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
     def test_template_rendering_django18_jinja2(self, should_collect):
         should_collect.return_value = False
         with self.settings(MIDDLEWARE_CLASSES=[
@@ -87,27 +79,20 @@ class TracesTest(TestCase):
             self.client.get(reverse('render-jinja2-template'))
             self.client.get(reverse('render-jinja2-template'))
 
-        transactions, traces, raw_transactions = self.opbeat.instrumentation_store.get_all()
+        transactions = self.opbeat.instrumentation_store.get_all()
 
-        self.assertEqual(len(transactions), 1)
-        self.assertEqual(len(traces), 2, [t['signature'] for t in traces])
+        self.assertEqual(len(transactions), 3)
+        traces = transactions[0]['traces']
+        self.assertEqual(len(traces), 2, [t['name'] for t in traces])
 
         kinds = ['transaction', 'template.jinja2']
-        self.assertEqual(set([t['kind'] for t in traces]),
+        self.assertEqual(set([t['type'] for t in traces]),
                          set(kinds))
 
-        # Reorder according to the kinds list so we can just test them
-        kinds_dict = dict([(t['kind'], t) for t in traces])
-        traces = [kinds_dict[k] for k in kinds]
+        self.assertEqual(traces[0]['type'], 'template.jinja2')
+        self.assertEqual(traces[0]['name'], 'jinja2_template.html')
+        self.assertEqual(traces[0]['parent'], 0)
 
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['transaction'],
-                         'GET tests.contrib.django.testapp.views.render_jinja2_template')
-        self.assertEqual(len(traces[0]['parents']), 0)
-
-        self.assertEqual(traces[1]['kind'], 'template.jinja2')
-        self.assertEqual(traces[1]['signature'], 'jinja2_template.html')
-        self.assertEqual(traces[1]['transaction'],
-                         'GET tests.contrib.django.testapp.views.render_jinja2_template')
-        self.assertEqual(traces[1]['parents'], ('transaction',))
+        self.assertEqual(traces[1]['type'], 'transaction')
+        self.assertEqual(traces[1]['name'], 'transaction')
+        self.assertIsNone(traces[1]['parent'])

@@ -2,7 +2,7 @@ import time
 
 from mock import Mock
 
-from opbeat.traces import RequestsStore, trace
+from opbeat.traces import TransactionsStore, trace, get_transaction
 from tests.utils.compat import TestCase
 
 
@@ -81,10 +81,10 @@ class RequestStoreTest(TestCase):
                    'filename': 'tests/contrib/django/django_tests.py'}]
 
         self.mock_get_frames.return_value = frames
-        self.requests_store = RequestsStore(self.mock_get_frames, 99999)
+        self.requests_store = TransactionsStore(self.mock_get_frames, 99999)
 
     def test_lru_get_frames_cache(self):
-        self.requests_store.transaction_start(None, "transaction.test")
+        self.requests_store.begin_transaction("transaction.test")
 
         for i in range(10):
             with trace("bleh", "custom"):
@@ -93,7 +93,7 @@ class RequestStoreTest(TestCase):
         self.assertEqual(self.mock_get_frames.call_count, 1)
 
     def test_leaf_tracing(self):
-        self.requests_store.transaction_start(None, "transaction.test")
+        self.requests_store.begin_transaction("transaction.test")
 
         with trace("root", "custom"):
             with trace("child1-leaf", "custom", leaf=True):
@@ -105,12 +105,26 @@ class RequestStoreTest(TestCase):
                 with trace("ignored-child2", "custom", leaf=False):
                     time.sleep(0.01)
 
-        self.requests_store.transaction_end(None, "transaction")
+        self.requests_store.end_transaction(None, "transaction")
 
-        transactions, traces, raw_transactions = self.requests_store.get_all()
+        transactions = self.requests_store.get_all()
+        traces = transactions[0]['traces']
 
         self.assertEqual(len(traces), 3)
 
         signatures = ['transaction', 'root', 'child1-leaf']
-        self.assertEqual(set([t['signature'] for t in traces]),
+        self.assertEqual(set([t['name'] for t in traces]),
                          set(signatures))
+
+
+def test_get_transaction():
+    requests_store = TransactionsStore(lambda: [], 99999)
+    t = requests_store.begin_transaction("test")
+    assert t == get_transaction()
+
+
+def test_get_transaction_clear():
+    requests_store = TransactionsStore(lambda: [], 99999)
+    t = requests_store.begin_transaction("test")
+    assert t == get_transaction(clear=True)
+    assert get_transaction() is None

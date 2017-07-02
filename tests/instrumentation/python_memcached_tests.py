@@ -13,7 +13,7 @@ class InstrumentMemcachedTest(TestCase):
         self.client = get_tempstoreclient()
         opbeat.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
     def test_memcached(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
@@ -24,29 +24,32 @@ class InstrumentMemcachedTest(TestCase):
             assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])
         self.client.end_transaction("BillingView")
 
-        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
 
         expected_signatures = ['transaction', 'test_memcached',
                                'Client.set', 'Client.get',
                                'Client.get_multi']
 
-        self.assertEqual(set([t['signature'] for t in traces]),
+        self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        # Reorder according to the kinds list so we can just test them
-        sig_dict = dict([(t['signature'], t) for t in traces])
-        traces = [sig_dict[k] for k in expected_signatures]
+        self.assertEqual(traces[0]['name'], 'Client.set')
+        self.assertEqual(traces[0]['type'], 'cache.memcached')
+        self.assertEqual(traces[0]['parent'], 1)
 
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'BillingView')
+        self.assertEqual(traces[1]['name'], 'Client.get')
+        self.assertEqual(traces[1]['type'], 'cache.memcached')
+        self.assertEqual(traces[1]['parent'], 1)
 
-        self.assertEqual(traces[1]['signature'], 'test_memcached')
-        self.assertEqual(traces[1]['kind'], 'test')
-        self.assertEqual(traces[1]['transaction'], 'BillingView')
+        self.assertEqual(traces[2]['name'], 'Client.get_multi')
+        self.assertEqual(traces[2]['type'], 'cache.memcached')
+        self.assertEqual(traces[2]['parent'], 1)
 
-        self.assertEqual(traces[2]['signature'], 'Client.set')
-        self.assertEqual(traces[2]['kind'], 'cache.memcached')
-        self.assertEqual(traces[2]['transaction'], 'BillingView')
+        self.assertEqual(traces[3]['name'], 'test_memcached')
+        self.assertEqual(traces[3]['type'], 'test')
+
+        self.assertEqual(traces[4]['name'], 'transaction')
+        self.assertEqual(traces[4]['type'], 'transaction')
 
         self.assertEqual(len(traces), 5)

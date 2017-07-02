@@ -467,7 +467,7 @@ class ClientTest(TestCase):
         self.assertTrue(len(event['logger']) < 61, len(event['logger']))
 
     @mock.patch('opbeat.base.Client.send')
-    @mock.patch('opbeat.base.RequestsStore.should_collect')
+    @mock.patch('opbeat.base.TransactionsStore.should_collect')
     def test_metrics_collection(self, should_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
@@ -490,7 +490,7 @@ class ClientTest(TestCase):
         self.assertEqual(mock_send.call_count, 1)
 
     @mock.patch('opbeat.base.Client.send')
-    @mock.patch('opbeat.base.RequestsStore.should_collect')
+    @mock.patch('opbeat.base.TransactionsStore.should_collect')
     def test_call_end_twice(self, should_collect, mock_send):
         client = get_tempstoreclient()
 
@@ -528,7 +528,7 @@ class ClientTest(TestCase):
         )
 
     @mock.patch('opbeat.base.Client.send')
-    @mock.patch('opbeat.base.RequestsStore.should_collect')
+    @mock.patch('opbeat.base.TransactionsStore.should_collect')
     def test_ignore_patterns(self, should_collect, mock_send):
         client = Client(
             servers=['http://example.com'],

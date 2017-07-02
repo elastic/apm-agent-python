@@ -12,7 +12,7 @@ class InstrumentSQLiteTest(TestCase):
         self.client = get_tempstoreclient()
         opbeat.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
     def test_connect(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
@@ -26,37 +26,29 @@ class InstrumentSQLiteTest(TestCase):
 
         self.client.end_transaction("MyView")
 
-        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
 
         expected_signatures = ['transaction', 'sqlite3.connect :memory:',
                                'CREATE TABLE', 'INSERT INTO testdb',
                                'DROP TABLE']
 
-        self.assertEqual(set([t['signature'] for t in traces]),
+        self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        # Reorder according to the kinds list so we can just test them
-        sig_dict = dict([(t['signature'], t) for t in traces])
-        traces = [sig_dict[k] for k in expected_signatures]
+        self.assertEqual(traces[0]['name'], 'sqlite3.connect :memory:')
+        self.assertEqual(traces[0]['type'], 'db.sqlite.connect')
 
-        self.assertEqual(traces[0]['signature'], 'transaction')
-        self.assertEqual(traces[0]['kind'], 'transaction')
-        self.assertEqual(traces[0]['transaction'], 'MyView')
+        self.assertEqual(traces[1]['name'], 'CREATE TABLE')
+        self.assertEqual(traces[1]['type'], 'db.sqlite.sql')
 
-        self.assertEqual(traces[1]['signature'], 'sqlite3.connect :memory:')
-        self.assertEqual(traces[1]['kind'], 'db.sqlite.connect')
-        self.assertEqual(traces[1]['transaction'], 'MyView')
+        self.assertEqual(traces[2]['name'], 'INSERT INTO testdb')
+        self.assertEqual(traces[2]['type'], 'db.sqlite.sql')
 
-        self.assertEqual(traces[2]['signature'], 'CREATE TABLE')
-        self.assertEqual(traces[2]['kind'], 'db.sqlite.sql')
-        self.assertEqual(traces[2]['transaction'], 'MyView')
+        self.assertEqual(traces[3]['name'], 'DROP TABLE')
+        self.assertEqual(traces[3]['type'], 'db.sqlite.sql')
 
-        self.assertEqual(traces[3]['signature'], 'INSERT INTO testdb')
-        self.assertEqual(traces[3]['kind'], 'db.sqlite.sql')
-        self.assertEqual(traces[3]['transaction'], 'MyView')
-
-        self.assertEqual(traces[4]['signature'], 'DROP TABLE')
-        self.assertEqual(traces[4]['kind'], 'db.sqlite.sql')
-        self.assertEqual(traces[4]['transaction'], 'MyView')
+        self.assertEqual(traces[4]['name'], 'transaction')
+        self.assertEqual(traces[4]['type'], 'transaction')
 
         self.assertEqual(len(traces), 5)

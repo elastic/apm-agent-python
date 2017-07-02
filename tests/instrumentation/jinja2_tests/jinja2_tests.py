@@ -17,7 +17,7 @@ class InstrumentJinja2Test(TestCase):
         self.env = Environment(loader=loader)
         opbeat.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.RequestsStore.should_collect")
+    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
     def test_from_file(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
@@ -25,20 +25,16 @@ class InstrumentJinja2Test(TestCase):
         template.render()
         self.client.end_transaction("MyView")
 
-        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
 
         expected_signatures = ['transaction', 'mytemplate.html']
 
-        self.assertEqual(set([t['signature'] for t in traces]),
+        self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        # Reorder according to the kinds list so we can just test them
-        sig_dict = dict([(t['signature'], t) for t in traces])
-        traces = [sig_dict[k] for k in expected_signatures]
-
-        self.assertEqual(traces[1]['signature'], 'mytemplate.html')
-        self.assertEqual(traces[1]['kind'], 'template.jinja2')
-        self.assertEqual(traces[1]['transaction'], 'MyView')
+        self.assertEqual(traces[0]['name'], 'mytemplate.html')
+        self.assertEqual(traces[0]['type'], 'template.jinja2')
 
     def test_from_string(self):
         self.client.begin_transaction("transaction.test")
@@ -46,17 +42,13 @@ class InstrumentJinja2Test(TestCase):
         template.render()
         self.client.end_transaction("test")
 
-        transactions, traces, raw_transactions = self.client.instrumentation_store.get_all()
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
 
         expected_signatures = ['transaction', '<template>']
 
-        self.assertEqual(set([t['signature'] for t in traces]),
+        self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        # Reorder according to the kinds list so we can just test them
-        sig_dict = dict([(t['signature'], t) for t in traces])
-        traces = [sig_dict[k] for k in expected_signatures]
-
-        self.assertEqual(traces[1]['signature'], '<template>')
-        self.assertEqual(traces[1]['kind'], 'template.jinja2')
-        self.assertEqual(traces[1]['transaction'], 'test')
+        self.assertEqual(traces[0]['name'], '<template>')
+        self.assertEqual(traces[0]['type'], 'template.jinja2')

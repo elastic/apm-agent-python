@@ -80,3 +80,5 @@ INSTRUMENT_DJANGO_MIDDLEWARE = True
 SYNC_TRANSPORT_CLASS = 'opbeat.transport.http_urllib3.Urllib3Transport'
 
 ASYNC_TRANSPORT_CLASS = 'opbeat.transport.http_urllib3.AsyncUrllib3Transport'
+
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'

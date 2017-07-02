@@ -28,5 +28,6 @@ class InstrumentBotocoreTest(TestCase):
             ec2.describe_instances()
         self.client.end_transaction("MyView")
 
-        _, traces = self.client.instrumentation_store.get_all()
-        self.assertIn('ec2:DescribeInstances', map(lambda x: x['signature'], traces))
+        transactions = self.client.instrumentation_store.get_all()
+        traces = transactions[0]['traces']
+        self.assertIn('ec2:DescribeInstances', map(lambda x: x['name'], traces))

@@ -23,7 +23,7 @@ import zlib
 
 import opbeat
 from opbeat.conf import defaults
-from opbeat.traces import RequestsStore, get_transaction
+from opbeat.traces import TransactionsStore, get_transaction
 from opbeat.transport.base import TransportException
 from opbeat.utils import opbeat_json as json
 from opbeat.utils import is_master_process, six, stacks, varmap
@@ -207,7 +207,7 @@ class Client(object):
 
         self.module_cache = ModuleProxyCache()
 
-        self.instrumentation_store = RequestsStore(
+        self.instrumentation_store = TransactionsStore(
             lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
             self.traces_send_freq_secs,
             transactions_ignore_patterns
@@ -578,16 +578,16 @@ class Client(object):
         """
         self.capture_query(*args, **kwargs)
 
-    def begin_transaction(self, kind):
+    def begin_transaction(self, transaction_type):
         """Register the start of a transaction on the client
 
         'kind' should follow the convention of '<transaction-kind>.<provider>'
         e.g. 'web.django', 'task.celery'.
         """
-        self.instrumentation_store.transaction_start(self, kind)
+        self.instrumentation_store.begin_transaction(transaction_type)
 
     def end_transaction(self, name, status_code=None):
-        self.instrumentation_store.transaction_end(status_code, name)
+        self.instrumentation_store.end_transaction(status_code, name)
         if self.instrumentation_store.should_collect():
             self._traces_collect()
 
@@ -595,7 +595,7 @@ class Client(object):
         transaction = get_transaction()
         if not transaction:
             return
-        transaction._name = name
+        transaction.name = name
 
     def set_transaction_extra_data(self, data, _key=None):
         transaction = get_transaction()
@@ -636,13 +636,13 @@ class Client(object):
         self.state.set_fail()
 
     def _traces_collect(self):
-        transactions, traces = self.instrumentation_store.get_all()
-        if not transactions or not traces:
+        transactions = self.instrumentation_store.get_all()
+        if not transactions:
             return
 
         data = self.build_msg({
             'transactions': transactions,
-            'traces': traces,
+            'app_name': self.app_id,
         })
         api_path = defaults.TRANSACTIONS_API_PATH.format(
             self.organization_id,
