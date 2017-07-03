@@ -39,11 +39,11 @@ class InstrumentRedisTest(TestCase):
         self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        self.assertEqual(traces[0]['name'], 'test_pipeline')
-        self.assertEqual(traces[0]['type'], 'test')
+        self.assertEqual(traces[0]['name'], 'StrictPipeline.execute')
+        self.assertEqual(traces[0]['type'], 'cache.redis')
 
-        self.assertEqual(traces[1]['name'], 'StrictPipeline.execute')
-        self.assertEqual(traces[1]['type'], 'cache.redis')
+        self.assertEqual(traces[1]['name'], 'test_pipeline')
+        self.assertEqual(traces[1]['type'], 'test')
 
         self.assertEqual(traces[2]['name'], 'transaction')
         self.assertEqual(traces[2]['type'], 'transaction')
@@ -76,11 +76,11 @@ class InstrumentRedisTest(TestCase):
         self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        self.assertEqual(traces[0]['name'], 'test_pipeline')
-        self.assertEqual(traces[0]['type'], 'test')
+        self.assertEqual(traces[0]['name'], 'StrictPipeline.execute')
+        self.assertEqual(traces[0]['type'], 'cache.redis')
 
-        self.assertEqual(traces[1]['name'], 'StrictPipeline.execute')
-        self.assertEqual(traces[1]['type'], 'cache.redis')
+        self.assertEqual(traces[1]['name'], 'test_pipeline')
+        self.assertEqual(traces[1]['type'], 'test')
 
         self.assertEqual(traces[2]['name'], 'transaction')
         self.assertEqual(traces[2]['type'], 'transaction')
@@ -106,14 +106,14 @@ class InstrumentRedisTest(TestCase):
         self.assertEqual(set([t['name'] for t in traces]),
                          set(expected_signatures))
 
-        self.assertEqual(traces[0]['name'], 'test_redis_client')
-        self.assertEqual(traces[0]['type'], 'test')
+        self.assertEqual(traces[0]['name'], 'RPUSH')
+        self.assertEqual(traces[0]['type'], 'cache.redis')
 
-        self.assertEqual(traces[1]['name'], 'RPUSH')
+        self.assertEqual(traces[1]['name'], 'EXPIRE')
         self.assertEqual(traces[1]['type'], 'cache.redis')
 
-        self.assertEqual(traces[2]['name'], 'EXPIRE')
-        self.assertEqual(traces[2]['type'], 'cache.redis')
+        self.assertEqual(traces[2]['name'], 'test_redis_client')
+        self.assertEqual(traces[2]['type'], 'test')
 
         self.assertEqual(traces[3]['name'], 'transaction')
         self.assertEqual(traces[3]['type'], 'transaction')

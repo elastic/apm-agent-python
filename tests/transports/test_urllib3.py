@@ -80,8 +80,3 @@ def test_https_proxy_environment_variable_is_preferred():
         transport = Urllib3Transport(urlparse.urlparse('http://localhost:9999'))
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
         assert transport.http.proxy.scheme == 'https'
-
-
-def test_retries():
-    url = 'http://localhost:9999'
-    transport = Urllib3Transport(urlparse.urlparse(url))

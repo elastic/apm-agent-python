@@ -2,7 +2,7 @@ import time
 
 from mock import Mock
 
-from opbeat.traces import TransactionsStore, trace, get_transaction
+from opbeat.traces import TransactionsStore, get_transaction, trace
 from tests.utils.compat import TestCase
 
 
