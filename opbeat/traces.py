@@ -150,7 +150,7 @@ class Trace(object):
             'name': self.name,
             'type': self.type,
             'start': self.start_time,
-            'end': self.end_time,
+            'duration': self.end_time - self.start_time,
             'parent': self.parent,
             'stacktrace': self.frames,
             'context': self.context

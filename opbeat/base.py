@@ -644,10 +644,7 @@ class Client(object):
             'transactions': transactions,
             'app_name': self.app_id,
         })
-        api_path = defaults.TRANSACTIONS_API_PATH.format(
-            self.organization_id,
-            self.app_id,
-        )
+        api_path = '/transactions'
 
         data['servers'] = [server + api_path for server in self.servers]
         self.send(**data)
