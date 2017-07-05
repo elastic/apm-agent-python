@@ -59,7 +59,7 @@ class Transaction(object):
 
     def end_transaction(self, skip_frames=8):
         # End the "transaction" trace started above
-        self.duration = (_time_func() - self.start_time) * 1000
+        self.duration = _time_func() - self.start_time
         return self.end_trace(skip_frames)
 
     def begin_trace(self, name, trace_type, context=None, leaf=False):
@@ -85,16 +85,12 @@ class Transaction(object):
 
         self.ignore_subtree = False
 
-        trace.end_time = (_time_func() - self.start_time)*1000
+        trace.duration = _time_func() - trace.start_time - self.start_time
 
         if self.trace_stack:
             trace.parent = self.trace_stack[-1].idx
 
-        if trace.fingerprint not in self._lrucache:
-            self._lrucache.set(trace.fingerprint)
-            frames = self.get_frames()[skip_frames:]
-            trace.frames = frames
-
+        trace.frames = self.get_frames()[skip_frames:]
         self.traces.append(trace)
 
         return trace
@@ -104,8 +100,8 @@ class Transaction(object):
             'id': str(self.id),
             'name': self.name,
             'type': self.kind,
-            'duration': self.duration,
-            'result': self.result,
+            'duration': self.duration * 1000,  # milliseconds
+            'result': str(self.result),
             'timestamp': self.timestamp.strftime(defaults.TIMESTAMP_FORMAT),
             'context': self.extra,
             'traces': [
@@ -133,9 +129,7 @@ class Trace(object):
         self.context = context
         self.leaf = leaf
         self.start_time = start_time
-        self.end_time = None
-        self.trace_duration = None
-        self.rel_start_time = None
+        self.duration = None
         self.transaction = None
         self.parent = None
         self.frames = None
@@ -146,11 +140,11 @@ class Trace(object):
 
     def to_dict(self):
         return {
-            'idx': self.idx,
+            'id': self.idx,
             'name': self.name,
             'type': self.type,
-            'start': self.start_time,
-            'duration': self.end_time - self.start_time,
+            'start': self.start_time * 1000,  # milliseconds
+            'duration': self.duration * 1000,  # milliseconds
             'parent': self.parent,
             'stacktrace': self.frames,
             'context': self.context
