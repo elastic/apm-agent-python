@@ -247,7 +247,8 @@ class ClientTest(TestCase):
             url='http://example.com',
             data=six.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
             headers={
-                'Content-Type': 'application/octet-stream',
+                'Content-Type': 'application/json',
+                'Content-Encoding': 'deflate',
                 'Authorization': 'Bearer %s' % (access_token),
                 'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
                 'X-Opbeat-Platform': self.client.get_platform_info(),
@@ -288,7 +289,8 @@ class ClientTest(TestCase):
             url='http://example.com',
             data=six.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
             headers={
-                'Content-Type': 'application/octet-stream',
+                'Content-Type': 'application/json',
+                'Content-Encoding': 'deflate',
                 'Authorization': 'foo',
                 'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
                 'X-Opbeat-Platform': self.client.get_platform_info(),

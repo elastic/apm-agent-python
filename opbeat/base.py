@@ -499,7 +499,8 @@ class Client(object):
         for url in servers:
             headers = {
                 'Authorization': auth_header,
-                'Content-Type': 'application/octet-stream',
+                'Content-Type': 'application/json',
+                'Content-Encoding': 'deflate',
                 'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
                 'X-Opbeat-Platform': self.get_platform_info()
             }

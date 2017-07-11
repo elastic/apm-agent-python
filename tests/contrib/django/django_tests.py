@@ -504,7 +504,7 @@ class DjangoClientTest(TestCase):
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/octet-stream',
+            'CONTENT_TYPE': 'application/json',
             'CONTENT_LENGTH': len(v),
             'ACCEPT': 'application/json',
         })
@@ -526,7 +526,7 @@ class DjangoClientTest(TestCase):
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/octet-stream',
+            'CONTENT_TYPE': 'application/json',
             'ACCEPT': 'application/json',
         })
         request.POST = QueryDict("x=1&y=2")
@@ -547,7 +547,7 @@ class DjangoClientTest(TestCase):
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/octet-stream',
+            'CONTENT_TYPE': 'application/json',
             'ACCEPT': 'application/json',
             'CONTENT_LENGTH': '6',
         })
@@ -570,7 +570,7 @@ class DjangoClientTest(TestCase):
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/octet-stream',
+            'CONTENT_TYPE': 'application/json',
             'ACCEPT': 'application/json',
         })
         with self.settings(ALLOWED_HOSTS=['example.com']):
@@ -588,7 +588,7 @@ class DjangoClientTest(TestCase):
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/octet-stream',
+            'CONTENT_TYPE': 'application/json',
             'ACCEPT': 'application/json',
         })
         with self.settings(ALLOWED_HOSTS=['example.com']):
@@ -941,7 +941,7 @@ class DjangoLoggingTest(TestCase):
                 'REQUEST_METHOD': 'POST',
                 'SERVER_NAME': 'testserver',
                 'SERVER_PORT': '80',
-                'CONTENT_TYPE': 'application/octet-stream',
+                'CONTENT_TYPE': 'application/json',
                 'ACCEPT': 'application/json',
             })
         })
