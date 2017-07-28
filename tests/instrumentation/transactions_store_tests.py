@@ -90,7 +90,7 @@ class RequestStoreTest(TestCase):
             with trace("bleh", "custom"):
                 time.sleep(0.01)
 
-        self.assertEqual(self.mock_get_frames.call_count, 1)
+        self.assertEqual(self.mock_get_frames.call_count, 10)
 
     def test_leaf_tracing(self):
         self.requests_store.begin_transaction("transaction.test")

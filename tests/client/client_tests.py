@@ -62,27 +62,28 @@ class ClientTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
 
-    def test_platform_info(self):
-        platform_info = self.client.get_platform_info()
-        self.assertIn(
-            'lang=python/' + platform.python_version(),
-            platform_info,
-        )
-        self.assertIn(
-            'platform=' + platform.python_implementation(),
-            platform_info,
-        )
+    def test_app_info(self):
+        app_info = self.client.get_app_info()
+        assert app_info['name'] == self.client.app_id
+        assert app_info['language'] == {
+            'name': 'python',
+            'version': platform.python_version()
+        }
+
+    def test_system_info(self):
+        system_info = self.client.get_system_info()
+        assert {'hostname', 'architecture', 'platform'} == set(system_info.keys())
 
     def test_config_by_environment(self):
         with mock.patch.dict('os.environ', {
-            'OPBEAT_ORGANIZATION_ID': 'org',
             'OPBEAT_APP_ID': 'app',
             'OPBEAT_SECRET_TOKEN': 'token',
+            'OPBEAT_GIT_REF': 'aabbccdd'
         }):
             client = Client()
-            self.assertEqual(client.organization_id, 'org')
             self.assertEqual(client.app_id, 'app')
             self.assertEqual(client.secret_token, 'token')
+            self.assertEqual(client.git_ref, 'aabbccdd')
             self.assertEqual(client.is_send_disabled, False)
         with mock.patch.dict('os.environ', {
             'OPBEAT_DISABLE_SEND': 'true',
@@ -251,7 +252,6 @@ class ClientTest(TestCase):
                 'Content-Encoding': 'deflate',
                 'Authorization': 'Bearer %s' % (access_token),
                 'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
-                'X-Opbeat-Platform': self.client.get_platform_info(),
             },
         )
 
@@ -293,7 +293,6 @@ class ClientTest(TestCase):
                 'Content-Encoding': 'deflate',
                 'Authorization': 'foo',
                 'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
-                'X-Opbeat-Platform': self.client.get_platform_info(),
             },
         )
 
@@ -501,16 +500,6 @@ class ClientTest(TestCase):
 
         client.end_transaction('test-transaction', 200)
         client.end_transaction('test-transaction', 200)
-
-    def test_async_arg_deprecation(self):
-        pytest.deprecated_call(
-            Client,
-            servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
-            secret_token='secret',
-            async=True,
-        )
 
     @mock.patch('opbeat.utils.is_master_process')
     def test_client_uses_sync_mode_when_master_process(self, is_master_process):

@@ -643,7 +643,7 @@ class DjangoClientTest(TestCase):
             assert len(transactions) == 1
             transaction = transactions[0]
             assert transaction['duration'] > 0
-            assert transaction['result'] == 200
+            assert transaction['result'] == '200'
             assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
 
     @pytest.mark.skipif(django.VERSION < (1, 10),
@@ -661,7 +661,7 @@ class DjangoClientTest(TestCase):
             assert len(transactions) == 1
             transaction = transactions[0]
             assert transaction['duration'] > 0
-            assert transaction['result'] == 200
+            assert transaction['result'] == '200'
             assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
 
     def test_request_metrics_301_append_slash(self):
@@ -858,10 +858,11 @@ class DjangoClientTest(TestCase):
             ''
         )
 
-    def test_get_platform_info(self):
+    def test_get_app_info(self):
         client = get_client()
-        platform_info = client.get_platform_info()
-        self.assertIn(django.get_version(), platform_info)
+        app_info = client.get_app_info()
+        assert django.get_version() == app_info['framework']['version']
+        assert 'django' == app_info['framework']['name']
 
 
 class DjangoClientNoTempTest(TestCase):

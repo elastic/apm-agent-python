@@ -88,7 +88,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
     else:
         framework_version = 'flask/<0.7'
 
-    return client_cls(
+    client = client_cls(
         organization_id=organization_id,
         app_id=app_id,
         secret_token=secret_token,
@@ -106,8 +106,11 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         processors=opbeat_config.get('PROCESSORS'),
         async_mode=opbeat_config.get('ASYNC_MODE'),
         transactions_ignore_patterns=opbeat_config.get('TRANSACTIONS_IGNORE_PATTERNS'),
-        framework_version=framework_version,
     )
+
+    client._framework = 'flask'
+    client._framework_version = getattr(flask, '__version__', '<0.7')
+    return client
 
 
 class Opbeat(object):

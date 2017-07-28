@@ -24,10 +24,10 @@ DEBUG = False
 SERVERS = ['https://intake.opbeat.com']
 
 # Error API path
-ERROR_API_PATH = '/api/v1/organizations/{0}/apps/{1}/errors/'
+ERROR_API_PATH = '/v1/errors/'
 
 # Transactions API path
-TRANSACTIONS_API_PATH = '/api/v1/organizations/{0}/apps/{1}/transactions/'
+TRANSACTIONS_API_PATH = '/v1/transactions/'
 
 TIMEOUT = 20
 

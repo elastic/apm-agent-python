@@ -157,7 +157,7 @@ class FlaskTest(TestCase):
         assert len(transactions) == 1
         traces = transactions[0]['traces']
         print(transactions[0])
-        assert transactions[0]['result'] == 404
+        assert transactions[0]['result'] == '404'
         assert len(traces) == 1, [t["signature"] for t in traces]
 
         assert set([t['name'] for t in traces]) == set(expected_signatures)
@@ -167,4 +167,5 @@ class FlaskTest(TestCase):
 
     def test_framework_version(self):
         opbeat = Opbeat(app=self.app)
-        self.assertIn('framework=flask', opbeat.client.get_platform_info())
+        app_info = opbeat.client.get_app_info()
+        assert 'flask' == app_info['framework']['name']

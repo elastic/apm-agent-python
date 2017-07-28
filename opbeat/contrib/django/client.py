@@ -60,7 +60,8 @@ class DjangoClient(Client):
             self.instrument_django_middleware = instrument_django_middleware
         else:
             self.instrument_django_middleware = defaults.INSTRUMENT_DJANGO_MIDDLEWARE
-        kwargs['framework_version'] = 'django/' + django.get_version()
+        self._framework = 'django'
+        self._framework_version = django.get_version()
         super(DjangoClient, self).__init__(**kwargs)
 
     def get_user_info(self, request):

@@ -15,6 +15,7 @@ import datetime
 import logging
 import os
 import platform
+import socket
 import sys
 import time
 import uuid
@@ -114,13 +115,21 @@ class Client(object):
     logger = logging.getLogger('opbeat')
     protocol_version = '1.0'
 
+    environment_config_map = {
+        'organization_id': 'OPBEAT_ORGANIZATION_ID',
+        'app_id': 'OPBEAT_APP_ID',
+        'secret_token': 'OPBEAT_SECRET_TOKEN',
+        'git_ref': 'OPBEAT_GIT_REF',
+        'app_version': 'OPBEAT_APP_VERSION',
+    }
+
     def __init__(self, organization_id=None, app_id=None, secret_token=None,
                  transport_class=None, include_paths=None, exclude_paths=None,
                  timeout=None, hostname=None, auto_log_stacks=None, key=None,
                  string_max_length=None, list_max_length=None, processors=None,
                  filter_exception_types=None, servers=None, api_path=None,
-                 async=None, async_mode=None, traces_send_freq_secs=None,
-                 transactions_ignore_patterns=None, framework_version='',
+                 async_mode=None, traces_send_freq_secs=None,
+                 transactions_ignore_patterns=None, git_ref=None, app_version=None,
                  **kwargs):
         # configure loggers first
         cls = self.__class__
@@ -128,30 +137,10 @@ class Client(object):
             cls.__name__))
         self.error_logger = logging.getLogger('opbeat.errors')
         self.state = ClientState()
-
-        if organization_id is None and os.environ.get('OPBEAT_ORGANIZATION_ID'):
-            msg = "Configuring opbeat from environment variable 'OPBEAT_ORGANIZATION_ID'"
-            self.logger.info(msg)
-            organization_id = os.environ['OPBEAT_ORGANIZATION_ID']
-
-        if app_id is None and os.environ.get('OPBEAT_APP_ID'):
-            msg = "Configuring opbeat from environment variable 'OPBEAT_APP_ID'"
-            self.logger.info(msg)
-            app_id = os.environ['OPBEAT_APP_ID']
-
-        if secret_token is None and os.environ.get('OPBEAT_SECRET_TOKEN'):
-            msg = "Configuring opbeat from environment variable 'OPBEAT_SECRET_TOKEN'"
-            self.logger.info(msg)
-            secret_token = os.environ['OPBEAT_SECRET_TOKEN']
-
+        self._configure(organization_id=organization_id, app_id=app_id,
+                        secret_token=secret_token, git_ref=git_ref,
+                        app_version=app_version)
         self.servers = servers or defaults.SERVERS
-        if async is not None and async_mode is None:
-            warnings.warn(
-                'Usage of "async" argument is deprecated. Use "async_mode"',
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
-            async_mode = async
         self.async_mode = (async_mode is True
                            or (defaults.ASYNC_MODE and async_mode is not False))
         if not transport_class:
@@ -162,7 +151,8 @@ class Client(object):
         self._transports = {}
 
         # servers may be set to a NoneType (for Django)
-        if self.servers and not (organization_id and app_id and secret_token):
+        if self.servers and not (
+                        self.organization_id and self.app_id and self.secret_token):
             msg = 'Missing configuration for Opbeat client. Please see documentation.'
             self.logger.info(msg)
 
@@ -188,10 +178,6 @@ class Client(object):
         self.traces_send_freq_secs = (traces_send_freq_secs or
                                       defaults.TRACES_SEND_FREQ_SECS)
 
-        self.organization_id = six.text_type(organization_id)
-        self.app_id = six.text_type(app_id)
-        self.secret_token = six.text_type(secret_token)
-
         self.filter_exception_types_dict = {}
         for exc_to_filter in (filter_exception_types or []):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -203,8 +189,6 @@ class Client(object):
         else:
             self.processors = processors
 
-        self._framework_version = framework_version
-
         self.module_cache = ModuleProxyCache()
 
         self.instrumentation_store = TransactionsStore(
@@ -213,6 +197,19 @@ class Client(object):
             transactions_ignore_patterns
         )
         atexit_register(self.close)
+
+    def _configure(self, **kwargs):
+        """
+        Configures this instance based on kwargs, or environment variables.
+        The former take precedence.
+        """
+        for attr_name, value in kwargs.items():
+            if value is None and (attr_name in self.environment_config_map
+                                  and self.environment_config_map[attr_name] in os.environ):
+                self.logger.info("Configuring opbeat.%s from environment variable '%s'",
+                                 attr_name, self.environment_config_map[attr_name])
+                value = os.environ[self.environment_config_map[attr_name]]
+            setattr(self, attr_name, six.text_type(value))
 
     def get_processors(self):
         for processor in self.processors:
@@ -337,10 +334,10 @@ class Client(object):
         return data
 
     def build_msg(self, data=None, **kwargs):
-        data.setdefault('machine', {'hostname': self.hostname})
-        data.setdefault('organization_id', self.organization_id)
-        data.setdefault('app_id', self.app_id)
-        data.setdefault('secret_token', self.secret_token)
+        data = data or {}
+        data['app'] = self.get_app_info()
+        data['system'] = self.get_system_info()
+        data.update(**kwargs)
         return data
 
     def capture(self, event_type, data=None, date=None, api_path=None,
@@ -389,10 +386,7 @@ class Client(object):
                                           extra, stack, **kwargs)
 
         if not api_path:
-            api_path = defaults.ERROR_API_PATH.format(
-                data['organization_id'],
-                data['app_id']
-            )
+            api_path = defaults.ERROR_API_PATH
 
         data['servers'] = [server+api_path for server in self.servers]
         self.send(**data)
@@ -502,7 +496,6 @@ class Client(object):
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'deflate',
                 'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
-                'X-Opbeat-Platform': self.get_platform_info()
             }
 
             self.send_remote(url=url, data=message, headers=headers)
@@ -643,23 +636,49 @@ class Client(object):
 
         data = self.build_msg({
             'transactions': transactions,
-            'app_name': self.app_id,
         })
         api_path = '/transactions'
 
         data['servers'] = [server + api_path for server in self.servers]
         self.send(**data)
 
-    def get_platform_info(self):
-        platform_bits = {'lang': 'python/' + platform.python_version()}
-        implementation = platform.python_implementation()
-        if implementation == 'PyPy':
-            implementation += '/' + '.'.join(map(str, sys.pypy_version_info[:3]))
-        platform_bits['platform'] = implementation
-        if self._framework_version:
-            platform_bits['framework'] = self._framework_version
-        return ' '.join('%s=%s' % item for item in platform_bits.items())
+    def get_app_info(self):
+        language_version = platform.python_version()
+        if hasattr(sys, 'pypy_version_info'):
+            runtime_version = '.'.join(map(str, sys.pypy_version_info[:3]))
+        else:
+            runtime_version = language_version
+        return {
+            'name': self.app_id,
+            'version': self.app_version,
+            'agent': {
+                'name': 'opbeat-python',
+                'version': opbeat.VERSION,
+            },
+            'argv': sys.argv,
+            'framework': {
+                'name': getattr(self, '_framework', None),
+                'version': getattr(self, '_framework_version', None),
+            },
+            'git_ref': self.git_ref,
+            'language': {
+                'name': 'python',
+                'version': platform.python_version(),
+            },
+            'pid': os.getpid(),
+            'process_title': None,
+            'runtime': {
+                'name': platform.python_implementation(),
+                'version': runtime_version,
+            }
+        }
 
+    def get_system_info(self):
+        return {
+            'hostname': socket.gethostname(),
+            'architecture': platform.machine(),
+            'platform': platform.system().lower(),
+        }
 
 class DummyClient(Client):
     """Sends messages into an empty void"""
