@@ -14,22 +14,6 @@ except ImportError:
     from celery.decorators import task
 from celery import signals
 
-from opbeat.base import Client
-
-
-class CeleryMixin(object):
-    def send_encoded(self, *args, **kwargs):
-        "Errors through celery"
-        self.send_raw.delay(*args, **kwargs)
-
-    @task(routing_key='opbeat')
-    def send_raw(self, *args, **kwargs):
-        return super(CeleryMixin, self).send_encoded(*args, **kwargs)
-
-
-class CeleryClient(CeleryMixin, Client):
-    pass
-
 
 class CeleryFilter(object):
     def filter(self, record):

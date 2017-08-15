@@ -29,7 +29,6 @@ import pytest
 from opbeat import instrumentation
 from opbeat.base import Client
 from opbeat.contrib.django import DjangoClient
-from opbeat.contrib.django.celery import CeleryClient
 from opbeat.contrib.django.handlers import OpbeatHandler
 from opbeat.contrib.django.middleware.wsgi import Opbeat
 from opbeat.contrib.django.models import client, get_client, get_client_config
@@ -952,68 +951,6 @@ class DjangoLoggingTest(TestCase):
         self.assertTrue('http' in event)
         http = event['http']
         self.assertEquals(http['method'], 'POST')
-
-
-class CeleryIsolatedClientTest(TestCase):
-    def setUp(self):
-        self.client = CeleryClient(
-            servers=['http://example.com'],
-            organization_id='org',
-            app_id='app',
-            secret_token='secret',
-        )
-
-    @mock.patch('opbeat.contrib.django.celery.CeleryClient.send_raw')
-    def test_send_encoded(self, send_raw):
-        self.client.send_encoded('foo')
-
-        send_raw.delay.assert_called_once_with('foo')
-
-    @mock.patch('opbeat.contrib.django.celery.CeleryClient.send_raw')
-    def test_without_eager(self, send_raw):
-        """
-        Integration test to ensure it propagates all the way down
-        and calls delay on the task.
-        """
-        self.client.capture('Message', message='test')
-
-        self.assertEquals(send_raw.delay.call_count, 1)
-
-    @pytest.mark.skipif(not has_with_eager_tasks,
-                        reason='with_eager_tasks is not available')
-    @with_eager_tasks
-    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
-    def test_with_eager(self, send_encoded):
-        """
-        Integration test to ensure it propagates all the way down
-        and calls the parent client's send_encoded method.
-        """
-        self.client.capture('Message', message='test')
-
-        self.assertEquals(send_encoded.call_count, 1)
-
-
-class CeleryIntegratedClientTest(TestCase):
-    def setUp(self):
-        self.client = CeleryClient(
-            servers=['http://example.com'],
-            organization_id='org',
-            app_id='app',
-            secret_token='secret',
-        )
-
-    @pytest.mark.skipif(not has_with_eager_tasks,
-                        reason='with_eager_tasks is not available')
-    @with_eager_tasks
-    @mock.patch('opbeat.contrib.django.DjangoClient.send_encoded')
-    def test_with_eager(self, send_encoded):
-        """
-        Integration test to ensure it propagates all the way down
-        and calls the parent client's send_encoded method.
-        """
-        self.client.capture('Message', message='test')
-
-        self.assertEquals(send_encoded.call_count, 1)
 
 
 def client_get(client, url):
