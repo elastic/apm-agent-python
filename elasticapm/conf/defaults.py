@@ -24,10 +24,10 @@ DEBUG = False
 SERVERS = ['http://localhost:8080']
 
 # Error API path
-ERROR_API_PATH = '/v1/errors/'
+ERROR_API_PATH = '/v1/errors'
 
 # Transactions API path
-TRANSACTIONS_API_PATH = '/v1/transactions/'
+TRANSACTIONS_API_PATH = '/v1/transactions'
 
 TIMEOUT = 20
 
