@@ -14,7 +14,7 @@ from __future__ import absolute_import
 import logging
 
 import django
-from django.core.exceptions import SuspiciousOperation
+from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
 from django.template import TemplateSyntaxError
@@ -24,6 +24,7 @@ from opbeat.conf import defaults
 from opbeat.contrib.django.utils import (get_data_from_template_debug,
                                          get_data_from_template_source,
                                          iterate_with_template_sources)
+from opbeat.utils import get_url_dict
 from opbeat.utils.wsgi import get_environ, get_headers
 
 try:
@@ -65,27 +66,26 @@ class DjangoClient(Client):
         super(DjangoClient, self).__init__(**kwargs)
 
     def get_user_info(self, request):
-        try:
-            if request.user.is_authenticated():
-                user_info = {
-                    'is_authenticated': True,
-                    'id': request.user.pk,
-                }
-                if hasattr(request.user, 'get_username'):
-                    user_info['username'] = request.user.get_username()
-                elif hasattr(request.user, 'username'):
-                    user_info['username'] = request.user.username
-                else:
-                    # this only happens if the project uses custom user models, but
-                    # doesn't correctly inherit from AbstractBaseUser
-                    user_info['username'] = ''
+        user_info = {}
 
-                if hasattr(request.user, 'email'):
-                    user_info['email'] = request.user.email
-            else:
-                user_info = {
-                    'is_authenticated': False,
-                }
+        if not hasattr(request, 'user'):
+            return user_info
+        try:
+            user = request.user
+            if hasattr(user, 'is_authenticated'):
+                if callable(user.is_authenticated):
+                    user_info['is_authenticated'] = user.is_authenticated()
+                else:
+                    user_info['is_authenticated'] = bool(user.is_authenticated)
+            if hasattr(user, 'id'):
+                user_info['id'] = user.id
+            if hasattr(user, 'get_username'):
+                user_info['username'] = user.get_username()
+            elif hasattr(user, 'username'):
+                user_info['username'] = user.username
+
+            if hasattr(user, 'email'):
+                user_info['email'] = user.email
         except DatabaseError:
             # If the connection is closed or similar, we'll just skip this
             return {}
@@ -93,18 +93,6 @@ class DjangoClient(Client):
         return user_info
 
     def get_data_from_request(self, request):
-        django_auth_installed = is_app_installed('django.contrib.auth')
-
-        if django_auth_installed:
-            from django.contrib.auth.models import AnonymousUser
-            try:
-                # try to import User via get_user_model (Django 1.5+)
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-            except ImportError:
-                # import the User model from the standard location (Django <1.5)
-                from django.contrib.auth.models import User
-
         if request.method != 'GET':
             try:
                 if hasattr(request, 'body'):
@@ -121,6 +109,17 @@ class DjangoClient(Client):
 
         environ = request.META
 
+        result = {
+            'body': data,
+            'env': dict(get_environ(environ)),
+            'headers': dict(get_headers(environ)),
+            'method': request.method,
+            'socket': {
+                'remote_address': request.META.get('REMOTE_ADDR'),
+                'encrypted': request.is_secure()
+            },
+        }
+
         if hasattr(request, 'get_raw_uri'):
             # added in Django 1.9
             url = request.get_raw_uri()
@@ -129,30 +128,13 @@ class DjangoClient(Client):
                 # Requires host to be in ALLOWED_HOSTS, might throw a
                 # DisallowedHost exception
                 url = request.build_absolute_uri()
-            except SuspiciousOperation:
-                # catching SuspiciousOperation, as the more specific
-                # DisallowedHost has only been introduced in Django 1.6.
+            except DisallowedHost:
                 # We can't figure out the real URL, so we have to set it to
-                # None
+                # DisallowedHost
+                result['url'] = {'raw': 'DisallowedHost'}
                 url = None
-
-        result = {
-            'http': {
-                'method': request.method,
-                'url': url,
-                'query_string': request.META.get('QUERY_STRING'),
-                'data': data,
-                'cookies': dict(request.COOKIES),
-                'headers': dict(get_headers(environ)),
-                'env': dict(get_environ(environ)),
-            }
-        }
-
-        if django_auth_installed and \
-           hasattr(request, 'user') and \
-           isinstance(request.user, (User, AnonymousUser)):
-            result['user'] = self.get_user_info(request)
-
+        if url:
+            result['url'] = get_url_dict(url)
         return result
 
     def capture(self, event_type, request=None, **kwargs):
@@ -161,9 +143,15 @@ class DjangoClient(Client):
         else:
             data = kwargs['data']
 
+        if 'context' not in data:
+            data['context'] = context = {}
+        else:
+            context = data['context']
+
         is_http_request = isinstance(request, HttpRequest)
         if is_http_request:
-            data.update(self.get_data_from_request(request))
+            context['request'] = self.get_data_from_request(request)
+            context['user'] = self.get_user_info(request)
 
         if kwargs.get('exc_info'):
             exc_value = kwargs['exc_info'][1]
@@ -183,7 +171,7 @@ class DjangoClient(Client):
         if is_http_request:
             # attach the opbeat object to the request
             request.opbeat = {
-                'app_id': data.get('app_id', self.app_id),
+                'app_name': data.get('app_name', self.app_name),
                 'id': self.get_ident(result),
             }
 

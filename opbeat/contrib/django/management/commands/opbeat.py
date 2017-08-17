@@ -94,13 +94,8 @@ or with environment variables:
 
 class Command(BaseCommand):
     arguments = (
-        (('-o', '--organization-id'),
-         {'default': None, 'dest': 'organization_id',
-          'help': 'Specifies the organization ID.'}
-         ),
-
-        (('-a', '--app-id'),
-         {'default': None, 'dest': 'app_id', 'help': 'Specifies the app ID.'}
+        (('-a', '--app-name'),
+         {'default': None, 'dest': 'app_name', 'help': 'Specifies the app name.'}
         ),
 
         (('-t', '--token'),
@@ -144,7 +139,7 @@ class Command(BaseCommand):
         config = get_client_config()
         # can't be async for testing
         config['async_mode'] = False
-        for key in ('organization_id', 'app_id', 'secret_token'):
+        for key in ('app_name', 'secret_token'):
             if options.get(key):
                 config[key] = options[key]
         client_class = get_client_class()
@@ -155,12 +150,10 @@ class Command(BaseCommand):
         client.state.error_logger = client.error_logger
         self.write(
             "Trying to send a test error to Opbeat using these settings:\n\n"
-            "ORGANIZATION_ID:\t%s\n"
-            "APP_ID:\t\t\t%s\n"
+            "APP_NAME:\t\t\t%s\n"
             "SECRET_TOKEN:\t\t%s\n"
             "SERVERS:\t\t%s\n\n" % (
-                client.organization_id,
-                client.app_id,
+                client.app_name,
                 client.secret_token,
                 ', '.join(client.servers)
             )
@@ -185,10 +178,10 @@ class Command(BaseCommand):
         client = client_class(**config)
         # check if org/app and token are set:
         is_set = lambda x: x and x != 'None'
-        values = [client.organization_id, client.app_id, client.secret_token]
+        values = [client.app_name, client.secret_token]
         if all(map(is_set, values)):
             self.write(
-                'Organization, app and secret token are set, good job!',
+                'App name and secret token are set, good job!',
                 green
             )
         else:
@@ -196,12 +189,8 @@ class Command(BaseCommand):
             self.write(
                 'Configuration errors detected!', red, ending='\n\n'
             )
-            if not is_set(client.organization_id):
-                self.write(
-                    "  * ORGANIZATION_ID not set! ", red, ending='\n'
-                )
-            if not is_set(client.app_id):
-                self.write("  * APP_ID not set! ", red, ending='\n')
+            if not is_set(client.app_name):
+                self.write("  * APP_NAME not set! ", red, ending='\n')
             if not is_set(client.secret_token):
                 self.write("  * SECRET_TOKEN not set!", red, ending='\n')
             self.write(CONFIG_EXAMPLE)

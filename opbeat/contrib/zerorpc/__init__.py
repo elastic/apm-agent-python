@@ -14,7 +14,7 @@ from opbeat.base import Client
 class OpbeatMiddleware(object):
     """Opbeat/opbeat middleware for ZeroRPC.
 
-    >>> opbeat = OpbeatMiddleware(app_id='..', secret_token='...')
+    >>> opbeat = OpbeatMiddleware(app_name='..', secret_token='...')
     >>> zerorpc.Context.get_instance().register_middleware(opbeat)
 
     Exceptions detected server-side in ZeroRPC will be submitted to Opbeat (and

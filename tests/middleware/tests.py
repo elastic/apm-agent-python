@@ -27,24 +27,23 @@ class MiddlewareTest(TestCase):
             list(response)
 
         self.assertEquals(len(client.events), 1)
-        event = client.events.pop(0)
+        event = client.events.pop(0)['errors'][0]
 
         self.assertTrue('exception' in event)
         exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(exc['value'], 'hello world')
-        self.assertEquals(event['level'], "error")
-        self.assertEquals(event['message'], 'ValueError: hello world')
+        self.assertEquals(event['log']['level'], "error")
+        self.assertEquals(exc['message'], 'ValueError: hello world')
 
-        self.assertTrue('http' in event)
-        http = event['http']
-        self.assertEquals(http['url'], 'http://localhost/an-error')
-        self.assertEquals(http['query_string'], 'foo=bar')
-        self.assertEquals(http['method'], 'GET')
-        headers = http['headers']
-        self.assertTrue('Host' in headers, headers.keys())
-        self.assertEquals(headers['Host'], 'localhost:80')
-        env = http['env']
+        self.assertTrue('request' in event['context'])
+        request = event['context']['request']
+        self.assertEquals(request['url']['raw'], 'http://localhost/an-error?foo=bar')
+        self.assertEquals(request['url']['search'], 'foo=bar')
+        self.assertEquals(request['method'], 'GET')
+        headers = request['headers']
+        self.assertTrue('host' in headers, headers.keys())
+        self.assertEquals(headers['host'], 'localhost:80')
+        env = request['env']
         self.assertTrue('SERVER_NAME' in env, env.keys())
         self.assertEquals(env['SERVER_NAME'], 'localhost')
         self.assertTrue('SERVER_PORT' in env, env.keys())

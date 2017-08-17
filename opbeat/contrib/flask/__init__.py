@@ -30,58 +30,17 @@ from opbeat.utils.deprecation import deprecated
 logger = logging.getLogger('opbeat.errors.client')
 
 
-def make_client(client_cls, app, organization_id=None, app_id=None, secret_token=None):
+def make_client(client_cls, app, app_name=None, secret_token=None):
     opbeat_config = app.config.get('OPBEAT', {})
-    # raise a warning if OPBEAT_ORGANIZATION_ID is set in the config, but not
-    # ORGANIZATION_ID. Until 1.3.1, we erroneously checked only
-    # OPBEAT_ORGANIZATION_ID
-    if ('OPBEAT_ORGANIZATION_ID' in opbeat_config
-            and 'ORGANIZATION_ID' not in opbeat_config):
-        warnings.warn(
-            'Please use ORGANIZATION_ID to set the opbeat '
-            'organization id your configuration',
-            DeprecationWarning,
-        )
-    # raise a warning if APP_ID is set in the environment, but not OPBEAT_APP_ID
-    # Until 1.3.1, we erroneously checked only APP_ID
-    if 'APP_ID' in os.environ and 'OPBEAT_APP_ID' not in os.environ:
-        warnings.warn(
-            'Please use OPBEAT_APP_ID to set the opbeat '
-            'app id in the environment',
-            DeprecationWarning,
-        )
-    # raise a warning if SECRET_TOKEN is set in the environment, but not
-    # OPBEAT_SECRET_TOKEN. Until 1.3.1, we erroneously checked only SECRET_TOKEN
-    if 'SECRET_TOKEN' in os.environ and 'OPBEAT_SECRET_TOKEN' not in os.environ:
-        warnings.warn(
-            'Please use OPBEAT_SECRET_TOKEN to set the opbeat secret token '
-            'in the environment',
-            DeprecationWarning,
-        )
-    if 'ASYNC' in opbeat_config:
-        warnings.warn(
-            'Usage of "ASYNC" configuration is deprecated. Use "ASYNC_MODE"',
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        opbeat_config['ASYNC_MODE'] = opbeat_config['ASYNC']
-    organization_id = (
-        organization_id or
-        opbeat_config.get('ORGANIZATION_ID') or  # config
-        os.environ.get('OPBEAT_ORGANIZATION_ID') or  # environment
-        opbeat_config.get('OPBEAT_ORGANIZATION_ID')  # deprecated fallback
-    )
-    app_id = (
-        app_id or
-        opbeat_config.get('APP_ID') or  # config
-        os.environ.get('OPBEAT_APP_ID') or  # environment
-        os.environ.get('APP_ID')  # deprecated fallback
+    app_name = (
+        app_name or
+        opbeat_config.get('APP_NAME') or  # config
+        os.environ.get('OPBEAT_APP_NAME') # environment
     )
     secret_token = (
         secret_token or
         opbeat_config.get('SECRET_TOKEN') or  # config
-        os.environ.get('OPBEAT_SECRET_TOKEN') or  # environment
-        os.environ.get('SECRET_TOKEN')  # deprecated fallback
+        os.environ.get('OPBEAT_SECRET_TOKEN') # environment
     )
     if hasattr(flask, '__version__'):
         framework_version = 'flask/' + flask.__version__
@@ -89,8 +48,7 @@ def make_client(client_cls, app, organization_id=None, app_id=None, secret_token
         framework_version = 'flask/<0.7'
 
     client = client_cls(
-        organization_id=organization_id,
-        app_id=app_id,
+        app_name=app_name,
         secret_token=secret_token,
         include_paths=set(opbeat_config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
         exclude_paths=opbeat_config.get('EXCLUDE_PATHS'),
@@ -117,15 +75,14 @@ class Opbeat(object):
     """
     Flask application for Opbeat.
 
-    Look up configuration from ``os.environ['OPBEAT_ORGANIZATION_ID']``,
-    ``os.environ.get('OPBEAT_APP_ID')`` and
+    Look up configuration from ``os.environ.get('OPBEAT_APP_NAME')`` and
     ``os.environ.get('OPBEAT_SECRET_TOKEN')``::
 
     >>> opbeat = Opbeat(app)
 
-    Pass an arbitrary ORGANIZATION_ID, APP_ID and SECRET_TOKEN::
+    Pass an arbitrary APP_NAME and SECRET_TOKEN::
 
-    >>> opbeat = Opbeat(app, organization_id='1', app_id='1', secret_token='asdasdasd')
+    >>> opbeat = Opbeat(app, app_name='myapp', secret_token='asdasdasd')
 
     Pass an explicit client::
 
@@ -146,11 +103,10 @@ class Opbeat(object):
 
     >>> opbeat.captureMessage('hello, world!')
     """
-    def __init__(self, app=None, organization_id=None, app_id=None,
+    def __init__(self, app=None, app_name=None,
                  secret_token=None, client=None, client_cls=Client,
                  logging=False):
-        self.organization_id = organization_id
-        self.app_id = app_id
+        self.app_name = app_name
         self.secret_token = secret_token
         self.logging = logging
         self.client_cls = client_cls
@@ -171,7 +127,7 @@ class Opbeat(object):
 
         self.client.capture(
             'Exception', exc_info=kwargs.get('exc_info'),
-            data=get_data_from_request(request),
+            data={'context': {'request': get_data_from_request(request)}},
             extra={
                 'app': self.app,
             },
@@ -181,8 +137,10 @@ class Opbeat(object):
         self.app = app
         if not self.client:
             self.client = make_client(
-                self.client_cls, app, self.organization_id,
-                self.app_id, self.secret_token,
+                self.client_cls,
+                app,
+                self.app_name,
+                self.secret_token,
             )
 
         if self.logging:

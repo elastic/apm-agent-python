@@ -11,10 +11,6 @@ python:
 
 env:
   matrix:
-    - WEBFRAMEWORK=django-1.4
-    - WEBFRAMEWORK=django-1.5
-    - WEBFRAMEWORK=django-1.6
-    - WEBFRAMEWORK=django-1.7
     - WEBFRAMEWORK=django-1.8
     - WEBFRAMEWORK=django-1.9
     - WEBFRAMEWORK=django-1.10
@@ -31,8 +27,6 @@ matrix:
   - python: 2.7
     env: WEBFRAMEWORK=django-master
   - python: 3.3
-    env: WEBFRAMEWORK=django-1.4
-  - python: 3.3
     env: WEBFRAMEWORK=django-1.9
   - python: 3.3
     env: WEBFRAMEWORK=django-1.10
@@ -40,32 +34,6 @@ matrix:
     env: WEBFRAMEWORK=django-1.11
   - python: 3.3
     env: WEBFRAMEWORK=django-master
-  - python: 3.4
-    env: WEBFRAMEWORK=django-1.4
-  - python: 3.5
-    env: WEBFRAMEWORK=django-1.4
-  - python: 3.5
-    env: WEBFRAMEWORK=django-1.5
-  - python: 3.5
-    env: WEBFRAMEWORK=django-1.6
-  - python: 3.5
-    env: WEBFRAMEWORK=django-1.7
-  - python: 3.6
-    env: WEBFRAMEWORK=django-1.4
-  - python: 3.6
-    env: WEBFRAMEWORK=django-1.5
-  - python: 3.6
-    env: WEBFRAMEWORK=django-1.6
-  - python: 3.6
-    env: WEBFRAMEWORK=django-1.7
-  - python: nightly
-    env: WEBFRAMEWORK=django-1.4
-  - python: nightly
-    env: WEBFRAMEWORK=django-1.5
-  - python: nightly
-    env: WEBFRAMEWORK=django-1.6
-  - python: nightly
-    env: WEBFRAMEWORK=django-1.7
   include:
   - sudo: required
     python: 3.4

@@ -11,6 +11,7 @@ Large portions are
 
 import logging
 import sys
+import uuid
 
 from opbeat.utils import varmap
 from opbeat.utils.encoding import shorten, to_unicode
@@ -19,16 +20,16 @@ from opbeat.utils.stacks import (get_culprit, get_stack_info,
 
 __all__ = ('BaseEvent', 'Exception', 'Message', 'Query')
 
+logger = logging.getLogger(__name__)
+
 
 class BaseEvent(object):
-    def __init__(self, client):
-        self.client = client
-        self.logger = logging.getLogger(__name__)
-
-    def to_string(self, data):
+    @staticmethod
+    def to_string(client, data):
         raise NotImplementedError
 
-    def capture(self, **kwargs):
+    @staticmethod
+    def capture(client, **kwargs):
         return {}
 
 
@@ -42,13 +43,15 @@ class Exception(BaseEvent):
     - frames: a list of serialized frames (see _get_traceback_frames)
     """
 
-    def to_string(self, data):
+    @staticmethod
+    def to_string(client, data):
         exc = data['exception']
         if exc['value']:
             return '%s: %s' % (exc['type'], exc['value'])
         return exc['type']
 
-    def get_hash(self, data):
+    @staticmethod
+    def get_hash(data):
         exc = data['exception']
         output = [exc['type']]
         for frame in data['stacktrace']['frames']:
@@ -56,7 +59,9 @@ class Exception(BaseEvent):
             output.append(frame['function'])
         return output
 
-    def capture(self, exc_info=None, **kwargs):
+    @staticmethod
+    def capture(client, exc_info=None, **kwargs):
+        culprit = exc_value = exc_type = exc_module = frames = None
         new_exc_info = False
         if not exc_info or exc_info is True:
             new_exc_info = True
@@ -70,14 +75,14 @@ class Exception(BaseEvent):
 
             frames = varmap(
                 lambda k, v: shorten(v,
-                                     string_length=self.client.string_max_length,
-                                     list_length=self.client.list_max_length
+                                     string_length=client.string_max_length,
+                                     list_length=client.list_max_length
                                      ),
                 get_stack_info((iter_traceback_frames(exc_traceback)))
             )
 
-            culprit = get_culprit(frames, self.client.include_paths,
-                                  self.client.exclude_paths)
+            culprit = get_culprit(frames, client.include_paths,
+                                  client.exclude_paths)
 
             if hasattr(exc_type, '__module__'):
                 exc_module = exc_type.__module__
@@ -91,19 +96,17 @@ class Exception(BaseEvent):
                     del exc_info
                     del exc_traceback
                 except Exception as e:
-                    self.logger.exception(e)
+                    logger.exception(e)
 
         return {
-            'level': logging.ERROR,
+            'id': str(uuid.uuid4()),
             'culprit': culprit,
             'exception': {
-                'value': to_unicode(exc_value),
+                'message': '%s: %s' % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type),
                 'type': str(exc_type),
                 'module': str(exc_module),
-            },
-            'stacktrace': {
-                'frames': frames
-            },
+                'stacktrace':  frames,
+            }
         }
 
 
@@ -115,28 +118,34 @@ class Message(BaseEvent):
     - params: ('foo', 'bar')
     """
 
-    def to_string(self, data):
-        msg = data['param_message']
-        if msg.get('params'):
-            return msg['message'] % msg['params']
-        return msg['message']
+    @staticmethod
+    def to_string(client, data):
+        return data['log']['message']
 
-    def get_hash(self, data):
+    @staticmethod
+    def get_hash(data):
         msg = data['param_message']
         return [msg['message']]
 
-    def capture(self, param_message=None, message=None, **kwargs):
+    @staticmethod
+    def capture(client, param_message=None, message=None, **kwargs):
         if message:
             param_message = {'message': message}
-
         params = param_message.get('params', ())
-        data = {
-            'param_message': {
-                'message': param_message['message'],
-                'params': params,
+        message = param_message['message'] % params
+        data = kwargs.get('data', {})
+        message_data = {
+            'id': str(uuid.uuid4()),
+            'log': {
+                'level': data.get('level'),
+                'logger_name': data.get('logger'),
+                'message': message,
+                'param_message': param_message['message'],
             }
         }
-        return data
+        if isinstance(data.get('stacktrace'), dict):
+            message_data['log']['stacktrace'] = data['stacktrace']['frames']
+        return message_data
 
 
 class Query(BaseEvent):

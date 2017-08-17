@@ -90,7 +90,7 @@ class OpbeatHandler(logbook.Handler):
                     record.exc_info and all(record.exc_info)):
             handler = self.client.get_handler('opbeat.events.Exception')
 
-            data.update(handler.capture(exc_info=record.exc_info))
+            data.update(handler.capture(self.client, exc_info=record.exc_info))
 
         return self.client.capture('Message',
                                    param_message=

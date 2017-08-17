@@ -11,6 +11,7 @@ Large portions are
 
 import sys
 
+from opbeat.utils import get_url_dict
 from opbeat.utils.wsgi import get_current_url, get_environ, get_headers
 
 
@@ -41,14 +42,13 @@ class Opbeat(object):
             'Exception',
             exc_info=exc_info,
             data={
-                'http': {
-                    'method': environ.get('REQUEST_METHOD'),
-                    'url': get_current_url(environ, strip_querystring=True),
-                    'query_string': environ.get('QUERY_STRING'),
-                    # TODO
-                    # 'data': environ.get('wsgi.input'),
-                    'headers': dict(get_headers(environ)),
-                    'env': dict(get_environ(environ)),
+                'context': {
+                    'request': {
+                        'method': environ.get('REQUEST_METHOD'),
+                        'url': get_url_dict(get_current_url(environ)),
+                        'headers': dict(get_headers(environ)),
+                        'env': dict(get_environ(environ)),
+                    }
                 }
             }
         )

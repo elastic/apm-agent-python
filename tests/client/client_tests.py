@@ -64,7 +64,7 @@ class ClientTest(TestCase):
 
     def test_app_info(self):
         app_info = self.client.get_app_info()
-        assert app_info['name'] == self.client.app_id
+        assert app_info['name'] == self.client.app_name
         assert app_info['language'] == {
             'name': 'python',
             'version': platform.python_version()
@@ -76,12 +76,12 @@ class ClientTest(TestCase):
 
     def test_config_by_environment(self):
         with mock.patch.dict('os.environ', {
-            'OPBEAT_APP_ID': 'app',
+            'OPBEAT_APP_NAME': 'app',
             'OPBEAT_SECRET_TOKEN': 'token',
             'OPBEAT_GIT_REF': 'aabbccdd'
         }):
             client = Client()
-            self.assertEqual(client.app_id, 'app')
+            self.assertEqual(client.app_name, 'app')
             self.assertEqual(client.secret_token, 'token')
             self.assertEqual(client.git_ref, 'aabbccdd')
             self.assertEqual(client.is_send_disabled, False)
@@ -91,8 +91,7 @@ class ClientTest(TestCase):
             client = Client()
             self.assertEqual(client.is_send_disabled, True)
 
-    @mock.patch('opbeat.base.Client.send')
-    def test_config_non_string_types(self, mock_send):
+    def test_config_non_string_types(self):
         """
         tests if we can handle non string types as configuration, e.g.
         Value types from django-configuration
@@ -109,22 +108,16 @@ class ClientTest(TestCase):
 
         client = Client(
             servers=['localhost'],
-            organization_id=MyValue('foo'),
-            app_id=MyValue('bar'),
+            app_name=MyValue('bar'),
             secret_token=MyValue('bay')
         )
-        client.capture('Message', message='foo')
-        args, kwargs = mock_send.call_args
-        self.assertEqual(
-            'localhost' + defaults.ERROR_API_PATH.format('foo', 'bar'),
-            kwargs['servers'][0]
-        )
+        assert isinstance(client.secret_token, six.string_types)
+        assert isinstance(client.app_name, six.string_types)
 
     def test_custom_transport(self):
         client = Client(
             servers=['localhost'],
-            organization_id='foo',
-            app_id='bar',
+            app_name='bar',
             secret_token='baz',
             transport_class='tests.client.client_tests.DummyTransport',
         )
@@ -133,8 +126,7 @@ class ClientTest(TestCase):
     def test_empty_processor_list(self):
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             processors=[],
         )
@@ -148,8 +140,7 @@ class ClientTest(TestCase):
 
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=False,
         )
@@ -177,8 +168,7 @@ class ClientTest(TestCase):
 
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=False,
         )
@@ -205,8 +195,7 @@ class ClientTest(TestCase):
 
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=True,
         )
@@ -237,8 +226,7 @@ class ClientTest(TestCase):
         access_token = "secret"
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
         )
         client.send(**{
@@ -262,8 +250,7 @@ class ClientTest(TestCase):
         with mock.patch.dict('os.environ', {'OPBEAT_DISABLE_SEND': 'true'}):
             client = Client(
                 servers=['http://example.com'],
-                organization_id='organization_id',
-                app_id='app_id',
+                app_name='app_name',
                 secret_token='secret',
             )
         client.send(**{
@@ -278,8 +265,7 @@ class ClientTest(TestCase):
         time.return_value = 1328055286.51
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
         )
         client.send(auth_header='foo', **{
@@ -303,8 +289,7 @@ class ClientTest(TestCase):
                                   mock_send):
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=False,
         )
@@ -320,8 +305,7 @@ class ClientTest(TestCase):
     def test_client_shutdown_async(self, mock_traces_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=True,
         )
@@ -344,7 +328,7 @@ class ClientTest(TestCase):
         })
 
         self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
+        event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event['message'], 'foo')
 
     def test_explicit_message_on_exception_event(self):
@@ -354,7 +338,7 @@ class ClientTest(TestCase):
             self.client.capture('Exception', data={'message': 'foobar'})
 
         self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
+        event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event['message'], 'foobar')
 
     def test_exception_event(self):
@@ -364,17 +348,16 @@ class ClientTest(TestCase):
             self.client.capture('Exception')
 
         self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertEquals(event['message'], 'ValueError: foo')
+        event = self.client.events.pop(0)['errors'][0]
         self.assertTrue('exception' in event)
         exc = event['exception']
+        self.assertEquals(exc['message'], 'ValueError: foo')
         self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(exc['value'], 'foo')
         self.assertEquals(exc['module'], ValueError.__module__)  # this differs in some Python versions
-        self.assertTrue('stacktrace' in event)
-        frames = event['stacktrace']
-        self.assertEquals(len(frames['frames']), 1)
-        frame = frames['frames'][0]
+        self.assertTrue('stacktrace' in exc)
+        frames = exc['stacktrace']
+        self.assertEquals(len(frames), 1)
+        frame = frames[0]
         self.assertEquals(frame['abs_path'], __file__.replace('.pyc', '.py'))
         self.assertEquals(frame['filename'], 'tests/client/client_tests.py')
         self.assertEquals(frame['module'], __name__)
@@ -385,8 +368,8 @@ class ClientTest(TestCase):
         self.client.capture('Message', message='test')
 
         self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertEquals(event['message'], 'test')
+        event = self.client.events.pop(0)['errors'][0]
+        self.assertEquals(event['log']['message'], 'test')
         self.assertFalse('stacktrace' in event)
         self.assertTrue('timestamp' in event)
 
@@ -436,44 +419,16 @@ class ClientTest(TestCase):
         self.client.capture('Message', message='test', data={'logger': 'test'})
 
         self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
+        event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event['logger'], 'test')
         self.assertTrue('timestamp' in event)
-
-    def test_long_message(self):
-        message = 'm' * 201
-
-        self.client.capture('Message', message=message)
-
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertTrue(len(event['message']) < 201, len(event['message']))
-
-    def test_long_culprit(self):
-        culprit = 'c' * 101
-
-        self.client.capture('Message', message='test', data={'culprit':culprit})
-
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertTrue(len(event['culprit']) < 101, len(event['culprit']))
-
-    def test_long_logger(self):
-        logger = 'c' * 61
-
-        self.client.capture('Message', message='test', data={'logger':logger})
-
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)
-        self.assertTrue(len(event['logger']) < 61, len(event['logger']))
 
     @mock.patch('opbeat.base.Client.send')
     @mock.patch('opbeat.base.TransactionsStore.should_collect')
     def test_metrics_collection(self, should_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
         )
         should_collect.return_value = False
@@ -508,8 +463,7 @@ class ClientTest(TestCase):
         is_master_process.return_value = True
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=True,
         )
@@ -523,8 +477,7 @@ class ClientTest(TestCase):
     def test_ignore_patterns(self, should_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
-            organization_id='organization_id',
-            app_id='app_id',
+            app_name='app_name',
             secret_token='secret',
             async_mode=True,
             transactions_ignore_patterns=[

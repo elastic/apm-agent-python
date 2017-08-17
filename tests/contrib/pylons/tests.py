@@ -15,8 +15,7 @@ class MiddlewareTest(TestCase):
     def test_init(self):
         config = {
             'opbeat.servers': 'http://localhost/api/store',
-            'opbeat.organization_id': 'p' * 32,
-            'opbeat.app_id': 'p' * 32,
+            'opbeat.app_name': 'p' * 32,
             'opbeat.secret_token': 'a' * 32,
         }
         middleware = Opbeat(self.app, config)

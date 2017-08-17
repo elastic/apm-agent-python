@@ -29,8 +29,7 @@ async def test_client_success():
 
     client = Client(
         servers=['http://localhost'],
-        organization_id='organization_id',
-        app_id='app_id',
+        app_name='app_name',
         secret_token='secret',
         async_mode=False,
         transport_class='.'.join(
@@ -52,8 +51,7 @@ async def test_client_failure():
 
     client = Client(
         servers=['http://error'],
-        organization_id='organization_id',
-        app_id='app_id',
+        app_name='app_name',
         secret_token='secret',
         async_mode=False,
         transport_class='.'.join(
@@ -74,8 +72,7 @@ async def test_client_failure_stdlib_exception(mocker):
 
     client = Client(
         servers=['http://opbeat'],
-        organization_id='organization_id',
-        app_id='app_id',
+        app_name='app_name',
         secret_token='secret',
         async_mode=False,
         transport_class='opbeat.transport.asyncio.AsyncioHTTPTransport',

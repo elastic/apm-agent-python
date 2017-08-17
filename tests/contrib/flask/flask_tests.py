@@ -41,14 +41,12 @@ class FlaskTest(TestCase):
         self.assertEquals(response.status_code, 500)
         self.assertEquals(len(self.opbeat_client.events), 1)
 
-        event = self.opbeat_client.events.pop(0)
+        event = self.opbeat_client.events.pop(0)['errors'][0]
 
         self.assertTrue('exception' in event)
         exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(exc['value'], 'hello world')
-        self.assertEquals(event['level'], "error")
-        self.assertEquals(event['message'], 'ValueError: hello world')
+        self.assertEquals(exc['message'], 'ValueError: hello world')
         self.assertEquals(event['culprit'], 'tests.contrib.flask.flask_tests.an_error')
 
     def test_get(self):
@@ -56,23 +54,23 @@ class FlaskTest(TestCase):
         self.assertEquals(response.status_code, 500)
         self.assertEquals(len(self.opbeat_client.events), 1)
 
-        event = self.opbeat_client.events.pop(0)
+        event = self.opbeat_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('http' in event)
-        http = event['http']
-        self.assertEquals(http['url'], 'http://localhost/an-error/')
-        self.assertEquals(http['query_string'], 'foo=bar')
-        self.assertEquals(http['method'], 'GET')
-        self.assertEquals(http['data'], {})
-        self.assertTrue('headers' in http)
-        headers = http['headers']
-        self.assertTrue('Content-Length' in headers, headers.keys())
-        self.assertEquals(headers['Content-Length'], '0')
-        self.assertTrue('Content-Type' in headers, headers.keys())
-        self.assertEquals(headers['Content-Type'], '')
-        self.assertTrue('Host' in headers, headers.keys())
-        self.assertEquals(headers['Host'], 'localhost')
-        env = http['env']
+        self.assertTrue('request' in event['context'])
+        request = event['context']['request']
+        self.assertEquals(request['url']['raw'], 'http://localhost/an-error/?foo=bar')
+        self.assertEquals(request['url']['search'], 'foo=bar')
+        self.assertEquals(request['method'], 'GET')
+        self.assertEquals(request['body'], None)
+        self.assertTrue('headers' in request)
+        headers = request['headers']
+        self.assertTrue('content-length' in headers, headers.keys())
+        self.assertEquals(headers['content-length'], '0')
+        self.assertTrue('content-type' in headers, headers.keys())
+        self.assertEquals(headers['content-type'], '')
+        self.assertTrue('host' in headers, headers.keys())
+        self.assertEquals(headers['host'], 'localhost')
+        env = request['env']
         self.assertTrue('SERVER_NAME' in env, env.keys())
         self.assertEquals(env['SERVER_NAME'], 'localhost')
         self.assertTrue('SERVER_PORT' in env, env.keys())
@@ -96,23 +94,23 @@ class FlaskTest(TestCase):
         self.assertEquals(response.status_code, 500)
         self.assertEquals(len(self.opbeat_client.events), 1)
 
-        event = self.opbeat_client.events.pop(0)
+        event = self.opbeat_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('http' in event)
-        http = event['http']
-        self.assertEquals(http['url'], 'http://localhost/an-error/')
-        self.assertEquals(http['query_string'], 'biz=baz')
-        self.assertEquals(http['method'], 'POST')
-        self.assertEquals(http['data'], {'foo': 'bar'})
-        self.assertTrue('headers' in http)
-        headers = http['headers']
-        self.assertTrue('Content-Length' in headers, headers.keys())
-        self.assertEquals(headers['Content-Length'], '7')
-        self.assertTrue('Content-Type' in headers, headers.keys())
-        self.assertEquals(headers['Content-Type'], 'application/x-www-form-urlencoded')
-        self.assertTrue('Host' in headers, headers.keys())
-        self.assertEquals(headers['Host'], 'localhost')
-        env = http['env']
+        self.assertTrue('request' in event['context'])
+        request = event['context']['request']
+        self.assertEquals(request['url']['raw'], 'http://localhost/an-error/?biz=baz')
+        self.assertEquals(request['url']['search'], 'biz=baz')
+        self.assertEquals(request['method'], 'POST')
+        self.assertEquals(request['body'], 'foo=bar')
+        self.assertTrue('headers' in request)
+        headers = request['headers']
+        self.assertTrue('content-length' in headers, headers.keys())
+        self.assertEquals(headers['content-length'], '7')
+        self.assertTrue('content-type' in headers, headers.keys())
+        self.assertEquals(headers['content-type'], 'application/x-www-form-urlencoded')
+        self.assertTrue('host' in headers, headers.keys())
+        self.assertEquals(headers['host'], 'localhost')
+        env = request['env']
         self.assertTrue('SERVER_NAME' in env, env.keys())
         self.assertEquals(env['SERVER_NAME'], 'localhost')
         self.assertTrue('SERVER_PORT' in env, env.keys())

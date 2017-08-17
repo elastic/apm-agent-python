@@ -8,83 +8,78 @@ from tests.utils.compat import TestCase
 class LogbookHandlerTest(TestCase):
     def setUp(self):
         self.logger = logbook.Logger(__name__)
+        self.client = get_tempstoreclient(include_paths=['tests', 'opbeat'])
+        self.handler = OpbeatHandler(self.client)
 
-    def test_logger(self):
-        client = get_tempstoreclient(include_paths=['tests', 'opbeat'])
-        handler = OpbeatHandler(client)
-        logger = self.logger
+    def test_logger_error_level(self):
+        with self.handler.applicationbound():
+            self.logger.error('This is a test error')
 
-        with handler.applicationbound():
-            logger.error('This is a test error')
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)['errors'][0]
+        assert event['log']['logger_name'] == __name__
+        assert event['log']['level'] == "error"
+        assert event['log']['message'] == 'This is a test error'
+        self.assertFalse('stacktrace' in event['log'])
+        self.assertFalse('exception' in event)
+        self.assertTrue('param_message' in event['log'])
+        assert event['log']['param_message'] == 'This is a test error'
 
-            self.assertEquals(len(client.events), 1)
-            event = client.events.pop(0)
-            self.assertEquals(event['logger'], __name__)
-            self.assertEquals(event['level'], "error")
-            self.assertEquals(event['message'], 'This is a test error')
-            self.assertFalse('stacktrace' in event)
-            self.assertFalse('exception' in event)
-            self.assertTrue('param_message' in event)
-            msg = event['param_message']
-            self.assertEquals(msg['message'], 'This is a test error')
-            self.assertEquals(msg['params'], ())
+    def test_logger_warning_level(self):
+        with self.handler.applicationbound():
+            self.logger.warning('This is a test warning')
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)['errors'][0]
+        assert event['log']['logger_name'] == __name__
+        assert event['log']['level'] == "warning"
+        assert event['log']['message'] == 'This is a test warning'
+        self.assertFalse('stacktrace' in event['log'])
+        self.assertFalse('exception' in event)
+        self.assertTrue('param_message' in event['log'])
+        assert event['log']['param_message'] == 'This is a test warning'
 
-            logger.warning('This is a test warning')
-            self.assertEquals(len(client.events), 1)
-            event = client.events.pop(0)
-            self.assertEquals(event['logger'], __name__)
-            self.assertEquals(event['level'], 'warning')
-            self.assertEquals(event['message'], 'This is a test warning')
-            self.assertFalse('stacktrace' in event)
-            self.assertFalse('exception' in event)
-            self.assertTrue('param_message' in event)
-            msg = event['param_message']
-            self.assertEquals(msg['message'], 'This is a test warning')
-            self.assertEquals(msg['params'], ())
-
-            logger.info('This is a test info with a url', extra=dict(
+    def test_logger_with_extra(self):
+        with self.handler.applicationbound():
+            self.logger.info('This is a test info with a url', extra=dict(
                 url='http://example.com',
             ))
-            self.assertEquals(len(client.events), 1)
-            event = client.events.pop(0)
-            self.assertEquals(event['extra']['url'], 'http://example.com')
-            self.assertFalse('stacktrace' in event)
-            self.assertFalse('exception' in event)
-            self.assertTrue('param_message' in event)
-            msg = event['param_message']
-            self.assertEquals(msg['message'], 'This is a test info with a url')
-            self.assertEquals(msg['params'], ())
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)['errors'][0]
+        self.assertEquals(event['context']['custom']['url'], 'http://example.com')
+        self.assertFalse('stacktrace' in event['log'])
+        self.assertFalse('exception' in event)
+        self.assertTrue('param_message' in event['log'])
+        self.assertEquals(event['log']['param_message'], 'This is a test info with a url')
 
+    def test_logger_with_exc_info(self):
+        with self.handler.applicationbound():
             try:
                 raise ValueError('This is a test ValueError')
             except ValueError:
-                logger.info('This is a test info with an exception', exc_info=True)
+                self.logger.info('This is a test info with an exception', exc_info=True)
 
-            self.assertEquals(len(client.events), 1)
-            event = client.events.pop(0)
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)['errors'][0]
 
-            self.assertEquals(event['message'], 'This is a test info with an exception')
-            self.assertTrue('stacktrace' in event)
-            self.assertTrue('exception' in event)
-            exc = event['exception']
-            self.assertEquals(exc['type'], 'ValueError')
-            self.assertEquals(exc['value'], 'This is a test ValueError')
-            self.assertTrue('param_message' in event)
-            msg = event['param_message']
-            self.assertEquals(msg['message'], 'This is a test info with an exception')
-            self.assertEquals(msg['params'], ())
+        self.assertEquals(event['log']['message'], 'This is a test info with an exception')
+        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('exception' in event)
+        exc = event['exception']
+        self.assertEquals(exc['type'], 'ValueError')
+        self.assertEquals(exc['message'], 'ValueError: This is a test ValueError')
+        self.assertTrue('param_message' in event['log'])
+        self.assertEquals(event['log']['param_message'], 'This is a test info with an exception')
 
-            # test args
-            logger.info('This is a test of %s', 'args')
-            self.assertEquals(len(client.events), 1)
-            event = client.events.pop(0)
-            self.assertEquals(event['message'], 'This is a test of args')
-            self.assertFalse('stacktrace' in event)
-            self.assertFalse('exception' in event)
-            self.assertTrue('param_message' in event)
-            msg = event['param_message']
-            self.assertEquals(msg['message'], 'This is a test of %s')
-            self.assertEquals(msg['params'], ('args',))
+    def test_logger_param_message(self):
+        with self.handler.applicationbound():
+            self.logger.info('This is a test of %s', 'args')
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)['errors'][0]
+        self.assertEquals(event['log']['message'], 'This is a test of args')
+        self.assertFalse('stacktrace' in event['log'])
+        self.assertFalse('exception' in event)
+        self.assertTrue('param_message' in event['log'])
+        self.assertEquals(event['log']['param_message'], 'This is a test of %s')
 
     def test_client_arg(self):
         client = get_tempstoreclient(include_paths=['tests'])
@@ -95,14 +90,6 @@ class LogbookHandlerTest(TestCase):
         client = get_tempstoreclient(include_paths=['tests'])
         handler = OpbeatHandler(client=client)
         self.assertEquals(handler.client, client)
-
-    # def test_first_arg_as_dsn(self):
-    #     handler = OpbeatHandler('http://public:secret@example.com/1')
-    #     self.assertTrue(isinstance(handler.client, Client))
-
-    # def test_custom_client_class(self):
-    #     handler = OpbeatHandler('http://public:secret@example.com/1', client_cls=TempStoreClient)
-    #     self.assertTrue(type(handler.client), TempStoreClient)
 
     def test_invalid_first_arg_type(self):
         self.assertRaises(ValueError, OpbeatHandler, object)

@@ -51,20 +51,20 @@ class Opbeat404CatchMiddleware(MiddlewareMixin):
                     django_settings.DEBUG
                 ):
             return response
-        data = client.get_data_from_request(request)
-        data.update({
+        data = {
             'level': logging.INFO,
             'logger': 'http404',
-        })
+        }
         result = client.capture(
             'Message',
+            request=request,
             param_message={
                 'message': 'Page Not Found: %s',
                 'params': [request.build_absolute_uri()]
             }, data=data
         )
         request.opbeat = {
-            'app_id': data.get('app_id', client.app_id),
+            'app_name': data.get('app_name', client.app_name),
             'id': client.get_ident(result),
         }
         return response
@@ -177,11 +177,12 @@ class OpbeatAPMMiddleware(MiddlewareMixin):
                     request
                 )
                 transaction_data = self.client.get_data_from_request(request)
-                self.client.set_transaction_extra_data(transaction_data['http'],
-                                                       'http')
-                if 'user' in transaction_data:
+                self.client.set_transaction_extra_data(transaction_data,
+                                                       'request')
+                user_data = self.client.get_user_info(request)
+                if user_data:
                     self.client.set_transaction_extra_data(
-                        transaction_data['user'], 'user')
+                        user_data, 'user')
 
                 self.client.end_transaction(transaction_name, status_code)
         except Exception:

@@ -15,22 +15,22 @@ class GetHeadersTest(TestCase):
         result = dict(get_headers({
             'HTTP_ACCEPT': 'text/plain',
         }))
-        self.assertIn('Accept', result)
-        self.assertEquals(result['Accept'], 'text/plain')
+        self.assertIn('accept', result)
+        self.assertEquals(result['accept'], 'text/plain')
 
     def test_coerces_content_type(self):
         result = dict(get_headers({
             'CONTENT_TYPE': 'text/plain',
         }))
-        self.assertIn('Content-Type', result)
-        self.assertEquals(result['Content-Type'], 'text/plain')
+        self.assertIn('content-type', result)
+        self.assertEquals(result['content-type'], 'text/plain')
 
     def test_coerces_content_length(self):
         result = dict(get_headers({
             'CONTENT_LENGTH': '134',
         }))
-        self.assertIn('Content-Length', result)
-        self.assertEquals(result['Content-Length'], '134')
+        self.assertIn('content-length', result)
+        self.assertEquals(result['content-length'], '134')
 
 
 class GetEnvironTest(TestCase):

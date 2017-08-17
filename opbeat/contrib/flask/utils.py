@@ -1,21 +1,34 @@
 try:
-    import urlparse
+    from urllib.parse import urlencode
 except ImportError:
-    import urllib.parse as urlparse
+    # Python 2
+    from urllib import urlencode
 
+from opbeat.utils import get_url_dict
 from opbeat.utils.wsgi import get_environ, get_headers
 
 
 def get_data_from_request(request):
-    urlparts = urlparse.urlsplit(request.url)
+    body = None
+    if request.data:
+        body = request.data
+    elif request.form:
+        body = urlencode(request.form)
 
-    return {
-        'http': {
-            'url': '%s://%s%s' % (urlparts.scheme, urlparts.netloc, urlparts.path),
-            'query_string': urlparts.query,
-            'method': request.method,
-            'data': request.form,
-            'headers': dict(get_headers(request.environ)),
-            'env': dict(get_environ(request.environ)),
-        }
+    result = {
+        'body': body,
+        'env': dict(get_environ(request.environ)),
+        'headers': dict(
+            get_headers(request.environ),
+        ),
+        'method': request.method,
+        'socket': {
+            'remote_address': request.environ.get('REMOTE_ADDR'),
+            'encrypted': request.is_secure
+        },
+        'cookies': request.cookies,
     }
+
+    result['url'] = get_url_dict(request.url)
+
+    return result

@@ -1,3 +1,0 @@
-Django>=1.5.12,<1.6
-django-celery
--r requirements-base.txt

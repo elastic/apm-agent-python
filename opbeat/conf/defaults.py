@@ -65,7 +65,12 @@ AUTO_LOG_STACKS = False
 
 # Client-side data processors to apply
 PROCESSORS = (
-    'opbeat.processors.SanitizePasswordsProcessor',
+    'opbeat.processors.sanitize_stacktrace_locals',
+    'opbeat.processors.sanitize_http_request_cookies',
+    'opbeat.processors.sanitize_http_request_headers',
+    'opbeat.processors.sanitize_http_wsgi_env',
+    'opbeat.processors.sanitize_http_request_querystring',
+    'opbeat.processors.sanitize_http_request_body',
 )
 
 # How often we send data to the metrics backend

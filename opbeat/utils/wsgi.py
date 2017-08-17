@@ -21,9 +21,9 @@ def get_headers(environ):
         key = str(key)
         if key.startswith('HTTP_') and key not in \
            ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
-            yield key[5:].replace('_', '-').title(), value
+            yield key[5:].replace('_', '-').lower(), value
         elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-            yield key.replace('_', '-').title(), value
+            yield key.replace('_', '-').lower(), value
 
 
 def get_environ(environ):

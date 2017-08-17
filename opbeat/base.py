@@ -37,18 +37,6 @@ from opbeat.utils.stacks import get_culprit, iter_stack_frames
 __all__ = ('Client',)
 
 
-class ModuleProxyCache(dict):
-    def __missing__(self, key):
-        module, class_name = key.rsplit('.', 1)
-
-        handler = getattr(__import__(module, {},
-                {}, [class_name]), class_name)
-
-        self[key] = handler
-
-        return handler
-
-
 class ClientState(object):
     ONLINE = 1
     ERROR = 0
@@ -89,7 +77,7 @@ class Client(object):
     HTTP API to Opbeat servers.
 
     Will read default configuration from the environment variable
-    ``OPBEAT_ORGANIZATION_ID``, ``OPBEAT_APP_ID`` and ``OPBEAT_SECRET_TOKEN``
+    ``OPBEAT_APP_NAME`` and ``OPBEAT_SECRET_TOKEN``
     if available. ::
 
     >>> from opbeat import Client
@@ -100,8 +88,7 @@ class Client(object):
     >>> # Configure the client manually
     >>> client = Client(
     >>>     include_paths=['my.package'],
-    >>>     organization_id='org_id',
-    >>>     app_id='app_id',
+    >>>     app_name='app_name',
     >>>     secret_token='secret_token',
     >>> )
 
@@ -116,28 +103,28 @@ class Client(object):
     protocol_version = '1.0'
 
     environment_config_map = {
-        'organization_id': 'OPBEAT_ORGANIZATION_ID',
-        'app_id': 'OPBEAT_APP_ID',
+        'app_name': 'OPBEAT_APP_NAME',
         'secret_token': 'OPBEAT_SECRET_TOKEN',
         'git_ref': 'OPBEAT_GIT_REF',
         'app_version': 'OPBEAT_APP_VERSION',
     }
 
-    def __init__(self, organization_id=None, app_id=None, secret_token=None,
+    def __init__(self, app_name=None, secret_token=None,
                  transport_class=None, include_paths=None, exclude_paths=None,
-                 timeout=None, hostname=None, auto_log_stacks=None, key=None,
+                 timeout=None, hostname=None, auto_log_stacks=None,
                  string_max_length=None, list_max_length=None, processors=None,
-                 filter_exception_types=None, servers=None, api_path=None,
+                 filter_exception_types=None, servers=None,
                  async_mode=None, traces_send_freq_secs=None,
-                 transactions_ignore_patterns=None, git_ref=None, app_version=None,
+                 transactions_ignore_patterns=None, git_ref=None,
+                 app_version=None,
                  **kwargs):
+        self.app_name = self.secret_token = self.git_ref = self.app_version = None
         # configure loggers first
         cls = self.__class__
-        self.logger = logging.getLogger('%s.%s' % (cls.__module__,
-            cls.__name__))
+        self.logger = logging.getLogger('%s.%s' % (cls.__module__, cls.__name__))
         self.error_logger = logging.getLogger('opbeat.errors')
         self.state = ClientState()
-        self._configure(organization_id=organization_id, app_id=app_id,
+        self._configure(app_name=app_name,
                         secret_token=secret_token, git_ref=git_ref,
                         app_version=app_version)
         self.servers = servers or defaults.SERVERS
@@ -151,8 +138,7 @@ class Client(object):
         self._transports = {}
 
         # servers may be set to a NoneType (for Django)
-        if self.servers and not (
-                        self.organization_id and self.app_id and self.secret_token):
+        if self.servers and not (self.app_name and self.secret_token):
             msg = 'Missing configuration for Opbeat client. Please see documentation.'
             self.logger.info(msg)
 
@@ -188,8 +174,7 @@ class Client(object):
             self.processors = defaults.PROCESSORS
         else:
             self.processors = processors
-
-        self.module_cache = ModuleProxyCache()
+        self.processors = [import_string(p) for p in self.processors]
 
         self.instrumentation_store = TransactionsStore(
             lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
@@ -211,10 +196,6 @@ class Client(object):
                 value = os.environ[self.environment_config_map[attr_name]]
             setattr(self, attr_name, six.text_type(value))
 
-    def get_processors(self):
-        for processor in self.processors:
-            yield self.module_cache[processor](self)
-
     def get_ident(self, result):
         """
         Returns a searchable string representing a message.
@@ -225,7 +206,7 @@ class Client(object):
         return result
 
     def get_handler(self, name):
-        return self.module_cache[name](self)
+        return import_string(name)
 
     def get_stack_info_for_trace(self, frames, extended=True):
         """Overrideable in derived clients to add frames/info, e.g. templates
@@ -251,17 +232,19 @@ class Client(object):
             date = datetime.datetime.utcnow()
         if stack is None:
             stack = self.auto_log_stacks
-
-        self.build_msg(data=data)
+        if 'context' not in data:
+            data['context'] = context = {}
+        else:
+            context = data['context']
 
         # if '.' not in event_type:
         # Assume it's a builtin
         event_type = 'opbeat.events.%s' % event_type
 
         handler = self.get_handler(event_type)
-
-        result = handler.capture(**kwargs)
-
+        result = handler.capture(self, data=data, **kwargs)
+        if self._filter_exception_type(result):
+            return
         # data (explicit) culprit takes over auto event detection
         culprit = result.pop('culprit', None)
         if data.get('culprit'):
@@ -271,67 +254,49 @@ class Client(object):
             if k not in data:
                 data[k] = v
 
-        if stack and 'stacktrace' not in data:
+        log = data.get('log', {})
+        if stack and 'stacktrace' not in log:
             if stack is True:
                 frames = iter_stack_frames()
             else:
                 frames = stack
+            frames = varmap(lambda k, v: shorten(
+                v,
+                string_length=self.string_max_length,
+                list_length=self.list_max_length
+            ), stacks.get_stack_info(frames))
+            log['stacktrace'] = frames
 
-            data.update({
-                'stacktrace': {
-                    'frames': varmap(lambda k, v: shorten(v,
-                        string_length=self.string_max_length,
-                        list_length=self.list_max_length),
-                                     stacks.get_stack_info(frames))
-                },
-            })
-
-        if 'stacktrace' in data and not culprit:
+        if 'stacktrace' in log and not culprit:
             culprit = get_culprit(
-                data['stacktrace']['frames'],
+                log['stacktrace'],
                 self.include_paths, self.exclude_paths
             )
 
-        if not data.get('level'):
-            data['level'] = 'error'
+        if not log.get('level'):
+            log['level'] = 'error'
 
-        if isinstance( data['level'], six.integer_types):
-            data['level'] = logging.getLevelName(data['level']).lower()
-
-        data.setdefault('extra', {})
-
-        # Shorten lists/strings
-        for k, v in six.iteritems(extra):
-            data['extra'][k] = shorten(v, string_length=self.string_max_length,
-                    list_length=self.list_max_length)
+        if isinstance(log['level'], six.integer_types):
+            log['level'] = logging.getLevelName(log['level']).lower()
+        data['log'] = log
 
         if culprit:
             data['culprit'] = culprit
 
+        context['custom'] = extra
+
         # Run the data through processors
-        for processor in self.get_processors():
-            data.update(processor.process(data))
+        for processor in self.processors:
+            data = processor(self, data)
 
         # Make sure all data is coerced
         data = transform(data)
 
-        if 'message' not in data:
-            data['message'] = handler.to_string(data)
-
-        # Make sure certain values are not too long
-        for v in defaults.MAX_LENGTH_VALUES:
-            if v in data:
-                data[v] = shorten(data[v],
-                            string_length=defaults.MAX_LENGTH_VALUES[v]
-                          )
-
         data.update({
-            'timestamp':  date,
-            # 'time_spent': time_spent,
-            'client_supplied_id': event_id,
+            'timestamp':  date.strftime(defaults.TIMESTAMP_FORMAT),
         })
 
-        return data
+        return self.build_msg({'errors': [data]})
 
     def build_msg(self, data=None, **kwargs):
         data = data or {}
@@ -340,7 +305,7 @@ class Client(object):
         data.update(**kwargs)
         return data
 
-    def capture(self, event_type, data=None, date=None, api_path=None,
+    def capture(self, event_type, data=None, date=None,
                 extra=None, stack=None, **kwargs):
         """
         Captures and processes an event and pipes it off to Client.send.
@@ -384,14 +349,9 @@ class Client(object):
 
         data = self.build_msg_for_logging(event_type, data, date,
                                           extra, stack, **kwargs)
-
-        if not api_path:
-            api_path = defaults.ERROR_API_PATH
-
-        data['servers'] = [server+api_path for server in self.servers]
-        self.send(**data)
-
-        return data['client_supplied_id']
+        if data:
+            self.send(**data)
+            return data['errors'][0]['id']
 
     def _send_remote(self, url, data, headers=None):
         if headers is None:
@@ -442,8 +402,15 @@ class Client(object):
         if exc_type in self.filter_exception_types_dict:
             exc_to_filter_module = self.filter_exception_types_dict[exc_type]
             if not exc_to_filter_module or exc_to_filter_module == exc_module:
-                    return True
-
+                if exc_module:
+                    exc_name = '%s.%s' % (exc_module, exc_type)
+                else:
+                    exc_name = exc_type
+                self.logger.info(
+                    'Ignored %s exception due to exception type filter',
+                    exc_name
+                )
+                return True
         return False
 
     def send_remote(self, url, data, headers=None):
@@ -649,7 +616,7 @@ class Client(object):
         else:
             runtime_version = language_version
         return {
-            'name': self.app_id,
+            'name': self.app_name,
             'version': self.app_version,
             'agent': {
                 'name': 'opbeat-python',

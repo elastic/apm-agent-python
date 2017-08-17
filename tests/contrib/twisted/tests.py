@@ -20,6 +20,5 @@ class TwistedLogObserverTest(TestCase):
         event = dict(log_failure=failure)
         observer(event)
 
-        cli_event = self.client.events.pop(0)
+        cli_event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(cli_event['exception']['type'], 'ZeroDivisionError')
-        self.assertTrue('zero' in cli_event['exception']['value'])

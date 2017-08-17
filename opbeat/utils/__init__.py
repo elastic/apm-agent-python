@@ -12,6 +12,12 @@ import os
 
 from opbeat.utils import six
 
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
+
 
 default_ports = {
     "https": 433,
@@ -78,3 +84,20 @@ def is_master_process():
         return os.getpid() == uwsgi.masterpid()
     except ImportError:
         return False
+
+
+def get_url_dict(url):
+    scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
+    if ':' in netloc:
+        hostname, port = netloc.split(':')
+    else:
+        hostname, port = (netloc, None)
+    return {
+        'raw': url,
+        'protocol': scheme + ':',
+        'hostname': hostname,
+        'port': port,
+        'pathname': path,
+        'search': query,
+        'hash': fragment,
+    }

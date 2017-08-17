@@ -122,12 +122,11 @@ class OpbeatHandler(logging.Handler, object):
         if record.exc_info and all(record.exc_info):
             handler = self.client.get_handler('opbeat.events.Exception')
 
-            data.update(handler.capture(exc_info=record.exc_info))
+            data.update(handler.capture(self.client, exc_info=record.exc_info))
             # data['checksum'] = handler.get_hash(data)
 
         data['level'] = record.levelno
         data['logger'] = record.name
-
         return self.client.capture('Message',
                                    param_message={'message': record.msg,
                                                   'params': record.args},

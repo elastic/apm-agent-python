@@ -14,112 +14,210 @@ import re
 from opbeat.utils import six, varmap
 from opbeat.utils.encoding import force_text
 
+MASK = 8 * '*'
 
-class Processor(object):
-    def __init__(self, client):
-        self.client = client
+SANITIZE_FIELD_NAMES = frozenset([
+    'password',
+    'secret',
+    'passwd',
+    'token',
+    'api_key',
+    'access_token',
+    'sessionid',
+])
 
-    def get_data(self, data, **kwargs):
+SANITIZE_VALUE_PATTERNS = [
+    re.compile(r'^[- \d]{16,19}$'),  # credit card numbers, with or without spacers
+]
+
+
+def remove_http_request_body(client, event):
+    """
+    Removes request.body from context
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    if 'context' in event and 'request' in event['context']:
+        event['context']['request'].pop('body', None)
+    return event
+
+
+def remove_stacktrace_locals(client, event):
+    """
+    Removes local variables from any frames.
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    func = lambda frame: frame.pop('vars', None)
+    return _process_stack_frames(event, func)
+
+
+def sanitize_stacktrace_locals(client, event):
+    """
+    Sanitizes local variables in all frames
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    def func(frame):
+        if 'vars' in frame:
+            frame['vars'] = varmap(_sanitize, frame['vars'])
+
+    return _process_stack_frames(event, func)
+
+
+def sanitize_http_request_cookies(client, event):
+    """
+    Sanitizes http request cookies
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    try:
+        cookies = event['context']['request']['cookies']
+        event['context']['request']['cookies'] = varmap(_sanitize, cookies)
+    except (KeyError, TypeError):
+        pass
+    return event
+
+
+def sanitize_http_request_headers(client, event):
+    """
+    Sanitizes http request headers
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    try:
+        headers = event['context']['request']['headers']
+        event['context']['request']['headers'] = varmap(_sanitize, headers)
+    except (KeyError, TypeError):
+        pass
+    return event
+
+
+def sanitize_http_wsgi_env(client, event):
+    """
+    Sanitizes WSGI environment variables
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    try:
+        env = event['context']['request']['env']
+        event['context']['request']['env'] = varmap(_sanitize, env)
+    except (KeyError, TypeError):
+        pass
+    return event
+
+
+def sanitize_http_request_querystring(client, event):
+    """
+    Sanitizes http request query string
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    try:
+        query_string = force_text(
+            event['context']['request']['url']['search'],
+            errors='replace'
+        )
+    except (KeyError, TypeError):
+        return event
+    if '=' in query_string:
+        sanitized_query_string = _sanitize_string(query_string, '&', '=')
+        raw = event['context']['request']['url']['raw']
+        event['context']['request']['url']['search'] = sanitized_query_string
+        event['context']['request']['url']['raw'] = raw.replace(
+            query_string,
+            sanitized_query_string
+        )
+    return event
+
+
+def sanitize_http_request_body(client, event):
+    """
+    Sanitizes http request body. This only works if the request body
+    is a query-encoded string. Other types (e.g. JSON) are not handled by
+    this sanitizer.
+
+    :param client: an Opbeat client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    try:
+        body = force_text(
+            event['context']['request']['body'],
+            errors='replace'
+        )
+    except (KeyError, TypeError):
+        return event
+    if '=' in body:
+        sanitized_query_string = _sanitize_string(body, '&', '=')
+        event['context']['request']['body'] = sanitized_query_string
+    return event
+
+
+def _sanitize(key, value):
+    if value is None:
         return
 
-    def process(self, data, **kwargs):
-        resp = self.get_data(data, **kwargs)
-        if resp:
-            data = resp
-        return data
+    if isinstance(value, six.string_types) and any(
+            pattern.match(value) for pattern in SANITIZE_VALUE_PATTERNS):
+        return MASK
 
-
-class RemovePostDataProcessor(Processor):
-    """
-    Removes HTTP post data.
-    """
-    def process(self, data, **kwargs):
-        if 'http' in data:
-            data['http'].pop('data', None)
-
-        return data
-
-
-class RemoveStackLocalsProcessor(Processor):
-    """
-    Removes local context variables from stacktraces.
-    """
-    def process(self, data, **kwargs):
-        if 'stacktrace' in data:
-            for frame in data['stacktrace'].get('frames', []):
-                frame.pop('vars', None)
-
-        return data
-
-
-class SanitizePasswordsProcessor(Processor):
-    """
-    Asterisk out passwords from password fields in frames, http,
-    and basic extra data.
-    """
-    MASK = '*' * 8
-    FIELDS = frozenset([
-        'password',
-        'secret',
-        'passwd',
-        'token',
-        'api_key',
-        'access_token',
-        'sessionid',
-    ])
-    VALUES_RE = re.compile(r'^\d{16}$')
-
-    def sanitize(self, key, value):
-        if value is None:
-            return
-
-        if isinstance(value, six.string_types) and self.VALUES_RE.match(value):
-            return self.MASK
-
-        if not key:  # key can be a NoneType
-            return value
-
-        key = key.lower()
-        for field in self.FIELDS:
-            if field in key:
-                # store mask as a fixed length for security
-                return self.MASK
+    if not key:  # key can be a NoneType
         return value
 
-    def filter_stacktrace(self, data):
-        if 'frames' not in data:
-            return
-        for frame in data['frames']:
-            if 'vars' not in frame:
-                continue
-            frame['vars'] = varmap(self.sanitize, frame['vars'])
+    key = key.lower()
+    for field in SANITIZE_FIELD_NAMES:
+        if field in key:
+            # store mask as a fixed length for security
+            return MASK
+    return value
 
-    def filter_http(self, data):
-        for n in ('data', 'cookies', 'headers', 'env', 'query_string'):
-            if n not in data:
-                continue
 
-            if isinstance(data[n], (six.binary_type,) + six.string_types):
-                text_data = force_text(data[n], errors='replace')
-                if '=' in text_data:
-                    # at this point we've assumed it's a standard HTTP query
-                    querybits = []
-                    for bit in text_data.split('&'):
-                        chunk = bit.split('=')
-                        if len(chunk) == 2:
-                            querybits.append((chunk[0], self.sanitize(*chunk)))
-                        else:
-                            querybits.append(chunk)
+def _sanitize_string(unsanitized, itemsep, kvsep):
+    """
+    sanitizes a string that contains multiple key/value items
+    :param unsanitized: the unsanitized string
+    :param itemsep: string that separates items
+    :param kvsep: string that separates key from value
+    :return: a sanitized string
+    """
+    sanitized = []
+    kvs = unsanitized.split(itemsep)
+    for kv in kvs:
+        kv = kv.split(kvsep)
+        if len(kv) == 2:
+            sanitized.append((kv[0], _sanitize(kv[0], kv[1])))
+        else:
+            sanitized.append(kv)
+    return itemsep.join(kvsep.join(kv) for kv in sanitized)
 
-                    data[n] = '&'.join('='.join(k) for k in querybits)
-                    continue
-            data[n] = varmap(self.sanitize, data[n])
 
-    def process(self, data, **kwargs):
-        if 'stacktrace' in data:
-            self.filter_stacktrace(data['stacktrace'])
-
-        if 'http' in data:
-            self.filter_http(data['http'])
-
-        return data
+def _process_stack_frames(event, func):
+    if 'traces' in event:
+        # every trace can have a stack trace
+        for trace in event['traces']:
+            if 'stacktrace' in trace:
+                for frame in trace['stacktrace']:
+                    func(frame)
+    # an error can have two stacktraces, one in "exception", one in "log"
+    if 'exception' in event and 'stacktrace' in event['exception']:
+        for frame in event['exception']['stacktrace']:
+            func(frame)
+    if 'log' in event and 'stacktrace' in event['log']:
+        for frame in event['log']['stacktrace']:
+            func(frame)
+    return event
