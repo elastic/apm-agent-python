@@ -273,12 +273,11 @@ class Client(object):
                 self.include_paths, self.exclude_paths
             )
 
-        if not log.get('level'):
-            log['level'] = 'error'
-
-        if isinstance(log['level'], six.integer_types):
+        if 'level' in log and isinstance(log['level'], six.integer_types):
             log['level'] = logging.getLevelName(log['level']).lower()
-        data['log'] = log
+
+        if log:
+            data['log'] = log
 
         if culprit:
             data['culprit'] = culprit

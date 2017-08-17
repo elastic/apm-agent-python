@@ -137,7 +137,7 @@ class Message(BaseEvent):
         message_data = {
             'id': str(uuid.uuid4()),
             'log': {
-                'level': data.get('level'),
+                'level': data.get('level', 'error'),
                 'logger_name': data.get('logger'),
                 'message': message,
                 'param_message': param_message['message'],
