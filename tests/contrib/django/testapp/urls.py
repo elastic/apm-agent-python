@@ -17,15 +17,16 @@ def handler500(request):
 urlpatterns = (
     url(r'^render-heavy-template$', views.render_template_view, name='render-heavy-template'),
     url(r'^render-user-template$', views.render_user_view, name='render-user-template'),
-    url(r'^no-error$', views.no_error, name='opbeat-no-error'),
-    url(r'^no-error-slash/$', views.no_error, name='opbeat-no-error-slash'),
-    url(r'^fake-login$', views.fake_login, name='opbeat-fake-login'),
-    url(r'^trigger-500$', views.raise_exc, name='opbeat-raise-exc'),
-    url(r'^trigger-500-ioerror$', views.raise_ioerror, name='opbeat-raise-ioerror'),
-    url(r'^trigger-500-decorated$', views.decorated_raise_exc, name='opbeat-raise-exc-decor'),
-    url(r'^trigger-500-django$', views.django_exc, name='opbeat-django-exc'),
-    url(r'^trigger-500-template$', views.template_exc, name='opbeat-template-exc'),
-    url(r'^trigger-500-log-request$', views.logging_request_exc, name='opbeat-log-request-exc'),
+    url(r'^no-error$', views.no_error, name='elasticapm-no-error'),
+    url(r'^no-error-slash/$', views.no_error, name='elasticapm-no-error-slash'),
+    url(r'^ignored-exception/$', views.ignored_exception, name='elasticapm-ignored-exception'),
+    url(r'^fake-login$', views.fake_login, name='elasticapm-fake-login'),
+    url(r'^trigger-500$', views.raise_exc, name='elasticapm-raise-exc'),
+    url(r'^trigger-500-ioerror$', views.raise_ioerror, name='elasticapm-raise-ioerror'),
+    url(r'^trigger-500-decorated$', views.decorated_raise_exc, name='elasticapm-raise-exc-decor'),
+    url(r'^trigger-500-django$', views.django_exc, name='elasticapm-django-exc'),
+    url(r'^trigger-500-template$', views.template_exc, name='elasticapm-template-exc'),
+    url(r'^trigger-500-log-request$', views.logging_request_exc, name='elasticapm-log-request-exc'),
 )
 
 

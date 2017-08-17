@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-opbeat
+elasticapm
 ======
 
-opbeat is a Python client for `Opbeat <https://opbeat.com/>`_. It provides
+elastic-apm is a Python client for `Elastic APM <https://elastic.co/apm>`_. It provides
 full out-of-the-box support for many of the popular frameworks, including
 `Django <djangoproject.com>`_, `Flask <http://flask.pocoo.org/>`_, and `Pylons
-<http://www.pylonsproject.org/>`_. opbeat also includes drop-in support for any
+<http://www.pylonsproject.org/>`_. elastic-apm also includes drop-in support for any
 `WSGI <http://wsgi.readthedocs.org/>`_-compatible web application.
 """
 
@@ -25,7 +25,7 @@ import os
 from codecs import open
 
 from setuptools import setup, find_packages, Extension
-from opbeat.version import VERSION
+from elasticapm.version import VERSION
 from setuptools.command.test import test as TestCommand
 
 from distutils.command.build_ext import build_ext
@@ -145,12 +145,12 @@ class PyTest(TestCommand):
 
 
 setup_kwargs = dict(
-    name='opbeat',
+    name='elastic-apm',
     version=VERSION,
-    author='Opbeat, Inc',
+    author='Elastic, Inc',
     author_email='support@opbeat.com',
-    url='https://github.com/opbeat/opbeat_python',
-    description='The official Python module for Opbeat.com',
+    url='https://github.com/elastic/apm-agent-python',
+    description='The official Python module for Elastic APM',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst'), encoding='utf-8').read(),
     packages=find_packages(exclude=("tests",)),
     zip_safe=False,
@@ -164,7 +164,7 @@ setup_kwargs = dict(
     include_package_data=True,
     entry_points={
         'paste.filter_app_factory': [
-            'opbeat = opbeat.contrib.paste:opbeat_filter_factory',
+            'elasticapm = elasticapm.contrib.paste:filter_factory',
         ],
     },
     classifiers=[
@@ -185,7 +185,7 @@ def run_setup(with_extensions):
 
     if with_extensions:
         setup_kwargs_tmp['ext_modules'] = [Extension(
-            'opbeat.utils.wrapt._wrappers', ['opbeat/utils/wrapt/_wrappers.c']
+            'elasticapm.utils.wrapt._wrappers', ['elasticapm/utils/wrapt/_wrappers.c']
         )]
         setup_kwargs_tmp['cmdclass']['build_ext'] = optional_build_ext
 
@@ -193,7 +193,7 @@ def run_setup(with_extensions):
 
 # Figure out if we should build the wrapt C extensions
 
-with_extensions = os.environ.get('OPBEAT_WRAPT_EXTENSIONS', None)
+with_extensions = os.environ.get('ELASTICAPM_WRAPT_EXTENSIONS', None)
 
 if with_extensions:
     if with_extensions.lower() == 'true':

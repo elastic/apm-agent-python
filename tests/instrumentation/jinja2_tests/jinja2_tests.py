@@ -4,7 +4,7 @@ import mock
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
-import opbeat.instrumentation.control
+import elasticapm.instrumentation.control
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -15,9 +15,9 @@ class InstrumentJinja2Test(TestCase):
         filedir = os.path.dirname(__file__)
         loader = FileSystemLoader(filedir)
         self.env = Environment(loader=loader)
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_from_file(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from twisted.python.failure import Failure
 
-from opbeat.contrib.twisted import OpbeatLogObserver
+from elasticapm.contrib.twisted import LogObserver
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -12,7 +12,7 @@ class TwistedLogObserverTest(TestCase):
         self.client = get_tempstoreclient()
 
     def test_observer(self):
-        observer = OpbeatLogObserver(client=self.client)
+        observer = LogObserver(client=self.client)
         try:
             1 / 0
         except ZeroDivisionError:

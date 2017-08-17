@@ -6,7 +6,11 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, render_to_response
 
-from opbeat.traces import trace
+from elasticapm.traces import trace
+
+
+class IgnoredException(Exception):
+    skip_elasticapm = True
 
 
 def no_error(request):
@@ -35,6 +39,10 @@ def decorated_raise_exc(request):
 
 def template_exc(request):
     return render_to_response('error.html')
+
+
+def ignored_exception(request):
+    raise IgnoredException()
 
 
 def logging_request_exc(request):

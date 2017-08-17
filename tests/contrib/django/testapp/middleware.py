@@ -15,5 +15,5 @@ class BrokenViewMiddleware(object):
 
 class MetricsNameOverrideMiddleware(object):
     def process_response(self, request, response):
-        request._opbeat_transaction_name = 'foobar'
+        request._elasticapm_transaction_name = 'foobar'
         return response

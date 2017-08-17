@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from opbeat.instrumentation.packages.base import AbstractInstrumentedModule
+from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 
 
 class _TestInstrumentNonExistingFunctionOnModule(AbstractInstrumentedModule):

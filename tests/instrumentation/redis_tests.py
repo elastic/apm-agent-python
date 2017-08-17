@@ -5,9 +5,9 @@ import pytest
 import redis
 from redis.client import StrictRedis
 
-import opbeat
-import opbeat.instrumentation.control
-from opbeat.traces import trace
+import elasticapm
+import elasticapm.instrumentation.control
+from elasticapm.traces import trace
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -16,9 +16,9 @@ from tests.utils.compat import TestCase
 class InstrumentRedisTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_pipeline(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
@@ -50,7 +50,7 @@ class InstrumentRedisTest(TestCase):
 
         self.assertEqual(len(traces), 3)
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_rq_patches_redis(self, should_collect):
         should_collect.return_value = False
 
@@ -87,7 +87,7 @@ class InstrumentRedisTest(TestCase):
 
         self.assertEqual(len(traces), 3)
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_redis_client(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")

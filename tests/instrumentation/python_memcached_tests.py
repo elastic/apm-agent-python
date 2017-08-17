@@ -1,9 +1,9 @@
 import memcache
 import mock
 
-import opbeat
-import opbeat.instrumentation.control
-from opbeat.traces import trace
+import elasticapm
+import elasticapm.instrumentation.control
+from elasticapm.traces import trace
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -11,9 +11,9 @@ from tests.utils.compat import TestCase
 class InstrumentMemcachedTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_memcached(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")

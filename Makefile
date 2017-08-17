@@ -7,7 +7,7 @@ test:
 	else py.test --isort; fi
 
 coverage:
-	coverage run runtests.py --include=opbeat/* && \
+	coverage run runtests.py --include=elasticapm/* && \
 	coverage html --omit=*/migrations/* -d cover
 
 .PHONY: isort test coverage

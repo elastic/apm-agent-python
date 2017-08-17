@@ -3,8 +3,8 @@ from __future__ import absolute_import
 
 import uuid
 
-from opbeat.utils import six
-from opbeat.utils.encoding import shorten, transform
+from elasticapm.utils import six
+from elasticapm.utils.encoding import shorten, transform
 from tests.utils.compat import TestCase
 
 
@@ -123,7 +123,7 @@ class TransformTest(TestCase):
 
     def test_custom_repr(self):
         class Foo(object):
-            def __opbeat__(self):
+            def __elasticapm__(self):
                 return 'example'
 
         x = Foo()

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 from mock import Mock
 
-from opbeat.events import Message
+from elasticapm.events import Message
 from tests.utils.compat import TestCase
 
 

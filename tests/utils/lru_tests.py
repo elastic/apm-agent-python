@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from opbeat.utils.lru import LRUCache
+from elasticapm.utils.lru import LRUCache
 from tests.utils.compat import TestCase
 
 

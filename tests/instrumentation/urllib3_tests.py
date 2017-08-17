@@ -4,9 +4,9 @@ import threading
 import mock
 import urllib3
 
-import opbeat
-import opbeat.instrumentation.control
-from opbeat.traces import trace
+import elasticapm
+import elasticapm.instrumentation.control
+from elasticapm.traces import trace
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -25,7 +25,7 @@ class InstrumentUrllib3Test(TestCase):
         self.client = get_tempstoreclient()
         self.port = random.randint(50000, 60000)
         self.start_test_server()
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
 
     def tearDown(self):
         if self.httpd:
@@ -40,7 +40,7 @@ class InstrumentUrllib3Test(TestCase):
         self.httpd_thread.setDaemon(True)
         self.httpd_thread.start()
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_urllib3(self, should_collect):
         should_collect.return_value = False
         self.client.begin_transaction("transaction")

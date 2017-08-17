@@ -4,7 +4,7 @@ pytest.importorskip("flask")  # isort:skip
 import mock
 from flask import Flask, render_template, signals
 
-from opbeat.contrib.flask import Opbeat
+from elasticapm.contrib.flask import ElasticAPM
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -29,19 +29,19 @@ class FlaskTest(TestCase):
         self.app = create_app()
         self.client = self.app.test_client()
 
-        self.opbeat_client = get_tempstoreclient()
-        self.opbeat = Opbeat(self.app, client=self.opbeat_client)
+        self.elasticapm_client = get_tempstoreclient()
+        self.elasticapm = ElasticAPM(self.app, client=self.elasticapm_client)
 
     def tearDown(self):
-        signals.request_started.disconnect(self.opbeat.request_started)
-        signals.request_finished.disconnect(self.opbeat.request_finished)
+        signals.request_started.disconnect(self.elasticapm.request_started)
+        signals.request_finished.disconnect(self.elasticapm.request_finished)
 
     def test_error_handler(self):
         response = self.client.get('/an-error/')
         self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(self.opbeat_client.events), 1)
+        self.assertEquals(len(self.elasticapm_client.events), 1)
 
-        event = self.opbeat_client.events.pop(0)['errors'][0]
+        event = self.elasticapm_client.events.pop(0)['errors'][0]
 
         self.assertTrue('exception' in event)
         exc = event['exception']
@@ -52,9 +52,9 @@ class FlaskTest(TestCase):
     def test_get(self):
         response = self.client.get('/an-error/?foo=bar')
         self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(self.opbeat_client.events), 1)
+        self.assertEquals(len(self.elasticapm_client.events), 1)
 
-        event = self.opbeat_client.events.pop(0)['errors'][0]
+        event = self.elasticapm_client.events.pop(0)['errors'][0]
 
         self.assertTrue('request' in event['context'])
         request = event['context']['request']
@@ -80,21 +80,21 @@ class FlaskTest(TestCase):
         self.app.config['DEBUG'] = True
         self.app.config['TESTING'] = False
         self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
-        self.assertEquals(len(self.opbeat_client.events), 0)
+        self.assertEquals(len(self.elasticapm_client.events), 0)
 
-    def test_get_debug_opbeat(self):
+    def test_get_debug_elasticapm(self):
         self.app.config['DEBUG'] = True
         self.app.config['TESTING'] = True
-        self.app.config['OPBEAT'] = {'DEBUG': True}
+        self.app.config['ELASTICAPM'] = {'DEBUG': True}
         self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
-        self.assertEquals(len(self.opbeat_client.events), 1)
+        self.assertEquals(len(self.elasticapm_client.events), 1)
 
     def test_post(self):
         response = self.client.post('/an-error/?biz=baz', data={'foo': 'bar'})
         self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(self.opbeat_client.events), 1)
+        self.assertEquals(len(self.elasticapm_client.events), 1)
 
-        event = self.opbeat_client.events.pop(0)['errors'][0]
+        event = self.elasticapm_client.events.pop(0)['errors'][0]
 
         self.assertTrue('request' in event['context'])
         request = event['context']['request']
@@ -117,13 +117,13 @@ class FlaskTest(TestCase):
         self.assertEquals(env['SERVER_PORT'], '80')
 
     def test_instrumentation(self):
-        with mock.patch("opbeat.traces.TransactionsStore.should_collect") as should_collect:
+        with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
             should_collect.return_value = False
             resp = self.client.post('/users/')
 
         assert resp.status_code == 200, resp.response
 
-        transactions = self.opbeat_client.instrumentation_store.get_all()
+        transactions = self.elasticapm_client.instrumentation_store.get_all()
 
         # If the test falls right at the change from one minute to another
         # this will have two items.
@@ -142,13 +142,13 @@ class FlaskTest(TestCase):
         assert traces[0]['type'] == 'template.jinja2'
 
     def test_instrumentation_404(self):
-        with mock.patch("opbeat.traces.TransactionsStore.should_collect") as should_collect:
+        with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
             should_collect.return_value = False
             resp = self.client.post('/no-such-page/')
 
         assert resp.status_code == 404, resp.response
 
-        transactions = self.opbeat_client.instrumentation_store.get_all()
+        transactions = self.elasticapm_client.instrumentation_store.get_all()
 
         expected_signatures = ['transaction']
 
@@ -164,6 +164,6 @@ class FlaskTest(TestCase):
         assert traces[0]['type'] == 'transaction'
 
     def test_framework_version(self):
-        opbeat = Opbeat(app=self.app)
-        app_info = opbeat.client.get_app_info()
+        elasticapm = ElasticAPM(app=self.app)
+        app_info = elasticapm.client.get_app_info()
         assert 'flask' == app_info['framework']['name']

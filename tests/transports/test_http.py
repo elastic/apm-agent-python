@@ -3,15 +3,15 @@ import socket
 import mock
 import pytest
 
-from opbeat.transport.base import TransportException
-from opbeat.transport.http import HTTPTransport
-from opbeat.utils import six
-from opbeat.utils.compat import HTTPError, urlparse
+from elasticapm.transport.base import TransportException
+from elasticapm.transport.http import HTTPTransport
+from elasticapm.utils import six
+from elasticapm.utils.compat import HTTPError, urlparse
 from tests.utils.compat import TestCase
 
 
 class TestHttpFailures(TestCase):
-    @mock.patch('opbeat.transport.http.urlopen')
+    @mock.patch('elasticapm.transport.http.urlopen')
     def test_send(self, mock_urlopen):
         transport = HTTPTransport(urlparse.urlparse('http://localhost:9999'))
         mock_response = mock.Mock(
@@ -22,7 +22,7 @@ class TestHttpFailures(TestCase):
         assert url == 'http://example.com/foo'
         assert mock_response.close.call_count == 1
 
-    @mock.patch('opbeat.transport.http.urlopen')
+    @mock.patch('elasticapm.transport.http.urlopen')
     def test_timeout(self, mock_urlopen):
         transport = HTTPTransport(urlparse.urlparse('http://localhost:9999'))
         mock_urlopen.side_effect = socket.timeout()
@@ -30,7 +30,7 @@ class TestHttpFailures(TestCase):
             transport.send('x', {})
         assert 'timeout' in str(exc_info.value)
 
-    @mock.patch('opbeat.transport.http.urlopen')
+    @mock.patch('elasticapm.transport.http.urlopen')
     def test_http_error(self, mock_urlopen):
         url, status, message, body = (
             'http://localhost:9999', 418, "I'm a teapot", 'Nothing'
@@ -44,7 +44,7 @@ class TestHttpFailures(TestCase):
         for val in (url, status, message, body):
             assert str(val) in str(exc_info.value)
 
-    @mock.patch('opbeat.transport.http.urlopen')
+    @mock.patch('elasticapm.transport.http.urlopen')
     def test_generic_error(self, mock_urlopen):
         url, status, message, body = (
             'http://localhost:9999', 418, "I'm a teapot", 'Nothing'

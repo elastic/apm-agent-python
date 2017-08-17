@@ -11,7 +11,7 @@ import mock
 import pytest
 
 from conftest import BASE_TEMPLATE_DIR
-from opbeat.contrib.django.models import get_client, opbeat
+from elasticapm.contrib.django.models import elasticapm, get_client
 
 # Testing Django 1.8+ backends
 TEMPLATES = (
@@ -32,19 +32,19 @@ TEMPLATES = (
 
 class TracesTest(TestCase):
     def setUp(self):
-        self.opbeat = get_client()
-        opbeat.instrumentation.control.instrument()
+        self.elasticapm_client = get_client()
+        elasticapm.instrumentation.control.instrument()
 
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_template_rendering(self, should_collect):
         should_collect.return_value = False
         with self.settings(MIDDLEWARE_CLASSES=[
-            'opbeat.contrib.django.middleware.OpbeatAPMMiddleware']):
+            'elasticapm.contrib.django.middleware.TracingMiddleware']):
             self.client.get(reverse('render-heavy-template'))
             self.client.get(reverse('render-heavy-template'))
             self.client.get(reverse('render-heavy-template'))
 
-        transactions = self.opbeat.instrumentation_store.get_all()
+        transactions = self.elasticapm_client.instrumentation_store.get_all()
 
         self.assertEqual(len(transactions), 3)
         traces = transactions[0]['traces']
@@ -68,18 +68,18 @@ class TracesTest(TestCase):
 
     @pytest.mark.skipif(django.VERSION < (1, 8),
                         reason='Jinja2 support introduced with Django 1.8')
-    @mock.patch("opbeat.traces.TransactionsStore.should_collect")
+    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_template_rendering_django18_jinja2(self, should_collect):
         should_collect.return_value = False
         with self.settings(MIDDLEWARE_CLASSES=[
-                'opbeat.contrib.django.middleware.OpbeatAPMMiddleware'],
+                'elasticapm.contrib.django.middleware.TracingMiddleware'],
                 TEMPLATES=TEMPLATES
             ):
             self.client.get(reverse('render-jinja2-template'))
             self.client.get(reverse('render-jinja2-template'))
             self.client.get(reverse('render-jinja2-template'))
 
-        transactions = self.opbeat.instrumentation_store.get_all()
+        transactions = self.elasticapm_client.instrumentation_store.get_all()
 
         self.assertEqual(len(transactions), 3)
         traces = transactions[0]['traces']

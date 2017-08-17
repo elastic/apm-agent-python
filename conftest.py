@@ -37,14 +37,14 @@ def pytest_configure(config):
             DATABASES={
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',
-                    'NAME': 'opbeat_tests.db',
-                    'TEST_NAME': 'opbeat_tests.db',
+                    'NAME': 'elasticapm_tests.db',
+                    'TEST_NAME': 'elasticapm_tests.db',
                     'TEST': {
-                        'NAME': 'opbeat_tests.db',
+                        'NAME': 'elasticapm_tests.db',
                     }
                 },
             },
-            TEST_DATABASE_NAME='opbeat_tests.db',
+            TEST_DATABASE_NAME='elasticapm_tests.db',
             INSTALLED_APPS=[
                 'django.contrib.auth',
                 'django.contrib.admin',
@@ -54,7 +54,7 @@ def pytest_configure(config):
 
                 'django.contrib.contenttypes',
 
-                'opbeat.contrib.django',
+                'elasticapm.contrib.django',
                 'tests.contrib.django.testapp',
             ] + djcelery,
             ROOT_URLCONF='tests.contrib.django.testapp.urls',

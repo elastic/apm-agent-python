@@ -4,7 +4,7 @@ import logging
 
 import mock
 
-from opbeat.conf import setup_logging
+from elasticapm.conf import setup_logging
 from tests.utils.compat import TestCase
 
 

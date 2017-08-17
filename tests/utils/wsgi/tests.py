@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from opbeat.utils.wsgi import get_environ, get_headers, get_host
+from elasticapm.utils.wsgi import get_environ, get_headers, get_host
 from tests.utils.compat import TestCase
 
 

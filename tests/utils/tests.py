@@ -1,4 +1,4 @@
-from opbeat.utils.deprecation import deprecated
+from elasticapm.utils.deprecation import deprecated
 
 
 @deprecated("alternative")

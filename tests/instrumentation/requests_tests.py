@@ -2,9 +2,9 @@ import mock
 import requests
 from requests.exceptions import InvalidURL, MissingSchema
 
-import opbeat
-import opbeat.instrumentation.control
-from opbeat.traces import trace
+import elasticapm
+import elasticapm.instrumentation.control
+from elasticapm.traces import trace
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -12,7 +12,7 @@ from tests.utils.compat import TestCase
 class InstrumentRequestsTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
 
     @mock.patch("requests.adapters.HTTPAdapter.send")
     def test_requests_instrumentation(self, mock_send):

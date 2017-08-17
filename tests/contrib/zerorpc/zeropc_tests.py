@@ -6,7 +6,7 @@ import tempfile
 
 import pytest
 
-from opbeat.contrib.zerorpc import OpbeatMiddleware
+from elasticapm.contrib.zerorpc import Middleware
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -21,14 +21,14 @@ has_unsupported_pypy = (hasattr(sys, 'pypy_version_info')
 
 class ZeroRPCTest(TestCase):
     def setUp(self):
-        self._socket_dir = tempfile.mkdtemp(prefix='opbeatzerorpcunittest')
+        self._socket_dir = tempfile.mkdtemp(prefix='elasticapmzerorpcunittest')
         self._server_endpoint = 'ipc://{0}'.format(os.path.join(
                     self._socket_dir, 'random_zeroserver'
         ))
 
-        self._opbeat = get_tempstoreclient()
-        zerorpc.Context.get_instance().register_middleware(OpbeatMiddleware(
-                    client=self._opbeat
+        self._elasticapm_client = get_tempstoreclient()
+        zerorpc.Context.get_instance().register_middleware(Middleware(
+                    client=self._elasticapm_client
         ))
 
     @pytest.mark.skipif(has_unsupported_pypy, reason='Failure with pypy < 2.6')
@@ -44,8 +44,8 @@ class ZeroRPCTest(TestCase):
             self._client.choice([])
         except zerorpc.exceptions.RemoteError as ex:
             self.assertEqual(ex.name, 'IndexError')
-            self.assertEqual(len(self._opbeat.events), 1)
-            exc = self._opbeat.events[0]['errors'][0]['exception']
+            self.assertEqual(len(self._elasticapm_client.events), 1)
+            exc = self._elasticapm_client.events[0]['errors'][0]['exception']
             self.assertEqual(exc['type'], 'IndexError')
             frames = exc['stacktrace']
             self.assertEqual(frames[0]['function'], 'choice')

@@ -1,4 +1,4 @@
-from opbeat.base import Client
+from elasticapm.base import Client
 
 
 def get_tempstoreclient(app_name="myapp",

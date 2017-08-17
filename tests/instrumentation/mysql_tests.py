@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from opbeat.instrumentation.packages.mysql import extract_signature
+from elasticapm.instrumentation.packages.mysql import extract_signature
 from tests.utils.compat import TestCase
 
 

@@ -1,9 +1,9 @@
 import boto3
 import mock
 
-import opbeat
-import opbeat.instrumentation.control
-from opbeat.traces import trace
+import elasticapm
+import elasticapm.instrumentation.control
+from elasticapm.traces import trace
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -11,7 +11,7 @@ from tests.utils.compat import TestCase
 class InstrumentBotocoreTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
 
     @mock.patch("botocore.endpoint.Endpoint.make_request")
     def test_botocore_instrumentation(self, mock_make_request):

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import webob
 
-from opbeat.middleware import Opbeat
+from elasticapm.middleware import ElasticAPM
 from tests.utils.compat import TestCase
 
 from ..helpers import get_tempstoreclient
@@ -18,7 +18,7 @@ class MiddlewareTest(TestCase):
 
     def test_error_handler(self):
         client = get_tempstoreclient()
-        middleware = Opbeat(self.app, client=client)
+        middleware = ElasticAPM(self.app, client=client)
 
         request = webob.Request.blank('/an-error?foo=bar')
         response = middleware(request.environ, lambda *args: None)

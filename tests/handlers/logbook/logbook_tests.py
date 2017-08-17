@@ -1,6 +1,6 @@
 import logbook
 
-from opbeat.handlers.logbook import OpbeatHandler
+from elasticapm.handlers.logbook import LogbookHandler
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -8,8 +8,8 @@ from tests.utils.compat import TestCase
 class LogbookHandlerTest(TestCase):
     def setUp(self):
         self.logger = logbook.Logger(__name__)
-        self.client = get_tempstoreclient(include_paths=['tests', 'opbeat'])
-        self.handler = OpbeatHandler(self.client)
+        self.client = get_tempstoreclient(include_paths=['tests', 'elasticapm'])
+        self.handler = LogbookHandler(self.client)
 
     def test_logger_error_level(self):
         with self.handler.applicationbound():
@@ -83,16 +83,16 @@ class LogbookHandlerTest(TestCase):
 
     def test_client_arg(self):
         client = get_tempstoreclient(include_paths=['tests'])
-        handler = OpbeatHandler(client)
+        handler = LogbookHandler(client)
         self.assertEquals(handler.client, client)
 
     def test_client_kwarg(self):
         client = get_tempstoreclient(include_paths=['tests'])
-        handler = OpbeatHandler(client=client)
+        handler = LogbookHandler(client=client)
         self.assertEquals(handler.client, client)
 
     def test_invalid_first_arg_type(self):
-        self.assertRaises(ValueError, OpbeatHandler, object)
+        self.assertRaises(ValueError, LogbookHandler, object)
 
     def test_missing_client_arg(self):
-        self.assertRaises(TypeError, OpbeatHandler)
+        self.assertRaises(TypeError, LogbookHandler)

@@ -5,13 +5,13 @@ import time
 import mock
 import pytest
 
-import opbeat
-from opbeat.base import Client, ClientState
-from opbeat.conf import defaults
-from opbeat.transport.base import Transport, TransportException
-from opbeat.transport.http import HTTPTransport
-from opbeat.utils import six
-from opbeat.utils.compat import urlparse
+import elasticapm
+from elasticapm.base import Client, ClientState
+from elasticapm.conf import defaults
+from elasticapm.transport.base import Transport, TransportException
+from elasticapm.transport.http import HTTPTransport
+from elasticapm.utils import six
+from elasticapm.utils.compat import urlparse
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -76,9 +76,9 @@ class ClientTest(TestCase):
 
     def test_config_by_environment(self):
         with mock.patch.dict('os.environ', {
-            'OPBEAT_APP_NAME': 'app',
-            'OPBEAT_SECRET_TOKEN': 'token',
-            'OPBEAT_GIT_REF': 'aabbccdd'
+            'ELASTICAPM_APP_NAME': 'app',
+            'ELASTICAPM_SECRET_TOKEN': 'token',
+            'ELASTICAPM_GIT_REF': 'aabbccdd'
         }):
             client = Client()
             self.assertEqual(client.app_name, 'app')
@@ -86,7 +86,7 @@ class ClientTest(TestCase):
             self.assertEqual(client.git_ref, 'aabbccdd')
             self.assertEqual(client.is_send_disabled, False)
         with mock.patch.dict('os.environ', {
-            'OPBEAT_DISABLE_SEND': 'true',
+            'ELASTICAPM_DISABLE_SEND': 'true',
         }):
             client = Client()
             self.assertEqual(client.is_send_disabled, True)
@@ -133,8 +133,8 @@ class ClientTest(TestCase):
 
         self.assertEqual(client.processors, [])
 
-    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
-    @mock.patch('opbeat.base.ClientState.should_try')
+    @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+    @mock.patch('elasticapm.base.ClientState.should_try')
     def test_send_remote_failover_sync(self, should_try, http_send):
         should_try.return_value = True
 
@@ -161,8 +161,8 @@ class ClientTest(TestCase):
         client.send_remote('http://example.com/api/store', 'foo')
         assert client.state.status == client.state.ONLINE
 
-    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
-    @mock.patch('opbeat.base.ClientState.should_try')
+    @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+    @mock.patch('elasticapm.base.ClientState.should_try')
     def test_send_remote_failover_sync_stdlib(self, should_try, http_send):
         should_try.return_value = True
 
@@ -188,8 +188,8 @@ class ClientTest(TestCase):
         client.send_remote('http://example.com/api/store', 'foo')
         assert client.state.status == client.state.ONLINE
 
-    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
-    @mock.patch('opbeat.base.ClientState.should_try')
+    @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+    @mock.patch('elasticapm.base.ClientState.should_try')
     def test_send_remote_failover_async(self, should_try, http_send):
         should_try.return_value = True
 
@@ -218,8 +218,8 @@ class ClientTest(TestCase):
         client.close()
         assert client.state.status == client.state.ONLINE
 
-    @mock.patch('opbeat.base.Client.send_remote')
-    @mock.patch('opbeat.base.time.time')
+    @mock.patch('elasticapm.base.Client.send_remote')
+    @mock.patch('elasticapm.base.time.time')
     def test_send(self, time, send_remote):
         time.return_value = 1328055286.51
         public = "public"
@@ -239,15 +239,15 @@ class ClientTest(TestCase):
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'deflate',
                 'Authorization': 'Bearer %s' % (access_token),
-                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
+                'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
             },
         )
 
-    @mock.patch('opbeat.base.Client.send_remote')
-    @mock.patch('opbeat.base.time.time')
+    @mock.patch('elasticapm.base.Client.send_remote')
+    @mock.patch('elasticapm.base.time.time')
     def test_send_not_enabled(self, time, send_remote):
         time.return_value = 1328055286.51
-        with mock.patch.dict('os.environ', {'OPBEAT_DISABLE_SEND': 'true'}):
+        with mock.patch.dict('os.environ', {'ELASTICAPM_DISABLE_SEND': 'true'}):
             client = Client(
                 servers=['http://example.com'],
                 app_name='app_name',
@@ -259,8 +259,8 @@ class ClientTest(TestCase):
 
         assert not send_remote.called
 
-    @mock.patch('opbeat.base.Client.send_remote')
-    @mock.patch('opbeat.base.time.time')
+    @mock.patch('elasticapm.base.Client.send_remote')
+    @mock.patch('elasticapm.base.time.time')
     def test_send_with_auth_header(self, time, send_remote):
         time.return_value = 1328055286.51
         client = Client(
@@ -278,13 +278,13 @@ class ClientTest(TestCase):
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'deflate',
                 'Authorization': 'foo',
-                'User-Agent': 'opbeat-python/%s' % opbeat.VERSION,
+                'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
             },
         )
 
-    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
-    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.close')
-    @mock.patch('opbeat.base.Client._traces_collect')
+    @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+    @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.close')
+    @mock.patch('elasticapm.base.Client._traces_collect')
     def test_client_shutdown_sync(self, mock_traces_collect, mock_close,
                                   mock_send):
         client = Client(
@@ -300,8 +300,8 @@ class ClientTest(TestCase):
         self.assertEqual(mock_close.call_count, 1)
         self.assertEqual(mock_traces_collect.call_count, 1)
 
-    @mock.patch('opbeat.transport.http_urllib3.Urllib3Transport.send')
-    @mock.patch('opbeat.base.Client._traces_collect')
+    @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+    @mock.patch('elasticapm.base.Client._traces_collect')
     def test_client_shutdown_async(self, mock_traces_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
@@ -423,8 +423,8 @@ class ClientTest(TestCase):
         self.assertEquals(event['logger'], 'test')
         self.assertTrue('timestamp' in event)
 
-    @mock.patch('opbeat.base.Client.send')
-    @mock.patch('opbeat.base.TransactionsStore.should_collect')
+    @mock.patch('elasticapm.base.Client.send')
+    @mock.patch('elasticapm.base.TransactionsStore.should_collect')
     def test_metrics_collection(self, should_collect, mock_send):
         client = Client(
             servers=['http://example.com'],
@@ -445,8 +445,8 @@ class ClientTest(TestCase):
         self.assertEqual(len(client.instrumentation_store), 0)
         self.assertEqual(mock_send.call_count, 1)
 
-    @mock.patch('opbeat.base.Client.send')
-    @mock.patch('opbeat.base.TransactionsStore.should_collect')
+    @mock.patch('elasticapm.base.Client.send')
+    @mock.patch('elasticapm.base.TransactionsStore.should_collect')
     def test_call_end_twice(self, should_collect, mock_send):
         client = get_tempstoreclient()
 
@@ -456,7 +456,7 @@ class ClientTest(TestCase):
         client.end_transaction('test-transaction', 200)
         client.end_transaction('test-transaction', 200)
 
-    @mock.patch('opbeat.utils.is_master_process')
+    @mock.patch('elasticapm.utils.is_master_process')
     def test_client_uses_sync_mode_when_master_process(self, is_master_process):
         # when in the master process, the client should use the non-async
         # HTTP transport, even if async_mode is True
@@ -472,8 +472,8 @@ class ClientTest(TestCase):
             HTTPTransport
         )
 
-    @mock.patch('opbeat.base.Client.send')
-    @mock.patch('opbeat.base.TransactionsStore.should_collect')
+    @mock.patch('elasticapm.base.Client.send')
+    @mock.patch('elasticapm.base.TransactionsStore.should_collect')
     def test_ignore_patterns(self, should_collect, mock_send):
         client = Client(
             servers=['http://example.com'],

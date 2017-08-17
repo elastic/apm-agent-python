@@ -41,7 +41,7 @@ def mock_client(mocker):
 
 @pytest.mark.asyncio
 async def test_send(mock_client):
-    from opbeat.transport.asyncio import AsyncioHTTPTransport
+    from elasticapm.transport.asyncio import AsyncioHTTPTransport
     transport = AsyncioHTTPTransport(urlparse('http://localhost:9999'))
 
     mock_client.status = 202
@@ -57,8 +57,8 @@ async def test_send(mock_client):
 
 @pytest.mark.asyncio
 async def test_send_not_found(mock_client):
-    from opbeat.transport.asyncio import AsyncioHTTPTransport
-    from opbeat.transport.base import TransportException
+    from elasticapm.transport.asyncio import AsyncioHTTPTransport
+    from elasticapm.transport.base import TransportException
 
     transport = AsyncioHTTPTransport(urlparse('http://localhost:9999'))
 
@@ -75,8 +75,8 @@ async def test_send_not_found(mock_client):
 
 @pytest.mark.asyncio
 async def test_send_timeout(mock_client):
-    from opbeat.transport.asyncio import AsyncioHTTPTransport
-    from opbeat.transport.base import TransportException
+    from elasticapm.transport.asyncio import AsyncioHTTPTransport
+    from elasticapm.transport.base import TransportException
 
     transport = AsyncioHTTPTransport(urlparse('http://localhost:9999'))
 
@@ -85,4 +85,4 @@ async def test_send_timeout(mock_client):
 
     with pytest.raises(TransportException) as excinfo:
         await transport.send(b'data', {}, timeout=0.0001)
-    assert 'Connection to Opbeat server timed out' in str(excinfo.value)
+    assert 'Connection to APM Server timed out' in str(excinfo.value)

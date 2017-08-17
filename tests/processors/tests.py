@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-from opbeat import processors
-from opbeat.utils import six
+from elasticapm import processors
+from elasticapm.utils import six
 from tests.utils.compat import TestCase
 
 

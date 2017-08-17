@@ -4,8 +4,8 @@ import os
 import pymongo
 import pytest
 
-import opbeat
-import opbeat.instrumentation.control
+import elasticapm
+import elasticapm.instrumentation.control
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
@@ -14,16 +14,16 @@ from tests.utils.compat import TestCase
 class InstrumentPyMongoTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        opbeat.instrumentation.control.instrument()
+        elasticapm.instrumentation.control.instrument()
         connection_params = {'host': os.environ.get('MONGODB_HOST', 'localhost'),
                              'port': int(os.environ.get('MONGODB_PORT', 27017))}
         if pymongo.version_tuple < (3, 0):
             connection_params['safe'] = True
         self.mongo = pymongo.MongoClient(**connection_params)
-        self.db = self.mongo.opbeat_test
+        self.db = self.mongo.elasticapm_test
 
     def tearDown(self):
-        self.mongo.drop_database('opbeat_test')
+        self.mongo.drop_database('elasticapm_test')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_bulk_write(self):
@@ -40,7 +40,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.bulk_write')
+                         'elasticapm_test.blogposts.bulk_write')
 
     def test_collection_count(self):
         blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -54,7 +54,7 @@ class InstrumentPyMongoTest(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
-        self.assertEqual(trace['name'], 'opbeat_test.blogposts.count')
+        self.assertEqual(trace['name'], 'elasticapm_test.blogposts.count')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_delete_one(self):
@@ -69,7 +69,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.delete_one')
+                         'elasticapm_test.blogposts.delete_one')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_delete_many(self):
@@ -84,7 +84,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.delete_many')
+                         'elasticapm_test.blogposts.delete_many')
 
     def test_collection_insert(self):
         blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -97,7 +97,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.insert')
+                         'elasticapm_test.blogposts.insert')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_insert_one(self):
@@ -111,7 +111,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.insert_one')
+                         'elasticapm_test.blogposts.insert_one')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_insert_many(self):
@@ -126,7 +126,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.insert_many')
+                         'elasticapm_test.blogposts.insert_many')
 
     def test_collection_find(self):
         blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -145,7 +145,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.cursor.refresh')
+                         'elasticapm_test.blogposts.cursor.refresh')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_find_one(self):
@@ -160,7 +160,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.find_one')
+                         'elasticapm_test.blogposts.find_one')
 
     def test_collection_remove(self):
         blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -174,7 +174,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.remove')
+                         'elasticapm_test.blogposts.remove')
 
     def test_collection_update(self):
         blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -189,7 +189,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.update')
+                         'elasticapm_test.blogposts.update')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_update_one(self):
@@ -205,7 +205,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.update_one')
+                         'elasticapm_test.blogposts.update_one')
 
     @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
     def test_collection_update_many(self):
@@ -221,7 +221,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.blogposts.update_many')
+                         'elasticapm_test.blogposts.update_many')
 
     @pytest.mark.skipif(pymongo.version_tuple < (2, 7), reason='New in 2.7')
     def test_bulk_execute(self):
@@ -236,7 +236,7 @@ class InstrumentPyMongoTest(TestCase):
         trace = _get_pymongo_trace(transactions[0]['traces'])
         self.assertEqual(trace['type'], 'db.mongodb.query')
         self.assertEqual(trace['name'],
-                         'opbeat_test.test_bulk.bulk.execute')
+                         'elasticapm_test.test_bulk.bulk.execute')
 
 
 def _get_pymongo_trace(traces):
