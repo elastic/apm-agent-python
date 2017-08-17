@@ -348,8 +348,10 @@ class Client(object):
 
         data = self.build_msg_for_logging(event_type, data, date,
                                           extra, stack, **kwargs)
+
         if data:
-            self.send(**data)
+            servers = [server + defaults.ERROR_API_PATH for server in self.servers]
+            self.send(servers=servers, **data)
             return data['errors'][0]['id']
 
     def _send_remote(self, url, data, headers=None):
@@ -603,10 +605,9 @@ class Client(object):
         data = self.build_msg({
             'transactions': transactions,
         })
-        api_path = '/transactions'
+        api_path = defaults.TRANSACTIONS_API_PATH
 
-        data['servers'] = [server + api_path for server in self.servers]
-        self.send(**data)
+        self.send(servers=[server + api_path for server in self.servers], **data)
 
     def get_app_info(self):
         language_version = platform.python_version()
