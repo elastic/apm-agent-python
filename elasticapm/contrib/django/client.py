@@ -118,6 +118,7 @@ class DjangoClient(Client):
                 'remote_address': request.META.get('REMOTE_ADDR'),
                 'encrypted': request.is_secure()
             },
+            'cookies': dict(request.COOKIES),
         }
 
         if hasattr(request, 'get_raw_uri'):

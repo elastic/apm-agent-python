@@ -79,9 +79,20 @@ def sanitize_http_request_cookies(client, event):
     :param event: a transaction or error event
     :return: The modified event
     """
+
+    # sanitize request.cookies dict
     try:
         cookies = event['context']['request']['cookies']
         event['context']['request']['cookies'] = varmap(_sanitize, cookies)
+    except (KeyError, TypeError):
+        pass
+
+    # sanitize request.header.cookie string
+    try:
+        cookie_string = event['context']['request']['headers']['cookie']
+        event['context']['request']['headers']['cookie'] = _sanitize_string(
+            cookie_string, '; ', '='
+        )
     except (KeyError, TypeError):
         pass
     return event
