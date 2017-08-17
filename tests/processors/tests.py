@@ -80,6 +80,9 @@ class SanitizePasswordsProcessorTest(TestCase):
         assert 'body' not in result['context']['request']
 
     def test_sanitize_http_request_cookies(self):
+        self.http_test_data['context']['request']['headers']['cookie'] =\
+            'foo=bar; password=12345; the_secret=12345; csrftoken=abc'
+
         result = processors.sanitize_http_request_cookies(None, self.http_test_data)
 
         assert result['context']['request']['cookies'] == {
@@ -89,6 +92,9 @@ class SanitizePasswordsProcessorTest(TestCase):
             'sessionid': processors.MASK,
             'a_password_here': processors.MASK,
         }
+
+        assert (result['context']['request']['headers']['cookie'] ==
+                'foo=bar; password={0}; the_secret={0}; csrftoken={0}'.format(processors.MASK))
 
     def test_sanitize_http_request_headers(self):
         result = processors.sanitize_http_request_headers(None, self.http_test_data)
