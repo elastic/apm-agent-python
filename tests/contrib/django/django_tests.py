@@ -130,7 +130,6 @@ class DjangoClientTest(TestCase):
         self.assertTrue('exception' in event)
         exc = event['exception']
         self.assertEquals(exc['type'], 'Exception')
-        self.assertEquals(event['log']['level'], 'error')
         self.assertEquals(exc['message'], 'Exception: view exception')
         self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 

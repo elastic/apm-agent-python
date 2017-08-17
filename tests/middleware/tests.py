@@ -32,7 +32,6 @@ class MiddlewareTest(TestCase):
         self.assertTrue('exception' in event)
         exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(event['log']['level'], "error")
         self.assertEquals(exc['message'], 'ValueError: hello world')
 
         self.assertTrue('request' in event['context'])
