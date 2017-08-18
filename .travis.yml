@@ -1,28 +1,258 @@
 sudo: false
 language: python
-python:
-- 2.7
-- 3.3
-- 3.4
-- 3.5
-- 3.6
-- nightly
-- pypy
+#python:
+#- 2.7
+#- 3.3
+#- 3.4
+#- 3.5
+#- 3.6
+#- nightly
+#- pypy
 
 env:
-  matrix:
-    - WEBFRAMEWORK=django-1.8
-    - WEBFRAMEWORK=django-1.9
-    - WEBFRAMEWORK=django-1.10
-    - WEBFRAMEWORK=django-1.11
-    - WEBFRAMEWORK=django-master
-    - WEBFRAMEWORK=flask-0.10
-    - WEBFRAMEWORK=flask-0.11
-    - WEBFRAMEWORK=flask-0.12
   global:
   - PIP_CACHE="$HOME/.pip_cache"'
   - RUN_SCRIPT="./travis/run_tests.sh"
-matrix:
+
+jobs:
+  include:
+    - stage: linters
+      env: WEBFRAMEWORK=""
+      python: 3.6
+      script: pip install isort && isort -c
+
+    # python 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.9
+      python: 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.10
+      python: 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.11
+      python: 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: 2.7
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: 2.7
+
+    # python 3.3
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: 3.3
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: 3.3
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: 3.3
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: 3.3
+
+    # python 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.9
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.10
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.11
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-master
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: 3.4
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: 3.4  
+
+    # python 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.9
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.10
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.11
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-master
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: 3.5
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: 3.5
+
+    # python 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.9
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.10
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.11
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-master
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: 3.6
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: 3.6
+      
+      
+    # pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.9
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.10
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.11
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-master
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: pypy
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: pypy
+
+    # python nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.8
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.9
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.10
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-1.11
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=django-master
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.10
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.11
+      python: nightly
+    - stage: tests
+      script: bash $RUN_SCRIPT
+      env: WEBFRAMEWORK=flask-0.12
+      python: nightly
+
+    - stage: build
+      sudo: required
+      python: 3.4
+      services:
+      - docker
+      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 RUN_SCRIPT=./travis/run_docker.sh
+    - stage: build
+      sudo: required
+      python: 3.4
+      services:
+      - docker
+      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 RUN_SCRIPT=./travis/run_docker.sh
+        PRE_CMD=linux32
   exclude:
   - python: 2.7
     env: WEBFRAMEWORK=django-master
@@ -34,18 +264,7 @@ matrix:
     env: WEBFRAMEWORK=django-1.11
   - python: 3.3
     env: WEBFRAMEWORK=django-master
-  include:
-  - sudo: required
-    python: 3.4
-    services:
-    - docker
-    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 RUN_SCRIPT=./travis/run_docker.sh
-  - sudo: required
-    python: 3.4
-    services:
-    - docker
-    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 RUN_SCRIPT=./travis/run_docker.sh
-      PRE_CMD=linux32
+
   allow_failures:
   - env: WEBFRAMEWORK=django-master
   - python: nightly
@@ -61,8 +280,7 @@ addons:
 cache:
   directories:
   - "$HOME/.pip_cache"
-script:
-- bash $RUN_SCRIPT
+
 notifications:
   email: false
   slack:
