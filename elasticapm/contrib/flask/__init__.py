@@ -35,12 +35,12 @@ def make_client(client_cls, app, app_name=None, secret_token=None):
     app_name = (
         app_name or
         config.get('APP_NAME') or  # config
-        os.environ.get('ELASTICAPM_APP_NAME') # environment
+        os.environ.get('ELASTICAPM_APP_NAME')  # environment
     )
     secret_token = (
         secret_token or
         config.get('SECRET_TOKEN') or  # config
-        os.environ.get('ELASTICAPM_SECRET_TOKEN') # environment
+        os.environ.get('ELASTICAPM_SECRET_TOKEN')  # environment
     )
     if hasattr(flask, '__version__'):
         framework_version = 'flask/' + flask.__version__

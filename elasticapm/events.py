@@ -105,7 +105,7 @@ class Exception(BaseEvent):
                 'message': '%s: %s' % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type),
                 'type': str(exc_type),
                 'module': str(exc_module),
-                'stacktrace':  frames,
+                'stacktrace': frames,
             }
         }
 

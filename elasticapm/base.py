@@ -292,7 +292,7 @@ class Client(object):
         data = transform(data)
 
         data.update({
-            'timestamp':  date.strftime(defaults.TIMESTAMP_FORMAT),
+            'timestamp': date.strftime(defaults.TIMESTAMP_FORMAT),
         })
 
         return self.build_msg({'errors': [data]})
