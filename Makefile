@@ -3,8 +3,8 @@ isort:
 
 test:
 	if [ "$$TRAVIS_PYTHON_VERSION" != "3.5" ]; then \
-	py.test --isort --ignore=tests/asyncio; \
-	else py.test --isort; fi
+	py.test --ignore=tests/asyncio; \
+	else py.test; fi
 
 coverage:
 	coverage run runtests.py --include=elasticapm/* && \
