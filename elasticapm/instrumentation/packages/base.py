@@ -83,6 +83,7 @@ class OriginalNamesBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
                                       self.__wrapped__, instance, args,
                                       kwargs)
 
+
 class OriginalNamesFunctionWrapper(wrapt.FunctionWrapper):
 
     __bound_function_wrapper__ = OriginalNamesBoundFunctionWrapper
@@ -151,8 +152,7 @@ class AbstractInstrumentedModule(object):
 
     def get_wrapped_name(self, wrapped, instance, fallback_method=None):
         wrapped_name = []
-        if(hasattr(instance, '__class__')
-           and hasattr(instance.__class__, '__name__')):
+        if hasattr(instance, '__class__') and hasattr(instance.__class__, '__name__'):
             wrapped_name.append(instance.__class__.__name__)
 
         if hasattr(wrapped, '__name__'):

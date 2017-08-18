@@ -18,7 +18,6 @@ except ImportError:
     import urllib.parse as urlparse
 
 
-
 default_ports = {
     "https": 433,
     "http": 80,

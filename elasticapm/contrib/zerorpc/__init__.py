@@ -54,8 +54,7 @@ class Middleware(object):
                 # Is there a better way than this (or looking up the filenames
                 # or hardcoding the number of frames to skip) to know when we
                 # are out of zerorpc?
-                if frame_info.function == '__call__' \
-                    or frame_info.function == '_receiver':
+                if frame_info.function == '__call__' or frame_info.function == '_receiver':
                     break
                 traceback = traceback.tb_next
 

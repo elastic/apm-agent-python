@@ -22,7 +22,7 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
         ("pylibmc", "Client.delete_multi"),
         ("pylibmc", "Client.touch"),
         ("pylibmc", "Client.get_stats"),
-        ]
+    ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)

@@ -47,9 +47,9 @@ class Catch404Middleware(MiddlewareMixin):
                 _is_ignorable_404(request.get_full_path())):
             return response
         if disabled_due_to_debug(
-                    getattr(django_settings, 'ELASTICAPM', {}),
-                    django_settings.DEBUG
-                ):
+            getattr(django_settings, 'ELASTICAPM', {}),
+            django_settings.DEBUG
+        ):
             return response
         data = {
             'level': logging.INFO,
@@ -96,8 +96,7 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
         # if there's no view_func on the request, and this middleware created
         # a new response object, it's logged as the responsible transaction
         # name
-        if (not hasattr(request, '_elasticapm_view_func')
-                and response is not original_response):
+        if not hasattr(request, '_elasticapm_view_func') and response is not original_response:
             request._elasticapm_transaction_name = get_name_from_middleware(
                 wrapped, instance
             )

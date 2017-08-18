@@ -8,10 +8,7 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-try:
-    from celery.task import task
-except ImportError:
-    from celery.decorators import task
+
 from celery import signals
 
 

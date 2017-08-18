@@ -1,6 +1,6 @@
 from elasticapm.utils.module_import import import_string
 
-_cls_register = set([
+_cls_register = {
     'elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation',
     'elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation',
     'elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation',
@@ -19,11 +19,12 @@ _cls_register = set([
 
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',
-])
+}
 
 
 def register(cls):
     _cls_register.add(cls)
+
 
 _instrumentation_singletons = {}
 

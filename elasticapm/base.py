@@ -18,7 +18,6 @@ import platform
 import socket
 import sys
 import time
-import uuid
 import warnings
 import zlib
 
@@ -128,8 +127,7 @@ class Client(object):
                         secret_token=secret_token, git_ref=git_ref,
                         app_version=app_version)
         self.servers = servers or defaults.SERVERS
-        self.async_mode = (async_mode is True
-                           or (defaults.ASYNC_MODE and async_mode is not False))
+        self.async_mode = (async_mode is True or (defaults.ASYNC_MODE and async_mode is not False))
         if not transport_class:
             transport_class = (defaults.ASYNC_TRANSPORT_CLASS
                                if self.async_mode
@@ -189,8 +187,8 @@ class Client(object):
         The former take precedence.
         """
         for attr_name, value in kwargs.items():
-            if value is None and (attr_name in self.environment_config_map
-                                  and self.environment_config_map[attr_name] in os.environ):
+            if value is None and (attr_name in self.environment_config_map and
+                                  self.environment_config_map[attr_name] in os.environ):
                 self.logger.info("Configuring elasticapm.%s from environment variable '%s'",
                                  attr_name, self.environment_config_map[attr_name])
                 value = os.environ[self.environment_config_map[attr_name]]
@@ -221,8 +219,6 @@ class Client(object):
         """
         Captures, processes and serializes an event into a dict object
         """
-        # create ID client-side so that it can be passed to application
-        event_id = uuid.uuid4().hex
 
         if data is None:
             data = {}
@@ -292,7 +288,7 @@ class Client(object):
         data = transform(data)
 
         data.update({
-            'timestamp':  date.strftime(defaults.TIMESTAMP_FORMAT),
+            'timestamp': date.strftime(defaults.TIMESTAMP_FORMAT),
         })
 
         return self.build_msg({'errors': [data]})
@@ -646,6 +642,7 @@ class Client(object):
             'architecture': platform.machine(),
             'platform': platform.system().lower(),
         }
+
 
 class DummyClient(Client):
     """Sends messages into an empty void"""

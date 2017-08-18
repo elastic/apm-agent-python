@@ -1,10 +1,10 @@
 import asyncio
 import urllib.parse
 
-from elasticapm.base import Client
+from elasticapm.base import Client as BaseClient
 
 
-class Client(Client):
+class Client(BaseClient):
 
     def handle_transport_response(self, task):
         try:

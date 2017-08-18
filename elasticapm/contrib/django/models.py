@@ -35,6 +35,7 @@ def get_installed_apps():
         out.add(app)
     return out
 
+
 _client = (None, None)
 
 
@@ -63,7 +64,7 @@ class ProxyClient(object):
     __gt__ = lambda x, o: get_client() > o
     __ge__ = lambda x, o: get_client() >= o
     if six.PY2:
-        __cmp__ = lambda x, o: cmp(get_client(), o)
+        __cmp__ = lambda x, o: cmp(get_client(), o)  # noqa F821
     __hash__ = lambda x: hash(get_client())
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: get_client()(*a, **kw)
@@ -93,8 +94,8 @@ class ProxyClient(object):
     __invert__ = lambda x: ~(get_client())
     __complex__ = lambda x: complex(get_client())
     __int__ = lambda x: int(get_client())
-    if not six.PY2:
-        __long__ = lambda x: long(get_client())
+    if six.PY2:
+        __long__ = lambda x: long(get_client())  # noqa F821
     __float__ = lambda x: float(get_client())
     __str__ = lambda x: str(get_client())
     __unicode__ = lambda x: six.text_type(get_client())
@@ -104,6 +105,7 @@ class ProxyClient(object):
     __coerce__ = lambda x, o: x.__coerce__(x, o)
     __enter__ = lambda x: x.__enter__()
     __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
+
 
 client = ProxyClient()
 
@@ -178,8 +180,7 @@ def exception_handler(request=None, **kwargs):
                 disabled_due_to_debug(
                     getattr(django_settings, 'ELASTICAPM', {}),
                     django_settings.DEBUG
-                )
-                or getattr(exc_info[1], 'skip_elasticapm', False)
+                ) or getattr(exc_info[1], 'skip_elasticapm', False)
             ):
                 return
 

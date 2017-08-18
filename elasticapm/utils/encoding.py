@@ -9,9 +9,13 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
+import datetime
 import uuid
+from decimal import Decimal
 
 from elasticapm.utils import six
+
+PROTECTED_TYPES = six.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
 
 
 def is_protected_type(obj):
@@ -20,10 +24,7 @@ def is_protected_type(obj):
     Objects of protected types are preserved as-is when passed to
     force_text(strings_only=True).
     """
-    from decimal import Decimal
-    import datetime
-    return isinstance(obj, six.integer_types + (type(None), float, Decimal,
-        datetime.datetime, datetime.date, datetime.time))
+    return isinstance(obj, PROTECTED_TYPES)
 
 
 def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
@@ -67,8 +68,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
             # working unicode method. Try to handle this without raising a
             # further exception by individually forcing the exception args
             # to unicode.
-            s = ' '.join([force_text(arg, encoding, strings_only,
-                    errors) for arg in s])
+            s = ' '.join([force_text(arg, encoding, strings_only, errors) for arg in s])
     return s
 
 
@@ -120,8 +120,8 @@ def transform(value, stack=None, context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
-    elif six.PY2 and isinstance(value, long):
-        ret = long(value)
+    elif six.PY2 and isinstance(value, long):  # noqa F821
+        ret = long(value)  # noqa F821
     elif value is not None:
         try:
             ret = transform(repr(value))

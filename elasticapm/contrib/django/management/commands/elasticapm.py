@@ -4,7 +4,7 @@ import sys
 from optparse import make_option
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core.management.color import color_style
 from django.utils import termcolors
 
@@ -94,13 +94,10 @@ or with environment variables:
 class Command(BaseCommand):
     arguments = (
         (('-a', '--app-name'),
-         {'default': None, 'dest': 'app_name', 'help': 'Specifies the app name.'}
-        ),
+         {'default': None, 'dest': 'app_name', 'help': 'Specifies the app name.'}),
 
         (('-t', '--token'),
-         {'default': None, 'dest': 'secret_token',
-          'help': 'Specifies the secret token.'}
-         )
+         {'default': None, 'dest': 'secret_token', 'help': 'Specifies the secret token.'})
     )
     if not hasattr(BaseCommand, 'add_arguments'):
         # Django <= 1.7
@@ -161,7 +158,7 @@ class Command(BaseCommand):
         try:
             raise TestException('Hi there!')
         except TestException as e:
-            result = client.capture_exception()
+            client.capture_exception()
             if not client.error_logger.errors:
                 self.write(
                     'Success! We tracked the error successfully! You should be'

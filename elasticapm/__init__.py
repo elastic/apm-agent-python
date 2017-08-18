@@ -17,6 +17,6 @@ try:
 except Exception as e:
     VERSION = 'unknown'
 
-from elasticapm.base import *
-from elasticapm.conf import *
-from elasticapm.traces import *
+from elasticapm.base import *  # noqa E403
+from elasticapm.conf import *  # noqa E403
+from elasticapm.traces import *  # noqa E403

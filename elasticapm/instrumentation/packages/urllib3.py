@@ -30,6 +30,5 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         url = instance.scheme + "://" + host + url
 
-        with trace(signature, "ext.http.urllib3",
-                                       {'url': url}, leaf=True):
+        with trace(signature, "ext.http.urllib3", {'url': url}, leaf=True):
             return wrapped(*args, **kwargs)

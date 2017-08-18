@@ -15,9 +15,8 @@ class Literal(object):
         self.content = content
 
     def __eq__(self, other):
-        return (isinstance(other, Literal)
-                and self.literal_type == other.literal_type
-                and self.content == other.content)
+        return (isinstance(other, Literal) and self.literal_type == other.literal_type and
+                self.content == other.content)
 
     def __repr__(self):
         return "<Literal {}{}{}>".format(self.literal_type, self.content,
@@ -28,11 +27,11 @@ def skip_to(start, tokens, value_sequence):
     i = start
     while i < len(tokens):
         for idx, token in enumerate(value_sequence):
-            if tokens[i+idx] != token:
+            if tokens[i + idx] != token:
                 break
         else:
             # Match
-            return tokens[start:i+len(value_sequence)]
+            return tokens[start:i + len(value_sequence)]
         i += 1
 
     # Not found
@@ -80,8 +79,7 @@ def scan(tokens):
             else:
 
                 if token == literal_started:
-                    if (literal_started == "'" and len(tokens) > i+1
-                            and tokens[i+1] == "'"):  # double quotes
+                    if literal_started == "'" and len(tokens) > i + 1 and tokens[i + 1] == "'":  # double quotes
                         i += 1
                         lexeme.append("'")
                     else:
@@ -103,7 +101,7 @@ def scan(tokens):
                 # Postgres can use arbitrary characters between two $'s as a
                 # literal separation token, e.g.: $fish$ literal $fish$
                 # This part will detect that and skip over the literal.
-                skipped_token = skip_to(i+1, tokens, '$')
+                skipped_token = skip_to(i + 1, tokens, '$')
                 if skipped_token is not None:
                     dollar_token = ['$'] + skipped_token
 
@@ -128,7 +126,7 @@ def extract_signature(sql):
     if first_space < 0:
         return sql
 
-    second_space = sql.find(' ', first_space+1)
+    second_space = sql.find(' ', first_space + 1)
 
     sql_type = sql[0:first_space].upper()
 
