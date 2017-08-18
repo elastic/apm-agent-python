@@ -96,8 +96,7 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
         # if there's no view_func on the request, and this middleware created
         # a new response object, it's logged as the responsible transaction
         # name
-        if (not hasattr(request, '_elasticapm_view_func')
-                and response is not original_response):
+        if not hasattr(request, '_elasticapm_view_func') and response is not original_response:
             request._elasticapm_transaction_name = get_name_from_middleware(
                 wrapped, instance
             )

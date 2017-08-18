@@ -15,9 +15,8 @@ class Literal(object):
         self.content = content
 
     def __eq__(self, other):
-        return (isinstance(other, Literal)
-                and self.literal_type == other.literal_type
-                and self.content == other.content)
+        return (isinstance(other, Literal) and self.literal_type == other.literal_type and
+                self.content == other.content)
 
     def __repr__(self):
         return "<Literal {}{}{}>".format(self.literal_type, self.content,
@@ -80,8 +79,7 @@ def scan(tokens):
             else:
 
                 if token == literal_started:
-                    if (literal_started == "'" and len(tokens) > i + 1
-                            and tokens[i + 1] == "'"):  # double quotes
+                    if literal_started == "'" and len(tokens) > i + 1 and tokens[i + 1] == "'":  # double quotes
                         i += 1
                         lexeme.append("'")
                     else:

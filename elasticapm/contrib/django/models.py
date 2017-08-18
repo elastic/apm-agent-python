@@ -180,8 +180,7 @@ def exception_handler(request=None, **kwargs):
                 disabled_due_to_debug(
                     getattr(django_settings, 'ELASTICAPM', {}),
                     django_settings.DEBUG
-                )
-                or getattr(exc_info[1], 'skip_elasticapm', False)
+                ) or getattr(exc_info[1], 'skip_elasticapm', False)
             ):
                 return
 
