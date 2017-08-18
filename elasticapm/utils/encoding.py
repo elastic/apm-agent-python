@@ -9,9 +9,9 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
-from decimal import Decimal
 import datetime
 import uuid
+from decimal import Decimal
 
 from elasticapm.utils import six
 

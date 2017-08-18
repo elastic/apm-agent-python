@@ -10,4 +10,5 @@ Large portions are
 """
 from elasticapm.contrib.django.client import *  # noqa E401
 
+
 default_app_config = 'elasticapm.contrib.django.apps.ElasticAPMConfig'
