@@ -158,7 +158,7 @@ class Command(BaseCommand):
         try:
             raise TestException('Hi there!')
         except TestException as e:
-            result = client.capture_exception()
+            client.capture_exception()
             if not client.error_logger.errors:
                 self.write(
                     'Success! We tracked the error successfully! You should be'

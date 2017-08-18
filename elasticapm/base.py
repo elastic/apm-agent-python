@@ -18,7 +18,6 @@ import platform
 import socket
 import sys
 import time
-import uuid
 import warnings
 import zlib
 
@@ -221,8 +220,6 @@ class Client(object):
         """
         Captures, processes and serializes an event into a dict object
         """
-        # create ID client-side so that it can be passed to application
-        event_id = uuid.uuid4().hex
 
         if data is None:
             data = {}

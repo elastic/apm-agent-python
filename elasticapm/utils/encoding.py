@@ -120,8 +120,8 @@ def transform(value, stack=None, context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
-    elif six.PY2 and isinstance(value, long):
-        ret = long(value)
+    elif six.PY2 and isinstance(value, long):  # noqa F821
+        ret = long(value)  # noqa F821
     elif value is not None:
         try:
             ret = transform(repr(value))
