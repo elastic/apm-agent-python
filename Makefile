@@ -1,3 +1,5 @@
+BUILD_DIR?=build
+
 isort:
 	isort -rc -vb .
 
@@ -10,4 +12,8 @@ coverage:
 	coverage run runtests.py --include=elasticapm/* && \
 	coverage html --omit=*/migrations/* -d cover
 
-.PHONY: isort test coverage
+docs:
+	sh ./script/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
+
+
+.PHONY: isort test coverage docs
