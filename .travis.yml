@@ -236,19 +236,19 @@ jobs:
       env: WEBFRAMEWORK=flask-0.12
       python: nightly
 
-    - stage: build
-      sudo: required
-      python: 3.4
-      services:
-      - docker
-      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 RUN_SCRIPT=./travis/run_docker.sh
-    - stage: build
-      sudo: required
-      python: 3.4
-      services:
-      - docker
-      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 RUN_SCRIPT=./travis/run_docker.sh
-        PRE_CMD=linux32
+#    - stage: build
+#      sudo: required
+#      python: 3.4
+#      services:
+#      - docker
+#      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 RUN_SCRIPT=./travis/run_docker.sh
+#    - stage: build
+#      sudo: required
+#      python: 3.4
+#      services:
+#      - docker
+#      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 RUN_SCRIPT=./travis/run_docker.sh
+#        PRE_CMD=linux32
   exclude:
   - python: 2.7
     env: WEBFRAMEWORK=django-master
