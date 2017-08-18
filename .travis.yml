@@ -19,7 +19,7 @@ jobs:
     - stage: linters
       env: WEBFRAMEWORK=""
       python: 3.6
-      script: pip install isort && isort -c
+      script: pip install isort && isort -c -df && echo "OK"
 
     # python 2.7
     - stage: tests
