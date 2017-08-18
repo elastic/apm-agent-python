@@ -8,9 +8,14 @@ env:
 jobs:
   include:
     - stage: linters
-      env: WEBFRAMEWORK=""
+      env: LINTER="isort"
       python: 3.6
       script: pip install isort && isort -c -df && echo "OK"
+
+    - stage: linters
+      env: LINTER="flake8"
+      python: 3.6
+      script: pip install flake8 && flake8 elasticapm
 
     # python 2.7
     - stage: tests
