@@ -647,6 +647,7 @@ class Client(object):
             'platform': platform.system().lower(),
         }
 
+
 class DummyClient(Client):
     """Sends messages into an empty void"""
     def send(self, **kwargs):

@@ -35,6 +35,7 @@ def get_installed_apps():
         out.add(app)
     return out
 
+
 _client = (None, None)
 
 
@@ -104,6 +105,7 @@ class ProxyClient(object):
     __coerce__ = lambda x, o: x.__coerce__(x, o)
     __enter__ = lambda x: x.__enter__()
     __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
+
 
 client = ProxyClient()
 

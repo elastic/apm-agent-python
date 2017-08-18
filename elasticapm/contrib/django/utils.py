@@ -11,7 +11,6 @@ except ImportError:
         pass
 
 
-
 def linebreak_iter(template_source):
     yield 0
     p = template_source.find('\n')

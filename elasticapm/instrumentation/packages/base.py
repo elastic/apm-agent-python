@@ -83,6 +83,7 @@ class OriginalNamesBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
                                       self.__wrapped__, instance, args,
                                       kwargs)
 
+
 class OriginalNamesFunctionWrapper(wrapt.FunctionWrapper):
 
     __bound_function_wrapper__ = OriginalNamesBoundFunctionWrapper
