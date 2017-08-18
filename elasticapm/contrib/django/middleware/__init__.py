@@ -47,9 +47,9 @@ class Catch404Middleware(MiddlewareMixin):
                 _is_ignorable_404(request.get_full_path())):
             return response
         if disabled_due_to_debug(
-                    getattr(django_settings, 'ELASTICAPM', {}),
-                    django_settings.DEBUG
-                ):
+            getattr(django_settings, 'ELASTICAPM', {}),
+            django_settings.DEBUG
+        ):
             return response
         data = {
             'level': logging.INFO,

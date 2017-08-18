@@ -9,9 +9,13 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
+from decimal import Decimal
+import datetime
 import uuid
 
 from elasticapm.utils import six
+
+PROTECTED_TYPES = six.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
 
 
 def is_protected_type(obj):
@@ -20,10 +24,7 @@ def is_protected_type(obj):
     Objects of protected types are preserved as-is when passed to
     force_text(strings_only=True).
     """
-    from decimal import Decimal
-    import datetime
-    return isinstance(obj, six.integer_types + (type(None), float, Decimal,
-        datetime.datetime, datetime.date, datetime.time))
+    return isinstance(obj, PROTECTED_TYPES)
 
 
 def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
@@ -67,8 +68,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
             # working unicode method. Try to handle this without raising a
             # further exception by individually forcing the exception args
             # to unicode.
-            s = ' '.join([force_text(arg, encoding, strings_only,
-                    errors) for arg in s])
+            s = ' '.join([force_text(arg, encoding, strings_only, errors) for arg in s])
     return s
 
 

@@ -94,13 +94,10 @@ or with environment variables:
 class Command(BaseCommand):
     arguments = (
         (('-a', '--app-name'),
-         {'default': None, 'dest': 'app_name', 'help': 'Specifies the app name.'}
-        ),
+         {'default': None, 'dest': 'app_name', 'help': 'Specifies the app name.'}),
 
         (('-t', '--token'),
-         {'default': None, 'dest': 'secret_token',
-          'help': 'Specifies the secret token.'}
-         )
+         {'default': None, 'dest': 'secret_token', 'help': 'Specifies the secret token.'})
     )
     if not hasattr(BaseCommand, 'add_arguments'):
         # Django <= 1.7
