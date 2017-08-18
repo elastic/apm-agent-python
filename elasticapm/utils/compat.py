@@ -5,12 +5,12 @@ import functools
 try:
     import urlparse
 except ImportError:
-    from urllib import parse as urlparse
+    from urllib import parse as urlparse  # noqa E401
 
 try:
     from urllib2 import HTTPError
 except ImportError:
-    from urllib.error import HTTPError
+    from urllib.error import HTTPError  # noqa E401
 
 
 def noop_decorator(func):

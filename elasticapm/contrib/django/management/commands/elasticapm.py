@@ -4,7 +4,7 @@ import sys
 from optparse import make_option
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core.management.color import color_style
 from django.utils import termcolors
 
