@@ -27,12 +27,6 @@ def pytest_configure(config):
         settings = None
     if settings is not None and not settings.configured:
         import django
-
-        # django-celery does not work well with Django 1.8+
-        if django.VERSION < (1, 8):
-            djcelery = ['djcelery']
-        else:
-            djcelery = []
         settings.configure(
             DATABASES={
                 'default': {
@@ -56,7 +50,7 @@ def pytest_configure(config):
 
                 'elasticapm.contrib.django',
                 'tests.contrib.django.testapp',
-            ] + djcelery,
+            ],
             ROOT_URLCONF='tests.contrib.django.testapp.urls',
             DEBUG=False,
             SITE_ID=1,
@@ -93,6 +87,3 @@ def pytest_configure(config):
         )
         if hasattr(django, 'setup'):
             django.setup()
-        if django.VERSION < (1, 8):
-            import djcelery
-            djcelery.setup_loader()
