@@ -11,7 +11,7 @@ import mock
 import pytest
 
 from conftest import BASE_TEMPLATE_DIR
-from elasticapm.contrib.django.models import elasticapm, get_client
+from elasticapm.contrib.django.client import get_client
 
 # Testing Django 1.8+ backends
 TEMPLATES = (
@@ -33,7 +33,6 @@ TEMPLATES = (
 class TracesTest(TestCase):
     def setUp(self):
         self.elasticapm_client = get_client()
-        elasticapm.instrumentation.control.instrument()
 
     @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_template_rendering(self, should_collect):

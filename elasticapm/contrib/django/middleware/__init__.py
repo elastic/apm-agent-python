@@ -16,7 +16,7 @@ import threading
 
 from django.conf import settings as django_settings
 
-from elasticapm.contrib.django.models import client, get_client
+from elasticapm.contrib.django.client import client, get_client
 from elasticapm.utils import (build_name_with_http_method_prefix,
                               disabled_due_to_debug, get_name_from_func, wrapt)
 

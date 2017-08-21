@@ -14,6 +14,7 @@ from __future__ import absolute_import
 import logging
 
 import django
+from django.conf import settings as django_settings
 from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
@@ -24,7 +25,8 @@ from elasticapm.conf import defaults
 from elasticapm.contrib.django.utils import (get_data_from_template_debug,
                                              get_data_from_template_source,
                                              iterate_with_template_sources)
-from elasticapm.utils import get_url_dict
+from elasticapm.utils import get_url_dict, six
+from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
 
 try:
@@ -33,20 +35,59 @@ except ImportError:
     from django.template.base import Origin as LoaderOrigin  # Django >= 1.9
 
 
-try:
-    # Attempt to use the Django 1.7+ apps sub-framework.
-    from django.apps import apps
-
-    is_app_installed = apps.is_installed
-except ImportError:
-    from django.conf import settings
-
-    # Use the legacy method of simple checking the configuration.
-    def is_app_installed(app_name):
-        return app_name in settings.INSTALLED_APPS
-
-
 __all__ = ('DjangoClient',)
+
+
+default_client_class = 'elasticapm.contrib.django.DjangoClient'
+_client = (None, None)
+
+
+def get_client(client=None):
+    """
+    Get an ElasticAPM client.
+
+    :param client:
+    :return:
+    :rtype: elasticapm.base.Client
+    """
+    global _client
+
+    tmp_client = client is not None
+    if not tmp_client:
+        config = getattr(django_settings, 'ELASTICAPM', {})
+        client = config.get('CLIENT', default_client_class)
+
+    if _client[0] != client:
+        client_class = import_string(client)
+        instance = client_class(**get_client_config())
+        if not tmp_client:
+            _client = (client, instance)
+        return instance
+    return _client[1]
+
+
+def get_client_config():
+    config = getattr(django_settings, 'ELASTICAPM', {})
+    return dict(
+        servers=config.get('SERVERS', None),
+        include_paths=set(
+            config.get('INCLUDE_PATHS', [])) | _get_installed_apps_paths(),
+        exclude_paths=config.get('EXCLUDE_PATHS', None),
+        filter_exception_types=config.get('FILTER_EXCEPTION_TYPES', None),
+        timeout=config.get('TIMEOUT', None),
+        hostname=config.get('HOSTNAME', None),
+        auto_log_stacks=config.get('AUTO_LOG_STACKS', None),
+        string_max_length=config.get('MAX_LENGTH_STRING', None),
+        list_max_length=config.get('MAX_LENGTH_LIST', None),
+        app_name=config.get('APP_NAME', None),
+        secret_token=config.get('SECRET_TOKEN', None),
+        transport_class=config.get('TRANSPORT_CLASS', None),
+        processors=config.get('PROCESSORS', None),
+        traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
+        async_mode=config.get('ASYNC_MODE', None),
+        instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
+        transactions_ignore_patterns=config.get('TRANSACTIONS_IGNORE_PATTERNS', None),
+    )
 
 
 class DjangoClient(Client):
@@ -207,3 +248,84 @@ class DjangoClient(Client):
         else:
             self.error_logger.error('No servers configured, and elasticapm not installed. Cannot send message')
             return None
+
+
+class ProxyClient(object):
+    """
+    A proxy which represents the current client at all times.
+    """
+    # introspection support:
+    __members__ = property(lambda x: x.__dir__())
+
+    # Need to pretend to be the wrapped class, for the sake of objects that care
+    # about this (especially in equality tests)
+    __class__ = property(lambda x: get_client().__class__)
+
+    __dict__ = property(lambda o: get_client().__dict__)
+
+    __repr__ = lambda: repr(get_client())
+    __getattr__ = lambda x, o: getattr(get_client(), o)
+    __setattr__ = lambda x, o, v: setattr(get_client(), o, v)
+    __delattr__ = lambda x, o: delattr(get_client(), o)
+
+    __lt__ = lambda x, o: get_client() < o
+    __le__ = lambda x, o: get_client() <= o
+    __eq__ = lambda x, o: get_client() == o
+    __ne__ = lambda x, o: get_client() != o
+    __gt__ = lambda x, o: get_client() > o
+    __ge__ = lambda x, o: get_client() >= o
+    if six.PY2:
+        __cmp__ = lambda x, o: cmp(get_client(), o)  # noqa F821
+    __hash__ = lambda x: hash(get_client())
+    # attributes are currently not callable
+    # __call__ = lambda x, *a, **kw: get_client()(*a, **kw)
+    __nonzero__ = lambda x: bool(get_client())
+    __len__ = lambda x: len(get_client())
+    __getitem__ = lambda x, i: get_client()[i]
+    __iter__ = lambda x: iter(get_client())
+    __contains__ = lambda x, i: i in get_client()
+    __getslice__ = lambda x, i, j: get_client()[i:j]
+    __add__ = lambda x, o: get_client() + o
+    __sub__ = lambda x, o: get_client() - o
+    __mul__ = lambda x, o: get_client() * o
+    __floordiv__ = lambda x, o: get_client() // o
+    __mod__ = lambda x, o: get_client() % o
+    __divmod__ = lambda x, o: get_client().__divmod__(o)
+    __pow__ = lambda x, o: get_client() ** o
+    __lshift__ = lambda x, o: get_client() << o
+    __rshift__ = lambda x, o: get_client() >> o
+    __and__ = lambda x, o: get_client() & o
+    __xor__ = lambda x, o: get_client() ^ o
+    __or__ = lambda x, o: get_client() | o
+    __div__ = lambda x, o: get_client().__div__(o)
+    __truediv__ = lambda x, o: get_client().__truediv__(o)
+    __neg__ = lambda x: -(get_client())
+    __pos__ = lambda x: +(get_client())
+    __abs__ = lambda x: abs(get_client())
+    __invert__ = lambda x: ~(get_client())
+    __complex__ = lambda x: complex(get_client())
+    __int__ = lambda x: int(get_client())
+    if six.PY2:
+        __long__ = lambda x: long(get_client())  # noqa F821
+    __float__ = lambda x: float(get_client())
+    __str__ = lambda x: str(get_client())
+    __unicode__ = lambda x: six.text_type(get_client())
+    __oct__ = lambda x: oct(get_client())
+    __hex__ = lambda x: hex(get_client())
+    __index__ = lambda x: get_client().__index__()
+    __coerce__ = lambda x, o: x.__coerce__(x, o)
+    __enter__ = lambda x: x.__enter__()
+    __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
+
+
+client = ProxyClient()
+
+
+def _get_installed_apps_paths():
+    """
+    Generate a list of modules in settings.INSTALLED_APPS.
+    """
+    out = set()
+    for app in django_settings.INSTALLED_APPS:
+        out.add(app)
+    return out

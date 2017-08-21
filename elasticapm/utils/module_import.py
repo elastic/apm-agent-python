@@ -3,6 +3,7 @@ from importlib import import_module
 
 from elasticapm.utils import six
 
+
 # From Django
 # https://github.com/django/django/blob/master/django/utils/module_loading.py
 
