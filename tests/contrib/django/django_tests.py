@@ -44,7 +44,7 @@ except ImportError:
     has_with_eager_tasks = False
 
 
-settings.ELASTICAPM = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
+settings.ELASTIC_APM = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
 
 
 class MockClientHandler(_TestClientHandler):
@@ -78,9 +78,9 @@ class ClientProxyTest(TestCase):
             'ORGANIZATION_ID': 'org',
             'SECRET_TOKEN': '99'
         }
-        config.update(settings.ELASTICAPM)
+        config.update(settings.ELASTIC_APM)
         event_count = len(client.events)
-        with self.settings(ELASTICAPM=config):
+        with self.settings(ELASTIC_APM=config):
             client.capture('Message', message='foo')
             self.assertEquals(len(client.events), event_count + 1)
             client.events.pop(0)
@@ -143,7 +143,7 @@ class DjangoClientTest(TestCase):
     def test_view_exception_elasticapm_debug(self):
         with self.settings(
             DEBUG=True,
-            ELASTICAPM={
+            ELASTIC_APM={
                 'DEBUG': True,
                 'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'
             },
@@ -1188,7 +1188,7 @@ class DjangoManagementCommandTest(TestCase):
 
     def test_settings_missing(self):
         stdout = six.StringIO()
-        with self.settings(ELASTICAPM={}):
+        with self.settings(ELASTIC_APM={}):
             call_command('elasticapm', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'Configuration errors detected' in output

@@ -30,16 +30,16 @@ logger = logging.getLogger('elasticapm.errors.client')
 
 
 def make_client(client_cls, app, app_name=None, secret_token=None):
-    config = app.config.get('ELASTICAPM', {})
+    config = app.config.get('ELASTIC_APM', {})
     app_name = (
         app_name or
         config.get('APP_NAME') or  # config
-        os.environ.get('ELASTICAPM_APP_NAME')  # environment
+        os.environ.get('ELASTIC_APM_APP_NAME')  # environment
     )
     secret_token = (
         secret_token or
         config.get('SECRET_TOKEN') or  # config
-        os.environ.get('ELASTICAPM_SECRET_TOKEN')  # environment
+        os.environ.get('ELASTIC_APM_SECRET_TOKEN')  # environment
     )
 
     client = client_cls(
@@ -70,8 +70,8 @@ class ElasticAPM(object):
     """
     Flask application for Elastic APM.
 
-    Look up configuration from ``os.environ.get('ELASTICAPM_APP_NAME')`` and
-    ``os.environ.get('ELASTICAPM_SECRET_TOKEN')``::
+    Look up configuration from ``os.environ.get('ELASTIC_APM_APP_NAME')`` and
+    ``os.environ.get('ELASTIC_APM_SECRET_TOKEN')``::
 
     >>> elasticapm = ElasticAPM(app)
 
@@ -115,7 +115,7 @@ class ElasticAPM(object):
             return
 
         if disabled_due_to_debug(
-            self.app.config.get('ELASTICAPM', {}),
+            self.app.config.get('ELASTIC_APM', {}),
             self.app.config.get('DEBUG', False)
         ):
             return

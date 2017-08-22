@@ -54,7 +54,7 @@ def get_client(client=None):
 
     tmp_client = client is not None
     if not tmp_client:
-        config = getattr(django_settings, 'ELASTICAPM', {})
+        config = getattr(django_settings, 'ELASTIC_APM', {})
         client = config.get('CLIENT', default_client_class)
 
     if _client[0] != client:
@@ -67,7 +67,7 @@ def get_client(client=None):
 
 
 def get_client_config():
-    config = getattr(django_settings, 'ELASTICAPM', {})
+    config = getattr(django_settings, 'ELASTIC_APM', {})
     return dict(
         servers=config.get('SERVERS', None),
         include_paths=set(

@@ -76,7 +76,7 @@ class Client(object):
     HTTP API to the APM Server.
 
     Will read default configuration from the environment variable
-    ``ELASTICAPM_APP_NAME`` and ``ELASTICAPM_SECRET_TOKEN``
+    ``ELASTIC_APM_APP_NAME`` and ``ELASTIC_APM_SECRET_TOKEN``
     if available. ::
 
     >>> from elasticapm import Client
@@ -102,10 +102,10 @@ class Client(object):
     protocol_version = '1.0'
 
     environment_config_map = {
-        'app_name': 'ELASTICAPM_APP_NAME',
-        'secret_token': 'ELASTICAPM_SECRET_TOKEN',
-        'git_ref': 'ELASTICAPM_GIT_REF',
-        'app_version': 'ELASTICAPM_APP_VERSION',
+        'app_name': 'ELASTIC_APM_APP_NAME',
+        'secret_token': 'ELASTIC_APM_SECRET_TOKEN',
+        'git_ref': 'ELASTIC_APM_GIT_REF',
+        'app_version': 'ELASTIC_APM_APP_VERSION',
     }
 
     def __init__(self, app_name=None, secret_token=None,
@@ -141,11 +141,11 @@ class Client(object):
             self.logger.info(msg)
 
         self.is_send_disabled = (
-            os.environ.get('ELASTICAPM_DISABLE_SEND', '').lower() in ('1', 'true')
+            os.environ.get('ELASTIC_APM_DISABLE_SEND', '').lower() in ('1', 'true')
         )
         if self.is_send_disabled:
             self.logger.info(
-                'Not sending any data to APM Server due to ELASTICAPM_DISABLE_SEND '
+                'Not sending any data to APM Server due to ELASTIC_APM_DISABLE_SEND '
                 'environment variable'
             )
 

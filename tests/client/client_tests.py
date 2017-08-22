@@ -76,9 +76,9 @@ class ClientTest(TestCase):
 
     def test_config_by_environment(self):
         with mock.patch.dict('os.environ', {
-            'ELASTICAPM_APP_NAME': 'app',
-            'ELASTICAPM_SECRET_TOKEN': 'token',
-            'ELASTICAPM_GIT_REF': 'aabbccdd'
+            'ELASTIC_APM_APP_NAME': 'app',
+            'ELASTIC_APM_SECRET_TOKEN': 'token',
+            'ELASTIC_APM_GIT_REF': 'aabbccdd'
         }):
             client = Client()
             self.assertEqual(client.app_name, 'app')
@@ -86,7 +86,7 @@ class ClientTest(TestCase):
             self.assertEqual(client.git_ref, 'aabbccdd')
             self.assertEqual(client.is_send_disabled, False)
         with mock.patch.dict('os.environ', {
-            'ELASTICAPM_DISABLE_SEND': 'true',
+            'ELASTIC_APM_DISABLE_SEND': 'true',
         }):
             client = Client()
             self.assertEqual(client.is_send_disabled, True)
@@ -247,7 +247,7 @@ class ClientTest(TestCase):
     @mock.patch('elasticapm.base.time.time')
     def test_send_not_enabled(self, time, send_remote):
         time.return_value = 1328055286.51
-        with mock.patch.dict('os.environ', {'ELASTICAPM_DISABLE_SEND': 'true'}):
+        with mock.patch.dict('os.environ', {'ELASTIC_APM_DISABLE_SEND': 'true'}):
             client = Client(
                 servers=['http://example.com'],
                 app_name='app_name',

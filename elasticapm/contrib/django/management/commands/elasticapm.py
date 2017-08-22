@@ -76,7 +76,7 @@ CONFIG_EXAMPLE = """
 
 You can set it in your settings file:
 
-    ELASTICAPM = {
+    ELASTIC_APM = {
         'ORGANIZATION_ID': '<YOUR-ORGANIZATION-ID>',
         'APP_ID': '<YOUR-APP-ID>',
         'SECRET_TOKEN': '<YOUR-SECRET-TOKEN>',
@@ -84,8 +84,8 @@ You can set it in your settings file:
 
 or with environment variables:
 
-    $ export ELASTICAPM_APP_ID="<YOUR-APP-ID>"
-    $ export ELASTICAPM_SECRET_TOKEN="<YOUR-SECRET-TOKEN>"
+    $ export ELASTIC_APM_APP_ID="<YOUR-APP-ID>"
+    $ export ELASTIC_APM_SECRET_TOKEN="<YOUR-SECRET-TOKEN>"
     $ python manage.py elasticapm check
 
 """
@@ -192,18 +192,18 @@ class Command(BaseCommand):
 
         # check if we're disabled due to DEBUG:
         if settings.DEBUG:
-            if getattr(settings, 'ELASTICAPM', {}).get('DEBUG'):
+            if getattr(settings, 'ELASTIC_APM', {}).get('DEBUG'):
                 self.write(
                     'Note: even though you are running in DEBUG mode, we will '
-                    'send data to the APM Server, because you set ELASTICAPM["DEBUG"] to '
+                    'send data to the APM Server, because you set ELASTIC_APM["DEBUG"] to '
                     'True. You can disable ElasticAPM while in DEBUG mode like this'
                     '\n\n',
                     yellow
                 )
                 self.write(
-                    '   ELASTICAPM = {\n'
+                    '   ELASTIC_APM = {\n'
                     '       "DEBUG": False,\n'
-                    '       # your other ELASTICAPM settings\n'
+                    '       # your other ELASTIC_APM settings\n'
                     '   }'
 
                 )
@@ -216,10 +216,10 @@ class Command(BaseCommand):
                 self.write(
                     'If you want to test ElasticAPM while DEBUG is set to True, you'
                     ' can force ElasticAPM to gather data by setting'
-                    ' ELASTICAPM["DEBUG"] to True, like this\n\n'
-                    '   ELASTICAPM = {\n'
+                    ' ELASTIC_APM["DEBUG"] to True, like this\n\n'
+                    '   ELASTIC_APM = {\n'
                     '       "DEBUG": True,\n'
-                    '       # your other ELASTICAPM settings\n'
+                    '       # your other ELASTIC_APM settings\n'
                     '   }'
                 )
                 passed = False
