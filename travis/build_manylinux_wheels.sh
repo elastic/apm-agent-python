@@ -3,7 +3,7 @@
 set -e -x
 
 export SKIP_ZERORPC=1
-export ELASTICAPM_WRAPT_EXTENSIONS="true"
+export ELASTIC_APM_WRAPT_EXTENSIONS="true"
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do

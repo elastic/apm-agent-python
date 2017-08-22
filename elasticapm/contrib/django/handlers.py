@@ -50,7 +50,7 @@ def exception_handler(request=None, **kwargs):
         try:
             if (
                 disabled_due_to_debug(
-                    getattr(django_settings, 'ELASTICAPM', {}),
+                    getattr(django_settings, 'ELASTIC_APM', {}),
                     django_settings.DEBUG
                 ) or getattr(exc_info[1], 'skip_elasticapm', False)
             ):

@@ -193,7 +193,7 @@ def run_setup(with_extensions):
 
 # Figure out if we should build the wrapt C extensions
 
-with_extensions = os.environ.get('ELASTICAPM_WRAPT_EXTENSIONS', None)
+with_extensions = os.environ.get('ELASTIC_APM_WRAPT_EXTENSIONS', None)
 
 if with_extensions:
     if with_extensions.lower() == 'true':

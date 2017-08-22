@@ -85,7 +85,7 @@ class FlaskTest(TestCase):
     def test_get_debug_elasticapm(self):
         self.app.config['DEBUG'] = True
         self.app.config['TESTING'] = True
-        self.app.config['ELASTICAPM'] = {'DEBUG': True}
+        self.app.config['ELASTIC_APM'] = {'DEBUG': True}
         self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
         self.assertEquals(len(self.elasticapm_client.events), 1)
 

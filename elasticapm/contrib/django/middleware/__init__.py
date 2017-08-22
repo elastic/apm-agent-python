@@ -47,7 +47,7 @@ class Catch404Middleware(MiddlewareMixin):
                 _is_ignorable_404(request.get_full_path())):
             return response
         if disabled_due_to_debug(
-            getattr(django_settings, 'ELASTICAPM', {}),
+            getattr(django_settings, 'ELASTIC_APM', {}),
             django_settings.DEBUG
         ):
             return response
@@ -149,7 +149,7 @@ class TracingMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         if not disabled_due_to_debug(
-            getattr(django_settings, 'ELASTICAPM', {}),
+            getattr(django_settings, 'ELASTIC_APM', {}),
             django_settings.DEBUG
         ):
             self.client.begin_transaction("request")

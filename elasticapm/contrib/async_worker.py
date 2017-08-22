@@ -18,7 +18,7 @@ from elasticapm.utils.six.moves import queue
 
 logger = logging.getLogger('elasticapm')
 
-ELASTICAPM_WAIT_SECONDS = 10
+ELASTIC_APM_WAIT_SECONDS = 10
 
 
 class AsyncWorker(object):
@@ -56,7 +56,7 @@ class AsyncWorker(object):
                     )
                 )
                 six.print_(
-                    "Waiting up to %s seconds, " % ELASTICAPM_WAIT_SECONDS,
+                    "Waiting up to %s seconds, " % ELASTIC_APM_WAIT_SECONDS,
                     end=''
                 )
                 wait_start = time.time()
@@ -64,7 +64,7 @@ class AsyncWorker(object):
                     six.print_("press Ctrl-Break to quit")
                 else:
                     six.print_("press Ctrl-C to quit")
-                self._timed_queue_join(ELASTICAPM_WAIT_SECONDS - initial_timeout)
+                self._timed_queue_join(ELASTIC_APM_WAIT_SECONDS - initial_timeout)
                 six.print_('PID %i: done, took %.2f seconds to complete' % (
                     os.getpid(),
                     time.time() - wait_start,
