@@ -143,6 +143,12 @@ class ElasticAPM(object):
 
         signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 
+        try:
+            from elasticapm.contrib.celery import register_exception_tracking
+            register_exception_tracking(self.client)
+        except ImportError:
+            pass
+
         # Instrument to get traces
         skip_env_var = 'SKIP_INSTRUMENT'
         if skip_env_var in os.environ:
@@ -152,6 +158,11 @@ class ElasticAPM(object):
 
             signals.request_started.connect(self.request_started, sender=app)
             signals.request_finished.connect(self.request_finished, sender=app)
+            try:
+                from elasticapm.contrib.celery import register_instrumentation
+                register_instrumentation(self.client)
+            except ImportError:
+                pass
 
     def request_started(self, app):
         self.client.begin_transaction("web.flask")
