@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from django.core.management.color import color_style
 from django.utils import termcolors
 
-from elasticapm.contrib.django.models import get_client_class, get_client_config
+from elasticapm.contrib.django.client import DjangoClient, get_client_config
 
 try:
     from django.core.management.base import OutputWrapper
@@ -138,8 +138,7 @@ class Command(BaseCommand):
         for key in ('app_name', 'secret_token'):
             if options.get(key):
                 config[key] = options[key]
-        client_class = get_client_class()
-        client = client_class(**config)
+        client = DjangoClient(**config)
         client.error_logger = ColoredLogger(self.stderr)
         client.logger = ColoredLogger(self.stderr)
         client.state.logger = client.logger
@@ -157,7 +156,7 @@ class Command(BaseCommand):
 
         try:
             raise TestException('Hi there!')
-        except TestException as e:
+        except TestException:
             client.capture_exception()
             if not client.error_logger.errors:
                 self.write(
@@ -170,8 +169,7 @@ class Command(BaseCommand):
         self.write(LOGO, cyan)
         passed = True
         config = get_client_config()
-        client_class = get_client_class()
-        client = client_class(**config)
+        client = DjangoClient(**config)
         # check if org/app and token are set:
         is_set = lambda x: x and x != 'None'
         values = [client.app_name, client.secret_token]

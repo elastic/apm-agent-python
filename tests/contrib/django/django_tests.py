@@ -27,10 +27,10 @@ import pytest
 from elasticapm import instrumentation
 from elasticapm.base import Client
 from elasticapm.contrib.django import DjangoClient
+from elasticapm.contrib.django.client import (client, get_client,
+                                              get_client_config)
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
-from elasticapm.contrib.django.models import (client, get_client,
-                                              get_client_config)
 from elasticapm.traces import Transaction
 from elasticapm.utils import six
 from elasticapm.utils.lru import LRUCache
@@ -93,7 +93,6 @@ class DjangoClientTest(TestCase):
     def setUp(self):
         self.elasticapm_client = get_client()
         self.elasticapm_client.events = []
-        instrumentation.control.instrument()
 
     def test_basic(self):
         self.elasticapm_client.capture('Message', message='foo')
@@ -826,16 +825,6 @@ class DjangoClientTest(TestCase):
             '.process_response'
         )
 
-    def test_ASYNC_config_raises_deprecation(self):
-        config = {
-            'ORGANIZATION_ID': '1',
-            'APP_ID': '1',
-            'SECRET_TOKEN': '1',
-            'ASYNC': True,
-        }
-        with self.settings(ELASTICAPM=config):
-            pytest.deprecated_call(get_client_config)
-
     def test_request_metrics_name_override(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
         with self.settings(
@@ -967,7 +956,6 @@ def client_get(client, url):
 def test_stacktraces_have_templates():
     client = _TestClient()
     elasticapm_client = get_client()
-    instrumentation.control.instrument()
 
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
@@ -1017,7 +1005,6 @@ def test_stacktraces_have_templates():
 def test_stacktrace_filtered_for_elasticapm():
     client = _TestClient()
     elasticapm_client = get_client()
-    instrumentation.control.instrument()
 
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
@@ -1045,7 +1032,6 @@ def test_perf_template_render(benchmark):
     client = _TestClient()
     elasticapm_client = get_client()
     responses = []
-    instrumentation.control.instrument()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         with override_settings(MIDDLEWARE_CLASSES=[
@@ -1069,7 +1055,6 @@ def test_perf_template_render_no_middleware(benchmark):
     client = _TestClient()
     elasticapm_client = get_client()
     responses = []
-    instrumentation.control.instrument()
     with mock.patch(
             "elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -1088,7 +1073,6 @@ def test_perf_database_render(benchmark):
     client = _TestClient()
 
     elasticapm_client = get_client()
-    instrumentation.control.instrument()
     responses = []
     elasticapm_client.instrumentation_store.get_all()
 

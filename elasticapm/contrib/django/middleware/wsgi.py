@@ -25,5 +25,5 @@ class ElasticAPM(ElasticAPMBase):
 
     @property
     def client(self):
-        from elasticapm.contrib.django.models import client
+        from elasticapm.contrib.django.client import client
         return client
