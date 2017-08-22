@@ -2,168 +2,152 @@ import pytest  # isort:skip
 pytest.importorskip("flask")  # isort:skip
 
 import mock
-from flask import Flask, render_template, signals
 
 from elasticapm.contrib.flask import ElasticAPM
-from tests.helpers import get_tempstoreclient
-from tests.utils.compat import TestCase
+from tests.contrib.flask.fixtures import flask_apm_client, flask_app
+from tests.fixtures import test_client
 
 
-def create_app():
-    app = Flask(__name__)
+def test_error_handler(flask_apm_client):
+    client = flask_apm_client.app.test_client()
+    response = client.get('/an-error/')
+    assert response.status_code == 500
+    assert len(flask_apm_client.client.events) == 1
 
-    @app.route('/an-error/', methods=['GET', 'POST'])
-    def an_error():
-        raise ValueError('hello world')
+    event = flask_apm_client.client.events.pop(0)['errors'][0]
 
-    @app.route('/users/', methods=['GET', 'POST'])
-    def users():
-        return render_template('users.html',
-                               users=['Ron', 'Rasmus'])
-
-    return app
+    assert 'exception' in event
+    exc = event['exception']
+    assert exc['type'] == 'ValueError'
+    assert exc['message'] == 'ValueError: hello world'
+    assert event['culprit'] == 'tests.contrib.flask.fixtures.an_error'
 
 
-class FlaskTest(TestCase):
-    def setUp(self):
-        self.app = create_app()
-        self.client = self.app.test_client()
+def test_get(flask_apm_client):
+    client = flask_apm_client.app.test_client()
+    response = client.get('/an-error/?foo=bar')
+    assert response.status_code == 500
+    assert len(flask_apm_client.client.events) == 1
 
-        self.elasticapm_client = get_tempstoreclient()
-        self.elasticapm = ElasticAPM(self.app, client=self.elasticapm_client)
+    event = flask_apm_client.client.events.pop(0)['errors'][0]
 
-    def tearDown(self):
-        signals.request_started.disconnect(self.elasticapm.request_started)
-        signals.request_finished.disconnect(self.elasticapm.request_finished)
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['url']['raw'] == 'http://localhost/an-error/?foo=bar'
+    assert request['url']['search'] == 'foo=bar'
+    assert request['method'] == 'GET'
+    assert request['body'] == None
+    assert 'headers' in request
+    headers = request['headers']
+    assert 'content-length' in headers, headers.keys()
+    assert headers['content-length'] == '0'
+    assert 'content-type' in headers, headers.keys()
+    assert headers['content-type'] == ''
+    assert 'host' in headers, headers.keys()
+    assert headers['host'] == 'localhost'
+    env = request['env']
+    assert 'SERVER_NAME' in env, env.keys()
+    assert env['SERVER_NAME'] == 'localhost'
+    assert 'SERVER_PORT' in env, env.keys()
+    assert env['SERVER_PORT'] == '80'
 
-    def test_error_handler(self):
-        response = self.client.get('/an-error/')
-        self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(self.elasticapm_client.events), 1)
 
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
+def test_get_debug(flask_apm_client):
+    app = flask_apm_client.app
+    app.config['DEBUG'] = True
+    app.config['TESTING'] = False
+    with pytest.raises(ValueError):
+        app.test_client().get('/an-error/?foo=bar')
+    assert len(flask_apm_client.client.events) == 0
 
-        self.assertTrue('exception' in event)
-        exc = event['exception']
-        self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(exc['message'], 'ValueError: hello world')
-        self.assertEquals(event['culprit'], 'tests.contrib.flask.flask_tests.an_error')
 
-    def test_get(self):
-        response = self.client.get('/an-error/?foo=bar')
-        self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+def test_get_debug_elasticapm(flask_apm_client):
+    app = flask_apm_client.app
+    app.config['DEBUG'] = True
+    app.config['TESTING'] = True
+    app.config['ELASTIC_APM'] = {'DEBUG': True}
+    with pytest.raises(ValueError):
+        app.test_client().get('/an-error/?foo=bar')
+    assert len(flask_apm_client.client.events) == 1
 
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['url']['raw'], 'http://localhost/an-error/?foo=bar')
-        self.assertEquals(request['url']['search'], 'foo=bar')
-        self.assertEquals(request['method'], 'GET')
-        self.assertEquals(request['body'], None)
-        self.assertTrue('headers' in request)
-        headers = request['headers']
-        self.assertTrue('content-length' in headers, headers.keys())
-        self.assertEquals(headers['content-length'], '0')
-        self.assertTrue('content-type' in headers, headers.keys())
-        self.assertEquals(headers['content-type'], '')
-        self.assertTrue('host' in headers, headers.keys())
-        self.assertEquals(headers['host'], 'localhost')
-        env = request['env']
-        self.assertTrue('SERVER_NAME' in env, env.keys())
-        self.assertEquals(env['SERVER_NAME'], 'localhost')
-        self.assertTrue('SERVER_PORT' in env, env.keys())
-        self.assertEquals(env['SERVER_PORT'], '80')
+def test_post(flask_apm_client):
+    client = flask_apm_client.app.test_client()
+    response = client.post('/an-error/?biz=baz', data={'foo': 'bar'})
+    assert response.status_code == 500
+    assert len(flask_apm_client.client.events) == 1
 
-    def test_get_debug(self):
-        self.app.config['DEBUG'] = True
-        self.app.config['TESTING'] = False
-        self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
-        self.assertEquals(len(self.elasticapm_client.events), 0)
+    event = flask_apm_client.client.events.pop(0)['errors'][0]
 
-    def test_get_debug_elasticapm(self):
-        self.app.config['DEBUG'] = True
-        self.app.config['TESTING'] = True
-        self.app.config['ELASTIC_APM'] = {'DEBUG': True}
-        self.assertRaises(ValueError, self.app.test_client().get, '/an-error/?foo=bar')
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['url']['raw'] == 'http://localhost/an-error/?biz=baz'
+    assert request['url']['search'] == 'biz=baz'
+    assert request['method'] == 'POST'
+    assert request['body'] == 'foo=bar'
+    assert 'headers' in request
+    headers = request['headers']
+    assert 'content-length' in headers, headers.keys()
+    assert headers['content-length'] == '7'
+    assert 'content-type' in headers, headers.keys()
+    assert headers['content-type'] == 'application/x-www-form-urlencoded'
+    assert 'host' in headers, headers.keys()
+    assert headers['host'] == 'localhost'
+    env = request['env']
+    assert 'SERVER_NAME' in env, env.keys()
+    assert env['SERVER_NAME'] == 'localhost'
+    assert 'SERVER_PORT' in env, env.keys()
+    assert env['SERVER_PORT'] == '80'
 
-    def test_post(self):
-        response = self.client.post('/an-error/?biz=baz', data={'foo': 'bar'})
-        self.assertEquals(response.status_code, 500)
-        self.assertEquals(len(self.elasticapm_client.events), 1)
 
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
+def test_instrumentation(flask_apm_client):
+    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        resp = flask_apm_client.app.test_client().post('/users/')
 
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['url']['raw'], 'http://localhost/an-error/?biz=baz')
-        self.assertEquals(request['url']['search'], 'biz=baz')
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], 'foo=bar')
-        self.assertTrue('headers' in request)
-        headers = request['headers']
-        self.assertTrue('content-length' in headers, headers.keys())
-        self.assertEquals(headers['content-length'], '7')
-        self.assertTrue('content-type' in headers, headers.keys())
-        self.assertEquals(headers['content-type'], 'application/x-www-form-urlencoded')
-        self.assertTrue('host' in headers, headers.keys())
-        self.assertEquals(headers['host'], 'localhost')
-        env = request['env']
-        self.assertTrue('SERVER_NAME' in env, env.keys())
-        self.assertEquals(env['SERVER_NAME'], 'localhost')
-        self.assertTrue('SERVER_PORT' in env, env.keys())
-        self.assertEquals(env['SERVER_PORT'], '80')
+    assert resp.status_code == 200, resp.response
 
-    def test_instrumentation(self):
-        with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-            should_collect.return_value = False
-            resp = self.client.post('/users/')
+    transactions = flask_apm_client.client.instrumentation_store.get_all()
 
-        assert resp.status_code == 200, resp.response
+    assert len(transactions) == 1
+    traces = transactions[0]['traces']
+    assert len(traces) == 2, [t['name'] for t in traces]
 
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
+    expected_signatures = ['transaction', 'users.html']
 
-        # If the test falls right at the change from one minute to another
-        # this will have two items.
-        assert len(transactions) == 1
-        traces = transactions[0]['traces']
-        assert len(traces) == 2, [t['name'] for t in traces]
+    assert set([t['name'] for t in traces]) == set(expected_signatures)
 
-        expected_signatures = ['transaction', 'users.html']
+    assert traces[1]['name'] == 'transaction'
+    assert traces[1]['type'] == 'transaction'
 
-        assert set([t['name'] for t in traces]) == set(expected_signatures)
+    assert traces[0]['name'] == 'users.html'
+    assert traces[0]['type'] == 'template.jinja2'
 
-        assert traces[1]['name'] == 'transaction'
-        assert traces[1]['type'] == 'transaction'
 
-        assert traces[0]['name'] == 'users.html'
-        assert traces[0]['type'] == 'template.jinja2'
+def test_instrumentation_404(flask_apm_client):
+    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        resp = flask_apm_client.app.test_client().post('/no-such-page/')
 
-    def test_instrumentation_404(self):
-        with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-            should_collect.return_value = False
-            resp = self.client.post('/no-such-page/')
+    assert resp.status_code == 404, resp.response
 
-        assert resp.status_code == 404, resp.response
+    transactions = flask_apm_client.client.instrumentation_store.get_all()
 
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
+    expected_signatures = ['transaction']
 
-        expected_signatures = ['transaction']
+    assert len(transactions) == 1
+    traces = transactions[0]['traces']
+    print(transactions[0])
+    assert transactions[0]['result'] == '404'
+    assert len(traces) == 1, [t["signature"] for t in traces]
 
-        assert len(transactions) == 1
-        traces = transactions[0]['traces']
-        print(transactions[0])
-        assert transactions[0]['result'] == '404'
-        assert len(traces) == 1, [t["signature"] for t in traces]
+    assert set([t['name'] for t in traces]) == set(expected_signatures)
 
-        assert set([t['name'] for t in traces]) == set(expected_signatures)
+    assert traces[0]['name'] == 'transaction'
+    assert traces[0]['type'] == 'transaction'
 
-        assert traces[0]['name'] == 'transaction'
-        assert traces[0]['type'] == 'transaction'
 
-    def test_framework_version(self):
-        elasticapm = ElasticAPM(app=self.app)
-        app_info = elasticapm.client.get_app_info()
-        assert 'flask' == app_info['framework']['name']
+def test_framework_version(flask_app):
+    elasticapm = ElasticAPM(app=flask_app)
+    app_info = elasticapm.client.get_app_info()
+    assert 'flask' == app_info['framework']['name']
