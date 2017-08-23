@@ -1,3 +1,5 @@
+import os
+
 import memcache
 import mock
 
@@ -18,7 +20,8 @@ class InstrumentMemcachedTest(TestCase):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
         with trace("test_memcached", "test"):
-            conn = memcache.Client(['127.0.0.1:11211'], debug=0)
+            host = os.environ.get('MEMCACHED_HOST', 'localhost')
+            conn = memcache.Client([host + ':11211'], debug=0)
             conn.set("mykey", "a")
             assert "a" == conn.get("mykey")
             assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])

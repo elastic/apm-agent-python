@@ -1,4 +1,5 @@
 from functools import partial
+import os
 
 import mock
 import pytest
@@ -23,7 +24,7 @@ class InstrumentRedisTest(TestCase):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
-            conn = redis.StrictRedis()
+            conn = redis.StrictRedis(host=os.environ.get('REDIS_HOST', 'localhost'))
             pipeline = conn.pipeline()
             pipeline.rpush("mykey", "a", "b")
             pipeline.expire("mykey", 1000)
@@ -55,7 +56,7 @@ class InstrumentRedisTest(TestCase):
         should_collect.return_value = False
 
         # Let's go ahead and change how something important works
-        conn = redis.StrictRedis()
+        conn = redis.StrictRedis(host=os.environ.get('REDIS_HOST', 'localhost'))
         conn._pipeline = partial(StrictRedis.pipeline, conn)
 
         self.client.begin_transaction("transaction.test")
@@ -92,7 +93,7 @@ class InstrumentRedisTest(TestCase):
         should_collect.return_value = False
         self.client.begin_transaction("transaction.test")
         with trace("test_redis_client", "test"):
-            conn = redis.StrictRedis()
+            conn = redis.StrictRedis(host=os.environ.get('REDIS_HOST', 'localhost'))
             conn.rpush("mykey", "a", "b")
             conn.expire("mykey", 1000)
         self.client.end_transaction("MyView")

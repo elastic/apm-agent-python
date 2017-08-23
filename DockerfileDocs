@@ -1,0 +1,10 @@
+FROM debian:8
+
+RUN apt-get update && \
+    apt-get install -y xsltproc libxml2-utils build-essential git curl python2.7 && \
+		rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+ADD . /app
+
+CMD make docs

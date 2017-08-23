@@ -1,0 +1,11 @@
+FROM python:3.6
+
+WORKDIR /app
+
+ENV PIP_CACHE ""
+ENV SCRIPT ""
+COPY ./Makefile /app
+COPY ./tests/scripts/${SCRIPT} /app/tests/scripts
+ADD ./tests/requirements /app/tests/requirements
+
+CMD ./tests/scripts/${SCRIPT}
