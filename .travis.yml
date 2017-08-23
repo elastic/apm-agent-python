@@ -17,6 +17,10 @@ jobs:
       python: 3.6
       script: pip install flake8 && flake8 elasticapm
 
+    - stage: linters
+      script: make docs
+      perl: "5.26"
+
     # python 2.7
     - stage: tests
       script: bash $RUN_SCRIPT
@@ -97,7 +101,7 @@ jobs:
     - stage: tests
       script: bash $RUN_SCRIPT
       env: WEBFRAMEWORK=flask-0.12
-      python: 3.4  
+      python: 3.4
 
     # python 3.5
     - stage: tests
@@ -166,8 +170,8 @@ jobs:
       script: bash $RUN_SCRIPT
       env: WEBFRAMEWORK=flask-0.12
       python: 3.6
-      
-      
+
+
     # pypy
     - stage: tests
       script: bash $RUN_SCRIPT
@@ -236,6 +240,8 @@ jobs:
       env: WEBFRAMEWORK=flask-0.12
       python: nightly
 
+
+
 #    - stage: build
 #      sudo: required
 #      python: 3.4
@@ -272,6 +278,8 @@ addons:
      - libevent-dev
      - libzmq3-dev
      - mongodb-org-server
+     - xsltproc
+     - libxml2-utils
   postgresql: '9.4'
 cache:
   directories:
