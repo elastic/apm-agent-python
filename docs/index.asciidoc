@@ -1,6 +1,6 @@
-= APM Python Agent Reference
+= APM Python Agent Reference (Experimental)
 
 
 == APM Python Agent
 
-Welcome to the APM Python agent docs.
+Welcome to the APM Python agent docs. The documentation pages are still work in progress. For more details also check the APM Python Agent https://github.com/elastic/apm-agent-python[Github repository].
