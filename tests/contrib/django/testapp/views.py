@@ -14,7 +14,9 @@ class IgnoredException(Exception):
 
 
 def no_error(request):
-    return HttpResponse('')
+    resp = HttpResponse('')
+    resp['My-Header'] = 'foo'
+    return resp
 
 
 def fake_login(request):

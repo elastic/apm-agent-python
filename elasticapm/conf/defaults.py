@@ -67,7 +67,7 @@ AUTO_LOG_STACKS = False
 PROCESSORS = (
     'elasticapm.processors.sanitize_stacktrace_locals',
     'elasticapm.processors.sanitize_http_request_cookies',
-    'elasticapm.processors.sanitize_http_request_headers',
+    'elasticapm.processors.sanitize_http_headers',
     'elasticapm.processors.sanitize_http_wsgi_env',
     'elasticapm.processors.sanitize_http_request_querystring',
     'elasticapm.processors.sanitize_http_request_body',

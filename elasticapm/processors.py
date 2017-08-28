@@ -98,19 +98,28 @@ def sanitize_http_request_cookies(client, event):
     return event
 
 
-def sanitize_http_request_headers(client, event):
+def sanitize_http_headers(client, event):
     """
-    Sanitizes http request headers
+    Sanitizes http request/response headers
 
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
     """
+    # request headers
     try:
         headers = event['context']['request']['headers']
         event['context']['request']['headers'] = varmap(_sanitize, headers)
     except (KeyError, TypeError):
         pass
+
+    # response headers
+    try:
+        headers = event['context']['response']['headers']
+        event['context']['response']['headers'] = varmap(_sanitize, headers)
+    except (KeyError, TypeError):
+        pass
+
     return event
 
 

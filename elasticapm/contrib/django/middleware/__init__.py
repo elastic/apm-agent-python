@@ -175,9 +175,11 @@ class TracingMiddleware(MiddlewareMixin):
                     transaction_name,
                     request
                 )
-                transaction_data = self.client.get_data_from_request(request)
-                self.client.set_transaction_extra_data(transaction_data,
-                                                       'request')
+                request_data = self.client.get_data_from_request(request)
+                response_data = self.client.get_data_from_response(response)
+                self.client.set_transaction_extra_data(request_data, 'request')
+                self.client.set_transaction_extra_data(response_data, 'response')
+
                 user_data = self.client.get_user_info(request)
                 if user_data:
                     self.client.set_transaction_extra_data(

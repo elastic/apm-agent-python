@@ -35,6 +35,15 @@ class SanitizePasswordsProcessorTest(TestCase):
                         'raw': 'http://example.com/bla?foo=bar&password=123456&the_secret=abc&cc=1234567890098765',
                         'search': 'foo=bar&password=123456&the_secret=abc&cc=1234567890098765'
                     }
+                },
+                'response': {
+                    'status_code': '200',
+                    'headers': {
+                        'foo': 'bar',
+                        'password': 'hello',
+                        'the_secret': 'hello',
+                        'a_password_here': 'hello',
+                    }
                 }
             }
         }
@@ -96,15 +105,16 @@ class SanitizePasswordsProcessorTest(TestCase):
         assert (result['context']['request']['headers']['cookie'] ==
                 'foo=bar; password={0}; the_secret={0}; csrftoken={0}'.format(processors.MASK))
 
-    def test_sanitize_http_request_headers(self):
-        result = processors.sanitize_http_request_headers(None, self.http_test_data)
-
-        assert result['context']['request']['headers'] == {
+    def test_sanitize_http_headers(self):
+        result = processors.sanitize_http_headers(None, self.http_test_data)
+        expected = {
             'foo': 'bar',
             'password': processors.MASK,
             'the_secret': processors.MASK,
             'a_password_here': processors.MASK,
         }
+        assert result['context']['request']['headers'] == expected
+        assert result['context']['response']['headers'] == expected
 
     def test_sanitize_http_wgi_env(self):
         result = processors.sanitize_http_wsgi_env(None, self.http_test_data)
