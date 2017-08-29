@@ -1,0 +1,296 @@
+[[get-started-with-django]]
+== Get started with Django
+
+Getting Elastic APM set up for your Django project is easy, and there are various ways you can tweak it to fit to your needs.
+
+[[django-installation]]
+=== Installation
+
+Install the Elastic APM agent using pip:
+
+[source,bash]
+----
+$ pip install elastic-apm
+----
+
+or add it to your project's `requirements.txt` file.
+
+NOTE: If you use Django with uwsgi, make sure to
+http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads[enable
+threads].
+
+[[django-setup]]
+=== Setup
+
+Set up the Elastic APM agent in Django with these two steps:
+
+1.  Add `elasticapm.contrib.django` to `INSTALLED_APPS` in your settings:
+
+[source,python]
+----
+INSTALLED_APPS = (
+   # ...
+   'elasticapm.contrib.django',
+)
+----
+
+1.  Choose an app name, and set the secret token if needed.
+
+[source,python]
+----
+ELASTIC_APM = {
+   'APP_NAME': '<APP-NAME>',
+   'SECRET_TOKEN': '<SECRET-TOKEN>',
+}
+----
+
+or as environment variables:
+
+[source,shell]
+----
+ELASTIC_APM_APP_NAME=<APP-NAME>
+ELASTIC_APM_SECRET_TOKEN=<SECRET-TOKEN>
+----
+
+You now have basic error logging set up, and everything resulting in a 500 HTTP status code will be reported to the APM Server.
+
+[[django-performance-metrics]]
+=== Performance Metrics
+
+To send performance metrics to Elastic APM, simply add our tracing middleware to your `MIDDLEWARES` settings:
+
+[source,python]
+----
+MIDDLEWARES = (
+    'elasticapm.contrib.django.middleware.TracingMiddleware',
+    # ...
+)
+----
+
+NOTE: For Django 1.8, you can add the same middleware to `MIDDLEWARE_CLASSES`.
+
+Make sure that it is the first middleware in the list.
+
+[[django-instrumenting-custom-python-code]]
+==== Instrumenting custom Python code
+
+To gain further insights into the performance of your code, please see
+<<instrumenting-custom-code, instrumenting custom code>>.
+
+[[django-ignoring-specific-views]]
+==== Ignoring specific views
+
+You can use the `TRANSACTIONS_IGNORE_PATTERNS` configuration option to ignore specific views.
+The list given should be a list of regular expressions which are matched against the transaction name as seen in the Elastic APM user interface:
+
+[source,python]
+----
+ELASTIC_APM['TRANSACTIONS_IGNORE_PATTERNS'] = ['^OPTIONS ', 'views.api.v2']
+----
+
+This example ignores any requests using the `OPTIONS` method and any requests containing `views.api.v2`.
+
+[[django-enabling-and-disabling-the-agent]]
+=== Enabling and disabling the agent
+
+The easiest way to disable the agent is to set Django’s `DEBUG` option to `True` in your development configuration.
+No errors or metrics will be logged to Elastic APM.
+
+However, if during debugging you would like to force logging of errors to Elastic APM, then you can set `DEBUG` to `True` inside of the Elastic APM
+configuration dictionary, like this:
+
+[source,python]
+----
+ELASTIC_APM = {
+   # ...
+   'DEBUG': True,
+}
+----
+
+[[django-logging]]
+=== Logging
+
+For fine-grained control over logging use Python's built-in logging module.
+If you are new to how the logging module works together with Django, read more
+https://docs.djangoproject.com/en/1.7/topics/logging/[in the Django documentation].
+
+An example of how your `LOGGING` setting could look:
+
+[source,python]
+----
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+    },
+    'handlers': {
+        'elasticapm': {
+            'level': 'WARNING',
+            'class': 'elasticapm.contrib.django.handlers.LoggingHandler',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        }
+    },
+    'loggers': {
+        'django.db.backends': {
+            'level': 'ERROR',
+            'handlers': ['console'],
+            'propagate': False,
+        },
+        'mysite': {
+            'level': 'WARNING',
+            'handlers': ['elasticapm'],
+            'propagate': False,
+        },
+        # Log errors from the Elastic APM module to the console (recommended)
+        'elasticapm.errors': {
+            'level': 'ERROR',
+            'handlers': ['console'],
+            'propagate': False,
+        },
+    },
+}
+----
+
+With this configuration, logging can be done like this in any module in the `myapp` django app:
+
+You can now use the logger in any module in the `myapp` django app, for instance `myapp/views.py`:
+
+[source,python]
+----
+import logging
+logger = logging.getLogger('mysite')
+
+try:
+    instance = MyModel.objects.get(pk=42)
+except MyModel.DoesNotExist:
+    logger.error(
+        'Could not find instance, doing something else',
+        exc_info=True
+    )
+----
+
+Note that `exc_info=True` adds the exception information to the data that gets sent to Elastic APM.
+Without it, only the message is sent.
+
+[[django-extra-data]]
+==== Extra data
+
+If you want to send more data  than what you get with the agent by default, logging can be done like so:
+
+[source,python]
+----
+import logging
+logger = logging.getLogger('mysite')
+
+try:
+    instance = MyModel.objects.get(pk=42)
+except MyModel.DoesNotExist:
+    logger.error(
+        'There was some crazy error',
+        exc_info=True,
+        extra={
+            'datetime': str(datetime.now()),
+        }
+    )
+----
+
+
+[[django-celery-integration]]
+=== Celery Integration
+
+For a general guide on how to set up Django with Celery, head over to
+Celery's http://celery.readthedocs.org/en/latest/django/first-steps-with-django.html#django-first-steps[Django
+documentation].
+
+Elastic APM will automatically log errors from your celery tasks, and record performance data.
+
+
+[[django-logging-http-404-not-found-errors]]
+=== Logging "HTTP 404 Not Found" Errors
+
+By default, Elastic APM does not log HTTP 404 errors. If you wish to log
+these errors, add
+`'elasticapm.contrib.django.middleware.Catch404Middleware'` to
+`MIDDLEWARES` in your settings:
+
+[source,python]
+----
+MIDDLEWARES = (
+    # ...
+    'elasticapm.contrib.django.middleware.Catch404Middleware',
+    # ...
+)
+----
+
+Note that this middleware respects Django's
+https://docs.djangoproject.com/en/1.11/ref/settings/#ignorable-404-urls[`IGNORABLE_404_URLS`]
+setting.
+
+
+[[django-disable-agent-during-tests]]
+=== Disable the agent during tests
+
+To prevent the agent from sending any data to the APM Server during tests, set the `ELASTIC_APM_DISABLE_SEND` environment variable to `true`, e.g.:
+
+[source,python]
+----
+ELASTIC_APM_DISABLE_SEND=true python manage.py test
+----
+
+
+[[django-troubleshooting]]
+=== Troubleshooting
+
+Elastic APM comes with a Django command that helps troubleshooting your setup. To check your configuration, run
+
+[source,bash]
+----
+python manage.py elasticapm check
+----
+
+To send a test exception using the current settings, run
+
+[source,bash]
+----
+python manage.py elasticapm test
+----
+
+If the command succeeds in sending a test exception, it will print a success message:
+
+[source,bash]
+----
+python manage.py elasticapm test
+
+Trying to send a test error using these settings:
+
+APP_NAME:           <APP_NAME>
+SECRET_TOKEN:       <SECRET_TOKEN>
+SERVERS:            http://localhost:8200
+
+Success! We tracked the error successfully! You should be able to see it in a few seconds.
+----
+
+[[supported-django-and-python-versions]]
+=== Supported Django and Python versions
+
+The agent supports the following Django versions:
+
+* 1.8
+* 1.9
+* 1.10
+* 1.11
+
+and the following Python versions:
+
+* 2.7
+* 3.3
+* 3.4
+* 3.5
+* 3.6

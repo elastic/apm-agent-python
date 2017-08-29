@@ -1,0 +1,27 @@
+[[instrumenting-custom-code]]
+== Instrumenting custom code
+
+Elastic APM instruments a variety of libraries out of the box, but sometimes you
+need to know how long a specific function took or how often it gets
+called.
+
+You can apply the decorator `@elasticapm.trace()` to achieve exactly that.
+It can also be used as a context manager in the following way:
+
+[source,python]
+----
+import elasticapm
+
+@elasticapm.trace()
+def coffee_maker(strength):
+    fetch_water()
+
+    with elasticapm.trace('near-to-machine'):
+        insert_filter()
+        for i in range(strengh):
+            pour_coffee()
+
+        start_drip()
+
+    fresh_pots()
+----
