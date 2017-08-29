@@ -3,14 +3,12 @@ import platform
 import time
 
 import mock
-import pytest
 
 import elasticapm
 from elasticapm.base import Client, ClientState
-from elasticapm.conf import defaults
 from elasticapm.transport.base import Transport, TransportException
 from elasticapm.transport.http import HTTPTransport
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from elasticapm.utils.compat import urlparse
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
@@ -111,8 +109,8 @@ class ClientTest(TestCase):
             app_name=MyValue('bar'),
             secret_token=MyValue('bay')
         )
-        assert isinstance(client.secret_token, six.string_types)
-        assert isinstance(client.app_name, six.string_types)
+        assert isinstance(client.secret_token, compat.string_types)
+        assert isinstance(client.app_name, compat.string_types)
 
     def test_custom_transport(self):
         client = Client(
@@ -234,7 +232,7 @@ class ClientTest(TestCase):
         })
         send_remote.assert_called_once_with(
             url='http://example.com',
-            data=six.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
+            data=compat.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
             headers={
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'deflate',
@@ -273,7 +271,7 @@ class ClientTest(TestCase):
         })
         send_remote.assert_called_once_with(
             url='http://example.com',
-            data=six.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
+            data=compat.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
             headers={
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'deflate',

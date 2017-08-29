@@ -10,11 +10,11 @@ Large portions are
 """
 import logging
 import os
+import sys
 import time
 from threading import Lock, Thread
 
-from elasticapm.utils import six
-from elasticapm.utils.six.moves import queue
+from elasticapm.utils.compat import queue
 
 logger = logging.getLogger('elasticapm')
 
@@ -49,23 +49,20 @@ class AsyncWorker(object):
                 # add or remove items
                 size = self._queue.qsize()
 
-                six.print_(
-                    "PID %i: ElasticAPM is attempting to send %i pending messages" % (
+                sys.stdout.write(
+                    "PID %i: ElasticAPM is attempting to send %i pending messages\n" % (
                         os.getpid(),
                         size,
                     )
                 )
-                six.print_(
-                    "Waiting up to %s seconds, " % ELASTIC_APM_WAIT_SECONDS,
-                    end=''
-                )
+                sys.stdout.write("Waiting up to %s seconds, " % ELASTIC_APM_WAIT_SECONDS)
                 wait_start = time.time()
                 if os.name == 'nt':
-                    six.print_("press Ctrl-Break to quit")
+                    sys.stdout.write("press Ctrl-Break to quit.\n")
                 else:
-                    six.print_("press Ctrl-C to quit")
+                    sys.stdout.write("press Ctrl-C to quit.\n")
                 self._timed_queue_join(ELASTIC_APM_WAIT_SECONDS - initial_timeout)
-                six.print_('PID %i: done, took %.2f seconds to complete' % (
+                sys.stdout.write('PID %i: done, took %.2f seconds to complete.\n' % (
                     os.getpid(),
                     time.time() - wait_start,
                 ))

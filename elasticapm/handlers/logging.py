@@ -17,7 +17,7 @@ import sys
 import traceback
 
 from elasticapm.base import Client
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from elasticapm.utils.encoding import to_string
 from elasticapm.utils.stacks import iter_stack_frames
 
@@ -49,18 +49,15 @@ class LoggingHandler(logging.Handler, object):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.name.startswith('elasticapm.errors'):
-            six.print_(to_string(record.message), file=sys.stderr)
+            sys.stderr.write(to_string(record.message) + '\n')
             return
 
         try:
             return self._emit(record)
         except Exception:
-            six.print_(
-                "Top level ElasticAPM exception caught - "
-                "failed creating log record",
-                sys.stderr)
-            six.print_(to_string(record.msg), sys.stderr)
-            six.print_(to_string(traceback.format_exc()), sys.stderr)
+            sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
+            sys.stderr.write(to_string(record.msg) + '\n')
+            sys.stderr.write(to_string(traceback.format_exc()) + '\n')
 
             try:
                 self.client.capture('Exception')
@@ -70,7 +67,7 @@ class LoggingHandler(logging.Handler, object):
     def _emit(self, record, **kwargs):
         data = {}
 
-        for k, v in six.iteritems(record.__dict__):
+        for k, v in compat.iteritems(record.__dict__):
             if '.' not in k and k not in ('culprit',):
                 continue
             data[k] = v

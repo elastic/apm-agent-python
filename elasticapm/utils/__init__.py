@@ -10,7 +10,7 @@ Large portions are
 """
 import os
 
-from elasticapm.utils import six
+from elasticapm.utils import compat
 
 try:
     import urlparse
@@ -38,7 +38,7 @@ def varmap(func, var, context=None, name=None):
         return func(name, '<...>')
     context[objid] = 1
     if isinstance(var, dict):
-        ret = dict((k, varmap(func, v, context, k)) for k, v in six.iteritems(var))
+        ret = dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var))
     elif isinstance(var, (list, tuple)):
         ret = [varmap(func, f, context, name) for f in var]
     else:

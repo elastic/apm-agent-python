@@ -1,7 +1,4 @@
-import sys
 from importlib import import_module
-
-from elasticapm.utils import six
 
 
 def import_string(dotted_path):
@@ -15,7 +12,7 @@ def import_string(dotted_path):
         module_path, class_name = dotted_path.rsplit('.', 1)
     except ValueError:
         msg = "%s doesn't look like a module path" % dotted_path
-        six.reraise(ImportError, ImportError(msg), sys.exc_info()[2])
+        raise ImportError(msg)
 
     module = import_module(module_path)
 
@@ -24,4 +21,4 @@ def import_string(dotted_path):
     except AttributeError:
         msg = 'Module "%s" does not define a "%s" attribute/class' % (
             module_path, class_name)
-        six.reraise(ImportError, ImportError(msg), sys.exc_info()[2])
+        raise ImportError(msg)

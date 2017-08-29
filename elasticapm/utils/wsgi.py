@@ -4,7 +4,7 @@ This module implements WSGI related helpers adapted from ``werkzeug.wsgi``
 :copyright: (c) 2010 by the Werkzeug Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from elasticapm.utils import six
+from elasticapm.utils import compat
 
 try:
     from urllib import quote
@@ -17,7 +17,7 @@ def get_headers(environ):
     """
     Returns only proper HTTP headers.
     """
-    for key, value in six.iteritems(environ):
+    for key, value in compat.iteritems(environ):
         key = str(key)
         if key.startswith('HTTP_') and key not in \
            ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
