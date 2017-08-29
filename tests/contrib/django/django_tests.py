@@ -15,6 +15,7 @@ from django.core.signals import got_request_exception
 from django.core.urlresolvers import reverse
 from django.db import DatabaseError
 from django.http import QueryDict
+from django.http.cookie import SimpleCookie
 from django.template import TemplateSyntaxError
 from django.test import TestCase
 from django.test.client import Client as _TestClient
@@ -652,6 +653,33 @@ class DjangoClientTest(TestCase):
             assert transaction['result'] == '200'
             assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
 
+    def test_transaction_request_response_data(self):
+        self.client.cookies = SimpleCookie({'foo': 'bar'})
+        self.elasticapm_client.instrumentation_store.get_all()
+        with self.settings(MIDDLEWARE_CLASSES=[
+            'elasticapm.contrib.django.middleware.TracingMiddleware']):
+            self.client.get(reverse('elasticapm-no-error'))
+        self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
+        transactions = self.elasticapm_client.instrumentation_store.get_all()
+        assert len(transactions) == 1
+        transaction = transactions[0]
+        assert 'request' in transaction['context']
+        request = transaction['context']['request']
+        assert request['method'] == 'GET'
+        assert 'headers' in request
+        headers = request['headers']
+        assert headers['cookie'] == ' foo=bar'
+        env = request['env']
+        assert 'SERVER_NAME' in env, env.keys()
+        assert env['SERVER_NAME'] == 'testserver'
+        assert 'SERVER_PORT' in env, env.keys()
+        assert env['SERVER_PORT'] == '80'
+
+        assert 'response' in transaction['context']
+        response = transaction['context']['response']
+        assert response['status_code'] == '200'
+        assert response['headers']['my-header'] == 'foo'
+
     @pytest.mark.skipif(django.VERSION < (1, 10),
                         reason='new-style middlewares')
     def test_transaction_metrics_new_style_middleware(self):
@@ -1027,6 +1055,7 @@ def test_stacktrace_filtered_for_elasticapm():
 
     # Top frame should be inside django rendering
     assert traces[1]['stacktrace'][0]['module'].startswith('django.template')
+
 
 def test_perf_template_render(benchmark):
     client = _TestClient()
