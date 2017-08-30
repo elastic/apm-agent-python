@@ -16,7 +16,6 @@ import traceback
 import logbook
 
 from elasticapm.base import Client
-from elasticapm.utils import six
 from elasticapm.utils.encoding import to_string
 
 LOOKBOOK_LEVELS = {
@@ -33,7 +32,7 @@ class LogbookHandler(logbook.Handler):
     def __init__(self, *args, **kwargs):
         if len(args) == 1:
             arg = args[0]
-            # if isinstance(arg, six.string_types):
+            # if isinstance(arg, compat.string_types):
             # self.client = kwargs.pop('client_cls', Client)(dsn=arg)
             if isinstance(arg, Client):
                 self.client = arg
@@ -58,19 +57,15 @@ class LogbookHandler(logbook.Handler):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.channel.startswith('elasticapm.errors'):
-            six.print_(to_string(record.message), file=sys.stderr)
+            sys.stderr.write(to_string(record.message) + '\n')
             return
 
         try:
             return self._emit(record)
         except Exception:
-            six.print_(sys.stderr,
-                       "Top level ElasticAPM exception caught - "
-                       "failed creating log record",
-                       file=sys.stderr)
-            six.print_(sys.stderr, to_string(record.msg), file=sys.stderr)
-            six.print_(sys.stderr, to_string(traceback.format_exc()),
-                       file=sys.stderr)
+            sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
+            sys.stderr.write(to_string(record.msg) + '\n')
+            sys.stderr.write(to_string(traceback.format_exc()) + '\n')
 
             try:
                 self.client.capture('Exception')

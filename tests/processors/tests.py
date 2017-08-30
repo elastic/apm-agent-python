@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 
 from elasticapm import processors
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from tests.utils.compat import TestCase
 
 
@@ -158,7 +158,7 @@ class SanitizePasswordsProcessorTest(TestCase):
         self.assertEquals(result, processors.MASK)
 
     def test_non_utf8_encoding(self):
-        broken = six.b('broken=') + u"aéöüa".encode('latin-1')
+        broken = compat.b('broken=') + u"aéöüa".encode('latin-1')
         self.http_test_data['context']['request']['url']['search'] = broken
         result = processors.sanitize_http_request_querystring(None, self.http_test_data)
         assert result['context']['request']['url']['search'] == u'broken=a\ufffd\ufffd\ufffda'

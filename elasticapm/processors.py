@@ -11,7 +11,7 @@ Large portions are
 
 import re
 
-from elasticapm.utils import six, varmap
+from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
 
 MASK = 8 * '*'
@@ -192,7 +192,7 @@ def _sanitize(key, value):
     if value is None:
         return
 
-    if isinstance(value, six.string_types) and any(
+    if isinstance(value, compat.string_types) and any(
             pattern.match(value) for pattern in SANITIZE_VALUE_PATTERNS):
         return MASK
 

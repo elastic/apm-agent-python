@@ -5,15 +5,14 @@ import pytest
 
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http import HTTPTransport
-from elasticapm.utils import six
-from elasticapm.utils.compat import HTTPError, urlparse
+from elasticapm.utils import compat
 from tests.utils.compat import TestCase
 
 
 class TestHttpFailures(TestCase):
     @mock.patch('elasticapm.transport.http.urlopen')
     def test_send(self, mock_urlopen):
-        transport = HTTPTransport(urlparse.urlparse('http://localhost:9999'))
+        transport = HTTPTransport(compat.urlparse.urlparse('http://localhost:9999'))
         mock_response = mock.Mock(
             info=lambda: {'Location': 'http://example.com/foo'}
         )
@@ -24,7 +23,7 @@ class TestHttpFailures(TestCase):
 
     @mock.patch('elasticapm.transport.http.urlopen')
     def test_timeout(self, mock_urlopen):
-        transport = HTTPTransport(urlparse.urlparse('http://localhost:9999'))
+        transport = HTTPTransport(compat.urlparse.urlparse('http://localhost:9999'))
         mock_urlopen.side_effect = socket.timeout()
         with pytest.raises(TransportException) as exc_info:
             transport.send('x', {})
@@ -35,9 +34,9 @@ class TestHttpFailures(TestCase):
         url, status, message, body = (
             'http://localhost:9999', 418, "I'm a teapot", 'Nothing'
         )
-        transport = HTTPTransport(urlparse.urlparse(url))
-        mock_urlopen.side_effect = HTTPError(
-            url, status, message, hdrs={}, fp=six.StringIO(body)
+        transport = HTTPTransport(compat.urlparse.urlparse(url))
+        mock_urlopen.side_effect = compat.HTTPError(
+            url, status, message, hdrs={}, fp=compat.StringIO(body)
         )
         with pytest.raises(TransportException) as exc_info:
             transport.send('x', {})
@@ -49,7 +48,7 @@ class TestHttpFailures(TestCase):
         url, status, message, body = (
             'http://localhost:9999', 418, "I'm a teapot", 'Nothing'
         )
-        transport = HTTPTransport(urlparse.urlparse(url))
+        transport = HTTPTransport(compat.urlparse.urlparse(url))
         mock_urlopen.side_effect = Exception('Oopsie')
         with pytest.raises(TransportException) as exc_info:
             transport.send('x', {})

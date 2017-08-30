@@ -25,7 +25,7 @@ from elasticapm.conf import defaults
 from elasticapm.contrib.django.utils import (get_data_from_template_debug,
                                              get_data_from_template_source,
                                              iterate_with_template_sources)
-from elasticapm.utils import get_url_dict, six
+from elasticapm.utils import compat, get_url_dict
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
 
@@ -284,7 +284,7 @@ class ProxyClient(object):
     __ne__ = lambda x, o: get_client() != o
     __gt__ = lambda x, o: get_client() > o
     __ge__ = lambda x, o: get_client() >= o
-    if six.PY2:
+    if compat.PY2:
         __cmp__ = lambda x, o: cmp(get_client(), o)  # noqa F821
     __hash__ = lambda x: hash(get_client())
     # attributes are currently not callable
@@ -315,11 +315,11 @@ class ProxyClient(object):
     __invert__ = lambda x: ~(get_client())
     __complex__ = lambda x: complex(get_client())
     __int__ = lambda x: int(get_client())
-    if six.PY2:
+    if compat.PY2:
         __long__ = lambda x: long(get_client())  # noqa F821
     __float__ = lambda x: float(get_client())
     __str__ = lambda x: str(get_client())
-    __unicode__ = lambda x: six.text_type(get_client())
+    __unicode__ = lambda x: compat.text_type(get_client())
     __oct__ = lambda x: oct(get_client())
     __hex__ = lambda x: hex(get_client())
     __index__ = lambda x: get_client().__index__()

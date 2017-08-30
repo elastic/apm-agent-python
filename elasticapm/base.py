@@ -26,8 +26,7 @@ from elasticapm.conf import defaults
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
 from elasticapm.utils import json_encoder as json
-from elasticapm.utils import is_master_process, six, stacks, varmap
-from elasticapm.utils.compat import atexit_register, urlparse
+from elasticapm.utils import compat, is_master_process, stacks, varmap
 from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.encoding import shorten, transform
 from elasticapm.utils.module_import import import_string
@@ -152,7 +151,7 @@ class Client(object):
         self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
         self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
         self.timeout = int(timeout or defaults.TIMEOUT)
-        self.hostname = six.text_type(hostname or defaults.HOSTNAME)
+        self.hostname = compat.text_type(hostname or defaults.HOSTNAME)
         self.auto_log_stacks = bool(auto_log_stacks or
                                     defaults.AUTO_LOG_STACKS)
 
@@ -179,7 +178,7 @@ class Client(object):
             self.traces_send_freq_secs,
             transactions_ignore_patterns
         )
-        atexit_register(self.close)
+        compat.atexit_register(self.close)
 
     def _configure(self, **kwargs):
         """
@@ -192,7 +191,7 @@ class Client(object):
                 self.logger.info("Configuring elasticapm.%s from environment variable '%s'",
                                  attr_name, self.environment_config_map[attr_name])
                 value = os.environ[self.environment_config_map[attr_name]]
-            setattr(self, attr_name, six.text_type(value))
+            setattr(self, attr_name, compat.text_type(value))
 
     def get_ident(self, result):
         """
@@ -246,7 +245,7 @@ class Client(object):
         if data.get('culprit'):
             culprit = data['culprit']
 
-        for k, v in six.iteritems(result):
+        for k, v in compat.iteritems(result):
             if k not in data:
                 data[k] = v
 
@@ -269,7 +268,7 @@ class Client(object):
                 self.include_paths, self.exclude_paths
             )
 
-        if 'level' in log and isinstance(log['level'], six.integer_types):
+        if 'level' in log and isinstance(log['level'], compat.integer_types):
             log['level'] = logging.getLevelName(log['level']).lower()
 
         if log:
@@ -353,7 +352,7 @@ class Client(object):
     def _send_remote(self, url, data, headers=None):
         if headers is None:
             headers = {}
-        parsed = urlparse.urlparse(url)
+        parsed = compat.urlparse.urlparse(url)
         transport = self._get_transport(parsed)
         if transport.async_mode:
             transport.send_async(

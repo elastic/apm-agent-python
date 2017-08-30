@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 import uuid
 
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from elasticapm.utils.encoding import shorten, transform
 from tests.utils.compat import TestCase
 
@@ -18,19 +18,19 @@ class TransformTest(TestCase):
 
     def test_correct_unicode(self):
         x = 'רונית מגן'
-        if six.PY2:
+        if compat.PY2:
             x = x.decode('utf-8')
 
         result = transform(x)
-        self.assertEquals(type(result), six.text_type)
+        self.assertEquals(type(result), compat.text_type)
         self.assertEquals(result, x)
 
     def test_bad_string(self):
-        x = six.b('The following character causes problems: \xd4')
+        x = compat.b('The following character causes problems: \xd4')
 
         result = transform(x)
-        self.assertEquals(type(result), six.binary_type)
-        self.assertEquals(result, six.b('(Error decoding value)'))
+        self.assertEquals(type(result), compat.binary_type)
+        self.assertEquals(result, compat.b('(Error decoding value)'))
 
     def test_float(self):
         result = transform(13.0)
@@ -91,15 +91,15 @@ class TransformTest(TestCase):
         self.assertEquals(type(result), dict)
         keys = list(result.keys())
         self.assertEquals(len(keys), 1)
-        self.assertTrue(type(keys[0]), six.binary_type)
-        if six.PY3:
+        self.assertTrue(type(keys[0]), compat.binary_type)
+        if compat.PY3:
             self.assertEquals(keys[0], 'רונית מגן')
         else:
             self.assertEquals(keys[0], u'רונית מגן')
 
     def test_dict_keys_utf8_as_unicode(self):
         x = {
-            six.text_type('\u05e8\u05d5\u05e0\u05d9\u05ea \u05de\u05d2\u05df'): 'bar'
+            compat.text_type('\u05e8\u05d5\u05e0\u05d9\u05ea \u05de\u05d2\u05df'): 'bar'
         }
 
         result = transform(x)
@@ -139,7 +139,7 @@ class TransformTest(TestCase):
         x = Foo()
 
         result = transform(x)
-        if six.PY2:
+        if compat.PY2:
             expected = u"<BadRepr: <class 'tests.utils.encoding.tests.Foo'>>"
         else:
             expected = "<BadRepr: <class 'tests.utils.encoding.tests.TransformTest.test_broken_repr.<locals>.Foo'>>"

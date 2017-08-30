@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 from mock import Mock
 
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from elasticapm.utils.stacks import get_culprit, get_stack_info
 from tests.utils.compat import TestCase
 
@@ -14,7 +14,7 @@ class Context(object):
 
     __getitem__ = lambda s, *a: s.dict.__getitem__(*a)
     __setitem__ = lambda s, *a: s.dict.__setitem__(*a)
-    iterkeys = lambda s, *a: six.iterkeys(s.dict, *a)
+    iterkeys = lambda s, *a: compat.iterkeys(s.dict, *a)
 
 
 class StackTest(TestCase):

@@ -33,7 +33,7 @@ from elasticapm.contrib.django.client import (client, get_client,
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.traces import Transaction
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from elasticapm.utils.lru import LRUCache
 from tests.contrib.django.testapp.views import IgnoredException
 
@@ -378,7 +378,7 @@ class DjangoClientTest(TestCase):
             '{% invalid template tag %}\n'
         )
 
-    @pytest.mark.skipif(six.PY3, reason='see Python bug #10805')
+    @pytest.mark.skipif(compat.PY3, reason='see Python bug #10805')
     def test_record_none_exc_info(self):
         # sys.exc_info can return (None, None, None) if no exception is being
         # handled anywhere on the stack. See:
@@ -505,9 +505,9 @@ class DjangoClientTest(TestCase):
     def test_raw_post_data_partial_read(self):
         if django.VERSION[:2] < (1, 3):
             return
-        v = six.b('{"foo": "bar"}')
+        v = compat.b('{"foo": "bar"}')
         request = WSGIRequest(environ={
-            'wsgi.input': six.BytesIO(v + six.b('\r\n\r\n')),
+            'wsgi.input': compat.BytesIO(v + compat.b('\r\n\r\n')),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -529,7 +529,7 @@ class DjangoClientTest(TestCase):
 
     def test_post_data(self):
         request = WSGIRequest(environ={
-            'wsgi.input': six.BytesIO(),
+            'wsgi.input': compat.BytesIO(),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -549,7 +549,7 @@ class DjangoClientTest(TestCase):
 
     def test_post_raw_data(self):
         request = WSGIRequest(environ={
-            'wsgi.input': six.BytesIO(six.b('foobar')),
+            'wsgi.input': compat.BytesIO(compat.b('foobar')),
             'wsgi.url_scheme': 'http',
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
@@ -566,13 +566,13 @@ class DjangoClientTest(TestCase):
         self.assertTrue('request' in event['context'])
         request = event['context']['request']
         self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], six.b('foobar'))
+        self.assertEquals(request['body'], compat.b('foobar'))
 
     @pytest.mark.skipif(django.VERSION < (1, 9),
                         reason='get-raw-uri-not-available')
     def test_disallowed_hosts_error_django_19(self):
         request = WSGIRequest(environ={
-            'wsgi.input': six.BytesIO(),
+            'wsgi.input': compat.BytesIO(),
             'wsgi.url_scheme': 'http',
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
@@ -590,7 +590,7 @@ class DjangoClientTest(TestCase):
                         reason='get-raw-uri-available')
     def test_disallowed_hosts_error_django_18(self):
         request = WSGIRequest(environ={
-            'wsgi.input': six.BytesIO(),
+            'wsgi.input': compat.BytesIO(),
             'wsgi.url_scheme': 'http',
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
@@ -609,7 +609,7 @@ class DjangoClientTest(TestCase):
         if django.VERSION[:2] < (1, 3):
             return
         request = WSGIRequest(environ={
-            'wsgi.input': six.BytesIO(),
+            'wsgi.input': compat.BytesIO(),
             'REQUEST_METHOD': 'POST',
             'SERVER_NAME': 'testserver',
             'SERVER_PORT': '80',
@@ -961,7 +961,7 @@ class DjangoLoggingTest(TestCase):
 
         logger.error('This is a test error', extra={
             'request': WSGIRequest(environ={
-                'wsgi.input': six.StringIO(),
+                'wsgi.input': compat.StringIO(),
                 'REQUEST_METHOD': 'POST',
                 'SERVER_NAME': 'testserver',
                 'SERVER_PORT': '80',
@@ -1201,7 +1201,7 @@ class DjangoManagementCommandTest(TestCase):
                         reason='argparse raises CommandError in this case')
     @mock.patch('elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv')
     def test_subcommand_not_set(self, argv_mock):
-        stdout = six.StringIO()
+        stdout = compat.StringIO()
         argv_mock.return_value = ['manage.py', 'elasticapm']
         call_command('elasticapm', stdout=stdout)
         output = stdout.getvalue()
@@ -1209,14 +1209,14 @@ class DjangoManagementCommandTest(TestCase):
 
     @mock.patch('elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv')
     def test_subcommand_not_known(self, argv_mock):
-        stdout = six.StringIO()
+        stdout = compat.StringIO()
         argv_mock.return_value = ['manage.py', 'elasticapm']
         call_command('elasticapm', 'foo', stdout=stdout)
         output = stdout.getvalue()
         assert 'No such command "foo"' in output
 
     def test_settings_missing(self):
-        stdout = six.StringIO()
+        stdout = compat.StringIO()
         with self.settings(ELASTIC_APM={}):
             call_command('elasticapm', 'check', stdout=stdout)
         output = stdout.getvalue()
@@ -1225,14 +1225,14 @@ class DjangoManagementCommandTest(TestCase):
         assert 'SECRET_TOKEN not set' in output
 
     def test_middleware_not_set(self):
-        stdout = six.StringIO()
+        stdout = compat.StringIO()
         with self.settings(MIDDLEWARE_CLASSES=()):
             call_command('elasticapm', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'Tracing middleware not configured!' in output
 
     def test_middleware_not_first(self):
-        stdout = six.StringIO()
+        stdout = compat.StringIO()
         with self.settings(MIDDLEWARE_CLASSES=(
             'foo',
             'elasticapm.contrib.django.middleware.TracingMiddleware'
@@ -1243,7 +1243,7 @@ class DjangoManagementCommandTest(TestCase):
 
     @mock.patch('elasticapm.transport.http_urllib3.urllib3.PoolManager.urlopen')
     def test_test_exception(self, urlopen_mock):
-        stdout = six.StringIO()
+        stdout = compat.StringIO()
         resp = mock.Mock(status=200, getheader=lambda h: 'http://example.com')
         urlopen_mock.return_value = resp
         with self.settings(MIDDLEWARE_CLASSES=(

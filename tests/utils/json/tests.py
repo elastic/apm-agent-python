@@ -5,7 +5,7 @@ import datetime
 import uuid
 
 from elasticapm.utils import json_encoder as json
-from elasticapm.utils import six
+from elasticapm.utils import compat
 from tests.utils.compat import TestCase
 
 
@@ -27,7 +27,7 @@ class JSONTest(TestCase):
         self.assertIn(json.dumps(res), ('["foo", "bar"]', '["bar", "foo"]'))
 
     def test_bytes(self):
-        if six.PY2:
+        if compat.PY2:
             res = bytes('foobar')
         else:
             res = bytes('foobar', encoding='ascii')

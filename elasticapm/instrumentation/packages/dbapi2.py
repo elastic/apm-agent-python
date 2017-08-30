@@ -6,7 +6,7 @@ import re
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import trace
-from elasticapm.utils import six, wrapt
+from elasticapm.utils import compat, wrapt
 
 
 class Literal(object):
@@ -55,7 +55,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
             else:
                 return lexeme
 
-        if isinstance(lexeme, six.string_types) and lexeme.upper() == keyword:
+        if isinstance(lexeme, compat.string_types) and lexeme.upper() == keyword:
             seen_keyword = True
 
 

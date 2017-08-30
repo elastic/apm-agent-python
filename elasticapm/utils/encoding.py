@@ -13,9 +13,9 @@ import datetime
 import uuid
 from decimal import Decimal
 
-from elasticapm.utils import six
+from elasticapm.utils import compat
 
-PROTECTED_TYPES = six.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
+PROTECTED_TYPES = compat.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
 
 
 def is_protected_type(obj):
@@ -35,27 +35,27 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
     If strings_only is True, don't convert (some) non-string-like objects.
     """
     # Handle the common case first, saves 30-40% when s is an instance of
-    # six.text_type. This function gets called often in that setting.
+    # compat.text_type. This function gets called often in that setting.
     #
     # Adapted from Django
-    if isinstance(s, six.text_type):
+    if isinstance(s, compat.text_type):
         return s
     if strings_only and is_protected_type(s):
         return s
     try:
-        if not isinstance(s, six.string_types):
+        if not isinstance(s, compat.string_types):
             if hasattr(s, '__unicode__'):
                 s = s.__unicode__()
             else:
-                if six.PY3:
+                if compat.PY3:
                     if isinstance(s, bytes):
-                        s = six.text_type(s, encoding, errors)
+                        s = compat.text_type(s, encoding, errors)
                     else:
-                        s = six.text_type(s)
+                        s = compat.text_type(s)
                 else:
-                    s = six.text_type(bytes(s), encoding, errors)
+                    s = compat.text_type(bytes(s), encoding, errors)
         else:
-            # Note: We use .decode() here, instead of six.text_type(s, encoding,
+            # Note: We use .decode() here, instead of compat.text_type(s, encoding,
             # errors), so that if s is a SafeBytes, it ends up being a
             # SafeText at the end.
             s = s.decode(encoding, errors)
@@ -106,12 +106,12 @@ def transform(value, stack=None, context=None):
     elif isinstance(value, uuid.UUID):
         ret = repr(value)
     elif isinstance(value, dict):
-        ret = dict((to_unicode(k), transform_rec(v)) for k, v in six.iteritems(value))
-    elif isinstance(value, six.text_type):
+        ret = dict((to_unicode(k), transform_rec(v)) for k, v in compat.iteritems(value))
+    elif isinstance(value, compat.text_type):
         ret = to_unicode(value)
-    elif isinstance(value, six.binary_type):
+    elif isinstance(value, compat.binary_type):
         ret = to_string(value)
-    elif not isinstance(value, six.class_types) and \
+    elif not isinstance(value, compat.class_types) and \
             _has_elasticapm_metadata(value):
         ret = transform_rec(value.__elasticapm__())
     elif isinstance(value, bool):
@@ -120,7 +120,7 @@ def transform(value, stack=None, context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
-    elif six.PY2 and isinstance(value, long):  # noqa F821
+    elif compat.PY2 and isinstance(value, long):  # noqa F821
         ret = long(value)  # noqa F821
     elif value is not None:
         try:
@@ -137,12 +137,12 @@ def transform(value, stack=None, context=None):
 
 def to_unicode(value):
     try:
-        value = six.text_type(force_text(value))
+        value = compat.text_type(force_text(value))
     except (UnicodeEncodeError, UnicodeDecodeError):
         value = '(Error decoding value)'
     except Exception:  # in some cases we get a different exception
         try:
-            value = six.binary_type(repr(type(value)))
+            value = compat.binary_type(repr(type(value)))
         except Exception:
             value = '(Error decoding value)'
     return value
@@ -150,14 +150,14 @@ def to_unicode(value):
 
 def to_string(value):
     try:
-        return six.binary_type(value.decode('utf-8').encode('utf-8'))
+        return compat.binary_type(value.decode('utf-8').encode('utf-8'))
     except:
         return to_unicode(value).encode('utf-8')
 
 
 def shorten(var, list_length=50, string_length=200):
     var = transform(var)
-    if isinstance(var, six.string_types) and len(var) > string_length:
+    if isinstance(var, compat.string_types) and len(var) > string_length:
         var = var[:string_length - 3] + '...'
     elif isinstance(var, (list, tuple, set, frozenset)) and len(var) > list_length:
         # TODO: we should write a real API for storing some metadata with vars when
