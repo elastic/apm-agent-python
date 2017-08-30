@@ -17,13 +17,15 @@ except ImportError:
     import SimpleHTTPServer
     from SocketServer import TCPServer
 
+
 class MyTCPServer(TCPServer):
     allow_reuse_address = True
+
 
 class InstrumentUrllib3Test(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
-        self.port = random.randint(50000, 60000)
+        self.port = None
         self.start_test_server()
         elasticapm.instrumentation.control.instrument()
 
@@ -34,7 +36,8 @@ class InstrumentUrllib3Test(TestCase):
     def start_test_server(self):
         handler = SimpleHTTPServer.SimpleHTTPRequestHandler
 
-        self.httpd = MyTCPServer(("", self.port), handler)
+        self.httpd = MyTCPServer(("", 0), handler)
+        self.port = self.httpd.socket.getsockname()[1]
 
         self.httpd_thread = threading.Thread(target=self.httpd.serve_forever)
         self.httpd_thread.setDaemon(True)
