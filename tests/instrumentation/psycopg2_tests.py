@@ -14,7 +14,7 @@ try:
 except ImportError:
     has_psycopg2 = False
 
-travis_and_psycopg2 = 'TRAVIS' not in os.environ or not has_psycopg2
+has_postgres_configured = 'POSTGRES_DB' in os.environ
 
 
 @pytest.yield_fixture(scope='function')
@@ -209,8 +209,7 @@ def test_multi_statement_sql():
 
     assert "CREATE TABLE" == actual
 
-@pytest.mark.skipif(travis_and_psycopg2,
-                    reason="Requires postgres server. Only runs on travisci.")
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_type(postgres_connection):
     import psycopg2.extras
 
@@ -228,8 +227,7 @@ def test_psycopg2_register_type(postgres_connection):
     assert new_type is not None
 
 
-@pytest.mark.skipif(travis_and_psycopg2,
-                    reason="Requires postgres server. Only runs on travisci.")
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_json(postgres_connection):
     # register_json bypasses register_type, so we have to test unwrapping
     # separately
@@ -254,8 +252,7 @@ def test_psycopg2_register_json(postgres_connection):
         client.instrumentation_store.get_all()
 
 
-@pytest.mark.skipif(travis_and_psycopg2,
-                    reason="Requires postgres server. Only runs on travisci.")
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection):
     client = get_client()
     control.instrument()
@@ -268,8 +265,7 @@ def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection)
     assert transactions == []
 
 
-@pytest.mark.skipif(travis_and_psycopg2,
-                    reason="Requires postgres server. Only runs on travisci.")
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_select_LIKE(postgres_connection):
     """
     Check that we pass queries with %-notation but without parameters

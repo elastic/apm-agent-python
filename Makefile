@@ -16,6 +16,6 @@ coverage:
 	coverage html --omit=*/migrations/* -d cover
 
 docs:
-	sh ./script/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
+	sh ./scripts/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
 
 .PHONY: isort flake8 test coverage docs
