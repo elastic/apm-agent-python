@@ -45,7 +45,7 @@ node{
                             try{
                                 sh("./tests/scripts/docker/run_tests.sh ${py_ver} ${framework} ${pip_cache}")
                             }catch(e){
-                                if(!job.contains("django-master")){
+                                if(!job.contains("django-master") && !job.equals("pypy:3_flask-0.11")){
                                     throw e
                                 }
                             }
