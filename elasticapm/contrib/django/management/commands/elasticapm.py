@@ -231,7 +231,7 @@ class Command(BaseCommand):
         self.write('')
 
         # check if middleware is set, and if it is at the first position
-        middleware = list(settings.MIDDLEWARE_CLASSES)
+        middleware = list(getattr(settings, 'MIDDLEWARE', getattr(settings, 'MIDDLEWARE_CLASSES', [])))
         try:
             pos = middleware.index(
                 'elasticapm.contrib.django.middleware.TracingMiddleware'
