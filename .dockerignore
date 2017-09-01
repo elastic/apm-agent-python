@@ -1,5 +1,6 @@
 # ignore for docker
 *build
+*src
 *elasticapm
 *travis
 *wheelhouse

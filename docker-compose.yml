@@ -31,9 +31,9 @@ services:
       - "6397:6397"
 
   run_tests:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: $PYTHON_IMAGE
+    command: ./tests/scripts/run_tests.sh
+    working_dir: /app
     environment: 
       MONGODB_HOST: 'mongodb'
       REDIS_HOST: 'redis'

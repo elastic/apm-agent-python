@@ -10,7 +10,7 @@ pip install -r "tests/requirements/requirements-python-${PYTHON_MAJOR_VERSION}.t
 if [[ $PYTHON_VERSION == 3.5* ]]; then
   pip install -r tests/requirements/requirements-asyncio.txt --cache-dir "${PIP_CACHE}"
 fi
-if [[ $PYTHON_VERSION == 'pypy' ]]; then
+if [[ $PYTHON_TYPE == 'pypy' ]]; then
   pip install -r tests/requirements/requirements-pypy.txt --cache-dir "${PIP_CACHE}"
 else
   pip install -r tests/requirements/requirements-cpython.txt --cache-dir "${PIP_CACHE}"

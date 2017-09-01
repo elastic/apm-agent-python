@@ -1,5 +1,5 @@
-from functools import partial
 import os
+from functools import partial
 
 import mock
 import pytest
