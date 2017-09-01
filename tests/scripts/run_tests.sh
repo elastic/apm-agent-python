@@ -3,7 +3,6 @@
 set -ex
 
 PYTHON_MAJOR_VERSION=$(python -c "import sys; print(sys.version_info[0])");
-mkdir -p "$PIP_CACHE"
 pip install -U pip
 pip install -r "tests/requirements/requirements-${WEBFRAMEWORK}.txt" --cache-dir "${PIP_CACHE}"
 pip install -r "tests/requirements/requirements-python-${PYTHON_MAJOR_VERSION}.txt" --cache-dir "${PIP_CACHE}"

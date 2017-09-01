@@ -19,11 +19,11 @@ node{
         }
        
         stage('Lint'){
-            def pip_cache = "${env.WORKSPACE}/${env.PIP_CACHE}"
             linters.each {
                 linter_jobs["${it}"] = {
                     node('linux'){
                         checkout scm
+                        def pip_cache = "${env.WORKSPACE}/${env.PIP_CACHE}"
                         sh("./tests/scripts/docker/${it}.sh ${pip_cache}")
                     }
                 }
@@ -32,7 +32,6 @@ node{
         }
         
         stage("Test Run"){
-            def pip_cache = "${env.WORKSPACE}/${env.PIP_CACHE}"
             python_versions.each{ py_ver -> 
                 frameworks.each{ framework -> 
                     def job = "${py_ver}_${framework}".toString()
@@ -43,6 +42,7 @@ node{
                         node('linux'){
                             checkout scm
                             try{
+                                def pip_cache = "${env.WORKSPACE}/${env.PIP_CACHE}"
                                 sh("./tests/scripts/docker/run_tests.sh ${py_ver} ${framework} ${pip_cache}")
                             }catch(e){
                                 if(!job.contains("django-master") && !job.equals("pypy:3_flask-0.11")){
