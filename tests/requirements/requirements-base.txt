@@ -1,13 +1,13 @@
-py==1.4.30
-pytest==2.8.0
-pytest-capturelog==0.7
-pytest-django==2.8.0
-pytest-benchmark==2.5.0
-apipkg==1.4
-execnet==1.4.1
-isort==4.2.2
-pytest-cache==1.0
-pytest-isort==0.1.0
+py==1.4.34
+pytest==3.2.1
+pytest-catchlog==1.2.2
+pytest-django==3.1.2
+
+pytest-benchmark==3.1.1
+docutils==0.14
+pathlib==1.0.1
+py-cpuinfo==3.3.0
+statistics==1.0.3.5
 
 urllib3
 certifi
