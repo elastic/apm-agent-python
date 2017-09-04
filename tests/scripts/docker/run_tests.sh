@@ -17,6 +17,6 @@ fi
 
 docker-compose pull run_tests
 docker-compose run \
-  -e WEBFRAMEWORK=$2 -e PIP_CACHE=${pip_cache} -e PYTHON_TYPE=$PYTHON_TYPE \
+  -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} -e PYTHON_TYPE=$PYTHON_TYPE \
   -v `pwd`:/app -v ${pip_cache}:${docker_pip_cache} \
   --rm run_tests

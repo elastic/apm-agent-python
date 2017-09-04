@@ -4,10 +4,12 @@ docker_pip_cache="/app/.cache/pip"
 
 mkdir -p ${pip_cache}
 
-docker pull python:3.6
 docker run \
-  -e PIP_CACHE=${pip_cache} \
+  -e PIP_CACHE=${docker_pip_cache} \
   -v `pwd`:/app -v ${pip_cache}:${docker_pip_cache} \
   -w /app \
-  -i python:3.6 \
-  /app/tests/scripts/flake8.sh
+  python:3.6 \
+  /bin/bash \
+  -c "pip install -U pip
+      pip install -r tests/requirements/lint-flake8.txt --cache-dir ${docker_pip_cache}
+      make flake8"
