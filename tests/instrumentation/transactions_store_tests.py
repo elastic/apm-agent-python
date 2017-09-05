@@ -1,7 +1,9 @@
+import logging
 import time
 
 from mock import Mock
 
+import elasticapm
 from elasticapm.traces import TransactionsStore, get_transaction, trace
 from tests.utils.compat import TestCase
 
@@ -128,3 +130,29 @@ def test_get_transaction_clear():
     t = requests_store.begin_transaction("test")
     assert t == get_transaction(clear=True)
     assert get_transaction() is None
+
+
+def test_tag_transaction():
+    requests_store = TransactionsStore(lambda: [], 99999)
+    t = requests_store.begin_transaction("test")
+    elasticapm.tag(foo='bar')
+    requests_store.end_transaction(200, 'test')
+
+    assert t._tags == {'foo': 'bar'}
+    transaction_dict = t.to_dict()
+    assert transaction_dict['context']['tags'] == {'foo': 'bar'}
+
+
+def test_tag_while_no_transaction(caplog):
+    elasticapm.tag(foo='bar')
+    record = caplog.records[0]
+    assert record.levelno == logging.WARNING
+    assert 'foo' in record.args
+
+
+def test_tag_with_non_string_value():
+    requests_store = TransactionsStore(lambda: [], 99999)
+    t = requests_store.begin_transaction("test")
+    elasticapm.tag(foo=1)
+    requests_store.end_transaction(200, 'test')
+    assert t._tags == {'foo': '1'}
