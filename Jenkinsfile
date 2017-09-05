@@ -4,7 +4,7 @@ def python_versions = ['python:2.7','python:3.3','python:3.4','python:3.5','pyth
 def frameworks = ['django-1.8', 'django-1.9', 'django-1.10', 'django-1.11', 'django-master', 'flask-0.10', 'flask-0.11', 'flask-0.12']
 def exclude_jobs = ['python:2.7_django-master', 'python:3.3_django-1.9', 'python:3.3_django-1.10', 'python:3.3_django-1.11', 'python:3.3_django-master']
 def test_jobs = [:]
-def linters = ['isort', 'flake8', 'docs']
+def linters = ['isort', 'flake8']
 def linter_jobs = [:]
 
 node{
@@ -17,36 +17,53 @@ node{
                 checkout scm
             }
         }
-       
+        
         stage('Lint'){
             linters.each {
                 linter_jobs["${it}"] = {
                     node('linux'){
                         checkout scm
-                        def pip_cache = "${env.WORKSPACE}/${env.PIP_CACHE}"
-                        sh("./tests/scripts/docker/${it}.sh ${pip_cache}")
+                        try{ sh 'docker stop $(docker ps -q -a)' }catch(e){}
+                        try{ sh 'docker rm -v $(docker ps -a -q)' }catch(e){}
+                        dir('src/github.com/elastic/apm-agent-python/'){
+                            sh("./tests/scripts/docker/${it}.sh")
+                        }
                     }
                 }
             }
             parallel linter_jobs
         }
+
+        stage('Docs'){
+            node('linux'){
+                checkout scm
+                dir('src/github.com/elastic/apm-agent-python/'){
+                    sh("./tests/scripts/docker/docs.sh")
+                }
+            }
+        } 
         
         stage("Test Run"){
-            python_versions.each{ py_ver -> 
-                frameworks.each{ framework -> 
+            for (int i=0; i<python_versions.size(); i++){
+                def py_ver = python_versions[i].toString()
+                for (int j=0; j<frameworks.size(); j++){
+                    def framework = frameworks[j].toString()
                     def job = "${py_ver}_${framework}".toString()
                     if(exclude_jobs.contains(job)){
-                        return
+                        continue 
                     }
                     test_jobs[job] = {
                         node('linux'){
                             checkout scm
-                            try{
-                                def pip_cache = "${env.WORKSPACE}/${env.PIP_CACHE}"
-                                sh("./tests/scripts/docker/run_tests.sh ${py_ver} ${framework} ${pip_cache}")
-                            }catch(e){
-                                if(!job.contains("django-master") && !job.equals("pypy:3_flask-0.11")){
-                                    throw e
+                            try{ sh 'docker stop $(docker ps -q -a)' }catch(e){}
+                            try{ sh 'docker rm -v $(docker ps -a -q)' }catch(e){}
+                            dir('src/github.com/elastic/apm-agent-python/'){
+                                try{
+                                    sh("./tests/scripts/docker/run_tests.sh ${py_ver} ${framework}")
+                                }catch(e){
+                                    if(!job.contains("django-master") && !job.equals("pypy:3_flask-0.11")){
+                                        throw e
+                                    }
                                 }
                             }
                         }

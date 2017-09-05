@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-pip_cache=${1-"$HOME/.cache/pip"}
+pip_cache="$HOME/.cache/pip"
 docker_pip_cache="/app/.cache/pip"
 
-mkdir -p ${pip_cache}
-
+docker build --build-arg PYTHON_IMAGE=python:3.6 -t lint_isort .
 docker run \
   -e PIP_CACHE=${docker_pip_cache} \
-  -v `pwd`:/app -v ${pip_cache}:${docker_pip_cache} \
+  -v ${pip_cache}:${docker_pip_cache} \
   -w /app \
-  python:3.6 \
+  --rm lint_isort \
   /bin/bash \
   -c "pip install -U pip 
       pip install -r tests/requirements/lint-isort.txt --cache-dir ${docker_pip_cache}
