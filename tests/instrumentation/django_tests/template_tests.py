@@ -4,7 +4,6 @@ pytest.importorskip("django")  # isort:skip
 from os.path import join
 
 import django
-from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 import mock
@@ -12,6 +11,15 @@ import pytest
 
 from conftest import BASE_TEMPLATE_DIR
 from elasticapm.contrib.django.client import get_client
+from tests.utils.compat import middleware_setting
+
+try:
+    # Django 1.10+
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
+
+
 
 # Testing Django 1.8+ backends
 TEMPLATES = (
@@ -37,8 +45,8 @@ class TracesTest(TestCase):
     @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_template_rendering(self, should_collect):
         should_collect.return_value = False
-        with self.settings(MIDDLEWARE_CLASSES=[
-            'elasticapm.contrib.django.middleware.TracingMiddleware']):
+        with self.settings(**middleware_setting(django.VERSION,
+                                                ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
             self.client.get(reverse('render-heavy-template'))
             self.client.get(reverse('render-heavy-template'))
             self.client.get(reverse('render-heavy-template'))
@@ -70,9 +78,10 @@ class TracesTest(TestCase):
     @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_template_rendering_django18_jinja2(self, should_collect):
         should_collect.return_value = False
-        with self.settings(MIDDLEWARE_CLASSES=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware'],
-                TEMPLATES=TEMPLATES
+        with self.settings(
+                TEMPLATES=TEMPLATES,
+                **middleware_setting(django.VERSION,
+                                     ['elasticapm.contrib.django.middleware.TracingMiddleware'])
             ):
             self.client.get(reverse('render-jinja2-template'))
             self.client.get(reverse('render-jinja2-template'))

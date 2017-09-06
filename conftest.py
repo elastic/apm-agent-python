@@ -2,6 +2,8 @@
 import sys
 from os.path import abspath, dirname, join
 
+from tests.utils.compat import middleware_setting
+
 where_am_i = dirname(abspath(__file__))
 
 BASE_TEMPLATE_DIR = join(where_am_i, 'tests', 'contrib', 'django', 'testapp',
@@ -27,7 +29,7 @@ def pytest_configure(config):
         settings = None
     if settings is not None and not settings.configured:
         import django
-        settings.configure(
+        settings_dict = dict(
             DATABASES={
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',
@@ -63,11 +65,6 @@ def pytest_configure(config):
             TEMPLATE_DEBUG=False,
             TEMPLATE_DIRS=[BASE_TEMPLATE_DIR],
             ALLOWED_HOSTS=['*'],
-            MIDDLEWARE_CLASSES=[
-                'django.contrib.sessions.middleware.SessionMiddleware',
-                'django.contrib.auth.middleware.AuthenticationMiddleware',
-                'django.contrib.messages.middleware.MessageMiddleware',
-            ],
             TEMPLATES=[
                 {
                     'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -83,7 +80,12 @@ def pytest_configure(config):
                     },
                 },
             ]
-
         )
+        settings_dict.update(**middleware_setting(django.VERSION, [
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+        ]))
+        settings.configure(**settings_dict)
         if hasattr(django, 'setup'):
             django.setup()

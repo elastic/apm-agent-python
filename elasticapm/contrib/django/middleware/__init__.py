@@ -121,8 +121,10 @@ class TracingMiddleware(MiddlewareMixin):
                     TracingMiddleware._elasticapm_instrumented = True
 
     def instrument_middlewares(self):
-        if getattr(django_settings, 'MIDDLEWARE_CLASSES', None):
-            for middleware_path in django_settings.MIDDLEWARE_CLASSES:
+        middlewares = (getattr(django_settings, 'MIDDLEWARE', None) or
+                       getattr(django_settings, 'MIDDLEWARE_CLASSES', None))
+        if middlewares:
+            for middleware_path in middlewares:
                 module_path, class_name = middleware_path.rsplit('.', 1)
                 try:
                     module = import_module(module_path)

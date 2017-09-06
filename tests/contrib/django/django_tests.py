@@ -12,7 +12,6 @@ from django.contrib.sites.models import Site
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.management import call_command
 from django.core.signals import got_request_exception
-from django.core.urlresolvers import reverse
 from django.db import DatabaseError
 from django.http import QueryDict
 from django.http.cookie import SimpleCookie
@@ -25,17 +24,23 @@ from django.test.utils import override_settings
 import mock
 import pytest
 
-from elasticapm import instrumentation
 from elasticapm.base import Client
 from elasticapm.contrib.django import DjangoClient
-from elasticapm.contrib.django.client import (client, get_client,
-                                              get_client_config)
+from elasticapm.contrib.django.client import client, get_client
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.traces import Transaction
 from elasticapm.utils import compat
 from elasticapm.utils.lru import LRUCache
 from tests.contrib.django.testapp.views import IgnoredException
+from tests.utils.compat import middleware_setting
+
+try:
+    # Django 1.10+
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
+
 
 try:
     from celery.tests.utils import with_eager_tasks
@@ -88,8 +93,6 @@ class ClientProxyTest(TestCase):
 
 
 class DjangoClientTest(TestCase):
-
-    urls = 'tests.contrib.django.testapp.urls'
 
     def setUp(self):
         self.elasticapm_client = get_client()
@@ -227,6 +230,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(user_info['username'], 'admin')
             self.assertFalse('email' in user_info)
 
+    @pytest.mark.skipif(django.VERSION > (1, 9),
+                        reason='MIDDLEWARE_CLASSES removed in Django 2.0')
     def test_user_info_with_non_django_auth(self):
         with self.settings(INSTALLED_APPS=[
             app for app in settings.INSTALLED_APPS
@@ -242,6 +247,25 @@ class DjangoClientTest(TestCase):
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         assert event['context']['user'] == {}
 
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='MIDDLEWARE new in Django 1.10')
+    def test_user_info_with_non_django_auth_django_2(self):
+        with self.settings(INSTALLED_APPS=[
+            app for app in settings.INSTALLED_APPS
+            if app != 'django.contrib.auth'
+        ]) and self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+            m for m in settings.MIDDLEWARE
+            if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
+        ]):
+            with pytest.raises(Exception):
+                resp = self.client.get(reverse('elasticapm-raise-exc'))
+
+        self.assertEquals(len(self.elasticapm_client.events), 1)
+        event = self.elasticapm_client.events.pop(0)['errors'][0]
+        assert event['context']['user'] == {}
+
+    @pytest.mark.skipif(django.VERSION > (1, 9),
+                        reason='MIDDLEWARE_CLASSES removed in Django 2.0')
     def test_user_info_without_auth_middleware(self):
         with self.settings(MIDDLEWARE_CLASSES=[
             m for m in settings.MIDDLEWARE_CLASSES
@@ -254,8 +278,23 @@ class DjangoClientTest(TestCase):
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         assert event['context']['user'] == {}
 
+    @pytest.mark.skipif(django.VERSION < (1, 10),
+                        reason='MIDDLEWARE new in Django 1.10')
+    def test_user_info_without_auth_middleware_django_2(self):
+        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+            m for m in settings.MIDDLEWARE
+            if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
+        ]):
+            self.assertRaises(Exception,
+                              self.client.get,
+                              reverse('elasticapm-raise-exc'))
+        self.assertEquals(len(self.elasticapm_client.events), 1)
+        event = self.elasticapm_client.events.pop(0)['errors'][0]
+        assert event['context']['user'] == {}
+
     def test_request_middleware_exception(self):
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware']):
+        with self.settings(**middleware_setting(django.VERSION,
+                                                ['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware'])):
             self.assertRaises(ImportError, self.client.get, reverse('elasticapm-raise-exc'))
 
             self.assertEquals(len(self.elasticapm_client.events), 1)
@@ -270,7 +309,8 @@ class DjangoClientTest(TestCase):
     def test_response_middlware_exception(self):
         if django.VERSION[:2] < (1, 3):
             return
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware']):
+        with self.settings(**middleware_setting(django.VERSION,
+                                                ['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware'])):
             self.assertRaises(ImportError, self.client.get, reverse('elasticapm-no-error'))
 
             self.assertEquals(len(self.elasticapm_client.events), 1)
@@ -287,7 +327,8 @@ class DjangoClientTest(TestCase):
             client = _TestClient(REMOTE_ADDR='127.0.0.1')
             client.handler = MockMiddleware(MockClientHandler())
 
-            self.assertRaises(Exception, client.get, reverse('elasticapm-raise-exc'))
+            with self.settings(**middleware_setting(django.VERSION, [])):
+                self.assertRaises(Exception, client.get, reverse('elasticapm-raise-exc'))
 
             self.assertEquals(len(self.elasticapm_client.events), 2)
             event = self.elasticapm_client.events.pop(0)['errors'][0]
@@ -307,7 +348,8 @@ class DjangoClientTest(TestCase):
             self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.urls.handler500')
 
     def test_view_middleware_exception(self):
-        with self.settings(MIDDLEWARE_CLASSES=['tests.contrib.django.testapp.middleware.BrokenViewMiddleware']):
+        with self.settings(**middleware_setting(django.VERSION,
+                                                ['tests.contrib.django.testapp.middleware.BrokenViewMiddleware'])):
             self.assertRaises(ImportError, self.client.get, reverse('elasticapm-raise-exc'))
 
             self.assertEquals(len(self.elasticapm_client.events), 1)
@@ -404,28 +446,8 @@ class DjangoClientTest(TestCase):
         assert 'exception' not in event
 
     def test_404_middleware(self):
-        with self.settings(MIDDLEWARE_CLASSES=['elasticapm.contrib.django.middleware.Catch404Middleware']):
-            resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
-
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
-
-            self.assertEquals(event['log']['level'], 'info')
-            self.assertEquals(event['log']['logger_name'], 'http404')
-
-            self.assertTrue('request' in event['context'])
-            request = event['context']['request']
-            self.assertEquals(request['url']['raw'], u'http://testserver/non-existant-page')
-            self.assertEquals(request['method'], 'GET')
-            self.assertEquals(request['url']['search'], '')
-            self.assertEquals(request['body'], None)
-
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_404_new_style_middleware(self):
-        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
-                'elasticapm.contrib.django.middleware.Catch404Middleware']):
+        with self.settings(**middleware_setting(django.VERSION,
+                                                ['elasticapm.contrib.django.middleware.Catch404Middleware'])):
             resp = self.client.get('/non-existant-page')
             self.assertEquals(resp.status_code, 404)
 
@@ -444,47 +466,19 @@ class DjangoClientTest(TestCase):
 
     def test_404_middleware_with_debug(self):
         with self.settings(
-                MIDDLEWARE_CLASSES=[
-                    'elasticapm.contrib.django.middleware.Catch404Middleware'
-                ],
                 DEBUG=True,
-        ):
-            resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
-            self.assertEquals(len(self.elasticapm_client.events), 0)
-
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_404_new_style_middleware_with_debug(self):
-        with self.settings(
-                MIDDLEWARE_CLASSES=None,
-                MIDDLEWARE=[
+                **middleware_setting(django.VERSION, [
                     'elasticapm.contrib.django.middleware.Catch404Middleware'
-                ],
-                DEBUG=True,
+                ])
         ):
             resp = self.client.get('/non-existant-page')
             self.assertEquals(resp.status_code, 404)
             self.assertEquals(len(self.elasticapm_client.events), 0)
 
     def test_response_error_id_middleware(self):
-        with self.settings(MIDDLEWARE_CLASSES=[
+        with self.settings(**middleware_setting(django.VERSION, [
                 'elasticapm.contrib.django.middleware.ErrorIdMiddleware',
-                'elasticapm.contrib.django.middleware.Catch404Middleware']):
-            resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
-            headers = dict(resp.items())
-            self.assertTrue('X-ElasticAPM-ErrorId' in headers)
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
-            self.assertEquals(event['id'], headers['X-ElasticAPM-ErrorId'])
-
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_response_error_id_middleware_new_style(self):
-        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
-                'elasticapm.contrib.django.middleware.ErrorIdMiddleware',
-                'elasticapm.contrib.django.middleware.Catch404Middleware']):
+                'elasticapm.contrib.django.middleware.Catch404Middleware'])):
             resp = self.client.get('/non-existant-page')
             self.assertEquals(resp.status_code, 404)
             headers = dict(resp.items())
@@ -637,27 +631,12 @@ class DjangoClientTest(TestCase):
         self.assertTrue('SERVER_PORT' in env, env.keys())
         self.assertEquals(env['SERVER_PORT'], '80')
 
-    def test_transaction_metrics(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-        with self.settings(MIDDLEWARE_CLASSES=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware']):
-            self.assertEqual(len(self.elasticapm_client.instrumentation_store), 0)
-            self.client.get(reverse('elasticapm-no-error'))
-            self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
-
-            transactions = self.elasticapm_client.instrumentation_store.get_all()
-
-            assert len(transactions) == 1
-            transaction = transactions[0]
-            assert transaction['duration'] > 0
-            assert transaction['result'] == '200'
-            assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
-
     def test_transaction_request_response_data(self):
         self.client.cookies = SimpleCookie({'foo': 'bar'})
         self.elasticapm_client.instrumentation_store.get_all()
-        with self.settings(MIDDLEWARE_CLASSES=[
-            'elasticapm.contrib.django.middleware.TracingMiddleware']):
+        with self.settings(**middleware_setting(
+                django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
+        )):
             self.client.get(reverse('elasticapm-no-error'))
         self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
         transactions = self.elasticapm_client.instrumentation_store.get_all()
@@ -680,12 +659,11 @@ class DjangoClientTest(TestCase):
         assert response['status_code'] == '200'
         assert response['headers']['my-header'] == 'foo'
 
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_transaction_metrics_new_style_middleware(self):
+    def test_transaction_metrics(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware']):
+        with self.settings(**middleware_setting(
+                django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
+        )):
             self.assertEqual(len(self.elasticapm_client.instrumentation_store), 0)
             self.client.get(reverse('elasticapm-no-error'))
             self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
@@ -706,39 +684,11 @@ class DjangoClientTest(TestCase):
         client.instrument_django_middleware = True
 
         with self.settings(
-            MIDDLEWARE_CLASSES=[
+            APPEND_SLASH=True,
+            **middleware_setting(django.VERSION, [
                 'elasticapm.contrib.django.middleware.TracingMiddleware',
                 'django.middleware.common.CommonMiddleware',
-            ],
-            APPEND_SLASH=True,
-        ):
-            self.client.get(reverse('elasticapm-no-error-slash')[:-1])
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertIn(
-            transactions[0]['name'], (
-                # django <= 1.8
-                'GET django.middleware.common.CommonMiddleware.process_request',
-                # django 1.9+
-                'GET django.middleware.common.CommonMiddleware.process_response',
-            )
-        )
-
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_request_metrics_301_append_slash_new_style_middleware(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-
-        # enable middleware wrapping
-        client = get_client()
-        client.instrument_django_middleware = True
-
-        with self.settings(
-            MIDDLEWARE_CLASSES=None,
-            MIDDLEWARE=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'django.middleware.common.CommonMiddleware',
-            ],
-            APPEND_SLASH=True,
+            ])
         ):
             self.client.get(reverse('elasticapm-no-error-slash')[:-1])
         transactions = self.elasticapm_client.instrumentation_store.get_all()
@@ -759,35 +709,11 @@ class DjangoClientTest(TestCase):
         client.instrument_django_middleware = True
 
         with self.settings(
-            MIDDLEWARE_CLASSES=[
+            PREPEND_WWW=True,
+            **middleware_setting(django.VERSION, [
                 'elasticapm.contrib.django.middleware.TracingMiddleware',
                 'django.middleware.common.CommonMiddleware',
-            ],
-            PREPEND_WWW=True,
-        ):
-            self.client.get(reverse('elasticapm-no-error'))
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET django.middleware.common.CommonMiddleware.process_request'
-        )
-
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_request_metrics_301_prepend_www_new_style_middleware(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-
-        # enable middleware wrapping
-        client = get_client()
-        client.instrument_django_middleware = True
-
-        with self.settings(
-            MIDDLEWARE_CLASSES=None,
-            MIDDLEWARE=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'django.middleware.common.CommonMiddleware',
-            ],
-            PREPEND_WWW=True,
+            ])
         ):
             self.client.get(reverse('elasticapm-no-error'))
         transactions = self.elasticapm_client.instrumentation_store.get_all()
@@ -809,40 +735,10 @@ class DjangoClientTest(TestCase):
         Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
 
         with self.settings(
-            MIDDLEWARE_CLASSES=[
+            **middleware_setting(django.VERSION, [
                 'elasticapm.contrib.django.middleware.TracingMiddleware',
                 'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
-            ],
-        ):
-            response = self.client.get('/redirect/me/')
-
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware'
-            '.process_response'
-        )
-
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='new-style middlewares')
-    def test_request_metrics_contrib_redirect_new_style_middleware(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-
-        # enable middleware wrapping
-        client = get_client()
-        client.instrument_django_middleware = True
-        from elasticapm.contrib.django.middleware import TracingMiddleware
-        TracingMiddleware._elasticapm_instrumented = False
-
-        s = Site.objects.get(pk=1)
-        Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
-
-        with self.settings(
-            MIDDLEWARE_CLASSES=None,
-            MIDDLEWARE=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
-            ],
+            ])
         ):
             response = self.client.get('/redirect/me/')
 
@@ -856,10 +752,10 @@ class DjangoClientTest(TestCase):
     def test_request_metrics_name_override(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
         with self.settings(
-            MIDDLEWARE_CLASSES=[
+            **middleware_setting(django.VERSION, [
                 'elasticapm.contrib.django.middleware.TracingMiddleware',
                 'tests.contrib.django.testapp.middleware.MetricsNameOverrideMiddleware',
-            ]
+            ])
         ):
             self.client.get(reverse('elasticapm-no-error'))
         transactions = self.elasticapm_client.instrumentation_store.get_all()
@@ -871,9 +767,7 @@ class DjangoClientTest(TestCase):
     def test_request_metrics_404_resolve_error(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
         with self.settings(
-                MIDDLEWARE_CLASSES=[
-                    'elasticapm.contrib.django.middleware.TracingMiddleware',
-                ]
+            **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
         ):
             self.client.get('/i-dont-exist/')
         transactions = self.elasticapm_client.instrumentation_store.get_all()
@@ -998,11 +892,11 @@ def test_stacktraces_have_templates():
         TEMPLATES_copy = deepcopy(settings.TEMPLATES)
         TEMPLATES_copy[0]['OPTIONS']['debug'] = TEMPLATE_DEBUG
         with override_settings(
-            MIDDLEWARE_CLASSES=[
-                'elasticapm.contrib.django.middleware.TracingMiddleware'
-            ],
             TEMPLATE_DEBUG=TEMPLATE_DEBUG,
-            TEMPLATES=TEMPLATES_copy
+            TEMPLATES=TEMPLATES_copy,
+            **middleware_setting(django.VERSION, [
+                'elasticapm.contrib.django.middleware.TracingMiddleware'
+            ])
         ):
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
@@ -1040,8 +934,8 @@ def test_stacktrace_filtered_for_elasticapm():
     with mock.patch(
             "elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        with override_settings(MIDDLEWARE_CLASSES=[
-            'elasticapm.contrib.django.middleware.TracingMiddleware']):
+        with override_settings(**middleware_setting(django.VERSION,
+                                                    ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
@@ -1063,8 +957,8 @@ def test_perf_template_render(benchmark):
     responses = []
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        with override_settings(MIDDLEWARE_CLASSES=[
-            'elasticapm.contrib.django.middleware.TracingMiddleware']):
+        with override_settings(**middleware_setting(django.VERSION,
+                                                    ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
             benchmark(lambda: responses.append(
                 client_get(client, reverse("render-heavy-template"))
             ))
@@ -1108,8 +1002,8 @@ def test_perf_database_render(benchmark):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
 
-        with override_settings(MIDDLEWARE_CLASSES=[
-            'elasticapm.contrib.django.middleware.TracingMiddleware']):
+        with override_settings(**middleware_setting(django.VERSION,
+                                                    ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
             benchmark(lambda: responses.append(
                 client_get(client, reverse("render-user-template"))
             ))
@@ -1153,9 +1047,8 @@ def test_perf_transaction_with_collection(benchmark):
 
         client = _TestClient()
 
-        with override_settings(MIDDLEWARE_CLASSES=[
-            'elasticapm.contrib.django.middleware.TracingMiddleware']):
-
+        with override_settings(**middleware_setting(django.VERSION,
+                                                    ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
             for i in range(10):
                 resp = client_get(client, reverse("render-user-template"))
                 assert resp.status_code == 200
@@ -1226,17 +1119,17 @@ class DjangoManagementCommandTest(TestCase):
 
     def test_middleware_not_set(self):
         stdout = compat.StringIO()
-        with self.settings(MIDDLEWARE_CLASSES=()):
+        with self.settings(**middleware_setting(django.VERSION, ())):
             call_command('elasticapm', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'Tracing middleware not configured!' in output
 
     def test_middleware_not_first(self):
         stdout = compat.StringIO()
-        with self.settings(MIDDLEWARE_CLASSES=(
+        with self.settings(**middleware_setting(django.VERSION, (
             'foo',
             'elasticapm.contrib.django.middleware.TracingMiddleware'
-        )):
+        ))):
             call_command('elasticapm', 'check', stdout=stdout)
         output = stdout.getvalue()
         assert 'not at the first position' in output
@@ -1246,10 +1139,10 @@ class DjangoManagementCommandTest(TestCase):
         stdout = compat.StringIO()
         resp = mock.Mock(status=200, getheader=lambda h: 'http://example.com')
         urlopen_mock.return_value = resp
-        with self.settings(MIDDLEWARE_CLASSES=(
-                'foo',
-                'elasticapm.contrib.django.middleware.TracingMiddleware'
-        )):
+        with self.settings(**middleware_setting(django.VERSION, [
+            'foo',
+            'elasticapm.contrib.django.middleware.TracingMiddleware'
+        ])):
             call_command('elasticapm', 'test', stdout=stdout, stderr=stdout)
         output = stdout.getvalue()
         assert 'http://example.com' in output
