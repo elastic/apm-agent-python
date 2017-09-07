@@ -7,7 +7,9 @@ def test_jobs = [:]
 def linters = ['isort', 'flake8']
 def linter_jobs = [:]
 
+
 node{
+    properties([pipelineTriggers([githubPush()])])
     withEnv(["HOME=/var/lib/jenkins",
              "PIP_CACHE=.cache/pip"
              ]) {
