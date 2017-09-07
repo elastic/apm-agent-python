@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+
 if [ $# -lt 2 ]; then
   echo "Arguments missing"
   exit 2

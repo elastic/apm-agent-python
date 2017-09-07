@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -e
 
 pip_cache="$HOME/.cache/pip"
 docker_pip_cache="/app/.cache/pip"
