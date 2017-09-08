@@ -8,8 +8,8 @@ def linters = ['isort', 'flake8']
 def linter_jobs = [:]
 
 
+properties([pipelineTriggers([githubPush()])])
 node{
-    properties([pipelineTriggers([githubPush()])])
     withEnv(["HOME=/var/lib/jenkins",
              "PIP_CACHE=.cache/pip"
              ]) {
