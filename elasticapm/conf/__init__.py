@@ -106,7 +106,7 @@ class Config(_ConfigBase):
     secret_token = _ConfigValue('SECRET_TOKEN')
     servers = _ListConfigValue('SERVERS', default=['http://localhost:8200'])
     include_paths = _ListConfigValue('INCLUDE_PATHS')
-    exclude_paths = _ListConfigValue('EXCLUDE_PATHS')
+    exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=['elasticapm'])
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
     timeout = _ConfigValue('TIMEOUT', type=float, default=5)
     hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
@@ -120,6 +120,7 @@ class Config(_ConfigBase):
         'elasticapm.processors.sanitize_http_wsgi_env',
         'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
+        'elasticapm.processors.mark_in_app_frames',
     ])
     traces_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
