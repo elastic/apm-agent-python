@@ -21,7 +21,6 @@ from django.http import HttpRequest
 from django.template import TemplateSyntaxError
 
 from elasticapm.base import Client
-from elasticapm.conf import defaults
 from elasticapm.contrib.django.utils import (get_data_from_template_debug,
                                              get_data_from_template_source,
                                              iterate_with_template_sources)
@@ -59,52 +58,29 @@ def get_client(client=None):
 
     if _client[0] != client:
         client_class = import_string(client)
-        instance = client_class(**get_client_config())
+        instance = client_class(**get_client_default_config())
         if not tmp_client:
             _client = (client, instance)
         return instance
     return _client[1]
 
 
-def get_client_config():
+def get_client_default_config():
     config = getattr(django_settings, 'ELASTIC_APM', {})
     return dict(
-        servers=config.get('SERVERS', None),
-        include_paths=set(
-            config.get('INCLUDE_PATHS', [])) | _get_installed_apps_paths(),
-        exclude_paths=config.get('EXCLUDE_PATHS', None),
-        filter_exception_types=config.get('FILTER_EXCEPTION_TYPES', None),
-        timeout=config.get('TIMEOUT', None),
-        hostname=config.get('HOSTNAME', None),
-        auto_log_stacks=config.get('AUTO_LOG_STACKS', None),
-        string_max_length=config.get('MAX_LENGTH_STRING', None),
-        list_max_length=config.get('MAX_LENGTH_LIST', None),
-        app_name=config.get('APP_NAME', None),
-        secret_token=config.get('SECRET_TOKEN', None),
-        transport_class=config.get('TRANSPORT_CLASS', None),
-        processors=config.get('PROCESSORS', None),
-        traces_send_freq_secs=config.get('TRACES_SEND_FREQ_SEC', None),
-        async_mode=config.get('ASYNC_MODE', None),
-        instrument_django_middleware=config.get('INSTRUMENT_DJANGO_MIDDLEWARE'),
-        transactions_ignore_patterns=config.get('TRANSACTIONS_IGNORE_PATTERNS', None),
+        include_paths=set(config.get('INCLUDE_PATHS', [])) | _get_installed_apps_paths(),
     )
 
 
 class DjangoClient(Client):
     logger = logging.getLogger('elasticapm.errors.client.django')
 
-    def __init__(self, **kwargs):
-        instrument_django_middleware = kwargs.pop(
-            'instrument_django_middleware',
-            None
-        )
-        if instrument_django_middleware is not None:
-            self.instrument_django_middleware = instrument_django_middleware
-        else:
-            self.instrument_django_middleware = defaults.INSTRUMENT_DJANGO_MIDDLEWARE
+    def __init__(self, config=None, **defaults):
+        if config is None:
+            config = getattr(django_settings, 'ELASTIC_APM', {})
         self._framework = 'django'
         self._framework_version = django.get_version()
-        super(DjangoClient, self).__init__(**kwargs)
+        super(DjangoClient, self).__init__(config, **defaults)
 
     def get_user_info(self, request):
         user_info = {}
@@ -226,7 +202,7 @@ class DjangoClient(Client):
         if is_http_request:
             # attach the elasticapm object to the request
             request._elasticapm = {
-                'app_name': data.get('app_name', self.app_name),
+                'app_name': data.get('app_name', self.config.app_name),
                 'id': self.get_ident(result),
             }
 
@@ -253,7 +229,7 @@ class DjangoClient(Client):
         If ``servers`` was passed into the constructor, this will serialize the data and pipe it to
         each server using ``send_remote()``.
         """
-        if self.servers:
+        if self.config.servers:
             return super(DjangoClient, self).send(**kwargs)
         else:
             self.error_logger.error('No servers configured, and elasticapm not installed. Cannot send message')

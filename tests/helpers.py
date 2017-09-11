@@ -7,13 +7,9 @@ def get_tempstoreclient(app_name="myapp",
 
 
 class TempStoreClient(Client):
-    def __init__(self,
-                 servers=None, app_name=None,
-                 secret_token=None, **kwargs):
+    def __init__(self, **defaults):
         self.events = []
-        super(TempStoreClient, self).__init__(
-            servers=servers, app_id=app_name,
-            secret_token=secret_token, **kwargs)
+        super(TempStoreClient, self).__init__(**defaults)
 
     def send(self, **kwargs):
         self.events.append(kwargs)

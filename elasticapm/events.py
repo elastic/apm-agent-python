@@ -74,15 +74,11 @@ class Exception(BaseEvent):
             exc_type, exc_value, exc_traceback = exc_info
 
             frames = varmap(
-                lambda k, v: shorten(v,
-                                     string_length=client.string_max_length,
-                                     list_length=client.list_max_length
-                                     ),
+                lambda k, v: shorten(v),
                 get_stack_info((iter_traceback_frames(exc_traceback)))
             )
 
-            culprit = get_culprit(frames, client.include_paths,
-                                  client.exclude_paths)
+            culprit = get_culprit(frames, client.config.include_paths, client.config.exclude_paths)
 
             if hasattr(exc_type, '__module__'):
                 exc_module = exc_type.__module__

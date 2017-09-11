@@ -22,7 +22,7 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(event['log']['logger_name'], __name__)
         self.assertEquals(event['log']['level'], "error")
         self.assertEquals(event['log']['message'], 'This is a test error')
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event['log'])
         self.assertEquals(event['log']['param_message'], 'This is a test error')
@@ -46,7 +46,7 @@ class LoggingIntegrationTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event['context']['custom']['url'], 'http://example.com')
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event['log'])
         self.assertEquals(event['log']['param_message'], 'This is a test info with a url')
@@ -94,6 +94,18 @@ class LoggingIntegrationTest(TestCase):
 
     def test_no_record_stack(self):
         self.logger.info('This is a test of no stacks', extra={'stack': False})
+        self.assertEquals(len(self.client.events), 1)
+        event = self.client.events.pop(0)['errors'][0]
+        self.assertEquals(event.get('culprit'), None)
+        self.assertEquals(event['log']['message'], 'This is a test of no stacks')
+        self.assertFalse('stacktrace' in event['log'])
+        self.assertFalse('exception' in event)
+        self.assertTrue('param_message' in event['log'])
+        self.assertEquals(event['log']['param_message'], 'This is a test of no stacks')
+
+    def test_no_record_stack_via_config(self):
+        self.client.config.auto_log_stacks = False
+        self.logger.info('This is a test of no stacks')
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event.get('culprit'), None)

@@ -22,7 +22,7 @@ import warnings
 import zlib
 
 import elasticapm
-from elasticapm.conf import defaults
+from elasticapm.conf import Config, defaults
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
 from elasticapm.utils import json_encoder as json
@@ -99,42 +99,19 @@ class Client(object):
     logger = logging.getLogger('elasticapm')
     protocol_version = '1.0'
 
-    environment_config_map = {
-        'app_name': 'ELASTIC_APM_APP_NAME',
-        'secret_token': 'ELASTIC_APM_SECRET_TOKEN',
-        'git_ref': 'ELASTIC_APM_GIT_REF',
-        'app_version': 'ELASTIC_APM_APP_VERSION',
-    }
-
-    def __init__(self, app_name=None, secret_token=None,
-                 transport_class=None, include_paths=None, exclude_paths=None,
-                 timeout=None, hostname=None, auto_log_stacks=None,
-                 string_max_length=None, list_max_length=None, processors=None,
-                 filter_exception_types=None, servers=None,
-                 async_mode=None, traces_send_freq_secs=None,
-                 transactions_ignore_patterns=None, git_ref=None,
-                 app_version=None,
-                 **kwargs):
-        self.app_name = self.secret_token = self.git_ref = self.app_version = None
+    def __init__(self, config=None, **defaults):
         # configure loggers first
         cls = self.__class__
         self.logger = logging.getLogger('%s.%s' % (cls.__module__, cls.__name__))
         self.error_logger = logging.getLogger('elasticapm.errors')
         self.state = ClientState()
-        self._configure(app_name=app_name,
-                        secret_token=secret_token, git_ref=git_ref,
-                        app_version=app_version)
-        self.servers = servers or defaults.SERVERS
-        self.async_mode = (async_mode is True or (defaults.ASYNC_MODE and async_mode is not False))
-        if not transport_class:
-            transport_class = (defaults.ASYNC_TRANSPORT_CLASS
-                               if self.async_mode
-                               else defaults.SYNC_TRANSPORT_CLASS)
-        self._transport_class = import_string(transport_class)
+        self.config = Config(config, default_dict=defaults)
+
+        self._transport_class = import_string(self.config.transport_class)
         self._transports = {}
 
         # servers may be set to a NoneType (for Django)
-        if self.servers and not (self.app_name and self.secret_token):
+        if self.config.servers and not (self.config.app_name and self.config.secret_token):
             msg = 'Missing configuration for ElasticAPM client. Please see documentation.'
             self.logger.info(msg)
 
@@ -147,50 +124,20 @@ class Client(object):
                 'environment variable'
             )
 
-        self.include_paths = set(include_paths or defaults.INCLUDE_PATHS)
-        self.exclude_paths = set(exclude_paths or defaults.EXCLUDE_PATHS)
-        self.timeout = int(timeout or defaults.TIMEOUT)
-        self.hostname = compat.text_type(hostname or defaults.HOSTNAME)
-        self.auto_log_stacks = bool(auto_log_stacks or
-                                    defaults.AUTO_LOG_STACKS)
-
-        self.string_max_length = int(string_max_length or
-                                     defaults.MAX_LENGTH_STRING)
-        self.list_max_length = int(list_max_length or defaults.MAX_LENGTH_LIST)
-        self.traces_send_freq_secs = (traces_send_freq_secs or
-                                      defaults.TRACES_SEND_FREQ_SECS)
-
         self.filter_exception_types_dict = {}
-        for exc_to_filter in (filter_exception_types or []):
+        for exc_to_filter in (self.config.filter_exception_types or []):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
             exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
             self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
 
-        if processors is None:
-            self.processors = defaults.PROCESSORS
-        else:
-            self.processors = processors
-        self.processors = [import_string(p) for p in self.processors]
+        self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         self.instrumentation_store = TransactionsStore(
             lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
-            self.traces_send_freq_secs,
-            transactions_ignore_patterns
+            self.config.traces_send_frequency,
+            self.config.transactions_ignore_patterns
         )
         compat.atexit_register(self.close)
-
-    def _configure(self, **kwargs):
-        """
-        Configures this instance based on kwargs, or environment variables.
-        The former take precedence.
-        """
-        for attr_name, value in kwargs.items():
-            if value is None and (attr_name in self.environment_config_map and
-                                  self.environment_config_map[attr_name] in os.environ):
-                self.logger.info("Configuring elasticapm.%s from environment variable '%s'",
-                                 attr_name, self.environment_config_map[attr_name])
-                value = os.environ[self.environment_config_map[attr_name]]
-            setattr(self, attr_name, compat.text_type(value))
 
     def get_ident(self, result):
         """
@@ -225,7 +172,7 @@ class Client(object):
         if not date:
             date = datetime.datetime.utcnow()
         if stack is None:
-            stack = self.auto_log_stacks
+            stack = self.config.auto_log_stacks
         if 'context' not in data:
             data['context'] = context = {}
         else:
@@ -254,17 +201,13 @@ class Client(object):
                 frames = iter_stack_frames()
             else:
                 frames = stack
-            frames = varmap(lambda k, v: shorten(
-                v,
-                string_length=self.string_max_length,
-                list_length=self.list_max_length
-            ), stacks.get_stack_info(frames))
+            frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(frames))
             log['stacktrace'] = frames
 
         if 'stacktrace' in log and not culprit:
             culprit = get_culprit(
                 log['stacktrace'],
-                self.include_paths, self.exclude_paths
+                self.config.include_paths, self.config.exclude_paths
             )
 
         if 'level' in log and isinstance(log['level'], compat.integer_types):
@@ -344,7 +287,7 @@ class Client(object):
                                           extra, stack, **kwargs)
 
         if data:
-            servers = [server + defaults.ERROR_API_PATH for server in self.servers]
+            servers = [server + defaults.ERROR_API_PATH for server in self.config.servers]
             self.send(servers=servers, **data)
             return data['errors'][0]['id']
 
@@ -360,7 +303,7 @@ class Client(object):
                 fail_callback=self.handle_transport_fail
             )
         else:
-            url = transport.send(data, headers, timeout=self.timeout)
+            url = transport.send(data, headers, timeout=self.config.timeout)
             self.handle_transport_success(url=url)
 
     def _get_log_message(self, data):
@@ -374,7 +317,7 @@ class Client(object):
         return message
 
     def _get_transport(self, parsed_url):
-        if self.async_mode and is_master_process():
+        if self._transport_class.async_mode and is_master_process():
             # when in the master process, always use SYNC mode. This avoids
             # the danger of being forked into an inconsistent threading state
             self.logger.info('Sending message synchronously while in master '
@@ -441,14 +384,14 @@ class Client(object):
         payload off to ``send_remote`` for each server specified in the servers
         configuration.
         """
-        servers = servers or self.servers
+        servers = servers or self.config.servers
         if not servers:
             warnings.warn('elasticapm client has no remote servers configured')
             return
 
         if not auth_header:
             if not secret_token:
-                secret_token = self.secret_token
+                secret_token = self.config.secret_token
 
             auth_header = "Bearer %s" % (secret_token)
 
@@ -565,7 +508,7 @@ class Client(object):
         })
         api_path = defaults.TRANSACTIONS_API_PATH
 
-        self.send(servers=[server + api_path for server in self.servers], **data)
+        self.send(servers=[server + api_path for server in self.config.servers], **data)
 
     def get_app_info(self):
         language_version = platform.python_version()
@@ -574,8 +517,8 @@ class Client(object):
         else:
             runtime_version = language_version
         return {
-            'name': self.app_name,
-            'version': self.app_version,
+            'name': self.config.app_name,
+            'version': self.config.app_version,
             'agent': {
                 'name': 'elasticapm-python',
                 'version': elasticapm.VERSION,
@@ -585,7 +528,6 @@ class Client(object):
                 'name': getattr(self, '_framework', None),
                 'version': getattr(self, '_framework_version', None),
             },
-            'git_ref': self.git_ref,
             'language': {
                 'name': 'python',
                 'version': platform.python_version(),

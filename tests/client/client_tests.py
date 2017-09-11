@@ -62,7 +62,7 @@ class ClientTest(TestCase):
 
     def test_app_info(self):
         app_info = self.client.get_app_info()
-        assert app_info['name'] == self.client.app_name
+        assert app_info['name'] == self.client.config.app_name
         assert app_info['language'] == {
             'name': 'python',
             'version': platform.python_version()
@@ -76,18 +76,16 @@ class ClientTest(TestCase):
         with mock.patch.dict('os.environ', {
             'ELASTIC_APM_APP_NAME': 'app',
             'ELASTIC_APM_SECRET_TOKEN': 'token',
-            'ELASTIC_APM_GIT_REF': 'aabbccdd'
         }):
             client = Client()
-            self.assertEqual(client.app_name, 'app')
-            self.assertEqual(client.secret_token, 'token')
-            self.assertEqual(client.git_ref, 'aabbccdd')
-            self.assertEqual(client.is_send_disabled, False)
+            self.assertEqual(client.config.app_name, 'app')
+            self.assertEqual(client.config.secret_token, 'token')
+            self.assertEqual(client.config.disable_send, False)
         with mock.patch.dict('os.environ', {
             'ELASTIC_APM_DISABLE_SEND': 'true',
         }):
             client = Client()
-            self.assertEqual(client.is_send_disabled, True)
+            self.assertEqual(client.config.disable_send, True)
 
     def test_config_non_string_types(self):
         """
@@ -109,8 +107,8 @@ class ClientTest(TestCase):
             app_name=MyValue('bar'),
             secret_token=MyValue('bay')
         )
-        assert isinstance(client.secret_token, compat.string_types)
-        assert isinstance(client.app_name, compat.string_types)
+        assert isinstance(client.config.secret_token, compat.string_types)
+        assert isinstance(client.config.app_name, compat.string_types)
 
     def test_custom_transport(self):
         client = Client(
@@ -140,7 +138,7 @@ class ClientTest(TestCase):
             servers=['http://example.com'],
             app_name='app_name',
             secret_token='secret',
-            async_mode=False,
+            transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
         )
         logger = mock.Mock()
         client.error_logger.error = logger
@@ -168,7 +166,7 @@ class ClientTest(TestCase):
             servers=['http://example.com'],
             app_name='app_name',
             secret_token='secret',
-            async_mode=False,
+            transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
         )
         logger = mock.Mock()
         client.error_logger.error = logger
@@ -289,7 +287,7 @@ class ClientTest(TestCase):
             servers=['http://example.com'],
             app_name='app_name',
             secret_token='secret',
-            async_mode=False,
+            transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
         )
         client.send(auth_header='foo', **{
             'foo': 'bar',
@@ -491,4 +489,7 @@ class ClientTest(TestCase):
         client.begin_transaction("web")
         client.end_transaction('GET views.users', 200)
 
-        self.assertEqual(len(client.instrumentation_store), 1)
+        transactions = client.instrumentation_store.get_all()
+
+        assert len(transactions) == 1
+        assert transactions[0]['name'] == 'GET views.users'

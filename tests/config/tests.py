@@ -4,7 +4,7 @@ import logging
 
 import mock
 
-from elasticapm.conf import setup_logging
+from elasticapm.conf import Config, setup_logging
 from tests.utils.compat import TestCase
 
 
@@ -24,3 +24,74 @@ class SetupLoggingTest(TestCase):
             logger.handlers = [handler]
             result = setup_logging(handler)
             self.assertFalse(result)
+
+
+def test_config_dict():
+    config = Config({
+        'APP_NAME': 'foo',
+        'SECRET_TOKEN': 'bar',
+        'SERVERS': 'http://example.com:1234',
+        'APP_VERSION': 1,
+        'HOSTNAME': 'localhost',
+        'TRACES_SEND_FREQ': '5'
+    })
+
+    assert config.app_name == 'foo'
+    assert config.secret_token == 'bar'
+    assert config.servers == ['http://example.com:1234']
+    assert config.app_version == '1'
+    assert config.hostname == 'localhost'
+    assert config.traces_send_frequency == 5
+
+
+def test_config_environment():
+    with mock.patch.dict('os.environ', {
+        'ELASTIC_APM_APP_NAME': 'foo',
+        'ELASTIC_APM_SECRET_TOKEN': 'bar',
+        'ELASTIC_APM_SERVERS': 'http://example.com:1234,http://example.com:5678',
+        'ELASTIC_APM_APP_VERSION': '1',
+        'ELASTIC_APM_HOSTNAME': 'localhost',
+        'ELASTIC_APM_TRACES_SEND_FREQ': '5',
+        'ELASTIC_APM_AUTO_LOG_STACKS': 'false',
+    }):
+        config = Config()
+
+        assert config.app_name == 'foo'
+        assert config.secret_token == 'bar'
+        assert config.servers == ['http://example.com:1234', 'http://example.com:5678']
+        assert config.app_version == '1'
+        assert config.hostname == 'localhost'
+        assert config.traces_send_frequency == 5
+        assert config.auto_log_stacks == False
+
+
+def test_config_defaults_dict():
+    config = Config(default_dict={
+        'app_name': 'foo',
+        'secret_token': 'bar',
+        'servers': ['http://example.com:1234', 'http://example.com:5678'],
+        'app_version': '1',
+        'hostname': 'localhost',
+        'traces_send_frequency': '5',
+    })
+
+    assert config.app_name == 'foo'
+    assert config.secret_token == 'bar'
+    assert config.servers == ['http://example.com:1234', 'http://example.com:5678']
+    assert config.app_version == '1'
+    assert config.hostname == 'localhost'
+    assert config.traces_send_frequency == 5
+
+
+def test_config_precedence():
+    #  precendece order: config dict, environment, default dict
+    with mock.patch.dict('os.environ', {
+        'ELASTIC_APM_APP_NAME': 'bar',
+        'ELASTIC_APM_SECRET_TOKEN': 'secret'
+    }):
+        config = Config({
+            'APP_NAME': 'foo',
+        }, default_dict={'secret_token': 'notsecret'})
+
+    assert config.app_name == 'foo'
+    assert config.secret_token == 'secret'
