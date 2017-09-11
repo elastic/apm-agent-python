@@ -27,7 +27,6 @@ from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
 from elasticapm.utils import json_encoder as json
 from elasticapm.utils import compat, is_master_process, stacks, varmap
-from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.encoding import shorten, transform
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.stacks import get_culprit, iter_stack_frames
@@ -483,19 +482,6 @@ class Client(object):
         """
         return self.capture('Message', message=message, **kwargs)
 
-    @deprecated(alternative="capture_message()")
-    def captureMessage(self, message, **kwargs):
-        """
-        Deprecated
-        :param message:
-        :type message:
-        :param kwargs:
-        :type kwargs:
-        :return:
-        :rtype:
-        """
-        self.capture_message(message, **kwargs)
-
     def capture_exception(self, exc_info=None, **kwargs):
         """
         Creates an event from an exception.
@@ -511,29 +497,6 @@ class Client(object):
         for you.
         """
         return self.capture('Exception', exc_info=exc_info, **kwargs)
-
-    @deprecated(alternative="capture_exception()")
-    def captureException(self, exc_info=None, **kwargs):
-        """
-        Deprecated
-        """
-        self.capture_exception(exc_info, **kwargs)
-
-    def capture_query(self, query, params=(), engine=None, **kwargs):
-        """
-        Creates an event for a SQL query.
-
-        >>> client.capture_query('SELECT * FROM foo')
-        """
-        return self.capture('Query', query=query, params=params, engine=engine,
-                            **kwargs)
-
-    @deprecated(alternative="capture_query()")
-    def captureQuery(self, *args, **kwargs):
-        """
-        Deprecated
-        """
-        self.capture_query(*args, **kwargs)
 
     def begin_transaction(self, transaction_type):
         """Register the start of a transaction on the client

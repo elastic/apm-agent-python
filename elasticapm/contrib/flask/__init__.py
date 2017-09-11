@@ -24,7 +24,6 @@ from elasticapm.contrib.flask.utils import get_data_from_request
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils import (build_name_with_http_method_prefix,
                               disabled_due_to_debug)
-from elasticapm.utils.deprecation import deprecated
 
 logger = logging.getLogger('elasticapm.errors.client')
 
@@ -180,11 +179,3 @@ class ElasticAPM(object):
     def capture_message(self, *args, **kwargs):
         assert self.client, 'capture_message called before application configured'
         return self.client.capture_message(*args, **kwargs)
-
-    @deprecated(alternative="capture_exception()")
-    def captureException(self, *args, **kwargs):
-        return self.capture_exception(*args, **kwargs)
-
-    @deprecated(alternative="capture_message()")
-    def captureMessage(self, *args, **kwargs):
-        return self.capture_message(*args, **kwargs)

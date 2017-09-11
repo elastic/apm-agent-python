@@ -18,7 +18,7 @@ from elasticapm.utils.encoding import shorten, to_unicode
 from elasticapm.utils.stacks import (get_culprit, get_stack_info,
                                      iter_traceback_frames)
 
-__all__ = ('BaseEvent', 'Exception', 'Message', 'Query')
+__all__ = ('BaseEvent', 'Exception', 'Message')
 
 logger = logging.getLogger(__name__)
 
@@ -146,28 +146,3 @@ class Message(BaseEvent):
         if isinstance(data.get('stacktrace'), dict):
             message_data['log']['stacktrace'] = data['stacktrace']['frames']
         return message_data
-
-
-class Query(BaseEvent):
-    """
-    Messages store the following metadata:
-
-    - query: 'SELECT * FROM table'
-    - engine: 'postgesql_psycopg2'
-    """
-
-    def to_string(self, data):
-        sql = data['query']
-        return sql['query']
-
-    def get_hash(self, data):
-        sql = data['query']
-        return [sql['query'], sql['engine']]
-
-    def capture(self, query, engine, **kwargs):
-        return {
-            'query': {
-                'query': query,
-                'engine': engine,
-            }
-        }
