@@ -1,6 +1,6 @@
-import mock
 import requests
 from requests.exceptions import InvalidURL, MissingSchema
+from urllib3_mock import Responses
 
 import elasticapm
 import elasticapm.instrumentation.control
@@ -8,19 +8,20 @@ from elasticapm.traces import trace
 from tests.helpers import get_tempstoreclient
 from tests.utils.compat import TestCase
 
+try:
+    from requests.packages import urllib3  # noqa
+    responses = Responses('requests.packages.urllib3')
+except ImportError:
+    responses = Responses('urllib3')
+
 
 class InstrumentRequestsTest(TestCase):
     def setUp(self):
         self.client = get_tempstoreclient()
         elasticapm.instrumentation.control.instrument()
+        responses.add('GET', '/', status=200, adding_headers={'Location': 'http://example.com/foo'})
 
-    @mock.patch("requests.adapters.HTTPAdapter.send")
-    def test_requests_instrumentation(self, mock_send):
-        mock_send.return_value = mock.Mock(
-            url='http://example.com',
-            history=[],
-            headers={'location': ''},
-        )
+    def test_requests_instrumentation(self):
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             # NOTE: The `allow_redirects` argument has to be set to `False`,
@@ -36,13 +37,7 @@ class InstrumentRequestsTest(TestCase):
         self.assertEqual('GET example.com', traces[0]['name'])
         self.assertEqual('http://example.com/', traces[0]['context']['url'])
 
-    @mock.patch("requests.adapters.HTTPAdapter.send")
-    def test_requests_instrumentation_via_session(self, mock_send):
-        mock_send.return_value = mock.Mock(
-            url='http://example.com',
-            history=[],
-            headers={'location': ''},
-        )
+    def test_requests_instrumentation_via_session(self):
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             s = requests.Session()
@@ -54,13 +49,7 @@ class InstrumentRequestsTest(TestCase):
         self.assertEqual('GET example.com', traces[0]['name'])
         self.assertEqual('http://example.com/', traces[0]['context']['url'])
 
-    @mock.patch("requests.adapters.HTTPAdapter.send")
-    def test_requests_instrumentation_via_prepared_request(self, mock_send):
-        mock_send.return_value = mock.Mock(
-            url='http://example.com',
-            history=[],
-            headers={'location': ''},
-        )
+    def test_requests_instrumentation_via_prepared_request(self):
         self.client.begin_transaction("transaction.test")
         with trace("test_pipeline", "test"):
             r = requests.Request('get', 'http://example.com')

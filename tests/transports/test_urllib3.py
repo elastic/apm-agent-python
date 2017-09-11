@@ -14,8 +14,8 @@ except ImportError:
     from urllib import parse as urlparse
 
 
-
 responses = Responses('urllib3')
+
 
 @responses.activate
 def test_send():
