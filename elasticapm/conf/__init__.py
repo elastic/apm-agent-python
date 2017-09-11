@@ -44,14 +44,14 @@ class _ConfigValue(object):
 
 class _ListConfigValue(_ConfigValue):
     def __init__(self, dict_key, list_separator=',', **kwargs):
-        self.list_serparator = list_separator
+        self.list_separator = list_separator
         super(_ListConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
         if isinstance(value, compat.string_types):
-            value = value.split(self.list_serparator)
-        else:
-            value = list(value) if value is not None else value
+            value = value.split(self.list_separator)
+        elif value is not None:
+            value = list(value)
         if value:
             value = [self.type(item) for item in value]
         instance._values[self] = value
@@ -72,34 +72,8 @@ class _BoolConfigValue(_ConfigValue):
         instance._values[self] = bool(value)
 
 
-class Config(object):
+class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
-
-    app_name = _ConfigValue('APP_NAME', validators=[lambda val: re.match('.*', val)])
-    secret_token = _ConfigValue('SECRET_TOKEN')
-    servers = _ListConfigValue('SERVERS', default=['http://localhost:8200'])
-    include_paths = _ListConfigValue('INCLUDE_PATHS')
-    exclude_paths = _ListConfigValue('EXCLUDE_PATHS')
-    filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
-    timeout = _ConfigValue('TIMEOUT', type=float)
-    hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
-    auto_log_stacks = _BoolConfigValue('AUTO_LOG_STACKS', default=True)
-    keyword_max_length = _ConfigValue('KEYWORD_MAX_LENGTH', type=int, default=1024)
-    transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http_urllib3.AsyncUrllib3Transport')
-    processors = _ListConfigValue('PROCESSORS', default=[
-        'elasticapm.processors.sanitize_stacktrace_locals',
-        'elasticapm.processors.sanitize_http_request_cookies',
-        'elasticapm.processors.sanitize_http_headers',
-        'elasticapm.processors.sanitize_http_wsgi_env',
-        'elasticapm.processors.sanitize_http_request_querystring',
-        'elasticapm.processors.sanitize_http_request_body',
-    ])
-    traces_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
-    async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
-    instrument_django_middleware = _BoolConfigValue('INSTRUMENT_DJANGO_MIDDLEWARE', default=True)
-    transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])
-    app_version = _ConfigValue('APP_VERSION')
-    disable_send = _BoolConfigValue('DISABLE_SEND', default=False)
 
     def __init__(self, config_dict=None, env_dict=None, default_dict=None):
         self._values = {}
@@ -125,6 +99,34 @@ class Config(object):
             # only set if new_value changed. We'll fall back to the field default if not.
             if new_value is not self._NO_VALUE:
                 setattr(self, field, new_value)
+
+
+class Config(_ConfigBase):
+    app_name = _ConfigValue('APP_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)])
+    secret_token = _ConfigValue('SECRET_TOKEN')
+    servers = _ListConfigValue('SERVERS', default=['http://localhost:8200'])
+    include_paths = _ListConfigValue('INCLUDE_PATHS')
+    exclude_paths = _ListConfigValue('EXCLUDE_PATHS')
+    filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
+    timeout = _ConfigValue('TIMEOUT', type=float, default=5)
+    hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
+    auto_log_stacks = _BoolConfigValue('AUTO_LOG_STACKS', default=True)
+    keyword_max_length = _ConfigValue('KEYWORD_MAX_LENGTH', type=int, default=1024)
+    transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http_urllib3.AsyncUrllib3Transport')
+    processors = _ListConfigValue('PROCESSORS', default=[
+        'elasticapm.processors.sanitize_stacktrace_locals',
+        'elasticapm.processors.sanitize_http_request_cookies',
+        'elasticapm.processors.sanitize_http_headers',
+        'elasticapm.processors.sanitize_http_wsgi_env',
+        'elasticapm.processors.sanitize_http_request_querystring',
+        'elasticapm.processors.sanitize_http_request_body',
+    ])
+    traces_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
+    async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
+    instrument_django_middleware = _BoolConfigValue('INSTRUMENT_DJANGO_MIDDLEWARE', default=True)
+    transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])
+    app_version = _ConfigValue('APP_VERSION')
+    disable_send = _BoolConfigValue('DISABLE_SEND', default=False)
 
 
 def setup_logging(handler, exclude=['elasticapm',

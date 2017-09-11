@@ -4,7 +4,8 @@ import logging
 
 import mock
 
-from elasticapm.conf import Config, setup_logging
+from elasticapm.conf import (Config, _BoolConfigValue, _ConfigBase,
+                             _ConfigValue, _ListConfigValue, setup_logging)
 from tests.utils.compat import TestCase
 
 
@@ -95,3 +96,34 @@ def test_config_precedence():
 
     assert config.app_name == 'foo'
     assert config.secret_token == 'secret'
+
+
+def test_list_config_value():
+    class MyConfig(_ConfigBase):
+        my_list = _ListConfigValue('MY_LIST', list_separator='|', type=int)
+
+    config = MyConfig({'MY_LIST': '1|2|3'})
+    assert config.my_list == [1, 2, 3]
+
+
+def test_bool_config_value():
+    class MyConfig(_ConfigBase):
+        my_bool = _BoolConfigValue('MY_BOOL', true_string='yup', false_string='nope')
+
+    config = MyConfig({'MY_BOOL': 'yup'})
+
+    assert config.my_bool is True
+
+    config.my_bool = 'nope'
+
+    assert config.my_bool is False
+
+
+def test_values_not_shared_among_instances():
+    class MyConfig(_ConfigBase):
+        my_bool = _BoolConfigValue('MY_BOOL', true_string='yup', false_string='nope')
+
+    c1 = MyConfig({'MY_BOOL': 'yup'})
+    c2 = MyConfig({'MY_BOOL': 'nope'})
+
+    assert c1.my_bool is not c2.my_bool
