@@ -493,3 +493,19 @@ class ClientTest(TestCase):
 
         assert len(transactions) == 1
         assert transactions[0]['name'] == 'GET views.users'
+
+
+@mock.patch('elasticapm.base.Client.send_remote')
+def test_disable_send(mock_send_remote):
+    client = Client(
+        servers=['http://example.com'],
+        app_name='app_name',
+        secret_token='secret',
+        disable_send=True
+    )
+
+    assert client.config.disable_send
+
+    client.capture('Message', message='test', data={'logger': 'test'})
+
+    assert mock_send_remote.call_count == 0
