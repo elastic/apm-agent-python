@@ -1,12 +1,14 @@
 [[run-tests-locally]]
-== Run Tests Locally
+=== Run Tests Locally
 
 To run tests locally you can make use of the docker images also used when running the whole test suite with Jenkins. 
-Running the full test suite first does some linting and then runs the actual tests with different versions of Python and different web frameworks. For a full overview of the test matrix and supported versions have a look at 
+Running the full test suite first does some linting and then runs the actual tests with different versions of Python and different web frameworks.
+For a full overview of the test matrix and supported versions have a look at
 https://github.com/elastic/apm-agent-python/blob/master/Jenkinsfile[Jenkins Configuration].
 
+[float]
 [[coder-linter]]
-=== Code Linter 
+==== Code Linter
 We run two code linters `isort` and `flake8`. You can trigger each single one locally by running:
 
 [source,bash]
@@ -19,25 +21,24 @@ $ ./tests/scripts/docker/isort.sh <pip-cache-dir>
 $ ./tests/scripts/docker/flake8.sh <pip-cache-dir>
 ----
 
+[float]
 [[test-documentation]]
-=== Test Documentation
+==== Test Documentation
 We test that the documentation can be generated without errors. You can trigger this check by running: 
 [source,bash]
 ----
 $ ./tests/scripts/docker/docs.sh 
 ----
 
+[float]
 [[running-tests]]
-=== Running Tests
+==== Running Tests
 We run the test suite on different combinations of Python versions and web frameworks. For triggering the test suite for a specific combination locally you can run:
 
 [source,bash]
 ----
 $ ./tests/scripts/docker/run_tests.sh python-version framework-version <pip-cache-dir>
 ----
-NOTE: 
-
-The `python-version` must be of format `python:version`, e.g. `python:3.6` or `pypy:2`.
-
-The `framework` must be of format `framework-version`, e.g. `django-1.10` or `flask-0.12`. 
+NOTE: The `python-version` must be of format `python:version`, e.g. `python:3.6` or `pypy:2`.
+The `framework` must be of format `framework-version`, e.g. `django-1.10` or `flask-0.12`.
 

@@ -27,15 +27,12 @@ from elasticapm.utils import (build_name_with_http_method_prefix,
 logger = logging.getLogger('elasticapm.errors.client')
 
 
-def make_client(client_cls, app, app_name=None, secret_token=None):
+def make_client(client_cls, app, **defaults):
     config = app.config.get('ELASTIC_APM', {})
 
-    client = client_cls(config, include_paths={app.import_name})
+    defaults.setdefault('include_paths', {app.import_name})
 
-    if app_name:
-        client.config.app_name = app_name
-    if secret_token:
-        client.config.secret_token = secret_token
+    client = client_cls(config, **defaults)
 
     client._framework = 'flask'
     client._framework_version = getattr(flask, '__version__', '<0.7')
@@ -72,19 +69,16 @@ class ElasticAPM(object):
 
     Capture a message::
 
-    >>> elasticapm.captureMessage('hello, world!')
+    >>> elasticapm.capture_message('hello, world!')
     """
-    def __init__(self, app=None, app_name=None,
-                 secret_token=None, client=None, client_cls=Client,
-                 logging=False):
-        self.app_name = app_name
-        self.secret_token = secret_token
+    def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults):
+        self.app = app
         self.logging = logging
         self.client_cls = client_cls
         self.client = client
 
         if app:
-            self.init_app(app)
+            self.init_app(app, **defaults)
 
     def handle_exception(self, *args, **kwargs):
         if not self.client:
@@ -104,15 +98,10 @@ class ElasticAPM(object):
             },
         )
 
-    def init_app(self, app):
+    def init_app(self, app, **defaults):
         self.app = app
         if not self.client:
-            self.client = make_client(
-                self.client_cls,
-                app,
-                self.app_name,
-                self.secret_token,
-            )
+            self.client = make_client(self.client_cls, app, **defaults)
 
         if self.logging:
             setup_logging(LoggingHandler(self.client))

@@ -1,0 +1,232 @@
+[[flask-support]]
+== Flask support
+
+Getting Elastic APM set up for your Flask project is easy,
+and there are various ways you can tweak it to fit to your needs.
+
+[float]
+[[flask-installation]]
+=== Installation
+
+Install the Elastic APM agent using pip:
+
+[source,bash]
+----
+$ pip install elastic-apm[flask]
+----
+
+or add `elastic-apm[flask]` to your project's `requirements.txt` file.
+
+NOTE: If you use Flask with uwsgi, make sure to
+http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads[enable
+threads].
+
+[float]
+[[flask-setup]]
+=== Setup
+
+To set up the agent, you need to initialize it with appropriate settings.
+
+The settings are configured either via environment variables,
+the application's settings, or as initialization arguments.
+
+You can find a list of all available settings in the <<configuration, Configuration>> page.
+
+To initialize the agent for your application using environment variables:
+
+[source,python]
+----
+from elasticapm.contrib.flask import ElasticAPM
+
+app = Flask(__name__)
+
+apm = ElasticAPM(app)
+----
+
+To configure the agent using `ELASTIC_APM` in your application's settings:
+
+[source,python]
+----
+from elasticapm.contrib.flask import ElasticAPM
+
+app.config['ELASTIC_APM'] ={
+    'APP_NAME': '<APP-NAME>',
+    'SECRET_TOKEN': '<SECRET-TOKEN>',
+}
+apm = ElasticAPM(app)
+----
+
+The final option is to initialize the agent with the settings as arguments:
+
+[source,python]
+----
+from elasticapm.contrib.flask import ElasticAPM
+
+apm = ElasticAPM(app, app_name='<APP-ID>', secret_token='<SECRET-TOKEN>')
+----
+
+[float]
+[[flask-debug-mode]]
+==== Debug Mode
+
+Please note that errors and transactions will only be sent to the apm server if your app is *not* in
+http://flask.pocoo.org/docs/0.12/quickstart/#debug-mode[debug mode].
+
+To force the agent to send data while the app is in debug mode,
+set the value of `DEBUG` in the `ELASTIC_APM` dictionary to `True`:
+
+[source,python]
+----
+app.config['ELASTIC_APM'] = {
+        'APP_NAME': '<APP-NAME>',
+        'SECRET_TOKEN': '<SECRET-TOKEN>',
+        'DEBUG': True
+}
+----
+
+[float]
+[[flask-building-applications-on-the-fly]]
+==== Building applications on the fly?
+
+You can use the agent's `init_app` hook for adding the application on the fly:
+
+[source,python]
+----
+from elasticapm.contrib.flask import ElasticAPM
+apm = ElasticAPM()
+
+def create_app():
+    app = Flask(__name__)
+    apm.init_app(app, app_name='<APP-NAME>', secret_token='<SECRET-TOKEN>')
+    return app
+----
+
+[float]
+[[flask-usage]]
+=== Usage
+
+Once you have configured the agent,
+it will automatically track transactions and capture uncaught exceptions within Flask.
+If you want to send additional events,
+a couple of shortcuts are provided on the ElasticAPM Flask middleware object
+by raising an exception or logging a generic message.
+
+Capture an arbitrary exception by calling `capture_exception`:
+
+[source,python]
+----
+try:
+    1 / 0
+except ZeroDivisionError:
+    apm.capture_exception()
+----
+
+Log a generic message with `capture_message`:
+
+[source,python]
+----
+apm.capture_message('hello, world!')
+----
+
+[float]
+[[flask-logging]]
+=== Logging
+
+Passing `logging=True` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module.
+
+[source,python]
+----
+from elasticapm.contrib.flask import ElasticAPM
+
+apm = ElasticAPM(app, logging=True)
+----
+
+For fine-grained control, you can initialize a logging handler and add it,
+just as you would with any other handler.
+
+[source,python]
+----
+from flask import Flask
+
+from elasticapm.contrib.flask import ElasticAPM
+from elasticapm.handlers.logging import LoggingHandler
+
+app = Flask(__name__)
+
+apm = ElasticAPM(app)
+
+if __name__ == '__main__':
+    # Create a logging handler and attach it.
+    handler = LoggingHandler(client=apm.client)
+    handler.setLevel(logging.WARN)
+    app.logger.addHandler(handler)
+----
+
+You can also capture exceptions and send them explictly:
+
+[source,python]
+----
+@app.route('/')
+def bar():
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        app.logger.error( 'I cannot math', exc_info=True)
+----
+
+NOTE: `exc_info=True` adds the exception info to the data that gets sent to the APM server.
+Without it, only the message is sent.
+
+[float]
+[[flask-extra-data]]
+==== Extra data
+
+In addition to what the agents log by default, you can send extra information:
+
+[source,python]
+----
+@app.route('/')
+def bar():
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        app.logger.error('Math is hard',
+            exc_info=True,
+            extra={
+                'good_at_math': False,
+            }
+        )
+    )
+----
+
+[float]
+[[flask-celery-tasks]]
+==== Celery tasks
+
+The Elastic APM agent will automatically send errors and performance data from your Celery tasks to the APM server.
+
+[float]
+[[flask-performance-metrics]]
+=== Performance Metrics
+
+If you've followed the instructions above, the agent has already hooked
+into the right signals and should be reporting performance metrics.
+
+[float]
+[[flask-ignoring-specific-views]]
+==== Ignoring specific routes
+
+You can use the `TRANSACTIONS_IGNORE_PATTERNS` configuration option to ignore specific routes.
+The list given should be a list of regular expressions which are matched against the transaction name:
+
+[source,python]
+----
+app.config['ELASTIC_APM'] = {
+    ...
+    'TRANSACTIONS_IGNORE_PATTERNS': ['^OPTIONS ', '/api/']
+    ...
+}
+----
+
+This would ignore any requests using the `OPTIONS` method
+and any requests containing `/api/`.
