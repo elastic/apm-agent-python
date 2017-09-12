@@ -287,3 +287,15 @@ NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` a
 |============
 
 If set to `True`, the agent won't send any events to the APM server.
+
+
+[float]
+[[config-disable-instrumentation]]
+==== `disable_instrumentation`
+|============
+| Environment                 | Django/Flask   | Default
+| `ELASTIC_APM_DISABLE_INSTRUMENTATION`  | `DISABLE_INSTRUMENTATION` | `False`
+|============
+
+If set to `True`, the agent won't instrument any code.
+This disables most of the tracing functionality, but can be useful to debug possible instrumentation issues.

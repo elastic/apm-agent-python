@@ -1,5 +1,3 @@
-import os
-
 from django.apps import AppConfig
 
 from elasticapm.contrib.django.client import get_client
@@ -13,10 +11,10 @@ class ElasticAPMConfig(AppConfig):
     def ready(self):
         client = get_client()
         register_handlers(client)
-        if 'SKIP_INSTRUMENT' not in os.environ:
+        if not client.config.disable_instrumentation:
             instrument(client)
         else:
-            client.logger.debug("Skipping instrumentation. SKIP_INSTRUMENT is set.")
+            client.logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
 
 
 def register_handlers(client):

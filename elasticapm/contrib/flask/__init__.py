@@ -12,7 +12,6 @@ Large portions are
 from __future__ import absolute_import
 
 import logging
-import os
 
 import flask
 from flask import request, signals
@@ -127,9 +126,8 @@ class ElasticAPM(object):
             pass
 
         # Instrument to get traces
-        skip_env_var = 'SKIP_INSTRUMENT'
-        if skip_env_var in os.environ:
-            logger.debug("Skipping instrumentation. %s is set.", skip_env_var)
+        if self.client.config.disable_instrumentation:
+            logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
         else:
             elasticapm.instrumentation.control.instrument()
 
