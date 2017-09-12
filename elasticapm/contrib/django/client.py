@@ -66,9 +66,9 @@ def get_client(client=None):
 
 
 def get_client_default_config():
-    config = getattr(django_settings, 'ELASTIC_APM', {})
     return dict(
-        include_paths=set(config.get('INCLUDE_PATHS', [])) | _get_installed_apps_paths(),
+        include_paths=_get_installed_apps_paths(),
+        exclude_paths={'django', 'elasticapm'}
     )
 
 

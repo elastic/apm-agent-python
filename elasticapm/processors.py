@@ -188,6 +188,31 @@ def sanitize_http_request_body(client, event):
     return event
 
 
+def mark_in_app_frames(client, event):
+    """
+    Marks frames as "in app" if the module matches any entries in config.include_paths and
+    doesn't match any entries in config.exclude_paths.
+
+    :param client: an ElasticAPM client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    include = client.config.include_paths or []
+    exclude = client.config.exclude_paths or []
+
+    def _is_in_app(frame):
+        if 'module' not in frame:
+            return
+        mod = frame['module']
+        frame['in_app'] = bool(
+            any(mod.startswith(path + '.') or mod == path for path in include) and
+            not any(mod.startswith(path + '.') or mod == path for path in exclude)
+        )
+
+    _process_stack_frames(event, _is_in_app)
+    return event
+
+
 def _sanitize(key, value):
     if value is None:
         return

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-from elasticapm import processors
+from elasticapm import Client, processors
 from elasticapm.utils import compat
 from tests.utils.compat import TestCase
 
@@ -201,3 +201,27 @@ def test_remove_stacktrace_locals():
     stack = result['exception']['stacktrace']
     for frame in stack:
         assert 'vars' not in frame
+
+
+def test_mark_in_app_frames():
+    data = {
+        'exception': {
+            'stacktrace': [
+                {'module': 'foo'},
+                {'module': 'foo.bar'},
+                {'module': 'foo.bar.baz'},
+                {'module': 'foobar'},
+                {'module': 'foo.bar.bazzinga'},
+            ]
+        }
+    }
+
+    client = Client(include_paths=['foo'], exclude_paths=['foo.bar.baz'])
+    data = processors.mark_in_app_frames(client, data)
+    frames = data['exception']['stacktrace']
+
+    assert frames[0]['in_app']
+    assert frames[1]['in_app']
+    assert not frames[2]['in_app']
+    assert not frames[3]['in_app']
+    assert frames[4]['in_app']

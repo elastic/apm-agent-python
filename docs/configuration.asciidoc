@@ -245,6 +245,40 @@ WARNING: We recommend to always include the default set of validators if you cus
 
 
 [float]
+[[config-include-paths]]
+==== `include_paths`
+
+|============
+| Environment                 | Django/Flask    | Default
+| `ELASTIC_APM_INCLUDE_PATHS` | `INCLUDE_PATHS` | Depending on framework
+| multiple values separated by commas, without spaces |||
+|============
+
+A set of module paths that should be considered when detecting if a stacktrace frame is a library frame or an "in-app" frame.
+For Django, the default set is the list of `INSTALLED_APPS`, but without `django.contrib` apps.
+For Flask, it's the app module.
+
+NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` also matches for `foo.bar.baz`.
+
+[float]
+[[config-exclude-paths]]
+==== `exclude_paths`
+
+|============
+| Environment                 | Django/Flask    | Default
+| `ELASTIC_APM_EXCLUDE_PATHS` | `EXCLUDE_PATHS` | Depending on framework
+| multiple values separated by commas, without spaces |||
+|============
+
+A set of module paths that should be considered when excluding a frame from being detected as an in-app frame.
+`exclude_paths` *takes precedence* over `include_paths`.
+
+For Django, the default is set to `{'elasticapm', 'django'}`.
+Everywhere else, the default is `set(['elasticapm'])`.
+
+NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` also matches for `foo.bar.baz`.
+
+[float]
 [[config-disable-send]]
 ==== `disable_send`
 |============
