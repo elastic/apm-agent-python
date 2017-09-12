@@ -54,8 +54,6 @@ node{
                     test_jobs[job] = {
                         node('linux'){
                             checkout scm
-                            try{ sh 'docker stop $(docker ps -q -a)' }catch(e){}
-                            try{ sh 'docker rm -v $(docker ps -a -q)' }catch(e){}
                             dir('src/github.com/elastic/apm-agent-python/'){
                                 sh("./tests/scripts/docker/cleanup.sh")
                                 try{
