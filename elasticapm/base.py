@@ -457,7 +457,7 @@ class Client(object):
             return
         if not _key:
             _key = 'extra'
-        transaction.extra[_key] = data
+        transaction._context[_key] = data
 
     def close(self):
         self._traces_collect()

@@ -7,10 +7,10 @@ import time
 import uuid
 
 from elasticapm.conf import defaults
-from elasticapm.utils import get_name_from_func
+from elasticapm.utils import compat, get_name_from_func
 from elasticapm.utils.lru import LRUCache
 
-__all__ = ('trace', )
+__all__ = ('trace', 'tag')
 
 error_logger = logging.getLogger('elasticapm.errors')
 
@@ -19,6 +19,8 @@ thread_local.transaction = None
 
 
 _time_func = time.time
+
+TAG_RE = re.compile('^[^.*\"]+$')
 
 
 def get_transaction(clear=False):
@@ -50,7 +52,8 @@ class Transaction(object):
         self.traces = []
         self.trace_stack = []
         self.ignore_subtree = False
-        self.extra = {}
+        self._context = {}
+        self._tags = {}
 
         self._trace_counter = 0
 
@@ -96,6 +99,7 @@ class Transaction(object):
         return trace
 
     def to_dict(self):
+        self._context['tags'] = self._tags
         return {
             'id': str(self.id),
             'name': self.name,
@@ -103,7 +107,7 @@ class Transaction(object):
             'duration': self.duration * 1000,  # milliseconds
             'result': str(self.result),
             'timestamp': self.timestamp.strftime(defaults.TIMESTAMP_FORMAT),
-            'context': self.extra,
+            'context': self._context,
             'traces': [
                 trace_obj.to_dict() for trace_obj in self.traces
             ]
@@ -240,3 +244,22 @@ class trace(object):
 
         if transaction:
             transaction.end_trace(self.skip_frames)
+
+
+def tag(**tags):
+    """
+    Tags current transaction. Both key and value of the tag should be strings.
+
+        import opbeat
+        opbeat.tag(foo=bar)
+
+    """
+    transaction = get_transaction()
+    for name, value in tags.items():
+        if not transaction:
+            error_logger.warning("Ignored tag %s. No transaction currently active.", name)
+            return
+        if TAG_RE.match(name):
+            transaction._tags[compat.text_type(name)] = compat.text_type(value)
+        else:
+            error_logger.warning("Ignored tag %s. Tag names can't contain stars, dots or double quotes.", name)
