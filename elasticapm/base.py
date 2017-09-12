@@ -115,15 +115,6 @@ class Client(object):
             msg = 'Missing configuration for ElasticAPM client. Please see documentation.'
             self.logger.info(msg)
 
-        self.is_send_disabled = (
-            os.environ.get('ELASTIC_APM_DISABLE_SEND', '').lower() in ('1', 'true')
-        )
-        if self.is_send_disabled:
-            self.logger.info(
-                'Not sending any data to APM Server due to ELASTIC_APM_DISABLE_SEND '
-                'environment variable'
-            )
-
         self.filter_exception_types_dict = {}
         for exc_to_filter in (self.config.filter_exception_types or []):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -367,7 +358,7 @@ class Client(object):
         Serializes the message and passes the payload onto ``send_encoded``.
         """
 
-        if self.is_send_disabled or self._filter_exception_type(data):
+        if self.config.disable_send or self._filter_exception_type(data):
             return
 
         message = self.encode(data)
