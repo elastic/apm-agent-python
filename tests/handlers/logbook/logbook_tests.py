@@ -20,7 +20,7 @@ class LogbookHandlerTest(TestCase):
         assert event['log']['logger_name'] == __name__
         assert event['log']['level'] == "error"
         assert event['log']['message'] == 'This is a test error'
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event['log'])
         assert event['log']['param_message'] == 'This is a test error'
@@ -33,10 +33,19 @@ class LogbookHandlerTest(TestCase):
         assert event['log']['logger_name'] == __name__
         assert event['log']['level'] == "warning"
         assert event['log']['message'] == 'This is a test warning'
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event['log'])
         assert event['log']['param_message'] == 'This is a test warning'
+
+    def test_logger_without_stacktrace(self):
+        self.client.config.auto_log_stacks = False
+
+        with self.handler.applicationbound():
+            self.logger.warning('This is a test warning')
+
+        event = self.client.events.pop(0)['errors'][0]
+        self.assertFalse('stacktrace' in event['log'])
 
     def test_logger_with_extra(self):
         with self.handler.applicationbound():
@@ -46,7 +55,7 @@ class LogbookHandlerTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event['context']['custom']['url'], 'http://example.com')
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event['log'])
         self.assertEquals(event['log']['param_message'], 'This is a test info with a url')
@@ -62,7 +71,7 @@ class LogbookHandlerTest(TestCase):
         event = self.client.events.pop(0)['errors'][0]
 
         self.assertEquals(event['log']['message'], 'This is a test info with an exception')
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertTrue('exception' in event)
         exc = event['exception']
         self.assertEquals(exc['type'], 'ValueError')
@@ -76,7 +85,7 @@ class LogbookHandlerTest(TestCase):
         self.assertEquals(len(self.client.events), 1)
         event = self.client.events.pop(0)['errors'][0]
         self.assertEquals(event['log']['message'], 'This is a test of args')
-        self.assertFalse('stacktrace' in event['log'])
+        self.assertTrue('stacktrace' in event['log'])
         self.assertFalse('exception' in event)
         self.assertTrue('param_message' in event['log'])
         self.assertEquals(event['log']['param_message'], 'This is a test of %s')

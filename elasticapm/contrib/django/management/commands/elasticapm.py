@@ -8,7 +8,8 @@ from django.core.management.base import BaseCommand
 from django.core.management.color import color_style
 from django.utils import termcolors
 
-from elasticapm.contrib.django.client import DjangoClient, get_client_config
+from elasticapm.contrib.django.client import (DjangoClient,
+                                              get_client_default_config)
 
 try:
     from django.core.management.base import OutputWrapper
@@ -132,7 +133,7 @@ class Command(BaseCommand):
     def handle_test(self, command, **options):
         """Send a test error to APM Server"""
         self.write(LOGO, cyan)
-        config = get_client_config()
+        config = get_client_default_config()
         # can't be async for testing
         config['async_mode'] = False
         for key in ('app_name', 'secret_token'):
@@ -148,9 +149,9 @@ class Command(BaseCommand):
             "APP_NAME:\t\t\t%s\n"
             "SECRET_TOKEN:\t\t%s\n"
             "SERVERS:\t\t%s\n\n" % (
-                client.app_name,
-                client.secret_token,
-                ', '.join(client.servers)
+                client.config.app_name,
+                client.config.secret_token,
+                ', '.join(client.config.servers)
             )
         )
 
@@ -168,11 +169,11 @@ class Command(BaseCommand):
         """Check your settings for common misconfigurations"""
         self.write(LOGO, cyan)
         passed = True
-        config = get_client_config()
+        config = get_client_default_config()
         client = DjangoClient(**config)
         # check if org/app and token are set:
         is_set = lambda x: x and x != 'None'
-        values = [client.app_name, client.secret_token]
+        values = [client.config.app_name, client.config.secret_token]
         if all(map(is_set, values)):
             self.write(
                 'App name and secret token are set, good job!',
@@ -183,9 +184,9 @@ class Command(BaseCommand):
             self.write(
                 'Configuration errors detected!', red, ending='\n\n'
             )
-            if not is_set(client.app_name):
+            if not is_set(client.config.app_name):
                 self.write("  * APP_NAME not set! ", red, ending='\n')
-            if not is_set(client.secret_token):
+            if not is_set(client.config.secret_token):
                 self.write("  * SECRET_TOKEN not set!", red, ending='\n')
             self.write(CONFIG_EXAMPLE)
         self.write('')

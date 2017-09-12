@@ -362,19 +362,19 @@ class DjangoClientTest(TestCase):
             self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_view')
 
     def test_exclude_modules_view(self):
-        exclude_paths = self.elasticapm_client.exclude_paths
-        self.elasticapm_client.exclude_paths = ['tests.views.decorated_raise_exc']
+        exclude_paths = self.elasticapm_client.config.exclude_paths
+        self.elasticapm_client.config.exclude_paths = ['tests.views.decorated_raise_exc']
         self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc-decor'))
 
         self.assertEquals(len(self.elasticapm_client.events), 1, self.elasticapm_client.events)
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
         self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
-        self.elasticapm_client.exclude_paths = exclude_paths
+        self.elasticapm_client.config.exclude_paths = exclude_paths
 
     def test_include_modules(self):
-        include_paths = self.elasticapm_client.include_paths
-        self.elasticapm_client.include_paths = ['django.shortcuts.get_object_or_404']
+        include_paths = self.elasticapm_client.config.include_paths
+        self.elasticapm_client.config.include_paths = ['django.shortcuts.get_object_or_404']
 
         self.assertRaises(Exception, self.client.get, reverse('elasticapm-django-exc'))
 
@@ -382,7 +382,7 @@ class DjangoClientTest(TestCase):
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
         self.assertEquals(event['culprit'], 'django.shortcuts.get_object_or_404')
-        self.elasticapm_client.include_paths = include_paths
+        self.elasticapm_client.config.include_paths = include_paths
 
     def test_ignored_exception_is_ignored(self):
         with pytest.raises(IgnoredException):
@@ -681,7 +681,10 @@ class DjangoClientTest(TestCase):
 
         # enable middleware wrapping
         client = get_client()
-        client.instrument_django_middleware = True
+        client.config.instrument_django_middleware = True
+
+        from elasticapm.contrib.django.middleware import TracingMiddleware
+        TracingMiddleware._elasticapm_instrumented = False
 
         with self.settings(
             APPEND_SLASH=True,
@@ -706,7 +709,10 @@ class DjangoClientTest(TestCase):
 
         # enable middleware wrapping
         client = get_client()
-        client.instrument_django_middleware = True
+        client.config.instrument_django_middleware = True
+
+        from elasticapm.contrib.django.middleware import TracingMiddleware
+        TracingMiddleware._elasticapm_instrumented = False
 
         with self.settings(
             PREPEND_WWW=True,
@@ -727,7 +733,7 @@ class DjangoClientTest(TestCase):
 
         # enable middleware wrapping
         client = get_client()
-        client.instrument_django_middleware = True
+        client.config.instrument_django_middleware = True
         from elasticapm.contrib.django.middleware import TracingMiddleware
         TracingMiddleware._elasticapm_instrumented = False
 
@@ -1145,4 +1151,4 @@ class DjangoManagementCommandTest(TestCase):
         ])):
             call_command('elasticapm', 'test', stdout=stdout, stderr=stdout)
         output = stdout.getvalue()
-        assert 'http://example.com' in output
+        assert 'Success! We tracked the error successfully!' in output

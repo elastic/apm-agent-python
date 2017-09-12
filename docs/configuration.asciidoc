@@ -1,0 +1,252 @@
+[[configuration]]
+== Configuration
+
+To adapt the Elastic APM agent to your needs, you can configure it using environment variables, or framework specific
+configuration.
+
+[float]
+[[django-configuration]]
+=== Django
+
+To configure Django, add an `ELASTIC_APM` dictionary to your `settings.py`:
+
+[source,python]
+----
+ELASTIC_APM = {
+    'APP_NAME': 'my-app',
+    'SECRET_TOKEN': 'changeme,
+}
+----
+
+[float]
+[[flask-configuration]]
+=== Flask
+
+To configure Flask, add an `ELASTIC_APM` dictonary to your `app.config`:
+
+[source,python]
+----
+app.config['ELASTIC_APM'] = {
+    'APP_NAME': 'my-app',
+    'SECRET_TOKEN': 'changeme,
+}
+
+apm = ElasticAPM(app)
+----
+
+[float]
+[[required-options]]
+=== Required options
+
+[float]
+[[config-app-name]]
+==== `app_name`
+
+[options="header"]
+|============
+| Environment            | Django/Flask    | Default    | Example
+| `ELASTIC_APM_APP_NAME` | `APP_NAME`      | `None`     | `my-app`
+|============
+
+
+The name of your app.
+This is used to keep all the errors and transactions of your app together
+and is the primary filter in the Elastic APM user interface.
+
+NOTE: The app name must conform to this regular expression: `^[a-zA-Z0-9 _-]+$`.
+In less regexy terms:
+Your app name must only contain characters from the ASCII alphabet, numbers, dashes, underscores and spaces.
+
+[float]
+[[config-servers]]
+==== `servers`
+
+[options="header"]
+|============
+| Environment           | Django/Flask   | Default
+| `ELASTIC_APM_SERVERS` | `SERVERS`      | `['http://localhost:8200']`
+| multiple values separated by commas, without spaces |||
+|============
+
+A list of URLs for your APM Servers.
+The URL must be fully qualified, including protocol (`http` or `https`) and port.
+
+NOTE: if you configure multiple servers, errors and transactions are sent to each server.
+
+[float]
+[[other-options]]
+=== Other options
+
+[float]
+[[config-secret-token]]
+==== `secret_token`
+
+[options="header"]
+|============
+| Environment                | Django/Flask    | Default    | Example
+| `ELASTIC_APM_SECRET_TOKEN` | `SECRET_TOKEN`  | `None`     | A random string
+|============
+
+This string is used to ensure that only your agents can send data to your APM servers.
+Both the agents and the APM servers have to be configured with the same secret token.
+One example to generate a secure secret token is:
+
+[source,bash]
+----
+python -c "import uuid; print(str(uuid.uuid4()))"
+----
+
+WARNING: secret tokens only provide any security if your APM servers use TLS.
+
+[float]
+[[config-app-version]]
+==== `app_version`
+[options="header"]
+|============
+| Environment                | Django/Flask    | Default    | Example
+| `ELASTIC_APM_APP_VERSION`  | `APP_VERSION`   | `None`     | A string indicating the version of the deployed app
+|============
+
+A version string for the currently deployed version of the app.
+If you don't version your deployments,
+the recommended value for this field is the commit identifier of the deploved revision, e.g. the output of `git rev-parse HEAD`.
+
+[float]
+[[config-filter-exception-types]]
+==== `filter_exception_types`
+[options="header"]
+|============
+| Environment                          | Django/Flask                  | Default  | Example
+| `ELASTIC_APM_FILTER_EXCEPTION_TYPES` | `FILTER_EXCEPTION_TYPES`      | `[]`     | `['OperationalError', 'mymodule.SomeoneElsesProblemError']`
+| multiple values separated by commas, without spaces |||
+|============
+
+A list of exception types to be filtered.
+Exceptions of these types will not be sent to the APM server.
+
+
+[float]
+[[config-transactions-ignore-patterns]]
+==== `transactions_ignore_patterns`
+[options="header"]
+|============
+| Environment                                | Django/Flask                    | Default  | Example
+| `ELASTIC_APM_TRANSACTIONS_IGNORE_PATTERNS` | `TRANSACTIONS_IGNORE_PATTERNS`  | `[]`     | `['^OPTIONS ', 'myviews.Healthcheck']`
+| multiple values separated by commas, without spaces |||
+|============
+
+A list of regular expressions.
+Transactions that match any of the of the configured patterns will be ignored and not sent to the APM server.
+
+
+[float]
+[[config-timeout]]
+==== `timeout`
+
+[options="header"]
+|============
+| Environment           | Django/Flask  | Default
+| `ELASTIC_APM_TIMEOUT` | `TIMEOUT`     | `5`
+|============
+
+A timeout in seconds.
+If a request to the APM server takes longer than the configured timeout,
+the request is cancelled and the event (exception or transaction) is discarded.
+Set to `None` to disable timeouts.
+
+WARNING: If timeouts are disabled or set to a high value,
+your app could experience memory issues if the APM server times out.
+
+
+[float]
+[[config-hostname]]
+==== `hostname`
+
+[options="header"]
+|============
+| Environment                | Django/Flask  | Default                | Example
+| `ELASTIC_APM_HOSTNAME`     | `HOSTNAME`    | `socket.gethostname()` | `app-server01.example.com`
+|============
+
+The host name to use when sending error and transaction data to the APM server.
+
+[float]
+[[config-auto-log-stacks]]
+==== `auto_log_stacks`
+
+[options="header"]
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_AUTO_LOG_STACKS` | `AUTO_LOG_STACKS` | `True`
+| set to `"true"` / `"false"` |||
+|============
+
+If set to `True` (the default), the agent will add a stack trace to each log event,
+indicating where the log message has been issued.
+
+This setting can be overridden on an individual basis by setting the `extra`-key `stack`:
+
+[source,python]
+----
+logger.info('something happened', extra={'stack': False})
+----
+
+[float]
+[[config-transport-class]]
+==== `transport_class`
+
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http_urllib3.AsyncUrllib3Transport`
+|============
+
+
+The transport class to use when sending events to the APM server.
+The default `AsyncUrllib3Transport` uses a background thread to send data.
+If your environment doesn't allow background threads, you can use
+`elasticapm.transport.http_urllib3.Urllib3Transport` instead. Note however that this can have adverse effects
+on performance.
+
+[float]
+[[config-traces-send-frequency]]
+==== `traces_send_frequency`
+
+|============
+| Environment                    | Django/Flask        | Default
+| `ELASTIC_APM_TRACES_SEND_FREQ` | `TRACES_SEND_FREQ` | `60`
+|============
+
+Interval with which transactions should be sent to the APM server, in seconds.
+A lower value will increase the load on your APM server,
+while a higher value can increase the memory pressure of your app.
+A higher value also impacts the time until transactions are indexed and searchable in Elasticsearch.
+
+[float]
+[[config-processors]]
+==== `processors`
+
+|============
+| Environment              | Django/Flask | Default
+| `ELASTIC_APM_PROCESSORS` | `PROCESSORS` | `['elasticapm.processors.sanitize_stacktrace_locals',
+                                              'elasticapm.processors.sanitize_http_request_cookies',
+                                              'elasticapm.processors.sanitize_http_headers',
+                                              'elasticapm.processors.sanitize_http_wsgi_env',
+                                              'elasticapm.processors.sanitize_http_request_querystring',
+                                              'elasticapm.processors.sanitize_http_request_body']`
+|============
+
+A list of processors to process transactions and errors.
+For more information, see <<sanitizing-data, Sanitizing Data>>.
+
+WARNING: We recommend to always include the default set of validators if you customize this setting.
+
+
+[float]
+[[config-disable-send]]
+==== `disable_send`
+|============
+| Environment                 | Django/Flask   | Default
+| `ELASTIC_APM_DISABLE_SEND`  | `DISABLE_SEND` | `False`
+|============
+
+If set to `True`, the agent won't send any events to the APM server.

@@ -30,35 +30,13 @@ logger = logging.getLogger('elasticapm.errors.client')
 
 def make_client(client_cls, app, app_name=None, secret_token=None):
     config = app.config.get('ELASTIC_APM', {})
-    app_name = (
-        app_name or
-        config.get('APP_NAME') or  # config
-        os.environ.get('ELASTIC_APM_APP_NAME')  # environment
-    )
-    secret_token = (
-        secret_token or
-        config.get('SECRET_TOKEN') or  # config
-        os.environ.get('ELASTIC_APM_SECRET_TOKEN')  # environment
-    )
 
-    client = client_cls(
-        app_name=app_name,
-        secret_token=secret_token,
-        include_paths=set(config.get('INCLUDE_PATHS', [])) | set([app.import_name]),
-        exclude_paths=config.get('EXCLUDE_PATHS'),
-        filter_exception_types=config.get('FILTER_EXCEPTION_TYPES', None),
-        servers=config.get('SERVERS'),
-        transport_class=config.get('TRANSPORT_CLASS', None),
-        hostname=config.get('HOSTNAME'),
-        auto_log_stacks=config.get('AUTO_LOG_STACKS'),
-        timeout=config.get('TIMEOUT'),
-        string_max_length=config.get('STRING_MAX_LENGTH'),
-        list_max_length=config.get('LIST_MAX_LENGTH'),
-        traces_freq_send=config.get('TRACES_FREQ_SEND'),
-        processors=config.get('PROCESSORS'),
-        async_mode=config.get('ASYNC_MODE'),
-        transactions_ignore_patterns=config.get('TRANSACTIONS_IGNORE_PATTERNS'),
-    )
+    client = client_cls(config, include_paths={app.import_name})
+
+    if app_name:
+        client.config.app_name = app_name
+    if secret_token:
+        client.config.secret_token = secret_token
 
     client._framework = 'flask'
     client._framework_version = getattr(flask, '__version__', '<0.7')

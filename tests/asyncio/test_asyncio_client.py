@@ -10,6 +10,7 @@ pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
 
 
 class MockTransport(mock.MagicMock):
+    async_mode = False
 
     def __init__(self, url=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,7 +32,6 @@ async def test_client_success():
         servers=['http://localhost'],
         app_name='app_name',
         secret_token='secret',
-        async_mode=False,
         transport_class='.'.join(
             (__name__, MockTransport.__name__)),
     )
@@ -53,7 +53,6 @@ async def test_client_failure():
         servers=['http://error'],
         app_name='app_name',
         secret_token='secret',
-        async_mode=False,
         transport_class='.'.join(
             (__name__, MockTransport.__name__)),
     )

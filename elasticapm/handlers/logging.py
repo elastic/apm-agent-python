@@ -56,8 +56,8 @@ class LoggingHandler(logging.Handler, object):
             return self._emit(record)
         except Exception:
             sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
-            sys.stderr.write(to_string(record.msg) + '\n')
-            sys.stderr.write(to_string(traceback.format_exc()) + '\n')
+            sys.stderr.write(to_string(record.msg + '\n'))
+            sys.stderr.write(to_string(traceback.format_exc() + '\n'))
 
             try:
                 self.client.capture('Exception')

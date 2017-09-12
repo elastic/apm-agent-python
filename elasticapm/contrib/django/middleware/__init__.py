@@ -64,7 +64,7 @@ class Catch404Middleware(MiddlewareMixin):
             }, data=data
         )
         request._elasticapm = {
-            'app_name': data.get('app_name', client.app_name),
+            'app_name': data.get('app_name', client.config.app_name),
             'id': client.get_ident(result),
         }
         return response
@@ -115,7 +115,7 @@ class TracingMiddleware(MiddlewareMixin):
         if not self._elasticapm_instrumented:
             with self._instrumenting_lock:
                 if not self._elasticapm_instrumented:
-                    if self.client.instrument_django_middleware:
+                    if self.client.config.instrument_django_middleware:
                         self.instrument_middlewares()
 
                     TracingMiddleware._elasticapm_instrumented = True
