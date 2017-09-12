@@ -19,27 +19,49 @@ from elasticapm.utils import compat
 __all__ = ('setup_logging', 'Config')
 
 
+class ConfigurationError(ValueError):
+    def __init__(self, msg, field_name):
+        self.field_name = field_name
+        super(ValueError, self).__init__(msg)
+
+
 class _ConfigValue(object):
-    def __init__(self, dict_key, env_key=None, type=compat.text_type, validators=None, default=None, doc=None):
+    def __init__(self, dict_key, env_key=None, type=compat.text_type, validators=None, default=None, required=False):
         self.type = type
         self.dict_key = dict_key
         self.validators = validators
         self.default = default
-        self.doc = doc
+        self.required = required
         if env_key is None:
             env_key = 'ELASTIC_APM_' + dict_key
         self.env_key = env_key
 
     def __get__(self, instance, owner):
         if instance:
-            return instance._values.get(self, self.default)
+            return instance._values.get(self.dict_key, self.default)
         else:
             return self.default
 
     def __set__(self, instance, value):
         if value is not None:
             value = self.type(value)
-        instance._values[self] = value
+        if self._validate(instance, value):
+            instance._values[self.dict_key] = value
+
+    def _validate(self, instance, value):
+        if value is None and self.required:
+            raise ConfigurationError(
+                'Configuration error: value for {} is required.'.format(self.dict_key),
+                self.dict_key,
+            )
+        if self.validators and value is not None:
+            if not all(validator(value) for validator in self.validators):
+                raise ConfigurationError(
+                    'Configuration error: value {} is not valid for {}.'.format(value, self.dict_key),
+                    self.dict_key,
+                )
+        instance._errors.pop(self.dict_key, None)
+        return True
 
 
 class _ListConfigValue(_ConfigValue):
@@ -54,7 +76,7 @@ class _ListConfigValue(_ConfigValue):
             value = list(value)
         if value:
             value = [self.type(item) for item in value]
-        instance._values[self] = value
+        instance._values[self.dict_key] = value
 
 
 class _BoolConfigValue(_ConfigValue):
@@ -69,7 +91,7 @@ class _BoolConfigValue(_ConfigValue):
                 value = True
             elif value.lower() == self.false_string:
                 value = False
-        instance._values[self] = bool(value)
+        instance._values[self.dict_key] = bool(value)
 
 
 class _ConfigBase(object):
@@ -77,6 +99,7 @@ class _ConfigBase(object):
 
     def __init__(self, config_dict=None, env_dict=None, default_dict=None):
         self._values = {}
+        self._errors = {}
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
@@ -98,13 +121,20 @@ class _ConfigBase(object):
                 new_value = default_dict[field]
             # only set if new_value changed. We'll fall back to the field default if not.
             if new_value is not self._NO_VALUE:
-                setattr(self, field, new_value)
+                try:
+                    setattr(self, field, new_value)
+                except ConfigurationError as e:
+                    self._errors[e.field_name] = str(e)
+
+    @property
+    def errors(self):
+        return self._errors
 
 
 class Config(_ConfigBase):
-    app_name = _ConfigValue('APP_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)])
+    app_name = _ConfigValue('APP_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)], required=True)
     secret_token = _ConfigValue('SECRET_TOKEN')
-    servers = _ListConfigValue('SERVERS', default=['http://localhost:8200'])
+    servers = _ListConfigValue('SERVERS', default=['http://localhost:8200'], required=True)
     include_paths = _ListConfigValue('INCLUDE_PATHS')
     exclude_paths = _ListConfigValue('EXCLUDE_PATHS')
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
@@ -112,7 +142,8 @@ class Config(_ConfigBase):
     hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue('AUTO_LOG_STACKS', default=True)
     keyword_max_length = _ConfigValue('KEYWORD_MAX_LENGTH', type=int, default=1024)
-    transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http_urllib3.AsyncUrllib3Transport')
+    transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http_urllib3.AsyncUrllib3Transport',
+                                   required=True)
     processors = _ListConfigValue('PROCESSORS', default=[
         'elasticapm.processors.sanitize_stacktrace_locals',
         'elasticapm.processors.sanitize_http_request_cookies',

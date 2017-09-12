@@ -106,14 +106,14 @@ class Client(object):
         self.error_logger = logging.getLogger('elasticapm.errors')
         self.state = ClientState()
         self.config = Config(config, default_dict=defaults)
+        if self.config.errors:
+            for msg in self.config.errors.values():
+                self.error_logger.error(msg)
+            self.config.disable_send = True
+            return
 
         self._transport_class = import_string(self.config.transport_class)
         self._transports = {}
-
-        # servers may be set to a NoneType (for Django)
-        if self.config.servers and not (self.config.app_name and self.config.secret_token):
-            msg = 'Missing configuration for ElasticAPM client. Please see documentation.'
-            self.logger.info(msg)
 
         self.filter_exception_types_dict = {}
         for exc_to_filter in (self.config.filter_exception_types or []):

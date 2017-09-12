@@ -73,6 +73,24 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 
 NOTE: if you configure multiple servers, errors and transactions are sent to each server.
 
+
+[float]
+[[config-transport-class]]
+==== `transport_class`
+
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http_urllib3.AsyncUrllib3Transport`
+|============
+
+
+The transport class to use when sending events to the APM server.
+The default `AsyncUrllib3Transport` uses a background thread to send data.
+If your environment doesn't allow background threads, you can use
+`elasticapm.transport.http_urllib3.Urllib3Transport` instead.
+Note however that this can have adverse effects on performance.
+
+
 [float]
 [[other-options]]
 === Other options
@@ -191,21 +209,6 @@ This setting can be overridden on an individual basis by setting the `extra`-key
 logger.info('something happened', extra={'stack': False})
 ----
 
-[float]
-[[config-transport-class]]
-==== `transport_class`
-
-|============
-| Environment                   | Django/Flask      | Default
-| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http_urllib3.AsyncUrllib3Transport`
-|============
-
-
-The transport class to use when sending events to the APM server.
-The default `AsyncUrllib3Transport` uses a background thread to send data.
-If your environment doesn't allow background threads, you can use
-`elasticapm.transport.http_urllib3.Urllib3Transport` instead. Note however that this can have adverse effects
-on performance.
 
 [float]
 [[config-traces-send-frequency]]
