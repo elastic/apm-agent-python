@@ -656,7 +656,7 @@ class DjangoClientTest(TestCase):
 
         assert 'response' in transaction['context']
         response = transaction['context']['response']
-        assert response['status_code'] == '200'
+        assert response['status_code'] == 200
         assert response['headers']['my-header'] == 'foo'
 
     def test_transaction_metrics(self):

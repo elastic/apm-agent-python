@@ -156,7 +156,7 @@ class DjangoClient(Client):
         return result
 
     def get_data_from_response(self, response):
-        result = {'status_code': str(response.status_code)}
+        result = {'status_code': response.status_code}
 
         # Django does not expose a public API to iterate over the headers of a response.
         # Unfortunately, we have to access the private _headers dictionary here, which is
