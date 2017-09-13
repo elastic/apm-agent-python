@@ -18,7 +18,7 @@ from django.conf import settings as django_settings
 
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.utils import (build_name_with_http_method_prefix,
-                              disabled_due_to_debug, get_name_from_func, wrapt)
+                              get_name_from_func, wrapt)
 
 try:
     from importlib import import_module
@@ -46,10 +46,7 @@ class Catch404Middleware(MiddlewareMixin):
         if (response.status_code != 404 or
                 _is_ignorable_404(request.get_full_path())):
             return response
-        if disabled_due_to_debug(
-            getattr(django_settings, 'ELASTIC_APM', {}),
-            django_settings.DEBUG
-        ):
+        if django_settings.DEBUG and not client.config.debug:
             return response
         data = {
             'level': logging.INFO,
@@ -150,10 +147,7 @@ class TracingMiddleware(MiddlewareMixin):
                     )
 
     def process_request(self, request):
-        if not disabled_due_to_debug(
-            getattr(django_settings, 'ELASTIC_APM', {}),
-            django_settings.DEBUG
-        ):
+        if not (django_settings.DEBUG and not self.client.config.debug):
             self.client.begin_transaction("request")
 
     def process_view(self, request, view_func, view_args, view_kwargs):

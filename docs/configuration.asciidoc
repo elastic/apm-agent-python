@@ -279,6 +279,18 @@ Everywhere else, the default is `set(['elasticapm'])`.
 NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` also matches for `foo.bar.baz`.
 
 [float]
+[[config-debug]]
+==== `debug`
+|============
+| Environment         | Django/Flask  | Default
+| `ELASTIC_APM_DEBUG` | `DEBUG`       | `False`
+|============
+
+If your app is in debug mode (e.g. in Django with `settings.DEBUG = True` or in Flask with `app.debug = True`),
+the agent won't send any data to the APM server. You can override it by changing this setting to `True`.
+
+
+[float]
 [[config-disable-send]]
 ==== `disable_send`
 |============
@@ -286,7 +298,7 @@ NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` a
 | `ELASTIC_APM_DISABLE_SEND`  | `DISABLE_SEND` | `False`
 |============
 
-If set to `True`, the agent won't send any events to the APM server.
+If set to `True`, the agent won't send any events to the APM server, independent of any debug state.
 
 
 [float]

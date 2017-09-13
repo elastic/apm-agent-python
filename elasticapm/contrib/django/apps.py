@@ -1,3 +1,5 @@
+from functools import partial
+
 from django.apps import AppConfig
 
 from elasticapm.contrib.django.client import get_client
@@ -22,7 +24,9 @@ def register_handlers(client):
     from elasticapm.contrib.django.handlers import exception_handler
 
     # Connect to Django's internal signal handler
-    got_request_exception.connect(exception_handler)
+    dispatch_uid = 'elasticapm-exceptions'
+    got_request_exception.disconnect(dispatch_uid=dispatch_uid)
+    got_request_exception.connect(partial(exception_handler, client), dispatch_uid=dispatch_uid, weak=False)
 
     # If we can import celery, register ourselves as exception handler
     try:
