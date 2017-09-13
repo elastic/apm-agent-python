@@ -34,7 +34,7 @@ class Urllib3Transport(HTTPTransport):
         try:
             try:
                 response = self.http.urlopen(
-                    'POST', self._url, body=data, headers=headers, timeout=timeout
+                    'POST', self._url, body=data, headers=headers, timeout=timeout, preload_content=False
                 )
             except Exception as e:
                 print_trace = True
