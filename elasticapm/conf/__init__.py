@@ -159,6 +159,7 @@ class Config(_ConfigBase):
     transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])
     app_version = _ConfigValue('APP_VERSION')
     disable_send = _BoolConfigValue('DISABLE_SEND', default=False)
+    disable_instrumentation = _BoolConfigValue('DISABLE_INSTRUMENTATION', default=False)
 
 
 def setup_logging(handler, exclude=['elasticapm',
