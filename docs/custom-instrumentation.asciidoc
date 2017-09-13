@@ -1,5 +1,5 @@
 [[instrumenting-custom-code]]
-== Instrumenting custom code
+=== Instrumenting custom code
 
 Elastic APM instruments a variety of libraries out of the box, but sometimes you
 need to know how long a specific function took or how often it gets

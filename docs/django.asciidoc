@@ -1,8 +1,9 @@
-[[get-started-with-django]]
-== Get started with Django
+[[django-support]]
+== Django Support
 
 Getting Elastic APM set up for your Django project is easy, and there are various ways you can tweak it to fit to your needs.
 
+[float]
 [[django-installation]]
 === Installation
 
@@ -19,6 +20,7 @@ NOTE: If you use Django with uwsgi, make sure to
 http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads[enable
 threads].
 
+[float]
 [[django-setup]]
 === Setup
 
@@ -54,6 +56,7 @@ ELASTIC_APM_SECRET_TOKEN=<SECRET-TOKEN>
 
 You now have basic error logging set up, and everything resulting in a 500 HTTP status code will be reported to the APM Server.
 
+[float]
 [[django-performance-metrics]]
 === Performance Metrics
 
@@ -71,12 +74,14 @@ NOTE: For Django 1.8, you can add the same middleware to `MIDDLEWARE_CLASSES`.
 
 Make sure that it is the first middleware in the list.
 
+[float]
 [[django-instrumenting-custom-python-code]]
 ==== Instrumenting custom Python code
 
 To gain further insights into the performance of your code, please see
 <<instrumenting-custom-code, instrumenting custom code>>.
 
+[float]
 [[django-ignoring-specific-views]]
 ==== Ignoring specific views
 
@@ -90,6 +95,7 @@ ELASTIC_APM['TRANSACTIONS_IGNORE_PATTERNS'] = ['^OPTIONS ', 'views.api.v2']
 
 This example ignores any requests using the `OPTIONS` method and any requests containing `views.api.v2`.
 
+[float]
 [[django-enabling-and-disabling-the-agent]]
 === Enabling and disabling the agent
 
@@ -107,6 +113,7 @@ ELASTIC_APM = {
 }
 ----
 
+[float]
 [[django-logging]]
 === Logging
 
@@ -179,6 +186,7 @@ except MyModel.DoesNotExist:
 Note that `exc_info=True` adds the exception information to the data that gets sent to Elastic APM.
 Without it, only the message is sent.
 
+[float]
 [[django-extra-data]]
 ==== Extra data
 
@@ -201,7 +209,7 @@ except MyModel.DoesNotExist:
     )
 ----
 
-
+[float]
 [[django-celery-integration]]
 === Celery Integration
 
@@ -211,7 +219,7 @@ documentation].
 
 Elastic APM will automatically log errors from your celery tasks, and record performance data.
 
-
+[float]
 [[django-logging-http-404-not-found-errors]]
 === Logging "HTTP 404 Not Found" Errors
 
@@ -233,7 +241,7 @@ Note that this middleware respects Django's
 https://docs.djangoproject.com/en/1.11/ref/settings/#ignorable-404-urls[`IGNORABLE_404_URLS`]
 setting.
 
-
+[float]
 [[django-disable-agent-during-tests]]
 === Disable the agent during tests
 
@@ -244,7 +252,7 @@ To prevent the agent from sending any data to the APM Server during tests, set t
 ELASTIC_APM_DISABLE_SEND=true python manage.py test
 ----
 
-
+[float]
 [[django-troubleshooting]]
 === Troubleshooting
 
@@ -277,6 +285,7 @@ SERVERS:            http://localhost:8200
 Success! We tracked the error successfully! You should be able to see it in a few seconds.
 ----
 
+[float]
 [[supported-django-and-python-versions]]
 === Supported Django and Python versions
 

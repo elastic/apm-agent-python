@@ -18,7 +18,11 @@ NOTE: For the best reading experience, please head over to this document at http
 endif::[]
 
 include::./configuration.asciidoc[Configuration]
-include::./getting-started-with-django.asciidoc[Getting Started With Django]
+include::./django.asciidoc[Django support]
+include::./flask.asciidoc[Flask support]
+
+[[advanced-topics]]
+== Advanced Topics
 include::./custom-instrumentation.asciidoc[Custom Instrumentation]
 include::./sanitizing-data.asciidoc[Sanitizing Data]
 include::./run-tests-locally.asciidoc[Run Tests Locally]
