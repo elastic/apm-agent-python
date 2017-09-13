@@ -370,6 +370,7 @@ def test_exception_event(test_client):
     assert frame['module'] == __name__
     assert frame['function'] == 'test_exception_event'
     assert 'timestamp' in event
+    assert 'log' not in event
 
 
 def test_message_event(test_client):

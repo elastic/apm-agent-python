@@ -273,9 +273,10 @@ class Client(object):
         :param extra: a dictionary of additional standard metadata
         :return: a 32-length string identifying this event
         """
-
-        data = self.build_msg_for_logging(event_type, data, date,
-                                          extra, stack, **kwargs)
+        if event_type == 'Exception':
+            # never gather log stack for exceptions
+            stack = False
+        data = self.build_msg_for_logging(event_type, data, date, extra, stack, **kwargs)
 
         if data:
             servers = [server + defaults.ERROR_API_PATH for server in self.config.servers]
