@@ -23,6 +23,9 @@ WSGI-compatible web application.
 Your application doesn't live on the web? No problem! Elastic APM is easy to use in
 any Python application.
 
+Read the documentation_.
+
+.. _documentation: https://www.elastic.co/guide/en/apm/agent/python/current/index.html
 
 License
 -------
