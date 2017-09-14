@@ -8,6 +8,7 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 from elasticapm.conf import defaults
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http import AsyncHTTPTransport, HTTPTransport
+from elasticapm.utils import compat
 
 
 class Urllib3Transport(HTTPTransport):
@@ -31,6 +32,12 @@ class Urllib3Transport(HTTPTransport):
         if timeout is None:
             timeout = defaults.TIMEOUT
         response = None
+
+        # ensure headers are byte strings
+        headers = {k.encode('ascii') if isinstance(k, compat.text_type) else k:
+                   v.encode('ascii') if isinstance(v, compat.text_type) else v
+                   for k, v in headers.items()}
+
         try:
             try:
                 response = self.http.urlopen(

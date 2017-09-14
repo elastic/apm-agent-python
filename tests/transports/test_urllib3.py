@@ -5,8 +5,8 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 from urllib3_mock import Responses
 
 from elasticapm.transport.base import TransportException
-from elasticapm.transport.http_urllib3 import (AsyncUrllib3Transport,
-                                               Urllib3Transport)
+from elasticapm.transport.http_urllib3 import Urllib3Transport
+from elasticapm.utils import compat
 
 try:
     import urlparse
@@ -80,3 +80,23 @@ def test_https_proxy_environment_variable_is_preferred():
         transport = Urllib3Transport(urlparse.urlparse('http://localhost:9999'))
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
         assert transport.http.proxy.scheme == 'https'
+
+
+def test_header_encodings():
+    """
+    Tests that headers are encoded as bytestrings. If they aren't,
+    urllib assumes it needs to encode the data as well, which is already a zlib
+    encoded bytestring, and explodes.
+    """
+    headers = {
+        compat.text_type('X'): compat.text_type('V')
+    }
+    transport = Urllib3Transport(urlparse.urlparse('http://localhost:9999'))
+
+    with mock.patch('elasticapm.transport.http_urllib3.urllib3.PoolManager.urlopen') as mock_urlopen:
+        mock_urlopen.return_value = mock.Mock(status=202)
+        transport.send('', headers)
+    _, args, kwargs = mock_urlopen.mock_calls[0]
+    for k, v in kwargs['headers'].items():
+        assert isinstance(k, compat.binary_type)
+        assert isinstance(v, compat.binary_type)
