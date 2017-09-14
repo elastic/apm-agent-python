@@ -22,10 +22,10 @@ from django.test.client import ClientHandler as _TestClientHandler
 from django.test.utils import override_settings
 
 import mock
-import pytest
 
 from elasticapm.base import Client
 from elasticapm.contrib.django import DjangoClient
+from elasticapm.contrib.django.apps import register_handlers
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
@@ -96,6 +96,7 @@ class DjangoClientTest(TestCase):
 
     def setUp(self):
         self.elasticapm_client = get_client()
+        register_handlers(self.elasticapm_client)
         self.elasticapm_client.events = []
 
     def test_basic(self):
@@ -145,13 +146,8 @@ class DjangoClientTest(TestCase):
         self.assertEquals(len(self.elasticapm_client.events), 0)
 
     def test_view_exception_elasticapm_debug(self):
-        with self.settings(
-            DEBUG=True,
-            ELASTIC_APM={
-                'DEBUG': True,
-                'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'
-            },
-        ):
+        self.elasticapm_client.config.debug = True
+        with self.settings(DEBUG=True):
             self.assertRaises(
                 Exception,
                 self.client.get, reverse('elasticapm-raise-exc')

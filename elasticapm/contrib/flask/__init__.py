@@ -21,8 +21,7 @@ from elasticapm.base import Client
 from elasticapm.conf import setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request
 from elasticapm.handlers.logging import LoggingHandler
-from elasticapm.utils import (build_name_with_http_method_prefix,
-                              disabled_due_to_debug)
+from elasticapm.utils import build_name_with_http_method_prefix
 
 logger = logging.getLogger('elasticapm.errors.client')
 
@@ -84,10 +83,7 @@ class ElasticAPM(object):
         if not self.client:
             return
 
-        if disabled_due_to_debug(
-            self.app.config.get('ELASTIC_APM', {}),
-            self.app.config.get('DEBUG', False)
-        ):
+        if self.app.debug and not self.client.config.debug:
             return
 
         self.client.capture(
@@ -129,7 +125,8 @@ class ElasticAPM(object):
                 pass
 
     def request_started(self, app):
-        self.client.begin_transaction("web.flask")
+        if not (self.app.debug and not self.client.config.debug):
+            self.client.begin_transaction("web.flask")
 
     def request_finished(self, app, response):
         rule = request.url_rule.rule if request.url_rule is not None else ""

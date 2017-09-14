@@ -54,7 +54,7 @@ def test_get(flask_apm_client):
 
 def test_get_debug(flask_apm_client):
     app = flask_apm_client.app
-    app.config['DEBUG'] = True
+    app.debug = True
     app.config['TESTING'] = False
     with pytest.raises(ValueError):
         app.test_client().get('/an-error/?foo=bar')
@@ -63,9 +63,9 @@ def test_get_debug(flask_apm_client):
 
 def test_get_debug_elasticapm(flask_apm_client):
     app = flask_apm_client.app
-    app.config['DEBUG'] = True
+    app.debug = True
     app.config['TESTING'] = True
-    app.config['ELASTIC_APM'] = {'DEBUG': True}
+    flask_apm_client.client.config.debug = True
     with pytest.raises(ValueError):
         app.test_client().get('/an-error/?foo=bar')
     assert len(flask_apm_client.client.events) == 1

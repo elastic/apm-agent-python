@@ -17,9 +17,7 @@ import warnings
 
 from django.conf import settings as django_settings
 
-from elasticapm.contrib.django.client import get_client
 from elasticapm.handlers.logging import LoggingHandler as BaseLoggingHandler
-from elasticapm.utils import disabled_due_to_debug
 
 
 class LoggingHandler(BaseLoggingHandler):
@@ -43,17 +41,11 @@ class LoggingHandler(BaseLoggingHandler):
         return super(LoggingHandler, self)._emit(record, request=request, **kwargs)
 
 
-def exception_handler(request=None, **kwargs):
+def exception_handler(client, request=None, **kwargs):
     def actually_do_stuff(request=None, **kwargs):
         exc_info = sys.exc_info()
-        client = get_client()
         try:
-            if (
-                disabled_due_to_debug(
-                    getattr(django_settings, 'ELASTIC_APM', {}),
-                    django_settings.DEBUG
-                ) or getattr(exc_info[1], 'skip_elasticapm', False)
-            ):
+            if (django_settings.DEBUG and not client.config.debug) or getattr(exc_info[1], 'skip_elasticapm', False):
                 return
 
             client.capture('Exception', exc_info=exc_info, request=request)
