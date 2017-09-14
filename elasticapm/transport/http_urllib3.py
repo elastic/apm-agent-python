@@ -37,11 +37,14 @@ class Urllib3Transport(HTTPTransport):
         headers = {k.encode('ascii') if isinstance(k, compat.text_type) else k:
                    v.encode('ascii') if isinstance(v, compat.text_type) else v
                    for k, v in headers.items()}
-
+        if compat.PY2 and isinstance(self._url, compat.text_type):
+            url = self._url.encode('utf-8')
+        else:
+            url = self._url
         try:
             try:
                 response = self.http.urlopen(
-                    'POST', self._url, body=data, headers=headers, timeout=timeout, preload_content=False
+                    'POST', url, body=data, headers=headers, timeout=timeout, preload_content=False
                 )
             except Exception as e:
                 print_trace = True

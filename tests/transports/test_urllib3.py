@@ -97,6 +97,8 @@ def test_header_encodings():
         mock_urlopen.return_value = mock.Mock(status=202)
         transport.send('', headers)
     _, args, kwargs = mock_urlopen.mock_calls[0]
+    if compat.PY2:
+        assert isinstance(args[1], compat.binary_type)
     for k, v in kwargs['headers'].items():
         assert isinstance(k, compat.binary_type)
         assert isinstance(v, compat.binary_type)
