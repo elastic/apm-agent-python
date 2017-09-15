@@ -204,7 +204,7 @@ def mark_in_app_frames(client, event):
         if 'module' not in frame:
             return
         mod = frame['module']
-        frame['in_app'] = bool(
+        frame['in_app'] = mod and bool(
             any(mod.startswith(path + '.') or mod == path for path in include) and
             not any(mod.startswith(path + '.') or mod == path for path in exclude)
         )

@@ -212,6 +212,7 @@ def test_mark_in_app_frames():
                 {'module': 'foo.bar.baz'},
                 {'module': 'foobar'},
                 {'module': 'foo.bar.bazzinga'},
+                {'module': None},
             ]
         }
     }
@@ -225,3 +226,4 @@ def test_mark_in_app_frames():
     assert not frames[2]['in_app']
     assert not frames[3]['in_app']
     assert frames[4]['in_app']
+    assert not frames[5]['in_app']
