@@ -1,2 +1,4 @@
 include setup.py README.rst MANIFEST.in LICENSE
 global-exclude *~
+recursive-exclude * __pycache__
+prune tests
