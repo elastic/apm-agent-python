@@ -1,0 +1,13 @@
+exclude:
+  - PYTHON_VERSION: python:2.7
+    FRAMEWORK: django-master
+  - PYTHON_VERSION: python:3.3
+    FRAMEWORK: django-1.9
+  - PYTHON_VERSION: python:3.3
+    FRAMEWORK: django-1.10
+  - PYTHON_VERSION: python:3.3
+    FRAMEWORK: django-1.11
+  - PYTHON_VERSION: python:3.3
+    FRAMEWORK: django-master
+  - PYTHON_VERSION: pypy:2
+    FRAMEWORK: django-master
