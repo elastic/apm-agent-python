@@ -131,7 +131,8 @@ class ElasticAPM(object):
     def request_finished(self, app, response):
         rule = request.url_rule.rule if request.url_rule is not None else ""
         rule = build_name_with_http_method_prefix(rule, request)
-
+        request_data = get_data_from_request(request)
+        self.client.set_transaction_extra_data(request_data, 'request')
         self.client.end_transaction(rule, response.status_code)
 
     def capture_exception(self, *args, **kwargs):
