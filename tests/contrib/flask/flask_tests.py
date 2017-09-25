@@ -110,6 +110,10 @@ def test_instrumentation(flask_apm_client):
     transactions = flask_apm_client.client.instrumentation_store.get_all()
 
     assert len(transactions) == 1
+    transaction = transactions[0]
+    assert 'request' in transaction['context']
+    assert transaction['context']['request']['url']['raw'] == 'http://localhost/users/'
+    assert transaction['context']['request']['method'] == 'POST'
     traces = transactions[0]['traces']
     assert len(traces) == 2, [t['name'] for t in traces]
 
