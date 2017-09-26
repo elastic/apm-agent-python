@@ -1,0 +1,35 @@
+// Use these for links to issue and pulls. Note issues and pulls redirect one to
+// each other on Github, so don't worry too much on using the right prefix.
+:issue: https://github.com/elastic/apm-agent-python/issues/
+:pull: https://github.com/elastic/apm-agent-python/pull/
+
+[[changelog]]
+== Changelog
+
+[[master-branch]]
+[float]
+=== master branch
+
+https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1\...master[Check the HEAD diff]
+
+ * added request context information for Flask ({pull}58[#58])
+ * BREAKING: changed the `SERVERS` list setting to a single `SERVER` string setting.
+   With this change, we now only support sending events to a single server ({pull}59[#59])
+
+[[release-v1.0.0.dev1]]
+[float]
+=== v1.0.0.dev1
+
+https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev0\...v1.0.0.dev1[Check the diff]
+
+ * unified configuration across supported frameworks ({pull}33[#33])
+ * added in-app frame detection ({pull}36[#36])
+ * added tagging functionality ({pull}28[#28])
+ * preliminary support for Django 2.0 ({pull}26[#26])
+ * initial set of documentation
+
+[[release-v1.0.0.dev0]]
+[float]
+=== v1.0.0.dev0
+
+First release of the Python agent for Elastic APM
