@@ -15,6 +15,8 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1\...master[Check 
  * added request context information for Flask ({pull}58[#58])
  * BREAKING: changed the `SERVERS` list setting to a single `SERVER` string setting.
    With this change, we now only support sending events to a single server ({pull}59[#59])
+ * BREAKING: removed root trace. Due to historical reason, we used to create a "root trace" which was equivalent
+   to the transaction. This is no longer necessary. {pull}61[#61]
 
 [[release-v1.0.0.dev1]]
 [float]

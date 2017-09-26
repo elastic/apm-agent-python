@@ -59,20 +59,16 @@ class InstrumentUrllib3Test(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'test_pipeline', expected_sig]
+        expected_signatures = {'test_pipeline', expected_sig}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
-        self.assertEqual(len(traces), 3)
+        self.assertEqual(len(traces), 2)
 
         self.assertEqual(traces[0]['name'], expected_sig)
         self.assertEqual(traces[0]['type'], 'ext.http.urllib3')
         self.assertEqual(traces[0]['context']['url'], url)
-        self.assertEqual(traces[0]['parent'], 1)
+        self.assertEqual(traces[0]['parent'], 0)
 
         self.assertEqual(traces[1]['name'], 'test_pipeline')
         self.assertEqual(traces[1]['type'], 'test')
-
-        self.assertEqual(traces[2]['name'], 'transaction')
-        self.assertEqual(traces[2]['type'], 'transaction')

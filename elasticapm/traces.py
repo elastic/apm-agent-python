@@ -57,13 +57,8 @@ class Transaction(object):
 
         self._trace_counter = 0
 
-        # The transaction is a trace as well
-        self.begin_trace("transaction", "transaction")
-
     def end_transaction(self, skip_frames=8):
-        # End the "transaction" trace started above
         self.duration = _time_func() - self.start_time
-        return self.end_trace(skip_frames)
 
     def begin_trace(self, name, trace_type, context=None, leaf=False):
         # If we were already called with `leaf=True`, we'll just push

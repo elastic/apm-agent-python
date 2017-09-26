@@ -28,10 +28,9 @@ class InstrumentJinja2Test(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'mytemplate.html']
+        expected_signatures = {'mytemplate.html'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], 'mytemplate.html')
         self.assertEqual(traces[0]['type'], 'template.jinja2')
@@ -45,10 +44,9 @@ class InstrumentJinja2Test(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', '<template>']
+        expected_signatures = {'<template>'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], '<template>')
         self.assertEqual(traces[0]['type'], 'template.jinja2')

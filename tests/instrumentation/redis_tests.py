@@ -34,11 +34,9 @@ class InstrumentRedisTest(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'test_pipeline',
-                               'StrictPipeline.execute']
+        expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], 'StrictPipeline.execute')
         self.assertEqual(traces[0]['type'], 'cache.redis')
@@ -46,10 +44,7 @@ class InstrumentRedisTest(TestCase):
         self.assertEqual(traces[1]['name'], 'test_pipeline')
         self.assertEqual(traces[1]['type'], 'test')
 
-        self.assertEqual(traces[2]['name'], 'transaction')
-        self.assertEqual(traces[2]['type'], 'transaction')
-
-        self.assertEqual(len(traces), 3)
+        self.assertEqual(len(traces), 2)
 
     @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_rq_patches_redis(self, should_collect):
@@ -71,11 +66,9 @@ class InstrumentRedisTest(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'test_pipeline',
-                               'StrictPipeline.execute']
+        expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], 'StrictPipeline.execute')
         self.assertEqual(traces[0]['type'], 'cache.redis')
@@ -83,10 +76,7 @@ class InstrumentRedisTest(TestCase):
         self.assertEqual(traces[1]['name'], 'test_pipeline')
         self.assertEqual(traces[1]['type'], 'test')
 
-        self.assertEqual(traces[2]['name'], 'transaction')
-        self.assertEqual(traces[2]['type'], 'transaction')
-
-        self.assertEqual(len(traces), 3)
+        self.assertEqual(len(traces), 2)
 
     @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
     def test_redis_client(self, should_collect):
@@ -101,11 +91,9 @@ class InstrumentRedisTest(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'test_redis_client',
-                               'RPUSH', 'EXPIRE']
+        expected_signatures = {'test_redis_client', 'RPUSH', 'EXPIRE'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], 'RPUSH')
         self.assertEqual(traces[0]['type'], 'cache.redis')
@@ -116,7 +104,5 @@ class InstrumentRedisTest(TestCase):
         self.assertEqual(traces[2]['name'], 'test_redis_client')
         self.assertEqual(traces[2]['type'], 'test')
 
-        self.assertEqual(traces[3]['name'], 'transaction')
-        self.assertEqual(traces[3]['type'], 'transaction')
 
-        self.assertEqual(len(traces), 4)
+        self.assertEqual(len(traces), 3)

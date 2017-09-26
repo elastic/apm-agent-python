@@ -112,11 +112,10 @@ class RequestStoreTest(TestCase):
         transactions = self.requests_store.get_all()
         traces = transactions[0]['traces']
 
-        self.assertEqual(len(traces), 3)
+        self.assertEqual(len(traces), 2)
 
-        signatures = ['transaction', 'root', 'child1-leaf']
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(signatures))
+        signatures = {'root', 'child1-leaf'}
+        self.assertEqual({t['name'] for t in traces}, signatures)
 
 
 def test_get_transaction():
