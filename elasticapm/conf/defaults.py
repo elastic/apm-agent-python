@@ -20,9 +20,6 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir))
 # Allow local testing of ElasticAPM even if DEBUG is enabled
 DEBUG = False
 
-# This should be the schema+host of the APM Server server
-SERVERS = ['http://localhost:8080']
-
 # Error API path
 ERROR_API_PATH = '/v1/errors'
 

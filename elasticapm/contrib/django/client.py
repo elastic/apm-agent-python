@@ -226,13 +226,13 @@ class DjangoClient(Client):
         """
         Serializes and signs ``data`` and passes the payload off to ``send_remote``
 
-        If ``servers`` was passed into the constructor, this will serialize the data and pipe it to
-        each server using ``send_remote()``.
+        If ``server`` was passed into the constructor, this will serialize the data and pipe it to
+        the server using ``send_remote()``.
         """
-        if self.config.servers:
+        if self.config.server:
             return super(DjangoClient, self).send(**kwargs)
         else:
-            self.error_logger.error('No servers configured, and elasticapm not installed. Cannot send message')
+            self.error_logger.error('No server configured, and elasticapm not installed. Cannot send message')
             return None
 
 

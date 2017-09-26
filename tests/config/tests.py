@@ -31,7 +31,7 @@ def test_config_dict():
     config = Config({
         'APP_NAME': 'foo',
         'SECRET_TOKEN': 'bar',
-        'SERVERS': 'http://example.com:1234',
+        'SERVER': 'http://example.com:1234',
         'APP_VERSION': 1,
         'HOSTNAME': 'localhost',
         'TRACES_SEND_FREQ': '5'
@@ -39,7 +39,7 @@ def test_config_dict():
 
     assert config.app_name == 'foo'
     assert config.secret_token == 'bar'
-    assert config.servers == ['http://example.com:1234']
+    assert config.server == 'http://example.com:1234'
     assert config.app_version == '1'
     assert config.hostname == 'localhost'
     assert config.traces_send_frequency == 5
@@ -49,7 +49,7 @@ def test_config_environment():
     with mock.patch.dict('os.environ', {
         'ELASTIC_APM_APP_NAME': 'foo',
         'ELASTIC_APM_SECRET_TOKEN': 'bar',
-        'ELASTIC_APM_SERVERS': 'http://example.com:1234,http://example.com:5678',
+        'ELASTIC_APM_SERVER': 'http://example.com:1234',
         'ELASTIC_APM_APP_VERSION': '1',
         'ELASTIC_APM_HOSTNAME': 'localhost',
         'ELASTIC_APM_TRACES_SEND_FREQ': '5',
@@ -59,7 +59,7 @@ def test_config_environment():
 
         assert config.app_name == 'foo'
         assert config.secret_token == 'bar'
-        assert config.servers == ['http://example.com:1234', 'http://example.com:5678']
+        assert config.server == 'http://example.com:1234'
         assert config.app_version == '1'
         assert config.hostname == 'localhost'
         assert config.traces_send_frequency == 5
@@ -70,7 +70,7 @@ def test_config_defaults_dict():
     config = Config(default_dict={
         'app_name': 'foo',
         'secret_token': 'bar',
-        'servers': ['http://example.com:1234', 'http://example.com:5678'],
+        'server': 'http://example.com:1234',
         'app_version': '1',
         'hostname': 'localhost',
         'traces_send_frequency': '5',
@@ -78,7 +78,7 @@ def test_config_defaults_dict():
 
     assert config.app_name == 'foo'
     assert config.secret_token == 'bar'
-    assert config.servers == ['http://example.com:1234', 'http://example.com:5678']
+    assert config.server == 'http://example.com:1234'
     assert config.app_version == '1'
     assert config.hostname == 'localhost'
     assert config.traces_send_frequency == 5

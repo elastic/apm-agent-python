@@ -279,8 +279,8 @@ class Client(object):
         data = self.build_msg_for_logging(event_type, data, date, extra, stack, **kwargs)
 
         if data:
-            servers = [server + defaults.ERROR_API_PATH for server in self.config.servers]
-            self.send(servers=servers, **data)
+            server = self.config.server + defaults.ERROR_API_PATH
+            self.send(server=server, **data)
             return data['errors'][0]['id']
 
     def _send_remote(self, url, data, headers=None):
@@ -353,8 +353,7 @@ class Client(object):
         except Exception as e:
             self.handle_transport_fail(exception=e)
 
-    def send(self, secret_token=None, auth_header=None,
-             servers=None, **data):
+    def send(self, secret_token=None, auth_header=None, server=None, **data):
         """
         Serializes the message and passes the payload onto ``send_encoded``.
         """
@@ -364,38 +363,33 @@ class Client(object):
 
         message = self.encode(data)
 
-        return self.send_encoded(message,
-                                 secret_token=secret_token,
-                                 auth_header=auth_header,
-                                 servers=servers)
+        return self.send_encoded(message, secret_token=secret_token, auth_header=auth_header, server=server)
 
-    def send_encoded(self, message, secret_token, auth_header=None,
-                     servers=None, **kwargs):
+    def send_encoded(self, message, secret_token, auth_header=None, server=None, **kwargs):
         """
         Given an already serialized message, signs the message and passes the
-        payload off to ``send_remote`` for each server specified in the servers
+        payload off to ``send_remote`` for each server specified in the server
         configuration.
         """
-        servers = servers or self.config.servers
-        if not servers:
-            warnings.warn('elasticapm client has no remote servers configured')
+        server = server or self.config.server
+        if not server:
+            warnings.warn('elasticapm client has no remote server configured')
             return
 
         if not auth_header:
             if not secret_token:
                 secret_token = self.config.secret_token
 
-            auth_header = "Bearer %s" % (secret_token)
+            auth_header = "Bearer %s" % secret_token
 
-        for url in servers:
-            headers = {
-                'Authorization': auth_header,
-                'Content-Type': 'application/json',
-                'Content-Encoding': 'deflate',
-                'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
-            }
+        headers = {
+            'Authorization': auth_header,
+            'Content-Type': 'application/json',
+            'Content-Encoding': 'deflate',
+            'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
+        }
 
-            self.send_remote(url=url, data=message, headers=headers)
+        self.send_remote(url=server, data=message, headers=headers)
 
     def encode(self, data):
         """
@@ -500,7 +494,7 @@ class Client(object):
         })
         api_path = defaults.TRANSACTIONS_API_PATH
 
-        self.send(servers=[server + api_path for server in self.config.servers], **data)
+        self.send(server=self.config.server + api_path, **data)
 
     def get_app_info(self):
         language_version = platform.python_version()

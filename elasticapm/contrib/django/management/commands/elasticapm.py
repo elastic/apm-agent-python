@@ -148,10 +148,10 @@ class Command(BaseCommand):
             "Trying to send a test error to APM Server using these settings:\n\n"
             "APP_NAME:\t\t\t%s\n"
             "SECRET_TOKEN:\t\t%s\n"
-            "SERVERS:\t\t%s\n\n" % (
+            "SERVER:\t\t%s\n\n" % (
                 client.config.app_name,
                 client.config.secret_token,
-                ', '.join(client.config.servers)
+                client.config.server,
             )
         )
 

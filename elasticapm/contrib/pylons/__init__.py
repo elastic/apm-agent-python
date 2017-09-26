@@ -22,7 +22,7 @@ def list_from_setting(config, setting):
 class ElasticAPM(Middleware):
     def __init__(self, app, config, client_cls=Client):
         client = client_cls(
-            servers=list_from_setting(config, 'elasticapm.servers'),
+            server=config.get('elasticapm.server'),
             timeout=config.get('elasticapm.timeout'),
             name=config.get('elasticapm.name'),
             app_name=config.get('elasticapm.app_name'),

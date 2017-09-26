@@ -102,7 +102,7 @@ def test_config_non_string_types():
             return repr(self.content)
 
     client = Client(
-        servers=['localhost'],
+        server='localhost',
         app_name=MyValue('bar'),
         secret_token=MyValue('bay')
     )
@@ -112,7 +112,7 @@ def test_config_non_string_types():
 
 def test_custom_transport():
     client = Client(
-        servers=['localhost'],
+        server='localhost',
         app_name='bar',
         secret_token='baz',
         transport_class='tests.client.client_tests.DummyTransport',
@@ -122,7 +122,7 @@ def test_custom_transport():
 
 def test_empty_processor_list():
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         processors=[],
@@ -136,7 +136,7 @@ def test_send_remote_failover_sync(should_try, http_send):
     should_try.return_value = True
 
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
@@ -165,7 +165,7 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
     should_try.return_value = True
 
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
@@ -193,7 +193,7 @@ def test_send_remote_failover_async(should_try, http_send):
     should_try.return_value = True
 
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         async_mode=True,
@@ -225,7 +225,7 @@ def test_send(time, send_remote):
     public = "public"
     access_token = "secret"
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
     )
@@ -250,7 +250,7 @@ def test_send_not_enabled(time, send_remote):
     time.return_value = 1328055286.51
     with mock.patch.dict('os.environ', {'ELASTIC_APM_DISABLE_SEND': 'true'}):
         client = Client(
-            servers=['http://example.com'],
+            server='http://example.com',
             app_name='app_name',
             secret_token='secret',
         )
@@ -266,7 +266,7 @@ def test_send_not_enabled(time, send_remote):
 def test_send_with_auth_header(time, send_remote):
     time.return_value = 1328055286.51
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
     )
@@ -290,7 +290,7 @@ def test_send_with_auth_header(time, send_remote):
 @mock.patch('elasticapm.base.Client._traces_collect')
 def test_client_shutdown_sync(mock_traces_collect, mock_close, mock_send):
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
@@ -307,7 +307,7 @@ def test_client_shutdown_sync(mock_traces_collect, mock_close, mock_send):
 @mock.patch('elasticapm.base.Client._traces_collect')
 def test_client_shutdown_async(mock_traces_collect, mock_send):
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         async_mode=True,
@@ -396,7 +396,7 @@ def test_logger(test_client):
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
 def test_metrics_collection(should_collect, mock_send):
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
     )
@@ -431,7 +431,7 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
     # HTTP transport, even if async_mode is True
     is_master_process.return_value = True
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         async_mode=True,
@@ -446,7 +446,7 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
 def test_ignore_patterns(should_collect, mock_send):
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         async_mode=True,
@@ -472,7 +472,7 @@ def test_ignore_patterns(should_collect, mock_send):
 @mock.patch('elasticapm.base.Client.send_remote')
 def test_disable_send(mock_send_remote):
     client = Client(
-        servers=['http://example.com'],
+        server='http://example.com',
         app_name='app_name',
         secret_token='secret',
         disable_send=True
