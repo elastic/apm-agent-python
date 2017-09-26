@@ -14,7 +14,7 @@ class MiddlewareTest(TestCase):
 
     def test_init(self):
         config = {
-            'elasticapm.servers': 'http://localhost/api/store',
+            'elasticapm.server': 'http://localhost/api/store',
             'elasticapm.app_name': 'p' * 32,
             'elasticapm.secret_token': 'a' * 32,
         }

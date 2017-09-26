@@ -29,7 +29,7 @@ async def test_client_success():
     from elasticapm.contrib.asyncio import Client
 
     client = Client(
-        servers=['http://localhost'],
+        server='http://localhost',
         app_name='app_name',
         secret_token='secret',
         transport_class='.'.join(
@@ -50,7 +50,7 @@ async def test_client_failure():
     from elasticapm.transport.base import TransportException
 
     client = Client(
-        servers=['http://error'],
+        server='http://error',
         app_name='app_name',
         secret_token='secret',
         transport_class='.'.join(
@@ -70,7 +70,7 @@ async def test_client_failure_stdlib_exception(mocker):
     from elasticapm.transport.base import TransportException
 
     client = Client(
-        servers=['http://elastic.co'],
+        server='http://elastic.co',
         app_name='app_name',
         secret_token='secret',
         async_mode=False,

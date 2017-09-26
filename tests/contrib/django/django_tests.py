@@ -788,7 +788,7 @@ class DjangoClientTest(TestCase):
 class DjangoClientNoTempTest(TestCase):
     def setUp(self):
         self.client = DjangoClient(
-            servers=['http://example.com'],
+            server='http://example.com',
             app_name='app',
             secret_token='secret',
             filter_exception_types=['KeyError', 'tests.contrib.django.fake1.FakeException']
