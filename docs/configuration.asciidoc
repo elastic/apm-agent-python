@@ -124,7 +124,7 @@ WARNING: secret tokens only provide any security if your APM server use TLS.
 
 A version string for the currently deployed version of the app.
 If you don't version your deployments,
-the recommended value for this field is the commit identifier of the deploved revision, e.g. the output of `git rev-parse HEAD`.
+the recommended value for this field is the commit identifier of the deployed revision, e.g. the output of `git rev-parse HEAD`.
 
 [float]
 [[config-filter-exception-types]]
