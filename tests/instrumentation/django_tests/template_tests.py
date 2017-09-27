@@ -55,23 +55,18 @@ class TracesTest(TestCase):
 
         self.assertEqual(len(transactions), 3)
         traces = transactions[0]['traces']
-        self.assertEqual(len(traces), 3, [t['name'] for t in traces])
+        self.assertEqual(len(traces), 2, [t['name'] for t in traces])
 
-        kinds = ['transaction', 'code', 'template.django']
-        self.assertEqual(set([t['type'] for t in traces]),
-                         set(kinds))
+        kinds = ['code', 'template.django']
+        self.assertEqual(set([t['type'] for t in traces]), set(kinds))
 
         self.assertEqual(traces[0]['type'], 'code')
         self.assertEqual(traces[0]['name'], 'something_expensive')
-        self.assertEqual(traces[0]['parent'], 1)
+        self.assertEqual(traces[0]['parent'], 0)
 
         self.assertEqual(traces[1]['type'], 'template.django')
         self.assertEqual(traces[1]['name'], 'list_users.html')
-        self.assertEqual(traces[1]['parent'], 0)
-
-        self.assertEqual(traces[2]['type'], 'transaction')
-        self.assertEqual(traces[2]['name'], 'transaction')
-        self.assertIsNone(traces[2]['parent'])
+        self.assertIsNone(traces[1]['parent'])
 
     @pytest.mark.skipif(django.VERSION < (1, 8),
                         reason='Jinja2 support introduced with Django 1.8')
@@ -91,16 +86,11 @@ class TracesTest(TestCase):
 
         self.assertEqual(len(transactions), 3)
         traces = transactions[0]['traces']
-        self.assertEqual(len(traces), 2, [t['name'] for t in traces])
+        self.assertEqual(len(traces), 1, [t['name'] for t in traces])
 
-        kinds = ['transaction', 'template.jinja2']
-        self.assertEqual(set([t['type'] for t in traces]),
-                         set(kinds))
+        kinds = ['template.jinja2']
+        self.assertEqual(set([t['type'] for t in traces]), set(kinds))
 
         self.assertEqual(traces[0]['type'], 'template.jinja2')
         self.assertEqual(traces[0]['name'], 'jinja2_template.html')
-        self.assertEqual(traces[0]['parent'], 0)
-
-        self.assertEqual(traces[1]['type'], 'transaction')
-        self.assertEqual(traces[1]['name'], 'transaction')
-        self.assertIsNone(traces[1]['parent'])
+        self.assertIsNone(traces[0]['parent'])

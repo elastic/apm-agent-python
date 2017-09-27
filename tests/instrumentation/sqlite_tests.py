@@ -29,12 +29,11 @@ class InstrumentSQLiteTest(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'sqlite3.connect :memory:',
+        expected_signatures = {'sqlite3.connect :memory:',
                                'CREATE TABLE', 'INSERT INTO testdb',
-                               'DROP TABLE']
+                               'DROP TABLE'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], 'sqlite3.connect :memory:')
         self.assertEqual(traces[0]['type'], 'db.sqlite.connect')
@@ -48,7 +47,5 @@ class InstrumentSQLiteTest(TestCase):
         self.assertEqual(traces[3]['name'], 'DROP TABLE')
         self.assertEqual(traces[3]['type'], 'db.sqlite.sql')
 
-        self.assertEqual(traces[4]['name'], 'transaction')
-        self.assertEqual(traces[4]['type'], 'transaction')
 
-        self.assertEqual(len(traces), 5)
+        self.assertEqual(len(traces), 4)

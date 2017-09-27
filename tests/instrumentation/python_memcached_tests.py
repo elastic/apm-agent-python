@@ -30,29 +30,25 @@ class InstrumentMemcachedTest(TestCase):
         transactions = self.client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
 
-        expected_signatures = ['transaction', 'test_memcached',
+        expected_signatures = {'test_memcached',
                                'Client.set', 'Client.get',
-                               'Client.get_multi']
+                               'Client.get_multi'}
 
-        self.assertEqual(set([t['name'] for t in traces]),
-                         set(expected_signatures))
+        self.assertEqual({t['name'] for t in traces}, expected_signatures)
 
         self.assertEqual(traces[0]['name'], 'Client.set')
         self.assertEqual(traces[0]['type'], 'cache.memcached')
-        self.assertEqual(traces[0]['parent'], 1)
+        self.assertEqual(traces[0]['parent'], 0)
 
         self.assertEqual(traces[1]['name'], 'Client.get')
         self.assertEqual(traces[1]['type'], 'cache.memcached')
-        self.assertEqual(traces[1]['parent'], 1)
+        self.assertEqual(traces[1]['parent'], 0)
 
         self.assertEqual(traces[2]['name'], 'Client.get_multi')
         self.assertEqual(traces[2]['type'], 'cache.memcached')
-        self.assertEqual(traces[2]['parent'], 1)
+        self.assertEqual(traces[2]['parent'], 0)
 
         self.assertEqual(traces[3]['name'], 'test_memcached')
         self.assertEqual(traces[3]['type'], 'test')
 
-        self.assertEqual(traces[4]['name'], 'transaction')
-        self.assertEqual(traces[4]['type'], 'transaction')
-
-        self.assertEqual(len(traces), 5)
+        self.assertEqual(len(traces), 4)

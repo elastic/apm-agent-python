@@ -138,6 +138,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 
     def test_view_exception_debug(self):
+        assert not self.elasticapm_client.config.debug
         with self.settings(DEBUG=True):
             self.assertRaises(
                 Exception,
@@ -907,12 +908,11 @@ def test_stacktraces_have_templates():
     assert len(transactions) == 1
     transaction = transactions[0]
     traces = transaction['traces']
-    assert len(traces) == 3, [t['name'] for t in traces]
+    assert len(traces) == 2, [t['name'] for t in traces]
 
-    expected_names = ['transaction', 'list_users.html',
-                           'something_expensive']
+    expected_names = {'list_users.html', 'something_expensive'}
 
-    assert set([t['name'] for t in traces]) == set(expected_names)
+    assert {t['name'] for t in traces} == expected_names
 
     assert traces[0]['name'] == 'something_expensive'
 
@@ -973,7 +973,7 @@ def test_perf_template_render(benchmark):
     # this will have two items.
     assert len(transactions) == len(responses)
     for transaction in transactions:
-        assert len(transaction['traces']) == 3
+        assert len(transaction['traces']) == 2
 
 
 def test_perf_template_render_no_middleware(benchmark):
@@ -1016,7 +1016,7 @@ def test_perf_database_render(benchmark):
 
         assert len(transactions) == len(responses)
         for transaction in transactions:
-            assert len(transaction['traces']) in (103, 104)
+            assert len(transaction['traces']) in (102, 103)
 
 
 @pytest.mark.django_db

@@ -115,14 +115,11 @@ def test_instrumentation(flask_apm_client):
     assert transaction['context']['request']['url']['raw'] == 'http://localhost/users/'
     assert transaction['context']['request']['method'] == 'POST'
     traces = transactions[0]['traces']
-    assert len(traces) == 2, [t['name'] for t in traces]
+    assert len(traces) == 1, [t['name'] for t in traces]
 
-    expected_signatures = ['transaction', 'users.html']
+    expected_signatures = {'users.html'}
 
-    assert set([t['name'] for t in traces]) == set(expected_signatures)
-
-    assert traces[1]['name'] == 'transaction'
-    assert traces[1]['type'] == 'transaction'
+    assert {t['name'] for t in traces} == expected_signatures
 
     assert traces[0]['name'] == 'users.html'
     assert traces[0]['type'] == 'template.jinja2'
@@ -137,18 +134,11 @@ def test_instrumentation_404(flask_apm_client):
 
     transactions = flask_apm_client.client.instrumentation_store.get_all()
 
-    expected_signatures = ['transaction']
-
     assert len(transactions) == 1
     traces = transactions[0]['traces']
     print(transactions[0])
     assert transactions[0]['result'] == '404'
-    assert len(traces) == 1, [t["signature"] for t in traces]
-
-    assert set([t['name'] for t in traces]) == set(expected_signatures)
-
-    assert traces[0]['name'] == 'transaction'
-    assert traces[0]['type'] == 'transaction'
+    assert len(traces) == 0, [t["signature"] for t in traces]
 
 
 def test_framework_version(flask_app):
