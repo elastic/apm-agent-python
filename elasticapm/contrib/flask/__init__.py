@@ -126,7 +126,7 @@ class ElasticAPM(object):
 
     def request_started(self, app):
         if not (self.app.debug and not self.client.config.debug):
-            self.client.begin_transaction("web.flask")
+            self.client.begin_transaction("request")
 
     def request_finished(self, app, response):
         rule = request.url_rule.rule if request.url_rule is not None else ""
