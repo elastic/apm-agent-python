@@ -111,6 +111,7 @@ def test_instrumentation(flask_apm_client):
 
     assert len(transactions) == 1
     transaction = transactions[0]
+    assert transaction['type'] == 'request'
     assert 'request' in transaction['context']
     assert transaction['context']['request']['url']['raw'] == 'http://localhost/users/'
     assert transaction['context']['request']['method'] == 'POST'
