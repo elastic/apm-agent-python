@@ -115,6 +115,13 @@ def test_instrumentation(flask_apm_client):
     assert 'request' in transaction['context']
     assert transaction['context']['request']['url']['raw'] == 'http://localhost/users/'
     assert transaction['context']['request']['method'] == 'POST'
+    assert transaction['context']['response']['status_code'] == 200
+    assert transaction['context']['response']['headers'] == {
+        'foo': 'bar;baz',
+        'bar': 'bazzinga',
+        'Content-Length': '78',
+        'Content-Type': 'text/html; charset=utf-8',
+    }
     traces = transactions[0]['traces']
     assert len(traces) == 1, [t['name'] for t in traces]
 

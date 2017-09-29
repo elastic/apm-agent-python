@@ -19,7 +19,8 @@ from flask import request, signals
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
 from elasticapm.conf import setup_logging
-from elasticapm.contrib.flask.utils import get_data_from_request
+from elasticapm.contrib.flask.utils import (get_data_from_request,
+                                            get_data_from_response)
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils import build_name_with_http_method_prefix
 
@@ -132,7 +133,9 @@ class ElasticAPM(object):
         rule = request.url_rule.rule if request.url_rule is not None else ""
         rule = build_name_with_http_method_prefix(rule, request)
         request_data = get_data_from_request(request)
+        response_data = get_data_from_response(response)
         self.client.set_transaction_extra_data(request_data, 'request')
+        self.client.set_transaction_extra_data(response_data, 'response')
         self.client.end_transaction(rule, response.status_code)
 
     def capture_exception(self, *args, **kwargs):

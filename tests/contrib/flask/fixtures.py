@@ -1,5 +1,5 @@
 import pytest
-from flask import Flask, render_template, signals
+from flask import Flask, make_response, render_template, signals
 
 from elasticapm.contrib.flask import ElasticAPM
 
@@ -14,8 +14,11 @@ def flask_app():
 
     @app.route('/users/', methods=['GET', 'POST'])
     def users():
-        return render_template('users.html',
-                               users=['Ron', 'Rasmus'])
+        response = make_response(render_template('users.html', users=['Ron', 'Rasmus']))
+        response.headers.add('foo', 'bar')
+        response.headers.add('foo', 'baz')
+        response.headers.add('bar', 'bazzinga')
+        return response
 
     return app
 
