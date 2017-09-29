@@ -6,11 +6,11 @@
 [[changelog]]
 == Changelog
 
-[[master-branch]]
+[[release-v1.0.0.dev2]]
 [float]
-=== master branch
+=== v1.0.0.dev2
 
-https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1\...master[Check the HEAD diff]
+https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1\...v1.0.0.dev2[Check the diff]
 
  * added request context information for Flask ({pull}58[#58])
  * BREAKING: changed the `SERVERS` list setting to a single `SERVER` string setting.
