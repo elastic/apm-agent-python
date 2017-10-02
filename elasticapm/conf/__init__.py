@@ -162,6 +162,9 @@ class Config(_ConfigBase):
     disable_send = _BoolConfigValue('DISABLE_SEND', default=False)
     disable_instrumentation = _BoolConfigValue('DISABLE_INSTRUMENTATION', default=False)
 
+    # undocumented configuration
+    _wait_to_first_send = _ConfigValue('_WAIT_TO_FIRST_SEND', type=int, default=5)
+
 
 def setup_logging(handler, exclude=['elasticapm',
                                     'gunicorn',

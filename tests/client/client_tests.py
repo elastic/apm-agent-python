@@ -3,6 +3,7 @@ import platform
 import time
 
 import mock
+import pytest
 
 import elasticapm
 from elasticapm.base import Client, ClientState
@@ -503,3 +504,19 @@ def test_empty_transport_disables_send():
     assert 'TRANSPORT_CLASS' in client.config.errors
 
     assert client.config.disable_send
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'traces_send_frequency': 2}], indirect=True)
+def test_send_timer(elasticapm_client):
+    assert elasticapm_client._send_timer is None
+    assert elasticapm_client.config.traces_send_frequency == 2
+    elasticapm_client.begin_transaction('test_type')
+    elasticapm_client.end_transaction('test')
+
+    assert elasticapm_client._send_timer is not None
+    assert elasticapm_client._send_timer.interval == 2
+    assert elasticapm_client._send_timer.is_alive()
+
+    elasticapm_client.close()
+
+    assert not elasticapm_client._send_timer.is_alive()

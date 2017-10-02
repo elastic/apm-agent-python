@@ -23,3 +23,28 @@ class Client(BaseClient):
         task = loop.create_task(
             transport.send(data, headers, timeout=self.config.timeout))
         task.add_done_callback(self.handle_transport_response)
+
+    def _start_send_timer(self, timeout=None):
+        timeout = timeout or self.config.traces_send_frequency
+        self._send_timer = AsyncTimer(timeout, self._traces_collect)
+
+    def _stop_send_timer(self):
+        if self._send_timer:
+            self._send_timer.cancel()
+
+
+class AsyncTimer:
+    def __init__(self, interval, callback):
+        self.interval = interval
+        self.callback = callback
+        self.task = asyncio.ensure_future(self._job())
+        self._done = False
+
+    async def _job(self):
+        await asyncio.sleep(self.interval)
+        await self._callback()
+        self._done = True
+
+    def cancel(self):
+        if not self._done:
+            self.task.cancel()
