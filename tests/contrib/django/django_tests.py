@@ -138,7 +138,7 @@ class DjangoClientTest(TestCase):
         self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
 
     def test_view_exception_debug(self):
-        assert not self.elasticapm_client.config.debug
+        self.elasticapm_client.config.debug = False
         with self.settings(DEBUG=True):
             self.assertRaises(
                 Exception,
@@ -462,6 +462,7 @@ class DjangoClientTest(TestCase):
             self.assertEquals(request['body'], None)
 
     def test_404_middleware_with_debug(self):
+        self.elasticapm_client.config.debug = False
         with self.settings(
                 DEBUG=True,
                 **middleware_setting(django.VERSION, [
