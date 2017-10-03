@@ -1,51 +1,39 @@
 import sqlite3
 
-import mock
-
-import elasticapm.instrumentation.control
-from tests.helpers import get_tempstoreclient
-from tests.utils.compat import TestCase
+from tests.fixtures import test_client
 
 
-class InstrumentSQLiteTest(TestCase):
-    def setUp(self):
-        self.client = get_tempstoreclient()
-        elasticapm.instrumentation.control.instrument()
+def test_connect(test_client):
+    test_client.begin_transaction("transaction.test")
 
-    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-    def test_connect(self, should_collect):
-        should_collect.return_value = False
-        self.client.begin_transaction("transaction.test")
+    conn = sqlite3.connect(":memory:")
+    cursor = conn.cursor()
 
-        conn = sqlite3.connect(":memory:")
-        cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE testdb (id integer, username text)""")
+    cursor.execute("""INSERT INTO testdb VALUES (1, "Ron")""")
+    cursor.execute("""DROP TABLE testdb""")
 
-        cursor.execute("""CREATE TABLE testdb (id integer, username text)""")
-        cursor.execute("""INSERT INTO testdb VALUES (1, "Ron")""")
-        cursor.execute("""DROP TABLE testdb""")
+    test_client.end_transaction("MyView")
 
-        self.client.end_transaction("MyView")
+    transactions = test_client.instrumentation_store.get_all()
+    traces = transactions[0]['traces']
 
-        transactions = self.client.instrumentation_store.get_all()
-        traces = transactions[0]['traces']
+    expected_signatures = {'sqlite3.connect :memory:',
+                           'CREATE TABLE', 'INSERT INTO testdb',
+                           'DROP TABLE'}
 
-        expected_signatures = {'sqlite3.connect :memory:',
-                               'CREATE TABLE', 'INSERT INTO testdb',
-                               'DROP TABLE'}
+    assert {t['name'] for t in traces} == expected_signatures
 
-        self.assertEqual({t['name'] for t in traces}, expected_signatures)
+    assert traces[0]['name'] == 'sqlite3.connect :memory:'
+    assert traces[0]['type'] == 'db.sqlite.connect'
 
-        self.assertEqual(traces[0]['name'], 'sqlite3.connect :memory:')
-        self.assertEqual(traces[0]['type'], 'db.sqlite.connect')
+    assert traces[1]['name'] == 'CREATE TABLE'
+    assert traces[1]['type'] == 'db.sqlite.sql'
 
-        self.assertEqual(traces[1]['name'], 'CREATE TABLE')
-        self.assertEqual(traces[1]['type'], 'db.sqlite.sql')
+    assert traces[2]['name'] == 'INSERT INTO testdb'
+    assert traces[2]['type'] == 'db.sqlite.sql'
 
-        self.assertEqual(traces[2]['name'], 'INSERT INTO testdb')
-        self.assertEqual(traces[2]['type'], 'db.sqlite.sql')
+    assert traces[3]['name'] == 'DROP TABLE'
+    assert traces[3]['type'] == 'db.sqlite.sql'
 
-        self.assertEqual(traces[3]['name'], 'DROP TABLE')
-        self.assertEqual(traces[3]['type'], 'db.sqlite.sql')
-
-
-        self.assertEqual(len(traces), 4)
+    assert len(traces) == 4

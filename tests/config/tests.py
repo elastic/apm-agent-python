@@ -6,25 +6,24 @@ import mock
 
 from elasticapm.conf import (Config, _BoolConfigValue, _ConfigBase,
                              _ConfigValue, _ListConfigValue, setup_logging)
-from tests.utils.compat import TestCase
 
 
-class SetupLoggingTest(TestCase):
-    def test_basic_not_configured(self):
-        with mock.patch('logging.getLogger', spec=logging.getLogger) as getLogger:
-            logger = getLogger()
-            logger.handlers = []
-            handler = mock.Mock()
-            result = setup_logging(handler)
-            self.assertTrue(result)
+def test_basic_not_configured():
+    with mock.patch('logging.getLogger', spec=logging.getLogger) as getLogger:
+        logger = getLogger()
+        logger.handlers = []
+        handler = mock.Mock()
+        result = setup_logging(handler)
+        assert result
 
-    def test_basic_already_configured(self):
-        with mock.patch('logging.getLogger', spec=logging.getLogger) as getLogger:
-            handler = mock.Mock()
-            logger = getLogger()
-            logger.handlers = [handler]
-            result = setup_logging(handler)
-            self.assertFalse(result)
+
+def test_basic_already_configured():
+    with mock.patch('logging.getLogger', spec=logging.getLogger) as getLogger:
+        handler = mock.Mock()
+        logger = getLogger()
+        logger.handlers = [handler]
+        result = setup_logging(handler)
+        assert not result
 
 
 def test_config_dict():

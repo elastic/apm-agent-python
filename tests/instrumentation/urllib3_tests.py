@@ -1,14 +1,13 @@
-import random
 import threading
 
 import mock
 import urllib3
+import pytest
 
-import elasticapm
-import elasticapm.instrumentation.control
+
 from elasticapm.traces import trace
-from tests.helpers import get_tempstoreclient
-from tests.utils.compat import TestCase
+from tests.fixtures import test_client
+
 
 try:
     from http import server as SimpleHTTPServer
@@ -22,53 +21,44 @@ class MyTCPServer(TCPServer):
     allow_reuse_address = True
 
 
-class InstrumentUrllib3Test(TestCase):
-    def setUp(self):
-        self.client = get_tempstoreclient()
-        self.port = None
-        self.start_test_server()
-        elasticapm.instrumentation.control.instrument()
+@pytest.fixture(scope='module')
+def tcp_server():
+    handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+    httpd = MyTCPServer(("", 0), handler)
+    httpd_thread = threading.Thread(target=httpd.serve_forever)
+    httpd_thread.setDaemon(True)
+    httpd_thread.start()
+    yield ('localhost', httpd.socket.getsockname()[1])
+    httpd.shutdown()
 
-    def tearDown(self):
-        if self.httpd:
-            self.httpd.shutdown()
 
-    def start_test_server(self):
-        handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+@mock.patch("elasticapm.traces.TransactionsStore.should_collect")
+def test_urllib3(should_collect, test_client, tcp_server):
+    should_collect.return_value = False
+    host, port = tcp_server
+    test_client.begin_transaction("transaction")
+    expected_sig = 'GET {0}:{1}'.format(host, port)
+    with trace("test_pipeline", "test"):
+        pool = urllib3.PoolManager(timeout=0.1)
 
-        self.httpd = MyTCPServer(("", 0), handler)
-        self.port = self.httpd.socket.getsockname()[1]
+        url = 'http://{0}:{1}/hello_world'.format(host, port)
+        r = pool.request('GET', url)
 
-        self.httpd_thread = threading.Thread(target=self.httpd.serve_forever)
-        self.httpd_thread.setDaemon(True)
-        self.httpd_thread.start()
+    test_client.end_transaction("MyView")
 
-    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-    def test_urllib3(self, should_collect):
-        should_collect.return_value = False
-        self.client.begin_transaction("transaction")
-        expected_sig = 'GET localhost:{0}'.format(self.port)
-        with trace("test_pipeline", "test"):
-            pool = urllib3.PoolManager(timeout=0.1)
+    transactions = test_client.instrumentation_store.get_all()
+    traces = transactions[0]['traces']
 
-            url = 'http://localhost:{0}/hello_world'.format(self.port)
-            r = pool.request('GET', url)
+    expected_signatures = {'test_pipeline', expected_sig}
 
-        self.client.end_transaction("MyView")
+    assert {t['name'] for t in traces} == expected_signatures
 
-        transactions = self.client.instrumentation_store.get_all()
-        traces = transactions[0]['traces']
+    assert len(traces) == 2
 
-        expected_signatures = {'test_pipeline', expected_sig}
+    assert traces[0]['name'] == expected_sig
+    assert traces[0]['type'] == 'ext.http.urllib3'
+    assert traces[0]['context']['url'] == url
+    assert traces[0]['parent'] == 0
 
-        self.assertEqual({t['name'] for t in traces}, expected_signatures)
-
-        self.assertEqual(len(traces), 2)
-
-        self.assertEqual(traces[0]['name'], expected_sig)
-        self.assertEqual(traces[0]['type'], 'ext.http.urllib3')
-        self.assertEqual(traces[0]['context']['url'], url)
-        self.assertEqual(traces[0]['parent'], 0)
-
-        self.assertEqual(traces[1]['name'], 'test_pipeline')
-        self.assertEqual(traces[1]['type'], 'test')
+    assert traces[1]['name'] == 'test_pipeline'
+    assert traces[1]['type'] == 'test'

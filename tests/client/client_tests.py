@@ -11,44 +11,46 @@ from elasticapm.transport.http import HTTPTransport
 from elasticapm.utils import compat
 from elasticapm.utils.compat import urlparse
 from tests.fixtures import test_client  # noqa
-from tests.utils.compat import TestCase
 
 
-class ClientStateTest(TestCase):
-    def test_should_try_online(self):
-        state = ClientState()
-        assert state.should_try() == True
+def test_client_state_should_try_online():
+    state = ClientState()
+    assert state.should_try() is True
 
-    def test_should_try_new_error(self):
-        state = ClientState()
-        state.status = state.ERROR
-        state.last_check = time.time()
-        state.retry_number = 1
-        assert state.should_try() == False
 
-    def test_should_try_time_passed_error(self):
-        state = ClientState()
-        state.status = state.ERROR
-        state.last_check = time.time() - 10
-        state.retry_number = 1
-        assert state.should_try() == True
+def test_client_state_should_try_new_error():
+    state = ClientState()
+    state.status = state.ERROR
+    state.last_check = time.time()
+    state.retry_number = 1
+    assert state.should_try() is False
 
-    def test_set_fail(self):
-        state = ClientState()
-        state.set_fail()
-        assert state.status == state.ERROR
-        self.assertNotEquals(state.last_check, None)
-        assert state.retry_number == 1
 
-    def test_set_success(self):
-        state = ClientState()
-        state.status = state.ERROR
-        state.last_check = 'foo'
-        state.retry_number = 0
-        state.set_success()
-        assert state.status == state.ONLINE
-        assert state.last_check == None
-        assert state.retry_number == 0
+def test_client_state_should_try_time_passed_error():
+    state = ClientState()
+    state.status = state.ERROR
+    state.last_check = time.time() - 10
+    state.retry_number = 1
+    assert state.should_try() is True
+
+
+def test_client_state_set_fail():
+    state = ClientState()
+    state.set_fail()
+    assert state.status == state.ERROR
+    assert state.last_check is not None
+    assert state.retry_number == 1
+
+
+def test_client_state_set_success():
+    state = ClientState()
+    state.status = state.ERROR
+    state.last_check = 'foo'
+    state.retry_number = 0
+    state.set_success()
+    assert state.status == state.ONLINE
+    assert state.last_check is None
+    assert state.retry_number == 0
 
 
 class DummyTransport(Transport):

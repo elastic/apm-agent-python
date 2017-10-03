@@ -76,7 +76,7 @@ class TempStoreClient(DjangoClient):
 
 class ClientProxyTest(TestCase):
     def test_proxy_responds_as_client(self):
-        self.assertEquals(get_client(), client)
+        assert get_client() == client
 
     def test_basic(self):
         config = {
@@ -88,7 +88,7 @@ class ClientProxyTest(TestCase):
         event_count = len(client.events)
         with self.settings(ELASTIC_APM=config):
             client.capture('Message', message='foo')
-            self.assertEquals(len(client.events), event_count + 1)
+            assert len(client.events) == event_count + 1
             client.events.pop(0)
 
 
@@ -101,14 +101,14 @@ class DjangoClientTest(TestCase):
 
     def test_basic(self):
         self.elasticapm_client.capture('Message', message='foo')
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         log = event['log']
-        self.assertTrue('message' in log)
+        assert 'message' in log
 
-        self.assertEquals(log['message'], 'foo')
-        self.assertEquals(log['level'], 'error')
-        self.assertEquals(log['param_message'], 'foo')
+        assert log['message'] == 'foo'
+        assert log['level'] == 'error'
+        assert log['param_message'] == 'foo'
 
     def test_signal_integration(self):
         try:
@@ -118,92 +118,88 @@ class DjangoClientTest(TestCase):
         else:
             self.fail('Expected an exception.')
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('exception' in event)
+        assert 'exception' in event
         exc = event['exception']
-        self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(exc['message'], u"ValueError: invalid literal for int() with base 10: 'hello'")
-        self.assertEquals(event['culprit'], 'tests.contrib.django.django_tests.test_signal_integration')
+        assert exc['type'] == 'ValueError'
+        assert exc['message'] == u"ValueError: invalid literal for int() with base 10: 'hello'"
+        assert event['culprit'] == 'tests.contrib.django.django_tests.test_signal_integration'
 
     def test_view_exception(self):
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+        with pytest.raises(Exception):
+            self.client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('exception' in event)
+        assert 'exception' in event
         exc = event['exception']
-        self.assertEquals(exc['type'], 'Exception')
-        self.assertEquals(exc['message'], 'Exception: view exception')
-        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
+        assert exc['type'] == 'Exception'
+        assert exc['message'] == 'Exception: view exception'
+        assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
 
     def test_view_exception_debug(self):
         self.elasticapm_client.config.debug = False
         with self.settings(DEBUG=True):
-            self.assertRaises(
-                Exception,
-                self.client.get, reverse('elasticapm-raise-exc')
-            )
-        self.assertEquals(len(self.elasticapm_client.events), 0)
+            with pytest.raises(Exception): self.client.get(reverse('elasticapm-raise-exc'))
+        assert len(self.elasticapm_client.events) == 0
 
     def test_view_exception_elasticapm_debug(self):
         self.elasticapm_client.config.debug = True
         with self.settings(DEBUG=True):
-            self.assertRaises(
-                Exception,
-                self.client.get, reverse('elasticapm-raise-exc')
-            )
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+            with pytest.raises(Exception): self.client.get(reverse('elasticapm-raise-exc'))
+        assert len(self.elasticapm_client.events) == 1
 
     def test_user_info(self):
         user = User(username='admin', email='admin@example.com')
         user.set_password('admin')
         user.save()
 
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+        with pytest.raises(Exception):
+            self.client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('user' in event['context'])
+        assert 'user' in event['context']
         user_info = event['context']['user']
-        self.assertTrue('is_authenticated' in user_info)
-        self.assertFalse(user_info['is_authenticated'])
+        assert 'is_authenticated' in user_info
+        assert not user_info['is_authenticated']
         assert user_info['username'] == ''
-        self.assertFalse('email' in user_info)
+        assert 'email' not in user_info
 
-        self.assertTrue(self.client.login(username='admin', password='admin'))
+        assert self.client.login(username='admin', password='admin')
 
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+        with pytest.raises(Exception):
+            self.client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('user' in event['context'])
+        assert 'user' in event['context']
         user_info = event['context']['user']
-        self.assertTrue('is_authenticated' in user_info)
-        self.assertTrue(user_info['is_authenticated'])
-        self.assertTrue('username' in user_info)
-        self.assertEquals(user_info['username'], 'admin')
-        self.assertTrue('email' in user_info)
-        self.assertEquals(user_info['email'], 'admin@example.com')
+        assert 'is_authenticated' in user_info
+        assert user_info['is_authenticated']
+        assert 'username' in user_info
+        assert user_info['username'] == 'admin'
+        assert 'email' in user_info
+        assert user_info['email'] == 'admin@example.com'
 
     def test_user_info_raises_database_error(self):
         user = User(username='admin', email='admin@example.com')
         user.set_password('admin')
         user.save()
 
-        self.assertTrue(
-            self.client.login(username='admin', password='admin'))
+        assert self.client.login(username='admin', password='admin')
 
         with mock.patch("django.contrib.auth.models.User.is_authenticated") as is_authenticated:
             is_authenticated.side_effect = DatabaseError("Test Exception")
-            self.assertRaises(Exception, self.client.get,
-                              reverse('elasticapm-raise-exc'))
+            with pytest.raises(Exception):
+                self.client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('user' in event['context'])
+        assert 'user' in event['context']
         user_info = event['context']['user']
-        self.assertEquals(user_info, {})
+        assert user_info == {}
 
     @pytest.mark.skipif(django.VERSION < (1, 5),
                         reason='Custom user model was introduced with Django 1.5')
@@ -214,18 +210,19 @@ class DjangoClientTest(TestCase):
             user = MyUser(my_username='admin')
             user.set_password('admin')
             user.save()
-            self.assertTrue(self.client.login(username='admin', password='admin'))
-            self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+            assert self.client.login(username='admin', password='admin')
+            with pytest.raises(Exception):
+                self.client.get(reverse('elasticapm-raise-exc'))
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
+            assert len(self.elasticapm_client.events) == 1
             event = self.elasticapm_client.events.pop(0)['errors'][0]
-            self.assertTrue('user' in event['context'])
+            assert 'user' in event['context']
             user_info = event['context']['user']
-            self.assertTrue('is_authenticated' in user_info)
-            self.assertTrue(user_info['is_authenticated'])
-            self.assertTrue('username' in user_info)
-            self.assertEquals(user_info['username'], 'admin')
-            self.assertFalse('email' in user_info)
+            assert 'is_authenticated' in user_info
+            assert user_info['is_authenticated']
+            assert 'username' in user_info
+            assert user_info['username'] == 'admin'
+            assert 'email' not in user_info
 
     @pytest.mark.skipif(django.VERSION > (1, 9),
                         reason='MIDDLEWARE_CLASSES removed in Django 2.0')
@@ -240,7 +237,7 @@ class DjangoClientTest(TestCase):
             with pytest.raises(Exception):
                 resp = self.client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         assert event['context']['user'] == {}
 
@@ -257,7 +254,7 @@ class DjangoClientTest(TestCase):
             with pytest.raises(Exception):
                 resp = self.client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         assert event['context']['user'] == {}
 
@@ -268,10 +265,9 @@ class DjangoClientTest(TestCase):
             m for m in settings.MIDDLEWARE_CLASSES
             if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
         ]):
-            self.assertRaises(Exception,
-                              self.client.get,
-                              reverse('elasticapm-raise-exc'))
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+            with pytest.raises(Exception):
+                self.client.get(reverse('elasticapm-raise-exc'))
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         assert event['context']['user'] == {}
 
@@ -282,42 +278,43 @@ class DjangoClientTest(TestCase):
             m for m in settings.MIDDLEWARE
             if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
         ]):
-            self.assertRaises(Exception,
-                              self.client.get,
-                              reverse('elasticapm-raise-exc'))
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+            with pytest.raises(Exception):
+                self.client.get(reverse('elasticapm-raise-exc'))
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
         assert event['context']['user'] == {}
 
     def test_request_middleware_exception(self):
         with self.settings(**middleware_setting(django.VERSION,
                                                 ['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware'])):
-            self.assertRaises(ImportError, self.client.get, reverse('elasticapm-raise-exc'))
+            with pytest.raises(ImportError):
+                self.client.get(reverse('elasticapm-raise-exc'))
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
+            assert len(self.elasticapm_client.events) == 1
             event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
+            assert 'exception' in event
             exc = event['exception']
-            self.assertEquals(exc['type'], 'ImportError')
-            self.assertEquals(exc['message'], 'ImportError: request')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_request')
+            assert exc['type'] == 'ImportError'
+            assert exc['message'] == 'ImportError: request'
+            assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_request'
 
     def test_response_middlware_exception(self):
         if django.VERSION[:2] < (1, 3):
             return
         with self.settings(**middleware_setting(django.VERSION,
                                                 ['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware'])):
-            self.assertRaises(ImportError, self.client.get, reverse('elasticapm-no-error'))
+            with pytest.raises(ImportError):
+                self.client.get(reverse('elasticapm-no-error'))
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
+            assert len(self.elasticapm_client.events) == 1
             event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
+            assert 'exception' in event
             exc = event['exception']
-            self.assertEquals(exc['type'], 'ImportError')
-            self.assertEquals(exc['message'], 'ImportError: response')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_response')
+            assert exc['type'] == 'ImportError'
+            assert exc['message'] == 'ImportError: response'
+            assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_response'
 
     def test_broken_500_handler_with_middleware(self):
         with self.settings(BREAK_THAT_500=True):
@@ -325,66 +322,70 @@ class DjangoClientTest(TestCase):
             client.handler = MockMiddleware(MockClientHandler())
 
             with self.settings(**middleware_setting(django.VERSION, [])):
-                self.assertRaises(Exception, client.get, reverse('elasticapm-raise-exc'))
+                with pytest.raises(Exception):
+                    client.get(reverse('elasticapm-raise-exc'))
 
-            self.assertEquals(len(self.elasticapm_client.events), 2)
+            assert len(self.elasticapm_client.events) == 2
             event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
+            assert 'exception' in event
             exc = event['exception']
-            self.assertEquals(exc['type'], 'Exception')
-            self.assertEquals(exc['message'], 'Exception: view exception')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
+            assert exc['type'] == 'Exception'
+            assert exc['message'] == 'Exception: view exception'
+            assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
 
             event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
+            assert 'exception' in event
             exc = event['exception']
-            self.assertEquals(exc['type'], 'ValueError')
-            self.assertEquals(exc['message'], 'ValueError: handler500')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.urls.handler500')
+            assert exc['type'] == 'ValueError'
+            assert exc['message'] == 'ValueError: handler500'
+            assert event['culprit'] == 'tests.contrib.django.testapp.urls.handler500'
 
     def test_view_middleware_exception(self):
         with self.settings(**middleware_setting(django.VERSION,
                                                 ['tests.contrib.django.testapp.middleware.BrokenViewMiddleware'])):
-            self.assertRaises(ImportError, self.client.get, reverse('elasticapm-raise-exc'))
+            with pytest.raises(ImportError):
+                self.client.get(reverse('elasticapm-raise-exc'))
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
+            assert len(self.elasticapm_client.events) == 1
             event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
+            assert 'exception' in event
             exc = event['exception']
-            self.assertEquals(exc['type'], 'ImportError')
-            self.assertEquals(exc['message'], 'ImportError: view')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_view')
+            assert exc['type'] == 'ImportError'
+            assert exc['message'] == 'ImportError: view'
+            assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_view'
 
     def test_exclude_modules_view(self):
         exclude_paths = self.elasticapm_client.config.exclude_paths
         self.elasticapm_client.config.exclude_paths = ['tests.views.decorated_raise_exc']
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc-decor'))
+        with pytest.raises(Exception):
+            self.client.get(reverse('elasticapm-raise-exc-decor'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1, self.elasticapm_client.events)
+        assert len(self.elasticapm_client.events) == 1, self.elasticapm_client.events
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
+        assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
         self.elasticapm_client.config.exclude_paths = exclude_paths
 
     def test_include_modules(self):
         include_paths = self.elasticapm_client.config.include_paths
         self.elasticapm_client.config.include_paths = ['django.shortcuts.get_object_or_404']
 
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-django-exc'))
+        with pytest.raises(Exception):
+            self.client.get(reverse('elasticapm-django-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertEquals(event['culprit'], 'django.shortcuts.get_object_or_404')
+        assert event['culprit'] == 'django.shortcuts.get_object_or_404'
         self.elasticapm_client.config.include_paths = include_paths
 
     def test_ignored_exception_is_ignored(self):
         with pytest.raises(IgnoredException):
             self.client.get(reverse('elasticapm-ignored-exception'))
-        self.assertEquals(len(self.elasticapm_client.events), 0)
+        assert len(self.elasticapm_client.events) == 0
 
     def test_template_name_as_view(self):
         # TODO this test passes only with TEMPLATE_DEBUG=True
@@ -402,20 +403,15 @@ class DjangoClientTest(TestCase):
                 },
             ]
         ):
-            self.assertRaises(
-                TemplateSyntaxError,
-                self.client.get, reverse('elasticapm-template-exc')
-            )
+            with pytest.raises(TemplateSyntaxError):
+                self.client.get(reverse('elasticapm-template-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertEquals(event['culprit'], 'error.html')
+        assert event['culprit'] == 'error.html'
 
-        self.assertEquals(
-            event['template']['context_line'],
-            '{% invalid template tag %}\n'
-        )
+        assert event['template']['context_line'] == '{% invalid template tag %}\n'
 
     @pytest.mark.skipif(compat.PY3, reason='see Python bug #10805')
     def test_record_none_exc_info(self):
@@ -434,32 +430,32 @@ class DjangoClientTest(TestCase):
         handler = LoggingHandler()
         handler.emit(record)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertEquals(event['log']['param_message'], 'test')
-        self.assertEquals(event['log']['logger_name'], 'foo')
-        self.assertEquals(event['log']['level'], 'info')
+        assert event['log']['param_message'] == 'test'
+        assert event['log']['logger_name'] == 'foo'
+        assert event['log']['level'] == 'info'
         assert 'exception' not in event
 
     def test_404_middleware(self):
         with self.settings(**middleware_setting(django.VERSION,
                                                 ['elasticapm.contrib.django.middleware.Catch404Middleware'])):
             resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
+            assert resp.status_code == 404
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
+            assert len(self.elasticapm_client.events) == 1
             event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertEquals(event['log']['level'], 'info')
-            self.assertEquals(event['log']['logger_name'], 'http404')
+            assert event['log']['level'] == 'info'
+            assert event['log']['logger_name'] == 'http404'
 
-            self.assertTrue('request' in event['context'])
+            assert 'request' in event['context']
             request = event['context']['request']
-            self.assertEquals(request['url']['raw'], u'http://testserver/non-existant-page')
-            self.assertEquals(request['method'], 'GET')
-            self.assertEquals(request['url']['search'], '')
-            self.assertEquals(request['body'], None)
+            assert request['url']['raw'] == u'http://testserver/non-existant-page'
+            assert request['method'] == 'GET'
+            assert request['url']['search'] == ''
+            assert request['body'] == None
 
     def test_404_middleware_with_debug(self):
         self.elasticapm_client.config.debug = False
@@ -470,28 +466,28 @@ class DjangoClientTest(TestCase):
                 ])
         ):
             resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
-            self.assertEquals(len(self.elasticapm_client.events), 0)
+            assert resp.status_code == 404
+            assert len(self.elasticapm_client.events) == 0
 
     def test_response_error_id_middleware(self):
         with self.settings(**middleware_setting(django.VERSION, [
                 'elasticapm.contrib.django.middleware.ErrorIdMiddleware',
                 'elasticapm.contrib.django.middleware.Catch404Middleware'])):
             resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
+            assert resp.status_code == 404
             headers = dict(resp.items())
-            self.assertTrue('X-ElasticAPM-ErrorId' in headers)
-            self.assertEquals(len(self.elasticapm_client.events), 1)
+            assert 'X-ElasticAPM-ErrorId' in headers
+            assert len(self.elasticapm_client.events) == 1
             event = self.elasticapm_client.events.pop(0)['errors'][0]
-            self.assertEquals(event['id'], headers['X-ElasticAPM-ErrorId'])
+            assert event['id'] == headers['X-ElasticAPM-ErrorId']
 
     def test_get_client(self):
-        self.assertEquals(get_client(), get_client())
-        self.assertEquals(get_client('elasticapm.base.Client').__class__, Client)
-        self.assertEquals(get_client(), self.elasticapm_client)
+        assert get_client() == get_client()
+        assert get_client('elasticapm.base.Client').__class__ == Client
+        assert get_client() == self.elasticapm_client
 
-        self.assertEquals(get_client('%s.%s' % (self.elasticapm_client.__class__.__module__, self.elasticapm_client.__class__.__name__)), self.elasticapm_client)
-        self.assertEquals(get_client(), self.elasticapm_client)
+        assert get_client('%s.%s' % (self.elasticapm_client.__class__.__module__, self.elasticapm_client.__class__.__name__)) == self.elasticapm_client
+        assert get_client() == self.elasticapm_client
 
     # This test only applies to Django 1.3+
     def test_raw_post_data_partial_read(self):
@@ -511,13 +507,13 @@ class DjangoClientTest(TestCase):
 
         self.elasticapm_client.capture('Message', message='foo', request=request)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('request' in event['context'])
+        assert 'request' in event['context']
         request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], '<unavailable>')
+        assert request['method'] == 'POST'
+        assert request['body'] == '<unavailable>'
 
     def test_post_data(self):
         request = WSGIRequest(environ={
@@ -531,13 +527,13 @@ class DjangoClientTest(TestCase):
         request.POST = QueryDict("x=1&y=2")
         self.elasticapm_client.capture('Message', message='foo', request=request)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('request' in event['context'])
+        assert 'request' in event['context']
         request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], {'x': '1', 'y': '2'})
+        assert request['method'] == 'POST'
+        assert request['body'] == {'x': '1', 'y': '2'}
 
     def test_post_raw_data(self):
         request = WSGIRequest(environ={
@@ -552,13 +548,13 @@ class DjangoClientTest(TestCase):
         })
         self.elasticapm_client.capture('Message', message='foo', request=request)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('request' in event['context'])
+        assert 'request' in event['context']
         request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], compat.b('foobar'))
+        assert request['method'] == 'POST'
+        assert request['body'] == compat.b('foobar')
 
     @pytest.mark.skipif(django.VERSION < (1, 9),
                         reason='get-raw-uri-not-available')
@@ -612,22 +608,22 @@ class DjangoClientTest(TestCase):
 
         self.elasticapm_client.capture('Message', message='foo', request=request)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+        assert len(self.elasticapm_client.events) == 1
         event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('request' in event['context'])
+        assert 'request' in event['context']
         request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], '<unavailable>')
-        self.assertTrue('headers' in request)
+        assert request['method'] == 'POST'
+        assert request['body'] == '<unavailable>'
+        assert 'headers' in request
         headers = request['headers']
-        self.assertTrue('content-type' in headers, headers.keys())
-        self.assertEquals(headers['content-type'], 'text/html')
+        assert 'content-type' in headers, headers.keys()
+        assert headers['content-type'] == 'text/html'
         env = request['env']
-        self.assertTrue('SERVER_NAME' in env, env.keys())
-        self.assertEquals(env['SERVER_NAME'], 'testserver')
-        self.assertTrue('SERVER_PORT' in env, env.keys())
-        self.assertEquals(env['SERVER_PORT'], '80')
+        assert 'SERVER_NAME' in env, env.keys()
+        assert env['SERVER_NAME'] == 'testserver'
+        assert 'SERVER_PORT' in env, env.keys()
+        assert env['SERVER_PORT'] == '80'
 
     def test_transaction_request_response_data(self):
         self.client.cookies = SimpleCookie({'foo': 'bar'})
@@ -636,7 +632,7 @@ class DjangoClientTest(TestCase):
                 django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
         )):
             self.client.get(reverse('elasticapm-no-error'))
-        self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
+        assert len(self.elasticapm_client.instrumentation_store) == 1
         transactions = self.elasticapm_client.instrumentation_store.get_all()
         assert len(transactions) == 1
         transaction = transactions[0]
@@ -662,9 +658,9 @@ class DjangoClientTest(TestCase):
         with self.settings(**middleware_setting(
                 django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
         )):
-            self.assertEqual(len(self.elasticapm_client.instrumentation_store), 0)
+            assert len(self.elasticapm_client.instrumentation_store) == 0
             self.client.get(reverse('elasticapm-no-error'))
-            self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
+            assert len(self.elasticapm_client.instrumentation_store) == 1
 
             transactions = self.elasticapm_client.instrumentation_store.get_all()
 
@@ -693,13 +689,11 @@ class DjangoClientTest(TestCase):
         ):
             self.client.get(reverse('elasticapm-no-error-slash')[:-1])
         transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertIn(
-            transactions[0]['name'], (
-                # django <= 1.8
-                'GET django.middleware.common.CommonMiddleware.process_request',
-                # django 1.9+
-                'GET django.middleware.common.CommonMiddleware.process_response',
-            )
+        assert transactions[0]['name'] in (
+            # django <= 1.8
+            'GET django.middleware.common.CommonMiddleware.process_request',
+            # django 1.9+
+            'GET django.middleware.common.CommonMiddleware.process_response',
         )
 
     def test_request_metrics_301_prepend_www(self):
@@ -721,10 +715,7 @@ class DjangoClientTest(TestCase):
         ):
             self.client.get(reverse('elasticapm-no-error'))
         transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET django.middleware.common.CommonMiddleware.process_request'
-        )
+        assert transactions[0]['name'] == 'GET django.middleware.common.CommonMiddleware.process_request'
 
     def test_request_metrics_contrib_redirect(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
@@ -747,11 +738,7 @@ class DjangoClientTest(TestCase):
             response = self.client.get('/redirect/me/')
 
         transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware'
-            '.process_response'
-        )
+        assert transactions[0]['name'] == 'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware.process_response'
 
     def test_request_metrics_name_override(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
@@ -763,10 +750,7 @@ class DjangoClientTest(TestCase):
         ):
             self.client.get(reverse('elasticapm-no-error'))
         transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET foobar'
-        )
+        assert transactions[0]['name'] == 'GET foobar'
 
     def test_request_metrics_404_resolve_error(self):
         self.elasticapm_client.instrumentation_store.get_all()  # clear the store
@@ -775,10 +759,7 @@ class DjangoClientTest(TestCase):
         ):
             self.client.get('/i-dont-exist/')
         transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            ''
-        )
+        assert transactions[0]['name'] == ''
 
     def test_get_app_info(self):
         client = get_client()
@@ -803,7 +784,7 @@ class DjangoClientNoTempTest(TestCase):
         except:
             self.client.capture('Exception')
 
-        self.assertEquals(send_encoded.call_count, 1)
+        assert send_encoded.call_count == 1
 
     @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
     def test_filter_matches_type(self, send_encoded):
@@ -812,7 +793,7 @@ class DjangoClientNoTempTest(TestCase):
         except:
             self.client.capture('Exception')
 
-        self.assertEquals(send_encoded.call_count, 0)
+        assert send_encoded.call_count == 0
 
     @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
     def test_filter_matches_type_but_not_module(self, send_encoded):
@@ -822,7 +803,7 @@ class DjangoClientNoTempTest(TestCase):
         except:
             self.client.capture('Exception')
 
-        self.assertEquals(send_encoded.call_count, 1)
+        assert send_encoded.call_count == 1
 
     @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
     def test_filter_matches_type_and_module(self, send_encoded):
@@ -832,7 +813,7 @@ class DjangoClientNoTempTest(TestCase):
         except:
             self.client.capture('Exception')
 
-        self.assertEquals(send_encoded.call_count, 0)
+        assert send_encoded.call_count == 0
 
     @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
     def test_filter_matches_module_only(self, send_encoded):
@@ -842,7 +823,7 @@ class DjangoClientNoTempTest(TestCase):
         except:
             self.client.capture('Exception')
 
-        self.assertEquals(send_encoded.call_count, 1)
+        assert send_encoded.call_count == 1
 
 
 class DjangoLoggingTest(TestCase):
@@ -868,11 +849,11 @@ class DjangoLoggingTest(TestCase):
             })
         })
 
-        self.assertEquals(len(self.client.events), 1)
+        assert len(self.client.events) == 1
         event = self.client.events.pop(0)['errors'][0]
-        self.assertTrue('request' in event['context'])
+        assert 'request' in event['context']
         request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
+        assert request['method'] == 'POST'
 
 
 def client_get(client, url):

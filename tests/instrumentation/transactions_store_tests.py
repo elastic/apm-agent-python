@@ -92,7 +92,7 @@ class RequestStoreTest(TestCase):
             with trace("bleh", "custom"):
                 time.sleep(0.01)
 
-        self.assertEqual(self.mock_get_frames.call_count, 10)
+        assert self.mock_get_frames.call_count == 10
 
     def test_leaf_tracing(self):
         self.requests_store.begin_transaction("transaction.test")
@@ -112,10 +112,10 @@ class RequestStoreTest(TestCase):
         transactions = self.requests_store.get_all()
         traces = transactions[0]['traces']
 
-        self.assertEqual(len(traces), 2)
+        assert len(traces) == 2
 
         signatures = {'root', 'child1-leaf'}
-        self.assertEqual({t['name'] for t in traces}, signatures)
+        assert {t['name'] for t in traces} == signatures
 
 
 def test_get_transaction():

@@ -30,10 +30,10 @@ class InstrumentJinja2Test(TestCase):
 
         expected_signatures = {'mytemplate.html'}
 
-        self.assertEqual({t['name'] for t in traces}, expected_signatures)
+        assert {t['name'] for t in traces} == expected_signatures
 
-        self.assertEqual(traces[0]['name'], 'mytemplate.html')
-        self.assertEqual(traces[0]['type'], 'template.jinja2')
+        assert traces[0]['name'] == 'mytemplate.html'
+        assert traces[0]['type'] == 'template.jinja2'
 
     def test_from_string(self):
         self.client.begin_transaction("transaction.test")
@@ -46,7 +46,7 @@ class InstrumentJinja2Test(TestCase):
 
         expected_signatures = {'<template>'}
 
-        self.assertEqual({t['name'] for t in traces}, expected_signatures)
+        assert {t['name'] for t in traces} == expected_signatures
 
-        self.assertEqual(traces[0]['name'], '<template>')
-        self.assertEqual(traces[0]['type'], 'template.jinja2')
+        assert traces[0]['name'] == '<template>'
+        assert traces[0]['type'] == 'template.jinja2'
