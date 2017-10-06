@@ -10,13 +10,17 @@ class ElasticAPMConfig(AppConfig):
     label = 'elasticapm.contrib.django'
     verbose_name = 'ElasticAPM'
 
+    def __init__(self, *args, **kwargs):
+        super(ElasticAPMConfig, self).__init__(*args, **kwargs)
+        self.client = None
+
     def ready(self):
-        client = get_client()
-        register_handlers(client)
-        if not client.config.disable_instrumentation:
-            instrument(client)
+        self.client = get_client()
+        register_handlers(self.client)
+        if not self.client.config.disable_instrumentation:
+            instrument(self.client)
         else:
-            client.logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
+            self.client.logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
 
 
 def register_handlers(client):

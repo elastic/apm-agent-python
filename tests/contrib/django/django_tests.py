@@ -32,6 +32,7 @@ from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.traces import Transaction
 from elasticapm.utils import compat
 from elasticapm.utils.lru import LRUCache
+from tests.contrib.django.fixtures import elasticapm_client
 from tests.contrib.django.testapp.views import IgnoredException
 from tests.utils.compat import middleware_setting
 
@@ -845,34 +846,45 @@ class DjangoClientNoTempTest(TestCase):
         self.assertEquals(send_encoded.call_count, 1)
 
 
-class DjangoLoggingTest(TestCase):
-    def setUp(self):
-        self.logger = logging.getLogger(__name__)
-        self.client = get_client()
+def test_django_logging_request_kwarg(elasticapm_client):
+    handler = LoggingHandler()
 
-    def test_request_kwarg(self):
-        handler = LoggingHandler()
+    logger = logging.getLogger(__name__)
+    logger.handlers = []
+    logger.addHandler(handler)
 
-        logger = self.logger
-        logger.handlers = []
-        logger.addHandler(handler)
-
-        logger.error('This is a test error', extra={
-            'request': WSGIRequest(environ={
-                'wsgi.input': compat.StringIO(),
-                'REQUEST_METHOD': 'POST',
-                'SERVER_NAME': 'testserver',
-                'SERVER_PORT': '80',
-                'CONTENT_TYPE': 'application/json',
-                'ACCEPT': 'application/json',
-            })
+    logger.error('This is a test error', extra={
+        'request': WSGIRequest(environ={
+            'wsgi.input': compat.StringIO(),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/json',
+            'ACCEPT': 'application/json',
         })
+    })
 
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)['errors'][0]
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['method'] == 'POST'
+
+
+def test_django_logging_middleware(elasticapm_client, client):
+    handler = LoggingHandler()
+
+    logger = logging.getLogger('logmiddleware')
+    logger.handlers = []
+    logger.addHandler(handler)
+
+    with override_settings(**middleware_setting(django.VERSION,
+                                                ['elasticapm.contrib.django.middleware.LogMiddleware'])):
+        client.get(reverse('elasticapm-logging'))
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'request' in event['context']
+    assert event['context']['request']['url']['pathname'] == reverse('elasticapm-logging')
 
 
 def client_get(client, url):
@@ -1149,3 +1161,13 @@ class DjangoManagementCommandTest(TestCase):
             call_command('elasticapm', 'test', stdout=stdout, stderr=stdout)
         output = stdout.getvalue()
         assert 'Success! We tracked the error successfully!' in output
+
+
+def test_tracing_middleware_uses_test_client(client, elasticapm_client):
+    with override_settings(**middleware_setting(django.VERSION, [
+        'elasticapm.contrib.django.middleware.TracingMiddleware'
+    ])):
+        client.get('/')
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    assert transactions[0]['context']['request']['url']['pathname'] == '/'
