@@ -4,7 +4,7 @@ from requests.exceptions import InvalidURL, MissingSchema
 from urllib3_mock import Responses
 
 from elasticapm.traces import trace
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 try:
     from requests.packages import urllib3  # noqa
@@ -14,8 +14,8 @@ except ImportError:
 responses.add('GET', '/', status=200, adding_headers={'Location': 'http://example.com/foo'})
 
 
-def test_requests_instrumentation(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_requests_instrumentation(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_request", "test"):
         # NOTE: The `allow_redirects` argument has to be set to `False`,
         # because mocking is done a level deeper, and the mocked response
@@ -23,58 +23,58 @@ def test_requests_instrumentation(test_client):
         # requests to resolve redirects, which doesn't make sense for this
         # test case.
         requests.get('http://example.com', allow_redirects=False)
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
     assert 'GET example.com' == traces[0]['name']
     assert 'http://example.com/' == traces[0]['context']['url']
 
 
-def test_requests_instrumentation_via_session(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_requests_instrumentation_via_session(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_request", "test"):
         s = requests.Session()
         s.get('http://example.com', allow_redirects=False)
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
     assert 'GET example.com' == traces[0]['name']
     assert 'http://example.com/' == traces[0]['context']['url']
 
 
-def test_requests_instrumentation_via_prepared_request(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_requests_instrumentation_via_prepared_request(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_request", "test"):
         r = requests.Request('get', 'http://example.com')
         pr = r.prepare()
         s = requests.Session()
         s.send(pr, allow_redirects=False)
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
     assert 'GET example.com' == traces[0]['name']
     assert 'http://example.com/' == traces[0]['context']['url']
 
 
-def test_requests_instrumentation_malformed_none(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_requests_instrumentation_malformed_none(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_request", "test"):
         with pytest.raises(MissingSchema):
             requests.get(None)
 
 
-def test_requests_instrumentation_malformed_schema(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_requests_instrumentation_malformed_schema(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_request", "test"):
         with pytest.raises(MissingSchema):
             requests.get('')
 
 
-def test_requests_instrumentation_malformed_path(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_requests_instrumentation_malformed_path(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_request", "test"):
         with pytest.raises(InvalidURL):
             requests.get('http://')

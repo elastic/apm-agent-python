@@ -164,6 +164,8 @@ class Command(BaseCommand):
                     'Success! We tracked the error successfully! You should be'
                     ' able to see it in a few seconds at the above URL'
                 )
+        finally:
+            client.close()
 
     def handle_check(self, command, **options):
         """Check your settings for common misconfigurations"""

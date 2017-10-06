@@ -4,17 +4,17 @@ import pytest
 
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils.stacks import iter_stack_frames
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()
-def logger(test_client):
-    test_client.config.include_paths = ['tests', 'elasticapm']
-    handler = LoggingHandler(test_client)
+def logger(elasticapm_client):
+    elasticapm_client.config.include_paths = ['tests', 'elasticapm']
+    handler = LoggingHandler(elasticapm_client)
     logger = logging.getLogger(__name__)
     logger.handlers = []
     logger.addHandler(handler)
-    logger.client = test_client
+    logger.client = elasticapm_client
     return logger
 
 
@@ -167,14 +167,14 @@ def test_logger_exception(logger):
     assert event['log']['message'] == 'This is a test with an exception'
 
 
-def test_client_arg(test_client):
-    handler = LoggingHandler(test_client)
-    assert handler.client == test_client
+def test_client_arg(elasticapm_client):
+    handler = LoggingHandler(elasticapm_client)
+    assert handler.client == elasticapm_client
 
 
-def test_client_kwarg(test_client):
-    handler = LoggingHandler(client=test_client)
-    assert handler.client == test_client
+def test_client_kwarg(elasticapm_client):
+    handler = LoggingHandler(client=elasticapm_client)
+    assert handler.client == elasticapm_client
 
 
 def test_invalid_first_arg_type():

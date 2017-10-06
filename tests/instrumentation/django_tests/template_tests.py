@@ -10,8 +10,8 @@ import mock
 import pytest
 
 from conftest import BASE_TEMPLATE_DIR
-from tests.utils.compat import middleware_setting
 from tests.contrib.django.fixtures import elasticapm_client
+from tests.utils.compat import middleware_setting
 
 try:
     # Django 1.10+

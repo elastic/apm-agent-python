@@ -1,10 +1,10 @@
 import sqlite3
 
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
-def test_connect(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_connect(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
 
     conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
@@ -13,9 +13,9 @@ def test_connect(test_client):
     cursor.execute("""INSERT INTO testdb VALUES (1, "Ron")""")
     cursor.execute("""DROP TABLE testdb""")
 
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
 
     expected_signatures = {'sqlite3.connect :memory:',

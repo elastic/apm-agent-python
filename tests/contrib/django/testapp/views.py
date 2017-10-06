@@ -56,6 +56,12 @@ def logging_request_exc(request):
     return HttpResponse('')
 
 
+def logging_view(request):
+    logger = logging.getLogger('logmiddleware')
+    logger.info("Just loggin'")
+    return HttpResponse('')
+
+
 def render_template_view(request):
     def something_expensive():
         with trace("something_expensive", "code"):

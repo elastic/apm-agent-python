@@ -8,7 +8,9 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
+from django.apps import apps
 
+from elasticapm.contrib.django.client import get_client
 from elasticapm.middleware import ElasticAPM as ElasticAPMBase
 
 
@@ -25,5 +27,8 @@ class ElasticAPM(ElasticAPMBase):
 
     @property
     def client(self):
-        from elasticapm.contrib.django.client import client
-        return client
+        try:
+            app = apps.get_app_config('elasticapm.contrib.django')
+            return app.client
+        except LookupError:
+            return get_client()

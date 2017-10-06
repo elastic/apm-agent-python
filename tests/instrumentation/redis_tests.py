@@ -7,7 +7,7 @@ import redis
 from redis.client import StrictRedis
 
 from elasticapm.traces import trace
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()
@@ -21,16 +21,16 @@ def redis_conn():
     del conn
 
 
-def test_pipeline(test_client, redis_conn):
-    test_client.begin_transaction("transaction.test")
+def test_pipeline(elasticapm_client, redis_conn):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_pipeline", "test"):
         pipeline = redis_conn.pipeline()
         pipeline.rpush("mykey", "a", "b")
         pipeline.expire("mykey", 1000)
         pipeline.execute()
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
 
     expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
@@ -46,20 +46,20 @@ def test_pipeline(test_client, redis_conn):
     assert len(traces) == 2
 
 
-def test_rq_patches_redis(test_client, redis_conn):
+def test_rq_patches_redis(elasticapm_client, redis_conn):
     # Let's go ahead and change how something important works
     redis_conn._pipeline = partial(StrictRedis.pipeline, redis_conn)
 
-    test_client.begin_transaction("transaction.test")
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_pipeline", "test"):
         # conn = redis.StrictRedis()
         pipeline = redis_conn._pipeline()
         pipeline.rpush("mykey", "a", "b")
         pipeline.expire("mykey", 1000)
         pipeline.execute()
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
 
     expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
@@ -75,14 +75,14 @@ def test_rq_patches_redis(test_client, redis_conn):
     assert len(traces) == 2
 
 
-def test_redis_client(test_client, redis_conn):
-    test_client.begin_transaction("transaction.test")
+def test_redis_client(elasticapm_client, redis_conn):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_redis_client", "test"):
         redis_conn.rpush("mykey", "a", "b")
         redis_conn.expire("mykey", 1000)
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
 
     expected_signatures = {'test_redis_client', 'RPUSH', 'EXPIRE'}

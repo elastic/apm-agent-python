@@ -6,7 +6,7 @@ import pytest
 from elasticapm.instrumentation import control
 from elasticapm.instrumentation.packages.psycopg2 import (PGCursorProxy,
                                                           extract_signature)
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 try:
     import psycopg2
@@ -210,24 +210,24 @@ def test_multi_statement_sql():
     assert "CREATE TABLE" == actual
 
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_register_type(postgres_connection, test_client):
+def test_psycopg2_register_type(postgres_connection, elasticapm_client):
     import psycopg2.extras
 
     control.instrument()
 
     try:
-        test_client.begin_transaction("web.django")
+        elasticapm_client.begin_transaction("web.django")
         new_type = psycopg2.extras.register_uuid(None, postgres_connection)
-        test_client.end_transaction(None, "test-transaction")
+        elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
-        test_client.instrumentation_store.get_all()
+        elasticapm_client.instrumentation_store.get_all()
 
     assert new_type is not None
 
 
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_register_json(postgres_connection, test_client):
+def test_psycopg2_register_json(postgres_connection, elasticapm_client):
     # register_json bypasses register_type, so we have to test unwrapping
     # separately
     import psycopg2.extras
@@ -235,7 +235,7 @@ def test_psycopg2_register_json(postgres_connection, test_client):
     control.instrument()
 
     try:
-        test_client.begin_transaction("web.django")
+        elasticapm_client.begin_transaction("web.django")
         # as arg
         new_type = psycopg2.extras.register_json(postgres_connection,
                                                  loads=lambda x: x)
@@ -244,26 +244,26 @@ def test_psycopg2_register_json(postgres_connection, test_client):
         new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection,
                                                  loads=lambda x: x)
         assert new_type is not None
-        test_client.end_transaction(None, "test-transaction")
+        elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
-        test_client.instrumentation_store.get_all()
+        elasticapm_client.instrumentation_store.get_all()
 
 
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection, test_client):
+def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection, elasticapm_client):
     control.instrument()
     cursor = postgres_connection.cursor()
     # check that the cursor is a proxy, even though we're not in an elasticapm
     # transaction
     assert isinstance(cursor, PGCursorProxy)
     cursor.execute('SELECT 1')
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     assert transactions == []
 
 
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_select_LIKE(postgres_connection, test_client):
+def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
     """
     Check that we pass queries with %-notation but without parameters
     properly to the dbapi backend
@@ -272,12 +272,12 @@ def test_psycopg2_select_LIKE(postgres_connection, test_client):
     cursor = postgres_connection.cursor()
 
     try:
-        test_client.begin_transaction("web.django")
+        elasticapm_client.begin_transaction("web.django")
         cursor.execute("SELECT * FROM test WHERE name LIKE 't%'")
         cursor.fetchall()
-        test_client.end_transaction(None, "test-transaction")
+        elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
-        transactions = test_client.instrumentation_store.get_all()
+        transactions = elasticapm_client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
         assert traces[0]['name'] == 'SELECT FROM test'

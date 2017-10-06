@@ -4,15 +4,15 @@ import pytest
 import webob
 
 from elasticapm.middleware import ElasticAPM
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
 def example_app(environ, start_response):
     raise ValueError('hello world')
 
 
-def test_error_handler(test_client):
-    middleware = ElasticAPM(example_app, client=test_client)
+def test_error_handler(elasticapm_client):
+    middleware = ElasticAPM(example_app, client=elasticapm_client)
 
     request = webob.Request.blank('/an-error?foo=bar')
     response = middleware(request.environ, lambda *args: None)
@@ -20,8 +20,8 @@ def test_error_handler(test_client):
     with pytest.raises(ValueError):
         list(response)
 
-    assert len(test_client.events) == 1
-    event = test_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
 
     assert 'exception' in event
     exc = event['exception']

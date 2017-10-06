@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from elasticapm.utils.wsgi import get_environ, get_headers, get_host
-from tests.utils.compat import TestCase
 
 
 def test_get_headers_tuple_as_key():

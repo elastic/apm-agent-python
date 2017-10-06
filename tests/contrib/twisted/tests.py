@@ -3,11 +3,11 @@ from __future__ import absolute_import
 from twisted.python.failure import Failure
 
 from elasticapm.contrib.twisted import LogObserver
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
-def test_twisted_log_observer(test_client):
-    observer = LogObserver(client=test_client)
+def test_twisted_log_observer(elasticapm_client):
+    observer = LogObserver(client=elasticapm_client)
     try:
         1 / 0
     except ZeroDivisionError:
@@ -15,5 +15,5 @@ def test_twisted_log_observer(test_client):
     event = dict(log_failure=failure)
     observer(event)
 
-    cli_event = test_client.events.pop(0)['errors'][0]
+    cli_event = elasticapm_client.events.pop(0)['errors'][0]
     assert cli_event['exception']['type'] == 'ZeroDivisionError'

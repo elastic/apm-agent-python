@@ -132,7 +132,7 @@ def test_transform_recursive():
 
 def test_transform_custom_repr():
     class Foo(object):
-        def __elasticapm__():
+        def __elasticapm__(self):
             return 'example'
 
     x = Foo()
@@ -143,7 +143,7 @@ def test_transform_custom_repr():
 
 def test_transform_broken_repr():
     class Foo(object):
-        def __repr__():
+        def __repr__(self):
             raise ValueError
 
     x = Foo()
@@ -152,7 +152,7 @@ def test_transform_broken_repr():
     if compat.PY2:
         expected = u"<BadRepr: <class 'tests.utils.encoding.tests.Foo'>>"
     else:
-        expected = "<BadRepr: <class 'tests.utils.encoding.tests.TransformTest.test_broken_repr.<locals>.Foo'>>"
+        expected = "<BadRepr: <class 'tests.utils.encoding.tests.test_transform_broken_repr.<locals>.Foo'>>"
     assert result == expected
 
 

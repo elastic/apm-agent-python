@@ -3,20 +3,20 @@ import os
 import memcache
 
 from elasticapm.traces import trace
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
-def test_memcached(test_client):
-    test_client.begin_transaction("transaction.test")
+def test_memcached(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
     with trace("test_memcached", "test"):
         host = os.environ.get('MEMCACHED_HOST', 'localhost')
         conn = memcache.Client([host + ':11211'], debug=0)
         conn.set("mykey", "a")
         assert "a" == conn.get("mykey")
         assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])
-    test_client.end_transaction("BillingView")
+    elasticapm_client.end_transaction("BillingView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
 
     expected_signatures = {'test_memcached',

@@ -5,7 +5,7 @@ import mock
 
 from tests.contrib.flask.fixtures import (flask_apm_client, flask_app,
                                           flask_celery)
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
 def test_task_failure(flask_celery):

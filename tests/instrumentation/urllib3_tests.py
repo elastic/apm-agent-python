@@ -1,13 +1,11 @@
 import threading
 
 import mock
-import urllib3
 import pytest
-
+import urllib3
 
 from elasticapm.traces import trace
-from tests.fixtures import test_client
-
+from tests.fixtures import elasticapm_client
 
 try:
     from http import server as SimpleHTTPServer
@@ -33,10 +31,10 @@ def tcp_server():
 
 
 @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_urllib3(should_collect, test_client, tcp_server):
+def test_urllib3(should_collect, elasticapm_client, tcp_server):
     should_collect.return_value = False
     host, port = tcp_server
-    test_client.begin_transaction("transaction")
+    elasticapm_client.begin_transaction("transaction")
     expected_sig = 'GET {0}:{1}'.format(host, port)
     with trace("test_pipeline", "test"):
         pool = urllib3.PoolManager(timeout=0.1)
@@ -44,9 +42,9 @@ def test_urllib3(should_collect, test_client, tcp_server):
         url = 'http://{0}:{1}/hello_world'.format(host, port)
         r = pool.request('GET', url)
 
-    test_client.end_transaction("MyView")
+    elasticapm_client.end_transaction("MyView")
 
-    transactions = test_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
     traces = transactions[0]['traces']
 
     expected_signatures = {'test_pipeline', expected_sig}

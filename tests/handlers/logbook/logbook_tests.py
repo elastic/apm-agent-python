@@ -2,7 +2,7 @@ import logbook
 import pytest
 
 from elasticapm.handlers.logbook import LogbookHandler
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()
@@ -11,9 +11,9 @@ def logbook_logger():
 
 
 @pytest.fixture()
-def logbook_handler(test_client):
-    test_client.config.include_paths = ['tests', 'elasticapm']
-    return LogbookHandler(test_client)
+def logbook_handler(elasticapm_client):
+    elasticapm_client.config.include_paths = ['tests', 'elasticapm']
+    return LogbookHandler(elasticapm_client)
 
 
 def test_logbook_logger_error_level(logbook_logger, logbook_handler):
@@ -101,14 +101,14 @@ def test_logger_param_message(logbook_logger, logbook_handler):
     assert event['log']['param_message'] == 'This is a test of %s'
 
 
-def test_client_arg(test_client):
-    handler = LogbookHandler(test_client)
-    assert handler.client == test_client
+def test_client_arg(elasticapm_client):
+    handler = LogbookHandler(elasticapm_client)
+    assert handler.client == elasticapm_client
 
 
-def test_client_kwarg(test_client):
-    handler = LogbookHandler(client=test_client)
-    assert handler.client == test_client
+def test_client_kwarg(elasticapm_client):
+    handler = LogbookHandler(client=elasticapm_client)
+    assert handler.client == elasticapm_client
 
 
 def test_invalid_first_arg_type():

@@ -10,7 +10,7 @@ from elasticapm.transport.base import Transport, TransportException
 from elasticapm.transport.http import HTTPTransport
 from elasticapm.utils import compat
 from elasticapm.utils.compat import urlparse
-from tests.fixtures import test_client  # noqa
+from tests.fixtures import elasticapm_client  # noqa
 
 
 def test_client_state_should_try_online():
@@ -58,17 +58,17 @@ class DummyTransport(Transport):
         pass
 
 
-def test_app_info(test_client):
-    app_info = test_client.get_app_info()
-    assert app_info['name'] == test_client.config.app_name
+def test_app_info(elasticapm_client):
+    app_info = elasticapm_client.get_app_info()
+    assert app_info['name'] == elasticapm_client.config.app_name
     assert app_info['language'] == {
         'name': 'python',
         'version': platform.python_version()
     }
 
 
-def test_system_info(test_client):
-    system_info = test_client.get_system_info()
+def test_system_info(elasticapm_client):
+    system_info = elasticapm_client.get_system_info()
     assert {'hostname', 'architecture', 'platform'} == set(system_info.keys())
 
 
@@ -322,42 +322,42 @@ def test_client_shutdown_async(mock_traces_collect, mock_send):
     assert mock_send.call_count == 1
 
 
-def test_encode_decode(test_client):
+def test_encode_decode(elasticapm_client):
     data = {'foo': 'bar'}
-    encoded = test_client.encode(data)
+    encoded = elasticapm_client.encode(data)
     assert isinstance(encoded, compat.binary_type)
-    assert data == test_client.decode(encoded)
+    assert data == elasticapm_client.decode(encoded)
 
 
-def test_explicit_message_on_message_event(test_client):
-    test_client.capture('Message', message='test', data={
+def test_explicit_message_on_message_event(elasticapm_client):
+    elasticapm_client.capture('Message', message='test', data={
         'message': 'foo'
     })
 
-    assert len(test_client.events) == 1
-    event = test_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
     assert event['message'] == 'foo'
 
 
-def test_explicit_message_on_exception_event(test_client):
+def test_explicit_message_on_exception_event(elasticapm_client):
     try:
         raise ValueError('foo')
     except ValueError:
-        test_client.capture('Exception', data={'message': 'foobar'})
+        elasticapm_client.capture('Exception', data={'message': 'foobar'})
 
-    assert len(test_client.events) == 1
-    event = test_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
     assert event['message'] == 'foobar'
 
 
-def test_exception_event(test_client):
+def test_exception_event(elasticapm_client):
     try:
         raise ValueError('foo')
     except ValueError:
-        test_client.capture('Exception')
+        elasticapm_client.capture('Exception')
 
-    assert len(test_client.events) == 1
-    event = test_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
     assert 'exception' in event
     exc = event['exception']
     assert exc['message'] == 'ValueError: foo'
@@ -375,21 +375,21 @@ def test_exception_event(test_client):
     assert 'log' not in event
 
 
-def test_message_event(test_client):
-    test_client.capture('Message', message='test')
+def test_message_event(elasticapm_client):
+    elasticapm_client.capture('Message', message='test')
 
-    assert len(test_client.events) == 1
-    event = test_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
     assert event['log']['message'] == 'test'
     assert 'stacktrace' not in event
     assert 'timestamp' in event
 
 
-def test_logger(test_client):
-    test_client.capture('Message', message='test', data={'logger': 'test'})
+def test_logger(elasticapm_client):
+    elasticapm_client.capture('Message', message='test', data={'logger': 'test'})
 
-    assert len(test_client.events) == 1
-    event = test_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
     assert event['logger'] == 'test'
     assert 'timestamp' in event
 
@@ -419,12 +419,12 @@ def test_metrics_collection(should_collect, mock_send):
 
 @mock.patch('elasticapm.base.Client.send')
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
-def test_call_end_twice(should_collect, mock_send, test_client):
+def test_call_end_twice(should_collect, mock_send, elasticapm_client):
     should_collect.return_value = False
-    test_client.begin_transaction("celery")
+    elasticapm_client.begin_transaction("celery")
 
-    test_client.end_transaction('test-transaction', 200)
-    test_client.end_transaction('test-transaction', 200)
+    elasticapm_client.end_transaction('test-transaction', 200)
+    elasticapm_client.end_transaction('test-transaction', 200)
 
 
 @mock.patch('elasticapm.utils.is_master_process')
