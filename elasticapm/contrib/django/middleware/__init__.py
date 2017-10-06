@@ -14,6 +14,7 @@ from __future__ import absolute_import
 import logging
 import threading
 
+from django.apps import apps
 from django.conf import settings as django_settings
 
 from elasticapm.contrib.django.client import client, get_client
@@ -107,7 +108,11 @@ class TracingMiddleware(MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         super(TracingMiddleware, self).__init__(*args, **kwargs)
-        self.client = get_client()
+        try:
+            app = apps.get_app_config('elasticapm.contrib.django')
+            self.client = app.client
+        except LookupError:
+            self.client = get_client()
 
         if not self._elasticapm_instrumented:
             with self._instrumenting_lock:
