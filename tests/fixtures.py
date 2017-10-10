@@ -4,5 +4,5 @@ from tests.helpers import get_tempstoreclient
 
 
 @pytest.fixture()
-def test_client():
+def elasticapm_client():
     return get_tempstoreclient()

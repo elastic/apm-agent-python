@@ -1,17 +1,15 @@
 from __future__ import absolute_import
 
 from elasticapm.utils.lru import LRUCache
-from tests.utils.compat import TestCase
 
 
-class LRUTest(TestCase):
-    def test_insert_overflow(self):
+def test_insert_overflow():
 
-        lru = LRUCache(4)
+    lru = LRUCache(4)
 
-        for x in range(6):
-            lru.set(x)
+    for x in range(6):
+        lru.set(x)
 
-        self.assertNotIn(1, lru)
-        for x in range(2, 6):
-            self.assertIn(x, lru)
+    assert 1 not in lru
+    for x in range(2, 6):
+        assert x in lru

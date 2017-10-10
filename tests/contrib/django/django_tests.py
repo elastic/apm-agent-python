@@ -16,7 +16,6 @@ from django.db import DatabaseError
 from django.http import QueryDict
 from django.http.cookie import SimpleCookie
 from django.template import TemplateSyntaxError
-from django.test import TestCase
 from django.test.client import Client as _TestClient
 from django.test.client import ClientHandler as _TestClientHandler
 from django.test.utils import override_settings
@@ -25,13 +24,14 @@ import mock
 
 from elasticapm.base import Client
 from elasticapm.contrib.django import DjangoClient
-from elasticapm.contrib.django.apps import register_handlers
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.traces import Transaction
 from elasticapm.utils import compat
 from elasticapm.utils.lru import LRUCache
+from tests.contrib.django.fixtures import (elasticapm_client,
+                                           sending_elasticapm_client)
 from tests.contrib.django.testapp.views import IgnoredException
 from tests.utils.compat import middleware_setting
 
@@ -50,9 +50,6 @@ except ImportError:
     has_with_eager_tasks = False
 
 
-settings.ELASTIC_APM = {'CLIENT': 'tests.contrib.django.django_tests.TempStoreClient'}
-
-
 class MockClientHandler(_TestClientHandler):
     def __call__(self, environ, start_response=[]):
         # this pretends doesnt require start_response
@@ -65,824 +62,826 @@ class MockMiddleware(ElasticAPM):
         return list(super(MockMiddleware, self).__call__(environ, start_response))
 
 
-class TempStoreClient(DjangoClient):
-    def __init__(self, *args, **kwargs):
-        self.events = []
-        super(TempStoreClient, self).__init__(*args, **kwargs)
-
-    def send(self, **kwargs):
-        self.events.append(kwargs)
+def test_proxy_responds_as_client():
+    assert get_client() == client
 
 
-class ClientProxyTest(TestCase):
-    def test_proxy_responds_as_client(self):
-        self.assertEquals(get_client(), client)
-
-    def test_basic(self):
-        config = {
-            'APP_ID': 'key',
-            'ORGANIZATION_ID': 'org',
-            'SECRET_TOKEN': '99'
-        }
-        config.update(settings.ELASTIC_APM)
-        event_count = len(client.events)
-        with self.settings(ELASTIC_APM=config):
-            client.capture('Message', message='foo')
-            self.assertEquals(len(client.events), event_count + 1)
-            client.events.pop(0)
+def test_basic(elasticapm_client):
+    config = {
+        'APP_ID': 'key',
+        'ORGANIZATION_ID': 'org',
+        'SECRET_TOKEN': '99'
+    }
+    event_count = len(elasticapm_client.events)
+    with override_settings(ELASTIC_APM=config):
+        elasticapm_client.capture('Message', message='foo')
+        assert len(elasticapm_client.events) == event_count + 1
+        elasticapm_client.events.pop(0)
 
 
-class DjangoClientTest(TestCase):
+def test_basic_django(elasticapm_client):
+    elasticapm_client.capture('Message', message='foo')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    log = event['log']
+    assert 'message' in log
 
-    def setUp(self):
-        self.elasticapm_client = get_client()
-        register_handlers(self.elasticapm_client)
-        self.elasticapm_client.events = []
+    assert log['message'] == 'foo'
+    assert log['level'] == 'error'
+    assert log['param_message'] == 'foo'
 
-    def test_basic(self):
-        self.elasticapm_client.capture('Message', message='foo')
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        log = event['log']
-        self.assertTrue('message' in log)
 
-        self.assertEquals(log['message'], 'foo')
-        self.assertEquals(log['level'], 'error')
-        self.assertEquals(log['param_message'], 'foo')
+def test_signal_integration(elasticapm_client):
+    try:
+        int('hello')
+    except ValueError:
+        got_request_exception.send(sender=None, request=None)
 
-    def test_signal_integration(self):
-        try:
-            int('hello')
-        except:
-            got_request_exception.send(sender=self.__class__, request=None)
-        else:
-            self.fail('Expected an exception.')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'exception' in event
+    exc = event['exception']
+    assert exc['type'] == 'ValueError'
+    assert exc['message'] == u"ValueError: invalid literal for int() with base 10: 'hello'"
+    assert event['culprit'] == 'tests.contrib.django.django_tests.test_signal_integration'
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('exception' in event)
-        exc = event['exception']
-        self.assertEquals(exc['type'], 'ValueError')
-        self.assertEquals(exc['message'], u"ValueError: invalid literal for int() with base 10: 'hello'")
-        self.assertEquals(event['culprit'], 'tests.contrib.django.django_tests.test_signal_integration')
 
-    def test_view_exception(self):
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+def test_view_exception(elasticapm_client, client):
+    with pytest.raises(Exception):
+        client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('exception' in event)
-        exc = event['exception']
-        self.assertEquals(exc['type'], 'Exception')
-        self.assertEquals(exc['message'], 'Exception: view exception')
-        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'exception' in event
+    exc = event['exception']
+    assert exc['type'] == 'Exception'
+    assert exc['message'] == 'Exception: view exception'
+    assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
 
-    def test_view_exception_debug(self):
-        self.elasticapm_client.config.debug = False
-        with self.settings(DEBUG=True):
-            self.assertRaises(
-                Exception,
-                self.client.get, reverse('elasticapm-raise-exc')
-            )
-        self.assertEquals(len(self.elasticapm_client.events), 0)
 
-    def test_view_exception_elasticapm_debug(self):
-        self.elasticapm_client.config.debug = True
-        with self.settings(DEBUG=True):
-            self.assertRaises(
-                Exception,
-                self.client.get, reverse('elasticapm-raise-exc')
-            )
-        self.assertEquals(len(self.elasticapm_client.events), 1)
+def test_view_exception_debug(elasticapm_client, client):
+    elasticapm_client.config.debug = False
+    with override_settings(DEBUG=True):
+        with pytest.raises(Exception):
+            client.get(reverse('elasticapm-raise-exc'))
+    assert len(elasticapm_client.events) == 0
 
-    def test_user_info(self):
-        user = User(username='admin', email='admin@example.com')
+
+def test_view_exception_elasticapm_debug(elasticapm_client, client):
+    elasticapm_client.config.debug = True
+    with override_settings(DEBUG=True):
+        with pytest.raises(Exception): client.get(reverse('elasticapm-raise-exc'))
+    assert len(elasticapm_client.events) == 1
+
+
+@pytest.mark.django_db
+def test_user_info(elasticapm_client, client):
+    user = User(username='admin', email='admin@example.com')
+    user.set_password('admin')
+    user.save()
+
+    with pytest.raises(Exception):
+        client.get(reverse('elasticapm-raise-exc'))
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'user' in event['context']
+    user_info = event['context']['user']
+    assert 'is_authenticated' in user_info
+    assert not user_info['is_authenticated']
+    assert user_info['username'] == ''
+    assert 'email' not in user_info
+
+    assert client.login(username='admin', password='admin')
+
+    with pytest.raises(Exception):
+        client.get(reverse('elasticapm-raise-exc'))
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'user' in event['context']
+    user_info = event['context']['user']
+    assert 'is_authenticated' in user_info
+    assert user_info['is_authenticated']
+    assert 'username' in user_info
+    assert user_info['username'] == 'admin'
+    assert 'email' in user_info
+    assert user_info['email'] == 'admin@example.com'
+
+
+@pytest.mark.django_db
+def test_user_info_raises_database_error(elasticapm_client, client):
+    user = User(username='admin', email='admin@example.com')
+    user.set_password('admin')
+    user.save()
+
+    assert client.login(username='admin', password='admin')
+
+    with mock.patch("django.contrib.auth.models.User.is_authenticated") as is_authenticated:
+        is_authenticated.side_effect = DatabaseError("Test Exception")
+        with pytest.raises(Exception):
+            client.get(reverse('elasticapm-raise-exc'))
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'user' in event['context']
+    user_info = event['context']['user']
+    assert user_info == {}
+
+
+@pytest.mark.django_db
+def test_user_info_with_custom_user(elasticapm_client, client):
+    with override_settings(AUTH_USER_MODEL='testapp.MyUser'):
+        from django.contrib.auth import get_user_model
+        MyUser = get_user_model()
+        user = MyUser(my_username='admin')
         user.set_password('admin')
         user.save()
+        assert client.login(username='admin', password='admin')
+        with pytest.raises(Exception):
+            client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
-
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('user' in event['context'])
+        assert len(elasticapm_client.events) == 1
+        event = elasticapm_client.events.pop(0)['errors'][0]
+        assert 'user' in event['context']
         user_info = event['context']['user']
-        self.assertTrue('is_authenticated' in user_info)
-        self.assertFalse(user_info['is_authenticated'])
-        assert user_info['username'] == ''
-        self.assertFalse('email' in user_info)
+        assert 'is_authenticated' in user_info
+        assert user_info['is_authenticated']
+        assert 'username' in user_info
+        assert user_info['username'] == 'admin'
+        assert 'email' not in user_info
 
-        self.assertTrue(self.client.login(username='admin', password='admin'))
 
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+@pytest.mark.skipif(django.VERSION > (1, 9),
+                    reason='MIDDLEWARE_CLASSES removed in Django 2.0')
+def test_user_info_with_non_django_auth(elasticapm_client, client):
+    with override_settings(INSTALLED_APPS=[
+        app for app in settings.INSTALLED_APPS
+        if app != 'django.contrib.auth'
+    ]) and override_settings(MIDDLEWARE_CLASSES=[
+        m for m in settings.MIDDLEWARE_CLASSES
+        if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
+    ]):
+        with pytest.raises(Exception):
+            resp = client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('user' in event['context'])
-        user_info = event['context']['user']
-        self.assertTrue('is_authenticated' in user_info)
-        self.assertTrue(user_info['is_authenticated'])
-        self.assertTrue('username' in user_info)
-        self.assertEquals(user_info['username'], 'admin')
-        self.assertTrue('email' in user_info)
-        self.assertEquals(user_info['email'], 'admin@example.com')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['context']['user'] == {}
 
-    def test_user_info_raises_database_error(self):
-        user = User(username='admin', email='admin@example.com')
-        user.set_password('admin')
-        user.save()
 
-        self.assertTrue(
-            self.client.login(username='admin', password='admin'))
+@pytest.mark.skipif(django.VERSION < (1, 10),
+                    reason='MIDDLEWARE new in Django 1.10')
+def test_user_info_with_non_django_auth_django_2(elasticapm_client, client):
+    with override_settings(INSTALLED_APPS=[
+        app for app in settings.INSTALLED_APPS
+        if app != 'django.contrib.auth'
+    ]) and override_settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+        m for m in settings.MIDDLEWARE
+        if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
+    ]):
+        with pytest.raises(Exception):
+            resp = client.get(reverse('elasticapm-raise-exc'))
 
-        with mock.patch("django.contrib.auth.models.User.is_authenticated") as is_authenticated:
-            is_authenticated.side_effect = DatabaseError("Test Exception")
-            self.assertRaises(Exception, self.client.get,
-                              reverse('elasticapm-raise-exc'))
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['context']['user'] == {}
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        self.assertTrue('user' in event['context'])
-        user_info = event['context']['user']
-        self.assertEquals(user_info, {})
 
-    @pytest.mark.skipif(django.VERSION < (1, 5),
-                        reason='Custom user model was introduced with Django 1.5')
-    def test_user_info_with_custom_user(self):
-        with self.settings(AUTH_USER_MODEL='testapp.MyUser'):
-            from django.contrib.auth import get_user_model
-            MyUser = get_user_model()
-            user = MyUser(my_username='admin')
-            user.set_password('admin')
-            user.save()
-            self.assertTrue(self.client.login(username='admin', password='admin'))
-            self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc'))
+@pytest.mark.skipif(django.VERSION > (1, 9),
+                    reason='MIDDLEWARE_CLASSES removed in Django 2.0')
+def test_user_info_without_auth_middleware(elasticapm_client, client):
+    with override_settings(MIDDLEWARE_CLASSES=[
+        m for m in settings.MIDDLEWARE_CLASSES
+        if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
+    ]):
+        with pytest.raises(Exception):
+            client.get(reverse('elasticapm-raise-exc'))
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['context']['user'] == {}
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
-            self.assertTrue('user' in event['context'])
-            user_info = event['context']['user']
-            self.assertTrue('is_authenticated' in user_info)
-            self.assertTrue(user_info['is_authenticated'])
-            self.assertTrue('username' in user_info)
-            self.assertEquals(user_info['username'], 'admin')
-            self.assertFalse('email' in user_info)
 
-    @pytest.mark.skipif(django.VERSION > (1, 9),
-                        reason='MIDDLEWARE_CLASSES removed in Django 2.0')
-    def test_user_info_with_non_django_auth(self):
-        with self.settings(INSTALLED_APPS=[
-            app for app in settings.INSTALLED_APPS
-            if app != 'django.contrib.auth'
-        ]) and self.settings(MIDDLEWARE_CLASSES=[
-            m for m in settings.MIDDLEWARE_CLASSES
-            if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
-        ]):
+@pytest.mark.skipif(django.VERSION < (1, 10),
+                    reason='MIDDLEWARE new in Django 1.10')
+def test_user_info_without_auth_middleware_django_2(elasticapm_client, client):
+    with override_settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
+        m for m in settings.MIDDLEWARE
+        if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
+    ]):
+        with pytest.raises(Exception):
+            client.get(reverse('elasticapm-raise-exc'))
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['context']['user'] == {}
+
+
+def test_request_middleware_exception(elasticapm_client, client):
+    with override_settings(**middleware_setting(django.VERSION,
+                                            ['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware'])):
+        with pytest.raises(ImportError):
+            client.get(reverse('elasticapm-raise-exc'))
+
+        assert len(elasticapm_client.events) == 1
+        event = elasticapm_client.events.pop(0)['errors'][0]
+
+        assert 'exception' in event
+        exc = event['exception']
+        assert exc['type'] == 'ImportError'
+        assert exc['message'] == 'ImportError: request'
+        assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_request'
+
+
+def test_response_middlware_exception(elasticapm_client, client):
+    if django.VERSION[:2] < (1, 3):
+        return
+    with override_settings(**middleware_setting(django.VERSION,
+                                            ['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware'])):
+        with pytest.raises(ImportError):
+            client.get(reverse('elasticapm-no-error'))
+
+        assert len(elasticapm_client.events) == 1
+        event = elasticapm_client.events.pop(0)['errors'][0]
+
+        assert 'exception' in event
+        exc = event['exception']
+        assert exc['type'] == 'ImportError'
+        assert exc['message'] == 'ImportError: response'
+        assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_response'
+
+
+def test_broken_500_handler_with_middleware(elasticapm_client, client):
+    with override_settings(BREAK_THAT_500=True):
+        client.handler = MockMiddleware(MockClientHandler())
+
+        with override_settings(**middleware_setting(django.VERSION, [])):
             with pytest.raises(Exception):
-                resp = self.client.get(reverse('elasticapm-raise-exc'))
+                client.get(reverse('elasticapm-raise-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        assert event['context']['user'] == {}
+        assert len(elasticapm_client.events) == 2
+        event = elasticapm_client.events.pop(0)['errors'][0]
 
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='MIDDLEWARE new in Django 1.10')
-    def test_user_info_with_non_django_auth_django_2(self):
-        with self.settings(INSTALLED_APPS=[
-            app for app in settings.INSTALLED_APPS
-            if app != 'django.contrib.auth'
-        ]) and self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
-            m for m in settings.MIDDLEWARE
-            if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
-        ]):
-            with pytest.raises(Exception):
-                resp = self.client.get(reverse('elasticapm-raise-exc'))
+        assert 'exception' in event
+        exc = event['exception']
+        assert exc['type'] == 'Exception'
+        assert exc['message'] == 'Exception: view exception'
+        assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        assert event['context']['user'] == {}
+        event = elasticapm_client.events.pop(0)['errors'][0]
 
-    @pytest.mark.skipif(django.VERSION > (1, 9),
-                        reason='MIDDLEWARE_CLASSES removed in Django 2.0')
-    def test_user_info_without_auth_middleware(self):
-        with self.settings(MIDDLEWARE_CLASSES=[
-            m for m in settings.MIDDLEWARE_CLASSES
-            if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
-        ]):
-            self.assertRaises(Exception,
-                              self.client.get,
-                              reverse('elasticapm-raise-exc'))
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        assert event['context']['user'] == {}
+        assert 'exception' in event
+        exc = event['exception']
+        assert exc['type'] == 'ValueError'
+        assert exc['message'] == 'ValueError: handler500'
+        assert event['culprit'] == 'tests.contrib.django.testapp.urls.handler500'
 
-    @pytest.mark.skipif(django.VERSION < (1, 10),
-                        reason='MIDDLEWARE new in Django 1.10')
-    def test_user_info_without_auth_middleware_django_2(self):
-        with self.settings(MIDDLEWARE_CLASSES=None, MIDDLEWARE=[
-            m for m in settings.MIDDLEWARE
-            if m != 'django.contrib.auth.middleware.AuthenticationMiddleware'
-        ]):
-            self.assertRaises(Exception,
-                              self.client.get,
-                              reverse('elasticapm-raise-exc'))
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        assert event['context']['user'] == {}
+def test_view_middleware_exception(elasticapm_client, client):
+    with override_settings(**middleware_setting(django.VERSION,
+                                            ['tests.contrib.django.testapp.middleware.BrokenViewMiddleware'])):
+        with pytest.raises(ImportError):
+            client.get(reverse('elasticapm-raise-exc'))
 
-    def test_request_middleware_exception(self):
-        with self.settings(**middleware_setting(django.VERSION,
-                                                ['tests.contrib.django.testapp.middleware.BrokenRequestMiddleware'])):
-            self.assertRaises(ImportError, self.client.get, reverse('elasticapm-raise-exc'))
+        assert len(elasticapm_client.events) == 1
+        event = elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
+        assert 'exception' in event
+        exc = event['exception']
+        assert exc['type'] == 'ImportError'
+        assert exc['message'] == 'ImportError: view'
+        assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_view'
 
-            self.assertTrue('exception' in event)
-            exc = event['exception']
-            self.assertEquals(exc['type'], 'ImportError')
-            self.assertEquals(exc['message'], 'ImportError: request')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_request')
 
-    def test_response_middlware_exception(self):
-        if django.VERSION[:2] < (1, 3):
-            return
-        with self.settings(**middleware_setting(django.VERSION,
-                                                ['tests.contrib.django.testapp.middleware.BrokenResponseMiddleware'])):
-            self.assertRaises(ImportError, self.client.get, reverse('elasticapm-no-error'))
+def test_exclude_modules_view(elasticapm_client, client):
+    elasticapm_client.config.exclude_paths = ['tests.views.decorated_raise_exc']
+    with pytest.raises(Exception):
+        client.get(reverse('elasticapm-raise-exc-decor'))
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1, elasticapm_client.events
+    event = elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
-            exc = event['exception']
-            self.assertEquals(exc['type'], 'ImportError')
-            self.assertEquals(exc['message'], 'ImportError: response')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_response')
+    assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
 
-    def test_broken_500_handler_with_middleware(self):
-        with self.settings(BREAK_THAT_500=True):
-            client = _TestClient(REMOTE_ADDR='127.0.0.1')
-            client.handler = MockMiddleware(MockClientHandler())
 
-            with self.settings(**middleware_setting(django.VERSION, [])):
-                self.assertRaises(Exception, client.get, reverse('elasticapm-raise-exc'))
+def test_include_modules(elasticapm_client, client):
+    elasticapm_client.config.include_paths = ['django.shortcuts.get_object_or_404']
 
-            self.assertEquals(len(self.elasticapm_client.events), 2)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
+    with pytest.raises(Exception):
+        client.get(reverse('elasticapm-django-exc'))
 
-            self.assertTrue('exception' in event)
-            exc = event['exception']
-            self.assertEquals(exc['type'], 'Exception')
-            self.assertEquals(exc['message'], 'Exception: view exception')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
 
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
+    assert event['culprit'] == 'django.shortcuts.get_object_or_404'
 
-            self.assertTrue('exception' in event)
-            exc = event['exception']
-            self.assertEquals(exc['type'], 'ValueError')
-            self.assertEquals(exc['message'], 'ValueError: handler500')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.urls.handler500')
 
-    def test_view_middleware_exception(self):
-        with self.settings(**middleware_setting(django.VERSION,
-                                                ['tests.contrib.django.testapp.middleware.BrokenViewMiddleware'])):
-            self.assertRaises(ImportError, self.client.get, reverse('elasticapm-raise-exc'))
+def test_ignored_exception_is_ignored(elasticapm_client, client):
+    with pytest.raises(IgnoredException):
+        client.get(reverse('elasticapm-ignored-exception'))
+    assert len(elasticapm_client.events) == 0
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertTrue('exception' in event)
-            exc = event['exception']
-            self.assertEquals(exc['type'], 'ImportError')
-            self.assertEquals(exc['message'], 'ImportError: view')
-            self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.middleware.process_view')
-
-    def test_exclude_modules_view(self):
-        exclude_paths = self.elasticapm_client.config.exclude_paths
-        self.elasticapm_client.config.exclude_paths = ['tests.views.decorated_raise_exc']
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-raise-exc-decor'))
-
-        self.assertEquals(len(self.elasticapm_client.events), 1, self.elasticapm_client.events)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-
-        self.assertEquals(event['culprit'], 'tests.contrib.django.testapp.views.raise_exc')
-        self.elasticapm_client.config.exclude_paths = exclude_paths
-
-    def test_include_modules(self):
-        include_paths = self.elasticapm_client.config.include_paths
-        self.elasticapm_client.config.include_paths = ['django.shortcuts.get_object_or_404']
-
-        self.assertRaises(Exception, self.client.get, reverse('elasticapm-django-exc'))
-
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-
-        self.assertEquals(event['culprit'], 'django.shortcuts.get_object_or_404')
-        self.elasticapm_client.config.include_paths = include_paths
-
-    def test_ignored_exception_is_ignored(self):
-        with pytest.raises(IgnoredException):
-            self.client.get(reverse('elasticapm-ignored-exception'))
-        self.assertEquals(len(self.elasticapm_client.events), 0)
-
-    def test_template_name_as_view(self):
-        # TODO this test passes only with TEMPLATE_DEBUG=True
-        with override_settings(
-            TEMPLATE_DEBUG=True,
-            TEMPLATES=[
-                {
-                    'BACKEND': settings.TEMPLATES[0]['BACKEND'],
-                    'DIRS': settings.TEMPLATES[0]['DIRS'],
-                    'OPTIONS': {
-                        'context_processors': settings.TEMPLATES[0]['OPTIONS']['context_processors'],
-                        'loaders': settings.TEMPLATES[0]['OPTIONS']['loaders'],
-                        'debug': True,
-                    },
+def test_template_name_as_view(elasticapm_client, client):
+    # TODO this test passes only with TEMPLATE_DEBUG=True
+    with override_settings(
+        TEMPLATE_DEBUG=True,
+        TEMPLATES=[
+            {
+                'BACKEND': settings.TEMPLATES[0]['BACKEND'],
+                'DIRS': settings.TEMPLATES[0]['DIRS'],
+                'OPTIONS': {
+                    'context_processors': settings.TEMPLATES[0]['OPTIONS']['context_processors'],
+                    'loaders': settings.TEMPLATES[0]['OPTIONS']['loaders'],
+                    'debug': True,
                 },
-            ]
-        ):
-            self.assertRaises(
-                TemplateSyntaxError,
-                self.client.get, reverse('elasticapm-template-exc')
-            )
+            },
+        ]
+    ):
+        with pytest.raises(TemplateSyntaxError):
+            client.get(reverse('elasticapm-template-exc'))
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertEquals(event['culprit'], 'error.html')
+    assert event['culprit'] == 'error.html'
 
-        self.assertEquals(
-            event['template']['context_line'],
-            '{% invalid template tag %}\n'
-        )
+    assert event['template']['context_line'] == '{% invalid template tag %}\n'
 
-    @pytest.mark.skipif(compat.PY3, reason='see Python bug #10805')
-    def test_record_none_exc_info(self):
-        # sys.exc_info can return (None, None, None) if no exception is being
-        # handled anywhere on the stack. See:
-        #  http://docs.python.org/library/sys.html#sys.exc_info
-        record = logging.LogRecord(
-            'foo',
-            logging.INFO,
-            pathname=None,
-            lineno=None,
-            msg='test',
-            args=(),
-            exc_info=(None, None, None),
-        )
-        handler = LoggingHandler()
-        handler.emit(record)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
+@pytest.mark.skipif(compat.PY3, reason='see Python bug #10805')
+def test_record_none_exc_info(elasticapm_client):
+    # sys.exc_info can return (None, None, None) if no exception is being
+    # handled anywhere on the stack. See:
+    #  http://docs.python.org/library/sys.html#sys.exc_info
+    record = logging.LogRecord(
+        'foo',
+        logging.INFO,
+        pathname=None,
+        lineno=None,
+        msg='test',
+        args=(),
+        exc_info=(None, None, None),
+    )
+    handler = LoggingHandler()
+    handler.emit(record)
 
-        self.assertEquals(event['log']['param_message'], 'test')
-        self.assertEquals(event['log']['logger_name'], 'foo')
-        self.assertEquals(event['log']['level'], 'info')
-        assert 'exception' not in event
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
 
-    def test_404_middleware(self):
-        with self.settings(**middleware_setting(django.VERSION,
-                                                ['elasticapm.contrib.django.middleware.Catch404Middleware'])):
-            resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
+    assert event['log']['param_message'] == 'test'
+    assert event['log']['logger_name'] == 'foo'
+    assert event['log']['level'] == 'info'
+    assert 'exception' not in event
 
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-            self.assertEquals(event['log']['level'], 'info')
-            self.assertEquals(event['log']['logger_name'], 'http404')
+def test_404_middleware(elasticapm_client, client):
+    with override_settings(**middleware_setting(django.VERSION,
+                                            ['elasticapm.contrib.django.middleware.Catch404Middleware'])):
+        resp = client.get('/non-existant-page')
+        assert resp.status_code == 404
 
-            self.assertTrue('request' in event['context'])
-            request = event['context']['request']
-            self.assertEquals(request['url']['raw'], u'http://testserver/non-existant-page')
-            self.assertEquals(request['method'], 'GET')
-            self.assertEquals(request['url']['search'], '')
-            self.assertEquals(request['body'], None)
+        assert len(elasticapm_client.events) == 1
+        event = elasticapm_client.events.pop(0)['errors'][0]
 
-    def test_404_middleware_with_debug(self):
-        self.elasticapm_client.config.debug = False
-        with self.settings(
-                DEBUG=True,
-                **middleware_setting(django.VERSION, [
-                    'elasticapm.contrib.django.middleware.Catch404Middleware'
-                ])
-        ):
-            resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
-            self.assertEquals(len(self.elasticapm_client.events), 0)
+        assert event['log']['level'] == 'info'
+        assert event['log']['logger_name'] == 'http404'
 
-    def test_response_error_id_middleware(self):
-        with self.settings(**middleware_setting(django.VERSION, [
-                'elasticapm.contrib.django.middleware.ErrorIdMiddleware',
-                'elasticapm.contrib.django.middleware.Catch404Middleware'])):
-            resp = self.client.get('/non-existant-page')
-            self.assertEquals(resp.status_code, 404)
-            headers = dict(resp.items())
-            self.assertTrue('X-ElasticAPM-ErrorId' in headers)
-            self.assertEquals(len(self.elasticapm_client.events), 1)
-            event = self.elasticapm_client.events.pop(0)['errors'][0]
-            self.assertEquals(event['id'], headers['X-ElasticAPM-ErrorId'])
-
-    def test_get_client(self):
-        self.assertEquals(get_client(), get_client())
-        self.assertEquals(get_client('elasticapm.base.Client').__class__, Client)
-        self.assertEquals(get_client(), self.elasticapm_client)
-
-        self.assertEquals(get_client('%s.%s' % (self.elasticapm_client.__class__.__module__, self.elasticapm_client.__class__.__name__)), self.elasticapm_client)
-        self.assertEquals(get_client(), self.elasticapm_client)
-
-    # This test only applies to Django 1.3+
-    def test_raw_post_data_partial_read(self):
-        if django.VERSION[:2] < (1, 3):
-            return
-        v = compat.b('{"foo": "bar"}')
-        request = WSGIRequest(environ={
-            'wsgi.input': compat.BytesIO(v + compat.b('\r\n\r\n')),
-            'REQUEST_METHOD': 'POST',
-            'SERVER_NAME': 'testserver',
-            'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/json',
-            'CONTENT_LENGTH': len(v),
-            'ACCEPT': 'application/json',
-        })
-        request.read(1)
-
-        self.elasticapm_client.capture('Message', message='foo', request=request)
-
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-
-        self.assertTrue('request' in event['context'])
+        assert 'request' in event['context']
         request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], '<unavailable>')
+        assert request['url']['raw'] == u'http://testserver/non-existant-page'
+        assert request['method'] == 'GET'
+        assert request['url']['search'] == ''
+        assert request['body'] == None
 
-    def test_post_data(self):
-        request = WSGIRequest(environ={
-            'wsgi.input': compat.BytesIO(),
-            'REQUEST_METHOD': 'POST',
-            'SERVER_NAME': 'testserver',
-            'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/json',
-            'ACCEPT': 'application/json',
-        })
-        request.POST = QueryDict("x=1&y=2")
-        self.elasticapm_client.capture('Message', message='foo', request=request)
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
+def test_404_middleware_with_debug(elasticapm_client, client):
+    elasticapm_client.config.debug = False
+    with override_settings(
+            DEBUG=True,
+            **middleware_setting(django.VERSION, [
+                'elasticapm.contrib.django.middleware.Catch404Middleware'
+            ])
+    ):
+        resp = client.get('/non-existant-page')
+        assert resp.status_code == 404
+        assert len(elasticapm_client.events) == 0
 
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], {'x': '1', 'y': '2'})
 
-    def test_post_raw_data(self):
-        request = WSGIRequest(environ={
-            'wsgi.input': compat.BytesIO(compat.b('foobar')),
-            'wsgi.url_scheme': 'http',
-            'REQUEST_METHOD': 'POST',
-            'SERVER_NAME': 'testserver',
-            'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/json',
-            'ACCEPT': 'application/json',
-            'CONTENT_LENGTH': '6',
-        })
-        self.elasticapm_client.capture('Message', message='foo', request=request)
+def test_response_error_id_middleware(elasticapm_client, client):
+    with override_settings(**middleware_setting(django.VERSION, [
+            'elasticapm.contrib.django.middleware.ErrorIdMiddleware',
+            'elasticapm.contrib.django.middleware.Catch404Middleware'])):
+        resp = client.get('/non-existant-page')
+        assert resp.status_code == 404
+        headers = dict(resp.items())
+        assert 'X-ElasticAPM-ErrorId' in headers
+        assert len(elasticapm_client.events) == 1
+        event = elasticapm_client.events.pop(0)['errors'][0]
+        assert event['id'] == headers['X-ElasticAPM-ErrorId']
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], compat.b('foobar'))
+def test_get_client(elasticapm_client):
+    assert get_client() == get_client()
+    assert get_client('elasticapm.base.Client').__class__ == Client
 
-    @pytest.mark.skipif(django.VERSION < (1, 9),
-                        reason='get-raw-uri-not-available')
-    def test_disallowed_hosts_error_django_19(self):
-        request = WSGIRequest(environ={
-            'wsgi.input': compat.BytesIO(),
-            'wsgi.url_scheme': 'http',
-            'REQUEST_METHOD': 'POST',
-            'SERVER_NAME': 'testserver',
-            'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/json',
-            'ACCEPT': 'application/json',
-        })
-        with self.settings(ALLOWED_HOSTS=['example.com']):
-            # this should not raise a DisallowedHost exception
-            self.elasticapm_client.capture('Message', message='foo', request=request)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        assert event['context']['request']['url']['raw'] == 'http://testserver/'
 
-    @pytest.mark.skipif(django.VERSION >= (1, 9),
-                        reason='get-raw-uri-available')
-    def test_disallowed_hosts_error_django_18(self):
-        request = WSGIRequest(environ={
-            'wsgi.input': compat.BytesIO(),
-            'wsgi.url_scheme': 'http',
-            'REQUEST_METHOD': 'POST',
-            'SERVER_NAME': 'testserver',
-            'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'application/json',
-            'ACCEPT': 'application/json',
-        })
-        with self.settings(ALLOWED_HOSTS=['example.com']):
-            # this should not raise a DisallowedHost exception
-            self.elasticapm_client.capture('Message', message='foo', request=request)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
-        assert event['context']['request']['url'] == {'raw': 'DisallowedHost'}
+def test_raw_post_data_partial_read(elasticapm_client):
+    v = compat.b('{"foo": "bar"}')
+    request = WSGIRequest(environ={
+        'wsgi.input': compat.BytesIO(v + compat.b('\r\n\r\n')),
+        'REQUEST_METHOD': 'POST',
+        'SERVER_NAME': 'testserver',
+        'SERVER_PORT': '80',
+        'CONTENT_TYPE': 'application/json',
+        'CONTENT_LENGTH': len(v),
+        'ACCEPT': 'application/json',
+    })
+    request.read(1)
 
-    # This test only applies to Django 1.3+
-    def test_request_capture(self):
-        if django.VERSION[:2] < (1, 3):
-            return
-        request = WSGIRequest(environ={
-            'wsgi.input': compat.BytesIO(),
-            'REQUEST_METHOD': 'POST',
-            'SERVER_NAME': 'testserver',
-            'SERVER_PORT': '80',
-            'CONTENT_TYPE': 'text/html',
-            'ACCEPT': 'text/html',
-        })
-        request.read(1)
+    elasticapm_client.capture('Message', message='foo', request=request)
 
-        self.elasticapm_client.capture('Message', message='foo', request=request)
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
 
-        self.assertEquals(len(self.elasticapm_client.events), 1)
-        event = self.elasticapm_client.events.pop(0)['errors'][0]
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['method'] == 'POST'
+    assert request['body'] == '<unavailable>'
 
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
-        self.assertEquals(request['body'], '<unavailable>')
-        self.assertTrue('headers' in request)
-        headers = request['headers']
-        self.assertTrue('content-type' in headers, headers.keys())
-        self.assertEquals(headers['content-type'], 'text/html')
-        env = request['env']
-        self.assertTrue('SERVER_NAME' in env, env.keys())
-        self.assertEquals(env['SERVER_NAME'], 'testserver')
-        self.assertTrue('SERVER_PORT' in env, env.keys())
-        self.assertEquals(env['SERVER_PORT'], '80')
 
-    def test_transaction_request_response_data(self):
-        self.client.cookies = SimpleCookie({'foo': 'bar'})
-        self.elasticapm_client.instrumentation_store.get_all()
-        with self.settings(**middleware_setting(
-                django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
-        )):
-            self.client.get(reverse('elasticapm-no-error'))
-        self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
+def test_post_data(elasticapm_client):
+    request = WSGIRequest(environ={
+        'wsgi.input': compat.BytesIO(),
+        'REQUEST_METHOD': 'POST',
+        'SERVER_NAME': 'testserver',
+        'SERVER_PORT': '80',
+        'CONTENT_TYPE': 'application/json',
+        'ACCEPT': 'application/json',
+    })
+    request.POST = QueryDict("x=1&y=2")
+    elasticapm_client.capture('Message', message='foo', request=request)
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['method'] == 'POST'
+    assert request['body'] == {'x': '1', 'y': '2'}
+
+
+def test_post_raw_data(elasticapm_client):
+    request = WSGIRequest(environ={
+        'wsgi.input': compat.BytesIO(compat.b('foobar')),
+        'wsgi.url_scheme': 'http',
+        'REQUEST_METHOD': 'POST',
+        'SERVER_NAME': 'testserver',
+        'SERVER_PORT': '80',
+        'CONTENT_TYPE': 'application/json',
+        'ACCEPT': 'application/json',
+        'CONTENT_LENGTH': '6',
+    })
+    elasticapm_client.capture('Message', message='foo', request=request)
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['method'] == 'POST'
+    assert request['body'] == compat.b('foobar')
+
+
+@pytest.mark.skipif(django.VERSION < (1, 9),
+                    reason='get-raw-uri-not-available')
+def test_disallowed_hosts_error_django_19(elasticapm_client):
+    request = WSGIRequest(environ={
+        'wsgi.input': compat.BytesIO(),
+        'wsgi.url_scheme': 'http',
+        'REQUEST_METHOD': 'POST',
+        'SERVER_NAME': 'testserver',
+        'SERVER_PORT': '80',
+        'CONTENT_TYPE': 'application/json',
+        'ACCEPT': 'application/json',
+    })
+    with override_settings(ALLOWED_HOSTS=['example.com']):
+        # this should not raise a DisallowedHost exception
+        elasticapm_client.capture('Message', message='foo', request=request)
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['context']['request']['url']['raw'] == 'http://testserver/'
+
+
+@pytest.mark.skipif(django.VERSION >= (1, 9),
+                    reason='get-raw-uri-available')
+def test_disallowed_hosts_error_django_18(elasticapm_client):
+    request = WSGIRequest(environ={
+        'wsgi.input': compat.BytesIO(),
+        'wsgi.url_scheme': 'http',
+        'REQUEST_METHOD': 'POST',
+        'SERVER_NAME': 'testserver',
+        'SERVER_PORT': '80',
+        'CONTENT_TYPE': 'application/json',
+        'ACCEPT': 'application/json',
+    })
+    with override_settings(ALLOWED_HOSTS=['example.com']):
+        # this should not raise a DisallowedHost exception
+        elasticapm_client.capture('Message', message='foo', request=request)
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['context']['request']['url'] == {'raw': 'DisallowedHost'}
+
+
+def test_request_capture(elasticapm_client):
+    request = WSGIRequest(environ={
+        'wsgi.input': compat.BytesIO(),
+        'REQUEST_METHOD': 'POST',
+        'SERVER_NAME': 'testserver',
+        'SERVER_PORT': '80',
+        'CONTENT_TYPE': 'text/html',
+        'ACCEPT': 'text/html',
+    })
+    request.read(1)
+
+    elasticapm_client.capture('Message', message='foo', request=request)
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['method'] == 'POST'
+    assert request['body'] == '<unavailable>'
+    assert 'headers' in request
+    headers = request['headers']
+    assert 'content-type' in headers, headers.keys()
+    assert headers['content-type'] == 'text/html'
+    env = request['env']
+    assert 'SERVER_NAME' in env, env.keys()
+    assert env['SERVER_NAME'] == 'testserver'
+    assert 'SERVER_PORT' in env, env.keys()
+    assert env['SERVER_PORT'] == '80'
+
+
+def test_transaction_request_response_data(elasticapm_client, client):
+    client.cookies = SimpleCookie({'foo': 'bar'})
+    elasticapm_client.instrumentation_store.get_all()
+    with override_settings(**middleware_setting(
+            django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
+    )):
+        client.get(reverse('elasticapm-no-error'))
+    assert len(elasticapm_client.instrumentation_store) == 1
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    transaction = transactions[0]
+    assert 'request' in transaction['context']
+    request = transaction['context']['request']
+    assert request['method'] == 'GET'
+    assert 'headers' in request
+    headers = request['headers']
+    assert headers['cookie'] == ' foo=bar'
+    env = request['env']
+    assert 'SERVER_NAME' in env, env.keys()
+    assert env['SERVER_NAME'] == 'testserver'
+    assert 'SERVER_PORT' in env, env.keys()
+    assert env['SERVER_PORT'] == '80'
+
+    assert 'response' in transaction['context']
+    response = transaction['context']['response']
+    assert response['status_code'] == 200
+    assert response['headers']['my-header'] == 'foo'
+
+
+def test_transaction_metrics(elasticapm_client, client):
+    elasticapm_client.instrumentation_store.get_all()  # clear the store
+    with override_settings(**middleware_setting(
+            django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
+    )):
+        assert len(elasticapm_client.instrumentation_store) == 0
+        client.get(reverse('elasticapm-no-error'))
+        assert len(elasticapm_client.instrumentation_store) == 1
+
+        transactions = elasticapm_client.instrumentation_store.get_all()
+
         assert len(transactions) == 1
         transaction = transactions[0]
-        assert 'request' in transaction['context']
-        request = transaction['context']['request']
-        assert request['method'] == 'GET'
-        assert 'headers' in request
-        headers = request['headers']
-        assert headers['cookie'] == ' foo=bar'
-        env = request['env']
-        assert 'SERVER_NAME' in env, env.keys()
-        assert env['SERVER_NAME'] == 'testserver'
-        assert 'SERVER_PORT' in env, env.keys()
-        assert env['SERVER_PORT'] == '80'
-
-        assert 'response' in transaction['context']
-        response = transaction['context']['response']
-        assert response['status_code'] == 200
-        assert response['headers']['my-header'] == 'foo'
-
-    def test_transaction_metrics(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-        with self.settings(**middleware_setting(
-                django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
-        )):
-            self.assertEqual(len(self.elasticapm_client.instrumentation_store), 0)
-            self.client.get(reverse('elasticapm-no-error'))
-            self.assertEqual(len(self.elasticapm_client.instrumentation_store), 1)
-
-            transactions = self.elasticapm_client.instrumentation_store.get_all()
-
-            assert len(transactions) == 1
-            transaction = transactions[0]
-            assert transaction['duration'] > 0
-            assert transaction['result'] == '200'
-            assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
-
-    def test_request_metrics_301_append_slash(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-
-        # enable middleware wrapping
-        client = get_client()
-        client.config.instrument_django_middleware = True
-
-        from elasticapm.contrib.django.middleware import TracingMiddleware
-        TracingMiddleware._elasticapm_instrumented = False
-
-        with self.settings(
-            APPEND_SLASH=True,
-            **middleware_setting(django.VERSION, [
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'django.middleware.common.CommonMiddleware',
-            ])
-        ):
-            self.client.get(reverse('elasticapm-no-error-slash')[:-1])
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertIn(
-            transactions[0]['name'], (
-                # django <= 1.8
-                'GET django.middleware.common.CommonMiddleware.process_request',
-                # django 1.9+
-                'GET django.middleware.common.CommonMiddleware.process_response',
-            )
-        )
-
-    def test_request_metrics_301_prepend_www(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-
-        # enable middleware wrapping
-        client = get_client()
-        client.config.instrument_django_middleware = True
-
-        from elasticapm.contrib.django.middleware import TracingMiddleware
-        TracingMiddleware._elasticapm_instrumented = False
-
-        with self.settings(
-            PREPEND_WWW=True,
-            **middleware_setting(django.VERSION, [
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'django.middleware.common.CommonMiddleware',
-            ])
-        ):
-            self.client.get(reverse('elasticapm-no-error'))
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET django.middleware.common.CommonMiddleware.process_request'
-        )
-
-    def test_request_metrics_contrib_redirect(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-
-        # enable middleware wrapping
-        client = get_client()
-        client.config.instrument_django_middleware = True
-        from elasticapm.contrib.django.middleware import TracingMiddleware
-        TracingMiddleware._elasticapm_instrumented = False
-
-        s = Site.objects.get(pk=1)
-        Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
-
-        with self.settings(
-            **middleware_setting(django.VERSION, [
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
-            ])
-        ):
-            response = self.client.get('/redirect/me/')
-
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware'
-            '.process_response'
-        )
-
-    def test_request_metrics_name_override(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-        with self.settings(
-            **middleware_setting(django.VERSION, [
-                'elasticapm.contrib.django.middleware.TracingMiddleware',
-                'tests.contrib.django.testapp.middleware.MetricsNameOverrideMiddleware',
-            ])
-        ):
-            self.client.get(reverse('elasticapm-no-error'))
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            'GET foobar'
-        )
-
-    def test_request_metrics_404_resolve_error(self):
-        self.elasticapm_client.instrumentation_store.get_all()  # clear the store
-        with self.settings(
-            **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
-        ):
-            self.client.get('/i-dont-exist/')
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
-        self.assertEqual(
-            transactions[0]['name'],
-            ''
-        )
-
-    def test_get_app_info(self):
-        client = get_client()
-        app_info = client.get_app_info()
-        assert django.get_version() == app_info['framework']['version']
-        assert 'django' == app_info['framework']['name']
+        assert transaction['duration'] > 0
+        assert transaction['result'] == '200'
+        assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
 
 
-class DjangoClientNoTempTest(TestCase):
-    def setUp(self):
-        self.client = DjangoClient(
-            server='http://example.com',
-            app_name='app',
-            secret_token='secret',
-            filter_exception_types=['KeyError', 'tests.contrib.django.fake1.FakeException']
-        )
+def test_request_metrics_301_append_slash(elasticapm_client, client):
+    elasticapm_client.instrumentation_store.get_all()  # clear the store
 
-    @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
-    def test_filter_no_match(self, send_encoded):
-        try:
-            raise ValueError('foo')
-        except:
-            self.client.capture('Exception')
+    # enable middleware wrapping
+    elasticapm_client.config.instrument_django_middleware = True
 
-        self.assertEquals(send_encoded.call_count, 1)
+    from elasticapm.contrib.django.middleware import TracingMiddleware
+    TracingMiddleware._elasticapm_instrumented = False
 
-    @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
-    def test_filter_matches_type(self, send_encoded):
-        try:
-            raise KeyError('foo')
-        except:
-            self.client.capture('Exception')
-
-        self.assertEquals(send_encoded.call_count, 0)
-
-    @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
-    def test_filter_matches_type_but_not_module(self, send_encoded):
-        try:
-            from tests.contrib.django.fake2 import FakeException
-            raise FakeException('foo')
-        except:
-            self.client.capture('Exception')
-
-        self.assertEquals(send_encoded.call_count, 1)
-
-    @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
-    def test_filter_matches_type_and_module(self, send_encoded):
-        try:
-            from tests.contrib.django.fake1 import FakeException
-            raise FakeException('foo')
-        except:
-            self.client.capture('Exception')
-
-        self.assertEquals(send_encoded.call_count, 0)
-
-    @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
-    def test_filter_matches_module_only(self, send_encoded):
-        try:
-            from tests.contrib.django.fake1 import OtherFakeException
-            raise OtherFakeException('foo')
-        except:
-            self.client.capture('Exception')
-
-        self.assertEquals(send_encoded.call_count, 1)
+    with override_settings(
+        APPEND_SLASH=True,
+        **middleware_setting(django.VERSION, [
+            'elasticapm.contrib.django.middleware.TracingMiddleware',
+            'django.middleware.common.CommonMiddleware',
+        ])
+    ):
+        client.get(reverse('elasticapm-no-error-slash')[:-1])
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['name'] in (
+        # django <= 1.8
+        'GET django.middleware.common.CommonMiddleware.process_request',
+        # django 1.9+
+        'GET django.middleware.common.CommonMiddleware.process_response',
+    )
 
 
-class DjangoLoggingTest(TestCase):
-    def setUp(self):
-        self.logger = logging.getLogger(__name__)
-        self.client = get_client()
+def test_request_metrics_301_prepend_www(elasticapm_client, client):
+    elasticapm_client.instrumentation_store.get_all()  # clear the store
 
-    def test_request_kwarg(self):
-        handler = LoggingHandler()
+    # enable middleware wrapping
+    elasticapm_client.config.instrument_django_middleware = True
 
-        logger = self.logger
-        logger.handlers = []
-        logger.addHandler(handler)
+    from elasticapm.contrib.django.middleware import TracingMiddleware
+    TracingMiddleware._elasticapm_instrumented = False
 
-        logger.error('This is a test error', extra={
-            'request': WSGIRequest(environ={
-                'wsgi.input': compat.StringIO(),
-                'REQUEST_METHOD': 'POST',
-                'SERVER_NAME': 'testserver',
-                'SERVER_PORT': '80',
-                'CONTENT_TYPE': 'application/json',
-                'ACCEPT': 'application/json',
-            })
+    with override_settings(
+        PREPEND_WWW=True,
+        **middleware_setting(django.VERSION, [
+            'elasticapm.contrib.django.middleware.TracingMiddleware',
+            'django.middleware.common.CommonMiddleware',
+        ])
+    ):
+        client.get(reverse('elasticapm-no-error'))
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['name'] == 'GET django.middleware.common.CommonMiddleware.process_request'
+
+
+@pytest.mark.django_db
+def test_request_metrics_contrib_redirect(elasticapm_client, client):
+    elasticapm_client.instrumentation_store.get_all()  # clear the store
+
+    # enable middleware wrapping
+    elasticapm_client.config.instrument_django_middleware = True
+    from elasticapm.contrib.django.middleware import TracingMiddleware
+    TracingMiddleware._elasticapm_instrumented = False
+
+    s = Site.objects.get(pk=1)
+    Redirect.objects.create(site=s, old_path='/redirect/me/', new_path='/here/')
+
+    with override_settings(
+        **middleware_setting(django.VERSION, [
+            'elasticapm.contrib.django.middleware.TracingMiddleware',
+            'django.contrib.redirects.middleware.RedirectFallbackMiddleware',
+        ])
+    ):
+        response = client.get('/redirect/me/')
+
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['name'] == 'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware.process_response'
+
+
+def test_request_metrics_name_override(elasticapm_client, client):
+    elasticapm_client.instrumentation_store.get_all()  # clear the store
+    with override_settings(
+        **middleware_setting(django.VERSION, [
+            'elasticapm.contrib.django.middleware.TracingMiddleware',
+            'tests.contrib.django.testapp.middleware.MetricsNameOverrideMiddleware',
+        ])
+    ):
+        client.get(reverse('elasticapm-no-error'))
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['name'] == 'GET foobar'
+
+
+def test_request_metrics_404_resolve_error(elasticapm_client, client):
+    elasticapm_client.instrumentation_store.get_all()  # clear the store
+    with override_settings(
+        **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
+    ):
+        client.get('/i-dont-exist/')
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['name'] == ''
+
+
+def test_get_app_info(elasticapm_client):
+    client = get_client()
+    app_info = client.get_app_info()
+    assert django.get_version() == app_info['framework']['version']
+    assert 'django' == app_info['framework']['name']
+
+
+@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
+@pytest.mark.parametrize('sending_elasticapm_client', [{'filter_exception_types': [
+        'KeyError', 'tests.contrib.django.fake1.FakeException'
+    ]}], indirect=True)
+def test_filter_no_match(send_encoded, sending_elasticapm_client):
+    try:
+        raise ValueError('foo')
+    except:
+        sending_elasticapm_client.capture('Exception')
+
+    assert send_encoded.call_count == 1
+
+
+@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
+@pytest.mark.parametrize('sending_elasticapm_client', [{'filter_exception_types': [
+        'KeyError', 'tests.contrib.django.fake1.FakeException'
+    ]}], indirect=True)
+def test_filter_matches_type(send_encoded, sending_elasticapm_client):
+    try:
+        raise KeyError('foo')
+    except:
+        sending_elasticapm_client.capture('Exception')
+
+    assert send_encoded.call_count == 0
+
+
+@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
+@pytest.mark.parametrize('sending_elasticapm_client', [{'filter_exception_types': [
+        'KeyError', 'tests.contrib.django.fake1.FakeException'
+    ]}], indirect=True)
+def test_filter_matches_type_but_not_module(send_encoded, sending_elasticapm_client):
+    try:
+        from tests.contrib.django.fake2 import FakeException
+        raise FakeException('foo')
+    except:
+        sending_elasticapm_client.capture('Exception')
+
+    assert send_encoded.call_count == 1
+
+
+@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
+@pytest.mark.parametrize('sending_elasticapm_client', [{'filter_exception_types': [
+        'KeyError', 'tests.contrib.django.fake1.FakeException'
+    ]}], indirect=True)
+def test_filter_matches_type_and_module(send_encoded, sending_elasticapm_client):
+    try:
+        from tests.contrib.django.fake1 import FakeException
+        raise FakeException('foo')
+    except:
+        sending_elasticapm_client.capture('Exception')
+
+    assert send_encoded.call_count == 0
+
+
+@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
+@pytest.mark.parametrize('sending_elasticapm_client', [{'filter_exception_types': [
+        'KeyError', 'tests.contrib.django.fake1.FakeException'
+    ]}], indirect=True)
+def test_filter_matches_module_only(send_encoded, sending_elasticapm_client):
+    try:
+        from tests.contrib.django.fake1 import OtherFakeException
+        raise OtherFakeException('foo')
+    except OtherFakeException:
+        sending_elasticapm_client.capture('Exception')
+
+    assert send_encoded.call_count == 1
+
+
+def test_django_logging_request_kwarg(elasticapm_client):
+    handler = LoggingHandler()
+
+    logger = logging.getLogger(__name__)
+    logger.handlers = []
+    logger.addHandler(handler)
+
+    logger.error('This is a test error', extra={
+        'request': WSGIRequest(environ={
+            'wsgi.input': compat.StringIO(),
+            'REQUEST_METHOD': 'POST',
+            'SERVER_NAME': 'testserver',
+            'SERVER_PORT': '80',
+            'CONTENT_TYPE': 'application/json',
+            'ACCEPT': 'application/json',
         })
+    })
 
-        self.assertEquals(len(self.client.events), 1)
-        event = self.client.events.pop(0)['errors'][0]
-        self.assertTrue('request' in event['context'])
-        request = event['context']['request']
-        self.assertEquals(request['method'], 'POST')
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'request' in event['context']
+    request = event['context']['request']
+    assert request['method'] == 'POST'
+
+
+def test_django_logging_middleware(elasticapm_client, client):
+    handler = LoggingHandler()
+
+    logger = logging.getLogger('logmiddleware')
+    logger.handlers = []
+    logger.addHandler(handler)
+
+    with override_settings(**middleware_setting(django.VERSION,
+                                                ['elasticapm.contrib.django.middleware.LogMiddleware'])):
+        client.get(reverse('elasticapm-logging'))
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert 'request' in event['context']
+    assert event['context']['request']['url']['pathname'] == reverse('elasticapm-logging')
 
 
 def client_get(client, url):
     return client.get(url)
 
 
-def test_stacktraces_have_templates():
-    client = _TestClient()
-    elasticapm_client = get_client()
-
+def test_stacktraces_have_templates(client, elasticapm_client):
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
 
@@ -927,10 +926,7 @@ def test_stacktraces_have_templates():
         assert False is True, "Template was not found"
 
 
-def test_stacktrace_filtered_for_elasticapm():
-    client = _TestClient()
-    elasticapm_client = get_client()
-
+def test_stacktrace_filtered_for_elasticapm(client, elasticapm_client):
     # Clear the LRU frame cache
     Transaction._lrucache = LRUCache(maxsize=5000)
 
@@ -954,9 +950,7 @@ def test_stacktrace_filtered_for_elasticapm():
     assert traces[1]['stacktrace'][0]['module'].startswith('django.template')
 
 
-def test_perf_template_render(benchmark):
-    client = _TestClient()
-    elasticapm_client = get_client()
+def test_perf_template_render(benchmark, client, elasticapm_client):
     responses = []
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -977,9 +971,7 @@ def test_perf_template_render(benchmark):
         assert len(transaction['traces']) == 2
 
 
-def test_perf_template_render_no_middleware(benchmark):
-    client = _TestClient()
-    elasticapm_client = get_client()
+def test_perf_template_render_no_middleware(benchmark, client, elasticapm_client):
     responses = []
     with mock.patch(
             "elasticapm.traces.TransactionsStore.should_collect") as should_collect:
@@ -995,10 +987,7 @@ def test_perf_template_render_no_middleware(benchmark):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_perf_database_render(benchmark):
-    client = _TestClient()
-
-    elasticapm_client = get_client()
+def test_perf_database_render(benchmark, client, elasticapm_client):
     responses = []
     elasticapm_client.instrumentation_store.get_all()
 
@@ -1021,8 +1010,7 @@ def test_perf_database_render(benchmark):
 
 
 @pytest.mark.django_db
-def test_perf_database_render_no_instrumentation(benchmark):
-    elasticapm_client = get_client()
+def test_perf_database_render_no_instrumentation(benchmark, elasticapm_client):
     elasticapm_client.instrumentation_store.get_all()
     responses = []
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
@@ -1041,8 +1029,7 @@ def test_perf_database_render_no_instrumentation(benchmark):
 
 
 @pytest.mark.django_db
-def test_perf_transaction_with_collection(benchmark):
-    elasticapm_client = get_client()
+def test_perf_transaction_with_collection(benchmark, elasticapm_client):
     elasticapm_client.instrumentation_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -1071,8 +1058,7 @@ def test_perf_transaction_with_collection(benchmark):
 
 
 @pytest.mark.django_db
-def test_perf_transaction_without_middleware(benchmark):
-    elasticapm_client = get_client()
+def test_perf_transaction_without_middleware(benchmark, elasticapm_client):
     elasticapm_client.instrumentation_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -1092,60 +1078,74 @@ def test_perf_transaction_without_middleware(benchmark):
         assert len(elasticapm_client.events) == 0
 
 
-class DjangoManagementCommandTest(TestCase):
-    @pytest.mark.skipif(django.VERSION > (1, 7),
-                        reason='argparse raises CommandError in this case')
-    @mock.patch('elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv')
-    def test_subcommand_not_set(self, argv_mock):
-        stdout = compat.StringIO()
-        argv_mock.return_value = ['manage.py', 'elasticapm']
-        call_command('elasticapm', stdout=stdout)
-        output = stdout.getvalue()
-        assert 'No command specified' in output
+@pytest.mark.skipif(django.VERSION > (1, 7),
+                    reason='argparse raises CommandError in this case')
+@mock.patch('elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv')
+def test_subcommand_not_set(argv_mock):
+    stdout = compat.StringIO()
+    argv_mock.return_value = ['manage.py', 'elasticapm']
+    call_command('elasticapm', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'No command specified' in output
 
-    @mock.patch('elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv')
-    def test_subcommand_not_known(self, argv_mock):
-        stdout = compat.StringIO()
-        argv_mock.return_value = ['manage.py', 'elasticapm']
-        call_command('elasticapm', 'foo', stdout=stdout)
-        output = stdout.getvalue()
-        assert 'No such command "foo"' in output
 
-    def test_settings_missing(self):
-        stdout = compat.StringIO()
-        with self.settings(ELASTIC_APM={}):
-            call_command('elasticapm', 'check', stdout=stdout)
-        output = stdout.getvalue()
-        assert 'Configuration errors detected' in output
-        assert 'APP_NAME not set' in output
-        assert 'SECRET_TOKEN not set' in output
+@mock.patch('elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv')
+def test_subcommand_not_known(argv_mock):
+    stdout = compat.StringIO()
+    argv_mock.return_value = ['manage.py', 'elasticapm']
+    call_command('elasticapm', 'foo', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'No such command "foo"' in output
 
-    def test_middleware_not_set(self):
-        stdout = compat.StringIO()
-        with self.settings(**middleware_setting(django.VERSION, ())):
-            call_command('elasticapm', 'check', stdout=stdout)
-        output = stdout.getvalue()
-        assert 'Tracing middleware not configured!' in output
 
-    def test_middleware_not_first(self):
-        stdout = compat.StringIO()
-        with self.settings(**middleware_setting(django.VERSION, (
-            'foo',
-            'elasticapm.contrib.django.middleware.TracingMiddleware'
-        ))):
-            call_command('elasticapm', 'check', stdout=stdout)
-        output = stdout.getvalue()
-        assert 'not at the first position' in output
+def test_settings_missing():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'Configuration errors detected' in output
+    assert 'APP_NAME not set' in output
+    assert 'SECRET_TOKEN not set' in output
 
-    @mock.patch('elasticapm.transport.http_urllib3.urllib3.PoolManager.urlopen')
-    def test_test_exception(self, urlopen_mock):
-        stdout = compat.StringIO()
-        resp = mock.Mock(status=200, getheader=lambda h: 'http://example.com')
-        urlopen_mock.return_value = resp
-        with self.settings(**middleware_setting(django.VERSION, [
-            'foo',
-            'elasticapm.contrib.django.middleware.TracingMiddleware'
-        ])):
-            call_command('elasticapm', 'test', stdout=stdout, stderr=stdout)
-        output = stdout.getvalue()
-        assert 'Success! We tracked the error successfully!' in output
+
+def test_middleware_not_set():
+    stdout = compat.StringIO()
+    with override_settings(**middleware_setting(django.VERSION, ())):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'Tracing middleware not configured!' in output
+
+
+def test_middleware_not_first():
+    stdout = compat.StringIO()
+    with override_settings(**middleware_setting(django.VERSION, (
+        'foo',
+        'elasticapm.contrib.django.middleware.TracingMiddleware'
+    ))):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'not at the first position' in output
+
+
+@mock.patch('elasticapm.transport.http_urllib3.urllib3.PoolManager.urlopen')
+def test_test_exception(urlopen_mock):
+    stdout = compat.StringIO()
+    resp = mock.Mock(status=200, getheader=lambda h: 'http://example.com')
+    urlopen_mock.return_value = resp
+    with override_settings(**middleware_setting(django.VERSION, [
+        'foo',
+        'elasticapm.contrib.django.middleware.TracingMiddleware'
+    ])):
+        call_command('elasticapm', 'test', stdout=stdout, stderr=stdout)
+    output = stdout.getvalue()
+    assert 'Success! We tracked the error successfully!' in output
+
+
+def test_tracing_middleware_uses_test_client(client, elasticapm_client):
+    with override_settings(**middleware_setting(django.VERSION, [
+        'elasticapm.contrib.django.middleware.TracingMiddleware'
+    ])):
+        client.get('/')
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert len(transactions) == 1
+    assert transactions[0]['context']['request']['url']['pathname'] == '/'

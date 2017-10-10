@@ -15,21 +15,28 @@ import logging
 import sys
 import warnings
 
+from django.apps import apps
 from django.conf import settings as django_settings
 
 from elasticapm.handlers.logging import LoggingHandler as BaseLoggingHandler
 
+logger = logging.getLogger(__name__)
+
 
 class LoggingHandler(BaseLoggingHandler):
     def __init__(self):
+        # skip initialization of BaseLoggingHandler
         logging.Handler.__init__(self)
 
-    def _get_client(self):
-        from elasticapm.contrib.django.client import client
-
-        return client
-
-    client = property(_get_client)
+    @property
+    def client(self):
+        try:
+            app = apps.get_app_config('elasticapm.contrib.django')
+            if not app.client:
+                logger.warning("Can't send log message to APM server, Django apps not initialized yet")
+            return app.client
+        except LookupError:
+            logger.warning("Can't send log message to APM server, elasticapm.contrib.django not in INSTALLED_APPS")
 
     def _emit(self, record, **kwargs):
         from elasticapm.contrib.django.middleware import LogMiddleware

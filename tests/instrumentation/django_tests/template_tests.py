@@ -4,13 +4,13 @@ pytest.importorskip("django")  # isort:skip
 from os.path import join
 
 import django
-from django.test import TestCase
+from django.test.utils import override_settings
 
 import mock
 import pytest
 
 from conftest import BASE_TEMPLATE_DIR
-from elasticapm.contrib.django.client import get_client
+from tests.contrib.django.fixtures import elasticapm_client
 from tests.utils.compat import middleware_setting
 
 try:
@@ -38,59 +38,56 @@ TEMPLATES = (
 )
 
 
-class TracesTest(TestCase):
-    def setUp(self):
-        self.elasticapm_client = get_client()
+@mock.patch("elasticapm.traces.TransactionsStore.should_collect")
+def test_template_rendering(should_collect, elasticapm_client, client):
+    should_collect.return_value = False
+    with override_settings(**middleware_setting(django.VERSION,
+                                            ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
+        client.get(reverse('render-heavy-template'))
+        client.get(reverse('render-heavy-template'))
+        client.get(reverse('render-heavy-template'))
 
-    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-    def test_template_rendering(self, should_collect):
-        should_collect.return_value = False
-        with self.settings(**middleware_setting(django.VERSION,
-                                                ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
-            self.client.get(reverse('render-heavy-template'))
-            self.client.get(reverse('render-heavy-template'))
-            self.client.get(reverse('render-heavy-template'))
+    transactions = elasticapm_client.instrumentation_store.get_all()
 
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
+    assert len(transactions) == 3
+    traces = transactions[0]['traces']
+    assert len(traces) == 2, [t['name'] for t in traces]
 
-        self.assertEqual(len(transactions), 3)
-        traces = transactions[0]['traces']
-        self.assertEqual(len(traces), 2, [t['name'] for t in traces])
+    kinds = ['code', 'template.django']
+    assert set([t['type'] for t in traces]) == set(kinds)
 
-        kinds = ['code', 'template.django']
-        self.assertEqual(set([t['type'] for t in traces]), set(kinds))
+    assert traces[0]['type'] == 'code'
+    assert traces[0]['name'] == 'something_expensive'
+    assert traces[0]['parent'] == 0
 
-        self.assertEqual(traces[0]['type'], 'code')
-        self.assertEqual(traces[0]['name'], 'something_expensive')
-        self.assertEqual(traces[0]['parent'], 0)
+    assert traces[1]['type'] == 'template.django'
+    assert traces[1]['name'] == 'list_users.html'
+    assert traces[1]['parent'] is None
 
-        self.assertEqual(traces[1]['type'], 'template.django')
-        self.assertEqual(traces[1]['name'], 'list_users.html')
-        self.assertIsNone(traces[1]['parent'])
 
-    @pytest.mark.skipif(django.VERSION < (1, 8),
-                        reason='Jinja2 support introduced with Django 1.8')
-    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-    def test_template_rendering_django18_jinja2(self, should_collect):
-        should_collect.return_value = False
-        with self.settings(
-                TEMPLATES=TEMPLATES,
-                **middleware_setting(django.VERSION,
-                                     ['elasticapm.contrib.django.middleware.TracingMiddleware'])
-            ):
-            self.client.get(reverse('render-jinja2-template'))
-            self.client.get(reverse('render-jinja2-template'))
-            self.client.get(reverse('render-jinja2-template'))
+@pytest.mark.skipif(django.VERSION < (1, 8),
+                    reason='Jinja2 support introduced with Django 1.8')
+@mock.patch("elasticapm.traces.TransactionsStore.should_collect")
+def test_template_rendering_django18_jinja2(should_collect, elasticapm_client, client):
+    should_collect.return_value = False
+    with override_settings(
+            TEMPLATES=TEMPLATES,
+            **middleware_setting(django.VERSION,
+                                 ['elasticapm.contrib.django.middleware.TracingMiddleware'])
+        ):
+        client.get(reverse('render-jinja2-template'))
+        client.get(reverse('render-jinja2-template'))
+        client.get(reverse('render-jinja2-template'))
 
-        transactions = self.elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
 
-        self.assertEqual(len(transactions), 3)
-        traces = transactions[0]['traces']
-        self.assertEqual(len(traces), 1, [t['name'] for t in traces])
+    assert len(transactions) == 3
+    traces = transactions[0]['traces']
+    assert len(traces) == 1, [t['name'] for t in traces]
 
-        kinds = ['template.jinja2']
-        self.assertEqual(set([t['type'] for t in traces]), set(kinds))
+    kinds = ['template.jinja2']
+    assert set([t['type'] for t in traces]) == set(kinds)
 
-        self.assertEqual(traces[0]['type'], 'template.jinja2')
-        self.assertEqual(traces[0]['name'], 'jinja2_template.html')
-        self.assertIsNone(traces[0]['parent'])
+    assert traces[0]['type'] == 'template.jinja2'
+    assert traces[0]['name'] == 'jinja2_template.html'
+    assert traces[0]['parent'] is None

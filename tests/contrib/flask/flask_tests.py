@@ -5,7 +5,7 @@ import mock
 
 from elasticapm.contrib.flask import ElasticAPM
 from tests.contrib.flask.fixtures import flask_apm_client, flask_app
-from tests.fixtures import test_client
+from tests.fixtures import elasticapm_client
 
 
 def test_error_handler(flask_apm_client):

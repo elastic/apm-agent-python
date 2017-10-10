@@ -1,52 +1,51 @@
 import os
 
 import mock
+import pytest
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
-import elasticapm.instrumentation.control
-from tests.helpers import get_tempstoreclient
-from tests.utils.compat import TestCase
+from tests.fixtures import elasticapm_client
 
 
-class InstrumentJinja2Test(TestCase):
-    def setUp(self):
-        self.client = get_tempstoreclient()
-        filedir = os.path.dirname(__file__)
-        loader = FileSystemLoader(filedir)
-        self.env = Environment(loader=loader)
-        elasticapm.instrumentation.control.instrument()
+@pytest.fixture()
+def jinja_env():
+    filedir = os.path.dirname(__file__)
+    loader = FileSystemLoader(filedir)
+    return Environment(loader=loader)
 
-    @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-    def test_from_file(self, should_collect):
-        should_collect.return_value = False
-        self.client.begin_transaction("transaction.test")
-        template = self.env.get_template('mytemplate.html')
-        template.render()
-        self.client.end_transaction("MyView")
 
-        transactions = self.client.instrumentation_store.get_all()
-        traces = transactions[0]['traces']
+@mock.patch("elasticapm.traces.TransactionsStore.should_collect")
+def test_from_file(should_collect, jinja_env, elasticapm_client):
+    should_collect.return_value = False
+    elasticapm_client.begin_transaction("transaction.test")
+    template = jinja_env.get_template('mytemplate.html')
+    template.render()
+    elasticapm_client.end_transaction("MyView")
 
-        expected_signatures = {'mytemplate.html'}
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    traces = transactions[0]['traces']
 
-        self.assertEqual({t['name'] for t in traces}, expected_signatures)
+    expected_signatures = {'mytemplate.html'}
 
-        self.assertEqual(traces[0]['name'], 'mytemplate.html')
-        self.assertEqual(traces[0]['type'], 'template.jinja2')
+    assert {t['name'] for t in traces} == expected_signatures
 
-    def test_from_string(self):
-        self.client.begin_transaction("transaction.test")
-        template = Template("<html></html")
-        template.render()
-        self.client.end_transaction("test")
+    assert traces[0]['name'] == 'mytemplate.html'
+    assert traces[0]['type'] == 'template.jinja2'
 
-        transactions = self.client.instrumentation_store.get_all()
-        traces = transactions[0]['traces']
 
-        expected_signatures = {'<template>'}
+def test_from_string(elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    template = Template("<html></html")
+    template.render()
+    elasticapm_client.end_transaction("test")
 
-        self.assertEqual({t['name'] for t in traces}, expected_signatures)
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    traces = transactions[0]['traces']
 
-        self.assertEqual(traces[0]['name'], '<template>')
-        self.assertEqual(traces[0]['type'], 'template.jinja2')
+    expected_signatures = {'<template>'}
+
+    assert {t['name'] for t in traces} == expected_signatures
+
+    assert traces[0]['name'] == '<template>'
+    assert traces[0]['type'] == 'template.jinja2'

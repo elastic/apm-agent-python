@@ -14,6 +14,7 @@ from __future__ import absolute_import
 import logging
 import threading
 
+from django.apps import apps
 from django.conf import settings as django_settings
 
 from elasticapm.contrib.django.client import client, get_client
@@ -41,18 +42,28 @@ def _is_ignorable_404(uri):
     return any(pattern.search(uri) for pattern in urls)
 
 
-class Catch404Middleware(MiddlewareMixin):
+class ElasticAPMClientMiddlewareMixin(object):
+    @property
+    def client(self):
+        try:
+            app = apps.get_app_config('elasticapm.contrib.django')
+            return app.client
+        except LookupError:
+            return get_client()
+
+
+class Catch404Middleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
     def process_response(self, request, response):
         if (response.status_code != 404 or
                 _is_ignorable_404(request.get_full_path())):
             return response
-        if django_settings.DEBUG and not client.config.debug:
+        if django_settings.DEBUG and not self.client.config.debug:
             return response
         data = {
             'level': logging.INFO,
             'logger': 'http404',
         }
-        result = client.capture(
+        result = self.client.capture(
             'Message',
             request=request,
             param_message={
@@ -61,8 +72,8 @@ class Catch404Middleware(MiddlewareMixin):
             }, data=data
         )
         request._elasticapm = {
-            'app_name': data.get('app_name', client.config.app_name),
-            'id': client.get_ident(result),
+            'app_name': data.get('app_name', self.client.config.app_name),
+            'id': self.client.get_ident(result),
         }
         return response
 
@@ -101,14 +112,12 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
         return response
 
 
-class TracingMiddleware(MiddlewareMixin):
+class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
     _elasticapm_instrumented = False
     _instrumenting_lock = threading.Lock()
 
     def __init__(self, *args, **kwargs):
         super(TracingMiddleware, self).__init__(*args, **kwargs)
-        self.client = get_client()
-
         if not self._elasticapm_instrumented:
             with self._instrumenting_lock:
                 if not self._elasticapm_instrumented:

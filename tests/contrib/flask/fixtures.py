@@ -24,8 +24,8 @@ def flask_app():
 
 
 @pytest.yield_fixture()
-def flask_apm_client(flask_app, test_client):
-    client = ElasticAPM(app=flask_app, client=test_client)
+def flask_apm_client(flask_app, elasticapm_client):
+    client = ElasticAPM(app=flask_app, client=elasticapm_client)
     yield client
     signals.request_started.disconnect(client.request_started)
     signals.request_finished.disconnect(client.request_finished)
