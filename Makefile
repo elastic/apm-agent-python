@@ -1,4 +1,5 @@
 BUILD_DIR?=build
+SHELL := /bin/bash
 
 isort:
 	isort -rc -vb .
@@ -7,13 +8,12 @@ flake8:
 	flake8 elasticapm
 
 test:
-	if [ "$$TRAVIS_PYTHON_VERSION" != "3.5" ]; then \
-	py.test --ignore=tests/asyncio; \
-	else py.test; fi
+	if [[ "$$TRAVIS_PYTHON_VERSION" =~ ^(3.5|3.6|nightly|pypy3)$$ ]] ; then \
+	py.test -v $(PYTEST_ARGS); \
+	else py.test -v $(PYTEST_ARGS) --ignore=tests/asyncio; fi
 
-coverage:
-	coverage run runtests.py --include=elasticapm/* && \
-	coverage html --omit=*/migrations/* -d cover
+coverage: PYTEST_ARGS=--cov
+coverage: test
 
 docs:
 	sh ./scripts/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
