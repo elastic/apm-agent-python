@@ -38,3 +38,7 @@ pymongo
 Twisted
 
 pytz
+
+pyzmq
+gevent
+zerorpc

@@ -13,9 +13,6 @@ if [[ $PYTHON_TYPE == 'pypy' ]]; then
   pip install -r tests/requirements/requirements-pypy.txt --cache-dir "${PIP_CACHE}"
 else
   pip install -r tests/requirements/requirements-cpython.txt --cache-dir "${PIP_CACHE}"
-  if [[ $PYTHON_MAJOR_VERSION == '2' ]]; then
-    pip install -r tests/requirements/requirements-zerorpc.txt --cache-dir "${PIP_CACHE}"
-  fi
 fi
 
 make test
