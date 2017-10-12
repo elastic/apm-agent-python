@@ -24,6 +24,19 @@ class MockTransport(mock.MagicMock):
         await asyncio.sleep(0.0001)
 
 
+class DummyTransport:
+    async_mode = False
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def send(self, data, headers, timeout):
+        return
+
+    def close(self):
+        pass
+
+
 @pytest.mark.asyncio
 async def test_client_success():
     from elasticapm.contrib.asyncio import Client
@@ -86,3 +99,22 @@ async def test_client_failure_stdlib_exception(mocker):
     with pytest.raises(TransportException):
         await task
     assert client.state.status == 0
+
+
+@pytest.mark.asyncio
+async def test_client_send_timer():
+    from elasticapm.contrib.asyncio.client import Client, AsyncTimer
+
+    client = Client(
+        transport_class='tests.asyncio.test_asyncio_client.DummyTransport'
+    )
+
+    assert client._send_timer is None
+
+    client.begin_transaction('test_type')
+    client.end_transaction('test')
+
+    assert isinstance(client._send_timer, AsyncTimer)
+    assert client._send_timer.interval == 5
+
+    client.close()

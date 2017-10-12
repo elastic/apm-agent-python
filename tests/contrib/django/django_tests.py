@@ -950,6 +950,7 @@ def test_stacktrace_filtered_for_elasticapm(client, elasticapm_client):
     assert traces[1]['stacktrace'][0]['module'].startswith('django.template')
 
 
+@pytest.mark.parametrize('elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_template_render(benchmark, client, elasticapm_client):
     responses = []
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
@@ -971,6 +972,7 @@ def test_perf_template_render(benchmark, client, elasticapm_client):
         assert len(transaction['traces']) == 2
 
 
+@pytest.mark.parametrize('elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_template_render_no_middleware(benchmark, client, elasticapm_client):
     responses = []
     with mock.patch(
@@ -986,6 +988,7 @@ def test_perf_template_render_no_middleware(benchmark, client, elasticapm_client
     assert len(transactions) == 0
 
 
+@pytest.mark.parametrize('elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 @pytest.mark.django_db(transaction=True)
 def test_perf_database_render(benchmark, client, elasticapm_client):
     responses = []
@@ -1010,6 +1013,7 @@ def test_perf_database_render(benchmark, client, elasticapm_client):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize('elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_database_render_no_instrumentation(benchmark, elasticapm_client):
     elasticapm_client.instrumentation_store.get_all()
     responses = []
@@ -1029,6 +1033,7 @@ def test_perf_database_render_no_instrumentation(benchmark, elasticapm_client):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize('elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_transaction_with_collection(benchmark, elasticapm_client):
     elasticapm_client.instrumentation_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
@@ -1058,6 +1063,7 @@ def test_perf_transaction_with_collection(benchmark, elasticapm_client):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize('elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_transaction_without_middleware(benchmark, elasticapm_client):
     elasticapm_client.instrumentation_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:

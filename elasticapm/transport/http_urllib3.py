@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 
 import certifi
@@ -9,6 +10,8 @@ from elasticapm.conf import defaults
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http import AsyncHTTPTransport, HTTPTransport
 from elasticapm.utils import compat
+
+logger = logging.getLogger(__name__)
 
 
 class Urllib3Transport(HTTPTransport):
@@ -46,6 +49,7 @@ class Urllib3Transport(HTTPTransport):
                 response = self.http.urlopen(
                     'POST', url, body=data, headers=headers, timeout=timeout, preload_content=False
                 )
+                logger.info('Sent request, url=%s size=%.2fkb status=%s', url, len(data) / 1024.0, response.status)
             except Exception as e:
                 print_trace = True
                 if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):

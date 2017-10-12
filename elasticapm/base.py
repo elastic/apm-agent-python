@@ -17,6 +17,7 @@ import os
 import platform
 import socket
 import sys
+import threading
 import time
 import warnings
 import zlib
@@ -111,6 +112,8 @@ class Client(object):
                 self.error_logger.error(msg)
             self.config.disable_send = True
             return
+
+        self._send_timer = None
 
         self._transport_class = import_string(self.config.transport_class)
         self._transports = {}
@@ -439,6 +442,9 @@ class Client(object):
         self.instrumentation_store.end_transaction(status_code, name)
         if self.instrumentation_store.should_collect():
             self._traces_collect()
+        if not self._send_timer:
+            # send first batch of data after config._wait_to_first_send
+            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.traces_send_frequency))
 
     def set_transaction_name(self, name):
         transaction = get_transaction()
@@ -456,6 +462,8 @@ class Client(object):
 
     def close(self):
         self._traces_collect()
+        if self._send_timer:
+            self._stop_send_timer()
         for url, transport in self._transports.items():
             transport.close()
 
@@ -485,6 +493,7 @@ class Client(object):
         self.state.set_fail()
 
     def _traces_collect(self):
+        self._stop_send_timer()
         transactions = self.instrumentation_store.get_all()
         if not transactions:
             return
@@ -495,6 +504,17 @@ class Client(object):
         api_path = defaults.TRANSACTIONS_API_PATH
 
         self.send(server=self.config.server + api_path, **data)
+        self._start_send_timer()
+
+    def _start_send_timer(self, timeout=None):
+        timeout = timeout or self.config.traces_send_frequency
+        self._send_timer = threading.Timer(timeout, self._traces_collect)
+        self._send_timer.start()
+
+    def _stop_send_timer(self):
+        if self._send_timer and self._send_timer.is_alive() and not self._send_timer == threading.current_thread():
+            self._send_timer.cancel()
+            self._send_timer.join()
 
     def get_app_info(self):
         language_version = platform.python_version()
