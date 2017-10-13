@@ -270,14 +270,19 @@ def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
     """
     control.instrument()
     cursor = postgres_connection.cursor()
+    query = "SELECT * FROM test WHERE name LIKE 't%'"
 
     try:
         elasticapm_client.begin_transaction("web.django")
-        cursor.execute("SELECT * FROM test WHERE name LIKE 't%'")
+        cursor.execute(query)
         cursor.fetchall()
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
         transactions = elasticapm_client.instrumentation_store.get_all()
         traces = transactions[0]['traces']
-        assert traces[0]['name'] == 'SELECT FROM test'
+        trace = traces[0]
+        assert trace['name'] == 'SELECT FROM test'
+        assert 'db' in trace['context']
+        assert trace['context']['db']['type'] == 'sql'
+        assert trace['context']['db']['statement'] == query
