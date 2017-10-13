@@ -64,7 +64,7 @@ Your app name must only contain characters from the ASCII alphabet, numbers, das
 [options="header"]
 |============
 | Environment           | Django/Flask   | Default
-| `ELASTIC_APM_SERVER` | `SERVER`      | `'http://localhost:8200'`
+| `ELASTIC_APM_SERVER`  | `SERVER`       | `'http://localhost:8200'`
 |============
 
 The URL for your APM Server.
@@ -125,6 +125,33 @@ WARNING: secret tokens only provide any security if your APM server use TLS.
 A version string for the currently deployed version of the app.
 If you don't version your deployments,
 the recommended value for this field is the commit identifier of the deployed revision, e.g. the output of `git rev-parse HEAD`.
+
+[float]
+[[config-framework-name]]
+==== `framework_name`
+[options="header"]
+|============
+| Environment                  | Django/Flask     | Default
+| `ELASTIC_APM_FRAMEWORK_NAME` | `FRAMEWORK_NAME` | Depending on framework
+|============
+
+Name of the used framework.
+For Django and Flask, this defaults to `django` and `flask` respectively,
+otherwise, the default is `None`.
+
+
+[float]
+[[config-framework-version]]
+==== `framework_version`
+[options="header"]
+|============
+| Environment                     | Django/Flask        | Default
+| `ELASTIC_APM_FRAMEWORK_VERSION` | `FRAMEWORK_VERSION` | Depending on framework
+|============
+
+Version number of the used framework.
+For Django and Flask, this defaults to the used version of the framework,
+otherwise, the default is `None`.
 
 [float]
 [[config-filter-exception-types]]
