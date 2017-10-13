@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 class LoggingHandler(BaseLoggingHandler):
-    def __init__(self):
+    def __init__(self, level=logging.NOTSET):
         # skip initialization of BaseLoggingHandler
-        logging.Handler.__init__(self)
+        logging.Handler.__init__(self, level=level)
 
     @property
     def client(self):

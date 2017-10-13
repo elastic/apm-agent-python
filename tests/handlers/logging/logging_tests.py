@@ -180,3 +180,12 @@ def test_client_kwarg(elasticapm_client):
 def test_invalid_first_arg_type():
     with pytest.raises(ValueError):
         LoggingHandler(object)
+
+
+def test_logger_setup():
+    handler = LoggingHandler(server='foo', app_name='bar', secret_token='baz')
+    client = handler.client
+    assert client.config.server == 'foo'
+    assert client.config.app_name == 'bar'
+    assert client.config.secret_token == 'baz'
+    assert handler.level == logging.NOTSET

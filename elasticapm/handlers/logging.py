@@ -22,7 +22,7 @@ from elasticapm.utils.encoding import to_string
 from elasticapm.utils.stacks import iter_stack_frames
 
 
-class LoggingHandler(logging.Handler, object):
+class LoggingHandler(logging.Handler):
     def __init__(self, *args, **kwargs):
         client = kwargs.pop('client_cls', Client)
         if len(args) == 1:
@@ -42,7 +42,7 @@ class LoggingHandler(logging.Handler, object):
         else:
             self.client = client(*args, **kwargs)
 
-        super(LoggingHandler, self).__init__(*args, **kwargs)
+        logging.Handler.__init__(self, level=kwargs.get('level', logging.NOTSET))
 
     def emit(self, record):
         self.format(record)
