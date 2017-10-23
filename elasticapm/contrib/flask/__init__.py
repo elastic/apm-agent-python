@@ -31,11 +31,11 @@ def make_client(client_cls, app, **defaults):
     config = app.config.get('ELASTIC_APM', {})
 
     defaults.setdefault('include_paths', {app.import_name})
+    if 'framework_name' not in defaults:
+        defaults['framework_name'] = 'flask'
+        defaults['framework_version'] = getattr(flask, '__version__', '<0.7')
 
     client = client_cls(config, **defaults)
-
-    client._framework = 'flask'
-    client._framework_version = getattr(flask, '__version__', '<0.7')
     return client
 
 

@@ -522,7 +522,7 @@ class Client(object):
             runtime_version = '.'.join(map(str, sys.pypy_version_info[:3]))
         else:
             runtime_version = language_version
-        return {
+        result = {
             'name': self.config.app_name,
             'version': self.config.app_version,
             'agent': {
@@ -530,10 +530,6 @@ class Client(object):
                 'version': elasticapm.VERSION,
             },
             'argv': sys.argv,
-            'framework': {
-                'name': getattr(self, '_framework', None),
-                'version': getattr(self, '_framework_version', None),
-            },
             'language': {
                 'name': 'python',
                 'version': platform.python_version(),
@@ -545,6 +541,12 @@ class Client(object):
                 'version': runtime_version,
             }
         }
+        if self.config.framework_name:
+            result['framework'] = {
+                'name': self.config.framework_name,
+                'version': self.config.framework_version,
+            }
+        return result
 
     def get_system_info(self):
         return {

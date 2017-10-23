@@ -78,8 +78,9 @@ class DjangoClient(Client):
     def __init__(self, config=None, **defaults):
         if config is None:
             config = getattr(django_settings, 'ELASTIC_APM', {})
-        self._framework = 'django'
-        self._framework_version = django.get_version()
+        if 'framework_name' not in defaults:
+            defaults['framework_name'] = 'django'
+            defaults['framework_version'] = django.get_version()
         super(DjangoClient, self).__init__(config, **defaults)
 
     def get_user_info(self, request):

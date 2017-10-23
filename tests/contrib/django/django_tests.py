@@ -762,10 +762,10 @@ def test_request_metrics_404_resolve_error(elasticapm_client, client):
 
 
 def test_get_app_info(elasticapm_client):
-    client = get_client()
-    app_info = client.get_app_info()
+    app_info = elasticapm_client.get_app_info()
     assert django.get_version() == app_info['framework']['version']
-    assert 'django' == app_info['framework']['name']
+    assert app_info['framework']['name'] == 'django'
+    assert elasticapm_client.config.framework_name == 'django'
 
 
 @mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')

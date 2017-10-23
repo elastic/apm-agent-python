@@ -149,7 +149,8 @@ def test_instrumentation_404(flask_apm_client):
     assert len(traces) == 0, [t["signature"] for t in traces]
 
 
-def test_framework_version(flask_app):
+def test_framework_name(flask_app):
     elasticapm = ElasticAPM(app=flask_app)
+    assert elasticapm.client.config.framework_name == 'flask'
     app_info = elasticapm.client.get_app_info()
-    assert 'flask' == app_info['framework']['name']
+    assert app_info['framework']['name'] == 'flask'
