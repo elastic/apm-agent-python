@@ -177,7 +177,7 @@ def get_frame_info(frame, lineno, extended=True):
     try:
         base_filename = sys.modules[module_name.split('.', 1)[0]].__file__
         filename = abs_path.split(base_filename.rsplit('/', 2)[0], 1)[-1][1:]
-    except:
+    except Exception:
         filename = abs_path
 
     if not filename:

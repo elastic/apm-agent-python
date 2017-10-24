@@ -146,7 +146,7 @@ def extract_signature(sql):
         try:
             sql_type = 'SELECT FROM'
             table_name = look_for_table(sql, "FROM")
-        except:
+        except Exception:
             table_name = ''
     else:
         # No name
