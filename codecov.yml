@@ -13,7 +13,6 @@ coverage:
         if_ci_failed: error
         only_pulls: false
         flags: null
-        paths: null
       agent:
         target: auto
         # Overall coverage should never drop more then 0.5%
@@ -26,7 +25,6 @@ coverage:
         if_ci_failed: error
         only_pulls: false
         flags: null
-        paths: null
     patch:
       default:
         target: auto
