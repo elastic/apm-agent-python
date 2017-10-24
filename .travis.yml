@@ -15,7 +15,7 @@ jobs:
     - stage: linters
       env: LINTER="flake8"
       python: 3.6
-      script: pip install flake8 && flake8 elasticapm
+      script: pip install -U flake8 && flake8 elasticapm
 
     - stage: linters
       script: make docs

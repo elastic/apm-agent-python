@@ -75,7 +75,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
 def _has_elasticapm_metadata(value):
     try:
         return callable(value.__getattribute__("__elasticapm__"))
-    except:
+    except Exception:
         return False
 
 
@@ -125,7 +125,7 @@ def transform(value, stack=None, context=None):
     elif value is not None:
         try:
             ret = transform(repr(value))
-        except:
+        except Exception:
             # It's common case that a model's __unicode__ definition may try to query the database
             # which if it was not cleaned up correctly, would hit a transaction aborted exception
             ret = u'<BadRepr: %s>' % type(value)
@@ -151,7 +151,7 @@ def to_unicode(value):
 def to_string(value):
     try:
         return compat.binary_type(value.decode('utf-8').encode('utf-8'))
-    except:
+    except Exception:
         return to_unicode(value).encode('utf-8')
 
 
