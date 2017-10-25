@@ -14,7 +14,7 @@ if [[ $1 == *"pypy"*  ]]; then
   PYTHON_TYPE="pypy"
 fi
 
-docker-compose build --build-arg PYTHON_IMAGE=$1 run_tests
+docker-compose build --pull --build-arg PYTHON_IMAGE=$1 run_tests
 docker-compose run \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} -e PYTHON_TYPE=$PYTHON_TYPE \
   -v ${pip_cache}:${docker_pip_cache} \
