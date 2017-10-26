@@ -148,7 +148,7 @@ setup_kwargs = dict(
     name='elastic-apm',
     version=VERSION,
     author='Elastic, Inc',
-    author_email='support@opbeat.com',
+    license='BSD',
     url='https://github.com/elastic/apm-agent-python',
     description='The official Python module for Elastic APM',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst'), encoding='utf-8').read(),
@@ -176,6 +176,10 @@ setup_kwargs = dict(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
     ],
 )
 
