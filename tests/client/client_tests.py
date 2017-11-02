@@ -290,7 +290,7 @@ def test_send_with_auth_header(time, send_remote):
 
 @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
 @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.close')
-@mock.patch('elasticapm.base.Client._traces_collect')
+@mock.patch('elasticapm.base.Client._collect_transactions')
 def test_client_shutdown_sync(mock_traces_collect, mock_close, mock_send):
     client = Client(
         server='http://example.com',
@@ -307,7 +307,7 @@ def test_client_shutdown_sync(mock_traces_collect, mock_close, mock_send):
 
 
 @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
-@mock.patch('elasticapm.base.Client._traces_collect')
+@mock.patch('elasticapm.base.Client._collect_transactions')
 def test_client_shutdown_async(mock_traces_collect, mock_send):
     client = Client(
         server='http://example.com',

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
+import mock
 import pytest
 
 from elasticapm import Client, processors
 from elasticapm.utils import compat
+from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()
@@ -222,3 +224,33 @@ def test_mark_in_app_frames():
     assert not frames[3]['in_app']
     assert frames[4]['in_app']
     assert not frames[5]['in_app']
+
+
+def dummy_processor(client, data):
+    data['processed'] = True
+    return data
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'processors': 'tests.processors.tests.dummy_processor'}], indirect=True)
+def test_transactions_processing(elasticapm_client):
+    for i in range(5):
+        elasticapm_client.begin_transaction('dummy')
+        elasticapm_client.end_transaction('dummy_transaction', 'success')
+    elasticapm_client._collect_transactions()
+    for transaction in elasticapm_client.events[0]['transactions']:
+        assert transaction['processed'] is True
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'processors': 'tests.processors.tests.dummy_processor'}], indirect=True)
+def test_exception_processing(elasticapm_client):
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        elasticapm_client.capture_exception()
+    assert elasticapm_client.events[0]['errors'][0]['processed'] is True
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'processors': 'tests.processors.tests.dummy_processor'}], indirect=True)
+def test_message_processing(elasticapm_client):
+    elasticapm_client.capture_message('foo')
+    assert elasticapm_client.events[0]['errors'][0]['processed'] is True

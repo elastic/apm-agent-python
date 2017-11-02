@@ -441,7 +441,7 @@ class Client(object):
     def end_transaction(self, name, status_code=None):
         self.instrumentation_store.end_transaction(status_code, name)
         if self.instrumentation_store.should_collect():
-            self._traces_collect()
+            self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
             self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.traces_send_frequency))
@@ -461,7 +461,7 @@ class Client(object):
         transaction._context[_key] = data
 
     def close(self):
-        self._traces_collect()
+        self._collect_transactions()
         if self._send_timer:
             self._stop_send_timer()
         for url, transport in self._transports.items():
@@ -492,15 +492,20 @@ class Client(object):
         )
         self.state.set_fail()
 
-    def _traces_collect(self):
+    def _collect_transactions(self):
         self._stop_send_timer()
-        transactions = self.instrumentation_store.get_all()
+        transactions = []
+        for transaction in self.instrumentation_store.get_all():
+            for processor in self.processors:
+                transaction = processor(self, transaction)
+            transactions.append(transaction)
         if not transactions:
             return
 
         data = self.build_msg({
             'transactions': transactions,
         })
+
         api_path = defaults.TRANSACTIONS_API_PATH
 
         self.send(server=self.config.server + api_path, **data)
@@ -508,7 +513,7 @@ class Client(object):
 
     def _start_send_timer(self, timeout=None):
         timeout = timeout or self.config.traces_send_frequency
-        self._send_timer = threading.Timer(timeout, self._traces_collect)
+        self._send_timer = threading.Timer(timeout, self._collect_transactions)
         self._send_timer.start()
 
     def _stop_send_timer(self):

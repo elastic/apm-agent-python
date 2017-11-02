@@ -26,7 +26,7 @@ class Client(BaseClient):
 
     def _start_send_timer(self, timeout=None):
         timeout = timeout or self.config.traces_send_frequency
-        self._send_timer = AsyncTimer(timeout, self._traces_collect)
+        self._send_timer = AsyncTimer(timeout, self._collect_transactions)
 
     def _stop_send_timer(self):
         if self._send_timer:
