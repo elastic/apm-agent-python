@@ -14,6 +14,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2\...master[Check 
 
  * added a background thread to process the transactions queue every 60 seconds (configurable) ({pull}68[#68])
  * adapted trace context for SQL traces to new API ({pull}77[#77])
+ * ensured that transaction data is also passed through processors ({pull}84[#84])
 
 [[release-v1.0.0.dev2]]
 [float]
