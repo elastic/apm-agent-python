@@ -21,6 +21,7 @@ def redis_conn():
     del conn
 
 
+@pytest.mark.integrationtest
 def test_pipeline(elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
     with trace("test_pipeline", "test"):
@@ -46,6 +47,7 @@ def test_pipeline(elasticapm_client, redis_conn):
     assert len(traces) == 2
 
 
+@pytest.mark.integrationtest
 def test_rq_patches_redis(elasticapm_client, redis_conn):
     # Let's go ahead and change how something important works
     redis_conn._pipeline = partial(StrictRedis.pipeline, redis_conn)
@@ -75,6 +77,7 @@ def test_rq_patches_redis(elasticapm_client, redis_conn):
     assert len(traces) == 2
 
 
+@pytest.mark.integrationtest
 def test_redis_client(elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
     with trace("test_redis_client", "test"):

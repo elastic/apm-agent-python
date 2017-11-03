@@ -209,6 +209,7 @@ def test_multi_statement_sql():
 
     assert "CREATE TABLE" == actual
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_type(postgres_connection, elasticapm_client):
     import psycopg2.extras
@@ -226,6 +227,7 @@ def test_psycopg2_register_type(postgres_connection, elasticapm_client):
     assert new_type is not None
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_json(postgres_connection, elasticapm_client):
     # register_json bypasses register_type, so we have to test unwrapping
@@ -250,6 +252,7 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
         elasticapm_client.instrumentation_store.get_all()
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection, elasticapm_client):
     control.instrument()
@@ -262,6 +265,7 @@ def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection,
     assert transactions == []
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
     """

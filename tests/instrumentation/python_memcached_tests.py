@@ -1,11 +1,13 @@
 import os
 
 import memcache
+import pytest
 
 from elasticapm.traces import trace
 from tests.fixtures import elasticapm_client
 
 
+@pytest.mark.integrationtest
 def test_memcached(elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with trace("test_memcached", "test"):
