@@ -4,6 +4,7 @@ pytest-catchlog==1.2.2
 pytest-django==3.1.2
 coverage==4.4.1
 pytest-cov==2.5.1
+pytest-mock
 
 pytest-benchmark==3.1.1
 docutils==0.14
@@ -36,5 +37,16 @@ requests
 urllib3-mock
 pymongo
 Twisted
-
+python-memcached
 pytz
+
+
+aiohttp ; python_version >= '3.5'
+pytest-asyncio ; python_version >= '3.5'
+
+psycopg2cffi ; platform_python_implementation == 'PyPy'
+psycopg2 ; platform_python_implementation == 'CPython'
+
+pyzmq==13.1.0 ; python_version == '2.7'
+gevent==1.1b1 ; python_version == '2.7'
+zerorpc>=0.4.0,<0.5 ; python_version == '2.7'
