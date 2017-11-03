@@ -20,6 +20,7 @@ def mongo_database():
     mongo.close()
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_bulk_write(elasticapm_client, mongo_database):
     elasticapm_client.begin_transaction('transaction.test')
@@ -37,6 +38,7 @@ def test_collection_bulk_write(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.bulk_write'
 
 
+@pytest.mark.integrationtest
 def test_collection_count(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
                 'date': datetime.datetime.utcnow()}
@@ -52,6 +54,7 @@ def test_collection_count(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.count'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_delete_one(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -67,6 +70,7 @@ def test_collection_delete_one(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.delete_one'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_delete_many(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -82,6 +86,7 @@ def test_collection_delete_many(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.delete_many'
 
 
+@pytest.mark.integrationtest
 def test_collection_insert(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
                 'date': datetime.datetime.utcnow()}
@@ -95,6 +100,7 @@ def test_collection_insert(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.insert'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_insert_one(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -109,6 +115,7 @@ def test_collection_insert_one(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.insert_one'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_insert_many(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -124,6 +131,7 @@ def test_collection_insert_many(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.insert_many'
 
 
+@pytest.mark.integrationtest
 def test_collection_find(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
                 'date': datetime.datetime.utcnow()}
@@ -143,6 +151,7 @@ def test_collection_find(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.cursor.refresh'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_find_one(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -158,6 +167,7 @@ def test_collection_find_one(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.find_one'
 
 
+@pytest.mark.integrationtest
 def test_collection_remove(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
                 'date': datetime.datetime.utcnow()}
@@ -172,6 +182,7 @@ def test_collection_remove(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.remove'
 
 
+@pytest.mark.integrationtest
 def test_collection_update(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
                 'date': datetime.datetime.utcnow()}
@@ -187,6 +198,7 @@ def test_collection_update(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.update'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_update_one(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -203,6 +215,7 @@ def test_collection_update_one(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.update_one'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason='New in 3.0')
 def test_collection_update_many(elasticapm_client, mongo_database):
     blogpost = {'author': 'Tom', 'text': 'Foo',
@@ -219,6 +232,7 @@ def test_collection_update_many(elasticapm_client, mongo_database):
     assert trace['name'] == 'elasticapm_test.blogposts.update_many'
 
 
+@pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (2, 7), reason='New in 2.7')
 def test_bulk_execute(elasticapm_client, mongo_database):
     elasticapm_client.begin_transaction('transaction.test')
