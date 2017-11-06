@@ -3,7 +3,6 @@ import logging
 
 from elasticapm.traces import get_transaction
 from elasticapm.utils import wrapt
-from elasticapm.utils.wrapt import resolve_path
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +143,7 @@ class AbstractInstrumentedModule(object):
 
         :param client: elasticapm.base.Client
         """
-        self.wrapped = None
+        self.originals = {}
         self.instrumented = False
 
         assert self.name is not None
@@ -181,7 +180,8 @@ class AbstractInstrumentedModule(object):
                         continue
                     # We jump through hoop here to get the original
                     # `module`/`method` in the call to `call_if_sampling`
-                    (parent, attribute, original) = resolve_path(module, method)
+                    parent, attribute, original = wrapt.resolve_path(module, method)
+                    self.originals[(module, method)] = original
                     wrapper = OriginalNamesFunctionWrapper(
                         original,
                         self.call_if_sampling,
@@ -207,6 +207,16 @@ class AbstractInstrumentedModule(object):
             logger.debug("Skipping instrumentation of %s. %s",
                          self.name, ex)
         self.instrumented = True
+
+    def uninstrument(self):
+        if not self.instrumented or not self.originals:
+            return
+        for module, method in self.get_instrument_list():
+            if (module, method) in self.originals:
+                parent, attribute, wrapper = wrapt.resolve_path(module, method)
+                wrapt.apply_patch(parent, attribute, self.originals[(module, method)])
+        self.instrumented = False
+        self.originals = {}
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
         if not get_transaction():
