@@ -1,7 +1,5 @@
 import sqlite3
 
-from tests.fixtures import elasticapm_client
-
 
 def test_connect(elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")

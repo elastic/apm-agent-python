@@ -6,7 +6,6 @@ import pytest
 
 from elasticapm import Client, processors
 from elasticapm.utils import compat
-from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()

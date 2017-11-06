@@ -7,7 +7,6 @@ import redis
 from redis.client import StrictRedis
 
 from elasticapm.traces import trace
-from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()

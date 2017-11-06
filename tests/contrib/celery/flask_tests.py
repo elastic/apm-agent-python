@@ -3,10 +3,6 @@ django = pytest.importorskip("flask")  # isort:skip
 
 import mock
 
-from tests.contrib.flask.fixtures import (flask_apm_client, flask_app,
-                                          flask_celery)
-from tests.fixtures import elasticapm_client
-
 
 def test_task_failure(flask_celery):
     apm_client = flask_celery.flask_apm_client.client

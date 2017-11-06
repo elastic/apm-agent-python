@@ -2,7 +2,6 @@ import logbook
 import pytest
 
 from elasticapm.handlers.logbook import LogbookHandler
-from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()

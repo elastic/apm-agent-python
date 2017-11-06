@@ -4,7 +4,6 @@ from requests.exceptions import InvalidURL, MissingSchema
 from urllib3_mock import Responses
 
 from elasticapm.traces import trace
-from tests.fixtures import elasticapm_client
 
 try:
     from requests.packages import urllib3  # noqa

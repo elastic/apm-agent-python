@@ -2,7 +2,18 @@
 import sys
 from os.path import abspath, dirname, join
 
+from tests.fixtures import elasticapm_client
 from tests.utils.compat import middleware_setting
+
+try:
+    from tests.contrib.django.fixtures import django_elasticapm_client, django_sending_elasticapm_client
+except ImportError:
+    pass
+
+try:
+    from tests.contrib.flask.fixtures import flask_app, flask_celery, flask_apm_client
+except ImportError:
+    pass
 
 where_am_i = dirname(abspath(__file__))
 
