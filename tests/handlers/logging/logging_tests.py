@@ -4,7 +4,6 @@ import pytest
 
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils.stacks import iter_stack_frames
-from tests.fixtures import elasticapm_client
 
 
 @pytest.fixture()

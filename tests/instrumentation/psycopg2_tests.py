@@ -6,7 +6,6 @@ import pytest
 from elasticapm.instrumentation import control
 from elasticapm.instrumentation.packages.psycopg2 import (PGCursorProxy,
                                                           extract_signature)
-from tests.fixtures import elasticapm_client
 
 try:
     import psycopg2

@@ -23,7 +23,7 @@ def flask_app():
     return app
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def flask_apm_client(flask_app, elasticapm_client):
     client = ElasticAPM(app=flask_app, client=elasticapm_client)
     yield client

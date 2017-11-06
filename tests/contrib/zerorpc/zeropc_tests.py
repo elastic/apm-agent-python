@@ -7,7 +7,6 @@ import tempfile
 import pytest
 
 from elasticapm.contrib.zerorpc import Middleware
-from tests.fixtures import elasticapm_client
 
 zerorpc = pytest.importorskip("zerorpc")
 gevent = pytest.importorskip("gevent")

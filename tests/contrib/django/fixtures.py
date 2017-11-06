@@ -16,7 +16,7 @@ class TempStoreClient(DjangoClient):
 
 
 @pytest.fixture()
-def elasticapm_client(request):
+def django_elasticapm_client(request):
     client_config = getattr(request, 'param', {})
     app = apps.get_app_config('elasticapm.contrib.django')
     old_client = app.client
@@ -34,7 +34,7 @@ def elasticapm_client(request):
 
 
 @pytest.fixture()
-def sending_elasticapm_client(request):
+def django_sending_elasticapm_client(request):
     client_config = getattr(request, 'param', {})
     app = apps.get_app_config('elasticapm.contrib.django')
     old_client = app.client

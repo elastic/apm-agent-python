@@ -2,7 +2,6 @@ import boto3
 import mock
 
 from elasticapm.traces import trace
-from tests.fixtures import elasticapm_client
 
 
 @mock.patch("botocore.endpoint.Endpoint.make_request")
