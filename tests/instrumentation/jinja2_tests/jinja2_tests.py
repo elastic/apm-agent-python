@@ -5,8 +5,6 @@ import pytest
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
-from tests.fixtures import elasticapm_client
-
 
 @pytest.fixture()
 def jinja_env():

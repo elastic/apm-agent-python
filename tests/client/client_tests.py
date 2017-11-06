@@ -11,7 +11,6 @@ from elasticapm.transport.base import Transport, TransportException
 from elasticapm.transport.http import HTTPTransport
 from elasticapm.utils import compat
 from elasticapm.utils.compat import urlparse
-from tests.fixtures import elasticapm_client  # noqa
 
 
 def test_client_state_should_try_online():

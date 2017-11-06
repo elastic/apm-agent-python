@@ -4,7 +4,6 @@ import pytest
 import webob
 
 from elasticapm.middleware import ElasticAPM
-from tests.fixtures import elasticapm_client
 
 
 def example_app(environ, start_response):

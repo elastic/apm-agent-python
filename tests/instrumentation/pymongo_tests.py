@@ -4,8 +4,6 @@ import os
 import pymongo
 import pytest
 
-from tests.fixtures import elasticapm_client
-
 
 @pytest.fixture()
 def mongo_database():

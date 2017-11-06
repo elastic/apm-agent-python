@@ -4,7 +4,6 @@ import memcache
 import pytest
 
 from elasticapm.traces import trace
-from tests.fixtures import elasticapm_client
 
 
 @pytest.mark.integrationtest

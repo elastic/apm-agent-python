@@ -5,7 +5,6 @@ import pytest
 import urllib3
 
 from elasticapm.traces import trace
-from tests.fixtures import elasticapm_client
 
 try:
     from http import server as SimpleHTTPServer

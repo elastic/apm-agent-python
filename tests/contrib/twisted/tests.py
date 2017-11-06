@@ -3,7 +3,6 @@ from __future__ import absolute_import
 from twisted.python.failure import Failure
 
 from elasticapm.contrib.twisted import LogObserver
-from tests.fixtures import elasticapm_client
 
 
 def test_twisted_log_observer(elasticapm_client):
