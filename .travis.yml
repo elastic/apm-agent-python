@@ -65,6 +65,20 @@ matrix:
     script: make docs
     perl: "5.26"
 
+  - stage: build
+    dist: trusty
+    python: 3.6
+    sudo: required
+    services:
+      - docker
+    script: pip install cibuildwheel==0.6.0 && mkdir -p wheelhouse/${TRAVIS_TAG} && cibuildwheel --output-dir wheelhouse/
+    env:
+      - CIBW_ENVIRONMENT="PIP_CACHE=/host/.pip"
+#      - CIBW_TEST_REQUIRES="pytest pytest-django mock pytest-catchlog"
+#      - CIBW_BEFORE_BUILD="yum -y install zeromq-devel libevent-devel && {pip} install -r tests/requirements/requirements-base.txt --cache-dir /host/.pip"
+#      - CIBW_TEST_COMMAND="cd {project} && py.test -m 'not integrationtest' {project}/tests --ignore={project}/tests/asyncio"
+    after_script:
+
 stages:
   - linters
   - test
@@ -102,14 +116,13 @@ services:
   - mysql
   - postgresql
 deploy:
-  provider: s3
-  access_key_id: AKIAIHY7VOHA6YNCCEYQ
-  secret_access_key:
-    secure: kb8Ho6JjTi3yTtdppw+fk6Zka0TLrFuEZU+O/b1YP4GEWUcf/aFKwtE8hi4SvsnjHGZxrAY9jRHKjVU02eEfbUTrCGu05ej9wEVC8IhevJMJljgInHWsG1PgPtNeD+uxWADXSXddjJ0U+N3Gh3I/PO530te2V2rQ1szJ2Hq79go=
-  bucket: wheels.opbeat.com
   skip_cleanup: true
-  local_dir: wheelhouse
-  acl: public_read
+  provider: releases
+  api_key:
+    secure: KEydyJx3qePSGAECmkOgn5M0rvcprmlmo7NZh9K+zsTOnb2Z3kaP6GxnmAJ0Ru50tHY6qEYwknDcMp7mAXGtA9fF4Xek8KyJBhGwRShvc6XVpyH3B6oHgyRLE19iRNMzZP15i318uIqwasA6E153UfCAP1hkZswBzu8AXHG+SdgWKiWNCjc8Yj92zJ1nFqxnm1vleseWan0hm5KqM8d2M7Wgp43RKj7VlLLKr6zhvZCFdgruuvfXiGPtKoGAI2/hsBHMrGjHSyUhk8cR1jHYK2KQ44gwiJvcl6nykMQb1PRy6xTGEG0ow2BFPGPyxaN3ETkn/4a+tsqbLpcm67HDpljVUv6UG0U5a8wQIY0J8o5yZNYqF3bjYBtrdEYlcI7w2uGwD2mtP1T51cnXbKMLIPvtcsul39/ji/hFAsAQuPh0BugNh1oiHd9dAx2GdKohWk1unGxRHdoRGON4w1W7sd7K5fC3mSlPIGWr5RgqnKBV2XqqvbxpIzaaDTyuIkdDlPoCBtqyfooPhH8eFzYlcj6BaD0ZtJAfRDeNNqOftzM5dLjImuKYscHUtRSdCSym7y4yYwk8Sf2556LYMmv5phANydTVgv1VjfhKPRViIier3C1xP4TL13np2mZm9tCA2FCFyuKv/ZELXCYiS2W5QOV2SFNRvZjMdKToGgHmBFM=
+  file_glob: true
+  file: wheelhouse/*.whl
   on:
-    repo: opbeat/opbeat_python
+    repo: elastic/apm-agent-python
     tags: true
+    branch: master
