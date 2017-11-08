@@ -15,6 +15,7 @@ typedef struct {
 
     PyObject *dict;
     PyObject *wrapped;
+    PyObject *weakreflist;
 } WraptObjectProxyObject;
 
 PyTypeObject WraptObjectProxy_Type;
@@ -48,6 +49,7 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type,
 
     self->dict = PyDict_New();
     self->wrapped = NULL;
+    self->weakreflist = NULL;
 
     return (PyObject *)self;
 }
@@ -152,6 +154,9 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
     PyObject_GC_UnTrack(self);
+
+    if (self->weakreflist != NULL)
+        PyObject_ClearWeakRefs((PyObject *)self);
 
     WraptObjectProxy_clear(self);
 
@@ -1387,18 +1392,13 @@ static PyObject *WraptObjectProxy_get_wrapped(
 static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
         PyObject *value)
 {
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return -1;
-    }
-
     if (!value) {
         PyErr_SetString(PyExc_TypeError, "__wrapped__ must be an object");
         return -1;
     }
 
     Py_INCREF(value);
-    Py_DECREF(self->wrapped);
+    Py_XDECREF(self->wrapped);
 
     self->wrapped = value;
 
@@ -1511,9 +1511,6 @@ static int WraptObjectProxy_setattro(
         wrapped_str = PyString_InternFromString("__wrapped__");
 #endif
     }
-
-    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1)
-        return PyObject_GenericSetAttr((PyObject *)self, name, value);
 
     if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
@@ -1691,7 +1688,7 @@ PyTypeObject WraptObjectProxy_Type = {
     (traverseproc)WraptObjectProxy_traverse, /*tp_traverse*/
     (inquiry)WraptObjectProxy_clear, /*tp_clear*/
     (richcmpfunc)WraptObjectProxy_richcompare, /*tp_richcompare*/
-    0,                      /*tp_weaklistoffset*/
+    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     (getiterfunc)WraptObjectProxy_iter, /*tp_iter*/
     0,                      /*tp_iternext*/
     WraptObjectProxy_methods, /*tp_methods*/
@@ -1762,7 +1759,7 @@ PyTypeObject WraptCallableObjectProxy_Type = {
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
     0,                      /*tp_richcompare*/
-    0,                      /*tp_weaklistoffset*/
+    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
@@ -2257,7 +2254,7 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
     (traverseproc)WraptFunctionWrapperBase_traverse, /*tp_traverse*/
     (inquiry)WraptFunctionWrapperBase_clear, /*tp_clear*/
     0,                      /*tp_richcompare*/
-    0,                      /*tp_weaklistoffset*/
+    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
@@ -2490,7 +2487,7 @@ PyTypeObject WraptBoundFunctionWrapper_Type = {
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
     0,                      /*tp_richcompare*/
-    0,                      /*tp_weaklistoffset*/
+    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
@@ -2590,7 +2587,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     return result;
 }
 
-/* ------------------------------------------------------------------------- */;
+/* ------------------------------------------------------------------------- */
 
 static PyGetSetDef WraptFunctionWrapper_getset[] = {
     { "__module__",         (getter)WraptObjectProxy_get_module,
@@ -2630,7 +2627,7 @@ PyTypeObject WraptFunctionWrapper_Type = {
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
     0,                      /*tp_richcompare*/
-    0,                      /*tp_weaklistoffset*/
+    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
@@ -2648,7 +2645,7 @@ PyTypeObject WraptFunctionWrapper_Type = {
     0,                      /*tp_is_gc*/
 };
 
-/* ------------------------------------------------------------------------- */;
+/* ------------------------------------------------------------------------- */
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
@@ -2681,7 +2678,7 @@ moduleinit(void)
     if (PyType_Ready(&WraptObjectProxy_Type) < 0)
         return NULL;
 
-    /* Ensure that inheritence relationships specified. */
+    /* Ensure that inheritance relationships specified. */
 
     WraptCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
     WraptFunctionWrapperBase_Type.tp_base = &WraptObjectProxy_Type;

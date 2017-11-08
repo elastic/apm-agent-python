@@ -31,7 +31,7 @@ else:
         exec("""exec _code_ in _globs_, _locs_""")
 
 from functools import partial
-from inspect import getargspec, ismethod, isclass, formatargspec
+from inspect import ismethod, isclass, formatargspec
 from collections import namedtuple
 from threading import Lock, RLock
 
@@ -181,17 +181,17 @@ def decorator(wrapper=None, enabled=None, adapter=None):
     # decorator. In that case parts of the function '__code__' and
     # '__defaults__' attributes are used from the adapter function
     # rather than those of the wrapped function. This allows for the
-    # argument specification from inspect.getargspec() to be overridden
-    # with a prototype for a different function than what was wrapped.
-    # The 'enabled' argument provides a way to enable/disable the use
-    # of the decorator. If the type of 'enabled' is a boolean, then it
-    # is evaluated immediately and the wrapper not even applied if
-    # it is False. If not a boolean, it will be evaluated when the
-    # wrapper is called for an unbound wrapper, and when binding occurs
-    # for a bound wrapper. When being evaluated, if 'enabled' is callable
-    # it will be called to obtain the value to be checked. If False,
-    # the wrapper will not be called and instead the original wrapped
-    # function will be called directly instead.
+    # argument specification from inspect.getargspec() and similar
+    # functions to be overridden with a prototype for a different
+    # function than what was wrapped. The 'enabled' argument provides a
+    # way to enable/disable the use of the decorator. If the type of
+    # 'enabled' is a boolean, then it is evaluated immediately and the
+    # wrapper not even applied if it is False. If not a boolean, it will
+    # be evaluated when the wrapper is called for an unbound wrapper,
+    # and when binding occurs for a bound wrapper. When being evaluated,
+    # if 'enabled' is callable it will be called to obtain the value to
+    # be checked. If False, the wrapper will not be called and instead
+    # the original wrapped function will be called directly instead.
 
     if wrapper is not None:
         # Helper function for creating wrapper of the appropriate
@@ -255,7 +255,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     # we need to first check that use of the decorator
                     # hadn't been disabled by a simple boolean. If it was,
                     # the target function to be wrapped is returned instead.
-                    
+
                     _enabled = enabled
                     if type(_enabled) is bool:
                         if not _enabled:
@@ -424,7 +424,7 @@ def synchronized(wrapped):
 
     if hasattr(wrapped, 'acquire') and hasattr(wrapped, 'release'):
         # We remember what the original lock is and then return a new
-        # decorator which acceses and locks it. When returning the new
+        # decorator which accesses and locks it. When returning the new
         # decorator we wrap it with an object proxy so we can override
         # the context manager methods in case it is being used to wrap
         # synchronized statements with a 'with' statement.
@@ -453,7 +453,7 @@ def synchronized(wrapped):
     # Following only apply when the lock is being created automatically
     # based on the context of what was supplied. In this case we supply
     # a final decorator, but need to use FunctionWrapper directly as we
-    # want to derive from it to add context manager methods in in case it is
+    # want to derive from it to add context manager methods in case it is
     # being used to wrap synchronized statements with a 'with' statement.
 
     def _synchronized_lock(context):
