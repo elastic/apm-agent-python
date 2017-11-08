@@ -19,6 +19,6 @@ except Exception as e:
 
 from elasticapm.base import *  # noqa E403
 from elasticapm.conf import *  # noqa E403
-from elasticapm.instrumentation.control import (instrument,  # noqa E403
-                                                uninstrument)
+from elasticapm.instrumentation.control import instrument  # noqa E403
+from elasticapm.instrumentation.control import uninstrument  # noqa E403
 from elasticapm.traces import *  # noqa E403
