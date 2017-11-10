@@ -1,23 +1,23 @@
 exclude:
-  - PYTHON_VERSION: python:2.7
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-2.0
-  - PYTHON_VERSION: python:2.7
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
-  - PYTHON_VERSION: python:3.3
+  - PYTHON_VERSION: python-3.3
     FRAMEWORK: django-1.9
-  - PYTHON_VERSION: python:3.3
+  - PYTHON_VERSION: python-3.3
     FRAMEWORK: django-1.10
-  - PYTHON_VERSION: python:3.3
+  - PYTHON_VERSION: python-3.3
     FRAMEWORK: django-1.11
-  - PYTHON_VERSION: python:3.3
+  - PYTHON_VERSION: python-3.3
     FRAMEWORK: django-2.0
-  - PYTHON_VERSION: python:3.3
+  - PYTHON_VERSION: python-3.3
     FRAMEWORK: django-master
-  - PYTHON_VERSION: python:3.4
+  - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-master
-  - PYTHON_VERSION: pypy:2
+  - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-2.0
-  - PYTHON_VERSION: pypy:2
+  - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-master
-  - PYTHON_VERSION: pypy:3
+  - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
