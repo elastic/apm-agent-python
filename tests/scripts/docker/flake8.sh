@@ -2,16 +2,20 @@
 
 set -e
 
-pip_cache="$HOME/.cache/pip"
-docker_pip_cache="/app/.cache/pip"
+pip_cache="$HOME/.cache"
+docker_pip_cache="/tmp/cache/pip"
+
+cd tests
 
 docker build --build-arg PYTHON_IMAGE=python:3.6 -t lint_flake8 .
 docker run \
+  -e LOCAL_USER_ID=$UID \
   -e PIP_CACHE=${docker_pip_cache} \
-  -v ${pip_cache}:${docker_pip_cache} \
+  -v ${pip_cache}:$(dirname ${docker_pip_cache}) \
+  -v "$(dirname $(pwd))":/app \
   -w /app \
   --rm lint_flake8 \
   /bin/bash \
-  -c "pip install -U pip
-      pip install -r tests/requirements/lint-flake8.txt --cache-dir ${docker_pip_cache}
-      make flake8"
+  -c "pip install --user -U pip
+      pip install --user -r tests/requirements/lint-flake8.txt --cache-dir ${docker_pip_cache}
+      /home/user/.local/bin/flake8 elasticapm"
