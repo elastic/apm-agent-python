@@ -335,3 +335,17 @@ If set to `True`, the agent won't send any events to the APM server, independent
 
 If set to `True`, the agent won't instrument any code.
 This disables most of the tracing functionality, but can be useful to debug possible instrumentation issues.
+
+
+[float]
+[[config-verify-server-cert]]
+==== `verify_server_cert`
+|============
+| Environment                 | Django/Flask   | Default
+| `ELASTIC_APM_VERIFY_SERVER_CERT`  | `VERIFY_SERVER_CERT` | `True`
+|============
+
+By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM server.
+Verification can be disabled by changing this setting to `False`.
+
+NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python 3.4.3+.

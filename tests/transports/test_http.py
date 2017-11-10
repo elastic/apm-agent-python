@@ -1,4 +1,5 @@
 import socket
+import sys
 
 import mock
 import pytest
@@ -31,6 +32,22 @@ def test_http_error(httpserver):
         transport.send(compat.b('x'), {})
     for val in (httpserver.url, 418, "I'm a teapot"):
         assert str(val) in str(exc_info.value)
+
+
+@pytest.mark.skipif(compat.PY3 and sys.version_info[:2] < (3,4), reason="Not supported in Python 3.3")
+def test_ssl_verify_fails(httpsserver):
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = HTTPTransport(compat.urlparse.urlparse(httpsserver.url))
+    with pytest.raises(TransportException) as exc_info:
+        url = transport.send(compat.b('x'), {})
+    assert 'CERTIFICATE_VERIFY_FAILED' in str(exc_info)
+
+
+def test_ssl_verify_disable(httpsserver):
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'https://example.com/foo'})
+    transport = HTTPTransport(compat.urlparse.urlparse(httpsserver.url), verify_certificate=False)
+    url = transport.send(compat.b('x'), {})
+    assert url == 'https://example.com/foo'
 
 
 @mock.patch('elasticapm.transport.http.urlopen')
