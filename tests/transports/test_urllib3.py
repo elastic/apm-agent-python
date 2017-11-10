@@ -17,12 +17,10 @@ except ImportError:
 responses = Responses('urllib3')
 
 
-@responses.activate
-def test_send():
-    transport = Urllib3Transport(urlparse.urlparse('http://localhost'))
-    responses.add('POST', '/', status=202,
-                  adding_headers={'Location': 'http://example.com/foo'})
-    url = transport.send('x', {})
+def test_send(httpserver):
+    httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = Urllib3Transport(urlparse.urlparse(httpserver.url))
+    url = transport.send(compat.b('x'), {})
     assert url == 'http://example.com/foo'
 
 
@@ -36,17 +34,13 @@ def test_timeout():
     assert 'timeout' in str(exc_info.value)
 
 
-@responses.activate
-def test_http_error():
-    url, status, body = (
-        'http://localhost:9999', 418, 'Nothing'
-    )
-    transport = Urllib3Transport(urlparse.urlparse(url))
-    responses.add('POST', '/', status=status, body=body)
+def test_http_error(httpserver):
+    httpserver.serve_content(code=418, content="I'm a teapot")
+    transport = Urllib3Transport(urlparse.urlparse(httpserver.url))
 
     with pytest.raises(TransportException) as exc_info:
         transport.send('x', {})
-    for val in (status, body):
+    for val in (418, "I'm a teapot"):
         assert str(val) in str(exc_info.value)
 
 

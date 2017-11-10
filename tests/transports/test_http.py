@@ -8,16 +8,11 @@ from elasticapm.transport.http import HTTPTransport
 from elasticapm.utils import compat
 
 
-@mock.patch('elasticapm.transport.http.urlopen')
-def test_send(mock_urlopen):
-    transport = HTTPTransport(compat.urlparse.urlparse('http://localhost:9999'))
-    mock_response = mock.Mock(
-        info=lambda: {'Location': 'http://example.com/foo'}
-    )
-    mock_urlopen.return_value = mock_response
-    url = transport.send('x', {})
+def test_send(httpserver):
+    httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = HTTPTransport(compat.urlparse.urlparse(httpserver.url))
+    url = transport.send(compat.b('x'), {})
     assert url == 'http://example.com/foo'
-    assert mock_response.close.call_count == 1
 
 
 @mock.patch('elasticapm.transport.http.urlopen')
@@ -29,18 +24,12 @@ def test_timeout(mock_urlopen):
     assert 'timeout' in str(exc_info.value)
 
 
-@mock.patch('elasticapm.transport.http.urlopen')
-def test_http_error(mock_urlopen):
-    url, status, message, body = (
-        'http://localhost:9999', 418, "I'm a teapot", 'Nothing'
-    )
-    transport = HTTPTransport(compat.urlparse.urlparse(url))
-    mock_urlopen.side_effect = compat.HTTPError(
-        url, status, message, hdrs={}, fp=compat.StringIO(body)
-    )
+def test_http_error(httpserver):
+    httpserver.serve_content(code=418, content="I'm a teapot")
+    transport = HTTPTransport(compat.urlparse.urlparse(httpserver.url))
     with pytest.raises(TransportException) as exc_info:
-        transport.send('x', {})
-    for val in (url, status, message, body):
+        transport.send(compat.b('x'), {})
+    for val in (httpserver.url, 418, "I'm a teapot"):
         assert str(val) in str(exc_info.value)
 
 
