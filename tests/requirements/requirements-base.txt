@@ -5,8 +5,9 @@ pytest-django==3.1.2
 coverage==4.4.1
 pytest-cov==2.5.1
 pytest-mock
-
+pytest-localserver==0.3.7
 pytest-benchmark==3.1.1
+
 docutils==0.14
 pathlib==1.0.1
 py-cpuinfo==3.3.0

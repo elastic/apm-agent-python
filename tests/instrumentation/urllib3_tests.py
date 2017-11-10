@@ -1,44 +1,22 @@
-import threading
-
 import mock
-import pytest
 import urllib3
 
 from elasticapm.traces import trace
-
-try:
-    from http import server as SimpleHTTPServer
-    from socketserver import TCPServer
-except ImportError:
-    import SimpleHTTPServer
-    from SocketServer import TCPServer
-
-
-class MyTCPServer(TCPServer):
-    allow_reuse_address = True
-
-
-@pytest.fixture(scope='module')
-def tcp_server():
-    handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-    httpd = MyTCPServer(("", 0), handler)
-    httpd_thread = threading.Thread(target=httpd.serve_forever)
-    httpd_thread.setDaemon(True)
-    httpd_thread.start()
-    yield ('localhost', httpd.socket.getsockname()[1])
-    httpd.shutdown()
+from elasticapm.utils.compat import urlparse
 
 
 @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_urllib3(should_collect, elasticapm_client, tcp_server):
+def test_urllib3(should_collect, elasticapm_client, httpserver):
     should_collect.return_value = False
-    host, port = tcp_server
+    httpserver.serve_content('')
+    url = httpserver.url + '/hello_world'
+    parsed_url = urlparse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
-    expected_sig = 'GET {0}:{1}'.format(host, port)
+    expected_sig = 'GET {0}'.format(parsed_url.netloc)
     with trace("test_pipeline", "test"):
         pool = urllib3.PoolManager(timeout=0.1)
 
-        url = 'http://{0}:{1}/hello_world'.format(host, port)
+        url = 'http://{0}/hello_world'.format(parsed_url.netloc)
         r = pool.request('GET', url)
 
     elasticapm_client.end_transaction("MyView")
