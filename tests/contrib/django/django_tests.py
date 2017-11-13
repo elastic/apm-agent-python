@@ -628,6 +628,7 @@ def test_transaction_request_response_data(django_elasticapm_client, client):
     transactions = django_elasticapm_client.instrumentation_store.get_all()
     assert len(transactions) == 1
     transaction = transactions[0]
+    assert transaction['result'] == 'HTTP 2xx'
     assert 'request' in transaction['context']
     request = transaction['context']['request']
     assert request['method'] == 'GET'
@@ -660,7 +661,7 @@ def test_transaction_metrics(django_elasticapm_client, client):
         assert len(transactions) == 1
         transaction = transactions[0]
         assert transaction['duration'] > 0
-        assert transaction['result'] == '200'
+        assert transaction['result'] == 'HTTP 2xx'
         assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
 
 
@@ -688,6 +689,7 @@ def test_request_metrics_301_append_slash(django_elasticapm_client, client):
         # django 1.9+
         'GET django.middleware.common.CommonMiddleware.process_response',
     )
+    assert transactions[0]['result'] == 'HTTP 3xx'
 
 
 def test_request_metrics_301_prepend_www(django_elasticapm_client, client):
@@ -709,6 +711,7 @@ def test_request_metrics_301_prepend_www(django_elasticapm_client, client):
         client.get(reverse('elasticapm-no-error'))
     transactions = django_elasticapm_client.instrumentation_store.get_all()
     assert transactions[0]['name'] == 'GET django.middleware.common.CommonMiddleware.process_request'
+    assert transactions[0]['result'] == 'HTTP 3xx'
 
 
 @pytest.mark.django_db
@@ -733,6 +736,7 @@ def test_request_metrics_contrib_redirect(django_elasticapm_client, client):
 
     transactions = django_elasticapm_client.instrumentation_store.get_all()
     assert transactions[0]['name'] == 'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware.process_response'
+    assert transactions[0]['result'] == 'HTTP 3xx'
 
 
 def test_request_metrics_name_override(django_elasticapm_client, client):
@@ -904,6 +908,7 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
     transactions = django_elasticapm_client.instrumentation_store.get_all()
     assert len(transactions) == 1
     transaction = transactions[0]
+    assert transaction['result'] == 'HTTP 2xx'
     traces = transaction['traces']
     assert len(traces) == 2, [t['name'] for t in traces]
 
@@ -936,6 +941,7 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
     assert resp.status_code == 200
 
     transactions = django_elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['result'] == 'HTTP 2xx'
     traces = transactions[0]['traces']
 
     expected_signatures = ['transaction', 'list_users.html',
@@ -967,6 +973,7 @@ def test_perf_template_render(benchmark, client, django_elasticapm_client):
     assert len(transactions) == len(responses)
     for transaction in transactions:
         assert len(transaction['traces']) == 2
+        assert transaction['result'] == 'HTTP 2xx'
 
 
 @pytest.mark.parametrize('django_elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)

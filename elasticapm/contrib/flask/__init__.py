@@ -136,7 +136,11 @@ class ElasticAPM(object):
         response_data = get_data_from_response(response)
         self.client.set_transaction_extra_data(request_data, 'request')
         self.client.set_transaction_extra_data(response_data, 'response')
-        self.client.end_transaction(rule, response.status_code)
+        if response.status_code:
+            result = 'HTTP {}xx'.format(response.status_code // 100)
+        else:
+            result = response.status
+        self.client.end_transaction(rule, result)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'
