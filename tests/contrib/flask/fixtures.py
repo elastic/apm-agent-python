@@ -20,6 +20,10 @@ def flask_app():
         response.headers.add('bar', 'bazzinga')
         return response
 
+    @app.route('/non-standard-status/', methods=['GET', 'POST'])
+    def non_standard_status():
+        return "foo", 'fail'
+
     return app
 
 

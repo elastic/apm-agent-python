@@ -190,7 +190,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     self.client.set_transaction_extra_data(
                         user_data, 'user')
 
-                self.client.end_transaction(transaction_name, status_code)
+                self.client.end_transaction(transaction_name, 'HTTP {}xx'.format(status_code // 100))
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',

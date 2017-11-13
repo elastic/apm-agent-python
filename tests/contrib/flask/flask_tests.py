@@ -110,6 +110,7 @@ def test_instrumentation(flask_apm_client):
     assert len(transactions) == 1
     transaction = transactions[0]
     assert transaction['type'] == 'request'
+    assert transaction['result'] == 'HTTP 2xx'
     assert 'request' in transaction['context']
     assert transaction['context']['request']['url']['raw'] == 'http://localhost/users/'
     assert transaction['context']['request']['method'] == 'POST'
@@ -142,9 +143,21 @@ def test_instrumentation_404(flask_apm_client):
 
     assert len(transactions) == 1
     traces = transactions[0]['traces']
-    print(transactions[0])
-    assert transactions[0]['result'] == '404'
+    assert transactions[0]['result'] == 'HTTP 4xx'
+    assert transactions[0]['context']['response']['status_code'] == 404
     assert len(traces) == 0, [t["signature"] for t in traces]
+
+
+def test_non_standard_http_status(flask_apm_client):
+    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
+        should_collect.return_value = False
+        resp = flask_apm_client.app.test_client().get('/non-standard-status/')
+    assert resp.status == "0 fail", resp.response
+    assert resp.status_code == 0, resp.response
+
+    transactions = flask_apm_client.client.instrumentation_store.get_all()
+    assert transactions[0]['result'] == '0 fail'  # "0" is prepended by Werkzeug BaseResponse
+    assert transactions[0]['context']['response']['status_code'] == 0
 
 
 def test_framework_name(flask_app):
