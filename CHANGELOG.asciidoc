@@ -6,10 +6,17 @@
 [[changelog]]
 == Changelog
 
-[[release-next]]
+//[[release-next]]
+//[float]
+//=== Unreleased
+//https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...master[Check the HEAD diff]
+
+
+[[release-v1.0.0.dev3]]
 [float]
-=== Unreleased
-https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2\...master[Check the HEAD diff]
+=== v1.0.0.dev3
+
+https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2\...v1.0.0.dev2[Check the diff]
 
 
  * added a background thread to process the transactions queue every 60 seconds (configurable) ({pull}68[#68])
