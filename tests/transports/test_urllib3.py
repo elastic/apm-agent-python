@@ -43,6 +43,21 @@ def test_http_error(httpserver):
     for val in (418, "I'm a teapot"):
         assert str(val) in str(exc_info.value)
 
+def test_ssl_verify_fails(httpsserver):
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = Urllib3Transport(compat.urlparse.urlparse(httpsserver.url))
+    with pytest.raises(TransportException) as exc_info:
+        url = transport.send(compat.b('x'), {})
+    assert 'CERTIFICATE_VERIFY_FAILED' in str(exc_info)
+
+
+@pytest.mark.filterwarnings('ignore:Unverified HTTPS')
+def test_ssl_verify_disable(httpsserver):
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'https://example.com/foo'})
+    transport = Urllib3Transport(compat.urlparse.urlparse(httpsserver.url), verify_certificate=False)
+    url = transport.send(compat.b('x'), {})
+    assert url == 'https://example.com/foo'
+
 
 @responses.activate
 def test_generic_error():

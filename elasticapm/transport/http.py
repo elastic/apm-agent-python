@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import socket
+import ssl
 
 from elasticapm.conf import defaults
 from elasticapm.contrib.async_worker import AsyncWorker
@@ -21,11 +22,22 @@ class HTTPTransport(Transport):
 
     scheme = ['http', 'https']
 
-    def __init__(self, parsed_url):
+    def __init__(self, parsed_url, verify_certificate=True):
         self.check_scheme(parsed_url)
 
         self._parsed_url = parsed_url
         self._url = parsed_url.geturl()
+        self._verify_certificate = verify_certificate
+        if self._parsed_url.scheme == 'https' and hasattr(ssl, 'PROTOCOL_TLS'):  # not available before 2.7.9 / 3.4.3
+            self._ssl_ctx = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
+            if verify_certificate:
+                self._ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+                self._ssl_ctx.check_hostname = True
+            else:
+                self._ssl_ctx.verify_mode = ssl.CERT_NONE
+                self._ssl_ctx.check_hostname = False
+        else:
+            self._ssl_ctx = None
 
     def send(self, data, headers, timeout=None):
         """
@@ -34,14 +46,14 @@ class HTTPTransport(Transport):
         Returns the shortcut URL of the recorded error on Elastic APM
         """
         req = Request(self._url, headers=headers)
+        urlopen_kwargs = {}
+        if self._ssl_ctx:
+            urlopen_kwargs['context'] = self._ssl_ctx
         if timeout is None:
             timeout = defaults.TIMEOUT
         response = None
         try:
-            try:
-                response = urlopen(req, data, timeout)
-            except TypeError:
-                response = urlopen(req, data)
+            response = urlopen(req, data, timeout, **urlopen_kwargs)
         except Exception as e:
             print_trace = True
             if isinstance(e, socket.timeout):
