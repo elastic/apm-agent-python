@@ -74,6 +74,7 @@ matrix:
     script: pip install cibuildwheel==0.6.0 && mkdir -p wheelhouse/${TRAVIS_TAG} && cibuildwheel --output-dir wheelhouse/
     env:
       - CIBW_ENVIRONMENT="PIP_CACHE=/host/.pip"
+      - CIBW_BEFORE_BUILD="rm -rf build elastic_apm.egg-info tests"
 #      - CIBW_TEST_REQUIRES="pytest pytest-django mock pytest-catchlog"
 #      - CIBW_BEFORE_BUILD="yum -y install zeromq-devel libevent-devel && {pip} install -r tests/requirements/requirements-base.txt --cache-dir /host/.pip"
 #      - CIBW_TEST_COMMAND="cd {project} && py.test -m 'not integrationtest' {project}/tests --ignore={project}/tests/asyncio"
