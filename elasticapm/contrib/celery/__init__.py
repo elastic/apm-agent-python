@@ -45,7 +45,7 @@ def register_instrumentation(client):
 
     def end_transaction(task_id, task, *args, **kwargs):
         name = get_name_from_func(task)
-        client.end_transaction(name, 200)
+        client.end_transaction(name, kwargs.get('state', 'None'))
 
     dispatch_uid = 'elasticapm-tracing-%s'
 
