@@ -6,11 +6,13 @@
 [[changelog]]
 == Changelog
 
-//[[release-next]]
-//[float]
-//=== Unreleased
-//https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...master[Check the HEAD diff]
 
+[[release-next]]
+[float]
+=== Unreleased
+https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...master[Check the HEAD diff]
+
+ * added `max-event-queue-length` setting. ({pull}67[#67])
 
 [[release-v1.0.0.dev3]]
 [float]
@@ -27,6 +29,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2\...v1.0.0.dev2[C
  * added normalization of HTTP status codes into classes for the `transaction.result` field. A HTTP status of `200`
    will be turned into `HTTP 2xx`. The unchanged status code is still available in `context.response.status_code`.
    ({pull}85[#85])
+
 
 [[release-v1.0.0.dev2]]
 [float]
