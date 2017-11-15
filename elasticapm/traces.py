@@ -151,9 +151,10 @@ class Trace(object):
 
 
 class TransactionsStore(object):
-    def __init__(self, get_frames, collect_frequency, ignore_patterns=None):
+    def __init__(self, get_frames, collect_frequency, max_queue_length=None, ignore_patterns=None):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
+        self.max_queue_length = max_queue_length
         self._get_frames = get_frames
         self._transactions = []
         self._last_collect = _time_func()
@@ -174,7 +175,8 @@ class TransactionsStore(object):
         return transactions
 
     def should_collect(self):
-        return (_time_func() - self._last_collect) >= self.collect_frequency
+        return ((self.max_queue_length and len(self._transactions) >= self.max_queue_length) or
+                (_time_func() - self._last_collect) >= self.collect_frequency)
 
     def __len__(self):
         with self.cond:

@@ -129,6 +129,7 @@ class Client(object):
         self.instrumentation_store = TransactionsStore(
             lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
             self.config.traces_send_frequency,
+            self.config.max_event_queue_length,
             self.config.transactions_ignore_patterns
         )
         compat.atexit_register(self.close)
