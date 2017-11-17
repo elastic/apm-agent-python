@@ -15,6 +15,8 @@ import sys
 from elasticapm.utils import compat
 from elasticapm.utils.encoding import transform
 
+_mod_cache = {}
+
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
 
 
@@ -150,6 +152,7 @@ def iter_stack_frames(frames=None):
         for frame, in_app in frames:
             yield frame, frame.f_lineno
 
+
 def get_frame_info(frame, lineno, extended=True):
     # Support hidden frames
     f_locals = getattr(frame, 'f_locals', {})
@@ -173,11 +176,14 @@ def get_frame_info(frame, lineno, extended=True):
 
     # Try to pull a relative file path
     # This changes /foo/site-packages/baz/bar.py into baz/bar.py
-    try:
-        base_filename = sys.modules[module_name.split('.', 1)[0]].__file__
-        filename = abs_path.split(base_filename.rsplit('/', 2)[0], 1)[-1][1:]
-    except Exception:
-        filename = abs_path
+    filename = _mod_cache.get(abs_path)
+    if not filename:
+        try:
+            base_filename = sys.modules[module_name.split('.', 1)[0]].__file__
+            filename = abs_path.split(base_filename.rsplit('/', 2)[0], 1)[-1][1:]
+        except Exception:
+            filename = abs_path
+        _mod_cache[abs_path] = filename
 
     if not filename:
         filename = abs_path
