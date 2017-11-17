@@ -160,7 +160,6 @@ def get_frame_info(frame, lineno, extended=True):
         return None
 
     f_globals = getattr(frame, 'f_globals', {})
-    loader = f_globals.get('__loader__')
     module_name = f_globals.get('__name__')
 
     try:
@@ -196,12 +195,13 @@ def get_frame_info(frame, lineno, extended=True):
     }
 
     if extended:
+        loader = f_globals.get('__loader__')
         if lineno is not None and abs_path:
             pre_context, context_line, post_context = get_lines_from_file(
                 abs_path, lineno, 3, loader, module_name)
         else:
             pre_context, context_line, post_context = [], None, []
-
+        f_locals = getattr(frame, 'f_locals', {})
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of
             # f_locals that are not actually dictionaries
