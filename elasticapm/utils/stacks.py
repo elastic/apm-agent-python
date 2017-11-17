@@ -163,11 +163,10 @@ def get_frame_info(frame, lineno, extended=True):
     loader = f_globals.get('__loader__')
     module_name = f_globals.get('__name__')
 
-    f_code = getattr(frame, 'f_code', None)
-    if f_code:
+    try:
         abs_path = frame.f_code.co_filename
         function = frame.f_code.co_name
-    else:
+    except AttributeError:
         abs_path = None
         function = None
 
