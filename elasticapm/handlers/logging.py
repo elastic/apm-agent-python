@@ -82,9 +82,9 @@ class LoggingHandler(logging.Handler):
             last_mod = ''
             for item in stack:
                 if isinstance(item, (list, tuple)):
-                    frame, lineno = item
+                    frame, lineno, in_app, extended = item
                 else:
-                    frame, lineno = item, item.f_lineno
+                    frame, lineno, in_app, extended = item, item.f_lineno, False, True
 
                 if not started:
                     f_globals = getattr(frame, 'f_globals', {})
@@ -96,7 +96,7 @@ class LoggingHandler(logging.Handler):
                     else:
                         last_mod = module_name
                         continue
-                frames.append((frame, lineno))
+                frames.append((frame, lineno, in_app, extended))
             stack = frames
 
         extra = getattr(record, 'data', {})

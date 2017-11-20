@@ -12,6 +12,7 @@ Large portions are
 from __future__ import absolute_import
 
 import datetime
+import itertools
 import logging
 import os
 import platform
@@ -129,7 +130,12 @@ class Client(object):
         self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         self.instrumentation_store = TransactionsStore(
-            lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
+            # we consume the iterator here to ensure that we get the correct stack trace
+            lambda: self.get_stack_info_for_trace(list(iter_stack_frames(
+                in_app_include_paths=self.config.include_paths,
+                in_app_exclude_paths=self.config.exclude_paths,
+                extended=False,
+            ))),
             self.config.traces_send_frequency,
             self.config.max_event_queue_length,
             self.config.transactions_ignore_patterns
@@ -148,12 +154,12 @@ class Client(object):
     def get_handler(self, name):
         return import_string(name)
 
-    def get_stack_info_for_trace(self, frames, extended=True):
+    def get_stack_info_for_trace(self, frames):
         """Overrideable in derived clients to add frames/info, e.g. templates
 
         4.0: Use for error frames too.
         """
-        return stacks.get_stack_info(frames, extended)
+        return itertools.starmap(stacks.get_frame_info, frames)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
                               extra=None, stack=None,
@@ -198,7 +204,7 @@ class Client(object):
                 frames = iter_stack_frames()
             else:
                 frames = stack
-            frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(frames))
+            frames = varmap(lambda k, v: shorten(v), list(stacks.get_stack_info(frames)))
             log['stacktrace'] = frames
 
         if 'stacktrace' in log and not culprit:

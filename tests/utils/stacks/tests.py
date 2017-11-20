@@ -44,8 +44,8 @@ def test_bad_locals_in_frame():
     frame.f_globals = {}
     frame.f_code.co_filename = __file__.replace('.pyc', '.py')
     frame.f_code.co_name = __name__
-    frames = [(frame, 1)]
-    results = get_stack_info(frames)
+    frames = [(frame, 1, False, True)]
+    results = list(get_stack_info(frames))
     assert len(results) == 1
     result = results[0]
     assert 'vars' in result

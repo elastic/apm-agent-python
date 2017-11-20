@@ -9,6 +9,7 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 import inspect
+import itertools
 import re
 import sys
 
@@ -16,6 +17,7 @@ from elasticapm.utils import compat
 from elasticapm.utils.encoding import transform
 
 _mod_cache = {}
+_in_app_cache = {}
 
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
 
@@ -122,7 +124,7 @@ def to_dict(dictish):
     return dict((k, dictish[k]) for k in m())
 
 
-def iter_traceback_frames(tb):
+def iter_traceback_frames(tb, in_app_include_paths=None, in_app_exclude_paths=None, extended=True):
     """
     Given a traceback object, it will iterate over all
     frames that do not contain the ``__traceback_hide__``
@@ -133,11 +135,12 @@ def iter_traceback_frames(tb):
         # to hide internal frames.
         f_locals = getattr(tb.tb_frame, 'f_locals', {})
         if not _getitem_from_frame(f_locals, '__traceback_hide__'):
-            yield tb.tb_frame, getattr(tb, 'tb_lineno', None)
+            in_app = _is_in_app(tb.tb_frame, in_app_include_paths, in_app_exclude_paths)
+            yield tb.tb_frame, getattr(tb, 'tb_lineno', None), in_app, extended
         tb = tb.tb_next
 
 
-def iter_stack_frames(frames=None):
+def iter_stack_frames(frames=None, in_app_include_paths=None, in_app_exclude_paths=None, extended=True):
     """
     Given an optional list of frames (defaults to current stack),
     iterates over all frames that do not contain the ``__traceback_hide__``
@@ -146,22 +149,16 @@ def iter_stack_frames(frames=None):
     if not frames:
         frame = inspect.currentframe()
         while frame:
-            yield frame, frame.f_lineno
+            in_app = _is_in_app(frame, in_app_include_paths, in_app_exclude_paths)
+            yield frame, frame.f_lineno, in_app, extended
             frame = frame.f_back
     else:
         for frame, in_app in frames:
-            yield frame, frame.f_lineno
+            in_app = _is_in_app(frame, in_app_include_paths, in_app_exclude_paths)
+            yield frame, frame.f_lineno, in_app, extended
 
 
-def get_frame_info(frame, lineno, extended=True):
-    # Support hidden frames
-    f_locals = getattr(frame, 'f_locals', {})
-    if _getitem_from_frame(f_locals, '__traceback_hide__'):
-        return None
-
-    f_globals = getattr(frame, 'f_globals', {})
-    module_name = f_globals.get('__name__')
-
+def get_frame_info(frame, lineno, in_app=False, extended=False):
     try:
         abs_path = frame.f_code.co_filename
         function = frame.f_code.co_name
@@ -171,6 +168,9 @@ def get_frame_info(frame, lineno, extended=True):
 
     if lineno:
         lineno -= 1
+
+    f_globals = getattr(frame, 'f_globals', {})
+    module_name = f_globals.get('__name__')
 
     # Try to pull a relative file path
     # This changes /foo/site-packages/baz/bar.py into baz/bar.py
@@ -185,13 +185,13 @@ def get_frame_info(frame, lineno, extended=True):
 
     if not filename:
         filename = abs_path
-
     frame_result = {
         'abs_path': abs_path,
         'filename': filename,
         'module': module_name,
         'function': function,
         'lineno': lineno + 1,
+        'in_app': in_app,
     }
 
     if extended:
@@ -220,7 +220,7 @@ def get_frame_info(frame, lineno, extended=True):
     return frame_result
 
 
-def get_stack_info(frames, extended=True):
+def get_stack_info(frames):
     """
     Given a list of frames, returns a list of stack information
     dictionary objects that are JSON-ready.
@@ -229,9 +229,23 @@ def get_stack_info(frames, extended=True):
     _Frame class do not contain the necessary data to lookup all
     of the information we want.
     """
-    results = []
-    for frame, lineno in frames:
-        result = get_frame_info(frame, lineno, extended)
-        if result:
-            results.append(result)
-    return results
+
+    return itertools.starmap(get_frame_info, frames)
+
+
+def _is_in_app(frame_obj, include_paths=None, exclude_paths=None):
+    module_name = getattr(frame_obj, 'f_globals', {}).get('__name__', None)
+    if not module_name:
+        return
+    key = (module_name, id(include_paths), id(exclude_paths))
+    val = _in_app_cache.get(key)
+    if val is None:
+        include_paths = include_paths if include_paths is not None else []
+        exclude_paths = exclude_paths if exclude_paths is not None else []
+        module_name = getattr(frame_obj, 'f_globals', {}).get('__name__', None)
+        val = bool(
+            any(module_name == path or module_name.startswith(path + '.') for path in include_paths) and
+            not any(module_name == path or module_name.startswith(path + '.') for path in exclude_paths)
+        )
+        _in_app_cache[key] = val
+    return val
