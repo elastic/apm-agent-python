@@ -218,7 +218,7 @@ class DjangoClient(Client):
                 frame['module'].startswith('elasticapm.') or
                 frame['module'] == 'contextlib'
             )
-        return itertools.dropwhile(discard_test, iterate_with_template_sources(frames))
+        return itertools.dropwhile(discard_test, iterate_with_template_sources(self, frames))
 
     def send(self, url, **kwargs):
         """

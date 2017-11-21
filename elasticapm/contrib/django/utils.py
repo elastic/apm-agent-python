@@ -77,9 +77,11 @@ def get_data_from_template_debug(template_debug):
     }
 
 
-def iterate_with_template_sources(frames):
+def iterate_with_template_sources(client, frames):
     template = None
-    for frame, lineno, in_app, extended in frames:
+    include_paths = client.include_paths_re
+    exclude_paths = client.exclude_paths_re
+    for frame, lineno, extended in frames:
         f_code = getattr(frame, 'f_code', None)
         if f_code:
             function = frame.f_code.co_name
@@ -104,4 +106,7 @@ def iterate_with_template_sources(frames):
                         yield template
                         template = None
 
-        yield get_frame_info(frame, lineno, in_app, extended)
+        yield get_frame_info(frame, lineno,
+                             extended=extended,
+                             include_paths_regex=include_paths,
+                             exclude_paths_regex=exclude_paths)

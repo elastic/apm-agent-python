@@ -75,10 +75,8 @@ class Exception(BaseEvent):
 
             frames = varmap(
                 lambda k, v: shorten(v),
-                list(get_stack_info((iter_traceback_frames(
+                list(get_stack_info(client, (iter_traceback_frames(
                     exc_traceback,
-                    client.config.include_paths,
-                    client.config.exclude_paths,
                     extended=True
                 ))))
             )
