@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-import inspect
-
-from mock import Mock
 import pytest
+from mock import Mock
 
-from elasticapm.utils import compat
-from elasticapm.utils import stacks
-
+from elasticapm.utils import compat, stacks
 from tests.utils.stacks import get_me_a_test_frame
 
 
@@ -91,3 +87,20 @@ def test_get_frame_info():
     assert frame_info['lineno'] == 6
     assert frame_info['context_line'] == '    return inspect.currentframe()'
     assert frame_info['vars'] == {'a_local_var': 42}
+
+
+def test_traceback_hide(elasticapm_client):
+    def get_me_a_filtered_frame(hide=True):
+        __traceback_hide__ = True
+        if not hide:
+            del __traceback_hide__
+
+        return list(stacks.iter_stack_frames())
+
+    # hide frame from `get_me_a_filtered_frame
+    frames = list(stacks.get_stack_info(elasticapm_client, get_me_a_filtered_frame(True)))
+    assert frames[0]['function'] == 'test_traceback_hide'
+
+    # don't hide it:
+    frames = list(stacks.get_stack_info(elasticapm_client, get_me_a_filtered_frame(False)))
+    assert frames[0]['function'] == 'get_me_a_filtered_frame'

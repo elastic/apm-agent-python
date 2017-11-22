@@ -147,7 +147,7 @@ def iter_stack_frames(frames=None, extended=True):
     local variable.
     """
     if not frames:
-        frame = inspect.currentframe()
+        frame = inspect.currentframe().f_back
         while frame:
             f_locals = getattr(frame, 'f_locals', {})
             if not _getitem_from_frame(f_locals, '__traceback_hide__'):
@@ -155,7 +155,9 @@ def iter_stack_frames(frames=None, extended=True):
             frame = frame.f_back
     else:
         for frame in frames:
-            yield frame, frame.f_lineno, extended
+            f_locals = getattr(frame, 'f_locals', {})
+            if not _getitem_from_frame(f_locals, '__traceback_hide__'):
+                yield frame, frame.f_lineno, extended
 
 
 def get_frame_info(frame, lineno, extended=False, include_paths_regex=None, exclude_paths_regex=None):
