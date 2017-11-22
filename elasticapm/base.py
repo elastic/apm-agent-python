@@ -532,7 +532,7 @@ class Client(object):
             'name': self.config.app_name,
             'version': self.config.app_version,
             'agent': {
-                'name': 'elasticapm-python',
+                'name': 'python',
                 'version': elasticapm.VERSION,
             },
             'argv': sys.argv,

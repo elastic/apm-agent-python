@@ -65,6 +65,7 @@ def test_app_info(elasticapm_client):
         'name': 'python',
         'version': platform.python_version()
     }
+    assert app_info['agent']['name'] == 'python'
 
 
 def test_system_info(elasticapm_client):

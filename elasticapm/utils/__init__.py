@@ -81,12 +81,14 @@ def get_url_dict(url):
         hostname, port = netloc.split(':')
     else:
         hostname, port = (netloc, None)
-    return {
+    url_dict = {
         'raw': url,
         'protocol': scheme + ':',
         'hostname': hostname,
-        'port': port,
         'pathname': path,
-        'search': query,
-        'hash': fragment,
     }
+    if port:
+        url_dict['port'] = port
+    if query:
+        url_dict['search'] = '?' + query
+    return url_dict

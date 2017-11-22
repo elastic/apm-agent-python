@@ -446,7 +446,6 @@ def test_404_middleware(django_elasticapm_client, client):
         request = event['context']['request']
         assert request['url']['raw'] == u'http://testserver/non-existant-page'
         assert request['method'] == 'GET'
-        assert request['url']['search'] == ''
         assert request['body'] == None
 
 
