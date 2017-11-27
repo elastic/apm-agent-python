@@ -19,7 +19,6 @@ import socket
 import sys
 import threading
 import time
-import warnings
 import zlib
 
 import elasticapm
@@ -106,6 +105,13 @@ class Client(object):
         self.logger = logging.getLogger('%s.%s' % (cls.__module__, cls.__name__))
         self.error_logger = logging.getLogger('elasticapm.errors')
         self.state = ClientState()
+
+        self.instrumentation_store = None
+        self.processors = []
+        self.filter_exception_types_dict = {}
+        self._send_timer = None
+        self._transports = {}
+
         self.config = Config(config, default_dict=defaults)
         if self.config.errors:
             for msg in self.config.errors.values():
@@ -113,12 +119,8 @@ class Client(object):
             self.config.disable_send = True
             return
 
-        self._send_timer = None
-
         self._transport_class = import_string(self.config.transport_class)
-        self._transports = {}
 
-        self.filter_exception_types_dict = {}
         for exc_to_filter in (self.config.filter_exception_types or []):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
             exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
@@ -283,24 +285,9 @@ class Client(object):
         data = self.build_msg_for_logging(event_type, data, date, extra, stack, **kwargs)
 
         if data:
-            server = self.config.server + defaults.ERROR_API_PATH
-            self.send(server=server, **data)
+            url = self.config.server_url + defaults.ERROR_API_PATH
+            self.send(url, **data)
             return data['errors'][0]['id']
-
-    def _send_remote(self, url, data, headers=None):
-        if headers is None:
-            headers = {}
-        parsed = compat.urlparse.urlparse(url)
-        transport = self._get_transport(parsed)
-        if transport.async_mode:
-            transport.send_async(
-                data, headers,
-                success_callback=self.handle_transport_success,
-                fail_callback=self.handle_transport_fail
-            )
-        else:
-            url = transport.send(data, headers, timeout=self.config.timeout)
-            self.handle_transport_success(url=url)
 
     def _get_log_message(self, data):
         # decode message so we can show the actual event
@@ -347,53 +334,50 @@ class Client(object):
                 return True
         return False
 
-    def send_remote(self, url, data, headers=None):
-        if not self.state.should_try():
-            message = self._get_log_message(data)
-            self.error_logger.error(message)
-            return
-        try:
-            self._send_remote(url=url, data=data, headers=headers)
-        except Exception as e:
-            self.handle_transport_fail(exception=e)
-
-    def send(self, secret_token=None, auth_header=None, server=None, **data):
+    def send(self, url, **data):
         """
-        Serializes the message and passes the payload onto ``send_encoded``.
+        Encodes and sends data to remote URL using configured transport
+        :param url: URL of endpoint
+        :param data: dictionary of data to send
         """
 
         if self.config.disable_send or self._filter_exception_type(data):
             return
 
-        message = self.encode(data)
-
-        return self.send_encoded(message, secret_token=secret_token, auth_header=auth_header, server=server)
-
-    def send_encoded(self, message, secret_token, auth_header=None, server=None, **kwargs):
-        """
-        Given an already serialized message, signs the message and passes the
-        payload off to ``send_remote`` for each server specified in the server
-        configuration.
-        """
-        server = server or self.config.server
-        if not server:
-            warnings.warn('elasticapm client has no remote server configured')
-            return
-
-        if not auth_header:
-            if not secret_token:
-                secret_token = self.config.secret_token
-
-            auth_header = "Bearer %s" % secret_token
+        payload = self.encode(data)
 
         headers = {
-            'Authorization': auth_header,
             'Content-Type': 'application/json',
             'Content-Encoding': 'deflate',
             'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
         }
 
-        self.send_remote(url=server, data=message, headers=headers)
+        if self.config.secret_token:
+            headers['Authorization'] = "Bearer %s" % self.config.secret_token
+
+        if not self.state.should_try():
+            message = self._get_log_message(payload)
+            self.error_logger.error(message)
+            return
+        try:
+            self._send_remote(url=url, data=payload, headers=headers)
+        except Exception as e:
+            self.handle_transport_fail(exception=e)
+
+    def _send_remote(self, url, data, headers=None):
+        if headers is None:
+            headers = {}
+        parsed = compat.urlparse.urlparse(url)
+        transport = self._get_transport(parsed)
+        if transport.async_mode:
+            transport.send_async(
+                data, headers,
+                success_callback=self.handle_transport_success,
+                fail_callback=self.handle_transport_fail
+            )
+        else:
+            url = transport.send(data, headers, timeout=self.config.timeout)
+            self.handle_transport_success(url=url)
 
     def encode(self, data):
         """
@@ -465,8 +449,9 @@ class Client(object):
         self._collect_transactions()
         if self._send_timer:
             self._stop_send_timer()
-        for url, transport in self._transports.items():
+        for url, transport in list(self._transports.items()):
             transport.close()
+            self._transports.pop(url)
 
     def handle_transport_success(self, **kwargs):
         """
@@ -496,10 +481,11 @@ class Client(object):
     def _collect_transactions(self):
         self._stop_send_timer()
         transactions = []
-        for transaction in self.instrumentation_store.get_all():
-            for processor in self.processors:
-                transaction = processor(self, transaction)
-            transactions.append(transaction)
+        if self.instrumentation_store:
+            for transaction in self.instrumentation_store.get_all():
+                for processor in self.processors:
+                    transaction = processor(self, transaction)
+                transactions.append(transaction)
         if not transactions:
             return
 
@@ -509,7 +495,7 @@ class Client(object):
 
         api_path = defaults.TRANSACTIONS_API_PATH
 
-        self.send(server=self.config.server + api_path, **data)
+        self.send(self.config.server_url + api_path, **data)
         self._start_send_timer()
 
     def _start_send_timer(self, timeout=None):
@@ -564,5 +550,5 @@ class Client(object):
 
 class DummyClient(Client):
     """Sends messages into an empty void"""
-    def send(self, **kwargs):
+    def send(self, url, **kwargs):
         return None
