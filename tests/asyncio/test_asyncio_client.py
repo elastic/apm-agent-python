@@ -42,13 +42,13 @@ async def test_client_success():
     from elasticapm.contrib.asyncio import Client
 
     client = Client(
-        server='http://localhost',
+        server_url='http://localhost',
         app_name='app_name',
         secret_token='secret',
         transport_class='.'.join(
             (__name__, MockTransport.__name__)),
     )
-    client.send(foo='bar')
+    client.send(client.config.server_url, foo='bar')
     tasks = asyncio.Task.all_tasks()
     task = next(t for t in tasks if t is not asyncio.Task.current_task())
     await task
@@ -63,13 +63,13 @@ async def test_client_failure():
     from elasticapm.transport.base import TransportException
 
     client = Client(
-        server='http://error',
+        server_url='http://error',
         app_name='app_name',
         secret_token='secret',
         transport_class='.'.join(
             (__name__, MockTransport.__name__)),
     )
-    client.send(foo='bar')
+    client.send(client.config.server_url, foo='bar')
     tasks = asyncio.Task.all_tasks()
     task = next(t for t in tasks if t is not asyncio.Task.current_task())
     with pytest.raises(TransportException):
@@ -83,7 +83,7 @@ async def test_client_failure_stdlib_exception(mocker):
     from elasticapm.transport.base import TransportException
 
     client = Client(
-        server='http://elastic.co',
+        server_url='http://elastic.co',
         app_name='app_name',
         secret_token='secret',
         async_mode=False,
@@ -93,7 +93,7 @@ async def test_client_failure_stdlib_exception(mocker):
     mock_client.post = mocker.Mock(side_effect=RuntimeError('oops'))
     transport = client._get_transport(urlparse('http://elastic.co'))
     transport.client = mock_client
-    client.send(foo='bar')
+    client.send(client.config.server_url, foo='bar')
     tasks = asyncio.Task.all_tasks()
     task = next(t for t in tasks if t is not asyncio.Task.current_task())
     with pytest.raises(TransportException):

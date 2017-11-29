@@ -135,7 +135,7 @@ class Config(_ConfigBase):
     app_name = _ConfigValue('APP_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)], required=True)
     secret_token = _ConfigValue('SECRET_TOKEN')
     debug = _BoolConfigValue('DEBUG', default=False)
-    server = _ConfigValue('SERVER', default='http://localhost:8200', required=True)
+    server_url = _ConfigValue('SERVER_URL', default='http://localhost:8200', required=True)
     include_paths = _ListConfigValue('INCLUDE_PATHS')
     exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=['elasticapm'])
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')

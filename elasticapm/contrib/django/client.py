@@ -223,15 +223,15 @@ class DjangoClient(Client):
             i += 1
         return frames
 
-    def send(self, **kwargs):
+    def send(self, url, **kwargs):
         """
         Serializes and signs ``data`` and passes the payload off to ``send_remote``
 
         If ``server`` was passed into the constructor, this will serialize the data and pipe it to
         the server using ``send_remote()``.
         """
-        if self.config.server:
-            return super(DjangoClient, self).send(**kwargs)
+        if self.config.server_url:
+            return super(DjangoClient, self).send(url, **kwargs)
         else:
             self.error_logger.error('No server configured, and elasticapm not installed. Cannot send message')
             return None

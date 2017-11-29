@@ -11,7 +11,7 @@ class TempStoreClient(DjangoClient):
         self.events = []
         super(TempStoreClient, self).__init__(*args, **kwargs)
 
-    def send(self, **kwargs):
+    def send(self, url, **kwargs):
         self.events.append(kwargs)
 
 
@@ -34,19 +34,20 @@ def django_elasticapm_client(request):
 
 
 @pytest.fixture()
-def django_sending_elasticapm_client(request):
+def django_sending_elasticapm_client(request, httpserver):
+    httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
     client_config = getattr(request, 'param', {})
+    client_config.setdefault('server_url', httpserver.url)
+    client_config.setdefault('app_name', 'app')
+    client_config.setdefault('secret_token', 'secret')
+    client_config.setdefault('transport_class', 'elasticapm.transport.http_urllib3.Urllib3Transport')
     app = apps.get_app_config('elasticapm.contrib.django')
     old_client = app.client
-    client = DjangoClient(
-        server='http://example.com',
-        app_name='app',
-        secret_token='secret',
-        **client_config
-    )
+    client = DjangoClient(**client_config)
     register_handlers(client)
     instrument(client)
     app.client = client
+    client.httpserver = httpserver
     yield client
 
     app.client = old_client

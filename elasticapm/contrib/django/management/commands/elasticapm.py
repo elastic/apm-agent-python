@@ -151,7 +151,7 @@ class Command(BaseCommand):
             "SERVER:\t\t%s\n\n" % (
                 client.config.app_name,
                 client.config.secret_token,
-                client.config.server,
+                client.config.server_url,
             )
         )
 

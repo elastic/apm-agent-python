@@ -81,12 +81,13 @@ def test_config_by_environment():
         client = Client()
         assert client.config.app_name == 'app'
         assert client.config.secret_token == 'token'
-        assert client.config.disable_send == False
+        assert client.config.disable_send is False
     with mock.patch.dict('os.environ', {
         'ELASTIC_APM_DISABLE_SEND': 'true',
     }):
         client = Client()
-        assert client.config.disable_send == True
+        assert client.config.disable_send is True
+    client.close()
 
 
 def test_config_non_string_types():
@@ -105,61 +106,50 @@ def test_config_non_string_types():
             return repr(self.content)
 
     client = Client(
-        server='localhost',
+        server_url='localhost',
         app_name=MyValue('bar'),
         secret_token=MyValue('bay')
     )
     assert isinstance(client.config.secret_token, compat.string_types)
     assert isinstance(client.config.app_name, compat.string_types)
+    client.close()
 
 
-def test_custom_transport():
-    client = Client(
-        server='localhost',
-        app_name='bar',
-        secret_token='baz',
-        transport_class='tests.client.client_tests.DummyTransport',
-    )
-    assert client._transport_class == DummyTransport
+@pytest.mark.parametrize('elasticapm_client', [
+    {'transport_class': 'tests.client.client_tests.DummyTransport'}
+], indirect=True)
+def test_custom_transport(elasticapm_client):
+    assert elasticapm_client._transport_class == DummyTransport
 
 
-def test_empty_processor_list():
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        processors=[],
-    )
+@pytest.mark.parametrize('elasticapm_client', [{'processors': []}], indirect=True)
+def test_empty_processor_list(elasticapm_client):
+    assert elasticapm_client.processors == []
 
-    assert client.processors == []
 
-@mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+@pytest.mark.parametrize('sending_elasticapm_client', [
+    {'transport_class': 'elasticapm.transport.http_urllib3.Urllib3Transport', 'async_mode': False}
+], indirect=True)
 @mock.patch('elasticapm.base.ClientState.should_try')
-def test_send_remote_failover_sync(should_try, http_send):
+def test_send_remote_failover_sync(should_try, sending_elasticapm_client):
+    sending_elasticapm_client.httpserver.code = 400
+    sending_elasticapm_client.httpserver.content = "go away"
     should_try.return_value = True
 
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
-    )
     logger = mock.Mock()
-    client.error_logger.error = logger
+    sending_elasticapm_client.error_logger.error = logger
 
     # test error
-    encoded_data = client.encode({'message': 'oh no'})
-    http_send.side_effect = TransportException('oopsie', encoded_data)
-    client.send_remote('http://example.com/api/store', data=encoded_data)
-    assert client.state.status == client.state.ERROR
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{'message': 'foo'})
+    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ERROR
     assert len(logger.call_args_list) == 2
-    assert 'oopsie' in logger.call_args_list[0][0][0]
-    assert 'oh no' in logger.call_args_list[1][0][1]
+    assert 'go away' in logger.call_args_list[0][0][0]
+    assert 'foo' in logger.call_args_list[1][0][1]
 
     # test recovery
-    http_send.side_effect = None
-    client.send_remote('http://example.com/api/store', 'foo')
-    assert client.state.status == client.state.ONLINE
+    sending_elasticapm_client.httpserver.code = 202
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{'message': 'foo'})
+    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ONLINE
 
 
 @mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
@@ -168,7 +158,7 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
     should_try.return_value = True
 
     client = Client(
-        server='http://example.com',
+        server_url='http://example.com',
         app_name='app_name',
         secret_token='secret',
         transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
@@ -177,150 +167,97 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
     client.error_logger.error = logger
 
     # test error
-    encoded_data = client.encode({'message': 'oh no'})
     http_send.side_effect = ValueError('oopsie')
-    client.send_remote('http://example.com/api/store', data=encoded_data)
+    client.send('http://example.com/api/store', **{'message': 'oh no'})
     assert client.state.status == client.state.ERROR
     assert len(logger.call_args_list) == 1
     assert 'oopsie' in logger.call_args_list[0][0][1]
 
     # test recovery
     http_send.side_effect = None
-    client.send_remote('http://example.com/api/store', 'foo')
+    client.send('http://example.com/api/store', **{'message': 'oh no'})
     assert client.state.status == client.state.ONLINE
+    client.close()
 
 
-@mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+@pytest.mark.parametrize('sending_elasticapm_client', [
+    {'transport_class': 'elasticapm.transport.http_urllib3.AsyncUrllib3Transport', 'async_mode': True}
+], indirect=True)
 @mock.patch('elasticapm.base.ClientState.should_try')
-def test_send_remote_failover_async(should_try, http_send):
+def test_send_remote_failover_async(should_try, sending_elasticapm_client):
     should_try.return_value = True
-
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        async_mode=True,
-    )
+    sending_elasticapm_client.httpserver.code = 400
     logger = mock.Mock()
-    client.error_logger.error = logger
+    sending_elasticapm_client.error_logger.error = logger
 
     # test error
-    encoded_data = client.encode({'message': 'oh no'})
-    http_send.side_effect = TransportException('oopsie', encoded_data)
-    client.send_remote('http://example.com/api/store', data=encoded_data)
-    client.close()
-    assert client.state.status == client.state.ERROR
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{'message': 'oh no'})
+    sending_elasticapm_client.close()
+    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ERROR
     assert len(logger.call_args_list) == 2
-    assert 'oopsie' in logger.call_args_list[0][0][0]
+    assert '400' in logger.call_args_list[0][0][0]
     assert 'oh no' in logger.call_args_list[1][0][1]
 
     # test recovery
-    http_send.side_effect = None
-    client.send_remote('http://example.com/api/store', 'foo')
-    client.close()
-    assert client.state.status == client.state.ONLINE
+    sending_elasticapm_client.httpserver.code = 202
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{'message': 'yay'})
+    sending_elasticapm_client.close()
+    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ONLINE
 
 
-@mock.patch('elasticapm.base.Client.send_remote')
 @mock.patch('elasticapm.base.time.time')
-def test_send(time, send_remote):
+def test_send(time, sending_elasticapm_client):
     time.return_value = 1328055286.51
-    public = "public"
-    access_token = "secret"
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-    )
-    client.send(**{
-        'foo': 'bar',
-    })
-    send_remote.assert_called_once_with(
-        url='http://example.com',
-        data=compat.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
-        headers={
-            'Content-Type': 'application/json',
-            'Content-Encoding': 'deflate',
-            'Authorization': 'Bearer %s' % (access_token),
-            'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
-        },
-    )
+
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo='bar')
+    sending_elasticapm_client.close()
+    request = sending_elasticapm_client.httpserver.requests[0]
+    expected_headers = {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'deflate',
+        'Authorization': 'Bearer %s' % sending_elasticapm_client.config.secret_token,
+        'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
+    }
+    seen_headers = dict(request.headers)
+    for k, v in expected_headers.items():
+        assert seen_headers[k] == v
+
+    assert request.content_length == 22
 
 
-@mock.patch('elasticapm.base.Client.send_remote')
+@pytest.mark.parametrize('sending_elasticapm_client', [{'disable_send': True}], indirect=True)
 @mock.patch('elasticapm.base.time.time')
-def test_send_not_enabled(time, send_remote):
+def test_send_not_enabled(time, sending_elasticapm_client):
     time.return_value = 1328055286.51
-    with mock.patch.dict('os.environ', {'ELASTIC_APM_DISABLE_SEND': 'true'}):
-        client = Client(
-            server='http://example.com',
-            app_name='app_name',
-            secret_token='secret',
-        )
-    client.send(**{
-        'foo': 'bar',
-    })
+    assert sending_elasticapm_client.config.disable_send
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo='bar')
+    sending_elasticapm_client.close()
 
-    assert not send_remote.called
+    assert len(sending_elasticapm_client.httpserver.requests) == 0
 
 
-@mock.patch('elasticapm.base.Client.send_remote')
-@mock.patch('elasticapm.base.time.time')
-def test_send_with_auth_header(time, send_remote):
-    time.return_value = 1328055286.51
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-    )
-    client.send(auth_header='foo', **{
-        'foo': 'bar',
-    })
-    send_remote.assert_called_once_with(
-        url='http://example.com',
-        data=compat.b('x\x9c\xabVJ\xcb\xcfW\xb2RPJJ,R\xaa\x05\x00 \x98\x04T'),
-        headers={
-            'Content-Type': 'application/json',
-            'Content-Encoding': 'deflate',
-            'Authorization': 'foo',
-            'User-Agent': 'elasticapm-python/%s' % elasticapm.VERSION,
-        },
-    )
-
-
-@mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
-@mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.close')
+@pytest.mark.parametrize('sending_elasticapm_client', [
+    {'transport_class': 'elasticapm.transport.http_urllib3.Urllib3Transport', 'async_mode': False}
+], indirect=True)
 @mock.patch('elasticapm.base.Client._collect_transactions')
-def test_client_shutdown_sync(mock_traces_collect, mock_close, mock_send):
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
-    )
-    client.send(auth_header='foo', **{
-        'foo': 'bar',
-    })
-    client.close()
-    assert mock_close.call_count == 1
+def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo='bar')
+    sending_elasticapm_client.close()
+    assert len(sending_elasticapm_client.httpserver.requests) == 1
     assert mock_traces_collect.call_count == 1
+    assert len(sending_elasticapm_client._transports) == 0
 
 
-@mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+@pytest.mark.parametrize('sending_elasticapm_client', [
+    {'transport_class': 'elasticapm.transport.http_urllib3.AsyncUrllib3Transport', 'async_mode': True}
+], indirect=True)
 @mock.patch('elasticapm.base.Client._collect_transactions')
-def test_client_shutdown_async(mock_traces_collect, mock_send):
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        async_mode=True,
-    )
-    client.send(auth_header='foo', **{
-        'foo': 'bar',
-    })
-    client.close()
+def test_client_shutdown_async(mock_traces_collect, sending_elasticapm_client):
+    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo='bar')
+    sending_elasticapm_client.close()
     assert mock_traces_collect.call_count == 1
-    assert mock_send.call_count == 1
+    assert len(sending_elasticapm_client.httpserver.requests) == 1
+    assert len(sending_elasticapm_client._transports) == 0
 
 
 def test_encode_decode(elasticapm_client):
@@ -395,32 +332,24 @@ def test_logger(elasticapm_client):
     assert 'timestamp' in event
 
 
-@mock.patch('elasticapm.base.Client.send')
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
-def test_metrics_collection(should_collect, mock_send):
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-    )
+def test_metrics_collection(should_collect, sending_elasticapm_client):
     should_collect.return_value = False
     for i in range(7):
-        client.begin_transaction("transaction.test")
-        client.end_transaction('test-transaction', 200)
+        sending_elasticapm_client.begin_transaction("transaction.test")
+        sending_elasticapm_client.end_transaction('test-transaction', 200)
 
-    assert len(client.instrumentation_store) == 7
-    assert mock_send.call_count == 0
+    assert len(sending_elasticapm_client.instrumentation_store) == 7
+    assert len(sending_elasticapm_client.httpserver.requests) == 0
     should_collect.return_value = True
 
-    client.begin_transaction("transaction.test")
-    client.end_transaction('my-other-transaction', 200)
-    assert len(client.instrumentation_store) == 0
-    assert mock_send.call_count == 1
+    sending_elasticapm_client.begin_transaction("transaction.test")
+    sending_elasticapm_client.end_transaction('my-other-transaction', 200)
+    assert len(sending_elasticapm_client.httpserver.requests) == 1
 
 
-@mock.patch('elasticapm.base.Client.send')
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
-def test_call_end_twice(should_collect, mock_send, elasticapm_client):
+def test_call_end_twice(should_collect, elasticapm_client):
     should_collect.return_value = False
     elasticapm_client.begin_transaction("celery")
 
@@ -434,7 +363,7 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
     # HTTP transport, even if async_mode is True
     is_master_process.return_value = True
     client = Client(
-        server='http://example.com',
+        server_url='http://example.com',
         app_name='app_name',
         secret_token='secret',
         async_mode=True,
@@ -445,65 +374,48 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
     )
 
 
-@mock.patch('elasticapm.base.Client.send')
+@pytest.mark.parametrize('elasticapm_client', [{'transactions_ignore_patterns': [
+        '^OPTIONS',
+        'views.api.v2'
+    ]}], indirect=True)
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
-def test_ignore_patterns(should_collect, mock_send):
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        async_mode=True,
-        transactions_ignore_patterns=[
-            '^OPTIONS',
-            'views.api.v2'
-        ]
-    )
-
+def test_ignore_patterns(should_collect, elasticapm_client):
     should_collect.return_value = False
-    client.begin_transaction("web")
-    client.end_transaction('OPTIONS views.healthcheck', 200)
+    elasticapm_client.begin_transaction("web")
+    elasticapm_client.end_transaction('OPTIONS views.healthcheck', 200)
 
-    client.begin_transaction("web")
-    client.end_transaction('GET views.users', 200)
+    elasticapm_client.begin_transaction("web")
+    elasticapm_client.end_transaction('GET views.users', 200)
 
-    transactions = client.instrumentation_store.get_all()
+    transactions = elasticapm_client.instrumentation_store.get_all()
 
     assert len(transactions) == 1
     assert transactions[0]['name'] == 'GET views.users'
 
 
-@mock.patch('elasticapm.base.Client.send_remote')
-def test_disable_send(mock_send_remote):
-    client = Client(
-        server='http://example.com',
-        app_name='app_name',
-        secret_token='secret',
-        disable_send=True
-    )
+@pytest.mark.parametrize('sending_elasticapm_client', [{'disable_send': True}], indirect=True)
+def test_disable_send(sending_elasticapm_client):
+    assert sending_elasticapm_client.config.disable_send
 
-    assert client.config.disable_send
+    sending_elasticapm_client.capture('Message', message='test', data={'logger': 'test'})
 
-    client.capture('Message', message='test', data={'logger': 'test'})
-
-    assert mock_send_remote.call_count == 0
+    assert len(sending_elasticapm_client.httpserver.requests) == 0
 
 
-def test_invalid_app_name_disables_send():
-    client = Client({'APP_NAME': '@%&!'})
+@pytest.mark.parametrize('elasticapm_client', [{'app_name': '@%&!'}], indirect=True)
+def test_invalid_app_name_disables_send(elasticapm_client):
+    assert len(elasticapm_client.config.errors) == 1
+    assert 'APP_NAME' in elasticapm_client.config.errors
 
-    assert len(client.config.errors) == 1
-    assert 'APP_NAME' in client.config.errors
-
-    assert client.config.disable_send
+    assert elasticapm_client.config.disable_send
 
 
-def test_empty_transport_disables_send():
-    client = Client({'APP_NAME': 'foo', 'TRANSPORT_CLASS': None})
+@pytest.mark.parametrize('elasticapm_client', [{'app_name': 'foo', 'config': {'TRANSPORT_CLASS': None}}], indirect=True)
+def test_empty_transport_disables_send(elasticapm_client):
+    assert len(elasticapm_client.config.errors) == 1
+    assert 'TRANSPORT_CLASS' in elasticapm_client.config.errors
 
-    assert len(client.config.errors) == 1
-    assert 'TRANSPORT_CLASS' in client.config.errors
-
-    assert client.config.disable_send
+    assert elasticapm_client.config.disable_send
 
 
 @pytest.mark.parametrize('elasticapm_client', [{'traces_send_frequency': 2}], indirect=True)
