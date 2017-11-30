@@ -768,72 +768,67 @@ def test_get_app_info(django_elasticapm_client):
     assert django_elasticapm_client.config.framework_name == 'django'
 
 
-@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
 @pytest.mark.parametrize('django_sending_elasticapm_client', [{'filter_exception_types': [
         'KeyError', 'tests.contrib.django.fake1.FakeException'
     ]}], indirect=True)
-def test_filter_no_match(send_encoded, django_sending_elasticapm_client):
+def test_filter_no_match(django_sending_elasticapm_client):
     try:
         raise ValueError('foo')
-    except:
+    except ValueError:
         django_sending_elasticapm_client.capture('Exception')
 
-    assert send_encoded.call_count == 1
+    assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
-@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
 @pytest.mark.parametrize('django_sending_elasticapm_client', [{'filter_exception_types': [
         'KeyError', 'tests.contrib.django.fake1.FakeException'
     ]}], indirect=True)
-def test_filter_matches_type(send_encoded, django_sending_elasticapm_client):
+def test_filter_matches_type(django_sending_elasticapm_client):
     try:
         raise KeyError('foo')
-    except:
+    except KeyError:
         django_sending_elasticapm_client.capture('Exception')
 
-    assert send_encoded.call_count == 0
+    assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
 
-@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
 @pytest.mark.parametrize('django_sending_elasticapm_client', [{'filter_exception_types': [
         'KeyError', 'tests.contrib.django.fake1.FakeException'
     ]}], indirect=True)
-def test_filter_matches_type_but_not_module(send_encoded, django_sending_elasticapm_client):
+def test_filter_matches_type_but_not_module(django_sending_elasticapm_client):
+    from tests.contrib.django.fake2 import FakeException
     try:
-        from tests.contrib.django.fake2 import FakeException
         raise FakeException('foo')
-    except:
+    except FakeException:
         django_sending_elasticapm_client.capture('Exception')
 
-    assert send_encoded.call_count == 1
+    assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
-@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
 @pytest.mark.parametrize('django_sending_elasticapm_client', [{'filter_exception_types': [
         'KeyError', 'tests.contrib.django.fake1.FakeException'
     ]}], indirect=True)
-def test_filter_matches_type_and_module(send_encoded, django_sending_elasticapm_client):
+def test_filter_matches_type_and_module(django_sending_elasticapm_client):
+    from tests.contrib.django.fake1 import FakeException
     try:
-        from tests.contrib.django.fake1 import FakeException
         raise FakeException('foo')
-    except:
+    except FakeException:
         django_sending_elasticapm_client.capture('Exception')
 
-    assert send_encoded.call_count == 0
+    assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
 
-@mock.patch('elasticapm.contrib.django.DjangoClient.send_encoded')
 @pytest.mark.parametrize('django_sending_elasticapm_client', [{'filter_exception_types': [
         'KeyError', 'tests.contrib.django.fake1.FakeException'
     ]}], indirect=True)
-def test_filter_matches_module_only(send_encoded, django_sending_elasticapm_client):
+def test_filter_matches_module_only(django_sending_elasticapm_client):
+    from tests.contrib.django.fake1 import OtherFakeException
     try:
-        from tests.contrib.django.fake1 import OtherFakeException
         raise OtherFakeException('foo')
     except OtherFakeException:
         django_sending_elasticapm_client.capture('Exception')
 
-    assert send_encoded.call_count == 1
+        assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
 def test_django_logging_request_kwarg(django_elasticapm_client):
