@@ -14,7 +14,9 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...master[Check 
 
  * added `max-event-queue-length` setting. ({pull}67[#67])
  * changed name that the agent reports itself with to the APM server from `elasticapm-python` to `python`. This aligns the Python agent with other languages. ({pull}104[#104])
+ * changed Celery integration to store the task state (e.g. `SUCCESS` or `FAILURE`) in `transaction.result` ({pull}100[#100])
  * BREAKING: renamed `server` configuration variable to `server_url` to better align with other language agents ({pull}105[#105]) 
+
 [[release-v1.0.0.dev3]]
 [float]
 === v1.0.0.dev3
