@@ -15,6 +15,7 @@ import datetime
 import logging
 import os
 import platform
+import re
 import socket
 import sys
 import threading
@@ -129,12 +130,19 @@ class Client(object):
         self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         self.instrumentation_store = TransactionsStore(
-            lambda: self.get_stack_info_for_trace(iter_stack_frames(), False),
+            # we consume the iterator here to ensure that we get the correct stack trace
+            lambda: self.get_stack_info_for_trace(list(iter_stack_frames(extended=False))),
             self.config.traces_send_frequency,
             self.config.max_event_queue_length,
             self.config.transactions_ignore_patterns
         )
+        self.include_paths_re = self._get_path_regex(self.config.include_paths) if self.config.include_paths else None
+        self.exclude_paths_re = self._get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
         compat.atexit_register(self.close)
+
+    def _get_path_regex(self, paths):
+        paths = '|'.join(map(re.escape, paths))
+        return re.compile('^(?:{})(?:.|$)'.format(paths))
 
     def get_ident(self, result):
         """
@@ -148,12 +156,12 @@ class Client(object):
     def get_handler(self, name):
         return import_string(name)
 
-    def get_stack_info_for_trace(self, frames, extended=True):
+    def get_stack_info_for_trace(self, frames):
         """Overrideable in derived clients to add frames/info, e.g. templates
 
         4.0: Use for error frames too.
         """
-        return stacks.get_stack_info(frames, extended)
+        return stacks.get_stack_info(self, frames)
 
     def build_msg_for_logging(self, event_type, data=None, date=None,
                               extra=None, stack=None,
@@ -198,7 +206,7 @@ class Client(object):
                 frames = iter_stack_frames()
             else:
                 frames = stack
-            frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(frames))
+            frames = varmap(lambda k, v: shorten(v), list(stacks.get_stack_info(self, frames)))
             log['stacktrace'] = frames
 
         if 'stacktrace' in log and not culprit:

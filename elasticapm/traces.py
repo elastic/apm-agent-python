@@ -1,5 +1,6 @@
 import datetime
 import functools
+import itertools
 import logging
 import re
 import threading
@@ -88,7 +89,7 @@ class Transaction(object):
         if self.trace_stack:
             trace.parent = self.trace_stack[-1].idx
 
-        trace.frames = self.get_frames()[skip_frames:]
+        trace.frames = itertools.islice(self.get_frames(), skip_frames, None)
         self.traces.append(trace)
 
         return trace
@@ -145,7 +146,7 @@ class Trace(object):
             'start': self.start_time * 1000,  # milliseconds
             'duration': self.duration * 1000,  # milliseconds
             'parent': self.parent,
-            'stacktrace': self.frames,
+            'stacktrace': list(self.frames),
             'context': self.context
         }
 

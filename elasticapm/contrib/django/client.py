@@ -11,6 +11,7 @@ Large portions are
 
 from __future__ import absolute_import
 
+import itertools
 import logging
 
 import django
@@ -209,19 +210,15 @@ class DjangoClient(Client):
 
         return result
 
-    def get_stack_info_for_trace(self, frames, extended=True):
+    def get_stack_info_for_trace(self, frames):
         """If the stacktrace originates within the elasticapm module, it will skip
         frames until some other module comes up."""
-        frames = list(iterate_with_template_sources(frames, extended))
-        i = 0
-        while len(frames) > i:
-            if 'module' in frames[i] and not (
-                    frames[i]['module'].startswith('elasticapm.') or
-                    frames[i]['module'] == 'contextlib'
-            ):
-                return frames[i:]
-            i += 1
-        return frames
+        def discard_test(frame):
+            return 'module' in frame and (
+                frame['module'].startswith('elasticapm.') or
+                frame['module'] == 'contextlib'
+            )
+        return itertools.dropwhile(discard_test, iterate_with_template_sources(self, frames))
 
     def send(self, url, **kwargs):
         """
