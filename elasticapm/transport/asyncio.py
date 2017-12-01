@@ -5,19 +5,16 @@ import aiohttp
 from elasticapm.conf import defaults
 
 from .base import TransportException
-from .http import HTTPTransport
+from .http_base import HTTPTransportBase
 
 
-class AsyncioHTTPTransport(HTTPTransport):
+class AsyncioHTTPTransport(HTTPTransportBase):
     """
     HTTP Transport ready for asyncio
     """
 
     def __init__(self, parsed_url):
-        self.check_scheme(parsed_url)
-
-        self._parsed_url = parsed_url
-        self._url = parsed_url.geturl()
+        super(AsyncioHTTPTransport, self).__init__(parsed_url)
         loop = asyncio.get_event_loop()
         self.client = aiohttp.ClientSession(loop=loop)
 

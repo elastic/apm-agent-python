@@ -40,7 +40,7 @@ def django_sending_elasticapm_client(request, httpserver):
     client_config.setdefault('server_url', httpserver.url)
     client_config.setdefault('app_name', 'app')
     client_config.setdefault('secret_token', 'secret')
-    client_config.setdefault('transport_class', 'elasticapm.transport.http_urllib3.Urllib3Transport')
+    client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
     app = apps.get_app_config('elasticapm.contrib.django')
     old_client = app.client
     client = DjangoClient(**client_config)

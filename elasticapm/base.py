@@ -300,12 +300,12 @@ class Client(object):
         return message
 
     def _get_transport(self, parsed_url):
-        if self._transport_class.async_mode and is_master_process():
+        if hasattr(self._transport_class, 'sync_transport') and is_master_process():
             # when in the master process, always use SYNC mode. This avoids
             # the danger of being forked into an inconsistent threading state
             self.logger.info('Sending message synchronously while in master '
                              'process. PID: %s', os.getpid())
-            return import_string(defaults.SYNC_TRANSPORT_CLASS)(parsed_url)
+            return self._transport_class.sync_transport(parsed_url)
         if parsed_url not in self._transports:
             self._transports[parsed_url] = self._transport_class(parsed_url)
         return self._transports[parsed_url]

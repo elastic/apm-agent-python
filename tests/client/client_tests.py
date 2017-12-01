@@ -8,7 +8,6 @@ import pytest
 import elasticapm
 from elasticapm.base import Client, ClientState
 from elasticapm.transport.base import Transport, TransportException
-from elasticapm.transport.http import HTTPTransport
 from elasticapm.utils import compat
 from elasticapm.utils.compat import urlparse
 
@@ -128,7 +127,7 @@ def test_empty_processor_list(elasticapm_client):
 
 
 @pytest.mark.parametrize('sending_elasticapm_client', [
-    {'transport_class': 'elasticapm.transport.http_urllib3.Urllib3Transport', 'async_mode': False}
+    {'transport_class': 'elasticapm.transport.http.Transport', 'async_mode': False}
 ], indirect=True)
 @mock.patch('elasticapm.base.ClientState.should_try')
 def test_send_remote_failover_sync(should_try, sending_elasticapm_client):
@@ -152,7 +151,7 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client):
     assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ONLINE
 
 
-@mock.patch('elasticapm.transport.http_urllib3.Urllib3Transport.send')
+@mock.patch('elasticapm.transport.http.Transport.send')
 @mock.patch('elasticapm.base.ClientState.should_try')
 def test_send_remote_failover_sync_stdlib(should_try, http_send):
     should_try.return_value = True
@@ -161,7 +160,7 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
         server_url='http://example.com',
         app_name='app_name',
         secret_token='secret',
-        transport_class='elasticapm.transport.http_urllib3.Urllib3Transport',
+        transport_class='elasticapm.transport.http.Transport',
     )
     logger = mock.Mock()
     client.error_logger.error = logger
@@ -181,7 +180,7 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
 
 
 @pytest.mark.parametrize('sending_elasticapm_client', [
-    {'transport_class': 'elasticapm.transport.http_urllib3.AsyncUrllib3Transport', 'async_mode': True}
+    {'transport_class': 'elasticapm.transport.http.AsyncTransport', 'async_mode': True}
 ], indirect=True)
 @mock.patch('elasticapm.base.ClientState.should_try')
 def test_send_remote_failover_async(should_try, sending_elasticapm_client):
@@ -237,7 +236,7 @@ def test_send_not_enabled(time, sending_elasticapm_client):
 
 
 @pytest.mark.parametrize('sending_elasticapm_client', [
-    {'transport_class': 'elasticapm.transport.http_urllib3.Urllib3Transport', 'async_mode': False}
+    {'transport_class': 'elasticapm.transport.http.Transport', 'async_mode': False}
 ], indirect=True)
 @mock.patch('elasticapm.base.Client._collect_transactions')
 def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
@@ -249,7 +248,7 @@ def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
 
 
 @pytest.mark.parametrize('sending_elasticapm_client', [
-    {'transport_class': 'elasticapm.transport.http_urllib3.AsyncUrllib3Transport', 'async_mode': True}
+    {'transport_class': 'elasticapm.transport.http.AsyncTransport', 'async_mode': True}
 ], indirect=True)
 @mock.patch('elasticapm.base.Client._collect_transactions')
 def test_client_shutdown_async(mock_traces_collect, sending_elasticapm_client):
@@ -357,7 +356,7 @@ def test_call_end_twice(should_collect, elasticapm_client):
     elasticapm_client.end_transaction('test-transaction', 200)
 
 
-@mock.patch('elasticapm.utils.is_master_process')
+@mock.patch('elasticapm.base.is_master_process')
 def test_client_uses_sync_mode_when_master_process(is_master_process):
     # when in the master process, the client should use the non-async
     # HTTP transport, even if async_mode is True
@@ -368,10 +367,8 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
         secret_token='secret',
         async_mode=True,
     )
-    assert isinstance(
-        client._get_transport(urlparse.urlparse('http://exampe.com')),
-        HTTPTransport
-    )
+    transport = client._get_transport(urlparse.urlparse('http://exampe.com'))
+    assert transport.async_mode is False
 
 
 @pytest.mark.parametrize('elasticapm_client', [{'transactions_ignore_patterns': [

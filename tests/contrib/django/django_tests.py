@@ -1131,7 +1131,7 @@ def test_middleware_not_first():
     assert 'not at the first position' in output
 
 
-@mock.patch('elasticapm.transport.http_urllib3.urllib3.PoolManager.urlopen')
+@mock.patch('elasticapm.transport.http.urllib3.PoolManager.urlopen')
 def test_test_exception(urlopen_mock):
     stdout = compat.StringIO()
     resp = mock.Mock(status=200, getheader=lambda h: 'http://example.com')

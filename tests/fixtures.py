@@ -20,7 +20,7 @@ def sending_elasticapm_client(request, httpserver):
     client_config.setdefault('server_url', httpserver.url)
     client_config.setdefault('app_name', 'myapp')
     client_config.setdefault('secret_token', 'test_key')
-    client_config.setdefault('transport_class', 'elasticapm.transport.http_urllib3.Urllib3Transport')
+    client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
     client = Client(**client_config)
     client.httpserver = httpserver
     yield client
