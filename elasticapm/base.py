@@ -307,7 +307,9 @@ class Client(object):
                              'process. PID: %s', os.getpid())
             return self._transport_class.sync_transport(parsed_url)
         if parsed_url not in self._transports:
-            self._transports[parsed_url] = self._transport_class(parsed_url)
+            self._transports[parsed_url] = self._transport_class(
+                parsed_url, verify_server_cert=self.config.verify_server_cert
+            )
         return self._transports[parsed_url]
 
     def _filter_exception_type(self, data):

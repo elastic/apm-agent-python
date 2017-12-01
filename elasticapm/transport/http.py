@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import ssl
 
 import certifi
 import urllib3
@@ -19,18 +20,21 @@ class Transport(HTTPTransportBase):
 
     scheme = ['http', 'https']
 
-    def __init__(self, parsed_url):
-        kwargs = {
+    def __init__(self, parsed_url, **kwargs):
+        super(Transport, self).__init__(parsed_url, **kwargs)
+        pool_kwargs = {
             'cert_reqs': 'CERT_REQUIRED',
             'ca_certs': certifi.where(),
             'block': True,
         }
+        if not self._verify_server_cert:
+            pool_kwargs['cert_reqs'] = ssl.CERT_NONE
+            pool_kwargs['assert_hostname'] = False
         proxy_url = os.environ.get('HTTPS_PROXY', os.environ.get('HTTP_PROXY'))
         if proxy_url:
-            self.http = urllib3.ProxyManager(proxy_url, **kwargs)
+            self.http = urllib3.ProxyManager(proxy_url, **pool_kwargs)
         else:
-            self.http = urllib3.PoolManager(**kwargs)
-        super(Transport, self).__init__(parsed_url)
+            self.http = urllib3.PoolManager(**pool_kwargs)
 
     def send(self, data, headers, timeout=None):
         if timeout is None:

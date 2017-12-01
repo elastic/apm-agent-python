@@ -96,3 +96,19 @@ def test_header_encodings():
     for k, v in kwargs['headers'].items():
         assert isinstance(k, compat.binary_type)
         assert isinstance(v, compat.binary_type)
+
+
+def test_ssl_verify_fails(httpsserver):
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = Transport(compat.urlparse.urlparse(httpsserver.url))
+    with pytest.raises(TransportException) as exc_info:
+        url = transport.send(compat.b('x'), {})
+    assert 'CERTIFICATE_VERIFY_FAILED' in str(exc_info)
+
+
+@pytest.mark.filterwarnings('ignore:Unverified HTTPS')
+def test_ssl_verify_disable(httpsserver):
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'https://example.com/foo'})
+    transport = Transport(compat.urlparse.urlparse(httpsserver.url), verify_server_cert=False)
+    url = transport.send(compat.b('x'), {})
+    assert url == 'https://example.com/foo'

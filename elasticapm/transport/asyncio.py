@@ -13,10 +13,13 @@ class AsyncioHTTPTransport(HTTPTransportBase):
     HTTP Transport ready for asyncio
     """
 
-    def __init__(self, parsed_url):
-        super(AsyncioHTTPTransport, self).__init__(parsed_url)
+    def __init__(self, parsed_url, **kwargs):
+        super(AsyncioHTTPTransport, self).__init__(parsed_url, **kwargs)
         loop = asyncio.get_event_loop()
-        self.client = aiohttp.ClientSession(loop=loop)
+        session_kwargs = {'loop': loop}
+        if not self._verify_server_cert:
+            session_kwargs['connector'] = aiohttp.TCPConnector(verify_ssl=False)
+        self.client = aiohttp.ClientSession(**session_kwargs)
 
     async def send(self, data, headers, timeout=None):
         """Use synchronous interface, because this is a coroutine."""

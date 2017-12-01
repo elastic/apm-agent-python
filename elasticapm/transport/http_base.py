@@ -6,11 +6,12 @@ from elasticapm.transport.base import AsyncTransport, Transport
 class HTTPTransportBase(Transport):
     scheme = ['http', 'https']
 
-    def __init__(self, parsed_url):
+    def __init__(self, parsed_url, verify_server_cert=True):
         self.check_scheme(parsed_url)
 
         self._parsed_url = parsed_url
         self._url = parsed_url.geturl()
+        self._verify_server_cert = verify_server_cert
 
     def send(self, data, headers, timeout=None):
         """
@@ -26,8 +27,8 @@ class AsyncHTTPTransportBase(AsyncTransport, HTTPTransportBase):
     async_mode = True
     sync_transport = HTTPTransportBase
 
-    def __init__(self, parsed_url):
-        super(AsyncHTTPTransportBase, self).__init__(parsed_url)
+    def __init__(self, parsed_url, **kwargs):
+        super(AsyncHTTPTransportBase, self).__init__(parsed_url, **kwargs)
         if self._url.startswith('async+'):
             self._url = self._url[6:]
         self._worker = None

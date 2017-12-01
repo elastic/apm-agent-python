@@ -86,3 +86,25 @@ async def test_send_timeout(mock_client):
     with pytest.raises(TransportException) as excinfo:
         await transport.send(b'data', {}, timeout=0.0001)
     assert 'Connection to APM Server timed out' in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_ssl_verify_fails(httpsserver):
+    from elasticapm.transport.asyncio import AsyncioHTTPTransport
+    from elasticapm.transport.base import TransportException
+
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = AsyncioHTTPTransport(urlparse(httpsserver.url))
+    with pytest.raises(TransportException) as exc_info:
+        await transport.send(b'x', {})
+    assert 'CERTIFICATE_VERIFY_FAILED' in str(exc_info)
+
+
+@pytest.mark.asyncio
+async def test_ssl_verify_disable(httpsserver):
+    from elasticapm.transport.asyncio import AsyncioHTTPTransport
+
+    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = AsyncioHTTPTransport(urlparse(httpsserver.url), verify_server_cert=False)
+    url = await transport.send(b'x', {})
+    assert url == 'http://example.com/foo'
