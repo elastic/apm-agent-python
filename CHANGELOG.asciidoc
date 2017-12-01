@@ -16,6 +16,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...master[Check 
  * changed name that the agent reports itself with to the APM server from `elasticapm-python` to `python`. This aligns the Python agent with other languages. ({pull}104[#104])
  * changed Celery integration to store the task state (e.g. `SUCCESS` or `FAILURE`) in `transaction.result` ({pull}100[#100])
  * BREAKING: renamed `server` configuration variable to `server_url` to better align with other language agents ({pull}105[#105]) 
+ * BREAKING: removed the old and unused urllib2-based HTTP transport, and renamed the urllib3 transport ({pull}107[#107])
 
 [[release-v1.0.0.dev3]]
 [float]
