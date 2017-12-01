@@ -1,110 +1,86 @@
 # -*- coding: utf-8 -*-
 import logging
-import socket
+import os
+
+import certifi
+import urllib3
+from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.conf import defaults
-from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.transport.base import (AsyncTransport, Transport,
-                                       TransportException)
-from elasticapm.utils.compat import HTTPError
+from elasticapm.transport.base import TransportException
+from elasticapm.transport.http_base import (AsyncHTTPTransportBase,
+                                            HTTPTransportBase)
+from elasticapm.utils import compat
 
-try:
-    from urllib2 import Request, urlopen
-except ImportError:
-    from urllib.request import Request, urlopen
+logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger('elasticapm')
-
-
-class HTTPTransport(Transport):
+class Transport(HTTPTransportBase):
 
     scheme = ['http', 'https']
 
     def __init__(self, parsed_url):
-        self.check_scheme(parsed_url)
-
-        self._parsed_url = parsed_url
-        self._url = parsed_url.geturl()
+        kwargs = {
+            'cert_reqs': 'CERT_REQUIRED',
+            'ca_certs': certifi.where(),
+            'block': True,
+        }
+        proxy_url = os.environ.get('HTTPS_PROXY', os.environ.get('HTTP_PROXY'))
+        if proxy_url:
+            self.http = urllib3.ProxyManager(proxy_url, **kwargs)
+        else:
+            self.http = urllib3.PoolManager(**kwargs)
+        super(Transport, self).__init__(parsed_url)
 
     def send(self, data, headers, timeout=None):
-        """
-        Sends a request to a remote webserver using HTTP POST.
-
-        Returns the shortcut URL of the recorded error on Elastic APM
-        """
-        req = Request(self._url, headers=headers)
         if timeout is None:
             timeout = defaults.TIMEOUT
         response = None
+
+        # ensure headers are byte strings
+        headers = {k.encode('ascii') if isinstance(k, compat.text_type) else k:
+                   v.encode('ascii') if isinstance(v, compat.text_type) else v
+                   for k, v in headers.items()}
+        if compat.PY2 and isinstance(self._url, compat.text_type):
+            url = self._url.encode('utf-8')
+        else:
+            url = self._url
         try:
             try:
-                response = urlopen(req, data, timeout)
-            except TypeError:
-                response = urlopen(req, data)
-        except Exception as e:
-            print_trace = True
-            if isinstance(e, socket.timeout):
-                message = (
-                    "Connection to APM Server timed out "
-                    "(url: %s, timeout: %d seconds)" % (self._url, timeout)
+                response = self.http.urlopen(
+                    'POST', url, body=data, headers=headers, timeout=timeout, preload_content=False
                 )
-            elif isinstance(e, HTTPError):
-                body = e.read()
-                if e.code == 429:  # rate-limited
+                logger.info('Sent request, url=%s size=%.2fkb status=%s', url, len(data) / 1024.0, response.status)
+            except Exception as e:
+                print_trace = True
+                if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):
+                    message = (
+                        "Connection to APM Server timed out "
+                        "(url: %s, timeout: %d seconds)" % (self._url, timeout)
+                    )
+                    print_trace = False
+                else:
+                    message = 'Unable to reach APM Server: %s (url: %s)' % (
+                        e, self._url
+                    )
+                raise TransportException(message, data, print_trace=print_trace)
+            body = response.read()
+            if response.status >= 400:
+                if response.status == 429:  # rate-limited
                     message = 'Temporarily rate limited: '
                     print_trace = False
                 else:
-                    message = 'Unable to reach APM Server: '
-                message += '%s (url: %s, body: %s)' % (e, self._url, body)
-            else:
-                message = 'Unable to reach APM Server: %s (url: %s)' % (
-                    e, self._url
-                )
-            raise TransportException(message, data, print_trace=print_trace)
+                    message = 'HTTP %s: ' % response.status
+                    print_trace = True
+                message += body.decode('utf8')
+                raise TransportException(message, data, print_trace=print_trace)
+            return response.getheader('Location')
         finally:
             if response:
                 response.close()
 
-        return response.info().get('Location')
 
-
-class AsyncHTTPTransport(AsyncTransport, HTTPTransport):
+class AsyncTransport(AsyncHTTPTransportBase, Transport):
     scheme = ['http', 'https']
     async_mode = True
-
-    def __init__(self, parsed_url):
-        super(AsyncHTTPTransport, self).__init__(parsed_url)
-        if self._url.startswith('async+'):
-            self._url = self._url[6:]
-        self._worker = None
-
-    @property
-    def worker(self):
-        if not self._worker or not self._worker.is_alive():
-            self._worker = AsyncWorker()
-        return self._worker
-
-    def send_sync(self, data=None, headers=None, success_callback=None,
-                  fail_callback=None):
-        try:
-            url = HTTPTransport.send(self, data, headers)
-            if callable(success_callback):
-                success_callback(url=url)
-        except Exception as e:
-            if callable(fail_callback):
-                fail_callback(exception=e)
-
-    def send_async(self, data, headers, success_callback=None,
-                   fail_callback=None):
-        kwargs = {
-            'data': data,
-            'headers': headers,
-            'success_callback': success_callback,
-            'fail_callback': fail_callback,
-        }
-        self.worker.queue(self.send_sync, kwargs)
-
-    def close(self):
-        if self._worker:
-            self._worker.main_thread_terminated()
+    sync_transport = Transport
