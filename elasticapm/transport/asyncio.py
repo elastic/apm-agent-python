@@ -2,8 +2,6 @@ import asyncio
 
 import aiohttp
 
-from elasticapm.conf import defaults
-
 from .base import TransportException
 from .http_base import HTTPTransportBase
 
@@ -21,8 +19,6 @@ class AsyncioHTTPTransport(HTTPTransportBase):
     async def send(self, data, headers, timeout=None):
         """Use synchronous interface, because this is a coroutine."""
 
-        if timeout is None:
-            timeout = defaults.TIMEOUT
         try:
             with aiohttp.Timeout(timeout):
                 async with self.client.post(self._url,
@@ -32,7 +28,7 @@ class AsyncioHTTPTransport(HTTPTransportBase):
         except asyncio.TimeoutError as e:
             print_trace = True
             message = ("Connection to APM Server timed out "
-                       "(url: %s, timeout: %d seconds)" % (self._url, timeout))
+                       "(url: %s, timeout: %s seconds)" % (self._url, timeout))
             raise TransportException(message, data,
                                      print_trace=print_trace) from e
         except AssertionError as e:
