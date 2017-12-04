@@ -371,6 +371,12 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
     assert transport.async_mode is False
 
 
+@pytest.mark.parametrize('elasticapm_client', [{'verify_server_cert': False}], indirect=True)
+def test_client_disables_ssl_verification(elasticapm_client):
+    assert not elasticapm_client.config.verify_server_cert
+    assert not elasticapm_client._get_transport(compat.urlparse.urlparse('https://example.com'))._verify_server_cert
+
+
 @pytest.mark.parametrize('elasticapm_client', [{'transactions_ignore_patterns': [
         '^OPTIONS',
         'views.api.v2'
