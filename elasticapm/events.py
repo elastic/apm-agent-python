@@ -61,7 +61,7 @@ class Exception(BaseEvent):
 
     @staticmethod
     def capture(client, exc_info=None, **kwargs):
-        culprit = exc_value = exc_type = exc_module = frames = None
+        culprit = exc_value = exc_type = exc_module = frames = exc_traceback = None
         new_exc_info = False
         if not exc_info or exc_info is True:
             new_exc_info = True
@@ -93,12 +93,16 @@ class Exception(BaseEvent):
                     del exc_traceback
                 except Exception as e:
                     logger.exception(e)
+        if 'message' in kwargs:
+            message = kwargs['message']
+        else:
+            message = '%s: %s' % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
 
         return {
             'id': str(uuid.uuid4()),
             'culprit': culprit,
             'exception': {
-                'message': '%s: %s' % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type),
+                'message': message,
                 'type': str(exc_type),
                 'module': str(exc_module),
                 'stacktrace': frames,
@@ -124,7 +128,7 @@ class Message(BaseEvent):
         return [msg['message']]
 
     @staticmethod
-    def capture(client, param_message=None, message=None, **kwargs):
+    def capture(client, param_message=None, message=None, level=None, logger_name=None, **kwargs):
         if message:
             param_message = {'message': message}
         params = param_message.get('params', ())
@@ -133,12 +137,15 @@ class Message(BaseEvent):
         message_data = {
             'id': str(uuid.uuid4()),
             'log': {
-                'level': data.get('level', 'error'),
-                'logger_name': data.get('logger'),
+                'level': level or 'error',
+                'logger_name': logger_name or '__root__',
                 'message': message,
                 'param_message': param_message['message'],
             }
         }
         if isinstance(data.get('stacktrace'), dict):
             message_data['log']['stacktrace'] = data['stacktrace']['frames']
+        if kwargs.get('exception'):
+            message_data['culprit'] = kwargs['exception']['culprit']
+            message_data['exception'] = kwargs['exception']['exception']
         return message_data

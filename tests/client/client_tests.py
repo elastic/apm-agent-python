@@ -266,25 +266,15 @@ def test_encode_decode(elasticapm_client):
     assert data == elasticapm_client.decode(encoded)
 
 
-def test_explicit_message_on_message_event(elasticapm_client):
-    elasticapm_client.capture('Message', message='test', data={
-        'message': 'foo'
-    })
-
-    assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)['errors'][0]
-    assert event['message'] == 'foo'
-
-
 def test_explicit_message_on_exception_event(elasticapm_client):
     try:
         raise ValueError('foo')
     except ValueError:
-        elasticapm_client.capture('Exception', data={'message': 'foobar'})
+        elasticapm_client.capture('Exception', message='foobar')
 
     assert len(elasticapm_client.events) == 1
     event = elasticapm_client.events.pop(0)['errors'][0]
-    assert event['message'] == 'foobar'
+    assert event['exception']['message'] == 'foobar'
 
 
 def test_exception_event(elasticapm_client):
@@ -323,11 +313,11 @@ def test_message_event(elasticapm_client):
 
 
 def test_logger(elasticapm_client):
-    elasticapm_client.capture('Message', message='test', data={'logger': 'test'})
+    elasticapm_client.capture('Message', message='test', logger_name='test')
 
     assert len(elasticapm_client.events) == 1
     event = elasticapm_client.events.pop(0)['errors'][0]
-    assert event['logger'] == 'test'
+    assert event['log']['logger_name'] == 'test'
     assert 'timestamp' in event
 
 

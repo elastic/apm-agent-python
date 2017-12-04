@@ -145,6 +145,7 @@ def test_extra_culprit(logger):
     assert len(logger.client.events) == 1
     event = logger.client.events.pop(0)['errors'][0]
     assert event['culprit'] == 'foo.bar'
+    assert 'culprit' not in event['context']['custom']
 
 
 def test_logger_exception(logger):

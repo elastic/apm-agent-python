@@ -16,6 +16,7 @@ import logging
 import flask
 from flask import request, signals
 
+import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
 from elasticapm.conf import setup_logging
@@ -89,8 +90,8 @@ class ElasticAPM(object):
 
         self.client.capture(
             'Exception', exc_info=kwargs.get('exc_info'),
-            data={'context': {'request': get_data_from_request(request)}},
-            extra={
+            context={'request': get_data_from_request(request)},
+            custom={
                 'app': self.app,
             },
         )
@@ -134,8 +135,8 @@ class ElasticAPM(object):
         rule = build_name_with_http_method_prefix(rule, request)
         request_data = get_data_from_request(request)
         response_data = get_data_from_response(response)
-        self.client.set_transaction_extra_data(request_data, 'request')
-        self.client.set_transaction_extra_data(response_data, 'response')
+        elasticapm.set_transaction_data(request_data, 'request')
+        elasticapm.set_transaction_data(response_data, 'response')
         if response.status_code:
             result = 'HTTP {}xx'.format(response.status_code // 100)
         else:

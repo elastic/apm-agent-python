@@ -56,6 +56,8 @@ ELASTIC_APM_SECRET_TOKEN=<SECRET-TOKEN>
 
 You now have basic error logging set up, and everything resulting in a 500 HTTP status code will be reported to the APM Server.
 
+You can find a list of all available settings in the <<configuration, Configuration>> page.
+
 [float]
 [[django-performance-metrics]]
 === Performance Metrics

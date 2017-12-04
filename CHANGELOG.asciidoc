@@ -18,6 +18,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...master[Check 
  * added setting to disable SSL certificate verification ({pull}108[#108])
  * BREAKING: renamed `server` configuration variable to `server_url` to better align with other language agents ({pull}105[#105]) 
  * BREAKING: removed the old and unused urllib2-based HTTP transport, and renamed the urllib3 transport ({pull}107[#107])
+ * BREAKING: several API changes to `capture_exception`, `capture_message`, and added documentation for these and other APIs ({pull}112[#112])
 
 [[release-v1.0.0.dev3]]
 [float]
