@@ -350,7 +350,7 @@ class Client(object):
 
     def _build_msg(self, data=None, **kwargs):
         data = data or {}
-        data['app'] = self.get_app_info()
+        data['service'] = self.get_app_info()
         data['system'] = self.get_system_info()
         data.update(**kwargs)
         return data

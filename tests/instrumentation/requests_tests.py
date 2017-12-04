@@ -25,7 +25,7 @@ def test_requests_instrumentation(elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert 'GET example.com' == traces[0]['name']
     assert 'http://example.com/' == traces[0]['context']['url']
 
@@ -38,7 +38,7 @@ def test_requests_instrumentation_via_session(elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert 'GET example.com' == traces[0]['name']
     assert 'http://example.com/' == traces[0]['context']['url']
 
@@ -53,7 +53,7 @@ def test_requests_instrumentation_via_prepared_request(elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert 'GET example.com' == traces[0]['name']
     assert 'http://example.com/' == traces[0]['context']['url']
 

@@ -22,7 +22,7 @@ def test_from_file(should_collect, jinja_env, elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'mytemplate.html'}
 
@@ -39,7 +39,7 @@ def test_from_string(elasticapm_client):
     elasticapm_client.end_transaction("test")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'<template>'}
 

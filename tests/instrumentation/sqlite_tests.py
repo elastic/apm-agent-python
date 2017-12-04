@@ -14,7 +14,7 @@ def test_connect(elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'sqlite3.connect :memory:',
                            'CREATE TABLE', 'INSERT INTO testdb',
