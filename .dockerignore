@@ -1,5 +1,0 @@
-# ignore for docker
-*build
-*src
-*travis
-*wheelhouse
