@@ -22,7 +22,7 @@ import time
 import zlib
 
 import elasticapm
-from elasticapm.conf import Config, defaults
+from elasticapm.conf import Config, constants
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
 from elasticapm.utils import json_encoder as json
@@ -226,7 +226,7 @@ class Client(object):
         data = transform(data)
 
         data.update({
-            'timestamp': date.strftime(defaults.TIMESTAMP_FORMAT),
+            'timestamp': date.strftime(constants.TIMESTAMP_FORMAT),
         })
 
         return self.build_msg({'errors': [data]})
@@ -285,7 +285,7 @@ class Client(object):
         data = self.build_msg_for_logging(event_type, data, date, extra, stack, **kwargs)
 
         if data:
-            url = self.config.server_url + defaults.ERROR_API_PATH
+            url = self.config.server_url + constants.ERROR_API_PATH
             self.send(url, **data)
             return data['errors'][0]['id']
 
@@ -493,7 +493,7 @@ class Client(object):
             'transactions': transactions,
         })
 
-        api_path = defaults.TRANSACTIONS_API_PATH
+        api_path = constants.TRANSACTIONS_API_PATH
 
         self.send(self.config.server_url + api_path, **data)
         self._start_send_timer()

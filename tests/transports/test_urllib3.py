@@ -30,7 +30,7 @@ def test_timeout():
     responses.add('POST', '/', status=202,
                   body=MaxRetryError(None, None, reason=TimeoutError()))
     with pytest.raises(TransportException) as exc_info:
-        transport.send('x', {})
+        transport.send('x', {}, timeout=5)
     assert 'timeout' in str(exc_info.value)
 
 

@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 
-from elasticapm.conf import defaults
+from elasticapm.conf import constants
 from elasticapm.utils import compat, get_name_from_func
 from elasticapm.utils.lru import LRUCache
 
@@ -101,7 +101,7 @@ class Transaction(object):
             'type': self.kind,
             'duration': self.duration * 1000,  # milliseconds
             'result': str(self.result),
-            'timestamp': self.timestamp.strftime(defaults.TIMESTAMP_FORMAT),
+            'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             'context': self._context,
             'traces': [
                 trace_obj.to_dict() for trace_obj in self.traces

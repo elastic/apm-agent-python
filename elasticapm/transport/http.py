@@ -6,7 +6,6 @@ import certifi
 import urllib3
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
-from elasticapm.conf import defaults
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http_base import (AsyncHTTPTransportBase,
                                             HTTPTransportBase)
@@ -33,8 +32,6 @@ class Transport(HTTPTransportBase):
         super(Transport, self).__init__(parsed_url)
 
     def send(self, data, headers, timeout=None):
-        if timeout is None:
-            timeout = defaults.TIMEOUT
         response = None
 
         # ensure headers are byte strings
@@ -56,7 +53,7 @@ class Transport(HTTPTransportBase):
                 if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):
                     message = (
                         "Connection to APM Server timed out "
-                        "(url: %s, timeout: %d seconds)" % (self._url, timeout)
+                        "(url: %s, timeout: %s seconds)" % (self._url, timeout)
                     )
                     print_trace = False
                 else:
