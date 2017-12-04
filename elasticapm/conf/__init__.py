@@ -136,6 +136,7 @@ class Config(_ConfigBase):
     secret_token = _ConfigValue('SECRET_TOKEN')
     debug = _BoolConfigValue('DEBUG', default=False)
     server_url = _ConfigValue('SERVER_URL', default='http://localhost:8200', required=True)
+    verify_server_cert = _BoolConfigValue('VERIFY_SERVER_CERT', default=True)
     include_paths = _ListConfigValue('INCLUDE_PATHS')
     exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=['elasticapm'])
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
