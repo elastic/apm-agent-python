@@ -189,10 +189,10 @@ class AbstractInstrumentedModule(object):
                         method
                     )
                     wrapt.apply_patch(parent, attribute, wrapper)
+                    logger.debug("Instrumenting %s, module: %s" % (self.name, module))
                 except ImportError:
                     # Could not import module
-                    logger.debug("Skipping instrumentation of %s."
-                                 " Module %s not found",
+                    logger.debug("Skipping instrumentation of %s. Module %s not found",
                                  self.name, module)
 
                     # Keep track of modules we couldn't load so we don't
