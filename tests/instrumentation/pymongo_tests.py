@@ -31,7 +31,7 @@ def test_collection_bulk_write(elasticapm_client, mongo_database):
     assert result.upserted_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.bulk_write'
 
@@ -47,7 +47,7 @@ def test_collection_count(elasticapm_client, mongo_database):
     assert count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.count'
 
@@ -63,7 +63,7 @@ def test_collection_delete_one(elasticapm_client, mongo_database):
     assert r.deleted_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.delete_one'
 
@@ -79,7 +79,7 @@ def test_collection_delete_many(elasticapm_client, mongo_database):
     assert r.deleted_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.delete_many'
 
@@ -93,7 +93,7 @@ def test_collection_insert(elasticapm_client, mongo_database):
     assert r is not None
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.insert'
 
@@ -108,7 +108,7 @@ def test_collection_insert_one(elasticapm_client, mongo_database):
     assert r.inserted_id is not None
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.insert_one'
 
@@ -124,7 +124,7 @@ def test_collection_insert_many(elasticapm_client, mongo_database):
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
 
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.insert_many'
 
@@ -144,7 +144,7 @@ def test_collection_find(elasticapm_client, mongo_database):
 
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.cursor.refresh'
 
@@ -160,7 +160,7 @@ def test_collection_find_one(elasticapm_client, mongo_database):
     assert r['author'] == 'Tom'
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.find_one'
 
@@ -175,7 +175,7 @@ def test_collection_remove(elasticapm_client, mongo_database):
     assert r['n'] == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.remove'
 
@@ -191,7 +191,7 @@ def test_collection_update(elasticapm_client, mongo_database):
     assert r['n'] == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.update'
 
@@ -208,7 +208,7 @@ def test_collection_update_one(elasticapm_client, mongo_database):
     assert r.modified_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.update_one'
 
@@ -225,7 +225,7 @@ def test_collection_update_many(elasticapm_client, mongo_database):
     assert r.modified_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.blogposts.update_many'
 
@@ -241,7 +241,7 @@ def test_bulk_execute(elasticapm_client, mongo_database):
     bulk.execute()
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['traces'])
+    trace = _get_pymongo_trace(transactions[0]['spans'])
     assert trace['type'] == 'db.mongodb.query'
     assert trace['name'] == 'elasticapm_test.test_bulk.bulk.execute'
 

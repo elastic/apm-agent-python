@@ -871,7 +871,7 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
     assert len(transactions) == 1
     transaction = transactions[0]
     assert transaction['result'] == 'HTTP 2xx'
-    traces = transaction['traces']
+    traces = transaction['spans']
     assert len(traces) == 2, [t['name'] for t in traces]
 
     expected_names = {'list_users.html', 'something_expensive'}
@@ -901,7 +901,7 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
 
     transactions = django_elasticapm_client.instrumentation_store.get_all()
     assert transactions[0]['result'] == 'HTTP 2xx'
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = ['transaction', 'list_users.html',
                            'something_expensive']
@@ -931,7 +931,7 @@ def test_perf_template_render(benchmark, client, django_elasticapm_client):
     # this will have two items.
     assert len(transactions) == len(responses)
     for transaction in transactions:
-        assert len(transaction['traces']) == 2
+        assert len(transaction['spans']) == 2
         assert transaction['result'] == 'HTTP 2xx'
 
 
@@ -972,7 +972,7 @@ def test_perf_database_render(benchmark, client, django_elasticapm_client):
 
         assert len(transactions) == len(responses)
         for transaction in transactions:
-            assert len(transaction['traces']) in (102, 103)
+            assert len(transaction['spans']) in (102, 103)
 
 
 @pytest.mark.django_db

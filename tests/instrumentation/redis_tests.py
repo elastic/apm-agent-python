@@ -31,7 +31,7 @@ def test_pipeline(elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
 
@@ -61,7 +61,7 @@ def test_rq_patches_redis(elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
 
@@ -85,7 +85,7 @@ def test_redis_client(elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'test_redis_client', 'RPUSH', 'EXPIRE'}
 

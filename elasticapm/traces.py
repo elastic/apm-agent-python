@@ -100,7 +100,7 @@ class Transaction(object):
             'result': str(self.result),
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             'context': self._context,
-            'traces': [
+            'spans': [
                 trace_obj.to_dict() for trace_obj in self.traces
             ]
         }

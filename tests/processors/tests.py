@@ -217,12 +217,12 @@ def test_mark_in_app_frames():
     data = processors.mark_in_app_frames(client, data)
     frames = data['exception']['stacktrace']
 
-    assert frames[0]['in_app']
-    assert frames[1]['in_app']
-    assert not frames[2]['in_app']
-    assert not frames[3]['in_app']
-    assert frames[4]['in_app']
-    assert not frames[5]['in_app']
+    assert not frames[0]['library_frame']
+    assert not frames[1]['library_frame']
+    assert frames[2]['library_frame']
+    assert frames[3]['library_frame']
+    assert not frames[4]['library_frame']
+    assert frames[5]['library_frame']
 
 
 def dummy_processor(client, data):
