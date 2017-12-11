@@ -99,7 +99,7 @@ class LoggingHandler(logging.Handler):
                 frames.append((frame, lineno))
             stack = frames
 
-        extra = getattr(record, 'data', {})
+        custom = getattr(record, 'data', {})
         # Add in all of the data from the record that we aren't already capturing
         for k in record.__dict__.keys():
             if k in (
@@ -109,7 +109,7 @@ class LoggingHandler(logging.Handler):
                 continue
             if k.startswith('_'):
                 continue
-            extra[k] = record.__dict__[k]
+            custom[k] = record.__dict__[k]
 
         date = datetime.datetime.utcfromtimestamp(record.created)
 
@@ -118,14 +118,12 @@ class LoggingHandler(logging.Handler):
         # http://docs.python.org/library/sys.html#sys.exc_info
         if record.exc_info and all(record.exc_info):
             handler = self.client.get_handler('elasticapm.events.Exception')
+            exception = handler.capture(self.client, exc_info=record.exc_info)
+        else:
+            exception = None
 
-            data.update(handler.capture(self.client, exc_info=record.exc_info))
-            # data['checksum'] = handler.get_hash(data)
-
-        data['level'] = record.levelno
-        data['logger'] = record.name
         return self.client.capture('Message',
                                    param_message={'message': record.msg,
                                                   'params': record.args},
-                                   stack=stack, data=data, extra=extra,
-                                   date=date, **kwargs)
+                                   stack=stack, custom=custom, exception=exception,
+                                   date=date, level=record.levelno, logger_name=record.name, **kwargs)

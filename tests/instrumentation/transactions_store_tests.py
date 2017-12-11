@@ -86,16 +86,6 @@ def transaction_store():
     return TransactionsStore(mock_get_frames, 99999)
 
 
-def test_lru_get_frames_cache(transaction_store):
-    transaction_store.begin_transaction("transaction.test")
-
-    for i in range(10):
-        with trace("bleh", "custom"):
-            time.sleep(0.01)
-
-    assert transaction_store._get_frames.call_count == 10
-
-
 def test_leaf_tracing(transaction_store):
     transaction_store.begin_transaction("transaction.test")
 
@@ -186,3 +176,29 @@ def test_tag_with_non_string_value():
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, 'test')
     assert t._tags == {'foo': '1'}
+
+
+def test_set_transaction_name(elasticapm_client):
+    elasticapm_client.begin_transaction('test')
+    elasticapm_client.end_transaction('test_name', 200)
+
+    elasticapm_client.begin_transaction('test')
+
+    elasticapm.set_transaction_name('another_name')
+
+    elasticapm_client.end_transaction('test_name', 200)
+
+    transactions = elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['name'] == 'test_name'
+    assert transactions[1]['name'] == 'another_name'
+
+
+def test_set_transaction_custom_data(elasticapm_client):
+    elasticapm_client.begin_transaction('test')
+
+    elasticapm.set_transaction_data({'foo': 'bar'})
+
+    elasticapm_client.end_transaction('foo', 200)
+    transactions = elasticapm_client.instrumentation_store.get_all()
+
+    assert transactions[0]['context']['custom'] == {'foo': 'bar'}

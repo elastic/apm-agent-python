@@ -28,7 +28,6 @@ from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.traces import Transaction
 from elasticapm.utils import compat
-from elasticapm.utils.lru import LRUCache
 from tests.contrib.django.testapp.views import IgnoredException
 from tests.utils.compat import middleware_setting
 
@@ -375,34 +374,6 @@ def test_ignored_exception_is_ignored(django_elasticapm_client, client):
     with pytest.raises(IgnoredException):
         client.get(reverse('elasticapm-ignored-exception'))
     assert len(django_elasticapm_client.events) == 0
-
-
-def test_template_name_as_view(django_elasticapm_client, client):
-    # TODO this test passes only with TEMPLATE_DEBUG=True
-    with override_settings(
-        TEMPLATE_DEBUG=True,
-        TEMPLATES=[
-            {
-                'BACKEND': settings.TEMPLATES[0]['BACKEND'],
-                'DIRS': settings.TEMPLATES[0]['DIRS'],
-                'OPTIONS': {
-                    'context_processors': settings.TEMPLATES[0]['OPTIONS']['context_processors'],
-                    'loaders': settings.TEMPLATES[0]['OPTIONS']['loaders'],
-                    'debug': True,
-                },
-            },
-        ]
-    ):
-        with pytest.raises(TemplateSyntaxError):
-            client.get(reverse('elasticapm-template-exc'))
-
-    assert len(django_elasticapm_client.events) == 1
-    event = django_elasticapm_client.events.pop(0)['errors'][0]
-
-    assert event['culprit'] == 'error.html'
-
-    assert event['template']['context_line'] == '{% invalid template tag %}\n'
-
 
 @pytest.mark.skipif(compat.PY3, reason='see Python bug #10805')
 def test_record_none_exc_info(django_elasticapm_client):
@@ -877,9 +848,6 @@ def client_get(client, url):
 
 
 def test_stacktraces_have_templates(client, django_elasticapm_client):
-    # Clear the LRU frame cache
-    Transaction._lrucache = LRUCache(maxsize=5000)
-
     # only Django 1.9+ have the necessary information stored on Node/Template
     # instances when TEMPLATE_DEBUG = False
 
@@ -923,9 +891,6 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
 
 
 def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
-    # Clear the LRU frame cache
-    Transaction._lrucache = LRUCache(maxsize=5000)
-
     with mock.patch(
             "elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False

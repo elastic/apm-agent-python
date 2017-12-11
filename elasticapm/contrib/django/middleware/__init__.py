@@ -17,6 +17,7 @@ import threading
 from django.apps import apps
 from django.conf import settings as django_settings
 
+import elasticapm
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.utils import (build_name_with_http_method_prefix,
                               get_name_from_func, wrapt)
@@ -69,11 +70,11 @@ class Catch404Middleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             param_message={
                 'message': 'Page Not Found: %s',
                 'params': [request.build_absolute_uri()]
-            }, data=data
+            }, logger_name='http404', level=logging.INFO
         )
         request._elasticapm = {
             'app_name': data.get('app_name', self.client.config.app_name),
-            'id': self.client.get_ident(result),
+            'id': result,
         }
         return response
 
@@ -182,13 +183,12 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                 )
                 request_data = self.client.get_data_from_request(request)
                 response_data = self.client.get_data_from_response(response)
-                self.client.set_transaction_extra_data(request_data, 'request')
-                self.client.set_transaction_extra_data(response_data, 'response')
+                elasticapm.set_transaction_data(request_data, 'request')
+                elasticapm.set_transaction_data(response_data, 'response')
 
                 user_data = self.client.get_user_info(request)
                 if user_data:
-                    self.client.set_transaction_extra_data(
-                        user_data, 'user')
+                    elasticapm.set_transaction_data(user_data, 'user')
 
                 self.client.end_transaction(transaction_name, 'HTTP {}xx'.format(status_code // 100))
         except Exception:
