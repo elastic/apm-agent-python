@@ -121,7 +121,7 @@ def test_instrumentation(flask_apm_client):
         'Content-Length': '78',
         'Content-Type': 'text/html; charset=utf-8',
     }
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert len(traces) == 1, [t['name'] for t in traces]
 
     expected_signatures = {'users.html'}
@@ -142,7 +142,7 @@ def test_instrumentation_404(flask_apm_client):
     transactions = flask_apm_client.client.instrumentation_store.get_all()
 
     assert len(transactions) == 1
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert transactions[0]['result'] == 'HTTP 4xx'
     assert transactions[0]['context']['response']['status_code'] == 404
     assert len(traces) == 0, [t["signature"] for t in traces]

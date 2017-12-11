@@ -283,7 +283,7 @@ def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
     finally:
         # make sure we've cleared out the traces for the other tests.
         transactions = elasticapm_client.instrumentation_store.get_all()
-        traces = transactions[0]['traces']
+        traces = transactions[0]['spans']
         trace = traces[0]
         assert trace['name'] == 'SELECT FROM test'
         assert 'db' in trace['context']

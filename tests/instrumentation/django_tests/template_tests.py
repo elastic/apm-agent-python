@@ -49,7 +49,7 @@ def test_template_rendering(should_collect, django_elasticapm_client, client):
     transactions = django_elasticapm_client.instrumentation_store.get_all()
 
     assert len(transactions) == 3
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert len(traces) == 2, [t['name'] for t in traces]
 
     kinds = ['code', 'template.django']
@@ -81,7 +81,7 @@ def test_template_rendering_django18_jinja2(should_collect, django_elasticapm_cl
     transactions = django_elasticapm_client.instrumentation_store.get_all()
 
     assert len(transactions) == 3
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert len(traces) == 1, [t['name'] for t in traces]
 
     kinds = ['template.jinja2']

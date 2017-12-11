@@ -102,7 +102,7 @@ def test_leaf_tracing(transaction_store):
     transaction_store.end_transaction(None, "transaction")
 
     transactions = transaction_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     assert len(traces) == 2
 

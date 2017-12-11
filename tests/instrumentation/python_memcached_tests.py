@@ -18,7 +18,7 @@ def test_memcached(elasticapm_client):
     elasticapm_client.end_transaction("BillingView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
 
     expected_signatures = {'test_memcached',
                            'Client.set', 'Client.get',

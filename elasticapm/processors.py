@@ -204,10 +204,10 @@ def mark_in_app_frames(client, event):
         if 'module' not in frame:
             return
         mod = frame['module']
-        frame['in_app'] = mod and bool(
+        frame['library_frame'] = not (mod and bool(
             any(mod.startswith(path + '.') or mod == path for path in include) and
             not any(mod.startswith(path + '.') or mod == path for path in exclude)
-        )
+        ))
 
     _process_stack_frames(event, _is_in_app)
     return event
@@ -252,9 +252,9 @@ def _sanitize_string(unsanitized, itemsep, kvsep):
 
 
 def _process_stack_frames(event, func):
-    if 'traces' in event:
+    if 'spans' in event:
         # every trace can have a stack trace
-        for trace in event['traces']:
+        for trace in event['spans']:
             if 'stacktrace' in trace:
                 for frame in trace['stacktrace']:
                     func(frame)

@@ -20,5 +20,5 @@ def test_botocore_instrumentation(mock_make_request, elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['traces']
+    traces = transactions[0]['spans']
     assert 'ec2:DescribeInstances' in map(lambda x: x['name'], traces)
