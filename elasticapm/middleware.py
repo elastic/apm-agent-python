@@ -41,14 +41,12 @@ class ElasticAPM(object):
         event_id = self.client.capture(
             'Exception',
             exc_info=exc_info,
-            data={
-                'context': {
-                    'request': {
-                        'method': environ.get('REQUEST_METHOD'),
-                        'url': get_url_dict(get_current_url(environ)),
-                        'headers': dict(get_headers(environ)),
-                        'env': dict(get_environ(environ)),
-                    }
+            context={
+                'request': {
+                    'method': environ.get('REQUEST_METHOD'),
+                    'url': get_url_dict(get_current_url(environ)),
+                    'headers': dict(get_headers(environ)),
+                    'env': dict(get_environ(environ)),
                 }
             }
         )

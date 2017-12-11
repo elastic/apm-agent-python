@@ -8,9 +8,8 @@ import uuid
 
 from elasticapm.conf import constants
 from elasticapm.utils import compat, get_name_from_func
-from elasticapm.utils.lru import LRUCache
 
-__all__ = ('trace', 'tag')
+__all__ = ('trace', 'tag', 'set_transaction_name', 'set_transaction_data')
 
 error_logger = logging.getLogger('elasticapm.errors')
 
@@ -37,17 +36,15 @@ def get_transaction(clear=False):
 
 
 class Transaction(object):
-    _lrucache = LRUCache(maxsize=5000)
-
-    def __init__(self, get_frames, kind="custom"):
+    def __init__(self, frames_collector_func, transaction_type="custom"):
         self.id = uuid.uuid4()
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
         self.name = None
         self.duration = None
         self.result = None
-        self.kind = kind
-        self.get_frames = get_frames
+        self.transaction_type = transaction_type
+        self._frames_collector_func = frames_collector_func
 
         self.traces = []
         self.trace_stack = []
@@ -88,7 +85,7 @@ class Transaction(object):
         if self.trace_stack:
             trace.parent = self.trace_stack[-1].idx
 
-        trace.frames = self.get_frames()[skip_frames:]
+        trace.frames = self._frames_collector_func()[skip_frames:]
         self.traces.append(trace)
 
         return trace
@@ -98,7 +95,7 @@ class Transaction(object):
         return {
             'id': str(self.id),
             'name': self.name,
-            'type': self.kind,
+            'type': self.transaction_type,
             'duration': self.duration * 1000,  # milliseconds
             'result': str(self.result),
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
@@ -151,11 +148,11 @@ class Trace(object):
 
 
 class TransactionsStore(object):
-    def __init__(self, get_frames, collect_frequency, max_queue_length=None, ignore_patterns=None):
+    def __init__(self, frames_collector_func, collect_frequency, max_queue_length=None, ignore_patterns=None):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
         self.max_queue_length = max_queue_length
-        self._get_frames = get_frames
+        self._frames_collector_func = frames_collector_func
         self._transactions = []
         self._last_collect = _time_func()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
@@ -188,7 +185,7 @@ class TransactionsStore(object):
 
         :returns the Transaction object
         """
-        transaction = Transaction(self._get_frames, transaction_type)
+        transaction = Transaction(self._frames_collector_func, transaction_type)
         thread_local.transaction = transaction
         return transaction
 
@@ -204,7 +201,8 @@ class TransactionsStore(object):
             transaction.end_transaction()
             if self._should_ignore(transaction_name):
                 return
-            transaction.name = transaction_name
+            if not transaction.name:
+                transaction.name = transaction_name
             transaction.result = response_code
             self.add_transaction(transaction.to_dict())
         return transaction
@@ -260,3 +258,17 @@ def tag(**tags):
             transaction._tags[compat.text_type(name)] = compat.text_type(value)
         else:
             error_logger.warning("Ignored tag %s. Tag names can't contain stars, dots or double quotes.", name)
+
+
+def set_transaction_name(name):
+    transaction = get_transaction()
+    if not transaction:
+        return
+    transaction.name = name
+
+
+def set_transaction_data(data, _key='custom'):
+    transaction = get_transaction()
+    if not transaction:
+        return
+    transaction._context[_key] = data

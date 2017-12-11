@@ -18,21 +18,12 @@ from django.conf import settings as django_settings
 from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
-from django.template import TemplateSyntaxError
 
 from elasticapm.base import Client
-from elasticapm.contrib.django.utils import (get_data_from_template_debug,
-                                             get_data_from_template_source,
-                                             iterate_with_template_sources)
+from elasticapm.contrib.django.utils import iterate_with_template_sources
 from elasticapm.utils import compat, get_url_dict
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
-
-try:
-    from django.template.loader import LoaderOrigin  # Django < 1.9
-except ImportError:
-    from django.template.base import Origin as LoaderOrigin  # Django >= 1.9
-
 
 __all__ = ('DjangoClient',)
 
@@ -167,49 +158,28 @@ class DjangoClient(Client):
         return result
 
     def capture(self, event_type, request=None, **kwargs):
-        if 'data' not in kwargs:
-            kwargs['data'] = data = {}
+        if 'context' not in kwargs:
+            kwargs['context'] = context = {}
         else:
-            data = kwargs['data']
-
-        if 'context' not in data:
-            data['context'] = context = {}
-        else:
-            context = data['context']
+            context = kwargs['context']
 
         is_http_request = isinstance(request, HttpRequest)
         if is_http_request:
             context['request'] = self.get_data_from_request(request)
             context['user'] = self.get_user_info(request)
 
-        if kwargs.get('exc_info'):
-            exc_value = kwargs['exc_info'][1]
-            # As of r16833 (Django) all exceptions may contain a ``django_template_source`` attribute (rather than the
-            # legacy ``TemplateSyntaxError.source`` check) which describes template information.
-            if (hasattr(exc_value, 'django_template_source') or (
-                (isinstance(exc_value, TemplateSyntaxError) and
-                 isinstance(getattr(exc_value, 'source', None), (tuple, list)) and
-                 isinstance(exc_value.source[0], LoaderOrigin))
-            )):
-                source = getattr(exc_value, 'django_template_source', getattr(exc_value, 'source', None))
-                if source is None:
-                    self.logger.info('Unable to get template source from exception')
-                data.update(get_data_from_template_source(source))
-            elif hasattr(exc_value, 'template_debug'):  # Django 1.9+
-                data.update(get_data_from_template_debug(exc_value.template_debug))
-
         result = super(DjangoClient, self).capture(event_type, **kwargs)
 
         if is_http_request:
             # attach the elasticapm object to the request
             request._elasticapm = {
-                'app_name': data.get('app_name', self.config.app_name),
-                'id': self.get_ident(result),
+                'app_name': self.config.app_name,
+                'id': result,
             }
 
         return result
 
-    def get_stack_info_for_trace(self, frames, extended=True):
+    def _get_stack_info_for_trace(self, frames, extended=True):
         """If the stacktrace originates within the elasticapm module, it will skip
         frames until some other module comes up."""
         frames = list(iterate_with_template_sources(frames, extended))

@@ -14,7 +14,7 @@ To configure Django, add an `ELASTIC_APM` dictionary to your `settings.py`:
 ----
 ELASTIC_APM = {
     'APP_NAME': 'my-app',
-    'SECRET_TOKEN': 'changeme,
+    'SECRET_TOKEN': 'changeme',
 }
 ----
 
@@ -28,7 +28,7 @@ To configure Flask, add an `ELASTIC_APM` dictonary to your `app.config`:
 ----
 app.config['ELASTIC_APM'] = {
     'APP_NAME': 'my-app',
-    'SECRET_TOKEN': 'changeme,
+    'SECRET_TOKEN': 'changeme',
 }
 
 apm = ElasticAPM(app)
