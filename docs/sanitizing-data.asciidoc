@@ -33,7 +33,6 @@ ELASTIC_APM = {
         'elasticapm.processors.sanitize_http_wsgi_env',
         'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
-        'elasticapm.processors.mark_in_app_frames',
     ),
 }
 ----

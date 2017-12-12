@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
+import pytest
 from mock import Mock
 
 from elasticapm.utils import compat, stacks
@@ -72,6 +73,25 @@ def test_traceback_hide(elasticapm_client):
     # don't hide it:
     frames = list(stacks.get_stack_info(get_me_a_filtered_frame(hide=False)))
     assert frames[0]['function'] == 'get_me_a_filtered_frame'
+
+
+@pytest.mark.parametrize('elasticapm_client', [{
+    'include_paths': ('a.b.c', 'c.d'),
+    'exclude_paths': ('c',)
+}], indirect=True)
+def test_library_frames(elasticapm_client):
+    include = elasticapm_client.include_paths_re
+    exclude = elasticapm_client.exclude_paths_re
+    frame1 = Mock(f_globals={'__name__': 'a.b.c'})
+    frame2 = Mock(f_globals={'__name__': 'a.b.c.d'})
+    frame3 = Mock(f_globals={'__name__': 'c.d'})
+
+    info1 = stacks.get_frame_info(frame1, 1, False, include_paths_re=include, exclude_paths_re=exclude)
+    info2 = stacks.get_frame_info(frame2, 1, False, include_paths_re=include, exclude_paths_re=exclude)
+    info3 = stacks.get_frame_info(frame3, 1, False, include_paths_re=include, exclude_paths_re=exclude)
+    assert not info1['library_frame']
+    assert not info2['library_frame']
+    assert info3['library_frame']
 
 
 def test_get_frame_info():

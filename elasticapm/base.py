@@ -15,6 +15,7 @@ import datetime
 import logging
 import os
 import platform
+import re
 import socket
 import sys
 import threading
@@ -133,6 +134,8 @@ class Client(object):
             self.config.max_event_queue_length,
             self.config.transactions_ignore_patterns
         )
+        self.include_paths_re = self._get_path_regex(self.config.include_paths) if self.config.include_paths else None
+        self.exclude_paths_re = self._get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
         compat.atexit_register(self.close)
 
     def get_handler(self, name):
@@ -309,6 +312,10 @@ class Client(object):
             url = transport.send(data, headers, timeout=self.config.timeout)
             self.handle_transport_success(url=url)
 
+    def _get_path_regex(self, paths):
+        paths = '|'.join(map(re.escape, paths))
+        return re.compile('^(?:{})(?:.|$)'.format(paths))
+
     def get_app_info(self):
         language_version = platform.python_version()
         if hasattr(sys, 'pypy_version_info'):
@@ -395,7 +402,11 @@ class Client(object):
                 frames = iter_stack_frames()
             else:
                 frames = stack
-            frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(frames))
+            frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(
+                frames, extended=True,
+                include_paths_re=self.include_paths_re,
+                exclude_paths_re=self.exclude_paths_re,
+            ))
             log['stacktrace'] = frames
 
         if 'stacktrace' in log and not culprit:
@@ -480,7 +491,7 @@ class Client(object):
 
         4.0: Use for error frames too.
         """
-        return stacks.get_stack_info(frames, extended)
+        return stacks.get_stack_info(frames, extended, self.include_paths_re, self.exclude_paths_re)
 
 
 class DummyClient(Client):
