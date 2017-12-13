@@ -62,11 +62,11 @@ You can find a list of all available settings in the <<configuration, Configurat
 [[django-performance-metrics]]
 === Performance Metrics
 
-To send performance metrics to Elastic APM, simply add our tracing middleware to your `MIDDLEWARES` settings:
+To send performance metrics to Elastic APM, simply add our tracing middleware to your `MIDDLEWARE` settings:
 
 [source,python]
 ----
-MIDDLEWARES = (
+MIDDLEWARE = (
     'elasticapm.contrib.django.middleware.TracingMiddleware',
     # ...
 )
@@ -228,11 +228,11 @@ Elastic APM will automatically log errors from your celery tasks, and record per
 By default, Elastic APM does not log HTTP 404 errors. If you wish to log
 these errors, add
 `'elasticapm.contrib.django.middleware.Catch404Middleware'` to
-`MIDDLEWARES` in your settings:
+`MIDDLEWARE` in your settings:
 
 [source,python]
 ----
-MIDDLEWARES = (
+MIDDLEWARE = (
     # ...
     'elasticapm.contrib.django.middleware.Catch404Middleware',
     # ...
