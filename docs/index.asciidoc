@@ -1,4 +1,4 @@
-= APM Python Agent Reference (Experimental)
+= APM Python Agent Reference (Beta)
 
 [[getting-started]]
 == Getting started
