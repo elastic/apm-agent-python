@@ -134,6 +134,7 @@ class Client(object):
                 with_locals=self.config.collect_local_variables in ('all', 'transactions')
             ),
             collect_frequency=self.config.transaction_send_frequency,
+            sample_rate=self.config.transaction_sample_rate,
             max_queue_length=self.config.max_event_queue_length,
             ignore_patterns=self.config.transactions_ignore_patterns,
         )
@@ -227,7 +228,7 @@ class Client(object):
     def begin_transaction(self, transaction_type):
         """Register the start of a transaction on the client
         """
-        self.instrumentation_store.begin_transaction(transaction_type)
+        return self.instrumentation_store.begin_transaction(transaction_type)
 
     def end_transaction(self, name, result=''):
         transaction = self.instrumentation_store.end_transaction(result, name)

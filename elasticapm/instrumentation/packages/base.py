@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 # We have our own `BoundFunctionWrapper` and `FunctionWrapper` here because
-# we want them to be able to now about `module` and `method` and supply it in
+# we want them to be able to know about `module` and `method` and supply it in
 # the call to the wrapper.
 
 class OriginalNamesBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
@@ -219,7 +219,8 @@ class AbstractInstrumentedModule(object):
         self.originals = {}
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
-        if not get_transaction():
+        transaction = get_transaction()
+        if not transaction or not transaction.is_sampled:
             return wrapped(*args, **kwargs)
         else:
             return self.call(module, method, wrapped, instance, args, kwargs)

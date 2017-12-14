@@ -181,12 +181,12 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     transaction_name,
                     request
                 )
-                request_data = self.client.get_data_from_request(request)
-                response_data = self.client.get_data_from_response(response)
+                request_data = lambda: self.client.get_data_from_request(request)
+                response_data = lambda: self.client.get_data_from_response(response)
                 elasticapm.set_transaction_data(request_data, 'request')
                 elasticapm.set_transaction_data(response_data, 'response')
 
-                user_data = self.client.get_user_info(request)
+                user_data = lambda: self.client.get_user_info(request)
                 if user_data:
                     elasticapm.set_transaction_data(user_data, 'user')
 
