@@ -199,32 +199,6 @@ def test_remove_stacktrace_locals():
         assert 'vars' not in frame
 
 
-def test_mark_in_app_frames():
-    data = {
-        'exception': {
-            'stacktrace': [
-                {'module': 'foo'},
-                {'module': 'foo.bar'},
-                {'module': 'foo.bar.baz'},
-                {'module': 'foobar'},
-                {'module': 'foo.bar.bazzinga'},
-                {'module': None},
-            ]
-        }
-    }
-
-    client = Client(include_paths=['foo'], exclude_paths=['foo.bar.baz'])
-    data = processors.mark_in_app_frames(client, data)
-    frames = data['exception']['stacktrace']
-
-    assert not frames[0]['library_frame']
-    assert not frames[1]['library_frame']
-    assert frames[2]['library_frame']
-    assert frames[3]['library_frame']
-    assert not frames[4]['library_frame']
-    assert frames[5]['library_frame']
-
-
 def dummy_processor(client, data):
     data['processed'] = True
     return data

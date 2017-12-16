@@ -15,6 +15,12 @@ import sys
 from elasticapm.utils import compat
 from elasticapm.utils.encoding import transform
 
+try:
+    from functools import lru_cache
+except ImportError:
+    from cachetools.func import lru_cache
+
+
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
 
 
@@ -147,10 +153,10 @@ def iter_stack_frames(frames=None):
     for frame in frames:
         f_locals = getattr(frame, 'f_locals', {})
         if not _getitem_from_frame(f_locals, '__traceback_hide__'):
-            yield frame, frame.f_lineno,
+            yield frame, frame.f_lineno
 
 
-def get_frame_info(frame, lineno, extended=True):
+def get_frame_info(frame, lineno, extended=True, include_paths_re=None, exclude_paths_re=None):
     # Support hidden frames
     f_locals = getattr(frame, 'f_locals', {})
     if _getitem_from_frame(f_locals, '__traceback_hide__'):
@@ -188,6 +194,7 @@ def get_frame_info(frame, lineno, extended=True):
         'module': module_name,
         'function': function,
         'lineno': lineno + 1,
+        'library_frame': _is_library_frame(module_name, include_paths_re, exclude_paths_re)
     }
 
     if extended:
@@ -215,7 +222,7 @@ def get_frame_info(frame, lineno, extended=True):
     return frame_result
 
 
-def get_stack_info(frames, extended=True):
+def get_stack_info(frames, extended=True, include_paths_re=None, exclude_paths_re=None):
     """
     Given a list of frames, returns a list of stack information
     dictionary objects that are JSON-ready.
@@ -226,7 +233,7 @@ def get_stack_info(frames, extended=True):
     """
     results = []
     for frame, lineno in frames:
-        result = get_frame_info(frame, lineno, extended)
+        result = get_frame_info(frame, lineno, extended, include_paths_re, exclude_paths_re)
         if result:
             results.append(result)
     return results
@@ -236,3 +243,11 @@ def _walk_stack(frame):
     while frame:
         yield frame
         frame = frame.f_back
+
+
+@lru_cache(512)
+def _is_library_frame(module_name, include_paths_re, exclude_paths_re):
+    return not(module_name and bool(
+        (include_paths_re.match(module_name) if include_paths_re else False) and
+        not (exclude_paths_re.match(module_name) if exclude_paths_re else False)
+    ))

@@ -22,10 +22,10 @@ for m in ('multiprocessing', 'billiard'):
 
 import sys
 import os
+import ast
 from codecs import open
 
 from setuptools import setup, find_packages, Extension
-from elasticapm.version import VERSION
 from setuptools.command.test import test as TestCommand
 
 from distutils.command.build_ext import build_ext
@@ -56,6 +56,21 @@ class optional_build_ext(build_ext):
             build_ext.build_extension(self, ext)
         except build_ext_errors:
             raise BuildExtFailed()
+
+
+def get_version():
+    """
+    Get version without importing from elasticapm. This avoids any side effects
+    from importing while installing and/or building the module
+    :return: a string, indicating the version
+    """
+    version_file = open(os.path.join('elasticapm', 'version.py'), encoding='utf-8')
+    for line in version_file:
+        if line.startswith('__version__'):
+            version_tuple = ast.literal_eval(line.split(' = ')[1])
+            return '.'.join(map(str, version_tuple))
+    return 'unknown'
+
 
 tests_require = [
     'py>=1.4.26',
@@ -97,11 +112,6 @@ else:
     tests_require += ['python3-memcached']
 
 
-if sys.version_info[:2] == (2, 6):
-    tests_require += ['Django>=1.2,<1.7']
-else:
-    tests_require += ['Django>=1.2']
-
 try:
     import __pypy__
 except ImportError:
@@ -116,13 +126,11 @@ if sys.version_info >= (3, 5):
         'pytest-mock',
     ]
 
-install_requires = ['urllib3', 'certifi']
-
-try:
-    # For Python >= 2.6
-    import json
-except ImportError:
-    install_requires.append("simplejson>=2.3.0,<2.5.0")
+install_requires = [
+    'urllib3',
+    'certifi',
+    "cachetools;python_version=='2.7'"
+]
 
 
 class PyTest(TestCommand):
@@ -146,7 +154,7 @@ class PyTest(TestCommand):
 
 setup_kwargs = dict(
     name='elastic-apm',
-    version=VERSION,
+    version=get_version(),
     author='Elastic, Inc',
     license='BSD',
     url='https://github.com/elastic/apm-agent-python',

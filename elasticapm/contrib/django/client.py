@@ -182,7 +182,7 @@ class DjangoClient(Client):
     def _get_stack_info_for_trace(self, frames, extended=True):
         """If the stacktrace originates within the elasticapm module, it will skip
         frames until some other module comes up."""
-        frames = list(iterate_with_template_sources(frames, extended))
+        frames = list(iterate_with_template_sources(frames, extended, self.include_paths_re, self.exclude_paths_re))
         i = 0
         while len(frames) > i:
             if 'module' in frames[i] and not (
