@@ -7,10 +7,12 @@
 == Changelog
 
 
-//[[release-next]]
-//[float]
-//=== Unreleased
-//https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the HEAD diff]
+[[release-next]]
+[float]
+=== Unreleased
+https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the HEAD diff]
+
+ * moved the library-frame detection from a processor to the stacktrace collection ({pull}113[#113]).
 
 [[release-1.0.0]]
 [float]

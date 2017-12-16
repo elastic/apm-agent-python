@@ -277,6 +277,9 @@ def test_explicit_message_on_exception_event(elasticapm_client):
     assert event['exception']['message'] == 'foobar'
 
 
+@pytest.mark.parametrize('elasticapm_client', [
+    {'include_paths': ('tests',)}
+], indirect=True)
 def test_exception_event(elasticapm_client):
     try:
         raise ValueError('foo')
@@ -298,10 +301,17 @@ def test_exception_event(elasticapm_client):
     assert frame['filename'] == 'tests/client/client_tests.py'
     assert frame['module'] == __name__
     assert frame['function'] == 'test_exception_event'
+    assert not frame['library_frame']
     assert 'timestamp' in event
     assert 'log' not in event
+    # check that only frames from `tests` module are not marked as library frames
+    assert all(frame['library_frame'] or frame['module'].startswith('tests')
+               for frame in event['exception']['stacktrace'])
 
 
+@pytest.mark.parametrize('elasticapm_client', [
+    {'include_paths': ('tests',)}
+], indirect=True)
 def test_message_event(elasticapm_client):
     elasticapm_client.capture('Message', message='test')
 
@@ -310,6 +320,9 @@ def test_message_event(elasticapm_client):
     assert event['log']['message'] == 'test'
     assert 'stacktrace' not in event
     assert 'timestamp' in event
+    assert 'stacktrace' in event['log']
+    # check that only frames from `tests` module are not marked as library frames
+    assert all(frame['library_frame'] or frame['module'].startswith('tests') for frame in event['log']['stacktrace'])
 
 
 def test_logger(elasticapm_client):

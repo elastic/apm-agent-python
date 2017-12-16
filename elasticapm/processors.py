@@ -10,6 +10,7 @@ Large portions are
 """
 
 import re
+import warnings
 
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
@@ -189,27 +190,8 @@ def sanitize_http_request_body(client, event):
 
 
 def mark_in_app_frames(client, event):
-    """
-    Marks frames as "in app" if the module matches any entries in config.include_paths and
-    doesn't match any entries in config.exclude_paths.
-
-    :param client: an ElasticAPM client
-    :param event: a transaction or error event
-    :return: The modified event
-    """
-    include = client.config.include_paths or []
-    exclude = client.config.exclude_paths or []
-
-    def _is_in_app(frame):
-        if 'module' not in frame:
-            return
-        mod = frame['module']
-        frame['library_frame'] = not (mod and bool(
-            any(mod.startswith(path + '.') or mod == path for path in include) and
-            not any(mod.startswith(path + '.') or mod == path for path in exclude)
-        ))
-
-    _process_stack_frames(event, _is_in_app)
+    warnings.warn('The mark_in_app_frames processor is deprecated '
+                  'and can be removed from your PROCESSORS setting', DeprecationWarning)
     return event
 
 

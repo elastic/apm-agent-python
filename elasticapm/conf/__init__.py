@@ -153,7 +153,6 @@ class Config(_ConfigBase):
         'elasticapm.processors.sanitize_http_wsgi_env',
         'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
-        'elasticapm.processors.mark_in_app_frames',
     ])
     traces_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
     max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
