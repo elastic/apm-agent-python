@@ -24,6 +24,7 @@ except ImportError:
 _coding_re = re.compile(r'coding[:=]\s*([-\w.]+)')
 
 
+@lru_cache(512)
 def get_lines_from_file(filename, lineno, context_lines, loader=None, module_name=None):
     """
     Returns context_lines before and after lineno from file.
@@ -156,7 +157,8 @@ def iter_stack_frames(frames=None):
             yield frame, frame.f_lineno
 
 
-def get_frame_info(frame, lineno, extended=True, include_paths_re=None, exclude_paths_re=None):
+def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
+                   include_paths_re=None, exclude_paths_re=None):
     # Support hidden frames
     f_locals = getattr(frame, 'f_locals', {})
     if _getitem_from_frame(f_locals, '__traceback_hide__'):
@@ -197,13 +199,19 @@ def get_frame_info(frame, lineno, extended=True, include_paths_re=None, exclude_
         'library_frame': _is_library_frame(module_name, include_paths_re, exclude_paths_re)
     }
 
-    if extended:
+    if with_source_context:
         if lineno is not None and abs_path:
             pre_context, context_line, post_context = get_lines_from_file(
                 abs_path, lineno, 3, loader, module_name)
         else:
             pre_context, context_line, post_context = [], None, []
-
+        if context_line:
+            frame_result.update({
+                'pre_context': pre_context,
+                'context_line': context_line,
+                'post_context': post_context,
+            })
+    if with_locals:
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of
             # f_locals that are not actually dictionaries
@@ -212,17 +220,12 @@ def get_frame_info(frame, lineno, extended=True, include_paths_re=None, exclude_
             except Exception:
                 f_locals = '<invalid local scope>'
 
-        if context_line:
-            frame_result.update({
-                'pre_context': pre_context,
-                'context_line': context_line,
-                'post_context': post_context,
-                'vars': transform(f_locals),
-            })
+        frame_result['vars'] = transform(f_locals)
     return frame_result
 
 
-def get_stack_info(frames, extended=True, include_paths_re=None, exclude_paths_re=None):
+def get_stack_info(frames, with_source_context=True, with_locals=True,
+                   include_paths_re=None, exclude_paths_re=None):
     """
     Given a list of frames, returns a list of stack information
     dictionary objects that are JSON-ready.
@@ -230,10 +233,24 @@ def get_stack_info(frames, extended=True, include_paths_re=None, exclude_paths_r
     We have to be careful here as certain implementations of the
     _Frame class do not contain the necessary data to lookup all
     of the information we want.
+
+    :param frames: a list of (Frame, lineno) tuples
+    :param with_source_context: boolean to indicate if context lines should be collected
+    :param with_locals: boolean to indicate if local variables should be collected
+    :param include_paths_re: a regex to determine if a frame is not a library frame
+    :param exclude_paths_re: a regex to exclude frames from not being library frames
+    :return:
     """
     results = []
     for frame, lineno in frames:
-        result = get_frame_info(frame, lineno, extended, include_paths_re, exclude_paths_re)
+        result = get_frame_info(
+            frame,
+            lineno,
+            with_source_context,
+            with_locals,
+            include_paths_re,
+            exclude_paths_re,
+        )
         if result:
             results.append(result)
     return results

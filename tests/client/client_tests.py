@@ -438,3 +438,91 @@ def test_send_timer(elasticapm_client):
     elasticapm_client.close()
 
     assert not elasticapm_client._send_timer.is_alive()
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'collect_local_variables': 'errors'},
+    {'collect_local_variables': 'transactions'},
+    {'collect_local_variables': 'all'},
+    {'collect_local_variables': 'something'},
+], indirect=True)
+def test_collect_local_variables_errors(elasticapm_client):
+    mode = elasticapm_client.config.collect_local_variables
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        elasticapm_client.capture_exception()
+    event = elasticapm_client.events[0]['errors'][0]
+    if mode in ('errors', 'all'):
+        assert 'vars' in event['exception']['stacktrace'][0], mode
+    else:
+        assert 'vars' not in event['exception']['stacktrace'][0], mode
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'collect_source': 'errors'},
+    {'collect_source': 'transactions'},
+    {'collect_source': 'all'},
+    {'collect_source': 'something'},
+], indirect=True)
+def test_collect_source_errors(elasticapm_client):
+    mode = elasticapm_client.config.collect_source
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        elasticapm_client.capture_exception()
+    event = elasticapm_client.events[0]['errors'][0]
+    if mode in ('errors', 'all'):
+        assert 'context_line' in event['exception']['stacktrace'][0], mode
+        assert 'pre_context' in event['exception']['stacktrace'][0], mode
+        assert 'post_context' in event['exception']['stacktrace'][0], mode
+    else:
+        assert 'context_line' not in event['exception']['stacktrace'][0], mode
+        assert 'pre_context' not in event['exception']['stacktrace'][0], mode
+        assert 'post_context' not in event['exception']['stacktrace'][0], mode
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'collect_local_variables': 'errors'},
+    {'collect_local_variables': 'transactions'},
+    {'collect_local_variables': 'all'},
+    {'collect_local_variables': 'something'},
+], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_collect_local_variables_transactions(should_collect, elasticapm_client):
+    should_collect.return_value = False
+    mode = elasticapm_client.config.collect_local_variables
+    elasticapm_client.begin_transaction('test')
+    with elasticapm.trace('foo'):
+        pass
+    elasticapm_client.end_transaction('test', 'ok')
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    if mode in ('transactions', 'all'):
+        assert 'vars' in transaction['spans'][0]['stacktrace'][0], mode
+    else:
+        assert 'vars' not in transaction['spans'][0]['stacktrace'][0], mode
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'collect_source': 'errors'},
+    {'collect_source': 'transactions'},
+    {'collect_source': 'all'},
+    {'collect_source': 'something'},
+], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_collect_source_transactions(should_collect, elasticapm_client):
+    should_collect.return_value = False
+    mode = elasticapm_client.config.collect_source
+    elasticapm_client.begin_transaction('test')
+    with elasticapm.trace('foo'):
+        pass
+    elasticapm_client.end_transaction('test', 'ok')
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    if mode in ('transactions', 'all'):
+        assert 'context_line' in transaction['spans'][0]['stacktrace'][0], mode
+        assert 'pre_context' in transaction['spans'][0]['stacktrace'][0], mode
+        assert 'post_context' in transaction['spans'][0]['stacktrace'][0], mode
+    else:
+        assert 'context_line' not in transaction['spans'][0]['stacktrace'][0], mode
+        assert 'pre_context' not in transaction['spans'][0]['stacktrace'][0], mode
+        assert 'post_context' not in transaction['spans'][0]['stacktrace'][0], mode

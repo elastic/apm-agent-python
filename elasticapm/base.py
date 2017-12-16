@@ -30,7 +30,6 @@ from elasticapm.utils import json_encoder as json
 from elasticapm.utils import compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import shorten, transform
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.stacks import get_culprit, iter_stack_frames
 
 __all__ = ('Client',)
 
@@ -129,7 +128,11 @@ class Client(object):
         self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         self.instrumentation_store = TransactionsStore(
-            lambda: self._get_stack_info_for_trace(iter_stack_frames(), False),
+            lambda: self._get_stack_info_for_trace(
+                stacks.iter_stack_frames(),
+                with_source_context=self.config.collect_source in ('all', 'transactions'),
+                with_locals=self.config.collect_local_variables in ('all', 'transactions')
+            ),
             self.config.traces_send_frequency,
             self.config.max_event_queue_length,
             self.config.transactions_ignore_patterns
@@ -399,18 +402,20 @@ class Client(object):
         log = event_data.get('log', {})
         if stack and 'stacktrace' not in log:
             if stack is True:
-                frames = iter_stack_frames()
+                frames = stacks.iter_stack_frames()
             else:
                 frames = stack
             frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(
-                frames, extended=True,
+                frames,
+                with_source_context=self.config.collect_source in ('errors', 'all'),
+                with_locals=self.config.collect_local_variables in ('errors', 'all'),
                 include_paths_re=self.include_paths_re,
                 exclude_paths_re=self.exclude_paths_re,
             ))
             log['stacktrace'] = frames
 
         if 'stacktrace' in log and not culprit:
-            culprit = get_culprit(
+            culprit = stacks.get_culprit(
                 log['stacktrace'],
                 self.config.include_paths, self.config.exclude_paths
             )
@@ -486,12 +491,10 @@ class Client(object):
             )
         return self._transports[parsed_url]
 
-    def _get_stack_info_for_trace(self, frames, extended=True):
-        """Overrideable in derived clients to add frames/info, e.g. templates
-
-        4.0: Use for error frames too.
-        """
-        return stacks.get_stack_info(frames, extended, self.include_paths_re, self.exclude_paths_re)
+    def _get_stack_info_for_trace(self, frames, with_source_context=True, with_locals=True):
+        """Overrideable in derived clients to add frames/info, e.g. templates"""
+        return stacks.get_stack_info(frames, with_source_context, with_locals,
+                                     self.include_paths_re, self.exclude_paths_re)
 
 
 class DummyClient(Client):

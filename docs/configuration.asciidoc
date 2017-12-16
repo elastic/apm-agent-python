@@ -233,6 +233,40 @@ This setting can be overridden on an individual basis by setting the `extra`-key
 logger.info('something happened', extra={'stack': False})
 ----
 
+[float]
+[[config-collect-local-variables]]
+==== `collect_local_variables`
+
+|============
+| Environment                           | Django/Flask              | Default
+| `ELASTIC_APM_COLLECT_LOCAL_VARIABLES` | `COLLECT_LOCAL_VARIABLES` | `errors`
+|============
+
+Possible values: `errors`, `transactions`, `all`, `none`
+
+The Elastic APM Python agent can collect local variables for stack frames.
+By default, this is only done for errors.
+
+NOTE: collecting local variables has a non-trivial overhead.
+Collecting local variables for transactions in production environments
+can have adverse effects for the performance of your service.
+
+[float]
+[[config-collect-source]]
+==== `collect_source`
+
+|============
+| Environment                  | Django/Flask     | Default
+| `ELASTIC_APM_COLLECT_SOURCE` | `COLLECT_SOURCE` | `all`
+|============
+
+Possible values: `errors`, `transactions`, `all`, `none`
+
+The Elastic APM Python agent can collect source code for stack frames.
+
+NOTE: collecting the source code for frames has a non-trivial overhead.
+If you notice a performance impact when running Elastic APM, changing
+this setting to `errors` can help.
 
 [float]
 [[config-traces-send-frequency]]
