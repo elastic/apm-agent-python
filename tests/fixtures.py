@@ -1,6 +1,66 @@
+import json
+import zlib
+
+import jsonschema
 import pytest
+import requests
+from pytest_localserver.http import ContentServer
+from werkzeug.wrappers import Request, Response
 
 from elasticapm.base import Client
+
+ERRORS_SCHEMA = 'https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/errors/payload.json'
+TRANSACTIONS_SCHEMA = 'https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/transactions/payload.json'
+
+VALIDATORS = {
+    '/v1/errors': jsonschema.Draft4Validator(
+        requests.get(ERRORS_SCHEMA).json(),
+        resolver=jsonschema.RefResolver(
+            base_uri='/'.join(ERRORS_SCHEMA.split('/')[:-1]) + '/',
+            referrer=ERRORS_SCHEMA,
+        )
+    ),
+    '/v1/transactions': jsonschema.Draft4Validator(
+        requests.get(TRANSACTIONS_SCHEMA).json(),
+        resolver=jsonschema.RefResolver(
+            base_uri='/'.join(TRANSACTIONS_SCHEMA.split('/')[:-1]) + '/',
+            referrer=TRANSACTIONS_SCHEMA,
+        )
+    )
+}
+
+
+class ValidatingWSGIApp(ContentServer):
+    def __init__(self, **kwargs):
+        super(ValidatingWSGIApp, self).__init__(**kwargs)
+        self.payloads = []
+        self.skip_validate = False
+
+    def __call__(self, environ, start_response):
+        code = self.code
+        content = self.content
+        request = Request(environ)
+        self.requests.append(request)
+        data = request.data
+        if request.content_encoding == 'deflate':
+            data = zlib.decompress(data)
+        data = data.decode(request.charset)
+        if request.content_type == 'application/json':
+            data = json.loads(data)
+        self.payloads.append(data)
+        validator = VALIDATORS.get(request.path, None)
+        if validator and not self.skip_validate:
+            try:
+                validator.validate(data)
+                code = 202
+            except jsonschema.ValidationError as e:
+                code = 400
+                content = json.dumps({'status': 'error', 'message': str(e)})
+        response = Response(status=code)
+        response.headers.clear()
+        response.headers.extend(self.headers)
+        response.data = content
+        return response(environ, start_response)
 
 
 @pytest.fixture()
@@ -14,15 +74,23 @@ def elasticapm_client(request):
 
 
 @pytest.fixture()
-def sending_elasticapm_client(request, httpserver):
-    httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+def validating_httpserver(request):
+    server = ValidatingWSGIApp()
+    server.start()
+    request.addfinalizer(server.stop)
+    return server
+
+
+@pytest.fixture()
+def sending_elasticapm_client(request, validating_httpserver):
+    validating_httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
     client_config = getattr(request, 'param', {})
-    client_config.setdefault('server_url', httpserver.url)
+    client_config.setdefault('server_url', validating_httpserver.url)
     client_config.setdefault('app_name', 'myapp')
     client_config.setdefault('secret_token', 'test_key')
     client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
     client = Client(**client_config)
-    client.httpserver = httpserver
+    client.httpserver = validating_httpserver
     yield client
     client.close()
 

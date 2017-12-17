@@ -34,10 +34,10 @@ def django_elasticapm_client(request):
 
 
 @pytest.fixture()
-def django_sending_elasticapm_client(request, httpserver):
-    httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+def django_sending_elasticapm_client(request, validating_httpserver):
+    validating_httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
     client_config = getattr(request, 'param', {})
-    client_config.setdefault('server_url', httpserver.url)
+    client_config.setdefault('server_url', validating_httpserver.url)
     client_config.setdefault('app_name', 'app')
     client_config.setdefault('secret_token', 'secret')
     client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
@@ -47,7 +47,7 @@ def django_sending_elasticapm_client(request, httpserver):
     register_handlers(client)
     instrument(client)
     app.client = client
-    client.httpserver = httpserver
+    client.httpserver = validating_httpserver
     yield client
 
     app.client = old_client
