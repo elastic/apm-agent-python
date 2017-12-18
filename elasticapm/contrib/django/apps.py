@@ -47,7 +47,7 @@ def register_handlers(client):
 
 def instrument(client):
     """
-    Auto-instruments code to get nice traces
+    Auto-instruments code to get nice spans
     """
     from elasticapm.instrumentation.control import instrument
 

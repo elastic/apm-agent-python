@@ -73,7 +73,7 @@ class Catch404Middleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             }, logger_name='http404', level=logging.INFO
         )
         request._elasticapm = {
-            'app_name': data.get('app_name', self.client.config.app_name),
+            'service_name': data.get('service_name', self.client.config.service_name),
             'id': result,
         }
         return response

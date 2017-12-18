@@ -23,7 +23,7 @@ To create a `Client` instance, import it and call its constructor:
 ----
 from elasticapm import Client
 
-client = Client({'APP_NAME': 'example'}, **defaults)
+client = Client({'SERVICE_NAME': 'example'}, **defaults)
 ----
 
  * `config`: A dictionary, with key/value configuration. For the possible configuration keys, see <<configuration, Configuration>>.

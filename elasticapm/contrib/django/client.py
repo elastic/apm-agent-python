@@ -173,7 +173,7 @@ class DjangoClient(Client):
         if is_http_request:
             # attach the elasticapm object to the request
             request._elasticapm = {
-                'app_name': self.config.app_name,
+                'service_name': self.config.service_name,
                 'id': result,
             }
 

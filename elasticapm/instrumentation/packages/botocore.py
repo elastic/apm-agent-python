@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
 
 
@@ -27,5 +27,5 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             'operation': operation_name,
         }
 
-        with trace(signature, 'ext.http.aws', extra_data, leaf=True):
+        with capture_span(signature, 'ext.http.aws', extra_data, leaf=True):
             return wrapped(*args, **kwargs)

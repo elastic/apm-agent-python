@@ -31,9 +31,9 @@ def test_collection_bulk_write(elasticapm_client, mongo_database):
     assert result.upserted_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.bulk_write'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.bulk_write'
 
 
 @pytest.mark.integrationtest
@@ -47,9 +47,9 @@ def test_collection_count(elasticapm_client, mongo_database):
     assert count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.count'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.count'
 
 
 @pytest.mark.integrationtest
@@ -63,9 +63,9 @@ def test_collection_delete_one(elasticapm_client, mongo_database):
     assert r.deleted_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.delete_one'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.delete_one'
 
 
 @pytest.mark.integrationtest
@@ -79,9 +79,9 @@ def test_collection_delete_many(elasticapm_client, mongo_database):
     assert r.deleted_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.delete_many'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.delete_many'
 
 
 @pytest.mark.integrationtest
@@ -93,9 +93,9 @@ def test_collection_insert(elasticapm_client, mongo_database):
     assert r is not None
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.insert'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.insert'
 
 
 @pytest.mark.integrationtest
@@ -108,9 +108,9 @@ def test_collection_insert_one(elasticapm_client, mongo_database):
     assert r.inserted_id is not None
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.insert_one'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.insert_one'
 
 
 @pytest.mark.integrationtest
@@ -124,9 +124,9 @@ def test_collection_insert_many(elasticapm_client, mongo_database):
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
 
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.insert_many'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.insert_many'
 
 
 @pytest.mark.integrationtest
@@ -144,9 +144,9 @@ def test_collection_find(elasticapm_client, mongo_database):
 
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.cursor.refresh'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.cursor.refresh'
 
 
 @pytest.mark.integrationtest
@@ -160,9 +160,9 @@ def test_collection_find_one(elasticapm_client, mongo_database):
     assert r['author'] == 'Tom'
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.find_one'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.find_one'
 
 
 @pytest.mark.integrationtest
@@ -175,9 +175,9 @@ def test_collection_remove(elasticapm_client, mongo_database):
     assert r['n'] == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.remove'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.remove'
 
 
 @pytest.mark.integrationtest
@@ -191,9 +191,9 @@ def test_collection_update(elasticapm_client, mongo_database):
     assert r['n'] == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.update'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.update'
 
 
 @pytest.mark.integrationtest
@@ -208,9 +208,9 @@ def test_collection_update_one(elasticapm_client, mongo_database):
     assert r.modified_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.update_one'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.update_one'
 
 
 @pytest.mark.integrationtest
@@ -225,9 +225,9 @@ def test_collection_update_many(elasticapm_client, mongo_database):
     assert r.modified_count == 1
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.blogposts.update_many'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.blogposts.update_many'
 
 
 @pytest.mark.integrationtest
@@ -241,12 +241,12 @@ def test_bulk_execute(elasticapm_client, mongo_database):
     bulk.execute()
     elasticapm_client.end_transaction('transaction.test')
     transactions = elasticapm_client.instrumentation_store.get_all()
-    trace = _get_pymongo_trace(transactions[0]['spans'])
-    assert trace['type'] == 'db.mongodb.query'
-    assert trace['name'] == 'elasticapm_test.test_bulk.bulk.execute'
+    span = _get_pymongo_trace(transactions[0]['spans'])
+    assert span['type'] == 'db.mongodb.query'
+    assert span['name'] == 'elasticapm_test.test_bulk.bulk.execute'
 
 
-def _get_pymongo_trace(traces):
-    for trace in traces:
-        if trace['type'].startswith('db.mongodb'):
-            return trace
+def _get_pymongo_trace(spans):
+    for span in spans:
+        if span['type'].startswith('db.mongodb'):
+            return span

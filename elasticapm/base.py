@@ -85,7 +85,7 @@ class Client(object):
     >>> # Configure the client manually
     >>> client = Client(
     >>>     include_paths=['my.package'],
-    >>>     app_name='app_name',
+    >>>     service_name='myapp',
     >>>     secret_token='secret_token',
     >>> )
 
@@ -133,9 +133,9 @@ class Client(object):
                 with_source_context=self.config.collect_source in ('all', 'transactions'),
                 with_locals=self.config.collect_local_variables in ('all', 'transactions')
             ),
-            self.config.traces_send_frequency,
-            self.config.max_event_queue_length,
-            self.config.transactions_ignore_patterns
+            collect_frequency=self.config.transaction_send_frequency,
+            max_queue_length=self.config.max_event_queue_length,
+            ignore_patterns=self.config.transactions_ignore_patterns,
         )
         self.include_paths_re = self._get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = self._get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
@@ -235,7 +235,7 @@ class Client(object):
             self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
-            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.traces_send_frequency))
+            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.transaction_send_frequency))
 
     def close(self):
         self._collect_transactions()
@@ -291,7 +291,7 @@ class Client(object):
         self._start_send_timer()
 
     def _start_send_timer(self, timeout=None):
-        timeout = timeout or self.config.traces_send_frequency
+        timeout = timeout or self.config.transaction_send_frequency
         self._send_timer = threading.Timer(timeout, self._collect_transactions)
         self._send_timer.start()
 
@@ -319,14 +319,14 @@ class Client(object):
         paths = '|'.join(map(re.escape, paths))
         return re.compile('^(?:{})(?:.|$)'.format(paths))
 
-    def get_app_info(self):
+    def get_service_info(self):
         language_version = platform.python_version()
         if hasattr(sys, 'pypy_version_info'):
             runtime_version = '.'.join(map(str, sys.pypy_version_info[:3]))
         else:
             runtime_version = language_version
         result = {
-            'name': self.config.app_name,
+            'name': self.config.service_name,
             'version': self.config.app_version,
             'agent': {
                 'name': 'python',
@@ -360,7 +360,7 @@ class Client(object):
 
     def _build_msg(self, data=None, **kwargs):
         data = data or {}
-        data['service'] = self.get_app_info()
+        data['service'] = self.get_service_info()
         data['system'] = self.get_system_info()
         data.update(**kwargs)
         return data

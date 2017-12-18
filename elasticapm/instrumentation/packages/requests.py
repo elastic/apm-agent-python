@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 from elasticapm.utils import default_ports
 from elasticapm.utils.compat import urlparse
 
@@ -33,6 +33,6 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         signature = request.method.upper()
         signature += " " + get_host_from_url(request.url)
 
-        with trace(signature, "ext.http.requests",
-                   {'url': request.url}, leaf=True):
+        with capture_span(signature, "ext.http.requests",
+                          {'url': request.url}, leaf=True):
             return wrapped(*args, **kwargs)

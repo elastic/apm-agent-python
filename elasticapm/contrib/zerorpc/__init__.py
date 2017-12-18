@@ -14,7 +14,7 @@ from elasticapm.base import Client
 class Middleware(object):
     """ElasticAPM middleware for ZeroRPC.
 
-    >>> elasticapm = Middleware(app_name='..', secret_token='...')
+    >>> elasticapm = Middleware(service_name='..', secret_token='...')
     >>> zerorpc.Context.get_instance().register_middleware(elasticapm)
 
     Exceptions detected server-side in ZeroRPC will be submitted to the apm server (and

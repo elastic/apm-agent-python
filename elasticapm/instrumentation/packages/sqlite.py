@@ -2,7 +2,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (ConnectionProxy,
                                                         CursorProxy,
                                                         DbApi2Instrumentation,
                                                         extract_signature)
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 class SQLiteCursorProxy(CursorProxy):
@@ -31,5 +31,5 @@ class SQLiteInstrumentation(DbApi2Instrumentation):
         if len(args) == 1:
             signature += " " + str(args[0])
 
-        with trace(signature, "db.sqlite.connect"):
+        with capture_span(signature, "db.sqlite.connect"):
             return SQLiteConnectionProxy(wrapped(*args, **kwargs))

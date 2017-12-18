@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, render_to_response
 
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 class IgnoredException(Exception):
@@ -64,7 +64,7 @@ def logging_view(request):
 
 def render_template_view(request):
     def something_expensive():
-        with trace("something_expensive", "code"):
+        with capture_span("something_expensive", "code"):
             return [User(username='Ron'), User(username='Beni')]
 
     return render(request, "list_users.html",
@@ -77,7 +77,7 @@ def render_jinja2_template(request):
 
 def render_user_view(request):
     def something_expensive():
-        with trace("something_expensive", "code"):
+        with capture_span("something_expensive", "code"):
             for i in range(100):
                 users = list(User.objects.all())
         return users

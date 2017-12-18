@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 from elasticapm.utils import default_ports
 
 
@@ -30,5 +30,5 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         url = instance.scheme + "://" + host + url
 
-        with trace(signature, "ext.http.urllib3", {'url': url}, leaf=True):
+        with capture_span(signature, "ext.http.urllib3", {'url': url}, leaf=True):
             return wrapped(*args, **kwargs)

@@ -2,7 +2,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (ConnectionProxy,
                                                         CursorProxy,
                                                         DbApi2Instrumentation,
                                                         extract_signature)
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 from elasticapm.utils import default_ports
 
 
@@ -40,7 +40,7 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
             # Parse connection string and extract host/port
             pass
 
-        with trace(signature, "db.postgreql.connect"):
+        with capture_span(signature, "db.postgreql.connect"):
             return PGConnectionProxy(wrapped(*args, **kwargs))
 
 

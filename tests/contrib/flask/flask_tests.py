@@ -121,15 +121,15 @@ def test_instrumentation(flask_apm_client):
         'Content-Length': '78',
         'Content-Type': 'text/html; charset=utf-8',
     }
-    traces = transactions[0]['spans']
-    assert len(traces) == 1, [t['name'] for t in traces]
+    spans = transactions[0]['spans']
+    assert len(spans) == 1, [t['name'] for t in spans]
 
     expected_signatures = {'users.html'}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert traces[0]['name'] == 'users.html'
-    assert traces[0]['type'] == 'template.jinja2'
+    assert spans[0]['name'] == 'users.html'
+    assert spans[0]['type'] == 'template.jinja2'
 
 
 def test_instrumentation_404(flask_apm_client):
@@ -142,10 +142,10 @@ def test_instrumentation_404(flask_apm_client):
     transactions = flask_apm_client.client.instrumentation_store.get_all()
 
     assert len(transactions) == 1
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
     assert transactions[0]['result'] == 'HTTP 4xx'
     assert transactions[0]['context']['response']['status_code'] == 404
-    assert len(traces) == 0, [t["signature"] for t in traces]
+    assert len(spans) == 0, [t["signature"] for t in spans]
 
 
 def test_non_standard_http_status(flask_apm_client):
@@ -163,5 +163,5 @@ def test_non_standard_http_status(flask_apm_client):
 def test_framework_name(flask_app):
     elasticapm = ElasticAPM(app=flask_app)
     assert elasticapm.client.config.framework_name == 'flask'
-    app_info = elasticapm.client.get_app_info()
+    app_info = elasticapm.client.get_service_info()
     assert app_info['framework']['name'] == 'flask'

@@ -43,7 +43,7 @@ async def test_client_success():
 
     client = Client(
         server_url='http://localhost',
-        app_name='app_name',
+        service_name='service_name',
         secret_token='secret',
         transport_class='.'.join(
             (__name__, MockTransport.__name__)),
@@ -64,7 +64,7 @@ async def test_client_failure():
 
     client = Client(
         server_url='http://error',
-        app_name='app_name',
+        service_name='service_name',
         secret_token='secret',
         transport_class='.'.join(
             (__name__, MockTransport.__name__)),
@@ -84,7 +84,7 @@ async def test_client_failure_stdlib_exception(mocker):
 
     client = Client(
         server_url='http://elastic.co',
-        app_name='app_name',
+        service_name='service_name',
         secret_token='secret',
         async_mode=False,
         transport_class='elasticapm.transport.asyncio.AsyncioHTTPTransport',
