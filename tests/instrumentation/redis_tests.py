@@ -6,7 +6,7 @@ import pytest
 import redis
 from redis.client import StrictRedis
 
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 @pytest.fixture()
@@ -23,7 +23,7 @@ def redis_conn():
 @pytest.mark.integrationtest
 def test_pipeline(elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
-    with trace("test_pipeline", "test"):
+    with capture_span("test_pipeline", "test"):
         pipeline = redis_conn.pipeline()
         pipeline.rpush("mykey", "a", "b")
         pipeline.expire("mykey", 1000)
@@ -31,19 +31,19 @@ def test_pipeline(elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert traces[0]['name'] == 'StrictPipeline.execute'
-    assert traces[0]['type'] == 'cache.redis'
+    assert spans[0]['name'] == 'StrictPipeline.execute'
+    assert spans[0]['type'] == 'cache.redis'
 
-    assert traces[1]['name'] == 'test_pipeline'
-    assert traces[1]['type'] == 'test'
+    assert spans[1]['name'] == 'test_pipeline'
+    assert spans[1]['type'] == 'test'
 
-    assert len(traces) == 2
+    assert len(spans) == 2
 
 
 @pytest.mark.integrationtest
@@ -52,7 +52,7 @@ def test_rq_patches_redis(elasticapm_client, redis_conn):
     redis_conn._pipeline = partial(StrictRedis.pipeline, redis_conn)
 
     elasticapm_client.begin_transaction("transaction.test")
-    with trace("test_pipeline", "test"):
+    with capture_span("test_pipeline", "test"):
         # conn = redis.StrictRedis()
         pipeline = redis_conn._pipeline()
         pipeline.rpush("mykey", "a", "b")
@@ -61,43 +61,43 @@ def test_rq_patches_redis(elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert traces[0]['name'] == 'StrictPipeline.execute'
-    assert traces[0]['type'] == 'cache.redis'
+    assert spans[0]['name'] == 'StrictPipeline.execute'
+    assert spans[0]['type'] == 'cache.redis'
 
-    assert traces[1]['name'] == 'test_pipeline'
-    assert traces[1]['type'] == 'test'
+    assert spans[1]['name'] == 'test_pipeline'
+    assert spans[1]['type'] == 'test'
 
-    assert len(traces) == 2
+    assert len(spans) == 2
 
 
 @pytest.mark.integrationtest
 def test_redis_client(elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
-    with trace("test_redis_client", "test"):
+    with capture_span("test_redis_client", "test"):
         redis_conn.rpush("mykey", "a", "b")
         redis_conn.expire("mykey", 1000)
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = {'test_redis_client', 'RPUSH', 'EXPIRE'}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert traces[0]['name'] == 'RPUSH'
-    assert traces[0]['type'] == 'cache.redis'
+    assert spans[0]['name'] == 'RPUSH'
+    assert spans[0]['type'] == 'cache.redis'
 
-    assert traces[1]['name'] == 'EXPIRE'
-    assert traces[1]['type'] == 'cache.redis'
+    assert spans[1]['name'] == 'EXPIRE'
+    assert spans[1]['type'] == 'cache.redis'
 
-    assert traces[2]['name'] == 'test_redis_client'
-    assert traces[2]['type'] == 'test'
+    assert spans[2]['name'] == 'test_redis_client'
+    assert spans[2]['type'] == 'test'
 
-    assert len(traces) == 3
+    assert len(spans) == 3

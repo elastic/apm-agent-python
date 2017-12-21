@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import sys
-from optparse import make_option
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -94,20 +93,15 @@ or with environment variables:
 
 class Command(BaseCommand):
     arguments = (
-        (('-a', '--app-name'),
-         {'default': None, 'dest': 'app_name', 'help': 'Specifies the app name.'}),
+        (('-s', '--service-name'),
+         {'default': None, 'dest': 'service_name', 'help': 'Specifies the service name.'}),
 
         (('-t', '--token'),
          {'default': None, 'dest': 'secret_token', 'help': 'Specifies the secret token.'})
     )
-    if not hasattr(BaseCommand, 'add_arguments'):
-        # Django <= 1.7
-        option_list = BaseCommand.option_list + tuple(
-            make_option(*args, **kwargs) for args, kwargs in arguments
-        )
+
     args = 'test check'
 
-    # Django 1.8+
     def add_arguments(self, parser):
         parser.add_argument('subcommand')
         for args, kwargs in self.arguments:
@@ -115,13 +109,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if 'subcommand' in options:
-            # Django 1.8+, argparse
             subcommand = options['subcommand']
-        elif not args:
-            return self.handle_command_not_found('No command specified.')
         else:
-            # Django 1.7, optparse
-            subcommand = args[0]
+            return self.handle_command_not_found('No command specified.')
         if subcommand not in self.dispatch:
             self.handle_command_not_found('No such command "%s".' % subcommand)
         else:
@@ -136,7 +126,7 @@ class Command(BaseCommand):
         config = get_client_default_config()
         # can't be async for testing
         config['async_mode'] = False
-        for key in ('app_name', 'secret_token'):
+        for key in ('service_name', 'secret_token'):
             if options.get(key):
                 config[key] = options[key]
         client = DjangoClient(**config)
@@ -146,10 +136,10 @@ class Command(BaseCommand):
         client.state.error_logger = client.error_logger
         self.write(
             "Trying to send a test error to APM Server using these settings:\n\n"
-            "APP_NAME:\t\t\t%s\n"
+            "SERVICE_NAME:\t\t\t%s\n"
             "SECRET_TOKEN:\t\t%s\n"
             "SERVER:\t\t%s\n\n" % (
-                client.config.app_name,
+                client.config.service_name,
                 client.config.secret_token,
                 client.config.server_url,
             )
@@ -175,10 +165,10 @@ class Command(BaseCommand):
         client = DjangoClient(**config)
         # check if org/app and token are set:
         is_set = lambda x: x and x != 'None'
-        values = [client.config.app_name, client.config.secret_token]
+        values = [client.config.service_name, client.config.secret_token]
         if all(map(is_set, values)):
             self.write(
-                'App name and secret token are set, good job!',
+                'Service name and secret token are set, good job!',
                 green
             )
         else:
@@ -186,8 +176,8 @@ class Command(BaseCommand):
             self.write(
                 'Configuration errors detected!', red, ending='\n\n'
             )
-            if not is_set(client.config.app_name):
-                self.write("  * APP_NAME not set! ", red, ending='\n')
+            if not is_set(client.config.service_name):
+                self.write("  * SERVICE_NAME not set! ", red, ending='\n')
             if not is_set(client.config.secret_token):
                 self.write("  * SECRET_TOKEN not set!", red, ending='\n')
             self.write(CONFIG_EXAMPLE)

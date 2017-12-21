@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
@@ -14,7 +14,7 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
 
         if not name:
             name = '<template string>'
-        with trace(name, "template.django"):
+        with capture_span(name, "template.django"):
             return wrapped(*args, **kwargs)
 
 

@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 class RedisInstrumentation(AbstractInstrumentedModule):
@@ -16,7 +16,7 @@ class RedisInstrumentation(AbstractInstrumentedModule):
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with trace(wrapped_name, "cache.redis", leaf=True):
+        with capture_span(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)
 
 
@@ -29,5 +29,5 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
-        with trace(wrapped_name, "cache.redis", leaf=True):
+        with capture_span(wrapped_name, "cache.redis", leaf=True):
             return wrapped(*args, **kwargs)

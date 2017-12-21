@@ -732,8 +732,8 @@ def test_request_metrics_404_resolve_error(django_elasticapm_client, client):
     assert transactions[0]['name'] == ''
 
 
-def test_get_app_info(django_elasticapm_client):
-    app_info = django_elasticapm_client.get_app_info()
+def test_get_service_info(django_elasticapm_client):
+    app_info = django_elasticapm_client.get_service_info()
     assert django.get_version() == app_info['framework']['version']
     assert app_info['framework']['name'] == 'django'
     assert django_elasticapm_client.config.framework_name == 'django'
@@ -871,17 +871,17 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
     assert len(transactions) == 1
     transaction = transactions[0]
     assert transaction['result'] == 'HTTP 2xx'
-    traces = transaction['spans']
-    assert len(traces) == 2, [t['name'] for t in traces]
+    spans = transaction['spans']
+    assert len(spans) == 2, [t['name'] for t in spans]
 
     expected_names = {'list_users.html', 'something_expensive'}
 
-    assert {t['name'] for t in traces} == expected_names
+    assert {t['name'] for t in spans} == expected_names
 
-    assert traces[0]['name'] == 'something_expensive'
+    assert spans[0]['name'] == 'something_expensive'
 
     # Find the template
-    for frame in traces[0]['stacktrace']:
+    for frame in spans[0]['stacktrace']:
         if frame['lineno'] == 4 and frame['filename'].endswith(
                 'django/testapp/templates/list_users.html'
         ):
@@ -901,15 +901,15 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
 
     transactions = django_elasticapm_client.instrumentation_store.get_all()
     assert transactions[0]['result'] == 'HTTP 2xx'
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = ['transaction', 'list_users.html',
                            'something_expensive']
 
-    assert traces[1]['name'] == 'list_users.html'
+    assert spans[1]['name'] == 'list_users.html'
 
     # Top frame should be inside django rendering
-    assert traces[1]['stacktrace'][0]['module'].startswith('django.template')
+    assert spans[1]['stacktrace'][0]['module'].startswith('django.template')
 
 
 @pytest.mark.parametrize('django_elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
@@ -1073,7 +1073,7 @@ def test_settings_missing():
         call_command('elasticapm', 'check', stdout=stdout)
     output = stdout.getvalue()
     assert 'Configuration errors detected' in output
-    assert 'APP_NAME not set' in output
+    assert 'SERVICE_NAME not set' in output
     assert 'SECRET_TOKEN not set' in output
 
 

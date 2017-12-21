@@ -28,7 +28,7 @@ def test_basic_already_configured():
 
 def test_config_dict():
     config = Config({
-        'APP_NAME': 'foo',
+        'SERVICE_NAME': 'foo',
         'SECRET_TOKEN': 'bar',
         'SERVER_URL': 'http://example.com:1234',
         'APP_VERSION': 1,
@@ -36,17 +36,17 @@ def test_config_dict():
         'TRACES_SEND_FREQ': '5'
     })
 
-    assert config.app_name == 'foo'
+    assert config.service_name == 'foo'
     assert config.secret_token == 'bar'
     assert config.server_url == 'http://example.com:1234'
     assert config.app_version == '1'
     assert config.hostname == 'localhost'
-    assert config.traces_send_frequency == 5
+    assert config.transaction_send_frequency == 5
 
 
 def test_config_environment():
     with mock.patch.dict('os.environ', {
-        'ELASTIC_APM_APP_NAME': 'foo',
+        'ELASTIC_APM_SERVICE_NAME': 'foo',
         'ELASTIC_APM_SECRET_TOKEN': 'bar',
         'ELASTIC_APM_SERVER_URL': 'http://example.com:1234',
         'ELASTIC_APM_APP_VERSION': '1',
@@ -56,44 +56,44 @@ def test_config_environment():
     }):
         config = Config()
 
-        assert config.app_name == 'foo'
+        assert config.service_name == 'foo'
         assert config.secret_token == 'bar'
         assert config.server_url == 'http://example.com:1234'
         assert config.app_version == '1'
         assert config.hostname == 'localhost'
-        assert config.traces_send_frequency == 5
+        assert config.transaction_send_frequency == 5
         assert config.auto_log_stacks == False
 
 
 def test_config_defaults_dict():
     config = Config(default_dict={
-        'app_name': 'foo',
+        'service_name': 'foo',
         'secret_token': 'bar',
         'server_url': 'http://example.com:1234',
         'app_version': '1',
         'hostname': 'localhost',
-        'traces_send_frequency': '5',
+        'transaction_send_frequency': '5',
     })
 
-    assert config.app_name == 'foo'
+    assert config.service_name == 'foo'
     assert config.secret_token == 'bar'
     assert config.server_url == 'http://example.com:1234'
     assert config.app_version == '1'
     assert config.hostname == 'localhost'
-    assert config.traces_send_frequency == 5
+    assert config.transaction_send_frequency == 5
 
 
 def test_config_precedence():
     #  precendece order: config dict, environment, default dict
     with mock.patch.dict('os.environ', {
-        'ELASTIC_APM_APP_NAME': 'bar',
+        'ELASTIC_APM_SERVICE_NAME': 'bar',
         'ELASTIC_APM_SECRET_TOKEN': 'secret'
     }):
         config = Config({
-            'APP_NAME': 'foo',
+            'SERVICE_NAME': 'foo',
         }, default_dict={'secret_token': 'notsecret'})
 
-    assert config.app_name == 'foo'
+    assert config.service_name == 'foo'
     assert config.secret_token == 'secret'
 
 

@@ -51,7 +51,7 @@ class ElasticAPM(object):
 
     Pass an arbitrary APP_NAME and SECRET_TOKEN::
 
-    >>> elasticapm = ElasticAPM(app, app_name='myapp', secret_token='asdasdasd')
+    >>> elasticapm = ElasticAPM(app, service_name='myapp', secret_token='asdasdasd')
 
     Pass an explicit client::
 
@@ -112,7 +112,7 @@ class ElasticAPM(object):
         except ImportError:
             pass
 
-        # Instrument to get traces
+        # Instrument to get spans
         if self.client.config.disable_instrumentation:
             logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
         else:

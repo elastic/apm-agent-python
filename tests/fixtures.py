@@ -66,7 +66,7 @@ class ValidatingWSGIApp(ContentServer):
 @pytest.fixture()
 def elasticapm_client(request):
     client_config = getattr(request, 'param', {})
-    client_config.setdefault('app_name', 'myapp')
+    client_config.setdefault('service_name', 'myapp')
     client_config.setdefault('secret_token', 'test_key')
     client = TempStoreClient(**client_config)
     yield client
@@ -86,7 +86,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     validating_httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
     client_config = getattr(request, 'param', {})
     client_config.setdefault('server_url', validating_httpserver.url)
-    client_config.setdefault('app_name', 'myapp')
+    client_config.setdefault('service_name', 'myapp')
     client_config.setdefault('secret_token', 'test_key')
     client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
     client = Client(**client_config)

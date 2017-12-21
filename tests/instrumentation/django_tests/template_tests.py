@@ -49,19 +49,19 @@ def test_template_rendering(should_collect, django_elasticapm_client, client):
     transactions = django_elasticapm_client.instrumentation_store.get_all()
 
     assert len(transactions) == 3
-    traces = transactions[0]['spans']
-    assert len(traces) == 2, [t['name'] for t in traces]
+    spans = transactions[0]['spans']
+    assert len(spans) == 2, [t['name'] for t in spans]
 
     kinds = ['code', 'template.django']
-    assert set([t['type'] for t in traces]) == set(kinds)
+    assert set([t['type'] for t in spans]) == set(kinds)
 
-    assert traces[0]['type'] == 'code'
-    assert traces[0]['name'] == 'something_expensive'
-    assert traces[0]['parent'] == 0
+    assert spans[0]['type'] == 'code'
+    assert spans[0]['name'] == 'something_expensive'
+    assert spans[0]['parent'] == 0
 
-    assert traces[1]['type'] == 'template.django'
-    assert traces[1]['name'] == 'list_users.html'
-    assert traces[1]['parent'] is None
+    assert spans[1]['type'] == 'template.django'
+    assert spans[1]['name'] == 'list_users.html'
+    assert spans[1]['parent'] is None
 
 
 @pytest.mark.skipif(django.VERSION < (1, 8),
@@ -81,12 +81,12 @@ def test_template_rendering_django18_jinja2(should_collect, django_elasticapm_cl
     transactions = django_elasticapm_client.instrumentation_store.get_all()
 
     assert len(transactions) == 3
-    traces = transactions[0]['spans']
-    assert len(traces) == 1, [t['name'] for t in traces]
+    spans = transactions[0]['spans']
+    assert len(spans) == 1, [t['name'] for t in spans]
 
     kinds = ['template.jinja2']
-    assert set([t['type'] for t in traces]) == set(kinds)
+    assert set([t['type'] for t in spans]) == set(kinds)
 
-    assert traces[0]['type'] == 'template.jinja2'
-    assert traces[0]['name'] == 'jinja2_template.html'
-    assert traces[0]['parent'] is None
+    assert spans[0]['type'] == 'template.jinja2'
+    assert spans[0]['name'] == 'jinja2_template.html'
+    assert spans[0]['parent'] is None

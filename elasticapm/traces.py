@@ -9,7 +9,7 @@ import uuid
 from elasticapm.conf import constants
 from elasticapm.utils import compat, get_name_from_func
 
-__all__ = ('trace', 'tag', 'set_transaction_name', 'set_transaction_data')
+__all__ = ('capture_span', 'tag', 'set_transaction_name', 'set_transaction_data')
 
 error_logger = logging.getLogger('elasticapm.errors')
 
@@ -46,49 +46,49 @@ class Transaction(object):
         self.transaction_type = transaction_type
         self._frames_collector_func = frames_collector_func
 
-        self.traces = []
-        self.trace_stack = []
+        self.spans = []
+        self.span_stack = []
         self.ignore_subtree = False
         self._context = {}
         self._tags = {}
 
-        self._trace_counter = 0
+        self._span_counter = 0
 
     def end_transaction(self, skip_frames=8):
         self.duration = _time_func() - self.start_time
 
-    def begin_trace(self, name, trace_type, context=None, leaf=False):
+    def begin_span(self, name, span_type, context=None, leaf=False):
         # If we were already called with `leaf=True`, we'll just push
         # a placeholder on the stack.
         if self.ignore_subtree:
-            self.trace_stack.append(None)
+            self.span_stack.append(None)
             return None
 
         if leaf:
             self.ignore_subtree = True
 
         start = _time_func() - self.start_time
-        trace = Trace(self._trace_counter, name, trace_type, start, context)
-        self._trace_counter += 1
-        self.trace_stack.append(trace)
-        return trace
+        span = Span(self._span_counter, name, span_type, start, context)
+        self._span_counter += 1
+        self.span_stack.append(span)
+        return span
 
-    def end_trace(self, skip_frames):
-        trace = self.trace_stack.pop()
-        if trace is None:
+    def end_span(self, skip_frames):
+        span = self.span_stack.pop()
+        if span is None:
             return None
 
         self.ignore_subtree = False
 
-        trace.duration = _time_func() - trace.start_time - self.start_time
+        span.duration = _time_func() - span.start_time - self.start_time
 
-        if self.trace_stack:
-            trace.parent = self.trace_stack[-1].idx
+        if self.span_stack:
+            span.parent = self.span_stack[-1].idx
 
-        trace.frames = self._frames_collector_func()[skip_frames:]
-        self.traces.append(trace)
+        span.frames = self._frames_collector_func()[skip_frames:]
+        self.spans.append(span)
 
-        return trace
+        return span
 
     def to_dict(self):
         self._context['tags'] = self._tags
@@ -101,27 +101,27 @@ class Transaction(object):
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             'context': self._context,
             'spans': [
-                trace_obj.to_dict() for trace_obj in self.traces
+                span_obj.to_dict() for span_obj in self.spans
             ]
         }
 
 
-class Trace(object):
-    def __init__(self, idx, name, trace_type, start_time, context=None,
+class Span(object):
+    def __init__(self, idx, name, span_type, start_time, context=None,
                  leaf=False):
         """
-        Create a new trace
+        Create a new Span
 
-        :param idx: Index of this trace
-        :param name: Generic name of the trace
-        :param trace_type: type of the trace
+        :param idx: Index of this span
+        :param name: Generic name of the span
+        :param span_type: type of the span
         :param start_time: start time relative to the transaction
         :param context: context dictionary
         :param leaf: is this transaction a leaf transaction?
         """
         self.idx = idx
         self.name = name
-        self.type = trace_type
+        self.type = span_type
         self.context = context
         self.leaf = leaf
         self.start_time = start_time
@@ -208,11 +208,11 @@ class TransactionsStore(object):
         return transaction
 
 
-class trace(object):
-    def __init__(self, name=None, trace_type='code.custom', extra=None,
+class capture_span(object):
+    def __init__(self, name=None, span_type='code.custom', extra=None,
                  skip_frames=0, leaf=False):
         self.name = name
-        self.type = trace_type
+        self.type = span_type
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
@@ -231,14 +231,14 @@ class trace(object):
         transaction = get_transaction()
 
         if transaction:
-            transaction.begin_trace(self.name, self.type, self.extra,
-                                    self.leaf)
+            transaction.begin_span(self.name, self.type, self.extra,
+                                   self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
 
         if transaction:
-            transaction.end_trace(self.skip_frames)
+            transaction.end_span(self.skip_frames)
 
 
 def tag(**tags):

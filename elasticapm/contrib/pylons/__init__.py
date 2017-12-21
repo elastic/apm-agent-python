@@ -25,7 +25,7 @@ class ElasticAPM(Middleware):
             server=config.get('elasticapm.server'),
             timeout=config.get('elasticapm.timeout'),
             name=config.get('elasticapm.name'),
-            app_name=config.get('elasticapm.app_name'),
+            service_name=config.get('elasticapm.service_name'),
             secret_token=config.get('elasticapm.secret_token'),
             include_paths=list_from_setting(config, 'elasticapm.include_paths'),
             exclude_paths=list_from_setting(config, 'elasticapm.exclude_paths'),

@@ -1,7 +1,7 @@
 import mock
 import urllib3
 
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
 
 
@@ -13,7 +13,7 @@ def test_urllib3(should_collect, elasticapm_client, httpserver):
     parsed_url = urlparse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = 'GET {0}'.format(parsed_url.netloc)
-    with trace("test_pipeline", "test"):
+    with capture_span("test_pipeline", "test"):
         pool = urllib3.PoolManager(timeout=0.1)
 
         url = 'http://{0}/hello_world'.format(parsed_url.netloc)
@@ -22,18 +22,18 @@ def test_urllib3(should_collect, elasticapm_client, httpserver):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = {'test_pipeline', expected_sig}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert len(traces) == 2
+    assert len(spans) == 2
 
-    assert traces[0]['name'] == expected_sig
-    assert traces[0]['type'] == 'ext.http.urllib3'
-    assert traces[0]['context']['url'] == url
-    assert traces[0]['parent'] == 0
+    assert spans[0]['name'] == expected_sig
+    assert spans[0]['type'] == 'ext.http.urllib3'
+    assert spans[0]['context']['url'] == url
+    assert spans[0]['parent'] == 0
 
-    assert traces[1]['name'] == 'test_pipeline'
-    assert traces[1]['type'] == 'test'
+    assert spans[1]['name'] == 'test_pipeline'
+    assert spans[1]['type'] == 'test'

@@ -58,8 +58,8 @@ class DummyTransport(Transport):
 
 
 def test_app_info(elasticapm_client):
-    app_info = elasticapm_client.get_app_info()
-    assert app_info['name'] == elasticapm_client.config.app_name
+    app_info = elasticapm_client.get_service_info()
+    assert app_info['name'] == elasticapm_client.config.service_name
     assert app_info['language'] == {
         'name': 'python',
         'version': platform.python_version()
@@ -74,11 +74,11 @@ def test_system_info(elasticapm_client):
 
 def test_config_by_environment():
     with mock.patch.dict('os.environ', {
-        'ELASTIC_APM_APP_NAME': 'app',
+        'ELASTIC_APM_SERVICE_NAME': 'app',
         'ELASTIC_APM_SECRET_TOKEN': 'token',
     }):
         client = Client()
-        assert client.config.app_name == 'app'
+        assert client.config.service_name == 'app'
         assert client.config.secret_token == 'token'
         assert client.config.disable_send is False
     with mock.patch.dict('os.environ', {
@@ -106,11 +106,11 @@ def test_config_non_string_types():
 
     client = Client(
         server_url='localhost',
-        app_name=MyValue('bar'),
+        service_name=MyValue('bar'),
         secret_token=MyValue('bay')
     )
     assert isinstance(client.config.secret_token, compat.string_types)
-    assert isinstance(client.config.app_name, compat.string_types)
+    assert isinstance(client.config.service_name, compat.string_types)
     client.close()
 
 
@@ -158,7 +158,7 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
 
     client = Client(
         server_url='http://example.com',
-        app_name='app_name',
+        service_name='app_name',
         secret_token='secret',
         transport_class='elasticapm.transport.http.Transport',
     )
@@ -366,7 +366,7 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
     is_master_process.return_value = True
     client = Client(
         server_url='http://example.com',
-        app_name='app_name',
+        service_name='app_name',
         secret_token='secret',
         async_mode=True,
     )
@@ -408,15 +408,15 @@ def test_disable_send(sending_elasticapm_client):
     assert len(sending_elasticapm_client.httpserver.requests) == 0
 
 
-@pytest.mark.parametrize('elasticapm_client', [{'app_name': '@%&!'}], indirect=True)
-def test_invalid_app_name_disables_send(elasticapm_client):
+@pytest.mark.parametrize('elasticapm_client', [{'service_name': '@%&!'}], indirect=True)
+def test_invalid_service_name_disables_send(elasticapm_client):
     assert len(elasticapm_client.config.errors) == 1
-    assert 'APP_NAME' in elasticapm_client.config.errors
+    assert 'SERVICE_NAME' in elasticapm_client.config.errors
 
     assert elasticapm_client.config.disable_send
 
 
-@pytest.mark.parametrize('elasticapm_client', [{'app_name': 'foo', 'config': {'TRANSPORT_CLASS': None}}], indirect=True)
+@pytest.mark.parametrize('elasticapm_client', [{'service_name': 'foo', 'config': {'TRANSPORT_CLASS': None}}], indirect=True)
 def test_empty_transport_disables_send(elasticapm_client):
     assert len(elasticapm_client.config.errors) == 1
     assert 'TRANSPORT_CLASS' in elasticapm_client.config.errors
@@ -424,10 +424,10 @@ def test_empty_transport_disables_send(elasticapm_client):
     assert elasticapm_client.config.disable_send
 
 
-@pytest.mark.parametrize('elasticapm_client', [{'traces_send_frequency': 2}], indirect=True)
+@pytest.mark.parametrize('elasticapm_client', [{'transaction_send_frequency': 2}], indirect=True)
 def test_send_timer(elasticapm_client):
     assert elasticapm_client._send_timer is None
-    assert elasticapm_client.config.traces_send_frequency == 2
+    assert elasticapm_client.config.transaction_send_frequency == 2
     elasticapm_client.begin_transaction('test_type')
     elasticapm_client.end_transaction('test')
 
@@ -493,7 +493,7 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
     should_collect.return_value = False
     mode = elasticapm_client.config.collect_local_variables
     elasticapm_client.begin_transaction('test')
-    with elasticapm.trace('foo'):
+    with elasticapm.capture_span('foo'):
         pass
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
@@ -514,7 +514,7 @@ def test_collect_source_transactions(should_collect, elasticapm_client):
     should_collect.return_value = False
     mode = elasticapm_client.config.collect_source
     elasticapm_client.begin_transaction('test')
-    with elasticapm.trace('foo'):
+    with elasticapm.capture_span('foo'):
         pass
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]

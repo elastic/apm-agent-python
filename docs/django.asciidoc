@@ -36,12 +36,12 @@ INSTALLED_APPS = (
 )
 ----
 
-1.  Choose an app name, and set the secret token if needed.
+1.  Choose a service name, and set the secret token if needed.
 
 [source,python]
 ----
 ELASTIC_APM = {
-   'APP_NAME': '<APP-NAME>',
+   'SERVICE_NAME': '<SERVICE-NAME>',
    'SECRET_TOKEN': '<SECRET-TOKEN>',
 }
 ----
@@ -50,7 +50,7 @@ or as environment variables:
 
 [source,shell]
 ----
-ELASTIC_APM_APP_NAME=<APP-NAME>
+ELASTIC_APM_SERVICE_NAME=<SERVICE-NAME>
 ELASTIC_APM_SECRET_TOKEN=<SECRET-TOKEN>
 ----
 
@@ -169,7 +169,7 @@ LOGGING = {
 
 With this configuration, logging can be done like this in any module in the `myapp` django app:
 
-You can now use the logger in any module in the `myapp` django app, for instance `myapp/views.py`:
+You can now use the logger in any module in the `myapp` Django app, for instance `myapp/views.py`:
 
 [source,python]
 ----
@@ -280,8 +280,8 @@ python manage.py elasticapm test
 
 Trying to send a test error using these settings:
 
-APP_NAME:           <APP_NAME>
-SECRET_TOKEN:       <SECRET_TOKEN>
+SERVICE_NAME:      <SERVICE_NAME>
+SECRET_TOKEN:      <SECRET_TOKEN>
 SERVER:            http://localhost:8200
 
 Success! We tracked the error successfully! You should be able to see it in a few seconds.

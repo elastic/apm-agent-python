@@ -5,7 +5,7 @@ import pytest
 from mock import Mock
 
 import elasticapm
-from elasticapm.traces import TransactionsStore, get_transaction, trace
+from elasticapm.traces import TransactionsStore, capture_span, get_transaction
 
 
 @pytest.fixture()
@@ -89,25 +89,25 @@ def transaction_store():
 def test_leaf_tracing(transaction_store):
     transaction_store.begin_transaction("transaction.test")
 
-    with trace("root", "custom"):
-        with trace("child1-leaf", "custom", leaf=True):
+    with capture_span("root", "custom"):
+        with capture_span("child1-leaf", "custom", leaf=True):
 
-            # These two traces should not show up
-            with trace("ignored-child1", "custom", leaf=True):
+            # These two spans should not show up
+            with capture_span("ignored-child1", "custom", leaf=True):
                 time.sleep(0.01)
 
-            with trace("ignored-child2", "custom", leaf=False):
+            with capture_span("ignored-child2", "custom", leaf=False):
                 time.sleep(0.01)
 
     transaction_store.end_transaction(None, "transaction")
 
     transactions = transaction_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
-    assert len(traces) == 2
+    assert len(spans) == 2
 
     signatures = {'root', 'child1-leaf'}
-    assert {t['name'] for t in traces} == signatures
+    assert {t['name'] for t in spans} == signatures
 
 
 def test_get_transaction():

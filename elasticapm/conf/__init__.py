@@ -132,7 +132,8 @@ class _ConfigBase(object):
 
 
 class Config(_ConfigBase):
-    app_name = _ConfigValue('APP_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)], required=True)
+    service_name = _ConfigValue('SERVICE_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)],
+                                required=True)
     secret_token = _ConfigValue('SECRET_TOKEN')
     debug = _BoolConfigValue('DEBUG', default=False)
     server_url = _ConfigValue('SERVER_URL', default='http://localhost:8200', required=True)
@@ -154,7 +155,7 @@ class Config(_ConfigBase):
         'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
     ])
-    traces_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
+    transaction_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
     max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
     collect_source = _ConfigValue('COLLECT_SOURCE', default='all')
