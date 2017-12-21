@@ -1,13 +1,9 @@
 sudo: false
 language: python
 python:
-- 2.7
-- 3.3
-- 3.4
+- nightly
 - 3.5
 - 3.6
-- nightly
-- pypy
 
 env:
   global:
@@ -15,40 +11,15 @@ env:
   - RUN_SCRIPT="./travis/run_tests.sh"
   - POSTGRES_DB=elasticapm_test
   matrix:
-  - WEBFRAMEWORK=django-1.8
-  - WEBFRAMEWORK=django-1.9
-  - WEBFRAMEWORK=django-1.10
-  - WEBFRAMEWORK=django-1.11
-  - WEBFRAMEWORK=django-2.0
   - WEBFRAMEWORK=django-master
-  - WEBFRAMEWORK=flask-0.10
-  - WEBFRAMEWORK=flask-0.11
-  - WEBFRAMEWORK=flask-0.12
+  - WEBFRAMEWORK=flask-master
 
 matrix:
   exclude:
-  - python: 2.7
-    env: WEBFRAMEWORK=django-2.0
-  - python: 2.7
-    env: WEBFRAMEWORK=django-master
-  - python: 3.3
-    env: WEBFRAMEWORK=django-1.9
-  - python: 3.3
-    env: WEBFRAMEWORK=django-1.10
-  - python: 3.3
-    env: WEBFRAMEWORK=django-1.11
-  - python: 3.3
-    env: WEBFRAMEWORK=django-2.0
-  - python: 3.3
-    env: WEBFRAMEWORK=django-master
-  - python: 3.4
-    env: WEBFRAMEWORK=django-master
-  - python: pypy
-    env: WEBFRAMEWORK=django-2.0
-  - python: pypy
-    env: WEBFRAMEWORK=django-master
   allow_failures:
-  - env: WEBFRAMEWORK=django-master
+  - env:
+    - WEBFRAMEWORK=django-master
+    - WEBFRAMEWORK=flask-master
   - python: nightly
   include:
   - stage: linters
@@ -83,6 +54,7 @@ matrix:
 stages:
   - linters
   - test
+  - build
 
 before_script:
 - psql -c 'create database elasticapm_test;' -U postgres
