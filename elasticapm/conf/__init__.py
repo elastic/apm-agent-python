@@ -156,6 +156,8 @@ class Config(_ConfigBase):
     ])
     traces_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
     max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
+    collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
+    collect_source = _ConfigValue('COLLECT_SOURCE', default='all')
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
     instrument_django_middleware = _BoolConfigValue('INSTRUMENT_DJANGO_MIDDLEWARE', default=True)
     transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])
