@@ -8,11 +8,11 @@ flake8:
 	flake8 elasticapm
 
 test:
-	if [[ "$$TRAVIS_PYTHON_VERSION" =~ ^(3.5|3.6|nightly|pypy3)$$ ]] ; then \
+	if [[ "$$PYTHON_VERSION" =~ ^(3.5|3.6|nightly|pypy3)$$ ]] ; then \
 	py.test -v $(PYTEST_ARGS); \
 	else py.test -v $(PYTEST_ARGS) --ignore=tests/asyncio; fi
 
-coverage: PYTEST_ARGS=--cov
+coverage: PYTEST_ARGS=--cov --cov-report xml:coverage.xml
 coverage: test
 
 docs:
