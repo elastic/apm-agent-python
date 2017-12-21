@@ -9,7 +9,8 @@ except ImportError:
         pass
 
 
-def iterate_with_template_sources(frames, extended=True, include_paths_re=None, exclude_paths_re=None):
+def iterate_with_template_sources(frames, with_source_context=True, with_locals=True,
+                                  include_paths_re=None, exclude_paths_re=None):
     template = None
     for frame, lineno in frames:
         f_code = getattr(frame, 'f_code', None)
@@ -36,4 +37,5 @@ def iterate_with_template_sources(frames, extended=True, include_paths_re=None, 
                         yield template
                         template = None
 
-        yield get_frame_info(frame, lineno, extended, include_paths_re, exclude_paths_re)
+        yield get_frame_info(frame, lineno, with_source_context, with_locals,
+                             include_paths_re, exclude_paths_re)

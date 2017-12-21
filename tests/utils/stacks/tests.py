@@ -86,9 +86,9 @@ def test_library_frames(elasticapm_client):
     frame2 = Mock(f_globals={'__name__': 'a.b.c.d'})
     frame3 = Mock(f_globals={'__name__': 'c.d'})
 
-    info1 = stacks.get_frame_info(frame1, 1, False, include_paths_re=include, exclude_paths_re=exclude)
-    info2 = stacks.get_frame_info(frame2, 1, False, include_paths_re=include, exclude_paths_re=exclude)
-    info3 = stacks.get_frame_info(frame3, 1, False, include_paths_re=include, exclude_paths_re=exclude)
+    info1 = stacks.get_frame_info(frame1, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
+    info2 = stacks.get_frame_info(frame2, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
+    info3 = stacks.get_frame_info(frame3, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
     assert not info1['library_frame']
     assert not info2['library_frame']
     assert info3['library_frame']
@@ -96,8 +96,8 @@ def test_library_frames(elasticapm_client):
 
 def test_get_frame_info():
     frame = get_me_a_test_frame()
-    frame_info = stacks.get_frame_info(frame, frame.f_lineno, extended=True)
-
+    frame_info = stacks.get_frame_info(frame, frame.f_lineno,
+                                       with_locals=True, with_source_context=True)
     assert frame_info['function'] == 'get_me_a_test_frame'
     assert frame_info['filename'] == 'tests/utils/stacks/__init__.py'
     assert frame_info['module'] == 'tests.utils.stacks'
