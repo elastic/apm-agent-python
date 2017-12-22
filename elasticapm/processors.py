@@ -235,10 +235,10 @@ def _sanitize_string(unsanitized, itemsep, kvsep):
 
 def _process_stack_frames(event, func):
     if 'spans' in event:
-        # every trace can have a stack trace
-        for trace in event['spans']:
-            if 'stacktrace' in trace:
-                for frame in trace['stacktrace']:
+        # every capture_span can have a stack capture_span
+        for span in event['spans']:
+            if 'stacktrace' in span:
+                for frame in span['stacktrace']:
                     func(frame)
     # an error can have two stacktraces, one in "exception", one in "log"
     if 'exception' in event and 'stacktrace' in event['exception']:

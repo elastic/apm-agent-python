@@ -22,14 +22,14 @@ def test_from_file(should_collect, jinja_env, elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = {'mytemplate.html'}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert traces[0]['name'] == 'mytemplate.html'
-    assert traces[0]['type'] == 'template.jinja2'
+    assert spans[0]['name'] == 'mytemplate.html'
+    assert spans[0]['type'] == 'template.jinja2'
 
 
 def test_from_string(elasticapm_client):
@@ -39,11 +39,11 @@ def test_from_string(elasticapm_client):
     elasticapm_client.end_transaction("test")
 
     transactions = elasticapm_client.instrumentation_store.get_all()
-    traces = transactions[0]['spans']
+    spans = transactions[0]['spans']
 
     expected_signatures = {'<template>'}
 
-    assert {t['name'] for t in traces} == expected_signatures
+    assert {t['name'] for t in spans} == expected_signatures
 
-    assert traces[0]['name'] == '<template>'
-    assert traces[0]['type'] == 'template.jinja2'
+    assert spans[0]['name'] == '<template>'
+    assert spans[0]['type'] == 'template.jinja2'

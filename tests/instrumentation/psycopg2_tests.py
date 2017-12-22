@@ -220,7 +220,7 @@ def test_psycopg2_register_type(postgres_connection, elasticapm_client):
         new_type = psycopg2.extras.register_uuid(None, postgres_connection)
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
-        # make sure we've cleared out the traces for the other tests.
+        # make sure we've cleared out the spans for the other tests.
         elasticapm_client.instrumentation_store.get_all()
 
     assert new_type is not None
@@ -281,11 +281,11 @@ def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
         cursor.fetchall()
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
-        # make sure we've cleared out the traces for the other tests.
+        # make sure we've cleared out the spans for the other tests.
         transactions = elasticapm_client.instrumentation_store.get_all()
-        traces = transactions[0]['spans']
-        trace = traces[0]
-        assert trace['name'] == 'SELECT FROM test'
-        assert 'db' in trace['context']
-        assert trace['context']['db']['type'] == 'sql'
-        assert trace['context']['db']['statement'] == query
+        spans = transactions[0]['spans']
+        span = spans[0]
+        assert span['name'] == 'SELECT FROM test'
+        assert 'db' in span['context']
+        assert span['context']['db']['type'] == 'sql'
+        assert span['context']['db']['statement'] == query

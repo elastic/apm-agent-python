@@ -50,7 +50,7 @@ To configure the agent using `ELASTIC_APM` in your application's settings:
 from elasticapm.contrib.flask import ElasticAPM
 
 app.config['ELASTIC_APM'] ={
-    'APP_NAME': '<APP-NAME>',
+    'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
 }
 apm = ElasticAPM(app)
@@ -62,7 +62,7 @@ The final option is to initialize the agent with the settings as arguments:
 ----
 from elasticapm.contrib.flask import ElasticAPM
 
-apm = ElasticAPM(app, app_name='<APP-ID>', secret_token='<SECRET-TOKEN>')
+apm = ElasticAPM(app, service_name='<APP-ID>', secret_token='<SECRET-TOKEN>')
 ----
 
 [float]
@@ -78,7 +78,7 @@ set the value of `DEBUG` in the `ELASTIC_APM` dictionary to `True`:
 [source,python]
 ----
 app.config['ELASTIC_APM'] = {
-        'APP_NAME': '<APP-NAME>',
+        'SERVICE_NAME': '<SERVICE-NAME>',
         'SECRET_TOKEN': '<SECRET-TOKEN>',
         'DEBUG': True
 }
@@ -97,7 +97,7 @@ apm = ElasticAPM()
 
 def create_app():
     app = Flask(__name__)
-    apm.init_app(app, app_name='<APP-NAME>', secret_token='<SECRET-TOKEN>')
+    apm.init_app(app, service_name='<SERVICE-NAME>', secret_token='<SECRET-TOKEN>')
     return app
 ----
 

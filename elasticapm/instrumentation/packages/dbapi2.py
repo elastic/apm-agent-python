@@ -5,7 +5,7 @@ https://www.python.org/dev/peps/pep-0249/
 import re
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 from elasticapm.utils import compat, wrapt
 
 
@@ -173,7 +173,7 @@ class CursorProxy(wrapt.ObjectProxy):
     def _trace_sql(self, method, sql, params):
         signature = self.extract_signature(sql)
         kind = "db.{0}.sql".format(self.provider_name)
-        with trace(signature, kind, {'db': {"type": "sql", "statement": sql}}):
+        with capture_span(signature, kind, {'db': {"type": "sql", "statement": sql}}):
             if params is None:
                 return method(sql)
             else:

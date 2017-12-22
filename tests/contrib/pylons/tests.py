@@ -10,7 +10,7 @@ def example_app(environ, start_response):
 def test_init():
     config = {
         'elasticapm.server': 'http://localhost/api/store',
-        'elasticapm.app_name': 'p' * 32,
+        'elasticapm.service_name': 'p' * 32,
         'elasticapm.secret_token': 'a' * 32,
     }
     middleware = ElasticAPM(example_app, config)

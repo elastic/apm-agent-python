@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
@@ -35,5 +35,5 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = self.get_wrapped_name(wrapped, instance, method)
 
-        with trace(name, "cache.memcached"):
+        with capture_span(name, "cache.memcached"):
             return wrapped(*args, **kwargs)

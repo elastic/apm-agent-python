@@ -1,5 +1,5 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import trace
+from elasticapm.traces import capture_span
 
 
 class ZLibInstrumentation(AbstractInstrumentedModule):
@@ -11,5 +11,5 @@ class ZLibInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = module + "." + method
-        with trace(wrapped_name, "compression.zlib"):
+        with capture_span(wrapped_name, "compression.zlib"):
             return wrapped(*args, **kwargs)
