@@ -31,7 +31,7 @@ def test_get(flask_apm_client):
 
     assert 'request' in event['context']
     request = event['context']['request']
-    assert request['url']['raw'] == 'http://localhost/an-error/?foo=bar'
+    assert request['url']['full'] == 'http://localhost/an-error/?foo=bar'
     assert request['url']['search'] == '?foo=bar'
     assert request['method'] == 'GET'
     assert request['body'] == None
@@ -79,7 +79,7 @@ def test_post(flask_apm_client):
 
     assert 'request' in event['context']
     request = event['context']['request']
-    assert request['url']['raw'] == 'http://localhost/an-error/?biz=baz'
+    assert request['url']['full'] == 'http://localhost/an-error/?biz=baz'
     assert request['url']['search'] == '?biz=baz'
     assert request['method'] == 'POST'
     assert request['body'] == 'foo=bar'
@@ -112,7 +112,7 @@ def test_instrumentation(flask_apm_client):
     assert transaction['type'] == 'request'
     assert transaction['result'] == 'HTTP 2xx'
     assert 'request' in transaction['context']
-    assert transaction['context']['request']['url']['raw'] == 'http://localhost/users/'
+    assert transaction['context']['request']['url']['full'] == 'http://localhost/users/'
     assert transaction['context']['request']['method'] == 'POST'
     assert transaction['context']['response']['status_code'] == 200
     assert transaction['context']['response']['headers'] == {

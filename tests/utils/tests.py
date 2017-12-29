@@ -17,28 +17,28 @@ def test_get_url_dict():
             'protocol': 'http:',
             'hostname': 'example.com',
             'pathname': '',
-            'raw': 'http://example.com',
+            'full': 'http://example.com',
         },
         'http://example.com:443': {
             'protocol': 'http:',
             'hostname': 'example.com',
             'port': '443',
             'pathname': '',
-            'raw': 'http://example.com:443',
+            'full': 'http://example.com:443',
         },
         'http://example.com:443/a/b/c': {
             'protocol': 'http:',
             'hostname': 'example.com',
             'port': '443',
             'pathname': '/a/b/c',
-            'raw': 'http://example.com:443/a/b/c',
+            'full': 'http://example.com:443/a/b/c',
         },
         'https://example.com:443/': {
             'protocol': 'https:',
             'hostname': 'example.com',
             'port': '443',
             'pathname': '/',
-            'raw': 'https://example.com:443/',
+            'full': 'https://example.com:443/',
         },
         'https://example.com:443/a/b/c?de': {
             'protocol': 'https:',
@@ -46,7 +46,7 @@ def test_get_url_dict():
             'port': '443',
             'pathname': '/a/b/c',
             'search': '?de',
-            'raw': 'https://example.com:443/a/b/c?de',
+            'full': 'https://example.com:443/a/b/c?de',
         }
     }
     for url, expected in data.items():

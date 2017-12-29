@@ -82,7 +82,7 @@ def get_url_dict(url):
     else:
         hostname, port = (netloc, None)
     url_dict = {
-        'raw': url,
+        'full': url,
         'protocol': scheme + ':',
         'hostname': hostname,
         'pathname': path,
