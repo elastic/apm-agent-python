@@ -141,7 +141,7 @@ class DjangoClient(Client):
             except DisallowedHost:
                 # We can't figure out the real URL, so we have to set it to
                 # DisallowedHost
-                result['url'] = {'raw': 'DisallowedHost'}
+                result['url'] = {'full': 'DisallowedHost'}
                 url = None
         if url:
             result['url'] = get_url_dict(url)

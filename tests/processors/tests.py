@@ -34,7 +34,7 @@ def http_test_data():
                     'a_password_here': '123456',
                 },
                 'url': {
-                    'raw': 'http://example.com/bla?foo=bar&password=123456&the_secret=abc&cc=1234567890098765',
+                    'full': 'http://example.com/bla?foo=bar&password=123456&the_secret=abc&cc=1234567890098765',
                     'search': 'foo=bar&password=123456&the_secret=abc&cc=1234567890098765'
                 }
             },
@@ -141,7 +141,7 @@ def test_sanitize_http_query_string(http_test_data):
         processors.MASK
     )
     assert result['context']['request']['url']['search'] == expected
-    assert result['context']['request']['url']['raw'].endswith(expected)
+    assert result['context']['request']['url']['full'].endswith(expected)
 
 
 def test_post_as_string(http_test_data):
