@@ -415,7 +415,7 @@ def test_404_middleware(django_elasticapm_client, client):
 
         assert 'request' in event['context']
         request = event['context']['request']
-        assert request['url']['raw'] == u'http://testserver/non-existant-page'
+        assert request['url']['full'] == u'http://testserver/non-existant-page'
         assert request['method'] == 'GET'
         assert request['body'] == None
 
@@ -534,7 +534,7 @@ def test_disallowed_hosts_error_django_19(django_elasticapm_client):
         # this should not raise a DisallowedHost exception
         django_elasticapm_client.capture('Message', message='foo', request=request)
     event = django_elasticapm_client.events.pop(0)['errors'][0]
-    assert event['context']['request']['url']['raw'] == 'http://testserver/'
+    assert event['context']['request']['url']['full'] == 'http://testserver/'
 
 
 @pytest.mark.skipif(django.VERSION >= (1, 9),
@@ -553,7 +553,7 @@ def test_disallowed_hosts_error_django_18(django_elasticapm_client):
         # this should not raise a DisallowedHost exception
         django_elasticapm_client.capture('Message', message='foo', request=request)
     event = django_elasticapm_client.events.pop(0)['errors'][0]
-    assert event['context']['request']['url'] == {'raw': 'DisallowedHost'}
+    assert event['context']['request']['url'] == {'full': 'DisallowedHost'}
 
 
 def test_request_capture(django_elasticapm_client):

@@ -24,8 +24,8 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
      The name of the analogous environment variable changed from `ELASTIC_APM_APP_NAME`
      to `ELASTIC_APM_SERVICE_NAME`.
  ** `app_name` arguments to API calls in the whole code base changed to `service_name`.
+ ** `context.request.url.raw` has been renamed to `context.request.url.full` ({pull}121[#121])
 
->>>>>>> renamed traces to spans, app to service
 [[release-1.0.0]]
 [float]
 === v1.0.0

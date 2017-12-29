@@ -29,7 +29,7 @@ def test_error_handler(elasticapm_client):
 
     assert 'request' in event['context']
     request = event['context']['request']
-    assert request['url']['raw'] == 'http://localhost/an-error?foo=bar'
+    assert request['url']['full'] == 'http://localhost/an-error?foo=bar'
     assert request['url']['search'] == '?foo=bar'
     assert request['method'] == 'GET'
     headers = request['headers']

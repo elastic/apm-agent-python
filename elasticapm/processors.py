@@ -157,9 +157,9 @@ def sanitize_http_request_querystring(client, event):
         return event
     if '=' in query_string:
         sanitized_query_string = _sanitize_string(query_string, '&', '=')
-        raw = event['context']['request']['url']['raw']
+        full_url = event['context']['request']['url']['full']
         event['context']['request']['url']['search'] = sanitized_query_string
-        event['context']['request']['url']['raw'] = raw.replace(
+        event['context']['request']['url']['full'] = full_url.replace(
             query_string,
             sanitized_query_string
         )
