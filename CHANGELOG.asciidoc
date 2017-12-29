@@ -15,6 +15,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  * moved the library-frame detection from a processor to the stacktrace collection ({pull}113[#113]).
  * added settings to enable/disable source code collection and local variables collection
    for errors and transactions ({pull}117[#117])
+ * added `service.environment` to provide an environment name (e.g. "production", "staging") ({pull}123[#123])
  * BREAKING: Several settings and APIs have been renamed ({pull}111[#111], {pull}119[#119]):
  ** The decorator for custom instrumentation, `elasticapm.trace`, is now `elasticapm.capture_span`
  ** The setting `traces_send_frequency` has been renamed to `transaction_send_frequency`.
