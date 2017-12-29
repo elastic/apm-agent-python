@@ -134,6 +134,7 @@ class _ConfigBase(object):
 class Config(_ConfigBase):
     service_name = _ConfigValue('SERVICE_NAME', validators=[lambda val: re.match('^[a-zA-Z0-9 _-]+$', val)],
                                 required=True)
+    environment = _ConfigValue('ENVIRONMENT', default=None)
     secret_token = _ConfigValue('SECRET_TOKEN')
     debug = _BoolConfigValue('DEBUG', default=False)
     server_url = _ConfigValue('SERVER_URL', default='http://localhost:8200', required=True)

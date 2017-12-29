@@ -93,6 +93,19 @@ Note however that this can have adverse effects on performance.
 === Other options
 
 [float]
+[[config-environment]]
+==== `environment`
+
+[options="header"]
+|============
+| Environment               | Django/Flask   | Default    | Example
+| `ELASTIC_APM_ENVIRONMENT` | `ENVIRONMENT`  | `None`     | `"production"`
+|============
+
+The name of the environment this service is deployed in,
+e.g. "production" or "staging".
+
+[float]
 [[config-secret-token]]
 ==== `secret_token`
 

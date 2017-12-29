@@ -327,6 +327,7 @@ class Client(object):
             runtime_version = language_version
         result = {
             'name': self.config.service_name,
+            'environment': self.config.environment,
             'version': self.config.app_version,
             'agent': {
                 'name': 'python',
