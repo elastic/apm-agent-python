@@ -33,7 +33,9 @@ def register_exception_tracking(client):
                 'task': sender,
                 'args': args,
                 'kwargs': kwargs,
-            })
+            },
+            handled=False,
+        )
 
     signals.task_failure.disconnect(process_failure_signal, dispatch_uid=dispatch_uid)
     signals.task_failure.connect(process_failure_signal, weak=False, dispatch_uid=dispatch_uid)
