@@ -24,7 +24,7 @@ import zlib
 
 import elasticapm
 from elasticapm.conf import Config, constants
-from elasticapm.traces import TransactionsStore
+from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
 from elasticapm.utils import json_encoder as json
 from elasticapm.utils import compat, is_master_process, stacks, varmap
@@ -230,12 +230,13 @@ class Client(object):
         self.instrumentation_store.begin_transaction(transaction_type)
 
     def end_transaction(self, name, result=''):
-        self.instrumentation_store.end_transaction(result, name)
+        transaction = self.instrumentation_store.end_transaction(result, name)
         if self.instrumentation_store.should_collect():
             self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
             self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.transaction_send_frequency))
+        return transaction
 
     def close(self):
         self._collect_transactions()
@@ -442,6 +443,10 @@ class Client(object):
         event_data.update({
             'timestamp': date.strftime(constants.TIMESTAMP_FORMAT),
         })
+
+        transaction = get_transaction()
+        if transaction:
+            event_data['transaction'] = {'id': transaction.id}
 
         return self._build_msg({'errors': [event_data]})
 
