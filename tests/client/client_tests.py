@@ -530,3 +530,16 @@ def test_collect_source_transactions(should_collect, elasticapm_client):
         assert 'context_line' not in transaction['spans'][0]['stacktrace'][0], mode
         assert 'pre_context' not in transaction['spans'][0]['stacktrace'][0], mode
         assert 'post_context' not in transaction['spans'][0]['stacktrace'][0], mode
+
+
+def test_transaction_id_is_attached(elasticapm_client):
+    elasticapm_client.capture_message('noid')
+    elasticapm_client.begin_transaction('test')
+    elasticapm_client.capture_message('id')
+    transaction = elasticapm_client.end_transaction('test', 'test')
+    elasticapm_client.capture_message('noid')
+
+    errors = elasticapm_client.events
+    assert 'transaction' not in errors[0]['errors'][0]
+    assert errors[1]['errors'][0]['transaction']['id'] == transaction.id
+    assert 'transaction' not in errors[2]['errors'][0]
