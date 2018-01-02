@@ -543,3 +543,21 @@ def test_transaction_id_is_attached(elasticapm_client):
     assert 'transaction' not in errors[0]['errors'][0]
     assert errors[1]['errors'][0]['transaction']['id'] == transaction.id
     assert 'transaction' not in errors[2]['errors'][0]
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'transaction_sample_rate': 0.4}], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
+    should_collect.return_value = False
+    for i in range(10):
+        elasticapm_client.begin_transaction('test_type')
+        with elasticapm.capture_span('xyz'):
+            pass
+        elasticapm_client.end_transaction('test')
+
+    transactions = elasticapm_client.instrumentation_store.get_all()
+
+    # seed is fixed by not_so_random fixture
+    assert len([t for t in transactions if t['sampled']]) == 5
+    for transaction in transactions:
+        assert transaction['sampled'] or not 'spans' in transaction

@@ -1,6 +1,7 @@
 import datetime
 import functools
 import logging
+import random
 import re
 import threading
 import time
@@ -36,7 +37,7 @@ def get_transaction(clear=False):
 
 
 class Transaction(object):
-    def __init__(self, frames_collector_func, transaction_type="custom"):
+    def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True):
         self.id = uuid.uuid4()
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
@@ -52,6 +53,7 @@ class Transaction(object):
         self._context = {}
         self._tags = {}
 
+        self.is_sampled = is_sampled
         self._span_counter = 0
 
     def end_transaction(self, skip_frames=8):
@@ -92,7 +94,7 @@ class Transaction(object):
 
     def to_dict(self):
         self._context['tags'] = self._tags
-        return {
+        result = {
             'id': str(self.id),
             'name': self.name,
             'type': self.transaction_type,
@@ -100,10 +102,11 @@ class Transaction(object):
             'result': str(self.result),
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             'context': self._context,
-            'spans': [
-                span_obj.to_dict() for span_obj in self.spans
-            ]
+            'sampled': self.is_sampled,
         }
+        if self.is_sampled:
+            result['spans'] = [span_obj.to_dict() for span_obj in self.spans]
+        return result
 
 
 class Span(object):
@@ -148,7 +151,8 @@ class Span(object):
 
 
 class TransactionsStore(object):
-    def __init__(self, frames_collector_func, collect_frequency, max_queue_length=None, ignore_patterns=None):
+    def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_queue_length=None,
+                 ignore_patterns=None):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
         self.max_queue_length = max_queue_length
@@ -156,6 +160,7 @@ class TransactionsStore(object):
         self._transactions = []
         self._last_collect = _time_func()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
+        self._sample_rate = sample_rate
 
     def add_transaction(self, transaction):
         with self.cond:
@@ -185,7 +190,8 @@ class TransactionsStore(object):
 
         :returns the Transaction object
         """
-        transaction = Transaction(self._frames_collector_func, transaction_type)
+        is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
+        transaction = Transaction(self._frames_collector_func, transaction_type, is_sampled=is_sampled)
         thread_local.transaction = transaction
         return transaction
 
@@ -229,15 +235,13 @@ class capture_span(object):
 
     def __enter__(self):
         transaction = get_transaction()
-
-        if transaction:
+        if transaction and transaction.is_sampled:
             transaction.begin_span(self.name, self.type, self.extra,
                                    self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
-
-        if transaction:
+        if transaction and transaction.is_sampled:
             transaction.end_span(self.skip_frames)
 
 
@@ -269,6 +273,8 @@ def set_transaction_name(name):
 
 def set_transaction_data(data, _key='custom'):
     transaction = get_transaction()
-    if not transaction:
+    if not transaction or not transaction.is_sampled:
         return
+    if callable(data):
+        data = data()
     transaction._context[_key] = data
