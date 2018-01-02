@@ -19,6 +19,7 @@ def test_task_failure(flask_celery):
     error = apm_client.events[0]['errors'][0]
     assert error['culprit'] == 'tests.contrib.celery.flask_tests.failing_task'
     assert error['exception']['message'] == 'ValueError: foo'
+    assert error['handled'] is False
 
     transaction = apm_client.events[1]['transactions'][0]
     assert transaction['name'] == 'tests.contrib.celery.flask_tests.failing_task'

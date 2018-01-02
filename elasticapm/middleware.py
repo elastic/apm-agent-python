@@ -48,6 +48,7 @@ class ElasticAPM(object):
                     'headers': dict(get_headers(environ)),
                     'env': dict(get_environ(environ)),
                 }
-            }
+            },
+            handled=False,
         )
         return event_id

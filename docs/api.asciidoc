@@ -55,6 +55,7 @@ except ValueError:
  * `context`: A dictionary with contextual information. This dictionary must follow the 
     https://www.elastic.co/guide/en/apm/server/current/error-api.html#error-context-schema[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
+ * `handled`: A boolean to indicate if this exception was handled or not.
 
 Returns the id of the error as a string.
 
