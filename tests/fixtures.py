@@ -1,4 +1,5 @@
 import json
+import random
 import zlib
 
 import jsonschema
@@ -102,3 +103,11 @@ class TempStoreClient(Client):
 
     def send(self, url, **kwargs):
         self.events.append(kwargs)
+
+
+@pytest.fixture()
+def not_so_random():
+    old_state = random.getstate()
+    random.seed(42)
+    yield
+    random.setstate(old_state)
