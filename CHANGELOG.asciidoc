@@ -18,6 +18,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  * added `service.environment` to provide an environment name (e.g. "production", "staging") ({pull}123[#123])
  * added `transaction.id` to errors to better correlate errors with transactions ({pull}122[#122])
  * added `transaction_sample_rate` to define a rate with which transactions are sampled ({pull}116[#116])
+ * added `error.handled` to indicate if an exception was handled or not ({pull}124[#124]).
  * BREAKING: Several settings and APIs have been renamed ({pull}111[#111], {pull}119[#119]):
  ** The decorator for custom instrumentation, `elasticapm.trace`, is now `elasticapm.capture_span`
  ** The setting `traces_send_frequency` has been renamed to `transaction_send_frequency`.

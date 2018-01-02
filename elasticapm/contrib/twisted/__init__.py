@@ -30,5 +30,7 @@ class LogObserver(object):
         failure = event.get('log_failure')
         if failure is not None:
             self.client.capture_exception(
-                (failure.type, failure.value, failure.getTracebackObject()),
-                extra=event)
+                exc_info=(failure.type, failure.value, failure.getTracebackObject()),
+                handled=False,
+                extra=event
+            )

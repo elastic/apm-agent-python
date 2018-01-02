@@ -145,14 +145,15 @@ class Client(object):
     def get_handler(self, name):
         return import_string(name)
 
-    def capture(self, event_type, date=None, context=None, custom=None, stack=None, **kwargs):
+    def capture(self, event_type, date=None, context=None, custom=None, stack=None, handled=True, **kwargs):
         """
         Captures and processes an event and pipes it off to Client.send.
         """
         if event_type == 'Exception':
             # never gather log stack for exceptions
             stack = False
-        data = self._build_msg_for_logging(event_type, date=date, context=context, custom=custom, stack=stack, **kwargs)
+        data = self._build_msg_for_logging(event_type, date=date, context=context, custom=custom, stack=stack,
+                                           handled=handled, **kwargs)
 
         if data:
             url = self.config.server_url + constants.ERROR_API_PATH
@@ -167,7 +168,7 @@ class Client(object):
         """
         return self.capture('Message', message=message, param_message=param_message, **kwargs)
 
-    def capture_exception(self, exc_info=None, **kwargs):
+    def capture_exception(self, exc_info=None, handled=True, **kwargs):
         """
         Creates an event from an exception.
 
@@ -181,7 +182,7 @@ class Client(object):
         perform the ``exc_info = sys.exc_info()`` and the requisite clean-up
         for you.
         """
-        return self.capture('Exception', exc_info=exc_info, **kwargs)
+        return self.capture('Exception', exc_info=exc_info, handled=handled, **kwargs)
 
     def send(self, url, **data):
         """
@@ -368,7 +369,8 @@ class Client(object):
         data.update(**kwargs)
         return data
 
-    def _build_msg_for_logging(self, event_type, date=None, context=None, custom=None, stack=None, **kwargs):
+    def _build_msg_for_logging(self, event_type, date=None, context=None, custom=None, stack=None,
+                               handled=True, **kwargs):
         """
         Captures, processes and serializes an event into a dict object
         """
@@ -440,6 +442,7 @@ class Client(object):
 
         # Make sure all data is coerced
         event_data = transform(event_data)
+        event_data['handled'] = handled
 
         event_data.update({
             'timestamp': date.strftime(constants.TIMESTAMP_FORMAT),

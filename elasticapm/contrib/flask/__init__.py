@@ -88,12 +88,13 @@ class ElasticAPM(object):
         if self.app.debug and not self.client.config.debug:
             return
 
-        self.client.capture(
-            'Exception', exc_info=kwargs.get('exc_info'),
+        self.client.capture_exception(
+            exc_info=kwargs.get('exc_info'),
             context={'request': get_data_from_request(request)},
             custom={
                 'app': self.app,
             },
+            handled=False,
         )
 
     def init_app(self, app, **defaults):

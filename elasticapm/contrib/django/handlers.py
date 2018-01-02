@@ -55,7 +55,7 @@ def exception_handler(client, request=None, **kwargs):
             if (django_settings.DEBUG and not client.config.debug) or getattr(exc_info[1], 'skip_elasticapm', False):
                 return
 
-            client.capture('Exception', exc_info=exc_info, request=request)
+            client.capture('Exception', exc_info=exc_info, request=request, handled=False)
         except Exception as exc:
             try:
                 client.error_logger.exception(u'Unable to process log entry: %s' % (exc,))

@@ -60,5 +60,6 @@ class Middleware(object):
 
         self._elasticapm_client.capture_exception(
             exc_info,
-            extra=task_ctx
+            extra=task_ctx,
+            handled=False,
         )
