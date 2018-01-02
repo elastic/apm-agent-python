@@ -336,13 +336,10 @@ class Client(object):
                 'name': 'python',
                 'version': elasticapm.VERSION,
             },
-            'argv': sys.argv,
             'language': {
                 'name': 'python',
                 'version': platform.python_version(),
             },
-            'pid': os.getpid(),
-            'process_title': None,
             'runtime': {
                 'name': platform.python_implementation(),
                 'version': runtime_version,
@@ -355,6 +352,13 @@ class Client(object):
             }
         return result
 
+    def get_process_info(self):
+        return {
+            'pid': os.getpid(),
+            'argv': sys.argv,
+            'title': None,
+        }
+
     def get_system_info(self):
         return {
             'hostname': socket.gethostname(),
@@ -365,6 +369,7 @@ class Client(object):
     def _build_msg(self, data=None, **kwargs):
         data = data or {}
         data['service'] = self.get_service_info()
+        data['process'] = self.get_process_info()
         data['system'] = self.get_system_info()
         data.update(**kwargs)
         return data
