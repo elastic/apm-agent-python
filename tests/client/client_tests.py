@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import platform
+import sys
 import time
 
 import mock
@@ -69,6 +70,14 @@ def test_service_info(elasticapm_client):
         'version': platform.python_version()
     }
     assert service_info['agent']['name'] == 'python'
+
+
+def test_process_info(elasticapm_client):
+    with mock.patch('os.getpid') as mock_pid, mock.patch.object(sys, 'argv', ['a', 'b', 'c']):
+        mock_pid.return_value = 123
+        process_info = elasticapm_client.get_process_info()
+    assert process_info['pid'] == 123
+    assert process_info['argv'] == ['a', 'b', 'c']
 
 
 def test_system_info(elasticapm_client):
