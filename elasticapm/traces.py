@@ -38,7 +38,7 @@ def get_transaction(clear=False):
 
 class Transaction(object):
     def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True):
-        self.id = uuid.uuid4()
+        self.id = str(uuid.uuid4())
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
         self.name = None
@@ -95,7 +95,7 @@ class Transaction(object):
     def to_dict(self):
         self._context['tags'] = self._tags
         result = {
-            'id': str(self.id),
+            'id': self.id,
             'name': self.name,
             'type': self.transaction_type,
             'duration': self.duration * 1000,  # milliseconds
