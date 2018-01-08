@@ -282,11 +282,11 @@ If you notice a performance impact when running Elastic APM, changing
 this setting to `errors` can help.
 
 [float]
-[[config-traces-send-frequency]]
+[[config-transaction-send-frequency]]
 ==== `transaction_send_frequency`
 
 |============
-| Environment                    | Django/Flask        | Default
+| Environment                         | Django/Flask            | Default
 | `ELASTIC_APM_TRANSACTION_SEND_FREQ` | `TRANSACTION_SEND_FREQ` | `60`
 |============
 
@@ -294,6 +294,20 @@ Interval with which transactions should be sent to the APM server, in seconds.
 A lower value will increase the load on your APM server,
 while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until transactions are indexed and searchable in Elasticsearch.
+
+
+[float]
+[[config-transaction-max-spans]]
+==== `transaction_max_spans`
+
+|============
+| Environment                         | Django/Flask            | Default
+| `ELASTIC_APM_TRANSACTION_MAX_SPANS` | `TRANSACTION_MAX_SPANS` | `500`
+|============
+
+Limits the amount of spans that are recorded per transaction.
+This is helpful in cases where a transaction creates a very high amount of spans (e.g. thousands of SQL queries).
+Setting an upper limit will prevent overloading the agent and the APM server with too much work for such edge cases.
 
 
 [float]

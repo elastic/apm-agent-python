@@ -23,6 +23,10 @@ _time_func = time.time
 TAG_RE = re.compile('^[^.*\"]+$')
 
 
+DROPPED_SPAN = object()
+IGNORED_SPAN = object()
+
+
 def get_transaction(clear=False):
     """
     Get the transaction registered for the current thread.
@@ -37,7 +41,7 @@ def get_transaction(clear=False):
 
 
 class Transaction(object):
-    def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True):
+    def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True, max_spans=None):
         self.id = str(uuid.uuid4())
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
@@ -49,6 +53,8 @@ class Transaction(object):
 
         self.spans = []
         self.span_stack = []
+        self.max_spans = max_spans
+        self.dropped_spans = 0
         self.ignore_subtree = False
         self._context = {}
         self._tags = {}
@@ -63,24 +69,33 @@ class Transaction(object):
         # If we were already called with `leaf=True`, we'll just push
         # a placeholder on the stack.
         if self.ignore_subtree:
-            self.span_stack.append(None)
+            self.span_stack.append(IGNORED_SPAN)
             return None
 
         if leaf:
             self.ignore_subtree = True
 
-        start = _time_func() - self.start_time
-        span = Span(self._span_counter, name, span_type, start, context)
         self._span_counter += 1
+
+        if self.max_spans and self._span_counter > self.max_spans:
+            self.dropped_spans += 1
+            self.span_stack.append(DROPPED_SPAN)
+            return None
+
+        start = _time_func() - self.start_time
+        span = Span(self._span_counter - 1, name, span_type, start, context)
         self.span_stack.append(span)
         return span
 
     def end_span(self, skip_frames):
         span = self.span_stack.pop()
-        if span is None:
+        if span is IGNORED_SPAN:
             return None
 
         self.ignore_subtree = False
+
+        if span is DROPPED_SPAN:
+            return
 
         span.duration = _time_func() - span.start_time - self.start_time
 
@@ -106,6 +121,8 @@ class Transaction(object):
         }
         if self.is_sampled:
             result['spans'] = [span_obj.to_dict() for span_obj in self.spans]
+        if self.dropped_spans:
+            result['span_count'] = {'dropped': {'total': self.dropped_spans}}
         return result
 
 
@@ -151,11 +168,12 @@ class Span(object):
 
 
 class TransactionsStore(object):
-    def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_queue_length=None,
+    def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_spans=0, max_queue_length=None,
                  ignore_patterns=None):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
         self.max_queue_length = max_queue_length
+        self.max_spans = max_spans
         self._frames_collector_func = frames_collector_func
         self._transactions = []
         self._last_collect = _time_func()
@@ -191,7 +209,8 @@ class TransactionsStore(object):
         :returns the Transaction object
         """
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
-        transaction = Transaction(self._frames_collector_func, transaction_type, is_sampled=is_sampled)
+        transaction = Transaction(self._frames_collector_func, transaction_type, max_spans=self.max_spans,
+                                  is_sampled=is_sampled)
         thread_local.transaction = transaction
         return transaction
 
@@ -236,8 +255,7 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, self.extra,
-                                   self.leaf)
+            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()

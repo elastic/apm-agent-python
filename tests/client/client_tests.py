@@ -570,3 +570,56 @@ def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
     assert len([t for t in transactions if t['sampled']]) == 5
     for transaction in transactions:
         assert transaction['sampled'] or not 'spans' in transaction
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'transaction_max_spans': 5}], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_transaction_max_spans(should_collect, elasticapm_client):
+    should_collect.return_value = False
+    elasticapm_client.begin_transaction('test_type')
+    for i in range(5):
+        with elasticapm.capture_span('nodrop'):
+            pass
+    for i in range(10):
+        with elasticapm.capture_span('drop'):
+            pass
+    transaction_obj = elasticapm_client.end_transaction('test')
+
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+
+    assert transaction_obj.max_spans == 5
+    assert transaction_obj.dropped_spans == 10
+    assert len(transaction['spans']) == 5
+    for span in transaction['spans']:
+        assert span['name'] == 'nodrop'
+    assert transaction['span_count'] == {'dropped': {'total': 10}}
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'transaction_max_spans': 3}], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_transaction_max_span_nested(should_collect, elasticapm_client):
+    should_collect.return_value = False
+    elasticapm_client.begin_transaction('test_type')
+    with elasticapm.capture_span('1'):
+        with elasticapm.capture_span('2'):
+            with elasticapm.capture_span('3'):
+                with elasticapm.capture_span('4'):
+                    with elasticapm.capture_span('5'):
+                        pass
+                with elasticapm.capture_span('6'):
+                    pass
+            with elasticapm.capture_span('7'):
+                pass
+        with elasticapm.capture_span('8'):
+            pass
+    with elasticapm.capture_span('9'):
+        pass
+    transaction_obj = elasticapm_client.end_transaction('test')
+
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+
+    assert transaction_obj.dropped_spans == 6
+    assert len(transaction['spans']) == 3
+    for span in transaction['spans']:
+        assert span['name'] in ('1', '2', '3')
+    assert transaction['span_count'] == {'dropped': {'total': 6}}
