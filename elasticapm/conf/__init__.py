@@ -162,6 +162,8 @@ class Config(_ConfigBase):
     max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
     collect_source = _ConfigValue('COLLECT_SOURCE', default='all')
+    local_var_max_length = _ConfigValue('LOCAL_VAR_MAX_LENGTH', type=int, default=200)
+    local_var_list_max_length = _ConfigValue('LOCAL_VAR_LIST_MAX_LENGTH', type=int, default=10)
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
     instrument_django_middleware = _BoolConfigValue('INSTRUMENT_DJANGO_MIDDLEWARE', default=True)
     transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])

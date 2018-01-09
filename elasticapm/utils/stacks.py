@@ -142,7 +142,7 @@ def iter_traceback_frames(tb):
         tb = tb.tb_next
 
 
-def iter_stack_frames(frames=None):
+def iter_stack_frames(frames=None, skip=0):
     """
     Given an optional list of frames (defaults to current stack),
     iterates over all frames that do not contain the ``__traceback_hide__``
@@ -151,14 +151,16 @@ def iter_stack_frames(frames=None):
     if not frames:
         frame = inspect.currentframe().f_back
         frames = _walk_stack(frame)
-    for frame in frames:
+    for i, frame in enumerate(frames):
+        if i < skip:
+            continue
         f_locals = getattr(frame, 'f_locals', {})
         if not _getitem_from_frame(f_locals, '__traceback_hide__'):
             yield frame, frame.f_lineno
 
 
 def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
-                   include_paths_re=None, exclude_paths_re=None):
+                   include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     # Support hidden frames
     f_locals = getattr(frame, 'f_locals', {})
     if _getitem_from_frame(f_locals, '__traceback_hide__'):
@@ -219,13 +221,14 @@ def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
                 f_locals = to_dict(f_locals)
             except Exception:
                 f_locals = '<invalid local scope>'
-
+        if locals_processor_func:
+            f_locals = {varname: locals_processor_func(var) for varname, var in compat.iteritems(f_locals)}
         frame_result['vars'] = transform(f_locals)
     return frame_result
 
 
 def get_stack_info(frames, with_source_context=True, with_locals=True,
-                   include_paths_re=None, exclude_paths_re=None):
+                   include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     """
     Given a list of frames, returns a list of stack information
     dictionary objects that are JSON-ready.
@@ -239,6 +242,7 @@ def get_stack_info(frames, with_source_context=True, with_locals=True,
     :param with_locals: boolean to indicate if local variables should be collected
     :param include_paths_re: a regex to determine if a frame is not a library frame
     :param exclude_paths_re: a regex to exclude frames from not being library frames
+    :param locals_processor_func: a function to call on all local variables
     :return:
     """
     results = []
@@ -250,6 +254,7 @@ def get_stack_info(frames, with_source_context=True, with_locals=True,
             with_locals,
             include_paths_re,
             exclude_paths_re,
+            locals_processor_func,
         )
         if result:
             results.append(result)

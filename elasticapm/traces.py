@@ -234,8 +234,7 @@ class TransactionsStore(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type='code.custom', extra=None,
-                 skip_frames=0, leaf=False):
+    def __init__(self, name=None, span_type='code.custom', extra=None, skip_frames=0, leaf=False):
         self.name = name
         self.type = span_type
         self.extra = extra
