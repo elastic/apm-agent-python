@@ -4,7 +4,7 @@ services:
   postgres:
     user: postgres
     image: postgres
-    ports: 
+    ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: 'postgres'
@@ -17,24 +17,37 @@ services:
 
   mongodb:
     image: mongo
-    ports: 
+    ports:
       - "27017:27017"
 
   memcached:
     image: memcached
-    ports: 
+    ports:
       - "11211:11211"
 
   redis:
     image: redis
-    ports: 
+    ports:
       - "6379:6379"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "network.host="
+      - "transport.host=127.0.0.1"
+      - "http.host=0.0.0.0"
+      - "xpack.security.enabled=false"
+    ports:
+      - "9200:9200"
 
   run_tests:
     build:
       context: .
       dockerfile: Dockerfile
-    environment: 
+    environment:
       MONGODB_HOST: 'mongodb'
       REDIS_HOST: 'redis'
       MEMCACHED_HOST: 'memcached'
@@ -42,12 +55,15 @@ services:
       POSTGRES_DB: 'elasticapm_test'
       POSTGRES_HOST: 'postgres'
       POSTGRES_PORT: '5432'
+      ELASTICSEARCH_URL: 'http://elasticsearch:9200'
     depends_on:
       postgres:
-        condition: service_healthy 
+        condition: service_healthy
       mongodb:
         condition: service_started
       memcached:
         condition: service_started
       redis:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy

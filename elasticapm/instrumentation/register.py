@@ -1,6 +1,7 @@
 from elasticapm.utils.module_import import import_string
 
 _cls_register = {
+    'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation',
     'elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation',
     'elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation',
     'elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation',
