@@ -9,8 +9,8 @@ flake8:
 
 test:
 	if [[ "$$PYTHON_VERSION" =~ ^(3.5|3.6|nightly|pypy3)$$ ]] ; then \
-	py.test -v $(PYTEST_ARGS); \
-	else py.test -v $(PYTEST_ARGS) --ignore=tests/asyncio; fi
+	py.test -v $(PYTEST_ARGS) -n auto --dist=loadscope; \
+	else py.test -v $(PYTEST_ARGS) --ignore=tests/asyncio -n auto --dist=loadscope; fi
 
 coverage: PYTEST_ARGS=--cov --cov-report xml:coverage.xml
 coverage: test
