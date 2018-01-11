@@ -290,11 +290,16 @@ def test_explicit_message_on_exception_event(elasticapm_client):
     assert event['exception']['message'] == 'foobar'
 
 
-@pytest.mark.parametrize('elasticapm_client', [
-    {'include_paths': ('tests',)}
-], indirect=True)
+@pytest.mark.parametrize('elasticapm_client', [{
+    'include_paths': ('tests',),
+    'local_var_max_length': 20,
+    'local_var_list_max_length': 10,
+}], indirect=True)
 def test_exception_event(elasticapm_client):
     try:
+        a_local_var = 1
+        a_long_local_var = 100 * 'a'
+        a_long_local_list = list(range(100))
         raise ValueError('foo')
     except ValueError:
         elasticapm_client.capture('Exception')
@@ -315,6 +320,10 @@ def test_exception_event(elasticapm_client):
     assert frame['module'] == __name__
     assert frame['function'] == 'test_exception_event'
     assert not frame['library_frame']
+    assert frame['vars']['a_local_var'] == 1
+    assert len(frame['vars']['a_long_local_var']) == 20
+    assert len(frame['vars']['a_long_local_list']) == 12
+    assert frame['vars']['a_long_local_list'][-1] == "(90 more elements)"
     assert 'timestamp' in event
     assert 'log' not in event
     # check that only frames from `tests` module are not marked as library frames
@@ -322,10 +331,15 @@ def test_exception_event(elasticapm_client):
                for frame in event['exception']['stacktrace'])
 
 
-@pytest.mark.parametrize('elasticapm_client', [
-    {'include_paths': ('tests',)}
-], indirect=True)
+@pytest.mark.parametrize('elasticapm_client', [{
+    'include_paths': ('tests',),
+    'local_var_max_length': 20,
+    'local_var_list_max_length': 10,
+}], indirect=True)
 def test_message_event(elasticapm_client):
+    a_local_var = 1
+    a_long_local_var = 100 * 'a'
+    a_long_local_list = list(range(100))
     elasticapm_client.capture('Message', message='test')
 
     assert len(elasticapm_client.events) == 1
@@ -336,6 +350,11 @@ def test_message_event(elasticapm_client):
     assert 'stacktrace' in event['log']
     # check that only frames from `tests` module are not marked as library frames
     assert all(frame['library_frame'] or frame['module'].startswith('tests') for frame in event['log']['stacktrace'])
+    frame = event['log']['stacktrace'][0]
+    assert frame['vars']['a_local_var'] == 1
+    assert len(frame['vars']['a_long_local_var']) == 20
+    assert len(frame['vars']['a_long_local_list']) == 12
+    assert frame['vars']['a_long_local_list'][-1] == "(90 more elements)"
 
 
 def test_logger(elasticapm_client):
@@ -497,8 +516,8 @@ def test_collect_source_errors(elasticapm_client):
 
 @pytest.mark.parametrize('elasticapm_client', [
     {'collect_local_variables': 'errors'},
-    {'collect_local_variables': 'transactions'},
-    {'collect_local_variables': 'all'},
+    {'collect_local_variables': 'transactions', 'local_var_max_length': 20, 'local_var_max_list_length': 10},
+    {'collect_local_variables': 'all', 'local_var_max_length': 20, 'local_var_max_list_length': 10},
     {'collect_local_variables': 'something'},
 ], indirect=True)
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
@@ -507,13 +526,21 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
     mode = elasticapm_client.config.collect_local_variables
     elasticapm_client.begin_transaction('test')
     with elasticapm.capture_span('foo'):
+        a_local_var = 1
+        a_long_local_var = 100 * 'a'
+        a_long_local_list = list(range(100))
         pass
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    frame = transaction['spans'][0]['stacktrace'][5]
     if mode in ('transactions', 'all'):
-        assert 'vars' in transaction['spans'][0]['stacktrace'][0], mode
+        assert 'vars' in frame, mode
+        assert frame['vars']['a_local_var'] == 1
+        assert len(frame['vars']['a_long_local_var']) == 20
+        assert len(frame['vars']['a_long_local_list']) == 12
+        assert frame['vars']['a_long_local_list'][-1] == "(90 more elements)"
     else:
-        assert 'vars' not in transaction['spans'][0]['stacktrace'][0], mode
+        assert 'vars' not in frame, mode
 
 
 @pytest.mark.parametrize('elasticapm_client', [

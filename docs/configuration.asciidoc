@@ -265,6 +265,30 @@ Collecting local variables for transactions in production environments
 can have adverse effects for the performance of your service.
 
 [float]
+[[config-local-var-max-length]]
+==== `local_var_max_length`
+
+|============
+| Environment                        | Django/Flask           | Default
+| `ELASTIC_APM_LOCAL_VAR_MAX_LENGTH` | `LOCAL_VAR_MAX_LENGTH` | `200`
+|============
+
+When collecting local variables, they will be converted to strings.
+With this setting, you can limit the length of resulting string.
+
+
+[float]
+[[config-local-list-var-max-length]]
+==== `local_var_list_max_length`
+
+|============
+| Environment                             | Django/Flask                | Default
+| `ELASTIC_APM_LOCAL_VAR_LIST_MAX_LENGTH` | `LOCAL_VAR_LIST_MAX_LENGTH` | `10`
+|============
+
+With this setting, you can limit the length of lists in local variables.
+
+[float]
 [[config-collect-source]]
 ==== `collect_source`
 
