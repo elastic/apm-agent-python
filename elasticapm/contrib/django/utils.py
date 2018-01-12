@@ -10,13 +10,13 @@ except ImportError:
 
 
 def iterate_with_template_sources(frames, with_source_context=True, with_locals=True,
-                                  include_paths_re=None, exclude_paths_re=None):
+                                  include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     template = None
     for frame, lineno in frames:
         f_code = getattr(frame, 'f_code', None)
         if f_code:
-            function = frame.f_code.co_name
-            if function == 'render':
+            function_name = frame.f_code.co_name
+            if function_name == 'render':
                 renderer = getattr(frame, 'f_locals', {}).get('self')
                 if renderer and isinstance(renderer, Node):
                     if getattr(renderer, "token", None) is not None:
@@ -37,5 +37,11 @@ def iterate_with_template_sources(frames, with_source_context=True, with_locals=
                         yield template
                         template = None
 
-        yield get_frame_info(frame, lineno, with_source_context, with_locals,
-                             include_paths_re, exclude_paths_re)
+        yield get_frame_info(
+            frame, lineno,
+            with_source_context=with_source_context,
+            with_locals=with_locals,
+            include_paths_re=include_paths_re,
+            exclude_paths_re=exclude_paths_re,
+            locals_processor_func=locals_processor_func,
+        )

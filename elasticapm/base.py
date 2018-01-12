@@ -131,7 +131,12 @@ class Client(object):
             lambda: self._get_stack_info_for_trace(
                 stacks.iter_stack_frames(),
                 with_source_context=self.config.collect_source in ('all', 'transactions'),
-                with_locals=self.config.collect_local_variables in ('all', 'transactions')
+                with_locals=self.config.collect_local_variables in ('all', 'transactions'),
+                locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
+                    v,
+                    list_length=self.config.local_var_list_max_length,
+                    string_length=self.config.local_var_max_length,
+                ), local_var)
             ),
             collect_frequency=self.config.transaction_send_frequency,
             sample_rate=self.config.transaction_sample_rate,
@@ -413,16 +418,21 @@ class Client(object):
         log = event_data.get('log', {})
         if stack and 'stacktrace' not in log:
             if stack is True:
-                frames = stacks.iter_stack_frames()
+                frames = stacks.iter_stack_frames(skip=3)
             else:
                 frames = stack
-            frames = varmap(lambda k, v: shorten(v), stacks.get_stack_info(
+            frames = stacks.get_stack_info(
                 frames,
                 with_source_context=self.config.collect_source in ('errors', 'all'),
                 with_locals=self.config.collect_local_variables in ('errors', 'all'),
                 include_paths_re=self.include_paths_re,
                 exclude_paths_re=self.exclude_paths_re,
-            ))
+                locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
+                    v,
+                    list_length=self.config.local_var_list_max_length,
+                    string_length=self.config.local_var_max_length,
+                ), local_var)
+            )
             log['stacktrace'] = frames
 
         if 'stacktrace' in log and not culprit:
@@ -507,10 +517,16 @@ class Client(object):
             )
         return self._transports[parsed_url]
 
-    def _get_stack_info_for_trace(self, frames, with_source_context=True, with_locals=True):
+    def _get_stack_info_for_trace(self, frames, with_source_context=True, with_locals=True, locals_processor_func=None):
         """Overrideable in derived clients to add frames/info, e.g. templates"""
-        return stacks.get_stack_info(frames, with_source_context, with_locals,
-                                     self.include_paths_re, self.exclude_paths_re)
+        return stacks.get_stack_info(
+            frames,
+            with_source_context=with_source_context,
+            with_locals=with_locals,
+            include_paths_re=self.include_paths_re,
+            exclude_paths_re=self.exclude_paths_re,
+            locals_processor_func=locals_processor_func,
+        )
 
 
 class DummyClient(Client):
