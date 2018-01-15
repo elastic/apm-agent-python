@@ -650,3 +650,18 @@ def test_transaction_max_span_nested(should_collect, elasticapm_client):
     for span in transaction['spans']:
         assert span['name'] in ('1', '2', '3')
     assert transaction['span_count'] == {'dropped': {'total': 6}}
+
+
+def test_transaction_context_is_used_in_errors(elasticapm_client):
+    elasticapm_client.begin_transaction('test')
+    elasticapm.tag(foo='baz')
+    elasticapm.set_custom_context({'a': 'b'})
+    elasticapm.set_user_context(username='foo', email='foo@example.com', user_id=42)
+    elasticapm_client.capture_message('x', custom={'foo': 'bar'})
+    transaction = elasticapm_client.end_transaction('test', 'OK')
+    message = elasticapm_client.events[0]['errors'][0]
+    assert message['context']['custom'] == {'a': 'b', 'foo': 'bar'}
+    assert message['context']['user'] == {'username': 'foo', 'email': 'foo@example.com', 'id': 42}
+    assert message['context']['tags'] == {'foo': 'baz'}
+    assert 'a' in transaction.context['custom']
+    assert 'foo' not in transaction.context['custom']

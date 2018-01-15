@@ -171,10 +171,10 @@ elasticapm.set_transaction_name('myapp.billing_process')
  * `name`: (*required*) A string describing name of the transaction
 
 [float]
-[[api-set-transaction-data]]
-==== `elasticapm.set_transaction_data()`
+[[api-set-custom-context]]
+==== `elasticapm.set_custom_context()`
 
-Attach custom contextual data to current transaction.
+Attach custom contextual data to the current transaction and errors.
 Supported frameworks will automatically attach information about the HTTP request and the logged in user.
 You can attach further data using this function. Example:
 
@@ -182,11 +182,52 @@ You can attach further data using this function. Example:
 ----
 import elasticapm
 
-elasticapm.set_transaction_data({'billing_amount': product.price * item_count})
+elasticapm.set_custom_context({'billing_amount': product.price * item_count})
 ----
 
-
  * `data`: (*required*) A dictionary with the data to be attached. This should be a flat key/value `dict` object.
- * `_key`: The key to use for this `dict` object. Defaults to `custom`.
-+
-NOTE: This should only be overridden by framework integrations.
+
+Errors that happen after this call will also have the custom context attached to them.
+You can call this function multiple times, new context data will be merged with existing data,
+following the `update()` semantics of Python dictionaries.
+
+[float]
+[[api-set-user-context]]
+==== `elasticapm.set_user_context()`
+
+Attach information about the currently logged in user to the current transaction and errors.
+Example:
+
+[source,python]
+----
+import elasticapm
+
+elasticapm.set_user_context(username=user.username, email=user.email, id=user.id)
+----
+
+ * `username`: The username of the logged in user
+ * `email`: The email of the logged in user
+ * `id`: The unique identifier of the logged in user, e.g. the primary key value
+
+Errors that happen after this call will also have the user context attached to them.
+You can call this function multiple times, new user data will be merged with existing data,
+following the `update()` semantics of Python dictionaries.
+
+
+[float]
+[[api-tag]]
+==== `elasticapm.tag()`
+
+Attach tags to the the current transaction and errors.
+Example:
+
+[source,python]
+----
+import elasticapm
+
+elasticapm.tag(ecommerce=True, dollar_value=47.12)
+----
+
+Errors that happen after this call will also have the tags attached to them.
+You can call this function multiple times, new tags will be merged with existing tags,
+following the `update()` semantics of Python dictionaries.

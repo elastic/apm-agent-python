@@ -10,7 +10,7 @@ import uuid
 from elasticapm.conf import constants
 from elasticapm.utils import compat, get_name_from_func
 
-__all__ = ('capture_span', 'tag', 'set_transaction_name', 'set_transaction_data')
+__all__ = ('capture_span', 'tag', 'set_transaction_name', 'set_custom_context', 'set_user_context')
 
 error_logger = logging.getLogger('elasticapm.errors')
 
@@ -56,8 +56,8 @@ class Transaction(object):
         self.max_spans = max_spans
         self.dropped_spans = 0
         self.ignore_subtree = False
-        self._context = {}
-        self._tags = {}
+        self.context = {}
+        self.tags = {}
 
         self.is_sampled = is_sampled
         self._span_counter = 0
@@ -108,7 +108,7 @@ class Transaction(object):
         return span
 
     def to_dict(self):
-        self._context['tags'] = self._tags
+        self.context['tags'] = self.tags
         result = {
             'id': self.id,
             'name': self.name,
@@ -116,7 +116,7 @@ class Transaction(object):
             'duration': self.duration * 1000,  # milliseconds
             'result': str(self.result),
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
-            'context': self._context,
+            'context': self.context,
             'sampled': self.is_sampled,
         }
         if self.is_sampled:
@@ -276,7 +276,7 @@ def tag(**tags):
             error_logger.warning("Ignored tag %s. No transaction currently active.", name)
             return
         if TAG_RE.match(name):
-            transaction._tags[compat.text_type(name)] = compat.text_type(value)
+            transaction.tags[compat.text_type(name)] = compat.text_type(value)
         else:
             error_logger.warning("Ignored tag %s. Tag names can't contain stars, dots or double quotes.", name)
 
@@ -288,10 +288,27 @@ def set_transaction_name(name):
     transaction.name = name
 
 
-def set_transaction_data(data, _key='custom'):
+def set_context(data, key='custom'):
     transaction = get_transaction()
-    if not transaction or not transaction.is_sampled:
+    if not transaction:
         return
-    if callable(data):
+    if callable(data) and transaction.is_sampled:
         data = data()
-    transaction._context[_key] = data
+    if key in transaction.context:
+        transaction.context[key].update(data)
+    else:
+        transaction.context[key] = data
+
+
+set_custom_context = functools.partial(set_context, key='custom')
+
+
+def set_user_context(username=None, email=None, user_id=None):
+    data = {}
+    if username is not None:
+        data['username'] = username
+    if email is not None:
+        data['email'] = email
+    if user_id is not None:
+        data['id'] = user_id
+    set_context(data, 'user')

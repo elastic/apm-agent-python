@@ -136,8 +136,8 @@ class ElasticAPM(object):
         rule = build_name_with_http_method_prefix(rule, request)
         request_data = get_data_from_request(request)
         response_data = get_data_from_response(response)
-        elasticapm.set_transaction_data(request_data, 'request')
-        elasticapm.set_transaction_data(response_data, 'response')
+        elasticapm.set_context(request_data, 'request')
+        elasticapm.set_context(response_data, 'response')
         if response.status_code:
             result = 'HTTP {}xx'.format(response.status_code // 100)
         else:
