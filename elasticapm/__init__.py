@@ -20,5 +20,5 @@ except Exception as e:
 from elasticapm.base import Client
 from elasticapm.conf import setup_logging
 from elasticapm.instrumentation.control import instrument, uninstrument
-from elasticapm.traces import (capture_span, set_transaction_data,
-                               set_transaction_name, tag)
+from elasticapm.traces import (capture_span, set_context, set_custom_context,
+                               set_transaction_name, set_user_context, tag)

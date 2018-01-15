@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 import zlib
+from copy import deepcopy
 
 import elasticapm
 from elasticapm.conf import Config, constants
@@ -385,7 +386,11 @@ class Client(object):
         """
         Captures, processes and serializes an event into a dict object
         """
-
+        transaction = get_transaction()
+        if transaction:
+            transaction_context = deepcopy(transaction.context)
+        else:
+            transaction_context = {}
         event_data = {}
         if custom is None:
             custom = {}
@@ -394,9 +399,13 @@ class Client(object):
         if stack is None:
             stack = self.config.auto_log_stacks
         if context:
-            event_data['context'] = context
+            transaction_context.update(context)
+            context = transaction_context
         else:
-            event_data['context'] = context = {}
+            context = transaction_context
+        event_data['context'] = context
+        if transaction and transaction.tags:
+            context['tags'] = deepcopy(transaction.tags)
 
         # if '.' not in event_type:
         # Assume it's a builtin
@@ -450,7 +459,10 @@ class Client(object):
         if culprit:
             event_data['culprit'] = culprit
 
-        context['custom'] = custom
+        if 'custom' in context:
+            context['custom'].update(custom)
+        else:
+            context['custom'] = custom
 
         # Run the data through processors
         for processor in self.processors:
