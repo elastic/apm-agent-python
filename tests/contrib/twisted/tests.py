@@ -16,4 +16,4 @@ def test_twisted_log_observer(elasticapm_client):
 
     cli_event = elasticapm_client.events.pop(0)['errors'][0]
     assert cli_event['exception']['type'] == 'ZeroDivisionError'
-    assert cli_event['handled'] is False
+    assert cli_event['exception']['handled'] is False

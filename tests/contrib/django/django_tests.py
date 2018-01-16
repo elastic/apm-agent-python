@@ -99,8 +99,8 @@ def test_signal_integration(django_elasticapm_client):
     exc = event['exception']
     assert exc['type'] == 'ValueError'
     assert exc['message'] == u"ValueError: invalid literal for int() with base 10: 'hello'"
+    assert exc['handled'] is False
     assert event['culprit'] == 'tests.contrib.django.django_tests.test_signal_integration'
-    assert event['handled'] is False
 
 
 def test_view_exception(django_elasticapm_client, client):
@@ -113,8 +113,8 @@ def test_view_exception(django_elasticapm_client, client):
     exc = event['exception']
     assert exc['type'] == 'Exception'
     assert exc['message'] == 'Exception: view exception'
+    assert exc['handled'] is False
     assert event['culprit'] == 'tests.contrib.django.testapp.views.raise_exc'
-    assert event['handled'] is False
 
 
 def test_view_exception_debug(django_elasticapm_client, client):
@@ -287,8 +287,8 @@ def test_request_middleware_exception(django_elasticapm_client, client):
         exc = event['exception']
         assert exc['type'] == 'ImportError'
         assert exc['message'] == 'ImportError: request'
+        assert exc['handled'] is False
         assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_request'
-        assert event['handled'] is False
 
 
 def test_response_middlware_exception(django_elasticapm_client, client):
@@ -306,8 +306,8 @@ def test_response_middlware_exception(django_elasticapm_client, client):
         exc = event['exception']
         assert exc['type'] == 'ImportError'
         assert exc['message'] == 'ImportError: response'
+        assert exc['handled'] is False
         assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_response'
-        assert event['handled'] is False
 
 
 def test_broken_500_handler_with_middleware(django_elasticapm_client, client):
@@ -333,8 +333,8 @@ def test_broken_500_handler_with_middleware(django_elasticapm_client, client):
         exc = event['exception']
         assert exc['type'] == 'ValueError'
         assert exc['message'] == 'ValueError: handler500'
+        assert exc['handled'] is False
         assert event['culprit'] == 'tests.contrib.django.testapp.urls.handler500'
-        assert event['handled'] is False
 
 
 def test_view_middleware_exception(django_elasticapm_client, client):
@@ -350,8 +350,8 @@ def test_view_middleware_exception(django_elasticapm_client, client):
         exc = event['exception']
         assert exc['type'] == 'ImportError'
         assert exc['message'] == 'ImportError: view'
+        assert exc['handled'] is False
         assert event['culprit'] == 'tests.contrib.django.testapp.middleware.process_view'
-        assert event['handled'] is False
 
 
 def test_exclude_modules_view(django_elasticapm_client, client):

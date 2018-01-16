@@ -19,7 +19,7 @@ def test_failing_celery_task(django_elasticapm_client):
     error = django_elasticapm_client.events[0]['errors'][0]
     assert error['culprit'] == 'tests.contrib.django.testapp.tasks.failing_task'
     assert error['exception']['message'] == 'ValueError: foo'
-    assert error['handled'] is False
+    assert error['exception']['handled'] is False
 
     transaction = django_elasticapm_client.events[1]['transactions'][0]
     assert transaction['name'] == 'tests.contrib.django.testapp.tasks.failing_task'
