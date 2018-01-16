@@ -18,8 +18,8 @@ def test_error_handler(flask_apm_client):
     exc = event['exception']
     assert exc['type'] == 'ValueError'
     assert exc['message'] == 'ValueError: hello world'
+    assert exc['handled'] is False
     assert event['culprit'] == 'tests.contrib.flask.fixtures.an_error'
-    assert event['handled'] is False
 
 
 def test_get(flask_apm_client):

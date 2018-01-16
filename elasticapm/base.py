@@ -470,7 +470,8 @@ class Client(object):
 
         # Make sure all data is coerced
         event_data = transform(event_data)
-        event_data['handled'] = handled
+        if 'exception' in event_data:
+            event_data['exception']['handled'] = bool(handled)
 
         event_data.update({
             'timestamp': date.strftime(constants.TIMESTAMP_FORMAT),

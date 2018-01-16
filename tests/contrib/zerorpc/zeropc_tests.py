@@ -48,4 +48,4 @@ def test_zerorpc_middleware_with_reqrep(elasticapm_client):
     frames = exc['stacktrace']
     assert frames[0]['function'] == 'choice'
     assert frames[0]['module'] == 'random'
-    assert elasticapm_client.events[0]['errors'][0]['handled'] is False
+    assert elasticapm_client.events[0]['errors'][0]['exception']['handled'] is False
