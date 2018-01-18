@@ -69,6 +69,7 @@ def elasticapm_client(request):
     client_config = getattr(request, 'param', {})
     client_config.setdefault('service_name', 'myapp')
     client_config.setdefault('secret_token', 'test_key')
+    client_config.setdefault('include_paths', ('tests',))
     client = TempStoreClient(**client_config)
     yield client
     client.close()
@@ -90,6 +91,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault('service_name', 'myapp')
     client_config.setdefault('secret_token', 'test_key')
     client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
+    client_config.setdefault('include_paths', ('tests',))
     client = Client(**client_config)
     client.httpserver = validating_httpserver
     yield client

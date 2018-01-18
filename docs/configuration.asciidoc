@@ -306,6 +306,35 @@ If you notice a performance impact when running Elastic APM, changing
 this setting to `errors` can help.
 
 [float]
+[[config-source_lines_app_frames_errors]]
+==== `source_lines_app_frames_errors`
+[float]
+[[config-source_lines_app_frames_transactions]]
+==== `source_lines_app_frames_transactions`
+[float]
+[[config-source_lines_library_frames_errors]]
+==== `source_lines_library_frames_errors`
+[float]
+[[config-source_lines_library_frames_transactions]]
+==== `source_lines_library_frames_transactions`
+
+|============
+| Environment                                            | Django/Flask                               | Default
+| `ELASTIC_APM_SOURCE_LINES_APP_FRAMES_ERRORS`           | `SOURCE_LINES_APP_FRAMES_ERRORS`           | `5`
+| `ELASTIC_APM_SOURCE_LINES_APP_FRAMES_TRANSACTIONS`     | `SOURCE_LINES_APP_FRAMES_TRANSACTIONS`     | `5`
+| `ELASTIC_APM_SOURCE_LINES_LIBRARY_FRAMES_ERRORS`       | `SOURCE_LINES_LIBRARY_FRAMES_ERRORS`       | `5`
+| `ELASTIC_APM_SOURCE_LINES_LIBRARY_FRAMES_TRANSACTIONS` | `SOURCE_LINES_LIBRARY_FRAMES_TRANSACTIONS` | `0`
+|============
+
+By default, the APM agent collects source code snippets for
+
+ * errors, both library frames and in-app frames
+ * transaction spans, only for in-app frames.
+ 
+With the above settings, you can modify how many lines of source code is collected.
+Note however that especially for transactions, collecting source code can have a large impact on storage use in your Elasticsearch cluster.
+
+[float]
 [[config-transaction-send-frequency]]
 ==== `transaction_send_frequency`
 

@@ -492,22 +492,49 @@ def test_collect_local_variables_errors(elasticapm_client):
 
 
 @pytest.mark.parametrize('elasticapm_client', [
-    {'collect_source': 'errors'},
+    {'collect_source': 'errors', 'source_lines_library_frames_errors': 0, 'source_lines_app_frames_errors': 0},
+    {'collect_source': 'errors', 'source_lines_library_frames_errors': 1, 'source_lines_app_frames_errors': 1},
+    {'collect_source': 'errors', 'source_lines_library_frames_errors': 7, 'source_lines_app_frames_errors': 3},
     {'collect_source': 'transactions'},
-    {'collect_source': 'all'},
+    {'collect_source': 'all', 'source_lines_library_frames_errors': 0, 'source_lines_app_frames_errors': 0},
+    {'collect_source': 'all', 'source_lines_library_frames_errors': 7, 'source_lines_app_frames_errors': 3},
     {'collect_source': 'something'},
 ], indirect=True)
 def test_collect_source_errors(elasticapm_client):
     mode = elasticapm_client.config.collect_source
+    library_frame_context = elasticapm_client.config.source_lines_library_frames_errors
+    in_app_frame_context = elasticapm_client.config.source_lines_app_frames_errors
     try:
-        1 / 0
-    except ZeroDivisionError:
+        import json, datetime
+        json.dumps(datetime.datetime.now())
+    except TypeError:
         elasticapm_client.capture_exception()
     event = elasticapm_client.events[0]['errors'][0]
+    in_app_frame = event['exception']['stacktrace'][0]
+    library_frame = event['exception']['stacktrace'][1]
+    assert not in_app_frame['library_frame']
+    assert library_frame['library_frame']
     if mode in ('errors', 'all'):
-        assert 'context_line' in event['exception']['stacktrace'][0], mode
-        assert 'pre_context' in event['exception']['stacktrace'][0], mode
-        assert 'post_context' in event['exception']['stacktrace'][0], mode
+        if library_frame_context:
+            assert 'context_line' in library_frame, (mode, library_frame_context)
+            assert 'pre_context' in library_frame, (mode, library_frame_context)
+            assert 'post_context' in library_frame, (mode, library_frame_context)
+            lines = len([library_frame['context_line']] + library_frame['pre_context'] + library_frame['post_context'])
+            assert  lines == library_frame_context, (mode, library_frame_context)
+        else:
+            assert 'context_line' not in library_frame, (mode, library_frame_context)
+            assert 'pre_context' not in library_frame, (mode, library_frame_context)
+            assert 'post_context' not in library_frame, (mode, library_frame_context)
+        if in_app_frame_context:
+            assert 'context_line' in in_app_frame, (mode, in_app_frame_context)
+            assert 'pre_context' in in_app_frame, (mode, in_app_frame_context)
+            assert 'post_context' in in_app_frame, (mode, in_app_frame_context)
+            lines = len([in_app_frame['context_line']] + in_app_frame['pre_context'] + in_app_frame['post_context'])
+            assert  lines == in_app_frame_context, (mode, in_app_frame_context, in_app_frame['lineno'])
+        else:
+            assert 'context_line' not in in_app_frame, (mode, in_app_frame_context)
+            assert 'pre_context' not in in_app_frame, (mode, in_app_frame_context)
+            assert 'post_context' not in in_app_frame, (mode, in_app_frame_context)
     else:
         assert 'context_line' not in event['exception']['stacktrace'][0], mode
         assert 'pre_context' not in event['exception']['stacktrace'][0], mode
@@ -545,23 +572,49 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
 
 @pytest.mark.parametrize('elasticapm_client', [
     {'collect_source': 'errors'},
-    {'collect_source': 'transactions'},
-    {'collect_source': 'all'},
+    {'collect_source': 'errors'},
+    {'collect_source': 'transactions', 'source_lines_library_frames_transactions': 0, 'source_lines_app_frames_transactions': 0},
+    {'collect_source': 'transactions', 'source_lines_library_frames_transactions': 7, 'source_lines_app_frames_transactions': 5},
+    {'collect_source': 'all', 'source_lines_library_frames_transactions': 0, 'source_lines_app_frames_transactions': 0},
+    {'collect_source': 'all', 'source_lines_library_frames_transactions': 7, 'source_lines_app_frames_transactions': 5},
     {'collect_source': 'something'},
 ], indirect=True)
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
 def test_collect_source_transactions(should_collect, elasticapm_client):
     should_collect.return_value = False
     mode = elasticapm_client.config.collect_source
+    library_frame_context = elasticapm_client.config.source_lines_library_frames_transactions
+    in_app_frame_context = elasticapm_client.config.source_lines_app_frames_transactions
     elasticapm_client.begin_transaction('test')
     with elasticapm.capture_span('foo'):
         pass
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    in_app_frame = transaction['spans'][0]['stacktrace'][5]
+    library_frame = transaction['spans'][0]['stacktrace'][1]
+    assert not in_app_frame['library_frame']
+    assert library_frame['library_frame']
     if mode in ('transactions', 'all'):
-        assert 'context_line' in transaction['spans'][0]['stacktrace'][0], mode
-        assert 'pre_context' in transaction['spans'][0]['stacktrace'][0], mode
-        assert 'post_context' in transaction['spans'][0]['stacktrace'][0], mode
+        if library_frame_context:
+            assert 'context_line' in library_frame, (mode, library_frame_context)
+            assert 'pre_context' in library_frame, (mode, library_frame_context)
+            assert 'post_context' in library_frame, (mode, library_frame_context)
+            lines = len([library_frame['context_line']] + library_frame['pre_context'] + library_frame['post_context'])
+            assert  lines == library_frame_context, (mode, library_frame_context)
+        else:
+            assert 'context_line' not in library_frame, (mode, library_frame_context)
+            assert 'pre_context' not in library_frame, (mode, library_frame_context)
+            assert 'post_context' not in library_frame, (mode, library_frame_context)
+        if in_app_frame_context:
+            assert 'context_line' in in_app_frame, (mode, in_app_frame_context)
+            assert 'pre_context' in in_app_frame, (mode, in_app_frame_context)
+            assert 'post_context' in in_app_frame, (mode, in_app_frame_context)
+            lines = len([in_app_frame['context_line']] + in_app_frame['pre_context'] + in_app_frame['post_context'])
+            assert  lines == in_app_frame_context, (mode, in_app_frame_context, in_app_frame['lineno'])
+        else:
+            assert 'context_line' not in in_app_frame, (mode, in_app_frame_context)
+            assert 'pre_context' not in in_app_frame, (mode, in_app_frame_context)
+            assert 'post_context' not in in_app_frame, (mode, in_app_frame_context)
     else:
         assert 'context_line' not in transaction['spans'][0]['stacktrace'][0], mode
         assert 'pre_context' not in transaction['spans'][0]['stacktrace'][0], mode
