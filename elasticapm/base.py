@@ -132,6 +132,8 @@ class Client(object):
             lambda: self._get_stack_info_for_trace(
                 stacks.iter_stack_frames(),
                 with_source_context=self.config.collect_source in ('all', 'transactions'),
+                library_frame_context_lines=self.config.source_lines_library_frames_transactions,
+                in_app_frame_context_lines=self.config.source_lines_app_frames_transactions,
                 with_locals=self.config.collect_local_variables in ('all', 'transactions'),
                 locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
                     v,
@@ -434,6 +436,8 @@ class Client(object):
                 frames,
                 with_source_context=self.config.collect_source in ('errors', 'all'),
                 with_locals=self.config.collect_local_variables in ('errors', 'all'),
+                library_frame_context_lines=self.config.source_lines_library_frames_errors,
+                in_app_frame_context_lines=self.config.source_lines_app_frames_errors,
                 include_paths_re=self.include_paths_re,
                 exclude_paths_re=self.exclude_paths_re,
                 locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
@@ -530,11 +534,18 @@ class Client(object):
             )
         return self._transports[parsed_url]
 
-    def _get_stack_info_for_trace(self, frames, with_source_context=True, with_locals=True, locals_processor_func=None):
+    def _get_stack_info_for_trace(self, frames,
+                                  with_source_context=True,
+                                  library_frame_context_lines=None,
+                                  in_app_frame_context_lines=None,
+                                  with_locals=True,
+                                  locals_processor_func=None):
         """Overrideable in derived clients to add frames/info, e.g. templates"""
         return stacks.get_stack_info(
             frames,
             with_source_context=with_source_context,
+            library_frame_context_lines=library_frame_context_lines,
+            in_app_frame_context_lines=in_app_frame_context_lines,
             with_locals=with_locals,
             include_paths_re=self.include_paths_re,
             exclude_paths_re=self.exclude_paths_re,

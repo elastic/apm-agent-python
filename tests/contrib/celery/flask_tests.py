@@ -17,7 +17,7 @@ def test_task_failure(flask_celery):
     assert t.status == 'FAILURE'
     assert len(apm_client.events[0]['errors']) == 1
     error = apm_client.events[0]['errors'][0]
-    assert error['culprit'] == 'tests.contrib.celery.flask_tests.failing_task'
+    assert error['culprit'] == 'tests.contrib.flask.fixtures.__call__'
     assert error['exception']['message'] == 'ValueError: foo'
     assert error['exception']['handled'] is False
 
