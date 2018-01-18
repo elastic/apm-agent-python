@@ -62,7 +62,7 @@ def get_lines_from_file(filename, lineno, context_lines, loader=None, module_nam
         source = [compat.text_type(sline, encoding, 'replace') for sline in source]
 
     lower_bound = max(0, lineno - context_lines)
-    upper_bound = lineno + context_lines
+    upper_bound = lineno + 1 + context_lines
 
     try:
         pre_context = [line.strip('\r\n') for line in source[lower_bound:lineno]]
@@ -160,6 +160,7 @@ def iter_stack_frames(frames=None, skip=0):
 
 
 def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
+                   library_frame_context_lines=None, in_app_frame_context_lines=None,
                    include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     # Support hidden frames
     f_locals = getattr(frame, 'f_locals', {})
@@ -202,9 +203,11 @@ def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
     }
 
     if with_source_context:
-        if lineno is not None and abs_path:
+        context_lines = library_frame_context_lines if frame_result['library_frame'] else in_app_frame_context_lines
+        if context_lines and lineno is not None and abs_path:
             pre_context, context_line, post_context = get_lines_from_file(
-                abs_path, lineno, 3, loader, module_name)
+                abs_path, lineno, int(context_lines / 2), loader, module_name
+            )
         else:
             pre_context, context_line, post_context = [], None, []
         if context_line:
@@ -228,6 +231,7 @@ def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
 
 
 def get_stack_info(frames, with_source_context=True, with_locals=True,
+                   library_frame_context_lines=None, in_app_frame_context_lines=None,
                    include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     """
     Given a list of frames, returns a list of stack information
@@ -250,11 +254,13 @@ def get_stack_info(frames, with_source_context=True, with_locals=True,
         result = get_frame_info(
             frame,
             lineno,
-            with_source_context,
-            with_locals,
-            include_paths_re,
-            exclude_paths_re,
-            locals_processor_func,
+            with_source_context=with_source_context,
+            library_frame_context_lines=library_frame_context_lines,
+            in_app_frame_context_lines=in_app_frame_context_lines,
+            with_locals=with_locals,
+            include_paths_re=include_paths_re,
+            exclude_paths_re=exclude_paths_re,
+            locals_processor_func=locals_processor_func,
         )
         if result:
             results.append(result)

@@ -96,8 +96,13 @@ def test_library_frames(elasticapm_client):
 
 def test_get_frame_info():
     frame = get_me_a_test_frame()
-    frame_info = stacks.get_frame_info(frame, frame.f_lineno,
-                                       with_locals=True, with_source_context=True)
+    frame_info = stacks.get_frame_info(
+        frame, frame.f_lineno,
+        library_frame_context_lines=5,
+        in_app_frame_context_lines=5,
+        with_locals=True,
+        with_source_context=True,
+    )
     assert frame_info['function'] == 'get_me_a_test_frame'
     assert frame_info['filename'] == 'tests/utils/stacks/__init__.py'
     assert frame_info['module'] == 'tests.utils.stacks'

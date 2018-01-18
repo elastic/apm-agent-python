@@ -162,6 +162,11 @@ class Config(_ConfigBase):
     max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
     collect_source = _ConfigValue('COLLECT_SOURCE', default='all')
+    source_lines_library_frames_errors = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_ERRORS', type=int, default=1)
+    source_lines_library_frames_transactions = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_TRANSACTIONS', type=int,
+                                                            default=0)
+    source_lines_app_frames_errors = _ConfigValue('SOURCE_LINES_APP_FRAMES_ERRORS', type=int, default=5)
+    source_lines_app_frames_transactions = _ConfigValue('SOURCE_LINES_APP_FRAMES_TRANSACTIONS', type=int, default=1)
     local_var_max_length = _ConfigValue('LOCAL_VAR_MAX_LENGTH', type=int, default=200)
     local_var_list_max_length = _ConfigValue('LOCAL_VAR_LIST_MAX_LENGTH', type=int, default=10)
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)

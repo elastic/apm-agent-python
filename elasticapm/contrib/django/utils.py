@@ -10,6 +10,7 @@ except ImportError:
 
 
 def iterate_with_template_sources(frames, with_source_context=True, with_locals=True,
+                                  library_frame_context_lines=None, in_app_frame_context_lines=None,
                                   include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     template = None
     for frame, lineno in frames:
@@ -40,6 +41,8 @@ def iterate_with_template_sources(frames, with_source_context=True, with_locals=
         yield get_frame_info(
             frame, lineno,
             with_source_context=with_source_context,
+            library_frame_context_lines=library_frame_context_lines,
+            in_app_frame_context_lines=in_app_frame_context_lines,
             with_locals=with_locals,
             include_paths_re=include_paths_re,
             exclude_paths_re=exclude_paths_re,
