@@ -333,7 +333,7 @@ def test_exception_event(elasticapm_client):
 
 
 @pytest.mark.parametrize('elasticapm_client', [{
-    'include_paths': ('tests',),
+    'include_paths': ('*/tests/*',),
     'local_var_max_length': 20,
     'local_var_list_max_length': 10,
 }], indirect=True)
@@ -350,7 +350,8 @@ def test_message_event(elasticapm_client):
     assert 'timestamp' in event
     assert 'stacktrace' in event['log']
     # check that only frames from `tests` module are not marked as library frames
-    assert all(frame['library_frame'] or frame['module'].startswith('tests') for frame in event['log']['stacktrace'])
+    for frame in event['log']['stacktrace']:
+        assert frame['library_frame'] or frame['module'].startswith(('tests', '__main__')), (frame['module'], frame['abs_path'])
     frame = event['log']['stacktrace'][0]
     assert frame['vars']['a_local_var'] == 1
     assert len(frame['vars']['a_long_local_var']) == 20
@@ -592,7 +593,7 @@ def test_collect_source_transactions(should_collect, elasticapm_client):
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
     in_app_frame = transaction['spans'][0]['stacktrace'][5]
-    library_frame = transaction['spans'][0]['stacktrace'][1]
+    library_frame = transaction['spans'][0]['stacktrace'][6]
     assert not in_app_frame['library_frame']
     assert library_frame['library_frame']
     if mode in ('transactions', 'all'):

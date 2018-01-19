@@ -8,6 +8,7 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
+import fnmatch
 import inspect
 import os
 import re
@@ -200,7 +201,7 @@ def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
         'module': module_name,
         'function': function,
         'lineno': lineno + 1,
-        'library_frame': _is_library_frame(module_name, include_paths_re, exclude_paths_re)
+        'library_frame': is_library_frame(abs_path, include_paths_re, exclude_paths_re)
     }
 
     if with_source_context:
@@ -275,8 +276,22 @@ def _walk_stack(frame):
 
 
 @lru_cache(512)
-def _is_library_frame(module_name, include_paths_re, exclude_paths_re):
-    return not(module_name and bool(
-        (include_paths_re.match(module_name) if include_paths_re else False) and
-        not (exclude_paths_re.match(module_name) if exclude_paths_re else False)
-    ))
+def is_library_frame(abs_file_path, include_paths_re, exclude_paths_re):
+    if not abs_file_path:
+        return True
+    if include_paths_re and include_paths_re.match(abs_file_path):
+        # frame is in-app, return False
+        return False
+    elif exclude_paths_re and exclude_paths_re.match(abs_file_path):
+        return True
+    # if neither excluded nor included, assume it's an in-app frame
+    return False
+
+
+def get_path_regex(paths):
+    """
+    compiles a list of path globs into a single pattern that matches any of the given paths
+    :param paths: a list of strings representing fnmatch path globs
+    :return: a compiled regex
+    """
+    return re.compile('|'.join(map(fnmatch.translate, paths)))

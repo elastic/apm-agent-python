@@ -78,22 +78,25 @@ def test_traceback_hide(elasticapm_client):
 
 
 @pytest.mark.parametrize('elasticapm_client', [{
-    'include_paths': ('a.b.c', 'c.d'),
-    'exclude_paths': ('c',)
+    'include_paths': ('/a/b/c/*', '/c/d/*'),
+    'exclude_paths': ('/c/*',)
 }], indirect=True)
 def test_library_frames(elasticapm_client):
     include = elasticapm_client.include_paths_re
     exclude = elasticapm_client.exclude_paths_re
-    frame1 = Mock(f_globals={'__name__': 'a.b.c'})
-    frame2 = Mock(f_globals={'__name__': 'a.b.c.d'})
-    frame3 = Mock(f_globals={'__name__': 'c.d'})
+    frame1 = Mock(f_code=Mock(co_filename='/a/b/c/d.py'))
+    frame2 = Mock(f_code=Mock(co_filename='/a/b/c/d/e.py'))
+    frame3 = Mock(f_code=Mock(co_filename='/c/d/e.py'))
+    frame4 = Mock(f_code=Mock(co_filename='/c/e.py'))
 
     info1 = stacks.get_frame_info(frame1, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
     info2 = stacks.get_frame_info(frame2, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
     info3 = stacks.get_frame_info(frame3, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
+    info4 = stacks.get_frame_info(frame4, 1, False, False, include_paths_re=include, exclude_paths_re=exclude)
     assert not info1['library_frame']
     assert not info2['library_frame']
-    assert info3['library_frame']
+    assert not info3['library_frame']
+    assert info4['library_frame']
 
 
 def test_get_frame_info():

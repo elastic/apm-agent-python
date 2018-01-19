@@ -31,7 +31,6 @@ logger = logging.getLogger('elasticapm.errors.client')
 def make_client(client_cls, app, **defaults):
     config = app.config.get('ELASTIC_APM', {})
 
-    defaults.setdefault('include_paths', {app.import_name})
     if 'framework_name' not in defaults:
         defaults['framework_name'] = 'flask'
         defaults['framework_version'] = getattr(flask, '__version__', '<0.7')

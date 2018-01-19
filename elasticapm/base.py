@@ -15,7 +15,6 @@ import datetime
 import logging
 import os
 import platform
-import re
 import socket
 import sys
 import threading
@@ -147,8 +146,8 @@ class Client(object):
             max_queue_length=self.config.max_event_queue_length,
             ignore_patterns=self.config.transactions_ignore_patterns,
         )
-        self.include_paths_re = self._get_path_regex(self.config.include_paths) if self.config.include_paths else None
-        self.exclude_paths_re = self._get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
+        self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
+        self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
         compat.atexit_register(self.close)
 
     def get_handler(self, name):
@@ -326,10 +325,6 @@ class Client(object):
         else:
             url = transport.send(data, headers, timeout=self.config.timeout)
             self.handle_transport_success(url=url)
-
-    def _get_path_regex(self, paths):
-        paths = '|'.join(map(re.escape, paths))
-        return re.compile('^(?:{})(?:.|$)'.format(paths))
 
     def get_service_info(self):
         language_version = platform.python_version()
