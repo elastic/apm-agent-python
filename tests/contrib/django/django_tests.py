@@ -3,6 +3,7 @@ import pytest  # isort:skip
 django = pytest.importorskip("django")  # isort:skip
 
 import logging
+import os
 from copy import deepcopy
 
 from django.conf import settings
@@ -890,7 +891,7 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
     # Find the template
     for frame in spans[0]['stacktrace']:
         if frame['lineno'] == 4 and frame['filename'].endswith(
-                'django/testapp/templates/list_users.html'
+                os.path.join('django', 'testapp', 'templates', 'list_users.html')
         ):
             break
     else:
