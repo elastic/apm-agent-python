@@ -4,7 +4,7 @@ import logging
 import random
 import re
 import threading
-import time
+import timeit
 import uuid
 
 from elasticapm.conf import constants
@@ -18,7 +18,8 @@ thread_local = threading.local()
 thread_local.transaction = None
 
 
-_time_func = time.time
+_time_func = timeit.default_timer
+
 
 TAG_RE = re.compile('^[^.*\"]+$')
 
