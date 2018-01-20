@@ -6,6 +6,7 @@
 .coverage
 .DS_Store
 .idea
+.vscode
 pip-log.txt
 /*.egg-info
 /build
