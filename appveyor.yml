@@ -1,0 +1,61 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+      WEBFRAMEWORK: "django-1.11"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python33"
+      WEBFRAMEWORK: "django-1.8"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python34"
+      WEBFRAMEWORK: "django-1.9"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python35"
+      WEBFRAMEWORK: "django-1.10"
+      ASYNCIO: "true"
+    - PYTHON: "C:\\Python27-x64"
+      WEBFRAMEWORK: "flask-0.10"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python33-x64"
+      DISTUTILS_USE_SDK: "1"
+      WEBFRAMEWORK: "flask-0.11"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python34-x64"
+      DISTUTILS_USE_SDK: "1"
+      WEBFRAMEWORK: "flask-0.12"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python35-x64"
+      WEBFRAMEWORK: "django-2.0"
+      ASYNCIO: "true"
+    - PYTHON: "C:\\Python36-x64"
+      WEBFRAMEWORK: "django-2.0"
+      ASYNCIO: "true"
+
+cache:
+  - "%APPDATA%\\pip"
+
+install:
+  # needed to compile pymongo
+  - if "%platform%" == "x86" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
+  - if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
+  - if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
+  # We need wheel installed to build wheels
+  - ".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pip install -U wheel pip setuptools"
+  - ".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pip install -r tests\\requirements\\requirements-%WEBFRAMEWORK%.txt"
+
+build: off
+
+test_script:
+  - if "%ASYNCIO%" == "true" call .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest -m "not integrationtest"
+  - if "%ASYNCIO%" == "false" call .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest --ignore=tests/asyncio -m "not integrationtest"
+
+after_test:
+  - ".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"
+
+artifacts:
+  # bdist_wheel puts your built wheel in the dist directory
+  - path: dist\*
+
+#on_success:
+#  You can use this step to upload your artifacts to a public website.
+#  See Appveyor's documentation for more details. Or you can simply
+#  access your wheels from the Appveyor "artifacts" tab for your build.
