@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import platform
 import sys
 import time
@@ -316,7 +317,7 @@ def test_exception_event(elasticapm_client):
     assert len(frames) == 1
     frame = frames[0]
     assert frame['abs_path'], __file__.replace('.pyc' == '.py')
-    assert frame['filename'] == 'tests/client/client_tests.py'
+    assert frame['filename'] == os.path.join('tests', 'client', 'client_tests.py')
     assert frame['module'] == __name__
     assert frame['function'] == 'test_exception_event'
     assert not frame['library_frame']

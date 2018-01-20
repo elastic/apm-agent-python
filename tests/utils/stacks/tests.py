@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
+import os
+
 import pytest
 from mock import Mock
 
@@ -104,7 +106,7 @@ def test_get_frame_info():
         with_source_context=True,
     )
     assert frame_info['function'] == 'get_me_a_test_frame'
-    assert frame_info['filename'] == 'tests/utils/stacks/__init__.py'
+    assert frame_info['filename'] == os.path.join('tests', 'utils', 'stacks', '__init__.py')
     assert frame_info['module'] == 'tests.utils.stacks'
     assert frame_info['lineno'] == 6
     assert frame_info['context_line'] == '    return inspect.currentframe()'
