@@ -651,6 +651,7 @@ def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
     assert len([t for t in transactions if t['sampled']]) == 5
     for transaction in transactions:
         assert transaction['sampled'] or not 'spans' in transaction
+        assert transaction['sampled'] or not 'context' in transaction
 
 
 @pytest.mark.parametrize('elasticapm_client', [{'transaction_max_spans': 5}], indirect=True)
