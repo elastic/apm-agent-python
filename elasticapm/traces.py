@@ -117,11 +117,12 @@ class Transaction(object):
             'duration': self.duration * 1000,  # milliseconds
             'result': str(self.result),
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
-            'context': self.context,
             'sampled': self.is_sampled,
         }
         if self.is_sampled:
             result['spans'] = [span_obj.to_dict() for span_obj in self.spans]
+            result['context'] = self.context
+
         if self.dropped_spans:
             result['span_count'] = {'dropped': {'total': self.dropped_spans}}
         return result
