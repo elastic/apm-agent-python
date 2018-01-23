@@ -158,6 +158,7 @@ class Config(_ConfigBase):
     flush_interval = _ConfigValue('FLUSH_INTERVAL', type=int, default=10)
     transaction_sample_rate = _ConfigValue('TRANSACTION_SAMPLE_RATE', type=float, default=1.0)
     transaction_max_spans = _ConfigValue('TRANSACTION_MAX_SPANS', type=int, default=500)
+    span_frames_min_duration_ms = _ConfigValue('SPAN_FRAMES_MIN_DURATION', default=5, type=int)
     max_queue_size = _ConfigValue('MAX_QUEUE_SIZE', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
     source_lines_error_app_frames = _ConfigValue('SOURCE_LINES_ERROR_APP_FRAMES', type=int, default=5)
