@@ -127,15 +127,15 @@ python -c "import uuid; print(str(uuid.uuid4()))"
 WARNING: secret tokens only provide any security if your APM server use TLS.
 
 [float]
-[[config-app-version]]
-==== `app_version`
+[[config-service-version]]
+==== `service_version`
 [options="header"]
 |============
-| Environment                | Django/Flask    | Default    | Example
-| `ELASTIC_APM_APP_VERSION`  | `APP_VERSION`   | `None`     | A string indicating the version of the deployed app
+| Environment                    | Django/Flask        | Default    | Example
+| `ELASTIC_APM_SERVICE_VERSION`  | `SERVICE_VERSION`   | `None`     | A string indicating the version of the deployed service
 |============
 
-A version string for the currently deployed version of the app.
+A version string for the currently deployed version of the service.
 If you don't version your deployments,
 the recommended value for this field is the commit identifier of the deployed revision, e.g. the output of `git rev-parse HEAD`.
 

@@ -335,7 +335,7 @@ class Client(object):
         result = {
             'name': self.config.service_name,
             'environment': self.config.environment,
-            'version': self.config.app_version,
+            'version': self.config.service_version,
             'agent': {
                 'name': 'python',
                 'version': elasticapm.VERSION,

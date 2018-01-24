@@ -23,7 +23,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  * added configuration options to limit captured local variables to a certain length ({pull}130[#130])
  * added options for configuring the amount of context lines that are captured with each frame ({pull}136[#136])
  * switched to `time.perf_counter` as timing function on Python 3 ({pull}138[#138])
- * BREAKING: Several settings and APIs have been renamed ({pull}111[#111], {pull}119[#119]):
+ * BREAKING: Several settings and APIs have been renamed ({pull}111[#111], {pull}119[#119], {pull}143[#143]):
  ** The decorator for custom instrumentation, `elasticapm.trace`, is now `elasticapm.capture_span`
  ** The setting `traces_send_frequency` has been renamed to `transaction_send_frequency`.
      The name of the analogous environment variable changed from `ELASTIC_APM_TRACES_SEND_FREQ`
@@ -32,6 +32,9 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
      The name of the analogous environment variable changed from `ELASTIC_APM_APP_NAME`
      to `ELASTIC_APM_SERVICE_NAME`.
  ** `app_name` arguments to API calls in the whole code base changed to `service_name`.
+ ** The `app_version` setting has been renamed to `service_version`.
+     The name of the analogous environment variable changed from `ELASTIC_APM_APP_VERSION`
+     to `ELASTIC_APM_SERVICE_VERSION`.
  ** `context.request.url.raw` has been renamed to `context.request.url.full` ({pull}121[#121])
  * BREAKING: added `elasticapm.set_custom_context` in favor of the more generic `set_custom_data` function ({pull}133[#133])
  * BREAKING: `include_patterns` and `exclude_patterns` now use shell globs instead of regular expressions, and
