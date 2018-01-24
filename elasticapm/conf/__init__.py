@@ -172,7 +172,7 @@ class Config(_ConfigBase):
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
     instrument_django_middleware = _BoolConfigValue('INSTRUMENT_DJANGO_MIDDLEWARE', default=True)
     transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])
-    app_version = _ConfigValue('APP_VERSION')
+    service_version = _ConfigValue('SERVICE_VERSION')
     framework_name = _ConfigValue('FRAMEWORK_NAME', default=None)
     framework_version = _ConfigValue('FRAMEWORK_VERSION', default=None)
     disable_send = _BoolConfigValue('DISABLE_SEND', default=False)

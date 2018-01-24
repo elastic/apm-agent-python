@@ -31,7 +31,7 @@ def test_config_dict():
         'SERVICE_NAME': 'foo',
         'SECRET_TOKEN': 'bar',
         'SERVER_URL': 'http://example.com:1234',
-        'APP_VERSION': 1,
+        'SERVICE_VERSION': 1,
         'HOSTNAME': 'localhost',
         'TRACES_SEND_FREQ': '5'
     })
@@ -39,7 +39,7 @@ def test_config_dict():
     assert config.service_name == 'foo'
     assert config.secret_token == 'bar'
     assert config.server_url == 'http://example.com:1234'
-    assert config.app_version == '1'
+    assert config.service_version == '1'
     assert config.hostname == 'localhost'
     assert config.transaction_send_frequency == 5
 
@@ -49,7 +49,7 @@ def test_config_environment():
         'ELASTIC_APM_SERVICE_NAME': 'foo',
         'ELASTIC_APM_SECRET_TOKEN': 'bar',
         'ELASTIC_APM_SERVER_URL': 'http://example.com:1234',
-        'ELASTIC_APM_APP_VERSION': '1',
+        'ELASTIC_APM_SERVICE_VERSION': '1',
         'ELASTIC_APM_HOSTNAME': 'localhost',
         'ELASTIC_APM_TRACES_SEND_FREQ': '5',
         'ELASTIC_APM_AUTO_LOG_STACKS': 'false',
@@ -59,7 +59,7 @@ def test_config_environment():
         assert config.service_name == 'foo'
         assert config.secret_token == 'bar'
         assert config.server_url == 'http://example.com:1234'
-        assert config.app_version == '1'
+        assert config.service_version == '1'
         assert config.hostname == 'localhost'
         assert config.transaction_send_frequency == 5
         assert config.auto_log_stacks == False
@@ -70,7 +70,7 @@ def test_config_defaults_dict():
         'service_name': 'foo',
         'secret_token': 'bar',
         'server_url': 'http://example.com:1234',
-        'app_version': '1',
+        'service_version': '1',
         'hostname': 'localhost',
         'transaction_send_frequency': '5',
     })
@@ -78,7 +78,7 @@ def test_config_defaults_dict():
     assert config.service_name == 'foo'
     assert config.secret_token == 'bar'
     assert config.server_url == 'http://example.com:1234'
-    assert config.app_version == '1'
+    assert config.service_version == '1'
     assert config.hostname == 'localhost'
     assert config.transaction_send_frequency == 5
 
