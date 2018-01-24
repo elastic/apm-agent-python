@@ -140,7 +140,7 @@ class Config(_ConfigBase):
     server_url = _ConfigValue('SERVER_URL', default='http://localhost:8200', required=True)
     verify_server_cert = _BoolConfigValue('VERIFY_SERVER_CERT', default=True)
     include_paths = _ListConfigValue('INCLUDE_PATHS')
-    exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=['elasticapm'])
+    exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=compat.get_default_library_patters())
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
     timeout = _ConfigValue('TIMEOUT', type=float, default=5)
     hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())

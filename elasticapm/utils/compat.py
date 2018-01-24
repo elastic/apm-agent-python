@@ -2,6 +2,7 @@
 import atexit
 import functools
 import operator
+import platform
 import sys
 import types
 
@@ -91,3 +92,25 @@ else:
 
     def iteritems(d, **kwargs):
         return iter(d.items(**kwargs))
+
+
+def get_default_library_patters():
+    """
+    Returns library paths depending on the used platform.
+
+    TODO: ensure that this works correctly on Windows
+
+    :return: a list of glob paths
+    """
+    python_version = platform.python_version_tuple()
+    python_implementation = platform.python_implementation()
+    system = platform.system()
+    if python_implementation == 'PyPy':
+        if python_version[0] == '2':
+            return ['*/lib-python/%s.%s/*' % python_version[:2], '*/site-packages/*']
+        else:
+            return ['*/lib-python/%s/*' % python_version[0], '*/site-packages/*']
+    else:
+        if system == 'Windows':
+            return [r'*\lib\*']
+        return ['*/lib/python%s.%s/*' % python_version[:2], '*/lib64/python%s.%s/*' % python_version[:2]]

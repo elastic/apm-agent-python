@@ -34,6 +34,8 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  ** `app_name` arguments to API calls in the whole code base changed to `service_name`.
  ** `context.request.url.raw` has been renamed to `context.request.url.full` ({pull}121[#121])
  * BREAKING: added `elasticapm.set_custom_context` in favor of the more generic `set_custom_data` function ({pull}133[#133])
+ * BREAKING: `include_patterns` and `exclude_patterns` now use shell globs instead of regular expressions, and
+             are matched against the full path file path of the module, not against the module name ({pull}137[#137])
 
 [[release-1.0.0]]
 [float]

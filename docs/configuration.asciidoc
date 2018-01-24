@@ -405,15 +405,16 @@ WARNING: We recommend to always include the default set of validators if you cus
 
 |============
 | Environment                 | Django/Flask    | Default
-| `ELASTIC_APM_INCLUDE_PATHS` | `INCLUDE_PATHS` | Depending on framework
+| `ELASTIC_APM_INCLUDE_PATHS` | `INCLUDE_PATHS` | `[]`
 | multiple values separated by commas, without spaces |||
 |============
 
-A set of module paths that should be considered when detecting if a stacktrace frame is a library frame or an "in-app" frame.
-For Django, the default set is the list of `INSTALLED_APPS`, but without `django.contrib` apps.
-For Flask, it's the app module.
+A set of paths, optionally using shell globs
+(see https://docs.python.org/3/library/fnmatch.html[`fnmatch`] for a description of the syntax).
+These are matched against the absolute filename of every frame, and if a pattern matches, the frame is considered
+to be an "in-app frame".
 
-NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` also matches for `foo.bar.baz`.
+`include_paths` *takes precedence* over `exclude_paths`.
 
 [float]
 [[config-exclude-paths]]
@@ -421,17 +422,21 @@ NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` a
 
 |============
 | Environment                 | Django/Flask    | Default
-| `ELASTIC_APM_EXCLUDE_PATHS` | `EXCLUDE_PATHS` | Depending on framework
+| `ELASTIC_APM_EXCLUDE_PATHS` | `EXCLUDE_PATHS` | Varies on Python version and implementation
 | multiple values separated by commas, without spaces |||
 |============
 
-A set of module paths that should be considered when excluding a frame from being detected as an in-app frame.
-`exclude_paths` *takes precedence* over `include_paths`.
+A set of paths, optionally using shell globs
+(see https://docs.python.org/3/library/fnmatch.html[`fnmatch`] for a description of the syntax).
+These are matched against the absolute filename of every frame, and if a pattern matches, the frame is considered
+to be a "library frame".
 
-For Django, the default is set to `{'elasticapm', 'django'}`.
-Everywhere else, the default is `set(['elasticapm'])`.
+`include_paths` *takes precedence* over `exclude_paths`.
 
-NOTE: for a given module path, all sub-modules will also match. E.g. `foo.bar` also matches for `foo.bar.baz`.
+The default value varies based on your Python version and implementation, e.g.:
+
+ * PyPy3: `['\*/lib-python/3/*', '\*/site-packages/*']`
+ * CPython 2.7: `['\*/lib/python2.7/*', '\*/lib64/python2.7/*']`
 
 [float]
 [[config-debug]]

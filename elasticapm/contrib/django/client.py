@@ -49,18 +49,11 @@ def get_client(client=None):
 
     if _client[0] != client:
         client_class = import_string(client)
-        instance = client_class(**get_client_default_config())
+        instance = client_class()
         if not tmp_client:
             _client = (client, instance)
         return instance
     return _client[1]
-
-
-def get_client_default_config():
-    return dict(
-        include_paths=_get_installed_apps_paths(),
-        exclude_paths={'django', 'elasticapm'}
-    )
 
 
 class DjangoClient(Client):
