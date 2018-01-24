@@ -7,8 +7,7 @@ from django.core.management.base import BaseCommand
 from django.core.management.color import color_style
 from django.utils import termcolors
 
-from elasticapm.contrib.django.client import (DjangoClient,
-                                              get_client_default_config)
+from elasticapm.contrib.django.client import DjangoClient
 
 try:
     from django.core.management.base import OutputWrapper
@@ -123,7 +122,7 @@ class Command(BaseCommand):
     def handle_test(self, command, **options):
         """Send a test error to APM Server"""
         self.write(LOGO, cyan)
-        config = get_client_default_config()
+        config = {}
         # can't be async for testing
         config['async_mode'] = False
         for key in ('service_name', 'secret_token'):
@@ -161,8 +160,7 @@ class Command(BaseCommand):
         """Check your settings for common misconfigurations"""
         self.write(LOGO, cyan)
         passed = True
-        config = get_client_default_config()
-        client = DjangoClient(**config)
+        client = DjangoClient()
         # check if org/app and token are set:
         is_set = lambda x: x and x != 'None'
         values = [client.config.service_name, client.config.secret_token]
