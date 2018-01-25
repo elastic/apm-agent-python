@@ -145,7 +145,6 @@ class Config(_ConfigBase):
     timeout = _ConfigValue('TIMEOUT', type=float, default=5)
     hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue('AUTO_LOG_STACKS', default=True)
-    keyword_max_length = _ConfigValue('KEYWORD_MAX_LENGTH', type=int, default=1024)
     transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http.AsyncTransport',
                                    required=True)
     processors = _ListConfigValue('PROCESSORS', default=[
