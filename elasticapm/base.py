@@ -130,7 +130,6 @@ class Client(object):
         self.instrumentation_store = TransactionsStore(
             lambda: self._get_stack_info_for_trace(
                 stacks.iter_stack_frames(),
-                with_source_context=self.config.collect_source in ('all', 'transactions'),
                 library_frame_context_lines=self.config.source_lines_library_frames_transactions,
                 in_app_frame_context_lines=self.config.source_lines_app_frames_transactions,
                 with_locals=self.config.collect_local_variables in ('all', 'transactions'),
@@ -429,7 +428,6 @@ class Client(object):
                 frames = stack
             frames = stacks.get_stack_info(
                 frames,
-                with_source_context=self.config.collect_source in ('errors', 'all'),
                 with_locals=self.config.collect_local_variables in ('errors', 'all'),
                 library_frame_context_lines=self.config.source_lines_library_frames_errors,
                 in_app_frame_context_lines=self.config.source_lines_app_frames_errors,
@@ -530,7 +528,6 @@ class Client(object):
         return self._transports[parsed_url]
 
     def _get_stack_info_for_trace(self, frames,
-                                  with_source_context=True,
                                   library_frame_context_lines=None,
                                   in_app_frame_context_lines=None,
                                   with_locals=True,
@@ -538,7 +535,6 @@ class Client(object):
         """Overrideable in derived clients to add frames/info, e.g. templates"""
         return stacks.get_stack_info(
             frames,
-            with_source_context=with_source_context,
             library_frame_context_lines=library_frame_context_lines,
             in_app_frame_context_lines=in_app_frame_context_lines,
             with_locals=with_locals,

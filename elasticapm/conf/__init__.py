@@ -161,7 +161,6 @@ class Config(_ConfigBase):
     transaction_max_spans = _ConfigValue('TRANSACTION_MAX_SPANS', type=int, default=500)
     max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
-    collect_source = _ConfigValue('COLLECT_SOURCE', default='all')
     source_lines_library_frames_errors = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_ERRORS', type=int, default=5)
     source_lines_library_frames_transactions = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_TRANSACTIONS', type=int,
                                                             default=0)
