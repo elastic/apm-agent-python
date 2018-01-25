@@ -106,7 +106,6 @@ def test_get_frame_info():
         library_frame_context_lines=5,
         in_app_frame_context_lines=5,
         with_locals=True,
-        with_source_context=True,
     )
     assert frame_info['function'] == 'get_me_a_test_frame'
     assert frame_info['filename'] == os.path.join('tests', 'utils', 'stacks', '__init__.py')
