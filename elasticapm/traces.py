@@ -170,11 +170,11 @@ class Span(object):
 
 
 class TransactionsStore(object):
-    def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_spans=0, max_queue_length=None,
+    def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_spans=0, max_queue_size=None,
                  ignore_patterns=None):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
-        self.max_queue_length = max_queue_length
+        self.max_queue_size = max_queue_size
         self.max_spans = max_spans
         self._frames_collector_func = frames_collector_func
         self._transactions = []
@@ -197,7 +197,7 @@ class TransactionsStore(object):
         return transactions
 
     def should_collect(self):
-        return ((self.max_queue_length and len(self._transactions) >= self.max_queue_length) or
+        return ((self.max_queue_size and len(self._transactions) >= self.max_queue_size) or
                 (_time_func() - self._last_collect) >= self.collect_frequency)
 
     def __len__(self):

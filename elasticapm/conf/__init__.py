@@ -158,7 +158,7 @@ class Config(_ConfigBase):
     transaction_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
     transaction_sample_rate = _ConfigValue('TRANSACTION_SAMPLE_RATE', type=float, default=1.0)
     transaction_max_spans = _ConfigValue('TRANSACTION_MAX_SPANS', type=int, default=500)
-    max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
+    max_queue_size = _ConfigValue('MAX_QUEUE_SIZE', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
     source_lines_library_frames_errors = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_ERRORS', type=int, default=5)
     source_lines_library_frames_transactions = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_TRANSACTIONS', type=int,

@@ -349,12 +349,12 @@ Setting an upper limit will prevent overloading the agent and the APM server wit
 
 
 [float]
-[[config-max-event-queue-length]]
-==== `max_event_queue_length`
+[[config-max-queue-size]]
+==== `max_queue_size`
 
 |============
-| Environment                          | Django/Flask             | Default
-| `ELASTIC_APM_MAX_EVENT_QUEUE_LENGTH` | `MAX_EVENT_QUEUE_LENGTH` | `500`
+| Environment                          | Django/Flask     | Default
+| `ELASTIC_APM_MAX_EVENT_QUEUE_LENGTH` | `MAX_QUEUE_SIZE` | `500`
 |============
 
 Maximum queue length of transactions before sending transactions to the APM server.
@@ -447,7 +447,7 @@ If set to `True`, the agent won't send any events to the APM server, independent
 
 
 [float]
-[[config-instrumentat]]
+[[config-instrument]]
 ==== `instrument`
 |============
 | Environment               | Django/Flask | Default

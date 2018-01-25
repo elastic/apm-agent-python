@@ -142,7 +142,7 @@ class Client(object):
             collect_frequency=self.config.transaction_send_frequency,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
-            max_queue_length=self.config.max_event_queue_length,
+            max_queue_size=self.config.max_queue_size,
             ignore_patterns=self.config.transactions_ignore_patterns,
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
