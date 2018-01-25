@@ -494,13 +494,13 @@ def test_collect_local_variables_errors(elasticapm_client):
 
 
 @pytest.mark.parametrize('elasticapm_client', [
-    {'source_lines_library_frames_errors': 0, 'source_lines_app_frames_errors': 0},
-    {'source_lines_library_frames_errors': 1, 'source_lines_app_frames_errors': 1},
-    {'source_lines_library_frames_errors': 7, 'source_lines_app_frames_errors': 3},
+    {'source_lines_error_library_frames': 0, 'source_lines_error_app_frames': 0},
+    {'source_lines_error_library_frames': 1, 'source_lines_error_app_frames': 1},
+    {'source_lines_error_library_frames': 7, 'source_lines_error_app_frames': 3},
 ], indirect=True)
 def test_collect_source_errors(elasticapm_client):
-    library_frame_context = elasticapm_client.config.source_lines_library_frames_errors
-    in_app_frame_context = elasticapm_client.config.source_lines_app_frames_errors
+    library_frame_context = elasticapm_client.config.source_lines_error_library_frames
+    in_app_frame_context = elasticapm_client.config.source_lines_error_app_frames
     try:
         import json, datetime
         json.dumps(datetime.datetime.now())
@@ -564,15 +564,15 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
 
 
 @pytest.mark.parametrize('elasticapm_client', [
-    {'source_lines_library_frames_transactions': 0, 'source_lines_app_frames_transactions': 0},
-    {'source_lines_library_frames_transactions': 1, 'source_lines_app_frames_transactions': 1},
-    {'source_lines_library_frames_transactions': 7, 'source_lines_app_frames_transactions': 5},
+    {'source_lines_span_library_frames': 0, 'source_lines_span_app_frames': 0},
+    {'source_lines_span_library_frames': 1, 'source_lines_span_app_frames': 1},
+    {'source_lines_span_library_frames': 7, 'source_lines_span_app_frames': 5},
 ], indirect=True)
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
 def test_collect_source_transactions(should_collect, elasticapm_client):
     should_collect.return_value = False
-    library_frame_context = elasticapm_client.config.source_lines_library_frames_transactions
-    in_app_frame_context = elasticapm_client.config.source_lines_app_frames_transactions
+    library_frame_context = elasticapm_client.config.source_lines_span_library_frames
+    in_app_frame_context = elasticapm_client.config.source_lines_span_app_frames
     elasticapm_client.begin_transaction('test')
     with elasticapm.capture_span('foo'):
         pass

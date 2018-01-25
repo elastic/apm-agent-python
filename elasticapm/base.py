@@ -130,8 +130,8 @@ class Client(object):
         self.instrumentation_store = TransactionsStore(
             lambda: self._get_stack_info_for_trace(
                 stacks.iter_stack_frames(),
-                library_frame_context_lines=self.config.source_lines_library_frames_transactions,
-                in_app_frame_context_lines=self.config.source_lines_app_frames_transactions,
+                library_frame_context_lines=self.config.source_lines_span_library_frames,
+                in_app_frame_context_lines=self.config.source_lines_span_app_frames,
                 with_locals=self.config.collect_local_variables in ('all', 'transactions'),
                 locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
                     v,
@@ -429,8 +429,8 @@ class Client(object):
             frames = stacks.get_stack_info(
                 frames,
                 with_locals=self.config.collect_local_variables in ('errors', 'all'),
-                library_frame_context_lines=self.config.source_lines_library_frames_errors,
-                in_app_frame_context_lines=self.config.source_lines_app_frames_errors,
+                library_frame_context_lines=self.config.source_lines_error_library_frames,
+                in_app_frame_context_lines=self.config.source_lines_error_app_frames,
                 include_paths_re=self.include_paths_re,
                 exclude_paths_re=self.exclude_paths_re,
                 locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
