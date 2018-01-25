@@ -17,10 +17,10 @@ class ElasticAPMConfig(AppConfig):
     def ready(self):
         self.client = get_client()
         register_handlers(self.client)
-        if not self.client.config.disable_instrumentation:
+        if self.client.config.instrument:
             instrument(self.client)
         else:
-            self.client.logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
+            self.client.logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
 
 
 def register_handlers(client):

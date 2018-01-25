@@ -113,9 +113,7 @@ class ElasticAPM(object):
             pass
 
         # Instrument to get spans
-        if self.client.config.disable_instrumentation:
-            logger.debug("Skipping instrumentation. DISABLE_INSTRUMENTATION is set.")
-        else:
+        if self.client.config.instrument:
             elasticapm.instrumentation.control.instrument()
 
             signals.request_started.connect(self.request_started, sender=app)
@@ -125,6 +123,8 @@ class ElasticAPM(object):
                 register_instrumentation(self.client)
             except ImportError:
                 pass
+        else:
+            logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
 
     def request_started(self, app):
         if not (self.app.debug and not self.client.config.debug):

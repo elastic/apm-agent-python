@@ -447,14 +447,14 @@ If set to `True`, the agent won't send any events to the APM server, independent
 
 
 [float]
-[[config-disable-instrumentation]]
-==== `disable_instrumentation`
+[[config-instrumentat]]
+==== `instrument`
 |============
-| Environment                 | Django/Flask   | Default
-| `ELASTIC_APM_DISABLE_INSTRUMENTATION`  | `DISABLE_INSTRUMENTATION` | `False`
+| Environment               | Django/Flask | Default
+| `ELASTIC_APM_INSTRUMENT`  | `INSTRUMENT` | `True`
 |============
 
-If set to `True`, the agent won't instrument any code.
+If set to `False`, the agent won't instrument any code.
 This disables most of the tracing functionality, but can be useful to debug possible instrumentation issues.
 
 
@@ -462,7 +462,7 @@ This disables most of the tracing functionality, but can be useful to debug poss
 [[config-verify-server-cert]]
 ==== `verify_server_cert`
 |============
-| Environment                 | Django/Flask   | Default
+| Environment                       | Django/Flask         | Default
 | `ELASTIC_APM_VERIFY_SERVER_CERT`  | `VERIFY_SERVER_CERT` | `True`
 |============
 

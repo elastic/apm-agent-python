@@ -175,7 +175,7 @@ class Config(_ConfigBase):
     framework_name = _ConfigValue('FRAMEWORK_NAME', default=None)
     framework_version = _ConfigValue('FRAMEWORK_VERSION', default=None)
     disable_send = _BoolConfigValue('DISABLE_SEND', default=False)
-    disable_instrumentation = _BoolConfigValue('DISABLE_INSTRUMENTATION', default=False)
+    instrument = _BoolConfigValue('DISABLE_INSTRUMENTATION', default=True)
 
     # undocumented configuration
     _wait_to_first_send = _ConfigValue('_WAIT_TO_FIRST_SEND', type=int, default=5)
