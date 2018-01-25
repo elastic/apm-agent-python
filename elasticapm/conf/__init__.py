@@ -142,10 +142,9 @@ class Config(_ConfigBase):
     include_paths = _ListConfigValue('INCLUDE_PATHS')
     exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=compat.get_default_library_patters())
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
-    timeout = _ConfigValue('TIMEOUT', type=float, default=5)
+    server_timeout = _ConfigValue('SERVER_TIMEOUT', type=float, default=5)
     hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue('AUTO_LOG_STACKS', default=True)
-    keyword_max_length = _ConfigValue('KEYWORD_MAX_LENGTH', type=int, default=1024)
     transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http.AsyncTransport',
                                    required=True)
     processors = _ListConfigValue('PROCESSORS', default=[
@@ -156,17 +155,15 @@ class Config(_ConfigBase):
         'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
     ])
-    transaction_send_frequency = _ConfigValue('TRACES_SEND_FREQ', type=int, default=60)
+    flush_interval = _ConfigValue('FLUSH_INTERVAL', type=int, default=60)
     transaction_sample_rate = _ConfigValue('TRANSACTION_SAMPLE_RATE', type=float, default=1.0)
     transaction_max_spans = _ConfigValue('TRANSACTION_MAX_SPANS', type=int, default=500)
-    max_event_queue_length = _ConfigValue('MAX_EVENT_QUEUE_LENGTH', type=int, default=500)
+    max_queue_size = _ConfigValue('MAX_QUEUE_SIZE', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
-    collect_source = _ConfigValue('COLLECT_SOURCE', default='all')
-    source_lines_library_frames_errors = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_ERRORS', type=int, default=5)
-    source_lines_library_frames_transactions = _ConfigValue('SOURCE_LINES_LIBRARY_FRAMES_TRANSACTIONS', type=int,
-                                                            default=0)
-    source_lines_app_frames_errors = _ConfigValue('SOURCE_LINES_APP_FRAMES_ERRORS', type=int, default=5)
-    source_lines_app_frames_transactions = _ConfigValue('SOURCE_LINES_APP_FRAMES_TRANSACTIONS', type=int, default=5)
+    source_lines_error_library_frames = _ConfigValue('SOURCE_LINES_ERROR_LIBRARY_FRAMES', type=int, default=5)
+    source_lines_span_library_frames = _ConfigValue('SOURCE_LINES_SPAN_LIBRARY_FRAMES', type=int, default=0)
+    source_lines_error_app_frames = _ConfigValue('SOURCE_LINES_ERROR_APP_FRAMES', type=int, default=5)
+    source_lines_span_app_frames = _ConfigValue('SOURCE_LINES_SPAN_APP_FRAMES', type=int, default=5)
     local_var_max_length = _ConfigValue('LOCAL_VAR_MAX_LENGTH', type=int, default=200)
     local_var_list_max_length = _ConfigValue('LOCAL_VAR_LIST_MAX_LENGTH', type=int, default=10)
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
@@ -176,7 +173,7 @@ class Config(_ConfigBase):
     framework_name = _ConfigValue('FRAMEWORK_NAME', default=None)
     framework_version = _ConfigValue('FRAMEWORK_VERSION', default=None)
     disable_send = _BoolConfigValue('DISABLE_SEND', default=False)
-    disable_instrumentation = _BoolConfigValue('DISABLE_INSTRUMENTATION', default=False)
+    instrument = _BoolConfigValue('DISABLE_INSTRUMENTATION', default=True)
 
     # undocumented configuration
     _wait_to_first_send = _ConfigValue('_WAIT_TO_FIRST_SEND', type=int, default=5)

@@ -21,11 +21,11 @@ class Client(BaseClient):
         transport = self._get_transport(parsed)
         loop = asyncio.get_event_loop()
         task = loop.create_task(
-            transport.send(data, headers, timeout=self.config.timeout))
+            transport.send(data, headers, timeout=self.config.server_timeout))
         task.add_done_callback(self.handle_transport_response)
 
     def _start_send_timer(self, timeout=None):
-        timeout = timeout or self.config.transaction_send_frequency
+        timeout = timeout or self.config.flush_interval
         self._send_timer = AsyncTimer(timeout, self._collect_transactions)
 
     def _stop_send_timer(self):

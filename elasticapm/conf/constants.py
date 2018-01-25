@@ -5,3 +5,5 @@ ERROR_API_PATH = '/v1/errors'
 TRANSACTIONS_API_PATH = '/v1/transactions'
 
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
+KEYWORD_MAX_LENGTH = 1024

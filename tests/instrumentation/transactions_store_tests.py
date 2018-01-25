@@ -138,7 +138,7 @@ def test_should_not_collect_time():
 
 
 def test_should_collect_count():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_length=5)
+    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_size=5)
     requests_store._transactions = 6 * [1]
     requests_store._last_collect -= 3
 
@@ -146,7 +146,7 @@ def test_should_collect_count():
 
 
 def test_should_not_collect_count():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_length=5)
+    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_size=5)
     requests_store._transactions = 4 * [1]
 
     assert not requests_store.should_collect()

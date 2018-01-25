@@ -22,8 +22,8 @@ def list_from_setting(config, setting):
 class ElasticAPM(Middleware):
     def __init__(self, app, config, client_cls=Client):
         client = client_cls(
-            server=config.get('elasticapm.server'),
-            timeout=config.get('elasticapm.timeout'),
+            server_url=config.get('elasticapm.server_url'),
+            server_timeout=config.get('elasticapm.server_timeout'),
             name=config.get('elasticapm.name'),
             service_name=config.get('elasticapm.service_name'),
             secret_token=config.get('elasticapm.secret_token'),

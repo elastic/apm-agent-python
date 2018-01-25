@@ -130,9 +130,8 @@ class Client(object):
         self.instrumentation_store = TransactionsStore(
             lambda: self._get_stack_info_for_trace(
                 stacks.iter_stack_frames(),
-                with_source_context=self.config.collect_source in ('all', 'transactions'),
-                library_frame_context_lines=self.config.source_lines_library_frames_transactions,
-                in_app_frame_context_lines=self.config.source_lines_app_frames_transactions,
+                library_frame_context_lines=self.config.source_lines_span_library_frames,
+                in_app_frame_context_lines=self.config.source_lines_span_app_frames,
                 with_locals=self.config.collect_local_variables in ('all', 'transactions'),
                 locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
                     v,
@@ -140,10 +139,10 @@ class Client(object):
                     string_length=self.config.local_var_max_length,
                 ), local_var)
             ),
-            collect_frequency=self.config.transaction_send_frequency,
+            collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
-            max_queue_length=self.config.max_event_queue_length,
+            max_queue_size=self.config.max_queue_size,
             ignore_patterns=self.config.transactions_ignore_patterns,
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
@@ -245,7 +244,7 @@ class Client(object):
             self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
-            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.transaction_send_frequency))
+            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.flush_interval))
         return transaction
 
     def close(self):
@@ -302,7 +301,7 @@ class Client(object):
         self._start_send_timer()
 
     def _start_send_timer(self, timeout=None):
-        timeout = timeout or self.config.transaction_send_frequency
+        timeout = timeout or self.config.flush_interval
         self._send_timer = threading.Timer(timeout, self._collect_transactions)
         self._send_timer.start()
 
@@ -323,7 +322,7 @@ class Client(object):
                 fail_callback=self.handle_transport_fail
             )
         else:
-            url = transport.send(data, headers, timeout=self.config.timeout)
+            url = transport.send(data, headers, timeout=self.config.server_timeout)
             self.handle_transport_success(url=url)
 
     def get_service_info(self):
@@ -429,10 +428,9 @@ class Client(object):
                 frames = stack
             frames = stacks.get_stack_info(
                 frames,
-                with_source_context=self.config.collect_source in ('errors', 'all'),
                 with_locals=self.config.collect_local_variables in ('errors', 'all'),
-                library_frame_context_lines=self.config.source_lines_library_frames_errors,
-                in_app_frame_context_lines=self.config.source_lines_app_frames_errors,
+                library_frame_context_lines=self.config.source_lines_error_library_frames,
+                in_app_frame_context_lines=self.config.source_lines_error_app_frames,
                 include_paths_re=self.include_paths_re,
                 exclude_paths_re=self.exclude_paths_re,
                 locals_processor_func=lambda local_var: varmap(lambda k, v: shorten(
@@ -530,7 +528,6 @@ class Client(object):
         return self._transports[parsed_url]
 
     def _get_stack_info_for_trace(self, frames,
-                                  with_source_context=True,
                                   library_frame_context_lines=None,
                                   in_app_frame_context_lines=None,
                                   with_locals=True,
@@ -538,7 +535,6 @@ class Client(object):
         """Overrideable in derived clients to add frames/info, e.g. templates"""
         return stacks.get_stack_info(
             frames,
-            with_source_context=with_source_context,
             library_frame_context_lines=library_frame_context_lines,
             in_app_frame_context_lines=in_app_frame_context_lines,
             with_locals=with_locals,
