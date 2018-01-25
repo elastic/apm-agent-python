@@ -3,12 +3,14 @@ version: '2.1'
 services:
   postgres:
     user: postgres
-    image: postgres
-    ports: 
+    image: postgres:9.6
+    ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_DB: 'elasticapm_test'
+    volumes:
+      - pypgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 1s
@@ -17,24 +19,26 @@ services:
 
   mongodb:
     image: mongo
-    ports: 
+    volumes:
+      - pymongodata:/data/db
+    ports:
       - "27017:27017"
 
   memcached:
     image: memcached
-    ports: 
+    ports:
       - "11211:11211"
 
   redis:
     image: redis
-    ports: 
+    ports:
       - "6379:6379"
 
   run_tests:
     build:
       context: .
       dockerfile: Dockerfile
-    environment: 
+    environment:
       MONGODB_HOST: 'mongodb'
       REDIS_HOST: 'redis'
       MEMCACHED_HOST: 'memcached'
@@ -44,10 +48,17 @@ services:
       POSTGRES_PORT: '5432'
     depends_on:
       postgres:
-        condition: service_healthy 
+        condition: service_healthy
       mongodb:
         condition: service_started
       memcached:
         condition: service_started
       redis:
         condition: service_started
+
+
+volumes:
+  pypgdata:
+    driver: local
+  pymongodata:
+    driver: local

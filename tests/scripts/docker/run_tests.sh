@@ -22,6 +22,7 @@ docker-compose run \
 	/bin/bash \
   -c "./tests/scripts/run_tests.sh"
 
+docker-compose down -v
 cd ..
 
 if [[ $CODECOV_TOKEN ]]; then
