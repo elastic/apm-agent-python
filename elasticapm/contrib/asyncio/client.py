@@ -21,7 +21,7 @@ class Client(BaseClient):
         transport = self._get_transport(parsed)
         loop = asyncio.get_event_loop()
         task = loop.create_task(
-            transport.send(data, headers, timeout=self.config.timeout))
+            transport.send(data, headers, timeout=self.config.server_timeout))
         task.add_done_callback(self.handle_transport_response)
 
     def _start_send_timer(self, timeout=None):

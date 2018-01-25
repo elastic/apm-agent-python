@@ -195,13 +195,13 @@ Transactions that match any of the of the configured patterns will be ignored an
 
 
 [float]
-[[config-timeout]]
-==== `timeout`
+[[config-server-timeout]]
+==== `server_timeout`
 
 [options="header"]
 |============
-| Environment           | Django/Flask  | Default
-| `ELASTIC_APM_TIMEOUT` | `TIMEOUT`     | `5`
+| Environment                  | Django/Flask         | Default
+| `ELASTIC_APM_SERVER_TIMEOUT` | `SERVER_TIMEOUT`     | `5`
 |============
 
 A timeout in seconds.

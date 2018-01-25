@@ -142,7 +142,7 @@ class Config(_ConfigBase):
     include_paths = _ListConfigValue('INCLUDE_PATHS')
     exclude_paths = _ListConfigValue('EXCLUDE_PATHS', default=compat.get_default_library_patters())
     filter_exception_types = _ListConfigValue('FILTER_EXCEPTION_TYPES')
-    timeout = _ConfigValue('TIMEOUT', type=float, default=5)
+    server_timeout = _ConfigValue('SERVER_TIMEOUT', type=float, default=5)
     hostname = _ConfigValue('HOSTNAME', default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue('AUTO_LOG_STACKS', default=True)
     transport_class = _ConfigValue('TRANSPORT_CLASS', default='elasticapm.transport.http.AsyncTransport',

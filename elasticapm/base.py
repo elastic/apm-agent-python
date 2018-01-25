@@ -322,7 +322,7 @@ class Client(object):
                 fail_callback=self.handle_transport_fail
             )
         else:
-            url = transport.send(data, headers, timeout=self.config.timeout)
+            url = transport.send(data, headers, timeout=self.config.server_timeout)
             self.handle_transport_success(url=url)
 
     def get_service_info(self):
