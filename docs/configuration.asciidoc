@@ -320,17 +320,17 @@ With the above settings, you can modify how many lines of source code is collect
 WARNING: Especially for transactions, collecting source code can have a large impact on storage use in your Elasticsearch cluster.
 
 [float]
-[[config-transaction-send-frequency]]
-==== `transaction_send_frequency`
+[[config-flush-interval]]
+==== `flush_interval`
 
 |============
-| Environment                         | Django/Flask            | Default
-| `ELASTIC_APM_TRANSACTION_SEND_FREQ` | `TRANSACTION_SEND_FREQ` | `60`
+| Environment                  | Django/Flask     | Default
+| `ELASTIC_APM_FLUSH_INTERVAL` | `FLUSH_INTERVAL` | `60`
 |============
 
 Interval with which transactions should be sent to the APM server, in seconds.
 A lower value will increase the load on your APM server,
-while a higher value can increase the memory pressure of your app.
+while a higher value can increase the memory pressure on your app.
 A higher value also impacts the time until transactions are indexed and searchable in Elasticsearch.
 
 

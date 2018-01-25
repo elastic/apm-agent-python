@@ -33,7 +33,7 @@ def test_config_dict():
         'SERVER_URL': 'http://example.com:1234',
         'SERVICE_VERSION': 1,
         'HOSTNAME': 'localhost',
-        'TRACES_SEND_FREQ': '5'
+        'FLUSH_INTERVAL': '5'
     })
 
     assert config.service_name == 'foo'
@@ -41,7 +41,7 @@ def test_config_dict():
     assert config.server_url == 'http://example.com:1234'
     assert config.service_version == '1'
     assert config.hostname == 'localhost'
-    assert config.transaction_send_frequency == 5
+    assert config.flush_interval == 5
 
 
 def test_config_environment():
@@ -51,7 +51,7 @@ def test_config_environment():
         'ELASTIC_APM_SERVER_URL': 'http://example.com:1234',
         'ELASTIC_APM_SERVICE_VERSION': '1',
         'ELASTIC_APM_HOSTNAME': 'localhost',
-        'ELASTIC_APM_TRACES_SEND_FREQ': '5',
+        'ELASTIC_APM_FLUSH_INTERVAL': '5',
         'ELASTIC_APM_AUTO_LOG_STACKS': 'false',
     }):
         config = Config()
@@ -61,7 +61,7 @@ def test_config_environment():
         assert config.server_url == 'http://example.com:1234'
         assert config.service_version == '1'
         assert config.hostname == 'localhost'
-        assert config.transaction_send_frequency == 5
+        assert config.flush_interval == 5
         assert config.auto_log_stacks == False
 
 
@@ -72,7 +72,7 @@ def test_config_defaults_dict():
         'server_url': 'http://example.com:1234',
         'service_version': '1',
         'hostname': 'localhost',
-        'transaction_send_frequency': '5',
+        'flush_interval': '5',
     })
 
     assert config.service_name == 'foo'
@@ -80,7 +80,7 @@ def test_config_defaults_dict():
     assert config.server_url == 'http://example.com:1234'
     assert config.service_version == '1'
     assert config.hostname == 'localhost'
-    assert config.transaction_send_frequency == 5
+    assert config.flush_interval == 5
 
 
 def test_config_precedence():

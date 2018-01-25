@@ -139,7 +139,7 @@ class Client(object):
                     string_length=self.config.local_var_max_length,
                 ), local_var)
             ),
-            collect_frequency=self.config.transaction_send_frequency,
+            collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
             max_queue_size=self.config.max_queue_size,
@@ -244,7 +244,7 @@ class Client(object):
             self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
-            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.transaction_send_frequency))
+            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.flush_interval))
         return transaction
 
     def close(self):
@@ -301,7 +301,7 @@ class Client(object):
         self._start_send_timer()
 
     def _start_send_timer(self, timeout=None):
-        timeout = timeout or self.config.transaction_send_frequency
+        timeout = timeout or self.config.flush_interval
         self._send_timer = threading.Timer(timeout, self._collect_transactions)
         self._send_timer.start()
 
