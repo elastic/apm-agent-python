@@ -161,8 +161,7 @@ class Config(_ConfigBase):
     max_queue_size = _ConfigValue('MAX_QUEUE_SIZE', type=int, default=500)
     collect_local_variables = _ConfigValue('COLLECT_LOCAL_VARIABLES', default='errors')
     source_lines_error_library_frames = _ConfigValue('SOURCE_LINES_ERROR_LIBRARY_FRAMES', type=int, default=5)
-    source_lines_span_library_frames = _ConfigValue('SOURCE_LINES_SPAN_LIBRARY_FRAMES', type=int,
-                                                            default=0)
+    source_lines_span_library_frames = _ConfigValue('SOURCE_LINES_SPAN_LIBRARY_FRAMES', type=int, default=0)
     source_lines_error_app_frames = _ConfigValue('SOURCE_LINES_ERROR_APP_FRAMES', type=int, default=5)
     source_lines_span_app_frames = _ConfigValue('SOURCE_LINES_SPAN_APP_FRAMES', type=int, default=5)
     local_var_max_length = _ConfigValue('LOCAL_VAR_MAX_LENGTH', type=int, default=200)

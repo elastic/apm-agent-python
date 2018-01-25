@@ -255,7 +255,7 @@ logger.info('something happened', extra={'stack': False})
 | `ELASTIC_APM_COLLECT_LOCAL_VARIABLES` | `COLLECT_LOCAL_VARIABLES` | `errors`
 |============
 
-Possible values: `errors`, `transactions`, `all`, `none`
+Possible values: `errors`, `transactions`, `all`, `off`
 
 The Elastic APM Python agent can collect local variables for stack frames.
 By default, this is only done for errors.
