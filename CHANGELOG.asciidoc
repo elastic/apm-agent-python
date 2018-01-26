@@ -25,9 +25,9 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  * switched to `time.perf_counter` as timing function on Python 3 ({pull}138[#138])
  * BREAKING: Several settings and APIs have been renamed ({pull}111[#111], {pull}119[#119], {pull}143[#143]):
  ** The decorator for custom instrumentation, `elasticapm.trace`, is now `elasticapm.capture_span`
- ** The setting `traces_send_frequency` has been renamed to `transaction_send_frequency`.
+ ** The setting `traces_send_frequency` has been renamed to `flush_interval`.
      The name of the analogous environment variable changed from `ELASTIC_APM_TRACES_SEND_FREQ`
-     to `ELASTIC_APM_TRANSACTION_SEND_FREQ`
+     to `ELASTIC_APM_FLUSH_INTERVAL`
  ** The `app_name` setting has been renamed to `service_name`.
      The name of the analogous environment variable changed from `ELASTIC_APM_APP_NAME`
      to `ELASTIC_APM_SERVICE_NAME`.
@@ -39,6 +39,11 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  * BREAKING: added `elasticapm.set_custom_context` in favor of the more generic `set_custom_data` function ({pull}133[#133])
  * BREAKING: `include_patterns` and `exclude_patterns` now use shell globs instead of regular expressions, and
              are matched against the full path file path of the module, not against the module name ({pull}137[#137])
+ * BREAKING: renamed several configuration options to align better with other language agents ({pull}145[#145]):
+ ** `disable_instrumentation` became `instrument` and inverted its meaning
+ ** `max_event_queue_length` became `max_queue_size`
+ ** `timeout` became `server_timeout`
+
 
 [[release-1.0.0]]
 [float]

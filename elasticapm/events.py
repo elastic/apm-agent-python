@@ -76,9 +76,8 @@ class Exception(BaseEvent):
             frames = get_stack_info(
                 iter_traceback_frames(exc_traceback),
                 with_locals=client.config.collect_local_variables in ('errors', 'all'),
-                with_source_context=client.config.collect_source in ('errors', 'all'),
-                library_frame_context_lines=client.config.source_lines_library_frames_errors,
-                in_app_frame_context_lines=client.config.source_lines_app_frames_errors,
+                library_frame_context_lines=client.config.source_lines_error_library_frames,
+                in_app_frame_context_lines=client.config.source_lines_error_app_frames,
                 include_paths_re=client.include_paths_re,
                 exclude_paths_re=client.exclude_paths_re,
                 locals_processor_func=lambda local_var: varmap(lambda k, val: shorten(

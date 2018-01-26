@@ -173,7 +173,6 @@ class DjangoClient(Client):
         return result
 
     def _get_stack_info_for_trace(self, frames,
-                                  with_source_context=True,
                                   library_frame_context_lines=None,
                                   in_app_frame_context_lines=None,
                                   with_locals=True,
@@ -182,7 +181,6 @@ class DjangoClient(Client):
         frames until some other module comes up."""
         frames = list(iterate_with_template_sources(
             frames,
-            with_source_context=with_source_context,
             with_locals=with_locals,
             library_frame_context_lines=library_frame_context_lines,
             in_app_frame_context_lines=in_app_frame_context_lines,

@@ -10,7 +10,7 @@ pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
 @pytest.fixture
 def mock_client(mocker):
     mock_client = mocker.MagicMock()
-    mock_client.config.timeout = None
+    mock_client.config.server_timeout = None
     response = mocker.MagicMock()
 
     async def read():
@@ -23,8 +23,8 @@ def mock_client(mocker):
         async def __aenter__(self, *args, **kwargs):
             response.status = mock_client.status
             response.headers = mock_client.headers
-            if mock_client.config.timeout:
-                await asyncio.sleep(mock_client.config.timeout)
+            if mock_client.config.server_timeout:
+                await asyncio.sleep(mock_client.config.server_timeout)
             return response
 
         async def __aexit__(self, *args):
@@ -80,7 +80,7 @@ async def test_send_timeout(mock_client):
 
     transport = AsyncioHTTPTransport(urlparse('http://localhost:9999'))
 
-    mock_client.config.timeout = 0.1
+    mock_client.config.server_timeout = 0.1
     transport.client = mock_client
 
     with pytest.raises(TransportException) as excinfo:

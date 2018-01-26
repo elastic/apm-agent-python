@@ -161,7 +161,7 @@ def iter_stack_frames(frames=None, skip=0):
             yield frame, frame.f_lineno
 
 
-def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
+def get_frame_info(frame, lineno, with_locals=True,
                    library_frame_context_lines=None, in_app_frame_context_lines=None,
                    include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     # Support hidden frames
@@ -204,20 +204,19 @@ def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
         'library_frame': is_library_frame(abs_path, include_paths_re, exclude_paths_re)
     }
 
-    if with_source_context:
-        context_lines = library_frame_context_lines if frame_result['library_frame'] else in_app_frame_context_lines
-        if context_lines and lineno is not None and abs_path:
-            pre_context, context_line, post_context = get_lines_from_file(
-                abs_path, lineno, int(context_lines / 2), loader, module_name
-            )
-        else:
-            pre_context, context_line, post_context = [], None, []
-        if context_line:
-            frame_result.update({
-                'pre_context': pre_context,
-                'context_line': context_line,
-                'post_context': post_context,
-            })
+    context_lines = library_frame_context_lines if frame_result['library_frame'] else in_app_frame_context_lines
+    if context_lines and lineno is not None and abs_path:
+        pre_context, context_line, post_context = get_lines_from_file(
+            abs_path, lineno, int(context_lines / 2), loader, module_name
+        )
+    else:
+        pre_context, context_line, post_context = [], None, []
+    if context_line:
+        frame_result.update({
+            'pre_context': pre_context,
+            'context_line': context_line,
+            'post_context': post_context,
+        })
     if with_locals:
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of
@@ -232,7 +231,7 @@ def get_frame_info(frame, lineno, with_source_context=True, with_locals=True,
     return frame_result
 
 
-def get_stack_info(frames, with_source_context=True, with_locals=True,
+def get_stack_info(frames, with_locals=True,
                    library_frame_context_lines=None, in_app_frame_context_lines=None,
                    include_paths_re=None, exclude_paths_re=None, locals_processor_func=None):
     """
@@ -244,7 +243,6 @@ def get_stack_info(frames, with_source_context=True, with_locals=True,
     of the information we want.
 
     :param frames: a list of (Frame, lineno) tuples
-    :param with_source_context: boolean to indicate if context lines should be collected
     :param with_locals: boolean to indicate if local variables should be collected
     :param include_paths_re: a regex to determine if a frame is not a library frame
     :param exclude_paths_re: a regex to exclude frames from not being library frames
@@ -256,7 +254,6 @@ def get_stack_info(frames, with_source_context=True, with_locals=True,
         result = get_frame_info(
             frame,
             lineno,
-            with_source_context=with_source_context,
             library_frame_context_lines=library_frame_context_lines,
             in_app_frame_context_lines=in_app_frame_context_lines,
             with_locals=with_locals,
