@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 
 from elasticapm.traces import get_transaction
 from elasticapm.utils import wrapt
@@ -169,6 +170,11 @@ class AbstractInstrumentedModule(object):
         if self.instrumented:
             return
 
+        skip_env_var = 'SKIP_INSTRUMENT_' + str(self.name.upper())
+        if skip_env_var in os.environ:
+            logger.debug("Skipping instrumentation of %s. %s is set.",
+                         self.name, skip_env_var)
+            return
         try:
             instrument_list = self.get_instrument_list()
             skipped_modules = set()

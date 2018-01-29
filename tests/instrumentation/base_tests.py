@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import types
 
+import mock
 import pytest
 
 from elasticapm.instrumentation.packages.base import (AbstractInstrumentedModule,
@@ -71,3 +72,10 @@ def test_uninstrument_py3():
     instrumentation.uninstrument()
     assert Dummy.dummy is original
     assert not isinstance(Dummy.dummy, OriginalNamesBoundFunctionWrapper)
+
+
+def test_skip_instrument_env_var():
+    instrumentation = _TestDummyInstrumentation()
+    with mock.patch.dict('os.environ', {'SKIP_INSTRUMENT_TEST_DUMMY_INSTRUMENT': 'foo'}):
+        instrumentation.instrument()
+    assert not instrumentation.instrumented
