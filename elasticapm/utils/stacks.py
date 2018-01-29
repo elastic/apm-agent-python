@@ -10,6 +10,7 @@ Large portions are
 """
 import fnmatch
 import inspect
+import itertools
 import os
 import re
 import sys
@@ -32,48 +33,56 @@ def get_lines_from_file(filename, lineno, context_lines, loader=None, module_nam
     Returns context_lines before and after lineno from file.
     Returns (pre_context_lineno, pre_context, context_line, post_context).
     """
+    lineno = lineno - 1
+    lower_bound = max(0, lineno - context_lines)
+    upper_bound = lineno + context_lines
+
     source = None
     if loader is not None and hasattr(loader, "get_source"):
-        try:
-            source = loader.get_source(module_name)
-        except ImportError:
-            # ImportError: Loader for module cProfile cannot handle module __main__
-            source = None
-        if source is not None:
-            source = source.splitlines()
+        result = get_source_lines_from_loader(loader, module_name, lineno, lower_bound, upper_bound)
+        if result is not None:
+            return result
+
     if source is None:
         try:
-            f = open(filename, 'rb')
-            try:
-                source = f.readlines()
-            finally:
-                f.close()
-        except (OSError, IOError):
+            with open(filename, 'rb') as file_obj:
+                encoding = 'utf8'
+                # try to find encoding of source file by "coding" header
+                # if none is found, utf8 is used as a fallback
+                for line in itertools.islice(file_obj, 0, 2):
+                    match = _coding_re.search(line.decode('utf8'))
+                    if match:
+                        encoding = match.group(1)
+                        break
+                file_obj.seek(0)
+                lines = [compat.text_type(line, encoding, 'replace')
+                         for line in itertools.islice(file_obj, lower_bound, upper_bound + 1)]
+                offset = lineno - lower_bound
+                return (
+                    [l.strip('\r\n') for l in lines[0:offset]],
+                    lines[offset].strip('\r\n'),
+                    [l.strip('\r\n') for l in lines[offset + 1:]] if len(lines) > offset else []
+                )
+        except (OSError, IOError, IndexError):
             pass
+    return None, None, None
 
-        if source is None:
-            return None, None, None
-        encoding = 'utf8'
-        for line in source[:2]:
-            # File coding may be specified. Match pattern from PEP-263
-            # (http://www.python.org/dev/peps/pep-0263/)
-            match = _coding_re.search(line.decode('utf8'))  # let's assume utf8
-            if match:
-                encoding = match.group(1)
-                break
-        source = [compat.text_type(sline, encoding, 'replace') for sline in source]
 
-    lower_bound = max(0, lineno - context_lines)
-    upper_bound = lineno + 1 + context_lines
-
+def get_source_lines_from_loader(loader, module_name, lineno, lower_bound, upper_bound):
+    try:
+        source = loader.get_source(module_name)
+    except ImportError:
+        # ImportError: Loader for module cProfile cannot handle module __main__
+        return None
+    if source is not None:
+        source = source.splitlines()
     try:
         pre_context = [line.strip('\r\n') for line in source[lower_bound:lineno]]
         context_line = source[lineno].strip('\r\n')
-        post_context = [line.strip('\r\n') for line in source[(lineno + 1):upper_bound]]
+        post_context = [line.strip('\r\n') for line in source[(lineno + 1):upper_bound + 1]]
     except IndexError:
         # the file may have changed since it was loaded into memory
         return None, None, None
-
     return pre_context, context_line, post_context
 
 
@@ -181,9 +190,6 @@ def get_frame_info(frame, lineno, with_locals=True,
         abs_path = None
         function = None
 
-    if lineno:
-        lineno -= 1
-
     # Try to pull a relative file path
     # This changes /foo/site-packages/baz/bar.py into baz/bar.py
     try:
@@ -200,7 +206,7 @@ def get_frame_info(frame, lineno, with_locals=True,
         'filename': filename,
         'module': module_name,
         'function': function,
-        'lineno': lineno + 1,
+        'lineno': lineno,
         'library_frame': is_library_frame(abs_path, include_paths_re, exclude_paths_re)
     }
 
@@ -212,11 +218,9 @@ def get_frame_info(frame, lineno, with_locals=True,
     else:
         pre_context, context_line, post_context = [], None, []
     if context_line:
-        frame_result.update({
-            'pre_context': pre_context,
-            'context_line': context_line,
-            'post_context': post_context,
-        })
+        frame_result['pre_context'] = pre_context
+        frame_result['context_line'] = context_line
+        frame_result['post_context'] = post_context
     if with_locals:
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of

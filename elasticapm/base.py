@@ -26,8 +26,9 @@ import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
+from elasticapm.utils import compat, is_master_process
 from elasticapm.utils import json_encoder as json
-from elasticapm.utils import compat, is_master_process, stacks, varmap
+from elasticapm.utils import stacks, varmap
 from elasticapm.utils.encoding import shorten, transform
 from elasticapm.utils.module_import import import_string
 
