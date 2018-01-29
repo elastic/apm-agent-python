@@ -9,6 +9,13 @@ from elasticapm.utils import default_ports
 class PGCursorProxy(CursorProxy):
     provider_name = 'postgresql'
 
+    def _bake_sql(self, sql):
+        # if this is a Composable object, use its `as_string` method
+        # see http://initd.org/psycopg/docs/sql.html
+        if hasattr(sql, 'as_string'):
+            return sql.as_string(self.__wrapped__)
+        return sql
+
     def extract_signature(self, sql):
         return extract_signature(sql)
 
