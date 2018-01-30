@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 
+import psycopg2
 import pytest
 
 from elasticapm.instrumentation import control
@@ -8,10 +9,12 @@ from elasticapm.instrumentation.packages.psycopg2 import (PGCursorProxy,
                                                           extract_signature)
 
 try:
-    import psycopg2
-    has_psycopg2 = True
+    from psycopg2 import sql
+    has_sql_module = True
 except ImportError:
-    has_psycopg2 = False
+    # as of Jan 2018, psycopg2cffi doesn't have this module
+    has_sql_module = False
+
 
 has_postgres_configured = 'POSTGRES_DB' in os.environ
 
@@ -37,100 +40,100 @@ def postgres_connection(request):
 
 
 def test_insert():
-    sql = """INSERT INTO mytable (id, name) VALUE ('2323', 'Ron')"""
-    actual = extract_signature(sql)
+    sql_statement = """INSERT INTO mytable (id, name) VALUE ('2323', 'Ron')"""
+    actual = extract_signature(sql_statement)
 
     assert "INSERT INTO mytable" == actual
 
 
 def test_update_with_quotes():
-    sql = """UPDATE "my table" set name='Ron' WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """UPDATE "my table" set name='Ron' WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "UPDATE my table" == actual
 
 
 def test_update():
-    sql = """update mytable set name = 'Ron where id = 'a'"""
-    actual = extract_signature(sql)
+    sql_statement = """update mytable set name = 'Ron where id = 'a'"""
+    actual = extract_signature(sql_statement)
 
     assert "UPDATE mytable" == actual
 
 
 def test_delete_simple():
-    sql = 'DELETE FROM "mytable"'
-    actual = extract_signature(sql)
+    sql_statement = 'DELETE FROM "mytable"'
+    actual = extract_signature(sql_statement)
 
     assert "DELETE FROM mytable" == actual
 
 
 def test_delete():
-    sql = """DELETE FROM "my table" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """DELETE FROM "my table" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "DELETE FROM my table" == actual
 
 
 def test_select_simple():
-    sql = """SELECT id, name FROM my_table WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """SELECT id, name FROM my_table WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM my_table" == actual
 
 
 def test_select_with_entity_quotes():
-    sql = """SELECT id, name FROM "mytable" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """SELECT id, name FROM "mytable" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM mytable" == actual
 
 
 def test_select_with_difficult_values():
-    sql = """SELECT id, 'some name' + '" from Denmark' FROM "mytable" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """SELECT id, 'some name' + '" from Denmark' FROM "mytable" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM mytable" == actual
 
 
 def test_select_with_dollar_quotes():
-    sql = """SELECT id, $$some single doubles ' $$ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """SELECT id, $$some single doubles ' $$ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM mytable" == actual
 
 
 def test_select_with_invalid_dollar_quotes():
-    sql = """SELECT id, $fish$some single doubles ' $$ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """SELECT id, $fish$some single doubles ' $$ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM" == actual
 
 
 def test_select_with_dollar_quotes_custom_token():
-    sql = """SELECT id, $token $FROM $ FROM $ FROM single doubles ' $token $ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = """SELECT id, $token $FROM $ FROM $ FROM single doubles ' $token $ + '" from Denmark' FROM "mytable" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM mytable" == actual
 
 
 def test_select_with_difficult_table_name():
-    sql = "SELECT id FROM \"myta\n-æøåble\" WHERE id = 2323"""
-    actual = extract_signature(sql)
+    sql_statement = "SELECT id FROM \"myta\n-æøåble\" WHERE id = 2323"""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM myta\n-æøåble" == actual
 
 
 def test_select_subselect():
-    sql = """SELECT id, name FROM (
+    sql_statement = """SELECT id, name FROM (
             SELECT id, 'not a FROM ''value' FROM mytable WHERE id = 2323
     ) LIMIT 20"""
-    actual = extract_signature(sql)
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM mytable" == actual
 
 
 def test_select_subselect_with_alias():
-    sql = """
+    sql_statement = """
     SELECT count(*)
     FROM (
         SELECT count(id) AS some_alias, some_column
@@ -139,74 +142,75 @@ def test_select_subselect_with_alias():
         HAVING count(id) > 1
     ) AS foo
     """
-    actual = extract_signature(sql)
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM mytable" == actual
 
 
 def test_select_with_multiple_tables():
-    sql = """SELECT count(table2.id)
+    sql_statement = """SELECT count(table2.id)
         FROM table1, table2, table2
         WHERE table2.id = table1.table2_id
     """
-    actual = extract_signature(sql)
+    actual = extract_signature(sql_statement)
     assert "SELECT FROM table1" == actual
 
 
 def test_select_with_invalid_subselect():
-    sql = "SELECT id FROM (SELECT * """
-    actual = extract_signature(sql)
+    sql_statement = "SELECT id FROM (SELECT * """
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM" == actual
 
 
 def test_select_with_invalid_literal():
-    sql = "SELECT 'neverending literal FROM (SELECT * FROM ..."""
-    actual = extract_signature(sql)
+    sql_statement = "SELECT 'neverending literal FROM (SELECT * FROM ..."""
+    actual = extract_signature(sql_statement)
 
     assert "SELECT FROM" == actual
 
 
 def test_savepoint():
-    sql = """SAVEPOINT x_asd1234"""
-    actual = extract_signature(sql)
+    sql_statement = """SAVEPOINT x_asd1234"""
+    actual = extract_signature(sql_statement)
 
     assert "SAVEPOINT" == actual
 
 
 def test_begin():
-    sql = """BEGIN"""
-    actual = extract_signature(sql)
+    sql_statement = """BEGIN"""
+    actual = extract_signature(sql_statement)
 
     assert "BEGIN" == actual
 
 
 def test_create_index_with_name():
-    sql = """CREATE INDEX myindex ON mytable"""
-    actual = extract_signature(sql)
+    sql_statement = """CREATE INDEX myindex ON mytable"""
+    actual = extract_signature(sql_statement)
 
     assert "CREATE INDEX" == actual
 
 
 def test_create_index_without_name():
-    sql = """CREATE INDEX ON mytable"""
-    actual = extract_signature(sql)
+    sql_statement = """CREATE INDEX ON mytable"""
+    actual = extract_signature(sql_statement)
 
     assert "CREATE INDEX" == actual
 
 
 def test_drop_table():
-    sql = """DROP TABLE mytable"""
-    actual = extract_signature(sql)
+    sql_statement = """DROP TABLE mytable"""
+    actual = extract_signature(sql_statement)
 
     assert "DROP TABLE" == actual
 
 
 def test_multi_statement_sql():
-    sql = """CREATE TABLE mytable; SELECT * FROM mytable; DROP TABLE mytable"""
-    actual = extract_signature(sql)
+    sql_statement = """CREATE TABLE mytable; SELECT * FROM mytable; DROP TABLE mytable"""
+    actual = extract_signature(sql_statement)
 
     assert "CREATE TABLE" == actual
+
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
@@ -289,3 +293,35 @@ def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
         assert 'db' in span['context']
         assert span['context']['db']['type'] == 'sql'
         assert span['context']['db']['statement'] == query
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+@pytest.mark.skipif(not has_sql_module, reason="psycopg2.sql module missing")
+def test_psycopg2_composable_query_works(postgres_connection, elasticapm_client):
+    """
+    Check that we parse queries that are psycopg2.sql.Composable correctly
+    """
+    control.instrument()
+    cursor = postgres_connection.cursor()
+    query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
+        table=sql.Identifier('test'),
+        row=sql.Identifier('name'),
+    )
+    baked_query = query.as_string(cursor.__wrapped__)
+    result = None
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        cursor.execute(query)
+        result = cursor.fetchall()
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        # make sure we've cleared out the spans for the other tests.
+        assert [(2, 'two'), (3, 'three')] == result
+        transactions = elasticapm_client.instrumentation_store.get_all()
+        spans = transactions[0]['spans']
+        span = spans[0]
+        assert span['name'] == 'SELECT FROM test'
+        assert 'db' in span['context']
+        assert span['context']['db']['type'] == 'sql'
+        assert span['context']['db']['statement'] == baked_query
