@@ -293,11 +293,11 @@ With this setting, you can limit the length of lists in local variables.
 [[config-source-lines-error-app-frames]]
 ==== `source_lines_error_app_frames`
 [float]
-[[config-source-lines-span-app-frames]]
-==== `source_lines_span_app_frames`
-[float]
 [[config-source-lines-error-library-frames]]
 ==== `source_lines_error_library_frames`
+[float]
+[[config-source-lines-span-app-frames]]
+==== `source_lines_span_app_frames`
 [float]
 [[config-source-lines-span-library-frames]]
 ==== `source_lines_span_library_frames`
@@ -305,19 +305,17 @@ With this setting, you can limit the length of lists in local variables.
 |============
 | Environment                                     | Django/Flask                        | Default
 | `ELASTIC_APM_SOURCE_LINES_ERROR_APP_FRAMES`     | `SOURCE_LINES_ERROR_APP_FRAMES`     | `5`
-| `ELASTIC_APM_SOURCE_LINES_SPAN_APP_FRAMES`      | `SOURCE_LINES_SPAN_APP_FRAMES`      | `5`
 | `ELASTIC_APM_SOURCE_LINES_ERROR_LIBRARY_FRAMES` | `SOURCE_LINES_ERROR_LIBRARY_FRAMES` | `5`
+| `ELASTIC_APM_SOURCE_LINES_SPAN_APP_FRAMES`      | `SOURCE_LINES_SPAN_APP_FRAMES`      | `0`
 | `ELASTIC_APM_SOURCE_LINES_SPAN_LIBRARY_FRAMES`  | `SOURCE_LINES_SPAN_LIBRARY_FRAMES`  | `0`
 |============
 
-By default, the APM agent collects source code snippets for
-
- * errors, both library frames and in-app frames
- * transaction spans, only for in-app frames.
- 
+By default, the APM agent collects source code snippets for errors.
 With the above settings, you can modify how many lines of source code is collected.
 
-WARNING: Especially for transactions, collecting source code can have a large impact on storage use in your Elasticsearch cluster.
+We differ between errors and spans, as well as library frames and app frames.
+
+WARNING: Especially for spans, collecting source code can have a large impact on storage use in your Elasticsearch cluster.
 
 [float]
 [[config-flush-interval]]

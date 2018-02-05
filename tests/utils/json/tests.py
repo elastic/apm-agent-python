@@ -4,8 +4,8 @@ from __future__ import absolute_import
 import datetime
 import uuid
 
-from elasticapm.utils import json_encoder as json
 from elasticapm.utils import compat
+from elasticapm.utils import json_encoder as json
 
 
 def test_uuid():

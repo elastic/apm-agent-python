@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import os
+import pkgutil
 
 import pytest
 from mock import Mock
@@ -113,3 +114,37 @@ def test_get_frame_info():
     assert frame_info['lineno'] == 6
     assert frame_info['context_line'] == '    return inspect.currentframe()'
     assert frame_info['vars'] == {'a_local_var': 42}
+
+
+@pytest.mark.parametrize("lineno,context,expected", [
+    (10, 5, (['5', '6', '7', '8', '9'], '10', ['11', '12', '13', '14', '15'])),
+    (1, 5, ([], '1', ['2', '3', '4', '5', '6'])),
+    (2, 5, (['1'], '2', ['3', '4', '5', '6', '7'])),
+    (20, 5, (['15', '16', '17', '18', '19'], '20', [])),
+    (19, 5, (['14', '15', '16', '17', '18'], '19', ['20'])),
+    (1, 0, ([], '1', [])),
+    (21, 0, (None, None, None)),
+])
+def test_get_lines_from_file(lineno, context, expected):
+    stacks.get_lines_from_file.cache_clear()
+    fname = os.path.join(os.path.dirname(__file__), 'linenos.py')
+    result = stacks.get_lines_from_file(fname, lineno, context)
+    assert result == expected
+
+
+@pytest.mark.parametrize("lineno,context,expected", [
+    (10, 5, (['5', '6', '7', '8', '9'], '10', ['11', '12', '13', '14', '15'])),
+    (1, 5, ([], '1', ['2', '3', '4', '5', '6'])),
+    (2, 5, (['1'], '2', ['3', '4', '5', '6', '7'])),
+    (20, 5, (['15', '16', '17', '18', '19'], '20', [])),
+    (19, 5, (['14', '15', '16', '17', '18'], '19', ['20'])),
+    (1, 0, ([], '1', [])),
+    (21, 0, (None, None, None)),
+])
+def test_get_lines_from_loader(lineno, context, expected):
+    stacks.get_lines_from_file.cache_clear()
+    module = 'tests.utils.stacks.linenos'
+    loader = pkgutil.get_loader(module)
+    fname = os.path.join(os.path.dirname(__file__), 'linenos.py')
+    result = stacks.get_lines_from_file(fname, lineno, context, loader=loader, module_name=module)
+    assert result == expected
