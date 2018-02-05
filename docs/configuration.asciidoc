@@ -318,6 +318,29 @@ We differ between errors and spans, as well as library frames and app frames.
 WARNING: Especially for spans, collecting source code can have a large impact on storage use in your Elasticsearch cluster.
 
 [float]
+[[config-capture-body]]
+==== `capture_body`
+
+|============
+| Environment                | Django/Flask   | Default
+| `ELASTIC_APM_CAPTURE_BODY` | `CAPTURE_BODY` | `off`
+|============
+
+For transactions that are HTTP requests,
+the Python agent can optionally capture the request body (e.g. `POST` variables).
+
+Possible values: `errors`, `transactions`, `all`, `off`.
+
+If the request has a body and this setting is disabled, the body will be shown as `[REDACTED]`.
+
+For requests with a content type of `multipart/form-data`,
+any uploaded files will be referenced in a special `_files` key.
+It contains the name of the field, and the name of the uploaded file, if provided.
+
+WARNING: request bodies often contain sensitive values like passwords, credit card numbers etc.
+If your service handles data like this, we advise to only enable this feature with care.
+
+[float]
 [[config-flush-interval]]
 ==== `flush_interval`
 

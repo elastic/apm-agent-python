@@ -1,6 +1,21 @@
 import mock
+import pytest
 
 from elasticapm.utils import compat
+
+try:
+    from werkzeug.datastructures import MultiDict
+    has_multidict = True
+except ImportError:
+    has_multidict = False
+
+try:
+    from django.utils.datastructures import MultiValueDict
+    has_multivaluedict = True
+except ImportError:
+    has_multivaluedict = False
+
+
 
 
 @mock.patch('platform.system')
@@ -21,3 +36,21 @@ def test_default_library_paths(version_tuple, python_implementation, system):
         python_implementation.return_value = implementation
 
         assert compat.get_default_library_patters() == expected
+
+
+@pytest.mark.skipif(not has_multivaluedict, reason='Django not installed')
+def test_multivalue_dict():
+    d = MultiValueDict()
+    d.update({'a': 'b', 'b': 'd'})
+    d.update({'a': 'c', 'e': 'f'})
+    d = compat.multidict_to_dict(d)
+    assert d == {'a': ['b', 'c'], 'b': 'd', 'e': 'f'}
+
+
+@pytest.mark.skipif(not has_multidict, reason='Werkzeug not installed')
+def test_multi_dict():
+    d = MultiDict()
+    d.update({'a': 'b', 'b': 'd'})
+    d.update({'a': 'c', 'e': 'f'})
+    d = compat.multidict_to_dict(d)
+    assert d == {'a': ['b', 'c'], 'b': 'd', 'e': 'f'}

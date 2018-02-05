@@ -94,27 +94,10 @@ class DjangoClient(Client):
 
         return user_info
 
-    def get_data_from_request(self, request):
-        if request.method != 'GET':
-            try:
-                if hasattr(request, 'body'):
-                    # Django 1.4+
-                    raw_data = request.body
-                else:
-                    raw_data = request.raw_post_data
-                data = raw_data if raw_data else request.POST
-            except Exception:
-                # assume we had a partial read:
-                data = '<unavailable>'
-        else:
-            data = None
-
-        environ = request.META
-
+    def get_data_from_request(self, request, capture_body=False):
         result = {
-            'body': data,
-            'env': dict(get_environ(environ)),
-            'headers': dict(get_headers(environ)),
+            'env': dict(get_environ(request.META)),
+            'headers': dict(get_headers(request.META)),
             'method': request.method,
             'socket': {
                 'remote_address': request.META.get('REMOTE_ADDR'),
@@ -122,6 +105,22 @@ class DjangoClient(Client):
             },
             'cookies': dict(request.COOKIES),
         }
+
+        if request.method not in ('GET', 'HEAD'):
+            content_type = request.META.get('CONTENT_TYPE')
+            if content_type == 'application/x-www-form-urlencoded':
+                data = compat.multidict_to_dict(request.POST)
+            elif content_type.startswith('multipart/form-data'):
+                data = compat.multidict_to_dict(request.POST)
+                if request.FILES:
+                    data['_files'] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+            else:
+                try:
+                    data = request.body
+                except Exception:
+                    data = '<unavailable>'
+
+            result['body'] = data if (capture_body or not data) else '[REDACTED]'
 
         if hasattr(request, 'get_raw_uri'):
             # added in Django 1.9
@@ -158,7 +157,8 @@ class DjangoClient(Client):
 
         is_http_request = isinstance(request, HttpRequest)
         if is_http_request:
-            context['request'] = self.get_data_from_request(request)
+            context['request'] = self.get_data_from_request(request,
+                                                            capture_body=self.config.capture_body in ('all', 'errors'))
             context['user'] = self.get_user_info(request)
 
         result = super(DjangoClient, self).capture(event_type, **kwargs)

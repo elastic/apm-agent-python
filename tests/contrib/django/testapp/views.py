@@ -9,6 +9,10 @@ from django.shortcuts import get_object_or_404, render, render_to_response
 from elasticapm.traces import capture_span
 
 
+class MyException(Exception):
+    pass
+
+
 class IgnoredException(Exception):
     skip_elasticapm = True
 
@@ -24,11 +28,11 @@ def fake_login(request):
 
 
 def django_exc(request):
-    return get_object_or_404(Exception, pk=1)
+    return get_object_or_404(MyException, pk=1)
 
 
 def raise_exc(request):
-    raise Exception(request.GET.get('message', 'view exception'))
+    raise MyException(request.GET.get('message', 'view exception'))
 
 
 def raise_ioerror(request):

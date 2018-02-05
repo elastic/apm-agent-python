@@ -89,7 +89,10 @@ class ElasticAPM(object):
 
         self.client.capture_exception(
             exc_info=kwargs.get('exc_info'),
-            context={'request': get_data_from_request(request)},
+            context={'request': get_data_from_request(
+                request,
+                capture_body=self.client.config.capture_body in ('errors', 'all')
+            )},
             custom={
                 'app': self.app,
             },
@@ -133,8 +136,11 @@ class ElasticAPM(object):
     def request_finished(self, app, response):
         rule = request.url_rule.rule if request.url_rule is not None else ""
         rule = build_name_with_http_method_prefix(rule, request)
-        request_data = get_data_from_request(request)
-        response_data = get_data_from_response(response)
+        request_data = lambda: get_data_from_request(
+            request,
+            capture_body=self.client.config.capture_body in ('transactions', 'all')
+        )
+        response_data = lambda: get_data_from_response(response)
         elasticapm.set_context(request_data, 'request')
         elasticapm.set_context(response_data, 'response')
         if response.status_code:
