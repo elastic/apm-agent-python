@@ -166,6 +166,7 @@ class Config(_ConfigBase):
     source_lines_span_library_frames = _ConfigValue('SOURCE_LINES_SPAN_LIBRARY_FRAMES', type=int, default=0)
     local_var_max_length = _ConfigValue('LOCAL_VAR_MAX_LENGTH', type=int, default=200)
     local_var_list_max_length = _ConfigValue('LOCAL_VAR_LIST_MAX_LENGTH', type=int, default=10)
+    capture_body = _ConfigValue('CAPTURE_BODY', default='off')
     async_mode = _BoolConfigValue('ASYNC_MODE', default=True)
     instrument_django_middleware = _BoolConfigValue('INSTRUMENT_DJANGO_MIDDLEWARE', default=True)
     transactions_ignore_patterns = _ListConfigValue('TRANSACTIONS_IGNORE_PATTERNS', default=[])

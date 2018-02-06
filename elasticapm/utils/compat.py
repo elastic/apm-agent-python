@@ -67,6 +67,11 @@ if PY2:
 
     def iteritems(d, **kwargs):
         return d.iteritems(**kwargs)
+
+    # for django.utils.datastructures.MultiValueDict
+    def iterlists(d, **kw):
+        return d.iterlists(**kw)
+
 else:
     import io
     import queue  # noqa F401
@@ -93,12 +98,14 @@ else:
     def iteritems(d, **kwargs):
         return iter(d.items(**kwargs))
 
+    # for django.utils.datastructures.MultiValueDict
+    def iterlists(d, **kw):
+        return iter(d.lists(**kw))
+
 
 def get_default_library_patters():
     """
     Returns library paths depending on the used platform.
-
-    TODO: ensure that this works correctly on Windows
 
     :return: a list of glob paths
     """
@@ -114,3 +121,16 @@ def get_default_library_patters():
         if system == 'Windows':
             return [r'*\lib\*']
         return ['*/lib/python%s.%s/*' % python_version[:2], '*/lib64/python%s.%s/*' % python_version[:2]]
+
+
+def multidict_to_dict(d):
+    """
+    Turns a werkzeug.MultiDict or django.MultiValueDict into a dict with
+    list values
+    :param d: a MultiDict or MultiValueDict instance
+    :return: a dict instance
+    """
+    return dict(
+        (k, v[0] if len(v) == 1 else v)
+        for k, v in iterlists(d)
+    )

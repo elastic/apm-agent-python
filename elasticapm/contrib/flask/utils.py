@@ -1,22 +1,11 @@
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    # Python 2
-    from urllib import urlencode
+from werkzeug.exceptions import ClientDisconnected
 
 from elasticapm.utils import compat, get_url_dict
 from elasticapm.utils.wsgi import get_environ, get_headers
 
 
-def get_data_from_request(request):
-    body = None
-    if request.data:
-        body = request.data
-    elif request.form:
-        body = urlencode(request.form)
-
+def get_data_from_request(request, capture_body=False):
     result = {
-        'body': body,
         'env': dict(get_environ(request.environ)),
         'headers': dict(
             get_headers(request.environ),
@@ -28,9 +17,27 @@ def get_data_from_request(request):
         },
         'cookies': request.cookies,
     }
+    if request.method not in ('GET', 'HEAD'):
+        body = None
+        if request.content_type == 'application/x-www-form-urlencoded':
+            body = compat.multidict_to_dict(request.form)
+        elif request.content_type.startswith('multipart/form-data'):
+            body = compat.multidict_to_dict(request.form)
+            if request.files:
+                body['_files'] = {
+                    field: val[0].filename if len(val) == 1 else [f.filename for f in val]
+                    for field, val in compat.iterlists(request.files)
+                }
+        else:
+            try:
+                body = request.data
+            except ClientDisconnected:
+                pass
+
+        if body is not None:
+            result['body'] = body if capture_body else '[REDACTED]'
 
     result['url'] = get_url_dict(request.url)
-
     return result
 
 
