@@ -1,11 +1,9 @@
-= APM Python Agent Reference (Beta)
+= APM Python Agent Reference
 
 [[getting-started]]
 == Getting started
 
 Welcome to the APM Python agent docs.
-
-NOTE: The documentation pages are still work in progress. For more details also check the APM Python Agent https://github.com/elastic/apm-agent-python[GitHub repository].
 
 The Elastic APM Python agent sends performance metrics and error logs to the APM Server.
 It has built-in support for Django and Flask performance metrics and error logging, as well as generic support of other WSGI frameworks for error logging.
