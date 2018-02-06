@@ -6,11 +6,16 @@
 [[changelog]]
 == Changelog
 
+//
+//[[release-next]]
+//[float]
+//=== Unreleased
+//https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the HEAD diff]
 
-[[release-next]]
+[[release-2.0.0]]
 [float]
-=== Unreleased
-https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the HEAD diff]
+=== v2.0.0
+https://github.com/elastic/apm-agent-python/compare/v1.0.0\...v2.0.0[Check the diff]
 
  * moved the library-frame detection from a processor to the stacktrace collection ({pull}113[#113]).
  * added settings to enable/disable source code collection and local variables collection
@@ -50,7 +55,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
 [[release-1.0.0]]
 [float]
 === v1.0.0
-https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...v1.0.0[Check the HEAD diff]
+https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...v1.0.0[Check the diff]
 
  * added `max-event-queue-length` setting. ({pull}67[#67])
  * changed name that the agent reports itself with to the APM server from `elasticapm-python` to `python`. This aligns the Python agent with other languages. ({pull}104[#104])
