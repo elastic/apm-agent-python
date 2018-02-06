@@ -1,9 +1,12 @@
 import pytest  # isort:skip
 pytest.importorskip("flask")  # isort:skip
 
+import os
+
 import mock
 
 from elasticapm.contrib.flask import ElasticAPM
+from elasticapm.utils import compat
 
 
 def test_error_handler(flask_apm_client):
@@ -35,7 +38,7 @@ def test_get(flask_apm_client):
     assert request['url']['full'] == 'http://localhost/an-error/?foo=bar'
     assert request['url']['search'] == '?foo=bar'
     assert request['method'] == 'GET'
-    assert request['body'] == None
+    assert 'body' not in request
     assert 'headers' in request
     headers = request['headers']
     assert 'content-length' in headers, headers.keys()
@@ -70,6 +73,11 @@ def test_get_debug_elasticapm(flask_apm_client):
     assert len(flask_apm_client.client.events) == 1
 
 
+@pytest.mark.parametrize('elasticapm_client', [
+    {'capture_body': 'errors'},
+    {'capture_body': 'all'},
+    {'capture_body': 'off'},
+], indirect=True)
 def test_post(flask_apm_client):
     client = flask_apm_client.app.test_client()
     response = client.post('/an-error/?biz=baz', data={'foo': 'bar'})
@@ -83,7 +91,10 @@ def test_post(flask_apm_client):
     assert request['url']['full'] == 'http://localhost/an-error/?biz=baz'
     assert request['url']['search'] == '?biz=baz'
     assert request['method'] == 'POST'
-    assert request['body'] == 'foo=bar'
+    if flask_apm_client.client.config.capture_body in ('errors', 'all'):
+        assert request['body'] == {'foo': 'bar'}
+    else:
+        assert request['body'] == '[REDACTED]'
     assert 'headers' in request
     headers = request['headers']
     assert 'content-length' in headers, headers.keys()
@@ -99,10 +110,15 @@ def test_post(flask_apm_client):
     assert env['SERVER_PORT'] == '80'
 
 
+@pytest.mark.parametrize('elasticapm_client', [
+    {'capture_body': 'transactions'},
+    {'capture_body': 'all'},
+    {'capture_body': 'off'},
+], indirect=True)
 def test_instrumentation(flask_apm_client):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().post('/users/')
+        resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
 
     assert resp.status_code == 200, resp.response
 
@@ -115,6 +131,10 @@ def test_instrumentation(flask_apm_client):
     assert 'request' in transaction['context']
     assert transaction['context']['request']['url']['full'] == 'http://localhost/users/'
     assert transaction['context']['request']['method'] == 'POST'
+    if flask_apm_client.client.config.capture_body in ('transactions', 'all'):
+        assert transaction['context']['request']['body'] == {'foo': 'bar'}
+    else:
+        assert transaction['context']['request']['body'] == '[REDACTED]'
     assert transaction['context']['response']['status_code'] == 200
     assert transaction['context']['response']['headers'] == {
         'foo': 'bar;baz',
@@ -166,3 +186,32 @@ def test_framework_name(flask_app):
     assert elasticapm.client.config.framework_name == 'flask'
     app_info = elasticapm.client.get_service_info()
     assert app_info['framework']['name'] == 'flask'
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'capture_body': 'errors'},
+    {'capture_body': 'all'},
+    {'capture_body': 'off'},
+], indirect=True)
+def test_post_files(flask_apm_client):
+    with open(os.path.abspath(__file__), mode='rb') as f:
+        response = flask_apm_client.app.test_client().post('/an-error/', data={
+            'foo': ['bar', 'baz'],
+            'f1': (compat.BytesIO(compat.b('1')),'bla'),
+            'f2': [(f, 'flask_tests.py'), (compat.BytesIO(compat.b('1')), 'blub')],
+        })
+    assert response.status_code == 500
+    assert len(flask_apm_client.client.events) == 1
+
+    event = flask_apm_client.client.events.pop(0)['errors'][0]
+    print(flask_apm_client.client.config.capture_body)
+    if flask_apm_client.client.config.capture_body in ('errors', 'all'):
+        assert event['context']['request']['body'] == {
+            'foo': ['bar', 'baz'],
+            '_files': {
+                'f1': 'bla',
+                'f2': ['flask_tests.py', 'blub'],
+            }
+        }
+    else:
+        assert event['context']['request']['body'] == '[REDACTED]'

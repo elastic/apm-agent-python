@@ -24,6 +24,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the H
  * added options for configuring the amount of context lines that are captured with each frame ({pull}136[#136])
  * added support for tracing queries formatted as http://initd.org/psycopg/docs/sql.html[`psycopg2.sql.SQL`] objects ({pull}148[#148])
  * switched to `time.perf_counter` as timing function on Python 3 ({pull}138[#138])
+ * added option to disable capturing of request body ({pull}151[#151])
  * BREAKING: Several settings and APIs have been renamed ({pull}111[#111], {pull}119[#119], {pull}143[#143]):
  ** The decorator for custom instrumentation, `elasticapm.trace`, is now `elasticapm.capture_span`
  ** The setting `traces_send_frequency` has been renamed to `flush_interval`.
