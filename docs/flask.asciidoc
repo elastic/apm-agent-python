@@ -17,6 +17,8 @@ $ pip install elastic-apm[flask]
 
 or add `elastic-apm[flask]` to your project's `requirements.txt` file.
 
+NOTE: For apm-server 6.2+, make sure you use version 2.0 or higher of `elastic-apm`.
+
 NOTE: If you use Flask with uwsgi, make sure to
 http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads[enable
 threads].
