@@ -1030,7 +1030,10 @@ def test_perf_database_render_no_instrumentation(benchmark, django_elasticapm_cl
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize('django_elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
+@pytest.mark.parametrize('django_elasticapm_client', [{
+    '_wait_to_first_send': 100,
+    'flush_interval': 100
+}], indirect=True)
 def test_perf_transaction_with_collection(benchmark, django_elasticapm_client):
     django_elasticapm_client.instrumentation_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:

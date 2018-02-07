@@ -39,3 +39,4 @@ include::./sanitizing-data.asciidoc[Sanitizing Data]
 include::./run-tests-locally.asciidoc[Run Tests Locally]
 
 include::./api.asciidoc[API documentation]
+include::./tuning.asciidoc[Tuning and Overhead considerations]
