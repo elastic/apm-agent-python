@@ -37,6 +37,7 @@ matrix:
     perl: "5.26"
 
   - stage: build
+    if: tag =~ ^v\d # only build if this is a version-tag
     dist: trusty
     python: 3.6
     sudo: required
