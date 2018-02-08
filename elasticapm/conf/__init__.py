@@ -155,7 +155,7 @@ class Config(_ConfigBase):
         'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
     ])
-    flush_interval = _ConfigValue('FLUSH_INTERVAL', type=int, default=60)
+    flush_interval = _ConfigValue('FLUSH_INTERVAL', type=int, default=10)
     transaction_sample_rate = _ConfigValue('TRANSACTION_SAMPLE_RATE', type=float, default=1.0)
     transaction_max_spans = _ConfigValue('TRANSACTION_MAX_SPANS', type=int, default=500)
     max_queue_size = _ConfigValue('MAX_QUEUE_SIZE', type=int, default=500)
