@@ -1,0 +1,75 @@
+[[tuning-and-overhead]]
+== Tuning and Overhead considerations
+
+Using an APM solution comes with certain trade-offs, and the Python agent for Elastic APM is no different.
+Instrumenting your code, measuring timings, recording context data etc. all need resources: 
+
+ * CPU time
+ * memory
+ * bandwidth use
+ * Elasticsearch storage
+
+We invested and continue to invest a lot of effort to keep the overhead of using Elastic APM as low as possible.
+But because every deployment is different, there are some knobs you can turn to adapt it to your specific needs.
+
+[float]
+[[tuning-sample-rate]]
+=== Transaction Sample Rate
+
+The most straight forward way to reduce the overhead of the agent is to tell the agent to do less.
+If you set the <<config-transaction-sample-rate,`transaction_sample_rate`>> to a value below `1.0`,
+the agent will randomly sample only a subset of transactions.
+If a transaction is not sampled, the agent has to do a lot less work,
+as we only record the the name of the transaction, the overall transaction time and the result for unsampled transactions.
+
+[options="header"]
+|============
+|        Field      | Sampled   | Unsampled
+| Transaction name  | yes       | yes
+| Duration          | yes       | yes
+| Result            | yes       | yes
+| Context           | yes       | no
+| Tags              | yes       | no
+| Spans             | yes       | no
+|============
+
+Reducing the sample rate to a fraction of all transactions can make a huge difference in all four of the mentioned resource types.
+
+[float]
+[[tuning-queue]]
+=== Transaction Queue
+
+To reduce the load on the APM Server, the agent does not send every transaction up as it happens.
+Instead, it queues them up, and flushes the queue periodically, or when it reaches a maximum size, using a background thread.
+
+While this reduces the load on the APM Server (and to a certain extent on the agent),
+holding on to the transaction data in a queue uses memory.
+If you notice that using the Python agent results in a large increase of memory use,
+you can use these settings:
+
+ * <<config-flush-interval,`flush_interval`>> to reduce the time between queue flushes
+ * <<config-max-queue-size,`max_queue_size`>> to reduce the maximum size of the queue
+
+The first setting, `flush_interval`, is helpful if you have a sustained high number of transactions.
+The second setting, `max_queue_size`, can help if you experience peaks of transactions
+(a large amount of transactions in a short period of time).
+
+Keep in mind that reducing the value of either setting will cause the agent to send more HTTP requests to the APM Server,
+potentially causing a higher load.
+
+
+[float]
+[[tuning-max-spans]]
+=== Spans per transaction
+
+The average amount of spans per transaction can influence how much time the agent spends in each transaction collecting contextual data for each span,
+and the the storage space needed in Elasticsearch.
+In our experience, most usual transactions should have well below 100 spans.
+In some cases however, the number of spans can explode:
+
+ * long-running transactions
+ * unoptimized code, e.g. doing hundreds of SQL queries in a loop
+ 
+To avoid that such edge cases overload both the agent and the APM Server,
+the agent stops recording spans when a limit is reached.
+You can configure this limit by changing the <<config-transaction-max-spans,`transaction_max_spans`>> setting.

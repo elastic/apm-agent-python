@@ -346,7 +346,7 @@ If your service handles data like this, we advise to only enable this feature wi
 
 |============
 | Environment                  | Django/Flask     | Default
-| `ELASTIC_APM_FLUSH_INTERVAL` | `FLUSH_INTERVAL` | `60`
+| `ELASTIC_APM_FLUSH_INTERVAL` | `FLUSH_INTERVAL` | `10`
 |============
 
 Interval with which transactions should be sent to the APM server, in seconds.
@@ -374,8 +374,8 @@ Setting an upper limit will prevent overloading the agent and the APM server wit
 ==== `max_queue_size`
 
 |============
-| Environment                          | Django/Flask     | Default
-| `ELASTIC_APM_MAX_EVENT_QUEUE_LENGTH` | `MAX_QUEUE_SIZE` | `500`
+| Environment                  | Django/Flask     | Default
+| `ELASTIC_APM_MAX_QUEUE_SIZE` | `MAX_QUEUE_SIZE` | `500`
 |============
 
 Maximum queue length of transactions before sending transactions to the APM server.
@@ -404,6 +404,19 @@ For more information, see <<sanitizing-data, Sanitizing Data>>.
 
 WARNING: We recommend to always include the default set of validators if you customize this setting.
 
+
+[float]
+[[config-transaction-sample-rate]]
+==== `transaction_sample_rate`
+
+|============
+| Environment                           | Django/Flask              | Default
+| `ELASTIC_APM_TRANSACTION_SAMPLE_RATE` | `TRANSACTION_SAMPLE_RATE` | `1.0`
+|============
+
+By default, the agent will sample every transaction (e.g. request to your service).
+To reduce overhead and storage requirements, you can set the sample rate to a value between `0.0` and `1.0`.
+We still record overall time and the result for unsampled transactions, but no context information, tags, or spans.
 
 [float]
 [[config-include-paths]]
