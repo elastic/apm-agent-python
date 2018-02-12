@@ -1,0 +1,4 @@
+[flake8]
+exclude=elasticapm/utils/wrapt,build,src,tests,dist,conftest.py,setup.py
+max-line-length=120
+ignore=E731
