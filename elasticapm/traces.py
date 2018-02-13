@@ -8,7 +8,7 @@ import timeit
 import uuid
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, get_name_from_func
+from elasticapm.utils import compat, encoding, get_name_from_func
 
 __all__ = ('capture_span', 'tag', 'set_transaction_name', 'set_custom_context', 'set_user_context')
 
@@ -112,10 +112,10 @@ class Transaction(object):
         self.context['tags'] = self.tags
         result = {
             'id': self.id,
-            'name': self.name,
-            'type': self.transaction_type,
+            'name': encoding.keyword_field(self.name),
+            'type': encoding.keyword_field(self.transaction_type),
             'duration': self.duration * 1000,  # milliseconds
-            'result': str(self.result),
+            'result': encoding.keyword_field(str(self.result)),
             'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             'sampled': self.is_sampled,
         }
@@ -159,8 +159,8 @@ class Span(object):
     def to_dict(self):
         return {
             'id': self.idx,
-            'name': self.name,
-            'type': self.type,
+            'name': encoding.keyword_field(self.name),
+            'type': encoding.keyword_field(self.type),
             'start': self.start_time * 1000,  # milliseconds
             'duration': self.duration * 1000,  # milliseconds
             'parent': self.parent,
@@ -278,7 +278,7 @@ def tag(**tags):
             error_logger.warning("Ignored tag %s. No transaction currently active.", name)
             return
         if TAG_RE.match(name):
-            transaction.tags[compat.text_type(name)] = compat.text_type(value)
+            transaction.tags[compat.text_type(name)] = encoding.keyword_field(compat.text_type(value))
         else:
             error_logger.warning("Ignored tag %s. Tag names can't contain stars, dots or double quotes.", name)
 
@@ -308,9 +308,9 @@ set_custom_context = functools.partial(set_context, key='custom')
 def set_user_context(username=None, email=None, user_id=None):
     data = {}
     if username is not None:
-        data['username'] = username
+        data['username'] = encoding.keyword_field(username)
     if email is not None:
-        data['email'] = email
+        data['email'] = encoding.keyword_field(email)
     if user_id is not None:
-        data['id'] = user_id
+        data['id'] = encoding.keyword_field(user_id)
     set_context(data, 'user')

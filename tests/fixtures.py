@@ -35,6 +35,7 @@ class ValidatingWSGIApp(ContentServer):
     def __init__(self, **kwargs):
         super(ValidatingWSGIApp, self).__init__(**kwargs)
         self.payloads = []
+        self.responses = []
         self.skip_validate = False
 
     def __call__(self, environ, start_response):
@@ -61,6 +62,7 @@ class ValidatingWSGIApp(ContentServer):
         response.headers.clear()
         response.headers.extend(self.headers)
         response.data = content
+        self.responses.append({'code': code, 'content': content})
         return response(environ, start_response)
 
 
