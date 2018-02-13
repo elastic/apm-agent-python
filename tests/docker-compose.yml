@@ -100,15 +100,6 @@ services:
       ES_6_URL: 'http://elasticsearch6:9200'
       ES_5_URL: 'http://elasticsearch5:9200'
       ES_2_URL: 'http://elasticsearch2:9200'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongodb:
-        condition: service_started
-      memcached:
-        condition: service_started
-      redis:
-        condition: service_started
 
 
 volumes:
