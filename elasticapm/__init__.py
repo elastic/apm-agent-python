@@ -18,7 +18,7 @@ except Exception as e:
     VERSION = 'unknown'
 
 from elasticapm.base import Client
-from elasticapm.conf import setup_logging
-from elasticapm.instrumentation.control import instrument, uninstrument
-from elasticapm.traces import (capture_span, set_context, set_custom_context,
-                               set_transaction_name, set_user_context, tag)
+from elasticapm.conf import setup_logging  # noqa: F401
+from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
+from elasticapm.traces import capture_span, set_context, set_custom_context  # noqa: F401
+from elasticapm.traces import set_transaction_name, set_user_context, tag  # noqa: F401

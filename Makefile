@@ -5,7 +5,7 @@ isort:
 	isort -rc -vb .
 
 flake8:
-	flake8 elasticapm
+	flake8
 
 test:
 	if [[ "$$PYTHON_VERSION" =~ ^(3.5|3.6|nightly|pypy3)$$ ]] ; then \
