@@ -1,6 +1,7 @@
 import asyncio
 
 import aiohttp
+import async_timeout
 
 from .base import TransportException
 from .http_base import HTTPTransportBase
@@ -23,7 +24,7 @@ class AsyncioHTTPTransport(HTTPTransportBase):
         """Use synchronous interface, because this is a coroutine."""
 
         try:
-            with aiohttp.Timeout(timeout):
+            with async_timeout.timeout(timeout):
                 async with self.client.post(self._url,
                                             data=data,
                                             headers=headers) as response:

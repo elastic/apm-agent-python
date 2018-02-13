@@ -6,11 +6,13 @@
 [[changelog]]
 == Changelog
 
-//
-//[[release-next]]
-//[float]
-//=== Unreleased
-//https://github.com/elastic/apm-agent-python/compare/v1.0.0\...master[Check the HEAD diff]
+
+[[release-next]]
+[float]
+=== Unreleased
+https://github.com/elastic/apm-agent-python/compare/v2.0.0\...master[Check the HEAD diff]
+
+ * fixed compatibility issue with aiohttp 3.0 ({pull}157[#157])
 
 [[release-2.0.0]]
 [float]
