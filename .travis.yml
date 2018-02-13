@@ -28,11 +28,6 @@ matrix:
     script: pip install isort && isort -c -df && echo "OK"
 
   - stage: linters
-    env: LINTER="flake8"
-    python: 3.6
-    script: pip install -U flake8 flake8-per-file-ignores && flake8 elasticapm
-
-  - stage: linters
     script: make docs
     perl: "5.26"
 
