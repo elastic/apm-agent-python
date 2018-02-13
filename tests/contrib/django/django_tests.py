@@ -1164,7 +1164,7 @@ def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
     {'capture_body': 'off'},
 ], indirect=True)
 def test_capture_post_errors_dict(client, django_elasticapm_client):
-    with pytest.raises(Exception):
+    with pytest.raises(MyException):
         client.post(reverse('elasticapm-raise-exc'), {'username': 'john', 'password': 'smith'})
     error = django_elasticapm_client.events[0]
     if django_elasticapm_client.config.capture_body in ('errors', 'all'):
@@ -1180,7 +1180,7 @@ def test_capture_post_errors_dict(client, django_elasticapm_client):
     {'capture_body': 'off'},
 ], indirect=True)
 def test_capture_post_errors_multivalue_dict(client, django_elasticapm_client):
-    with pytest.raises(Exception):
+    with pytest.raises(MyException):
         client.post(reverse('elasticapm-raise-exc'), 'key=value1&key=value2&test=test&key=value3',
                     content_type='application/x-www-form-urlencoded')
     error = django_elasticapm_client.events[0]
@@ -1200,9 +1200,9 @@ def test_capture_post_errors_multivalue_dict(client, django_elasticapm_client):
 ], indirect=True)
 def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
     # use "sending" client to ensure that we encode the payload correctly
-    with pytest.raises(Exception):
-        client.post(reverse('elasticapm-raise-exc'), json.dumps({'a': 'b'}).encode('utf8'),
-                    content_type='application/json')
+    with pytest.raises(MyException):
+        client.post(reverse('elasticapm-raise-exc'), json.dumps({'a': 'b'}),
+                    content_type='application/json; charset=utf8')
     error = django_sending_elasticapm_client.httpserver.payloads[0]
     if django_sending_elasticapm_client.config.capture_body in ('errors', 'all'):
         assert error['errors'][0]['context']['request']['body'] == '{"a": "b"}'
@@ -1217,7 +1217,7 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
     {'capture_body': 'off'},
 ], indirect=True)
 def test_capture_empty_body(client, django_elasticapm_client):
-    with pytest.raises(Exception):
+    with pytest.raises(MyException):
         client.post(reverse('elasticapm-raise-exc'), data={})
     error = django_elasticapm_client.events[0]
     # body should be empty no matter if we capture it or not
