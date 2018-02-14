@@ -35,9 +35,7 @@ services:
       - "6379:6379"
 
   run_tests:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: apm-agent-python:${PYTHON_VERSION}
     environment:
       MONGODB_HOST: 'mongodb'
       REDIS_HOST: 'redis'
