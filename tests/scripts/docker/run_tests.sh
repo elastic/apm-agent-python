@@ -22,7 +22,7 @@ PYTHON_VERSION=${1} docker-compose run \
   -v "$(dirname $(pwd))":/app \
   --rm run_tests \
 	/bin/bash \
-  -c "./tests/scripts/run_tests.sh"
+  -c "timeout 5m ./tests/scripts/run_tests.sh"
 
 docker-compose down -v
 cd ..
