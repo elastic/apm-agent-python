@@ -10,13 +10,7 @@ Large portions are
 """
 import os
 
-from elasticapm.utils import compat
-
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
+from elasticapm.utils import compat, encoding
 
 default_ports = {
     "https": 433,
@@ -76,19 +70,19 @@ def is_master_process():
 
 
 def get_url_dict(url):
-    scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
+    scheme, netloc, path, params, query, fragment = compat.urlparse.urlparse(url)
     if ':' in netloc:
         hostname, port = netloc.split(':')
     else:
         hostname, port = (netloc, None)
     url_dict = {
-        'full': url,
+        'full': encoding.keyword_field(url),
         'protocol': scheme + ':',
-        'hostname': hostname,
-        'pathname': path,
+        'hostname': encoding.keyword_field(hostname),
+        'pathname': encoding.keyword_field(path),
     }
     if port:
         url_dict['port'] = port
     if query:
-        url_dict['search'] = '?' + query
+        url_dict['search'] = encoding.keyword_field('?' + query)
     return url_dict

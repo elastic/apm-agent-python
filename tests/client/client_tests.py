@@ -9,9 +9,9 @@ import pytest
 
 import elasticapm
 from elasticapm.base import Client, ClientState
-from elasticapm.transport.base import Transport, TransportException
-from elasticapm.utils import compat
-from elasticapm.utils.compat import urlparse
+from elasticapm.conf.constants import KEYWORD_MAX_LENGTH
+from elasticapm.transport.base import Transport
+from elasticapm.utils import compat, encoding
 
 
 def test_client_state_should_try_online():
@@ -404,7 +404,7 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
         secret_token='secret',
         async_mode=True,
     )
-    transport = client._get_transport(urlparse.urlparse('http://exampe.com'))
+    transport = client._get_transport(compat.urlparse.urlparse('http://exampe.com'))
     assert transport.async_mode is False
 
 
@@ -702,3 +702,67 @@ def test_transaction_context_is_used_in_errors(elasticapm_client):
     assert message['context']['tags'] == {'foo': 'baz'}
     assert 'a' in transaction.context['custom']
     assert 'foo' not in transaction.context['custom']
+
+
+def test_transaction_keyword_truncation(sending_elasticapm_client):
+    too_long = 'x' * (KEYWORD_MAX_LENGTH + 1)
+    expected = encoding.keyword_field(too_long)
+    assert too_long != expected
+    assert len(expected) == KEYWORD_MAX_LENGTH
+    assert expected[-1] != 'x'
+    sending_elasticapm_client.begin_transaction(too_long)
+    elasticapm.tag(val=too_long)
+    elasticapm.set_user_context(username=too_long, email=too_long, user_id=too_long)
+    with elasticapm.capture_span(name=too_long, span_type=too_long):
+        pass
+    sending_elasticapm_client.end_transaction(too_long, too_long)
+    sending_elasticapm_client.close()
+    assert sending_elasticapm_client.httpserver.responses[0]['code'] == 202
+    transaction = sending_elasticapm_client.httpserver.payloads[0]['transactions'][0]
+    span = transaction['spans'][0]
+
+    assert transaction['name'] == expected
+    assert transaction['type'] == expected
+    assert transaction['result'] == expected
+
+    assert transaction['context']['user']['id'] == expected
+    assert transaction['context']['user']['username'] == expected
+    assert transaction['context']['user']['email'] == expected
+
+    assert transaction['context']['tags']['val'] == expected
+
+    assert span['type'] == expected
+    assert span['name'] == expected
+
+
+def test_error_keyword_truncation(sending_elasticapm_client):
+    too_long = 'x' * (KEYWORD_MAX_LENGTH + 1)
+    expected = encoding.keyword_field(too_long)
+
+    # let's create a way too long Exception type with a way too long module name
+    WayTooLongException = type(too_long.upper(), (Exception,), {})
+    WayTooLongException.__module__ = too_long
+    try:
+        raise WayTooLongException()
+    except WayTooLongException:
+        sending_elasticapm_client.capture_exception()
+    error = sending_elasticapm_client.httpserver.payloads[0]['errors'][0]
+
+    assert error['exception']['type'] == expected.upper()
+    assert error['exception']['module'] == expected
+
+
+def test_message_keyword_truncation(sending_elasticapm_client):
+    too_long = 'x' * (KEYWORD_MAX_LENGTH + 1)
+    expected = encoding.keyword_field(too_long)
+    sending_elasticapm_client.capture_message(
+        param_message={'message': too_long, 'params': []},
+        logger_name=too_long,
+    )
+
+    error = sending_elasticapm_client.httpserver.payloads[0]['errors'][0]
+
+    assert error['log']['param_message'] == expected
+    assert error['log']['message'] == too_long  # message is not truncated
+
+    assert error['log']['logger_name'] == expected

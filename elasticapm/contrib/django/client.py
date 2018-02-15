@@ -21,7 +21,7 @@ from django.http import HttpRequest
 
 from elasticapm.base import Client
 from elasticapm.contrib.django.utils import iterate_with_template_sources
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import compat, encoding, get_url_dict
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
 
@@ -80,11 +80,11 @@ class DjangoClient(Client):
                 else:
                     user_info['is_authenticated'] = bool(user.is_authenticated)
             if hasattr(user, 'id'):
-                user_info['id'] = user.id
+                user_info['id'] = encoding.keyword_field(user.id)
             if hasattr(user, 'get_username'):
-                user_info['username'] = user.get_username()
+                user_info['username'] = encoding.keyword_field(user.get_username())
             elif hasattr(user, 'username'):
-                user_info['username'] = user.username
+                user_info['username'] = encoding.keyword_field(user.username)
 
             if hasattr(user, 'email'):
                 user_info['email'] = user.email

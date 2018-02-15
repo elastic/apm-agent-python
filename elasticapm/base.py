@@ -29,7 +29,7 @@ from elasticapm.transport.base import TransportException
 from elasticapm.utils import compat, is_master_process
 from elasticapm.utils import json_encoder as json
 from elasticapm.utils import stacks, varmap
-from elasticapm.utils.encoding import shorten, transform
+from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 
 __all__ = ('Client',)
@@ -111,6 +111,7 @@ class Client(object):
         self.filter_exception_types_dict = {}
         self._send_timer = None
         self._transports = {}
+        self._service_info = None
 
         self.config = Config(config, default_dict=defaults)
         if self.config.errors:
@@ -327,45 +328,48 @@ class Client(object):
             self.handle_transport_success(url=url)
 
     def get_service_info(self):
+        if self._service_info:
+            return self._service_info
         language_version = platform.python_version()
         if hasattr(sys, 'pypy_version_info'):
             runtime_version = '.'.join(map(str, sys.pypy_version_info[:3]))
         else:
             runtime_version = language_version
         result = {
-            'name': self.config.service_name,
-            'environment': self.config.environment,
-            'version': self.config.service_version,
+            'name': keyword_field(self.config.service_name),
+            'environment': keyword_field(self.config.environment),
+            'version': keyword_field(self.config.service_version),
             'agent': {
                 'name': 'python',
                 'version': elasticapm.VERSION,
             },
             'language': {
                 'name': 'python',
-                'version': platform.python_version(),
+                'version': keyword_field(platform.python_version()),
             },
             'runtime': {
-                'name': platform.python_implementation(),
-                'version': runtime_version,
+                'name': keyword_field(platform.python_implementation()),
+                'version': keyword_field(runtime_version),
             }
         }
         if self.config.framework_name:
             result['framework'] = {
-                'name': self.config.framework_name,
-                'version': self.config.framework_version,
+                'name': keyword_field(self.config.framework_name),
+                'version': keyword_field(self.config.framework_version),
             }
+        self._service_info = result
         return result
 
     def get_process_info(self):
         return {
             'pid': os.getpid(),
             'argv': sys.argv,
-            'title': None,
+            'title': None,  # Note: if we implement this, the value needs to be wrapped with keyword_field
         }
 
     def get_system_info(self):
         return {
-            'hostname': socket.gethostname(),
+            'hostname': keyword_field(socket.gethostname()),
             'architecture': platform.machine(),
             'platform': platform.system().lower(),
         }
