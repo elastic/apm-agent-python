@@ -7,13 +7,20 @@
 == Changelog
 
 
-[[release-next]]
+//[[release-next]]
+//[float]
+//=== Unreleased
+//https://github.com/elastic/apm-agent-python/compare/v2.0.1\...master[Check the HEAD diff]
+
+
+[[release-2.0.1]]
 [float]
-=== Unreleased
-https://github.com/elastic/apm-agent-python/compare/v2.0.0\...master[Check the HEAD diff]
+=== v2.0.1
+https://github.com/elastic/apm-agent-python/compare/v2.0.0\...v2.0.1[Check the diff]
 
  * fixed compatibility issue with aiohttp 3.0 ({pull}157[#157])
  * Added truncation for fields that have a `maxLength` in the JSON Schema ({pull}159[#159])
+
 
 [[release-2.0.0]]
 [float]
