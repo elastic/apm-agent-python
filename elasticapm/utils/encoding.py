@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 elasticapm.utils.encoding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -13,6 +15,7 @@ import datetime
 import uuid
 from decimal import Decimal
 
+from elasticapm.conf.constants import KEYWORD_MAX_LENGTH
 from elasticapm.utils import compat
 
 PROTECTED_TYPES = compat.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
@@ -165,3 +168,9 @@ def shorten(var, list_length=50, string_length=200):
         # TODO: when we finish the above, we should also implement this for dicts
         var = list(var)[:list_length] + ['...', '(%d more elements)' % (len(var) - list_length,)]
     return var
+
+
+def keyword_field(string):
+    if not isinstance(string, compat.string_types) or len(string) <= KEYWORD_MAX_LENGTH:
+        return string
+    return string[:KEYWORD_MAX_LENGTH - 1] + u'…'

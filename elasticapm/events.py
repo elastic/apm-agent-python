@@ -14,7 +14,7 @@ import sys
 import uuid
 
 from elasticapm.utils import varmap
-from elasticapm.utils.encoding import shorten, to_unicode
+from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
 from elasticapm.utils.stacks import (get_culprit, get_stack_info,
                                      iter_traceback_frames)
 
@@ -112,8 +112,8 @@ class Exception(BaseEvent):
             'culprit': culprit,
             'exception': {
                 'message': message,
-                'type': str(exc_type),
-                'module': str(exc_module),
+                'type': keyword_field(str(exc_type)),
+                'module': keyword_field(str(exc_module)),
                 'stacktrace': frames,
             }
         }
@@ -146,10 +146,10 @@ class Message(BaseEvent):
         message_data = {
             'id': str(uuid.uuid4()),
             'log': {
-                'level': level or 'error',
-                'logger_name': logger_name or '__root__',
+                'level': keyword_field(level or 'error'),
+                'logger_name': keyword_field(logger_name or '__root__'),
                 'message': message,
-                'param_message': param_message['message'],
+                'param_message': keyword_field(param_message['message']),
             }
         }
         if isinstance(data.get('stacktrace'), dict):
