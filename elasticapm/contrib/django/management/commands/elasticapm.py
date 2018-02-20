@@ -243,8 +243,7 @@ class Command(BaseCommand):
             self.write('Looks like everything should be ready!', green)
         else:
             self.write(
-                'Please fix the above errors. If you have any questions, write '
-                'us at support@opbeat.com!',
+                'Please fix the above errors.',
                 red
             )
         self.write('')
