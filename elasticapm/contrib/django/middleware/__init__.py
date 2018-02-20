@@ -157,13 +157,15 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     )
 
     def process_request(self, request):
-        if not (django_settings.DEBUG and not self.client.config.debug):
+        if not django_settings.DEBUG or self.client.config.debug:
             self.client.begin_transaction("request")
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._elasticapm_view_func = view_func
 
     def process_response(self, request, response):
+        if django_settings.DEBUG and not self.client.config.debug:
+            return response
         try:
             if hasattr(response, 'status_code'):
                 # check if _elasticapm_transaction_name is set

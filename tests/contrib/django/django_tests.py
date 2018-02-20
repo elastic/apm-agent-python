@@ -669,6 +669,29 @@ def test_transaction_metrics(django_elasticapm_client, client):
         assert transaction['name'] == 'GET tests.contrib.django.testapp.views.no_error'
 
 
+def test_transaction_metrics_debug(django_elasticapm_client, client):
+    with override_settings(DEBUG=True, **middleware_setting(
+        django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
+    )):
+        assert len(django_elasticapm_client.instrumentation_store) == 0
+        client.get(reverse('elasticapm-no-error'))
+        assert len(django_elasticapm_client.instrumentation_store) == 0
+
+
+@pytest.mark.parametrize('django_elasticapm_client', [
+    {'debug': True}
+], indirect=True)
+def test_transaction_metrics_debug_and_client_debug(django_elasticapm_client, client):
+    assert django_elasticapm_client.config.debug is True
+
+    with override_settings(DEBUG=True, **middleware_setting(
+        django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
+    )):
+        assert len(django_elasticapm_client.instrumentation_store) == 0
+        client.get(reverse('elasticapm-no-error'))
+        assert len(django_elasticapm_client.instrumentation_store) == 1
+
+
 def test_request_metrics_301_append_slash(django_elasticapm_client, client):
     django_elasticapm_client.instrumentation_store.get_all()  # clear the store
 
