@@ -130,24 +130,25 @@ class ElasticAPM(object):
             logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
 
     def request_started(self, app):
-        if not (self.app.debug and not self.client.config.debug):
+        if not self.app.debug or self.client.config.debug:
             self.client.begin_transaction("request")
 
     def request_finished(self, app, response):
-        rule = request.url_rule.rule if request.url_rule is not None else ""
-        rule = build_name_with_http_method_prefix(rule, request)
-        request_data = lambda: get_data_from_request(
-            request,
-            capture_body=self.client.config.capture_body in ('transactions', 'all')
-        )
-        response_data = lambda: get_data_from_response(response)
-        elasticapm.set_context(request_data, 'request')
-        elasticapm.set_context(response_data, 'response')
-        if response.status_code:
-            result = 'HTTP {}xx'.format(response.status_code // 100)
-        else:
-            result = response.status
-        self.client.end_transaction(rule, result)
+        if not self.app.debug or self.client.config.debug:
+            rule = request.url_rule.rule if request.url_rule is not None else ""
+            rule = build_name_with_http_method_prefix(rule, request)
+            request_data = lambda: get_data_from_request(
+                request,
+                capture_body=self.client.config.capture_body in ('transactions', 'all')
+            )
+            response_data = lambda: get_data_from_response(response)
+            elasticapm.set_context(request_data, 'request')
+            elasticapm.set_context(response_data, 'response')
+            if response.status_code:
+                result = 'HTTP {}xx'.format(response.status_code // 100)
+            else:
+                result = response.status
+            self.client.end_transaction(rule, result)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'

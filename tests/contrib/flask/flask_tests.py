@@ -153,6 +153,23 @@ def test_instrumentation(flask_apm_client):
     assert spans[0]['type'] == 'template.jinja2'
 
 
+def test_instrumentation_debug(flask_apm_client):
+    flask_apm_client.app.debug = True
+    assert len(flask_apm_client.client.instrumentation_store) == 0
+    resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
+    assert len(flask_apm_client.client.instrumentation_store) == 0
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'debug': True},
+], indirect=True)
+def test_instrumentation_debug_client_debug(flask_apm_client):
+    flask_apm_client.app.debug = True
+    assert len(flask_apm_client.client.instrumentation_store) == 0
+    resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
+    assert len(flask_apm_client.client.instrumentation_store) == 1
+
+
 def test_instrumentation_404(flask_apm_client):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False

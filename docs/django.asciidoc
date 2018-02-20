@@ -61,6 +61,20 @@ You now have basic error logging set up, and everything resulting in a 500 HTTP 
 
 You can find a list of all available settings in the <<configuration, Configuration>> page.
 
+[NOTE]
+====
+The agent only captures and sends data if you have `DEBUG = False` in your settings.
+To force the agent to capture data in Django debug mode, set the <<config-debug,debug>> configuration option, e.g.:
+
+[source,python]
+----
+ELASTIC_APM = {
+   'SERVICE_NAME': '<SERVICE-NAME>',
+   'DEBUG': True,
+}
+----
+====
+
 [float]
 [[django-performance-metrics]]
 === Performance Metrics
