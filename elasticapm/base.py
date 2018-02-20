@@ -129,9 +129,16 @@ class Client(object):
 
         self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
+        if platform.python_implementation() == 'PyPy':
+            # PyPy introduces a `_functools.partial.__call__` frame due to our use
+            # of `partial` in AbstractInstrumentedModule
+            skip_modules = ('elasticapm.', '_functools')
+        else:
+            skip_modules = ('elasticapm.',)
+
         def frames_collector_func():
             return self._get_stack_info_for_trace(
-                stacks.iter_stack_frames(skip_top_modules=('elasticapm.',)),
+                stacks.iter_stack_frames(skip_top_modules=skip_modules),
                 library_frame_context_lines=self.config.source_lines_span_library_frames,
                 in_app_frame_context_lines=self.config.source_lines_span_app_frames,
                 with_locals=self.config.collect_local_variables in ('all', 'transactions'),
