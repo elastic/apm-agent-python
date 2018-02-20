@@ -119,8 +119,8 @@ class Command(BaseCommand):
         client.state.error_logger = client.error_logger
         self.write(
             "Trying to send a test error to APM Server using these settings:\n\n"
-            "SERVICE_NAME:\t\t\t%s\n"
-            "SECRET_TOKEN:\t\t%s\n"
+            "SERVICE_NAME:\t%s\n"
+            "SECRET_TOKEN:\t%s\n"
             "SERVER:\t\t%s\n\n" % (
                 client.config.service_name,
                 client.config.secret_token,
