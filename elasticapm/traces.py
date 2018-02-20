@@ -1,5 +1,6 @@
 import datetime
 import functools
+import hashlib
 import logging
 import random
 import re
@@ -66,7 +67,7 @@ class Transaction(object):
     def end_transaction(self, skip_frames=8):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False):
+    def begin_span(self, name, span_type, context=None, context_fingerprint=None, leaf=False):
         # If we were already called with `leaf=True`, we'll just push
         # a placeholder on the stack.
         if self.ignore_subtree:
@@ -84,7 +85,7 @@ class Transaction(object):
             return None
 
         start = _time_func() - self.start_time
-        span = Span(self._span_counter - 1, name, span_type, start, context)
+        span = Span(self._span_counter - 1, name, span_type, start, context, context_fingerprint)
         self.span_stack.append(span)
         return span
 
@@ -98,14 +99,41 @@ class Transaction(object):
         if span is DROPPED_SPAN:
             return
 
-        span.duration = _time_func() - span.start_time - self.start_time
+        now = _time_func()
+
+        span.duration = now - span.start_time - self.start_time
 
         if self.span_stack:
             span.parent = self.span_stack[-1].idx
 
-        span.frames = self._frames_collector_func()[skip_frames:]
         self.spans.append(span)
-
+        if len(self.spans) > 1 and span.name == self.spans[-2].name:
+            pre = self.spans[-2]
+            # the two spans have the same name, let's check fingerprint
+            if span.fingerprint == pre.fingerprint:
+                # they share a fingerprint. Let's check if the older span already has a parent with the same fingerprint
+                if pre.parent is not None and self.spans[pre.parent].fingerprint == span.fingerprint:
+                    # parent span already created, let's add this one, and remove frames
+                    grandpa = self.spans[pre.parent]
+                    grandpa.duration = now - grandpa.start_time - self.start_time
+                    grandpa.count += 1
+                    span.parent = grandpa.idx
+                    span.frames = []
+                else:
+                    # duplicate pre
+                    pre_copy = Span(self._span_counter, pre.name, pre.type, pre.start_time, pre.context, leaf=pre.leaf)
+                    pre_copy.fingerprint = pre.fingerprint
+                    pre_copy.parent = pre.idx
+                    pre_copy.duration = pre.duration
+                    pre_copy.frames = []
+                    self.spans.append(pre_copy)
+                    span.parent = pre.idx
+                    span.frames = []
+                    self._span_counter += 1
+                    pre.duration = now - pre.start_time - self.start_time
+                    pre.count = 1
+        else:
+            span.frames = self._frames_collector_func()[skip_frames:]
         return span
 
     def to_dict(self):
@@ -130,7 +158,7 @@ class Transaction(object):
 
 class Span(object):
     def __init__(self, idx, name, span_type, start_time, context=None,
-                 leaf=False):
+                 context_fingerprint=None, leaf=False):
         """
         Create a new Span
 
@@ -141,6 +169,8 @@ class Span(object):
         :param context: context dictionary
         :param leaf: is this transaction a leaf transaction?
         """
+        self._context_fingerprint = context_fingerprint
+        self._fingerprint = None
         self.idx = idx
         self.name = name
         self.type = span_type
@@ -151,15 +181,39 @@ class Span(object):
         self.transaction = None
         self.parent = None
         self.frames = None
+        self.count = 0
 
     @property
     def fingerprint(self):
-        return self.transaction, self.parent, self.name, self.type
+        if not self._fingerprint:
+            fp = hashlib.md5()
+            fp.update(self.name.encode('utf8'))
+            fp.update(self.type.encode('utf8'))
+            if self._context_fingerprint:
+                for el in self._context_fingerprint:
+                    fp.update(el.encode('utf8'))
+            elif self.frames:
+                for frame in self.frames:
+                    fp.update(frame['abs_path'].encode('utf8'))
+                    fp.update(frame['module'].encode('utf8'))
+                    fp.update(frame['function'].encode('utf8'))
+                    if frame['lineno'] is not None:
+                        fp.update(compat.binary_type(frame['lineno']))
+            self._fingerprint = fp.hexdigest()
+        return self._fingerprint
+
+    @fingerprint.setter
+    def fingerprint(self, val):
+        self._fingerprint = val
 
     def to_dict(self):
+        if self.count:
+            name = '(%dx) %s' % (self.count, self.name)
+        else:
+            name = self.name
         return {
             'id': self.idx,
-            'name': encoding.keyword_field(self.name),
+            'name': encoding.keyword_field(name),
             'type': encoding.keyword_field(self.type),
             'start': self.start_time * 1000,  # milliseconds
             'duration': self.duration * 1000,  # milliseconds
@@ -236,12 +290,13 @@ class TransactionsStore(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type='code.custom', extra=None, skip_frames=0, leaf=False):
+    def __init__(self, name=None, span_type='code.custom', context=None, skip_frames=0, leaf=False, context_fingerprint=None):
         self.name = name
         self.type = span_type
-        self.extra = extra
+        self.context = context
         self.skip_frames = skip_frames
         self.leaf = leaf
+        self.context_fingerprint = context_fingerprint
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -256,7 +311,8 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            transaction.begin_span(self.name, self.type, context=self.context,
+                                   context_fingerprint=self.context_fingerprint, leaf=self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
