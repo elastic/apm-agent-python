@@ -56,20 +56,6 @@ class ColoredLogger(object):
         self.log('info', *args, **kwargs)
 
 
-LOGO = """
-
-                              .o8                               .
-                             "888                             .o8
-         .ooooo.  oo.ooooo.   888oooo.   .ooooo.   .oooo.   .o888oo
-        d88' `88b  888' `88b  d88' `88b d88' `88b `P  )88b    888
-        888   888  888   888  888   888 888ooo888  .oP"888    888
-        888   888  888   888  888   888 888    .o d8(  888    888 .
-        `Y8bod8P'  888bod8P'  `Y8bod8P' `Y8bod8P' `Y888""8o   "888"
-                   888
-                  o888o
-
-"""
-
 
 CONFIG_EXAMPLE = """
 
@@ -121,7 +107,6 @@ class Command(BaseCommand):
 
     def handle_test(self, command, **options):
         """Send a test error to APM Server"""
-        self.write(LOGO, cyan)
         config = {}
         # can't be async for testing
         config['async_mode'] = False
@@ -158,7 +143,6 @@ class Command(BaseCommand):
 
     def handle_check(self, command, **options):
         """Check your settings for common misconfigurations"""
-        self.write(LOGO, cyan)
         passed = True
         client = DjangoClient()
         # check if org/app and token are set:
@@ -267,7 +251,6 @@ class Command(BaseCommand):
         return passed
 
     def handle_command_not_found(self, message):
-        self.write(LOGO, cyan)
         self.write(message, red, ending='')
         self.write(
             ' Please use one of the following commands:\n\n',
