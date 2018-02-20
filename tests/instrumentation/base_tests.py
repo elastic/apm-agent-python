@@ -4,6 +4,7 @@ import types
 import mock
 import pytest
 
+import elasticapm
 from elasticapm.instrumentation.packages.base import (AbstractInstrumentedModule,
                                                       OriginalNamesBoundFunctionWrapper)
 from elasticapm.utils import compat
@@ -79,3 +80,12 @@ def test_skip_instrument_env_var():
     with mock.patch.dict('os.environ', {'SKIP_INSTRUMENT_TEST_DUMMY_INSTRUMENT': 'foo'}):
         instrumentation.instrument()
     assert not instrumentation.instrumented
+
+
+def test_skip_ignored_frames(elasticapm_client):
+    elasticapm_client.begin_transaction('test')
+    with elasticapm.capture_span('test'):
+        pass
+    transaction = elasticapm_client.end_transaction('test', 'test')
+    for frame in transaction.spans[0].frames:
+        assert not frame['module'].startswith('elasticapm')

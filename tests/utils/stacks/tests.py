@@ -78,6 +78,33 @@ def test_traceback_hide(elasticapm_client):
     assert frames[0]['function'] == 'get_me_a_filtered_frame'
 
 
+def test_iter_stack_frames_skip_frames():
+    frames = [
+        Mock(f_lineno=1, f_globals={}),
+        Mock(f_lineno=2, f_globals={}),
+        Mock(f_lineno=3, f_globals={}),
+        Mock(f_lineno=4, f_globals={}),
+    ]
+
+    iterated_frames = list(stacks.iter_stack_frames(frames, skip=3))
+    assert len(iterated_frames) == 1
+    assert iterated_frames[0][1] == 4
+
+
+def test_iter_stack_frames_skip_frames_by_module():
+    frames = [
+        Mock(f_lineno=1, f_globals={'__name__': 'foo.bar'}),
+        Mock(f_lineno=2, f_globals={'__name__': 'foo.bar'}),
+        Mock(f_lineno=3, f_globals={'__name__': 'baz.bar'}),
+        Mock(f_lineno=4, f_globals={'__name__': 'foo.bar'}),
+    ]
+
+    iterated_frames = list(stacks.iter_stack_frames(frames, skip_top_modules=('foo.',)))
+    assert len(iterated_frames) == 2
+    assert iterated_frames[0][1] == 3
+    assert iterated_frames[1][1] == 4
+
+
 @pytest.mark.parametrize('elasticapm_client', [{
     'include_paths': ('/a/b/c/*', '/c/d/*'),
     'exclude_paths': ('/c/*',)
