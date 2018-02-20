@@ -62,14 +62,13 @@ CONFIG_EXAMPLE = """
 You can set it in your settings file:
 
     ELASTIC_APM = {
-        'ORGANIZATION_ID': '<YOUR-ORGANIZATION-ID>',
-        'APP_ID': '<YOUR-APP-ID>',
+        'SERVICE_NAME': '<YOUR-SERVICE-NAME>',
         'SECRET_TOKEN': '<YOUR-SECRET-TOKEN>',
     }
 
 or with environment variables:
 
-    $ export ELASTIC_APM_APP_ID="<YOUR-APP-ID>"
+    $ export ELASTIC_APM_SERVICE_NAME="<YOUR-SERVICE-NAME>"
     $ export ELASTIC_APM_SECRET_TOKEN="<YOUR-SECRET-TOKEN>"
     $ python manage.py elasticapm check
 
