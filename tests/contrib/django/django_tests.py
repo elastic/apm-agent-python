@@ -966,7 +966,7 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
     assert spans[1]['name'] == 'list_users.html'
 
     # Top frame should be inside django rendering
-    assert spans[1]['stacktrace'][0]['module'].startswith('django.template')
+    assert spans[1]['stacktrace'][0]['module'].startswith('django.template'), spans[1]['stacktrace'][0]['function']
 
 
 @pytest.mark.parametrize('django_elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)

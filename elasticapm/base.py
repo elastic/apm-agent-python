@@ -129,9 +129,9 @@ class Client(object):
 
         self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
-        self.instrumentation_store = TransactionsStore(
-            lambda: self._get_stack_info_for_trace(
-                stacks.iter_stack_frames(),
+        def frames_collector_func():
+            return self._get_stack_info_for_trace(
+                stacks.iter_stack_frames(skip_top_modules=('elasticapm.',)),
                 library_frame_context_lines=self.config.source_lines_span_library_frames,
                 in_app_frame_context_lines=self.config.source_lines_span_app_frames,
                 with_locals=self.config.collect_local_variables in ('all', 'transactions'),
@@ -140,7 +140,10 @@ class Client(object):
                     list_length=self.config.local_var_list_max_length,
                     string_length=self.config.local_var_max_length,
                 ), local_var)
-            ),
+            )
+
+        self.instrumentation_store = TransactionsStore(
+            frames_collector_func=frames_collector_func,
             collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,

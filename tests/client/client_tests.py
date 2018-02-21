@@ -552,7 +552,7 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
         pass
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
-    frame = transaction['spans'][0]['stacktrace'][5]
+    frame = transaction['spans'][0]['stacktrace'][0]
     if mode in ('transactions', 'all'):
         assert 'vars' in frame, mode
         assert frame['vars']['a_local_var'] == 1
@@ -578,8 +578,8 @@ def test_collect_source_transactions(should_collect, elasticapm_client):
         pass
     elasticapm_client.end_transaction('test', 'ok')
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
-    in_app_frame = transaction['spans'][0]['stacktrace'][5]
-    library_frame = transaction['spans'][0]['stacktrace'][6]
+    in_app_frame = transaction['spans'][0]['stacktrace'][0]
+    library_frame = transaction['spans'][0]['stacktrace'][1]
     assert not in_app_frame['library_frame']
     assert library_frame['library_frame']
     if library_frame_context:
