@@ -267,10 +267,6 @@ class capture_span(object):
 def tag(**tags):
     """
     Tags current transaction. Both key and value of the tag should be strings.
-
-        import opbeat
-        opbeat.tag(foo=bar)
-
     """
     transaction = get_transaction()
     for name, value in tags.items():

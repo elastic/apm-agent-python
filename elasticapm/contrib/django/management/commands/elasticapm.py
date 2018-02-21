@@ -56,34 +56,19 @@ class ColoredLogger(object):
         self.log('info', *args, **kwargs)
 
 
-LOGO = """
-
-                              .o8                               .
-                             "888                             .o8
-         .ooooo.  oo.ooooo.   888oooo.   .ooooo.   .oooo.   .o888oo
-        d88' `88b  888' `88b  d88' `88b d88' `88b `P  )88b    888
-        888   888  888   888  888   888 888ooo888  .oP"888    888
-        888   888  888   888  888   888 888    .o d8(  888    888 .
-        `Y8bod8P'  888bod8P'  `Y8bod8P' `Y8bod8P' `Y888""8o   "888"
-                   888
-                  o888o
-
-"""
-
 
 CONFIG_EXAMPLE = """
 
 You can set it in your settings file:
 
     ELASTIC_APM = {
-        'ORGANIZATION_ID': '<YOUR-ORGANIZATION-ID>',
-        'APP_ID': '<YOUR-APP-ID>',
+        'SERVICE_NAME': '<YOUR-SERVICE-NAME>',
         'SECRET_TOKEN': '<YOUR-SECRET-TOKEN>',
     }
 
 or with environment variables:
 
-    $ export ELASTIC_APM_APP_ID="<YOUR-APP-ID>"
+    $ export ELASTIC_APM_SERVICE_NAME="<YOUR-SERVICE-NAME>"
     $ export ELASTIC_APM_SECRET_TOKEN="<YOUR-SECRET-TOKEN>"
     $ python manage.py elasticapm check
 
@@ -121,7 +106,6 @@ class Command(BaseCommand):
 
     def handle_test(self, command, **options):
         """Send a test error to APM Server"""
-        self.write(LOGO, cyan)
         config = {}
         # can't be async for testing
         config['async_mode'] = False
@@ -135,8 +119,8 @@ class Command(BaseCommand):
         client.state.error_logger = client.error_logger
         self.write(
             "Trying to send a test error to APM Server using these settings:\n\n"
-            "SERVICE_NAME:\t\t\t%s\n"
-            "SECRET_TOKEN:\t\t%s\n"
+            "SERVICE_NAME:\t%s\n"
+            "SECRET_TOKEN:\t%s\n"
             "SERVER:\t\t%s\n\n" % (
                 client.config.service_name,
                 client.config.secret_token,
@@ -158,7 +142,6 @@ class Command(BaseCommand):
 
     def handle_check(self, command, **options):
         """Check your settings for common misconfigurations"""
-        self.write(LOGO, cyan)
         passed = True
         client = DjangoClient()
         # check if org/app and token are set:
@@ -259,15 +242,13 @@ class Command(BaseCommand):
             self.write('Looks like everything should be ready!', green)
         else:
             self.write(
-                'Please fix the above errors. If you have any questions, write '
-                'us at support@opbeat.com!',
+                'Please fix the above errors.',
                 red
             )
         self.write('')
         return passed
 
     def handle_command_not_found(self, message):
-        self.write(LOGO, cyan)
         self.write(message, red, ending='')
         self.write(
             ' Please use one of the following commands:\n\n',
