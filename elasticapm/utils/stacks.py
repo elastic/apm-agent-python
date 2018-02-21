@@ -147,24 +147,43 @@ def iter_traceback_frames(tb):
     while tb:
         # support for __traceback_hide__ which is used by a few libraries
         # to hide internal frames.
-        f_locals = getattr(tb.tb_frame, 'f_locals', {})
+        frame = tb.tb_frame
+        f_locals = getattr(frame, 'f_locals', {})
         if not _getitem_from_frame(f_locals, '__traceback_hide__'):
-            yield tb.tb_frame, getattr(tb, 'tb_lineno', None)
+            yield frame, getattr(tb, 'tb_lineno', None)
         tb = tb.tb_next
 
 
-def iter_stack_frames(frames=None, skip=0):
+def iter_stack_frames(frames=None, skip=0, skip_top_modules=()):
     """
     Given an optional list of frames (defaults to current stack),
     iterates over all frames that do not contain the ``__traceback_hide__``
     local variable.
+
+    Frames can be skipped by either providing a number, or a tuple
+    of module names. If the module of a frame matches one of the names
+    (using `.startswith`, that frame will be skipped. This matching will only
+    be done until the first frame doesn't match.
+
+    This is useful to filter out frames that are caused by frame collection
+    itself.
+
+    :param frames: a list of frames, or None
+    :param skip: number of frames to skip from the beginning
+    :param skip_top_modules: tuple of strings
+
     """
     if not frames:
         frame = inspect.currentframe().f_back
         frames = _walk_stack(frame)
+    stop_ignoring = False
     for i, frame in enumerate(frames):
         if i < skip:
             continue
+        f_globals = getattr(frame, 'f_globals', {})
+        if not stop_ignoring and f_globals.get('__name__', '').startswith(skip_top_modules):
+            continue
+        stop_ignoring = True
         f_locals = getattr(frame, 'f_locals', {})
         if not _getitem_from_frame(f_locals, '__traceback_hide__'):
             yield frame, frame.f_lineno

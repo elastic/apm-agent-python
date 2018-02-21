@@ -179,7 +179,7 @@ class DjangoClient(Client):
                                   locals_processor_func=None):
         """If the stacktrace originates within the elasticapm module, it will skip
         frames until some other module comes up."""
-        frames = list(iterate_with_template_sources(
+        return list(iterate_with_template_sources(
             frames,
             with_locals=with_locals,
             library_frame_context_lines=library_frame_context_lines,
@@ -188,15 +188,6 @@ class DjangoClient(Client):
             exclude_paths_re=self.exclude_paths_re,
             locals_processor_func=locals_processor_func,
         ))
-        i = 0
-        while len(frames) > i:
-            if 'module' in frames[i] and not (
-                    frames[i]['module'].startswith('elasticapm.') or
-                    frames[i]['module'] == 'contextlib'
-            ):
-                return frames[i:]
-            i += 1
-        return frames
 
     def send(self, url, **kwargs):
         """

@@ -7,11 +7,12 @@
 == Changelog
 
 
-//[[release-next]]
-//[float]
-//=== Unreleased
-//https://github.com/elastic/apm-agent-python/compare/v2.0.1\...master[Check the HEAD diff]
+[[release-next]]
+[float]
+=== Unreleased
+https://github.com/elastic/apm-agent-python/compare/v2.0.1\...master[Check the HEAD diff]
 
+ * made skipping of initial `elasticapm` frames for span stack traces more generic ({pull}167[#167])
 
 [[release-2.0.1]]
 [float]
