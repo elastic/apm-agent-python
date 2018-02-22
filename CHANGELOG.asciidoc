@@ -13,6 +13,7 @@
 https://github.com/elastic/apm-agent-python/compare/v2.0.1\...master[Check the HEAD diff]
 
  * made skipping of initial `elasticapm` frames for span stack traces more generic ({pull}167[#167])
+ * added `context.process.ppid` field (supported in apm-server 6.3+) ({pull}168[#168])
 
 [[release-2.0.1]]
 [float]
