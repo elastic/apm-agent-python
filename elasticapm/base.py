@@ -154,6 +154,7 @@ class Client(object):
             collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
+            span_frames_min_duration=self.config.span_frames_min_duration_ms,
             max_queue_size=self.config.max_queue_size,
             ignore_patterns=self.config.transactions_ignore_patterns,
         )
