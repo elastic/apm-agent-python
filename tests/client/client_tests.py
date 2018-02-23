@@ -663,6 +663,50 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
     assert transaction['span_count'] == {'dropped': {'total': 10}}
 
 
+@pytest.mark.parametrize('elasticapm_client', [{'span_frames_min_duration_ms': 20}], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_transaction_span_frames_min_duration(should_collect, elasticapm_client):
+    should_collect.return_value = False
+    elasticapm_client.begin_transaction('test_type')
+    with elasticapm.capture_span('noframes'):
+        time.sleep(0.001)
+    with elasticapm.capture_span('frames'):
+        time.sleep(0.040)
+    elasticapm_client.end_transaction('test')
+
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    spans = transaction['spans']
+
+    assert len(spans) == 2
+    assert spans[0]['name'] == 'noframes'
+    assert spans[0]['stacktrace'] is None
+
+    assert spans[1]['name'] == 'frames'
+    assert spans[1]['stacktrace'] is not None
+
+
+@pytest.mark.parametrize('elasticapm_client', [{'span_frames_min_durarion_ms': -1}], indirect=True)
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_transaction_span_frames_min_duration_no_limit(should_collect, elasticapm_client):
+    should_collect.return_value = False
+    elasticapm_client.begin_transaction('test_type')
+    with elasticapm.capture_span('frames'):
+        pass
+    with elasticapm.capture_span('frames'):
+        time.sleep(0.040)
+    elasticapm_client.end_transaction('test')
+
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    spans = transaction['spans']
+
+    assert len(spans) == 2
+    assert spans[0]['name'] == 'frames'
+    assert spans[0]['stacktrace'] is not None
+
+    assert spans[1]['name'] == 'frames'
+    assert spans[1]['stacktrace'] is not None
+
+
 @pytest.mark.parametrize('elasticapm_client', [{'transaction_max_spans': 3}], indirect=True)
 @mock.patch('elasticapm.base.TransactionsStore.should_collect')
 def test_transaction_max_span_nested(should_collect, elasticapm_client):

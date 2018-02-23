@@ -42,7 +42,8 @@ def get_transaction(clear=False):
 
 
 class Transaction(object):
-    def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True, max_spans=None):
+    def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True, max_spans=None,
+                 span_frames_min_duration=None):
         self.id = str(uuid.uuid4())
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
@@ -55,6 +56,7 @@ class Transaction(object):
         self.spans = []
         self.span_stack = []
         self.max_spans = max_spans
+        self.span_frames_min_duration = span_frames_min_duration
         self.dropped_spans = 0
         self.ignore_subtree = False
         self.context = {}
@@ -103,7 +105,8 @@ class Transaction(object):
         if self.span_stack:
             span.parent = self.span_stack[-1].idx
 
-        span.frames = self._frames_collector_func()[skip_frames:]
+        if not self.span_frames_min_duration or span.duration >= self.span_frames_min_duration:
+            span.frames = self._frames_collector_func()[skip_frames:]
         self.spans.append(span)
 
         return span
@@ -129,8 +132,9 @@ class Transaction(object):
 
 
 class Span(object):
-    def __init__(self, idx, name, span_type, start_time, context=None,
-                 leaf=False):
+    __slots__ = ('idx', 'name', 'type', 'context', 'leaf', 'start_time', 'duration', 'parent', 'frames')
+
+    def __init__(self, idx, name, span_type, start_time, context=None, leaf=False):
         """
         Create a new Span
 
@@ -148,13 +152,8 @@ class Span(object):
         self.leaf = leaf
         self.start_time = start_time
         self.duration = None
-        self.transaction = None
         self.parent = None
         self.frames = None
-
-    @property
-    def fingerprint(self):
-        return self.transaction, self.parent, self.name, self.type
 
     def to_dict(self):
         return {
@@ -171,7 +170,7 @@ class Span(object):
 
 class TransactionsStore(object):
     def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_spans=0, max_queue_size=None,
-                 ignore_patterns=None):
+                 span_frames_min_duration=None, ignore_patterns=None):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
         self.max_queue_size = max_queue_size
@@ -181,6 +180,11 @@ class TransactionsStore(object):
         self._last_collect = _time_func()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
         self._sample_rate = sample_rate
+        if span_frames_min_duration in (-1, None):
+            # both None and -1 mean "no minimum"
+            self.span_frames_min_duration = None
+        else:
+            self.span_frames_min_duration = span_frames_min_duration / 1000.0
 
     def add_transaction(self, transaction):
         with self.cond:
@@ -212,7 +216,7 @@ class TransactionsStore(object):
         """
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(self._frames_collector_func, transaction_type, max_spans=self.max_spans,
-                                  is_sampled=is_sampled)
+                                  span_frames_min_duration=self.span_frames_min_duration, is_sampled=is_sampled)
         thread_local.transaction = transaction
         return transaction
 
