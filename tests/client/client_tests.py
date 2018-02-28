@@ -679,7 +679,7 @@ def test_transaction_span_frames_min_duration(should_collect, elasticapm_client)
 
     assert len(spans) == 2
     assert spans[0]['name'] == 'noframes'
-    assert spans[0]['stacktrace'] is None
+    assert 'stacktrace' not in spans[0]
 
     assert spans[1]['name'] == 'frames'
     assert spans[1]['stacktrace'] is not None
