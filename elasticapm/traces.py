@@ -156,16 +156,18 @@ class Span(object):
         self.frames = None
 
     def to_dict(self):
-        return {
+        result = {
             'id': self.idx,
             'name': encoding.keyword_field(self.name),
             'type': encoding.keyword_field(self.type),
             'start': self.start_time * 1000,  # milliseconds
             'duration': self.duration * 1000,  # milliseconds
             'parent': self.parent,
-            'stacktrace': self.frames,
             'context': self.context
         }
+        if self.frames:
+            result['stacktrace'] = self.frames
+        return result
 
 
 class TransactionsStore(object):
