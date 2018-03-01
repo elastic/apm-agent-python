@@ -363,6 +363,24 @@ def test_message_event(elasticapm_client):
     assert frame['vars']['a_long_local_list'][-1] == "(90 more elements)"
 
 
+def test_param_message_event(elasticapm_client):
+    elasticapm_client.capture('Message', param_message={'message': 'test %s %d', 'params': ('x', 1)})
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['log']['message'] == 'test x 1'
+    assert event['log']['param_message'] == 'test %s %d'
+
+
+def test_message_with_percent(elasticapm_client):
+    elasticapm_client.capture('Message', message='This works 100% of the time')
+
+    assert len(elasticapm_client.events) == 1
+    event = elasticapm_client.events.pop(0)['errors'][0]
+    assert event['log']['message'] == 'This works 100% of the time'
+    assert event['log']['param_message'] == 'This works 100% of the time'
+
+
 def test_logger(elasticapm_client):
     elasticapm_client.capture('Message', message='test', logger_name='test')
 

@@ -140,8 +140,8 @@ class Message(BaseEvent):
     def capture(client, param_message=None, message=None, level=None, logger_name=None, **kwargs):
         if message:
             param_message = {'message': message}
-        params = param_message.get('params', ())
-        message = param_message['message'] % params
+        params = param_message.get('params')
+        message = param_message['message'] % params if params else param_message['message']
         data = kwargs.get('data', {})
         message_data = {
             'id': str(uuid.uuid4()),
