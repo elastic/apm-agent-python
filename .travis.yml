@@ -10,6 +10,7 @@ env:
   - PIP_CACHE="$HOME/.pip_cache"'
   - RUN_SCRIPT="./travis/run_tests.sh"
   - POSTGRES_DB=elasticapm_test
+  - TWINE_USERNAME=piquadrat
   matrix:
   - WEBFRAMEWORK=django-master
   - WEBFRAMEWORK=flask-master
@@ -38,7 +39,13 @@ matrix:
     sudo: required
     services:
       - docker
-    script: pip install cibuildwheel==0.6.0 && mkdir -p wheelhouse/${TRAVIS_TAG} && cibuildwheel --output-dir wheelhouse/
+    script:
+      - pip install cibuildwheel==0.6.0
+      - cibuildwheel --output-dir wheelhouse/
+      - python -m pip install twine
+      - python setup.py sdist
+      - python -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*.tar.gz
+      - python -m twine upload --repository-url https://upload.pypi.org/legacy/ wheelhouse/*.whl
     env:
       - CIBW_ENVIRONMENT="PIP_CACHE=/host/.pip"
       - CIBW_BEFORE_BUILD="rm -rf build elastic_apm.egg-info tests"
