@@ -18,7 +18,10 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
 
         target_endpoint = instance._endpoint.host
         parsed_url = urlparse.urlparse(target_endpoint)
-        service, region, _ = parsed_url.hostname.split('.', 2)
+        if '.' in parsed_url.hostname:
+            service, region = parsed_url.hostname.split('.', 2)[:2]
+        else:
+            service, region = parsed_url.hostname, None
 
         signature = '{}:{}'.format(service, operation_name)
         extra_data = {
