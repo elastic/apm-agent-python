@@ -20,6 +20,7 @@ from django.db import DatabaseError
 from django.http import HttpRequest
 
 from elasticapm.base import Client
+from elasticapm.conf import constants
 from elasticapm.contrib.django.utils import iterate_with_template_sources
 from elasticapm.utils import compat, encoding, get_url_dict
 from elasticapm.utils.module_import import import_string
@@ -106,11 +107,11 @@ class DjangoClient(Client):
             'cookies': dict(request.COOKIES),
         }
 
-        if request.method not in ('GET', 'HEAD'):
+        if request.method in constants.HTTP_WITH_BODY:
             content_type = request.META.get('CONTENT_TYPE')
             if content_type == 'application/x-www-form-urlencoded':
                 data = compat.multidict_to_dict(request.POST)
-            elif content_type.startswith('multipart/form-data'):
+            elif content_type and content_type.startswith('multipart/form-data'):
                 data = compat.multidict_to_dict(request.POST)
                 if request.FILES:
                     data['_files'] = {field: file.name for field, file in compat.iteritems(request.FILES)}

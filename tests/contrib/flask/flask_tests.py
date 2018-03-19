@@ -232,3 +232,12 @@ def test_post_files(flask_apm_client):
         }
     else:
         assert event['context']['request']['body'] == '[REDACTED]'
+
+
+@pytest.mark.parametrize('elasticapm_client', [
+    {'capture_body': 'transactions'},
+], indirect=True)
+def test_options_request(flask_apm_client):
+    resp = flask_apm_client.app.test_client().options('/')
+    transactions = flask_apm_client.client.instrumentation_store.get_all()
+    assert transactions[0]['context']['request']['method'] == 'OPTIONS'

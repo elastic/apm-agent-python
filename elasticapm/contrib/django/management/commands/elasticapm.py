@@ -56,7 +56,6 @@ class ColoredLogger(object):
         self.log('info', *args, **kwargs)
 
 
-
 CONFIG_EXAMPLE = """
 
 You can set it in your settings file:

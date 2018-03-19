@@ -1271,3 +1271,15 @@ def test_capture_files(client, django_elasticapm_client):
         }
     else:
         assert error['errors'][0]['context']['request']['body'] == '[REDACTED]'
+
+
+@pytest.mark.parametrize('django_elasticapm_client', [
+    {'capture_body': 'transactions'},
+], indirect=True)
+def test_options_request(client, django_elasticapm_client):
+    with override_settings(**middleware_setting(django.VERSION, [
+        'elasticapm.contrib.django.middleware.TracingMiddleware'
+    ])):
+        client.options('/')
+    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    assert transactions[0]['context']['request']['method'] == 'OPTIONS'

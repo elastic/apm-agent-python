@@ -1,5 +1,6 @@
 from werkzeug.exceptions import ClientDisconnected
 
+from elasticapm.conf import constants
 from elasticapm.utils import compat, get_url_dict
 from elasticapm.utils.wsgi import get_environ, get_headers
 
@@ -17,11 +18,11 @@ def get_data_from_request(request, capture_body=False):
         },
         'cookies': request.cookies,
     }
-    if request.method not in ('GET', 'HEAD'):
+    if request.method in constants.HTTP_WITH_BODY:
         body = None
         if request.content_type == 'application/x-www-form-urlencoded':
             body = compat.multidict_to_dict(request.form)
-        elif request.content_type.startswith('multipart/form-data'):
+        elif request.content_type and request.content_type.startswith('multipart/form-data'):
             body = compat.multidict_to_dict(request.form)
             if request.files:
                 body['_files'] = {
