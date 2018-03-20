@@ -74,14 +74,14 @@ def test_service_info(elasticapm_client):
 
 
 def test_process_info(elasticapm_client):
-    with mock.patch('os.getpid') as mock_pid, \
-            mock.patch('os.getppid') as mock_ppid, \
-            mock.patch.object(sys, 'argv', ['a', 'b', 'c']):
-        mock_pid.return_value = 123
-        mock_ppid.return_value = 456
+    with mock.patch.object(sys, 'argv', ['a', 'b', 'c']):
         process_info = elasticapm_client.get_process_info()
-    assert process_info['pid'] == 123
-    assert process_info['ppid'] == 456
+    assert process_info['pid'] == os.getpid()
+    if hasattr(os, 'getppid'):
+        assert process_info['ppid'] == os.getppid()
+    else:
+        # Windows + Python 2.7
+        assert process_info['ppid'] is None
     assert process_info['argv'] == ['a', 'b', 'c']
 
 
