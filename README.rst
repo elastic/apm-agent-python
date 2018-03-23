@@ -33,4 +33,4 @@ License
 BSD-3-Clause
 
 
-Made with ♥️ and ☕️ by Elastic, Inc. and our community.
+Made with ♥️ and ☕️ by Elastic and our community.
