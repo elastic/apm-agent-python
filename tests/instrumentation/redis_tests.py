@@ -1,7 +1,6 @@
 import os
 from functools import partial
 
-import mock
 import pytest
 import redis
 from redis.client import StrictRedis
@@ -21,7 +20,7 @@ def redis_conn():
 
 
 @pytest.mark.integrationtest
-def test_pipeline(elasticapm_client, redis_conn):
+def test_pipeline(instrument, elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_pipeline", "test"):
         pipeline = redis_conn.pipeline()
@@ -47,7 +46,7 @@ def test_pipeline(elasticapm_client, redis_conn):
 
 
 @pytest.mark.integrationtest
-def test_rq_patches_redis(elasticapm_client, redis_conn):
+def test_rq_patches_redis(instrument, elasticapm_client, redis_conn):
     # Let's go ahead and change how something important works
     redis_conn._pipeline = partial(StrictRedis.pipeline, redis_conn)
 
@@ -77,7 +76,7 @@ def test_rq_patches_redis(elasticapm_client, redis_conn):
 
 
 @pytest.mark.integrationtest
-def test_redis_client(elasticapm_client, redis_conn):
+def test_redis_client(instrument, elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_redis_client", "test"):
         redis_conn.rpush("mykey", "a", "b")

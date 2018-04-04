@@ -7,7 +7,7 @@ from elasticapm.traces import capture_span
 
 
 @pytest.mark.integrationtest
-def test_memcached(elasticapm_client):
+def test_memcached(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_memcached", "test"):
         host = os.environ.get('MEMCACHED_HOST', 'localhost')

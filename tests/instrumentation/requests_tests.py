@@ -13,7 +13,7 @@ except ImportError:
 responses.add('GET', '/', status=200, adding_headers={'Location': 'http://example.com/foo'})
 
 
-def test_requests_instrumentation(elasticapm_client):
+def test_requests_instrumentation(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         # NOTE: The `allow_redirects` argument has to be set to `False`,
@@ -30,7 +30,7 @@ def test_requests_instrumentation(elasticapm_client):
     assert 'http://example.com/' == spans[0]['context']['url']
 
 
-def test_requests_instrumentation_via_session(elasticapm_client):
+def test_requests_instrumentation_via_session(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         s = requests.Session()
@@ -43,7 +43,7 @@ def test_requests_instrumentation_via_session(elasticapm_client):
     assert 'http://example.com/' == spans[0]['context']['url']
 
 
-def test_requests_instrumentation_via_prepared_request(elasticapm_client):
+def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         r = requests.Request('get', 'http://example.com')
@@ -58,21 +58,21 @@ def test_requests_instrumentation_via_prepared_request(elasticapm_client):
     assert 'http://example.com/' == spans[0]['context']['url']
 
 
-def test_requests_instrumentation_malformed_none(elasticapm_client):
+def test_requests_instrumentation_malformed_none(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         with pytest.raises(MissingSchema):
             requests.get(None)
 
 
-def test_requests_instrumentation_malformed_schema(elasticapm_client):
+def test_requests_instrumentation_malformed_schema(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         with pytest.raises(MissingSchema):
             requests.get('')
 
 
-def test_requests_instrumentation_malformed_path(elasticapm_client):
+def test_requests_instrumentation_malformed_path(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         with pytest.raises(InvalidURL):

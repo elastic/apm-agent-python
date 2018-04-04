@@ -1,7 +1,7 @@
 import sqlite3
 
 
-def test_connect(elasticapm_client):
+def test_connect(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
 
     conn = sqlite3.connect(":memory:")
