@@ -38,7 +38,7 @@ TEMPLATES = (
 
 
 @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_template_rendering(should_collect, django_elasticapm_client, client):
+def test_template_rendering(should_collect, instrument, django_elasticapm_client, client):
     should_collect.return_value = False
     with override_settings(**middleware_setting(django.VERSION,
                                             ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
@@ -67,7 +67,7 @@ def test_template_rendering(should_collect, django_elasticapm_client, client):
 @pytest.mark.skipif(django.VERSION < (1, 8),
                     reason='Jinja2 support introduced with Django 1.8')
 @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_template_rendering_django18_jinja2(should_collect, django_elasticapm_client, client):
+def test_template_rendering_django18_jinja2(should_collect, instrument, django_elasticapm_client, client):
     should_collect.return_value = False
     with override_settings(
             TEMPLATES=TEMPLATES,
