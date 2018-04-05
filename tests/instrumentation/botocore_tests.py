@@ -5,7 +5,7 @@ from elasticapm.instrumentation.packages.botocore import BotocoreInstrumentation
 
 
 @mock.patch("botocore.endpoint.Endpoint.make_request")
-def test_botocore_instrumentation(mock_make_request, elasticapm_client):
+def test_botocore_instrumentation(mock_make_request, elasticapm_client, instrument):
     mock_response = mock.Mock()
     mock_response.status_code = 200
     mock_make_request.return_value = (mock_response, {})
@@ -26,7 +26,7 @@ def test_botocore_instrumentation(mock_make_request, elasticapm_client):
 
 
 
-def test_nonstandard_endpoint_url(elasticapm_client):
+def test_nonstandard_endpoint_url(instrument, elasticapm_client):
     instrument = BotocoreInstrumentation()
     elasticapm_client.begin_transaction('test')
     module, method = BotocoreInstrumentation.instrument_list[0]

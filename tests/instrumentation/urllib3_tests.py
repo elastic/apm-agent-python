@@ -6,7 +6,7 @@ from elasticapm.utils.compat import urlparse
 
 
 @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_urllib3(should_collect, elasticapm_client, httpserver):
+def test_urllib3(should_collect, instrument, elasticapm_client, httpserver):
     should_collect.return_value = False
     httpserver.serve_content('')
     url = httpserver.url + '/hello_world'

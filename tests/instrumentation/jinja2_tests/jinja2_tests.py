@@ -14,7 +14,7 @@ def jinja_env():
 
 
 @mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_from_file(should_collect, jinja_env, elasticapm_client):
+def test_from_file(should_collect, instrument, jinja_env, elasticapm_client):
     should_collect.return_value = False
     elasticapm_client.begin_transaction("transaction.test")
     template = jinja_env.get_template('mytemplate.html')
@@ -32,7 +32,7 @@ def test_from_file(should_collect, jinja_env, elasticapm_client):
     assert spans[0]['type'] == 'template.jinja2'
 
 
-def test_from_string(elasticapm_client):
+def test_from_string(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     template = Template("<html></html")
     template.render()

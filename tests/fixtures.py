@@ -8,6 +8,7 @@ import requests
 from pytest_localserver.http import ContentServer
 from werkzeug.wrappers import Request, Response
 
+import elasticapm
 from elasticapm.base import Client
 
 ERRORS_SCHEMA = 'https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/errors/payload.json'
@@ -117,3 +118,10 @@ def not_so_random():
     random.seed(42)
     yield
     random.setstate(old_state)
+
+
+@pytest.fixture()
+def instrument():
+    elasticapm.instrument()
+    yield
+    elasticapm.uninstrument()

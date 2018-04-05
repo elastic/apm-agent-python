@@ -217,8 +217,6 @@ def test_multi_statement_sql():
 def test_psycopg2_register_type(postgres_connection, elasticapm_client):
     import psycopg2.extras
 
-    control.instrument()
-
     try:
         elasticapm_client.begin_transaction("web.django")
         new_type = psycopg2.extras.register_uuid(None, postgres_connection)
@@ -236,8 +234,6 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
     # register_json bypasses register_type, so we have to test unwrapping
     # separately
     import psycopg2.extras
-
-    control.instrument()
 
     try:
         elasticapm_client.begin_transaction("web.django")
@@ -257,8 +253,7 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection, elasticapm_client):
-    control.instrument()
+def test_psycopg2_tracing_outside_of_elasticapm_transaction(instrument, postgres_connection, elasticapm_client):
     cursor = postgres_connection.cursor()
     # check that the cursor is a proxy, even though we're not in an elasticapm
     # transaction
@@ -270,12 +265,11 @@ def test_psycopg2_tracing_outside_of_elasticapm_transaction(postgres_connection,
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
+def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client):
     """
     Check that we pass queries with %-notation but without parameters
     properly to the dbapi backend
     """
-    control.instrument()
     cursor = postgres_connection.cursor()
     query = "SELECT * FROM test WHERE name LIKE 't%'"
 
@@ -298,11 +292,10 @@ def test_psycopg2_select_LIKE(postgres_connection, elasticapm_client):
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 @pytest.mark.skipif(not has_sql_module, reason="psycopg2.sql module missing")
-def test_psycopg2_composable_query_works(postgres_connection, elasticapm_client):
+def test_psycopg2_composable_query_works(instrument, postgres_connection, elasticapm_client):
     """
     Check that we parse queries that are psycopg2.sql.Composable correctly
     """
-    control.instrument()
     cursor = postgres_connection.cursor()
     query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
         table=sql.Identifier('test'),
