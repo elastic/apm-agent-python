@@ -1,5 +1,6 @@
 import logbook
 import pytest
+from logbook import LogRecord
 
 from elasticapm.handlers.logbook import LogbookHandler
 
@@ -118,3 +119,19 @@ def test_invalid_first_arg_type():
 def test_missing_client_arg():
     with pytest.raises(TypeError):
         LogbookHandler()
+
+
+def test_logbook_handler_emit_error(capsys, elasticapm_client):
+    handler = LogbookHandler(elasticapm_client)
+    handler._emit = lambda: 1/0
+    handler.emit(LogRecord('x', 1, 'Oops'))
+    out, err = capsys.readouterr()
+    assert 'Top level ElasticAPM exception caught' in err
+    assert 'Oops' in err
+
+
+def test_logbook_handler_dont_emit_elasticapm(capsys, elasticapm_client):
+    handler = LogbookHandler(elasticapm_client)
+    handler.emit(LogRecord('elasticapm.errors', 1, 'Oops'))
+    out, err = capsys.readouterr()
+    assert 'Oops' in err

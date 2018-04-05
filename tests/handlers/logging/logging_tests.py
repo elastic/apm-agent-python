@@ -1,4 +1,5 @@
 import logging
+from logging import LogRecord
 
 import pytest
 
@@ -189,3 +190,19 @@ def test_logger_setup():
     assert client.config.service_name == 'bar'
     assert client.config.secret_token == 'baz'
     assert handler.level == logging.NOTSET
+
+
+def test_logging_handler_emit_error(capsys, elasticapm_client):
+    handler = LoggingHandler(elasticapm_client)
+    handler._emit = lambda: 1/0
+    handler.emit(LogRecord('x', 1, '/ab/c/', 10, 'Oops', [], None))
+    out, err = capsys.readouterr()
+    assert 'Top level ElasticAPM exception caught' in err
+    assert 'Oops' in err
+
+
+def test_logging_handler_dont_emit_elasticapm(capsys, elasticapm_client):
+    handler = LoggingHandler(elasticapm_client)
+    handler.emit(LogRecord('elasticapm.errors', 1, '/ab/c/', 10, 'Oops', [], None))
+    out, err = capsys.readouterr()
+    assert 'Oops' in err

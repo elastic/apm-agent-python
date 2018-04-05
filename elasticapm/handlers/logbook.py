@@ -16,7 +16,7 @@ import traceback
 import logbook
 
 from elasticapm.base import Client
-from elasticapm.utils.encoding import to_string
+from elasticapm.utils.encoding import to_unicode
 
 LOOKBOOK_LEVELS = {
     logbook.DEBUG: 'debug',
@@ -57,15 +57,15 @@ class LogbookHandler(logbook.Handler):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.channel.startswith('elasticapm.errors'):
-            sys.stderr.write(to_string(record.message + '\n'))
+            sys.stderr.write(to_unicode(record.message + '\n'))
             return
 
         try:
             return self._emit(record)
         except Exception:
             sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
-            sys.stderr.write(to_string(record.msg + '\n'))
-            sys.stderr.write(to_string(traceback.format_exc() + '\n'))
+            sys.stderr.write(to_unicode(record.msg + '\n'))
+            sys.stderr.write(to_unicode(traceback.format_exc() + '\n'))
 
             try:
                 self.client.capture('Exception')
