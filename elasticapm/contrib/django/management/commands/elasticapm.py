@@ -204,37 +204,24 @@ class Command(BaseCommand):
         self.write('')
 
         # check if middleware is set, and if it is at the first position
-        middleware = list(getattr(settings, 'MIDDLEWARE', getattr(settings, 'MIDDLEWARE_CLASSES', [])))
+        middleware_attr = 'MIDDLEWARE' if getattr(settings, 'MIDDLEWARE', None) is not None else 'MIDDLEWARE_CLASSES'
+        middleware = list(getattr(settings, middleware_attr))
         try:
-            pos = middleware.index(
-                'elasticapm.contrib.django.middleware.TracingMiddleware'
-            )
+            pos = middleware.index('elasticapm.contrib.django.middleware.TracingMiddleware')
             if pos == 0:
-                self.write(
-                    'Tracing middleware is configured! Awesome!',
-                    green
-                )
+                self.write('Tracing middleware is configured! Awesome!', green)
             else:
-                self.write(
-                    'Tracing middleware is configured, but not at the first '
-                    'position\n',
-                    yellow
-                )
-                self.write(
-                    'ElasticAPM works best if you add it at the top of your '
-                    'MIDDLEWARE_CLASSES'
-                )
+                self.write('Tracing middleware is configured, but not at the first position\n', yellow)
+                self.write('ElasticAPM works best if you add it at the top of your %s setting' % middleware_attr)
         except ValueError:
-            self.write(
-                'Tracing middleware not configured!', red
-            )
+            self.write('Tracing middleware not configured!', red)
             self.write(
                 '\n'
-                'Add it to your MIDDLEWARE_CLASSES like this:\n\n'
-                '    MIDDLEWARE_CLASSES = (\n'
+                'Add it to your %(name)s setting like this:\n\n'
+                '    %(name)s = (\n'
                 '        "elasticapm.contrib.django.middleware.TracingMiddleware",\n'
                 '        # your other middleware classes\n'
-                '    )\n'
+                '    )\n' % {'name': middleware_attr}
             )
         self.write('')
         if passed:
