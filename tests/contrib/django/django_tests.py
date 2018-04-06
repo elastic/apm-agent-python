@@ -1143,6 +1143,10 @@ def test_middleware_not_set():
         call_command('elasticapm', 'check', stdout=stdout)
     output = stdout.getvalue()
     assert 'Tracing middleware not configured!' in output
+    if django.VERSION < (1, 10):
+        assert 'MIDDLEWARE_CLASSES' in output
+    else:
+        assert 'MIDDLEWARE setting' in output
 
 
 def test_middleware_not_first():
@@ -1151,6 +1155,26 @@ def test_middleware_not_first():
         'foo',
         'elasticapm.contrib.django.middleware.TracingMiddleware'
     ))):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'not at the first position' in output
+    if django.VERSION < (1, 10):
+        assert 'MIDDLEWARE_CLASSES' in output
+    else:
+        assert 'MIDDLEWARE setting' in output
+
+
+@pytest.mark.skipif(not ((1, 10) <= django.VERSION < (2, 0)),
+                    reason='only needed in 1.10 and 1.11 when both middleware settings are valid')
+def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
+    stdout = compat.StringIO()
+    with override_settings(
+        MIDDLEWARE=None,
+        MIDDLEWARE_CLASSES=[
+            'foo',
+            'elasticapm.contrib.django.middleware.TracingMiddleware'
+        ],
+    ):
         call_command('elasticapm', 'check', stdout=stdout)
     output = stdout.getvalue()
     assert 'not at the first position' in output
