@@ -8,3 +8,6 @@ FRAMEWORK:
   - flask-0.10
   - flask-0.11
   - flask-0.12
+  - elasticsearch-2
+  - elasticsearch-5
+  - elasticsearch-6
