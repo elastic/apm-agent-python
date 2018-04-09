@@ -12,6 +12,13 @@
 //=== Unreleased
 //https://github.com/elastic/apm-agent-python/compare/v2.1.0\...master[Check the HEAD diff]
 
+[[release-2.1.1]]
+[float]
+=== v2.1.1
+ * fixed bug in Django management command that would be triggered on Django 1.10 or 1.11 while using
+   the `MIDDLEWARE_CLASSES` setting ({issue}186[#186], {pull}187[#187])
+ * fix an encoding issue with log messages that are hit in rare cases ({issue}188[#188], {pull}189[#189])
+
 [[release-2.1.0]]
 [float]
 === v2.1.0
