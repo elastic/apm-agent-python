@@ -7,4 +7,5 @@ pip install -r "tests/requirements/requirements-${WEBFRAMEWORK}.txt" --cache-dir
 
 export PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
 
+make update-json-schema
 make test
