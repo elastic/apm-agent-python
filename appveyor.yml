@@ -45,6 +45,7 @@ install:
 build: off
 
 test_script:
+  - bash .\\tests\\scripts\\download_json_schema.sh
   - if "%ASYNCIO%" == "true" call .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest -m "not integrationtest"
   - if "%ASYNCIO%" == "false" call .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest --ignore=tests/asyncio -m "not integrationtest"
 

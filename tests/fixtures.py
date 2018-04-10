@@ -1,35 +1,50 @@
+import codecs
 import json
+import os
 import random
 import zlib
 
 import jsonschema
 import pytest
-import requests
 from pytest_localserver.http import ContentServer
 from werkzeug.wrappers import Request, Response
 
 import elasticapm
 from elasticapm.base import Client
 
-ERRORS_SCHEMA = 'https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/errors/payload.json'
-TRANSACTIONS_SCHEMA = 'https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/transactions/payload.json'
+try:
+    from urllib.request import pathname2url
+except ImportError:
+    # Python 2
+    from urllib import pathname2url
 
-VALIDATORS = {
-    '/v1/errors': jsonschema.Draft4Validator(
-        requests.get(ERRORS_SCHEMA).json(),
-        resolver=jsonschema.RefResolver(
-            base_uri='/'.join(ERRORS_SCHEMA.split('/')[:-1]) + '/',
-            referrer=ERRORS_SCHEMA,
+cur_dir = os.path.dirname(os.path.realpath(__file__))
+
+ERRORS_SCHEMA = os.path.join(cur_dir, '.schemacache', 'errors', 'payload.json')
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, '.schemacache', 'transactions', 'payload.json')
+
+assert (os.path.exists(ERRORS_SCHEMA) and os.path.exists(TRANSACTIONS_SCHEMA)), \
+    'JSON Schema files not found. Run "make update-json-schema to download'
+
+
+with codecs.open(ERRORS_SCHEMA, encoding='utf8') as errors_json, \
+        codecs.open(TRANSACTIONS_SCHEMA, encoding='utf8') as transactions_json:
+    VALIDATORS = {
+        '/v1/errors': jsonschema.Draft4Validator(
+            json.load(errors_json),
+            resolver=jsonschema.RefResolver(
+                base_uri='file:' + pathname2url(ERRORS_SCHEMA),
+                referrer='file:' + pathname2url(ERRORS_SCHEMA),
+            )
+        ),
+        '/v1/transactions': jsonschema.Draft4Validator(
+            json.load(transactions_json),
+            resolver=jsonschema.RefResolver(
+                base_uri='file:' + pathname2url(TRANSACTIONS_SCHEMA),
+                referrer='file:' + pathname2url(TRANSACTIONS_SCHEMA),
+            )
         )
-    ),
-    '/v1/transactions': jsonschema.Draft4Validator(
-        requests.get(TRANSACTIONS_SCHEMA).json(),
-        resolver=jsonschema.RefResolver(
-            base_uri='/'.join(TRANSACTIONS_SCHEMA.split('/')[:-1]) + '/',
-            referrer=TRANSACTIONS_SCHEMA,
-        )
-    )
-}
+    }
 
 
 class ValidatingWSGIApp(ContentServer):

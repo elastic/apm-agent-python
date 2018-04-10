@@ -16,6 +16,9 @@ coverage: PYTEST_ARGS=--cov --cov-report xml:coverage.xml
 coverage: test
 
 docs:
-	sh ./scripts/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
+	bash ./scripts/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
 
-.PHONY: isort flake8 test coverage docs
+update-json-schema:
+	bash ./tests/scripts/download_json_schema.sh
+
+.PHONY: isort flake8 test coverage docs update-json-schema
