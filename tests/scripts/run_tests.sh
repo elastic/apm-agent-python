@@ -9,11 +9,17 @@ export PATH=/home/user/.local/bin:$PATH
 
 export PYTHON_VERSION=$(python -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))")
 
-
+# check if the full FRAMEWORK name is in scripts/envs
 if [[ -e "./tests/scripts/envs/${WEBFRAMEWORK}.sh" ]]
 then
-    echo "sourcing ./tests/scripts/envs/${WEBFRAMEWORK}.sh"
     source ./tests/scripts/envs/${WEBFRAMEWORK}.sh
+else
+    # check if only the first part of the FRAMEWORK is in scripts/envs
+    IFS='-'; frameworkParts=($WEBFRAMEWORK); unset IFS;
+    if [[ -e "./tests/scripts/envs/${frameworkParts[0]}.sh" ]]
+    then
+        source ./tests/scripts/envs/${frameworkParts[0]}.sh
+    fi
 fi
 
 make update-json-schema

@@ -11,9 +11,18 @@ docker_pip_cache="/tmp/cache/pip"
 
 cd tests
 
+# check if the full FRAMEWORK name is in scripts/envs
+
 if [[ -e "./scripts/envs/${2}.sh" ]]
 then
     source ./scripts/envs/${2}.sh
+else
+    # check if only the first part of the FRAMEWORK is in scripts/envs
+    IFS='-'; frameworkParts=($2); unset IFS;
+    if [[ -e "./scripts/envs/${frameworkParts[0]}.sh" ]]
+    then
+        source ./scripts/envs/${frameworkParts[0]}.sh
+    fi
 fi
 
 echo ${1}

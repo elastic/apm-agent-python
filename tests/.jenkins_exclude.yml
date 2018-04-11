@@ -23,3 +23,15 @@ exclude:
     FRAMEWORK: django-master
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: requests-1.2
