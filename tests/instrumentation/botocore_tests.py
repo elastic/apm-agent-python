@@ -1,11 +1,16 @@
+import pytest  # isort:skip
+pytest.importorskip("boto3")  # isort:skip
+
 import boto3
 import mock
 
 from elasticapm.instrumentation.packages.botocore import BotocoreInstrumentation
 
+pytestmark = pytest.mark.boto3
+
 
 @mock.patch("botocore.endpoint.Endpoint.make_request")
-def test_botocore_instrumentation(mock_make_request, elasticapm_client, instrument):
+def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_client):
     mock_response = mock.Mock()
     mock_response.status_code = 200
     mock_make_request.return_value = (mock_response, {})
@@ -23,7 +28,6 @@ def test_botocore_instrumentation(mock_make_request, elasticapm_client, instrume
     assert span.context['service'] == 'ec2'
     assert span.context['region'] == 'us-west-2'
     assert span.context['operation'] == 'DescribeInstances'
-
 
 
 def test_nonstandard_endpoint_url(instrument, elasticapm_client):
