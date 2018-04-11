@@ -59,13 +59,7 @@ services:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
       MEMCACHED_HOST: 'memcached'
-      POSTGRES_USER: 'postgres'
-      POSTGRES_DB: 'elasticapm_test'
-      POSTGRES_HOST: 'postgres'
-      POSTGRES_PORT: '5432'
     depends_on:
-      postgres:
-        condition: service_healthy
       memcached:
         condition: service_started
 

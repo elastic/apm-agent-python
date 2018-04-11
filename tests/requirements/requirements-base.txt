@@ -42,9 +42,6 @@ pytz
 aiohttp ; python_version >= '3.5'
 pytest-asyncio ; python_version >= '3.5'
 
-psycopg2cffi ; platform_python_implementation == 'PyPy'
-psycopg2 ; platform_python_implementation == 'CPython'
-
 pyzmq==16.0.2 ; python_version == '2.7'
 gevent==1.2.2 ; python_version == '2.7'
 zerorpc>=0.4.0,<0.5 ; python_version == '2.7'

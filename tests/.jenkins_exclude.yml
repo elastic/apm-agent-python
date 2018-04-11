@@ -65,3 +65,12 @@ exclude:
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
+  # psycopg2
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: psycopg2-2.5
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: psycopg2-2.6
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: psycopg2-2.5
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: psycopg2-2.6

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+import pytest  # isort:skip
+pytest.importorskip("psycopg2")  # isort:skip
+
 import os
 
 import psycopg2
-import pytest
 
-from elasticapm.instrumentation import control
 from elasticapm.instrumentation.packages.psycopg2 import (PGCursorProxy,
                                                           extract_signature)
 
@@ -15,6 +16,8 @@ except ImportError:
     # as of Jan 2018, psycopg2cffi doesn't have this module
     has_sql_module = False
 
+
+pytestmark = pytest.mark.psycopg2
 
 has_postgres_configured = 'POSTGRES_DB' in os.environ
 
