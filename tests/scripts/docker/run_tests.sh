@@ -25,7 +25,7 @@ else
     fi
 fi
 
-echo ${1}
+echo "Running tests for ${1}/${2}"
 
 if [[ -n $DOCKER_DEPS ]]
 then

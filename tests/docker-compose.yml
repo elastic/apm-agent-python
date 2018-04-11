@@ -17,10 +17,31 @@ services:
       timeout: 30s
       retries: 3
 
-  mongodb:
-    image: mongo
+  mongodb30:
+    image: mongo:3.6
     volumes:
-      - pymongodata:/data/db
+      - pymongodata30:/data/db
+    ports:
+      - "27017:27017"
+
+  mongodb32:
+    image: mongo:3.6
+    volumes:
+      - pymongodata32:/data/db
+    ports:
+      - "27017:27017"
+
+  mongodb34:
+    image: mongo:3.6
+    volumes:
+      - pymongodata34:/data/db
+    ports:
+      - "27017:27017"
+
+  mongodb36:
+    image: mongo:3.6
+    volumes:
+      - pymongodata36:/data/db
     ports:
       - "27017:27017"
 
@@ -37,7 +58,6 @@ services:
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
-      MONGODB_HOST: 'mongodb'
       REDIS_HOST: 'redis'
       MEMCACHED_HOST: 'memcached'
       POSTGRES_USER: 'postgres'
@@ -47,8 +67,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mongodb:
-        condition: service_started
       memcached:
         condition: service_started
       redis:
@@ -58,5 +76,11 @@ services:
 volumes:
   pypgdata:
     driver: local
-  pymongodata:
+  pymongodata30:
+    driver: local
+  pymongodata32:
+    driver: local
+  pymongodata34:
+    driver: local
+  pymongodata36:
     driver: local

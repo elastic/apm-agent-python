@@ -35,7 +35,6 @@ msgpack-python
 pep8
 redis
 urllib3-mock
-pymongo
 Twisted
 python-memcached
 pytz

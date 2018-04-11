@@ -1,8 +1,12 @@
+import pytest  # isort:skip
+pytest.importorskip("pymongo")  # isort:skip
+
 import datetime
 import os
 
 import pymongo
-import pytest
+
+pytestmark = pytest.mark.mongodb
 
 
 @pytest.fixture()
