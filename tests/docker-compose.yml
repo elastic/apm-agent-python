@@ -58,7 +58,6 @@ services:
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
-      REDIS_HOST: 'redis'
       MEMCACHED_HOST: 'memcached'
       POSTGRES_USER: 'postgres'
       POSTGRES_DB: 'elasticapm_test'
@@ -68,8 +67,6 @@ services:
       postgres:
         condition: service_healthy
       memcached:
-        condition: service_started
-      redis:
         condition: service_started
 
 

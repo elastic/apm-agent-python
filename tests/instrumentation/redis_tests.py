@@ -1,11 +1,15 @@
+import pytest  # isort:skip
+pytest.importorskip("redis")  # isort:skip
+
 import os
 from functools import partial
 
-import pytest
 import redis
 from redis.client import StrictRedis
 
 from elasticapm.traces import capture_span
+
+pytestmark = pytest.mark.redis
 
 
 @pytest.fixture()
@@ -13,7 +17,6 @@ def redis_conn():
     conn = redis.StrictRedis(
         host=os.environ.get('REDIS_HOST', 'localhost'),
         port=os.environ.get('REDIS_PORT', 6379),
-
     )
     yield conn
     del conn

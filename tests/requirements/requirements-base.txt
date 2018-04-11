@@ -33,7 +33,6 @@ kombu<4
 mock
 msgpack-python
 pep8
-redis
 urllib3-mock
 Twisted
 python-memcached
