@@ -1,9 +1,13 @@
+import pytest  # isort:skip
+pytest.importorskip("memcache")  # isort:skip
+
 import os
 
 import memcache
-import pytest
 
 from elasticapm.traces import capture_span
+
+pytestmark = pytest.mark.memcached
 
 
 @pytest.mark.integrationtest

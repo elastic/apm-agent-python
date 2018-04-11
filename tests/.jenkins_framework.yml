@@ -29,4 +29,6 @@ FRAMEWORK:
   - psycopg2-2.5
   - psycopg2-2.6
   - psycopg2-newest
+  - memcached-1.51
+  - memcached-newest
 

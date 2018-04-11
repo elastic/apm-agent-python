@@ -57,11 +57,6 @@ services:
 
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
-    environment:
-      MEMCACHED_HOST: 'memcached'
-    depends_on:
-      memcached:
-        condition: service_started
 
 
 volumes:

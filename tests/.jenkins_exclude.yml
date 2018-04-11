@@ -74,3 +74,16 @@ exclude:
     FRAMEWORK: psycopg2-2.5
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: psycopg2-2.6
+  # python-memcached
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: memcached-1.51
