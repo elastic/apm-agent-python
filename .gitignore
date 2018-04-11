@@ -16,6 +16,7 @@ pip-log.txt
 /docs/html
 /docs/doctrees
 /example_project/*.db
+tests/.schemacache
 elasticapm/utils/wrapt/_wrappers.so
 coverage
 .tox

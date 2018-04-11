@@ -8,8 +8,10 @@ pip install --user -r "tests/requirements/requirements-${WEBFRAMEWORK}.txt" --ca
 export PATH=/home/user/.local/bin:$PATH
 
 export PYTHON_VERSION=$(python -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))")
-echo $(env)
-if [ "$WITH_COVERAGE" == "true" ]
+
+make update-json-schema
+
+if [[ "$WITH_COVERAGE" == "true" ]]
 then
     make coverage
 else
