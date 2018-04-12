@@ -28,6 +28,7 @@ def django_elasticapm_client(request):
     instrument(client)
     app.client = client
     yield client
+    client.close()
 
     app.client = old_client
 
@@ -53,6 +54,7 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     app.client = client
     client.httpserver = validating_httpserver
     yield client
+    client.close()
 
     app.client = old_client
 
