@@ -1,4 +1,5 @@
 exclude:
+  # Django
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-2.0
   - PYTHON_VERSION: python-2.7
@@ -21,5 +22,68 @@ exclude:
     FRAMEWORK: django-2.0
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-master
+  # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
+  # requests
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: requests-1.2
+  # pymongo
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: pymongo-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: pymongo-3.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: pymongo-3.0
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: pymongo-3.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: pymongo-3.1
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: pymongo-3.1
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: pymongo-3.2
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: pymongo-3.2
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: pymongo-3.3
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: pymongo-3.3
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: pymongo-3.4
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: pymongo-3.4
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: pymongo-3.0
+  # psycopg2
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: psycopg2-2.5
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: psycopg2-2.6
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: psycopg2-2.5
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: psycopg2-2.6
+  # python-memcached
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: memcached-1.51

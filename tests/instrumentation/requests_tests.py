@@ -1,4 +1,6 @@
-import pytest
+import pytest  # isort:skip
+pytest.importorskip("requests")  # isort:skip
+
 import requests
 from requests.exceptions import InvalidURL, MissingSchema
 from urllib3_mock import Responses
@@ -11,6 +13,9 @@ try:
 except ImportError:
     responses = Responses('urllib3')
 responses.add('GET', '/', status=200, adding_headers={'Location': 'http://example.com/foo'})
+
+
+pytestmark = pytest.mark.requests
 
 
 def test_requests_instrumentation(instrument, elasticapm_client):

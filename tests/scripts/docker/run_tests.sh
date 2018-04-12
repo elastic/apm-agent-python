@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 if [ $# -lt 2 ]; then
   echo "Arguments missing"
@@ -11,7 +11,26 @@ docker_pip_cache="/tmp/cache/pip"
 
 cd tests
 
-echo ${1}
+# check if the full FRAMEWORK name is in scripts/envs
+
+if [[ -e "./scripts/envs/${2}.sh" ]]
+then
+    source ./scripts/envs/${2}.sh
+else
+    # check if only the first part of the FRAMEWORK is in scripts/envs
+    IFS='-'; frameworkParts=($2); unset IFS;
+    if [[ -e "./scripts/envs/${frameworkParts[0]}.sh" ]]
+    then
+        source ./scripts/envs/${frameworkParts[0]}.sh
+    fi
+fi
+
+echo "Running tests for ${1}/${2}"
+
+if [[ -n $DOCKER_DEPS ]]
+then
+    PYTHON_VERSION=${1} docker-compose up -d ${DOCKER_DEPS}
+fi
 
 docker build --pull --force-rm --build-arg PYTHON_IMAGE=${1/-/:} -t apm-agent-python:${1} . # replace - with : to get the correct docker image
 PYTHON_VERSION=${1} docker-compose run \
@@ -24,7 +43,7 @@ PYTHON_VERSION=${1} docker-compose run \
 	/bin/bash \
   -c "timeout 5m ./tests/scripts/run_tests.sh"
 
-docker-compose down -v
+PYTHON_VERSION=${1} docker-compose down -v
 cd ..
 
 if [[ $CODECOV_TOKEN ]]; then
