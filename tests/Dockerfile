@@ -1,4 +1,4 @@
-ARG PYTHON_IMAGE 
+ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 
 RUN apt-get update && apt-get -y --no-install-recommends install ca-certificates curl python-virtualenv &&\
@@ -18,6 +18,12 @@ RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/dow
     && chmod +x /usr/local/bin/gosu
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+COPY requirements/requirements-base.txt /
+
+# pre-install base requirements
+
+RUN pip install -r /requirements-base.txt
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
