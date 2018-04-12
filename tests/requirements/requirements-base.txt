@@ -17,7 +17,7 @@ statistics==1.0.3.5
 urllib3
 certifi
 Jinja2
-Logbook
+Logbook==1.3.0
 MarkupSafe
 WebOb
 Werkzeug
