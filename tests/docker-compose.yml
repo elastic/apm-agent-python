@@ -18,21 +18,21 @@ services:
       retries: 3
 
   mongodb30:
-    image: mongo:3.6
+    image: mongo:3.0
     volumes:
       - pymongodata30:/data/db
     ports:
       - "27017:27017"
 
   mongodb32:
-    image: mongo:3.6
+    image: mongo:3.2
     volumes:
       - pymongodata32:/data/db
     ports:
       - "27017:27017"
 
   mongodb34:
-    image: mongo:3.6
+    image: mongo:3.4
     volumes:
       - pymongodata34:/data/db
     ports:
