@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
 set -e
-
-pip install --user -U pip --cache-dir "${PIP_CACHE}"
-pip install --user -r "tests/requirements/requirements-${WEBFRAMEWORK}.txt" --cache-dir "${PIP_CACHE}"
-
-export PATH=/home/user/.local/bin:$PATH
+export PATH=${HOME}/.local/bin:${PATH}
+python -m pip install --user -U pip --cache-dir "${PIP_CACHE}"
+python -m pip install --user -r "tests/requirements/requirements-${WEBFRAMEWORK}.txt" --cache-dir "${PIP_CACHE}"
 
 export PYTHON_VERSION=$(python -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))")
 
