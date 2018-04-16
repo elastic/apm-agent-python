@@ -21,9 +21,11 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 COPY requirements/requirements-base.txt /
 
-# pre-install base requirements
+# if we're in a pypy image, link pypy/pypy3 to /usr/local/bin/python
+RUN if command -v pypy3; then ln -s $(command -v pypy3) /usr/local/bin/python; elif command -v pypy; then ln -s $(command -v pypy) /usr/local/bin/python; fi
 
-RUN pip install -r /requirements-base.txt
+# pre-install base requirements
+RUN python -m pip install -U pip && pip install -r /requirements-base.txt
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
