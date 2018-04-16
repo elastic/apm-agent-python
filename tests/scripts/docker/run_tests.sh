@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -ex
 
+function cleanup {
+    PYTHON_VERSION=${1} docker-compose down -v
+
+    if [[ $CODECOV_TOKEN ]]; then
+        cd ..
+        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK
+    fi
+}
+trap cleanup EXIT
+
 if [ $# -lt 2 ]; then
   echo "Arguments missing"
   exit 2
@@ -37,15 +47,9 @@ PYTHON_VERSION=${1} docker-compose run \
   -e LOCAL_USER_ID=$UID \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
   -e WITH_COVERAGE=true \
+  -e PYTEST_JUNIT="--junitxml=/app/tests/python-agent-junit.xml" \
   -v ${pip_cache}:$(dirname ${docker_pip_cache}) \
   -v "$(dirname $(pwd))":/app \
   --rm run_tests \
 	/bin/bash \
   -c "timeout 5m ./tests/scripts/run_tests.sh"
-
-PYTHON_VERSION=${1} docker-compose down -v
-cd ..
-
-if [[ $CODECOV_TOKEN ]]; then
-    bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK
-fi
