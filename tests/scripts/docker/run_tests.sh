@@ -47,6 +47,7 @@ PYTHON_VERSION=${1} docker-compose run \
   -e LOCAL_USER_ID=$UID \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
   -e WITH_COVERAGE=true \
+  -e PYTEST_JUNIT="--junitxml=/app/tests/python-agent-junit.xml" \
   -v ${pip_cache}:$(dirname ${docker_pip_cache}) \
   -v "$(dirname $(pwd))":/app \
   --rm run_tests \
