@@ -370,11 +370,11 @@ Setting an upper limit will prevent overloading the agent and the APM server wit
 
 [float]
 [[config-span-frames-min-duration-ms]]
-==== `span_frames_min_duration_ms`
+==== `span_frames_min_duration`
 
 |============
 | Environment                               | Django/Flask                  | Default
-| `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION_MS` | `SPAN_FRAMES_MIN_DURATION_MS` | `-1`
+| `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION` | `SPAN_FRAMES_MIN_DURATION` | `-1`
 |============
 
 In its default settings, the APM agent will collect a stack trace with every recorded span.
