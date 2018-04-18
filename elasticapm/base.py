@@ -12,6 +12,7 @@ Large portions are
 from __future__ import absolute_import
 
 import datetime
+import gc
 import logging
 import os
 import platform
@@ -20,7 +21,6 @@ import sys
 import threading
 import time
 import zlib
-import gc
 from copy import deepcopy
 
 import elasticapm
