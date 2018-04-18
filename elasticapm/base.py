@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import zlib
+import gc
 from copy import deepcopy
 
 import elasticapm
@@ -67,6 +68,9 @@ class ClientState(object):
 
     def did_fail(self):
         return self.status == self.ERROR
+
+
+gc_callback = lambda phase, info: elasticapm.mark('gc', 'collect-%s' % phase)
 
 
 class Client(object):
@@ -148,6 +152,9 @@ class Client(object):
                     string_length=self.config.local_var_max_length,
                 ), local_var)
             )
+
+        if gc_callback not in gc.callbacks:
+            gc.callbacks.append(gc_callback)
 
         self.instrumentation_store = TransactionsStore(
             frames_collector_func=frames_collector_func,
