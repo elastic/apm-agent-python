@@ -6,6 +6,7 @@ import re
 import threading
 import timeit
 import uuid
+from collections import defaultdict
 
 from elasticapm.conf import constants
 from elasticapm.utils import compat, encoding, get_name_from_func
@@ -61,6 +62,7 @@ class Transaction(object):
         self.ignore_subtree = False
         self.context = {}
         self.tags = {}
+        self.mark_groups = defaultdict(dict)
 
         self.is_sampled = is_sampled
         self._span_counter = 0
@@ -125,6 +127,8 @@ class Transaction(object):
         if self.is_sampled:
             result['spans'] = [span_obj.to_dict() for span_obj in self.spans]
             result['context'] = self.context
+            if self.mark_groups:
+                result['marks'] = self.mark_groups
 
         if self.dropped_spans:
             result['span_count'] = {'dropped': {'total': self.dropped_spans}}
@@ -316,3 +320,20 @@ def set_user_context(username=None, email=None, user_id=None):
     if user_id is not None:
         data['id'] = encoding.keyword_field(user_id)
     set_context(data, 'user')
+
+
+def mark(group_name, name, override=True):
+    transaction = get_transaction()
+    if not transaction:
+        error_logger.debug("Ignored mark %s/%s. No transaction currently active.", group_name, name)
+        return
+    t = (_time_func() - transaction.start_time) * 1000.0
+    group = transaction.mark_groups[group_name]
+    if name in group and not override:
+        i = 1
+        clash_name = '%s-%d' % (name, i)
+        while clash_name in group:
+            i += 1
+            clash_name = '%s-%d' % (name, i)
+        name = clash_name
+    group[name] = t
