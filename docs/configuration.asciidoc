@@ -369,6 +369,20 @@ This is helpful in cases where a transaction creates a very high amount of spans
 Setting an upper limit will prevent overloading the agent and the APM server with too much work for such edge cases.
 
 [float]
+[[config-transaction-mark-errors]]
+==== `transaction_mark_errors`
+
+|============
+| Environment                           | Django/Flask              | Default
+| `ELASTIC_APM_TRANSACTION_MARK_ERRORS` | `TRANSACTION_MARK_ERRORS` | `all`
+|============
+
+Possible values: `handled`, `unhandled`, `all`, `off`
+
+Mark errors that happen during a transaction on the transaction.
+
+
+[float]
 [[config-span-frames-min-duration-ms]]
 ==== `span_frames_min_duration`
 
