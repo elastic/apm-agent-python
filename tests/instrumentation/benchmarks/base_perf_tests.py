@@ -2,7 +2,7 @@ import mock
 import pytest
 
 import elasticapm
-from tests.instrumentation.perf_tests.perf_util import go_someplace_else
+from tests.instrumentation.benchmarks.perf_util import go_someplace_else
 
 
 @pytest.mark.parametrize('elasticapm_client', [{

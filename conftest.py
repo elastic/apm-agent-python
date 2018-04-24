@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 import sys
+import subprocess
+import os
+import json
 from os.path import abspath, dirname, join
+
+import pytest
 
 from tests.fixtures import (elasticapm_client, instrument, not_so_random,
                             sending_elasticapm_client, validating_httpserver)
@@ -15,6 +20,12 @@ try:
     from tests.contrib.flask.fixtures import flask_app, flask_celery, flask_apm_client
 except ImportError:
     pass
+
+
+try:
+    from urllib.request import Request, urlopen
+except ImportError:
+    from urllib2 import Request, urlopen
 
 where_am_i = dirname(abspath(__file__))
 
@@ -101,3 +112,23 @@ def pytest_configure(config):
         settings.configure(**settings_dict)
         if hasattr(django, 'setup'):
             django.setup()
+
+
+#@pytest.mark.hookwrapper
+def pytest_benchmark_update_commit_info(config, commit_info):
+    commit_info['message'] = subprocess.check_output(['git', 'log', '-1', '--pretty=%B']).decode('utf8').strip()
+
+
+#@pytest.mark.hookwrapper
+def pytest_benchmark_update_json(config, benchmarks, output_json):
+    if not 'BENCHMARK_ES_HOST' in os.environ:
+        return output_json
+    url = os.environ['BENCHMARK_ES_HOST'] + 'agent_benchmarks/_doc/'
+    for benchmark in output_json['benchmarks']:
+        benchmark['machine_info'] = output_json['machine_info']
+        benchmark['commit_info'] = output_json['commit_info']
+        benchmark['@timestamp'] = output_json['commit_info']['author_time']
+        req = Request(url, json.dumps(benchmark).encode('utf8'), {'Content-Type': 'application/json'})
+        f = urlopen(req)
+        response = f.read()
+        f.close()
