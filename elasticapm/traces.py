@@ -115,7 +115,7 @@ class Transaction(object):
         self.context['tags'] = self.tags
         result = {
             'id': self.id,
-            'name': encoding.keyword_field(self.name),
+            'name': encoding.keyword_field(self.name or ''),
             'type': encoding.keyword_field(self.transaction_type),
             'duration': self.duration * 1000,  # milliseconds
             'result': encoding.keyword_field(str(self.result)),
@@ -228,7 +228,7 @@ class TransactionsStore(object):
                 return True
         return False
 
-    def end_transaction(self, response_code, transaction_name):
+    def end_transaction(self, result=None, transaction_name=None):
         transaction = get_transaction(clear=True)
         if transaction:
             transaction.end_transaction()
@@ -236,7 +236,8 @@ class TransactionsStore(object):
                 return
             if not transaction.name:
                 transaction.name = transaction_name
-            transaction.result = response_code
+            if transaction.result is None:
+                transaction.result = result
             self.add_transaction(transaction.to_dict())
         return transaction
 
@@ -290,6 +291,13 @@ def set_transaction_name(name):
     if not transaction:
         return
     transaction.name = name
+
+
+def set_transaction_result(result):
+    transaction = get_transaction()
+    if not transaction:
+        return
+    transaction.result = result
 
 
 def set_context(data, key='custom'):

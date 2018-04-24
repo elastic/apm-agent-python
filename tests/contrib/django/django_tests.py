@@ -1093,7 +1093,9 @@ def test_perf_transaction_with_collection(benchmark, django_elasticapm_client):
         @benchmark
         def result():
             # Code to be measured
-            return client_get(client, reverse("render-user-template"))
+            with override_settings(**middleware_setting(django.VERSION,
+                                                    ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
+                return client_get(client, reverse("render-user-template"))
 
         assert result.status_code is 200
         assert len(django_elasticapm_client.events) > 0
