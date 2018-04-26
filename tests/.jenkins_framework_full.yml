@@ -44,4 +44,7 @@ FRAMEWORK:
   - psycopg2-newest
   - memcached-1.51
   - memcached-newest
+  - cassandra-3.4
+  - cassandra-newest
+
 
