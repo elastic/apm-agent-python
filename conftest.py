@@ -42,6 +42,7 @@ def pytest_configure(config):
     if settings is not None and not settings.configured:
         import django
         settings_dict = dict(
+            SECRET_KEY='42',
             DATABASES={
                 'default': {
                     'ENGINE': 'django.db.backends.sqlite3',
