@@ -22,6 +22,15 @@ fi
 
 make update-json-schema
 
+if [[ -n $WAIT_FOR_HOST ]]
+then
+    echo "Waiting for $WAIT_FOR_HOST:$WAIT_FOR_PORT"
+    while ! nc -z $WAIT_FOR_HOST $WAIT_FOR_PORT; do
+        sleep 1
+    done
+    echo "$WAIT_FOR_HOST:$WAIT_FOR_PORT is up!"
+fi
+
 if [[ "$WITH_COVERAGE" == "true" ]]
 then
     make coverage
