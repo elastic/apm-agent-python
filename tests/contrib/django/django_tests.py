@@ -799,7 +799,7 @@ def test_request_metrics_streaming(django_elasticapm_client, client):
         resp.close()
     transaction = django_elasticapm_client.instrumentation_store.get_all()[0]
     assert transaction['result'] == 'HTTP 2xx'
-    assert transaction['duration'] >= 500
+    assert transaction['duration'] >= 50
     assert len(transaction['spans']) == 5
 
 

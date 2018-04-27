@@ -95,7 +95,7 @@ def streaming_view(request):
     def my_generator():
         for i in range(5):
             with capture_span('iter', 'code'):
-                time.sleep(0.1)
+                time.sleep(0.01)
                 yield str(i)
     resp = StreamingHttpResponse(my_generator())
     return resp
