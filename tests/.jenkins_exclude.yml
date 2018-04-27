@@ -25,6 +25,10 @@ exclude:
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: flask-1.0
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: flask-master
   # requests
   - PYTHON_VERSION: python-3.3
     FRAMEWORK: requests-1.2

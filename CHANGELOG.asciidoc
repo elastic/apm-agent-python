@@ -7,10 +7,12 @@
 == Changelog
 
 
-//[[release-next]]
-//[float]
-//=== Unreleased
-//https://github.com/elastic/apm-agent-python/compare/v2.1.0\...master[Check the HEAD diff]
+[[release-next]]
+[float]
+=== Unreleased
+https://github.com/elastic/apm-agent-python/compare/v2.1.1\...master[Check the HEAD diff]
+
+ * added Flask 1.0 to the test matrix ({pull}207[#207])
 
 [[release-2.1.1]]
 [float]
