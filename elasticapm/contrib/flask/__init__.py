@@ -148,7 +148,11 @@ class ElasticAPM(object):
                 result = 'HTTP {}xx'.format(response.status_code // 100)
             else:
                 result = response.status
-            self.client.end_transaction(rule, result)
+            elasticapm.set_transaction_name(rule)
+            elasticapm.set_transaction_result(result)
+            # Instead of calling end_transaction here, we defer the call until the response is closed.
+            # This ensures that we capture things that happen until the WSGI server closes the response.
+            response.call_on_close(self.client.end_transaction)
 
     def capture_exception(self, *args, **kwargs):
         assert self.client, 'capture_exception called before application configured'

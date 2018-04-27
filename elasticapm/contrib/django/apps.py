@@ -5,11 +5,9 @@ from django.conf import settings as django_settings
 
 from elasticapm.contrib.django.client import get_client
 
-
 ERROR_DISPATCH_UID = 'elasticapm-exceptions'
 REQUEST_START_DISPATCH_UID = 'elasticapm-request-start'
 REQUEST_FINISH_DISPATCH_UID = 'elasticapm-request-stop'
-
 
 
 class ElasticAPMConfig(AppConfig):
