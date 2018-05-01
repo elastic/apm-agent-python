@@ -21,15 +21,11 @@ Logbook==1.3.0
 MarkupSafe
 WebOb
 Werkzeug
-amqp==1.4.9
 anyjson
 argparse
-billiard
 blinker>=1.1
-celery<4
 greenlet
 itsdangerous
-kombu<4
 mock
 msgpack-python
 pep8

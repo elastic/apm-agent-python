@@ -11,6 +11,12 @@ FRAMEWORK:
   - flask-0.11
   - flask-0.12
   - flask-1.0
+  - celery-3-flask-1.0
+  - celery-3-django-1.11
+  - celery-3-django-2.0
+  - celery-4-flask-1.0
+  - celery-4-django-1.11
+  - celery-4-django-2.0
   - twisted-18
   - twisted-17
   - twisted-16

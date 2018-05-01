@@ -1,7 +1,10 @@
 import pytest  # isort:skip
-django = pytest.importorskip("flask")  # isort:skip
+flask = pytest.importorskip("flask")  # isort:skip
+celery = pytest.importorskip("celery")  # isort:skip
 
 import mock
+
+pytestmark = pytest.mark.celery
 
 
 def test_task_failure(flask_celery):
