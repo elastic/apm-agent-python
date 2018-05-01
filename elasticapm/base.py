@@ -178,6 +178,12 @@ class Client(object):
         if data:
             url = self.config.server_url + constants.ERROR_API_PATH
             self.send(url, **data)
+            c = self.config.transaction_mark_errors
+            if c != 'off':
+                if (c == 'all' or
+                        (handled and c == 'handled') or
+                        (not handled and c == 'unhandled')):
+                    elasticapm.mark('errors', data['errors'][0]['id'])
             return data['errors'][0]['id']
 
     def capture_message(self, message=None, param_message=None, **kwargs):

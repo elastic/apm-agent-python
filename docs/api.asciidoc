@@ -231,3 +231,35 @@ elasticapm.tag(ecommerce=True, dollar_value=47.12)
 Errors that happen after this call will also have the tags attached to them.
 You can call this function multiple times, new tags will be merged with existing tags,
 following the `update()` semantics of Python dictionaries.
+
+
+[float]
+[[api-mark]]
+==== `elasticapm.mark()`
+
+Mark arbitrary points in time during a transaction.
+ 
+ [source,python]
+----
+import elasticapm
+
+elasticapm.mark(group_name='request', 'middleware_finished', override=True)
+----
+
+ * `group_name`: (*required*) name of the group this mark should be filed under
+ * `name`: (*required*) name of the mark
+ * `override`: (default: `True`) if `True`, existing marks with the same name will be overwritten. 
+   If `False`, a new mark name will be generated with an appended counter.
+
+Examples for such marks:
+
+ * Garbage collection events
+ * events during request processing
+ * errors
+
+// TODO
+//Some of our specific framework support comes with default marks,
+//see the "Marks" section in the respective framework documentation.
+
+You can enable automatic marks for any errors (handled or unhandled) that happen during a transaction,
+see <<[config-transaction-mark-errors,`transaction_mark_errors`>>.
