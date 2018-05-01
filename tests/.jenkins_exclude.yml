@@ -29,6 +29,9 @@ exclude:
     FRAMEWORK: flask-1.0
   - PYTHON_VERSION: python-3.3
     FRAMEWORK: flask-master
+  # Twisted
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: twisted-18
   # requests
   - PYTHON_VERSION: python-3.3
     FRAMEWORK: requests-1.2
