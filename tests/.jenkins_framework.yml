@@ -5,6 +5,7 @@ FRAMEWORK:
   - django-2.0
   - flask-0.12
   - flask-1.0
+  - twisted-18
   - requests-newest
   - boto3-newest
   - pymongo-newest
