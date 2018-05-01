@@ -1,0 +1,2 @@
+celery>=4,<5
+-r requirements-flask-1.0.txt
