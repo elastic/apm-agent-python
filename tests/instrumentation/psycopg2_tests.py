@@ -215,6 +215,12 @@ def test_multi_statement_sql():
     assert "CREATE TABLE" == actual
 
 
+def test_fully_qualified_table_name():
+    sql_statement = """SELECT a.b FROM db.schema.mytable as a;"""
+    actual = extract_signature(sql_statement)
+    assert "SELECT FROM db.schema.mytable" == actual
+
+
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_type(postgres_connection, elasticapm_client):

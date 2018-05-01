@@ -13,6 +13,7 @@
 https://github.com/elastic/apm-agent-python/compare/v2.1.1\...master[Check the HEAD diff]
 
  * added Flask 1.0 to the test matrix ({pull}207[#207])
+ * fixed an issue with our minimalistic SQL parser and "fully qualified" table names ({pull}206[#206])
 
 [[release-2.1.1]]
 [float]
