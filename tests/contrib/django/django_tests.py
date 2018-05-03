@@ -901,6 +901,7 @@ def test_django_logging_middleware(django_elasticapm_client, client):
     logger = logging.getLogger('logmiddleware')
     logger.handlers = []
     logger.addHandler(handler)
+    logger.level = logging.INFO
 
     with override_settings(**middleware_setting(django.VERSION,
                                                 ['elasticapm.contrib.django.middleware.LogMiddleware'])):

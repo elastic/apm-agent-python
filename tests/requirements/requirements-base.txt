@@ -1,8 +1,10 @@
-py==1.4.34
-pytest==3.2.4
-pytest-catchlog==1.2.2
-pytest-django==3.1.2
-coverage==4.4.2
+pytest==3.6.2
+py==1.5.3
+more-itertools==4.1.0
+pluggy==0.6.0
+pytest-django==3.3.2
+atomicwrites==1.1.5
+coverage==4.5.1
 pytest-cov==2.5.1
 pytest-localserver==0.4.1
 pytest-mock==1.6.3
