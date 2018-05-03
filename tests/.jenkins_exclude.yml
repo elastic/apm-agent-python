@@ -50,6 +50,8 @@ exclude:
     FRAMEWORK: celery-3-django-2.0
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: celery-4-django-2.0
+  - PYTHON_VERSION: python-3.7-rc
+    FRAMEWORK: celery-3-django-1.11 # see https://code.djangoproject.com/ticket/28814
   # celery 4 doesn't currently work on Python 3.7, see https://github.com/celery/celery/issues/4500
   - PYTHON_VERSION: python-3.7-rc
     FRAMEWORK: celery-4-django-2.0
