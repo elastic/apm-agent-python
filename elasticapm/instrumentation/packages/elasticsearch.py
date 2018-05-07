@@ -130,7 +130,8 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
         super(ElasticsearchInstrumentation, self).instrument()
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        params = kwargs.pop('params', {})
+        # make a copy of params in case the caller reuses them for some reason
+        params = kwargs.pop('params', {}).copy()
         cls_name, method_name = method.split('.', 1)
         body_pos = (self.body_positions['all'].get(method_name) or
                     self.body_positions[self.version].get(method_name) or None)
