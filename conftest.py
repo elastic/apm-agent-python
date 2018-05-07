@@ -12,7 +12,7 @@ except ImportError:
     pass
 
 try:
-    from tests.contrib.flask.fixtures import flask_app, flask_celery, flask_apm_client
+    from tests.contrib.flask.fixtures import flask_app, flask_celery, flask_apm_client, flask_wsgi_server
 except ImportError:
     pass
 

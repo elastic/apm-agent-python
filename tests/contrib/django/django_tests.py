@@ -789,6 +789,20 @@ def test_request_metrics_404_resolve_error(django_elasticapm_client, client):
     assert transactions[0]['name'] == ''
 
 
+@pytest.mark.django_db
+def test_request_metrics_streaming(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
+    ):
+        resp = client.get('/streaming')
+        assert list(resp.streaming_content) == [b'0', b'1', b'2', b'3', b'4']
+        resp.close()
+    transaction = django_elasticapm_client.instrumentation_store.get_all()[0]
+    assert transaction['result'] == 'HTTP 2xx'
+    assert transaction['duration'] >= 50
+    assert len(transaction['spans']) == 5
+
+
 def test_get_service_info(django_elasticapm_client):
     app_info = django_elasticapm_client.get_service_info()
     assert django.get_version() == app_info['framework']['version']
@@ -1079,7 +1093,9 @@ def test_perf_transaction_with_collection(benchmark, django_elasticapm_client):
         @benchmark
         def result():
             # Code to be measured
-            return client_get(client, reverse("render-user-template"))
+            with override_settings(**middleware_setting(django.VERSION,
+                                                    ['elasticapm.contrib.django.middleware.TracingMiddleware'])):
+                return client_get(client, reverse("render-user-template"))
 
         assert result.status_code is 200
         assert len(django_elasticapm_client.events) > 0

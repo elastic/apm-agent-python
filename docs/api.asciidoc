@@ -126,11 +126,13 @@ Should be called e.g. at the end of a request or when ending a background task. 
 client.end_transaction('myapp.billing_process', processor.status)
 ----
 
- * `name`: (*required*) A string describing the name of the transaction, e.g. `process_order`.
+ * `name`: (*optional*) A string describing the name of the transaction, e.g. `process_order`.
    This is typically the name of the view/controller that handles the request, or the route name.
- * `result`: (*required*) A string describing the result of the transaction.
+ * `result`: (*optional*) A string describing the result of the transaction.
    This is typically the HTTP status code, or e.g. `'success'` for a background task.
 
+NOTE: if `name` and `result` are not set in the `end_transaction()` call,
+they have to be set beforehand by calling <<api-set-transaction-name, `elasticapm.set_transaction_name()`>> and <<api-set-transaction-result, `elasticapm.set_transaction_result()`>> during the transaction.
 
 [float]
 [[api-other]]
@@ -157,7 +159,7 @@ elasticapm.instrument()
 [[api-set-transaction-name]]
 ==== `elasticapm.set_transaction_name()`
 
-Override the name of the current transaction.
+Set the name of the current transaction.
 For supported frameworks, the transaction name is determined automatically,
 and can be overridden using this function. Example:
 
@@ -169,6 +171,25 @@ elasticapm.set_transaction_name('myapp.billing_process')
 ----
 
  * `name`: (*required*) A string describing name of the transaction
+
+
+[float]
+[[api-set-transaction-result]]
+==== `elasticapm.set_transaction_result()`
+
+Set the name of the current transaction.
+For supported frameworks, the transaction result is determined automatically,
+and can be overridden using this function. Example:
+
+[source,python]
+----
+import elasticapm
+
+elasticapm.set_transaction_result('SUCCESS')
+----
+
+ * `result`: (*required*) A string describing the result of the transaction, e.g. `HTTP 2xx` or `SUCCESS`
+
 
 [float]
 [[api-set-custom-context]]

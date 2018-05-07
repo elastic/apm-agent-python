@@ -1,6 +1,10 @@
-import pytest
-from flask import Flask, make_response, render_template, signals
+import time
 
+import pytest
+from flask import Flask, Response, make_response, render_template, signals
+from pytest_localserver.http import WSGIServer
+
+import elasticapm
 from elasticapm.contrib.flask import ElasticAPM
 
 
@@ -24,7 +28,28 @@ def flask_app():
     def non_standard_status():
         return "foo", 'fail'
 
+    @app.route('/streaming/', methods=['GET'])
+    def streaming():
+        def generator():
+            for i in range(5):
+                with elasticapm.capture_span('generator'):
+                    time.sleep(0.01)
+                    yield str(i)
+        return Response(generator(), mimetype='text/plain')
+
     return app
+
+
+@pytest.fixture()
+def flask_wsgi_server(request, flask_app, elasticapm_client):
+    server = WSGIServer(application=flask_app)
+    apm_client = ElasticAPM(app=flask_app, client=elasticapm_client)
+    flask_app.apm_client = apm_client
+    server.start()
+    yield server
+    server.stop()
+    apm_client.client.close()
+
 
 
 @pytest.fixture()
