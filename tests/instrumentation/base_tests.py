@@ -25,7 +25,7 @@ class _TestInstrumentNonExistingFunctionOnModule(AbstractInstrumentedModule):
 class _TestInstrumentNonExistingMethod(AbstractInstrumentedModule):
     name = "test_non_existing_method_instrumentation"
     instrument_list = [
-        ("dict", "non_existing_method"),
+        ("logging", "Logger.non_existing_method"),
     ]
 
 
@@ -47,36 +47,54 @@ def test_instrument_nonexisting_method_on_module():
     _TestInstrumentNonExistingFunctionOnModule().instrument()
 
 
-def test_instrument_nonexisting_method():
-    _TestInstrumentNonExistingMethod().instrument()
+def test_instrument_nonexisting_method(caplog):
+    with caplog.at_level(logging.DEBUG, 'elasticapm.instrument'):
+        _TestInstrumentNonExistingMethod().instrument()
+    record = caplog.records[0]
+    assert 'has no attribute' in record.message
 
 
 @pytest.mark.skipif(compat.PY3, reason="different object model")
-def test_uninstrument_py2():
+def test_uninstrument_py2(caplog):
     assert isinstance(Dummy.dummy, types.MethodType)
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
     instrumentation = _TestDummyInstrumentation()
-    instrumentation.instrument()
+    with caplog.at_level(logging.DEBUG, 'elasticapm.instrument'):
+        instrumentation.instrument()
+    record = caplog.records[0]
+    assert "Instrumented" in record.message
+    assert record.args == ('test_dummy_instrument', 'tests.instrumentation.base_tests.Dummy.dummy')
     assert isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
-    instrumentation.uninstrument()
+    with caplog.at_level(logging.DEBUG, 'elasticapm.instrument'):
+        instrumentation.uninstrument()
+    record = caplog.records[1]
+    assert "Uninstrumented" in record.message
+    assert record.args == ('test_dummy_instrument', 'tests.instrumentation.base_tests.Dummy.dummy')
     assert isinstance(Dummy.dummy, types.MethodType)
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
 
 @pytest.mark.skipif(compat.PY2, reason="different object model")
-def test_uninstrument_py3():
+def test_uninstrument_py3(caplog):
     original = Dummy.dummy
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
     instrumentation = _TestDummyInstrumentation()
-    instrumentation.instrument()
-
+    with caplog.at_level(logging.DEBUG, 'elasticapm.instrument'):
+        instrumentation.instrument()
+    record = caplog.records[0]
+    assert "Instrumented" in record.message
+    assert record.args == ('test_dummy_instrument', 'tests.instrumentation.base_tests.Dummy.dummy')
     assert Dummy.dummy is not original
     assert isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
-    instrumentation.uninstrument()
+    with caplog.at_level(logging.DEBUG, 'elasticapm.instrument'):
+        instrumentation.uninstrument()
+    record = caplog.records[1]
+    assert "Uninstrumented" in record.message
+    assert record.args == ('test_dummy_instrument', 'tests.instrumentation.base_tests.Dummy.dummy')
     assert Dummy.dummy is original
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
@@ -97,10 +115,13 @@ def test_module_method_args(elasticapm_client):
     assert call_args == ('tests.instrumentation.base_tests', 'Dummy.dummy')
 
 
-def test_skip_instrument_env_var():
+def test_skip_instrument_env_var(caplog):
     instrumentation = _TestDummyInstrumentation()
-    with mock.patch.dict('os.environ', {'SKIP_INSTRUMENT_TEST_DUMMY_INSTRUMENT': 'foo'}):
+    with mock.patch.dict('os.environ', {'SKIP_INSTRUMENT_TEST_DUMMY_INSTRUMENT': 'foo'}),\
+            caplog.at_level(logging.DEBUG, 'elasticapm.instrument'):
         instrumentation.instrument()
+    record = caplog.records[0]
+    assert 'Skipping' in record.message
     assert not instrumentation.instrumented
 
 

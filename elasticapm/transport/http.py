@@ -12,7 +12,7 @@ from elasticapm.transport.http_base import (AsyncHTTPTransportBase,
                                             HTTPTransportBase)
 from elasticapm.utils import compat
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('elasticapm.transport.http')
 
 
 class Transport(HTTPTransportBase):

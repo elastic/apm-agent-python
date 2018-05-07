@@ -20,7 +20,7 @@ from elasticapm.utils.stacks import (get_culprit, get_stack_info,
 
 __all__ = ('BaseEvent', 'Exception', 'Message')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('elasticapm.events')
 
 
 class BaseEvent(object):

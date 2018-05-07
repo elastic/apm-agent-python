@@ -20,7 +20,7 @@ from django.conf import settings as django_settings
 
 from elasticapm.handlers.logging import LoggingHandler as BaseLoggingHandler
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('elasticapm.logging')
 
 
 class LoggingHandler(BaseLoggingHandler):
