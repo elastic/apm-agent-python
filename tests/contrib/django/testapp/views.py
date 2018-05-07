@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 
 import logging
+import time
 
 from django.contrib.auth.models import User
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render, render_to_response
 
 from elasticapm.traces import capture_span
@@ -88,3 +89,13 @@ def render_user_view(request):
 
     return render(request, "list_users.html",
                   {'users': something_expensive})
+
+
+def streaming_view(request):
+    def my_generator():
+        for i in range(5):
+            with capture_span('iter', 'code'):
+                time.sleep(0.01)
+                yield str(i)
+    resp = StreamingHttpResponse(my_generator())
+    return resp

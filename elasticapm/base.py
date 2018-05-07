@@ -251,7 +251,7 @@ class Client(object):
         """
         return self.instrumentation_store.begin_transaction(transaction_type)
 
-    def end_transaction(self, name, result=''):
+    def end_transaction(self, name=None, result=''):
         transaction = self.instrumentation_store.end_transaction(result, name)
         if self.instrumentation_store.should_collect():
             self._collect_transactions()

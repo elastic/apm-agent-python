@@ -8,6 +8,11 @@ import mock
 from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.utils import compat
 
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
+
 
 def test_error_handler(flask_apm_client):
     client = flask_apm_client.app.test_client()
@@ -119,6 +124,7 @@ def test_instrumentation(flask_apm_client):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
+        resp.close()
 
     assert resp.status_code == 200, resp.response
 
@@ -157,6 +163,7 @@ def test_instrumentation_debug(flask_apm_client):
     flask_apm_client.app.debug = True
     assert len(flask_apm_client.client.instrumentation_store) == 0
     resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
+    resp.close()
     assert len(flask_apm_client.client.instrumentation_store) == 0
 
 
@@ -167,6 +174,7 @@ def test_instrumentation_debug_client_debug(flask_apm_client):
     flask_apm_client.app.debug = True
     assert len(flask_apm_client.client.instrumentation_store) == 0
     resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
+    resp.close()
     assert len(flask_apm_client.client.instrumentation_store) == 1
 
 
@@ -174,6 +182,7 @@ def test_instrumentation_404(flask_apm_client):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         resp = flask_apm_client.app.test_client().post('/no-such-page/')
+        resp.close()
 
     assert resp.status_code == 404, resp.response
 
@@ -190,6 +199,7 @@ def test_non_standard_http_status(flask_apm_client):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         resp = flask_apm_client.app.test_client().get('/non-standard-status/')
+        resp.close()
     assert resp.status == "0 fail", resp.response
     assert resp.status_code == 0, resp.response
 
@@ -239,5 +249,26 @@ def test_post_files(flask_apm_client):
 ], indirect=True)
 def test_options_request(flask_apm_client):
     resp = flask_apm_client.app.test_client().options('/')
+    resp.close()
     transactions = flask_apm_client.client.instrumentation_store.get_all()
     assert transactions[0]['context']['request']['method'] == 'OPTIONS'
+
+
+def test_streaming_response(flask_apm_client):
+    resp = flask_apm_client.app.test_client().get('/streaming/')
+    assert resp.data == b'01234'
+    resp.close()
+    transaction = flask_apm_client.client.instrumentation_store.get_all()[0]
+    assert transaction['duration'] > 50
+    assert len(transaction['spans']) == 5
+
+
+def test_response_close_wsgi(flask_wsgi_server):
+    # this tests the response-close behavior using a real WSGI server
+    elasticapm_client = flask_wsgi_server.app.apm_client.client
+    url = flask_wsgi_server.url + '/streaming/'
+    response = urlopen(url)
+    response.read()
+    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    assert transaction['duration'] > 50
+    assert len(transaction['spans']) == 5

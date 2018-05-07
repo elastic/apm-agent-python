@@ -14,10 +14,14 @@ https://github.com/elastic/apm-agent-python/compare/v2.1.1\...master[Check the H
 
  * added Flask 1.0 to the test matrix ({pull}207[#207])
  * fixed an issue with our minimalistic SQL parser and "fully qualified" table names ({pull}206[#206])
+ * fixed issue with spans in Django's `StreamingHTTPResponse` not being captured ({issue}201[#201], {pull}202[#202])
+ * fixed issue with spans with Flask's streaming response not being captured ({issue}201[#201], {pull}202[#202])
 
 [[release-2.1.1]]
 [float]
 === v2.1.1
+https://github.com/elastic/apm-agent-python/compare/v2.1.0\...v2.1.1[Check the diff]
+
  * fixed bug in Django management command that would be triggered on Django 1.10 or 1.11 while using
    the `MIDDLEWARE_CLASSES` setting ({issue}186[#186], {pull}187[#187])
  * fix an encoding issue with log messages that are hit in rare cases ({issue}188[#188], {pull}189[#189])
@@ -25,6 +29,7 @@ https://github.com/elastic/apm-agent-python/compare/v2.1.1\...master[Check the H
 [[release-2.1.0]]
 [float]
 === v2.1.0
+https://github.com/elastic/apm-agent-python/compare/v2.0.1\...v2.1.0[Check the diff]
 
  * made skipping of initial `elasticapm` frames for span stack traces more generic ({pull}167[#167])
  * added `context.process.ppid` field (supported in apm-server 6.3+) ({pull}168[#168])

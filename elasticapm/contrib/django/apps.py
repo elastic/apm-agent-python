@@ -1,8 +1,13 @@
 from functools import partial
 
 from django.apps import AppConfig
+from django.conf import settings as django_settings
 
 from elasticapm.contrib.django.client import get_client
+
+ERROR_DISPATCH_UID = 'elasticapm-exceptions'
+REQUEST_START_DISPATCH_UID = 'elasticapm-request-start'
+REQUEST_FINISH_DISPATCH_UID = 'elasticapm-request-stop'
 
 
 class ElasticAPMConfig(AppConfig):
@@ -24,13 +29,25 @@ class ElasticAPMConfig(AppConfig):
 
 
 def register_handlers(client):
-    from django.core.signals import got_request_exception
+    from django.core.signals import got_request_exception, request_started, request_finished
     from elasticapm.contrib.django.handlers import exception_handler
 
-    # Connect to Django's internal signal handler
-    dispatch_uid = 'elasticapm-exceptions'
-    got_request_exception.disconnect(dispatch_uid=dispatch_uid)
-    got_request_exception.connect(partial(exception_handler, client), dispatch_uid=dispatch_uid, weak=False)
+    # Connect to Django's internal signal handlers
+    got_request_exception.disconnect(dispatch_uid=ERROR_DISPATCH_UID)
+    got_request_exception.connect(partial(exception_handler, client), dispatch_uid=ERROR_DISPATCH_UID, weak=False)
+
+    request_started.disconnect(dispatch_uid=REQUEST_START_DISPATCH_UID)
+    request_started.connect(
+        lambda sender, environ, **kwargs: client.begin_transaction('request')
+        if _should_start_transaction(client) else None,
+        dispatch_uid=REQUEST_START_DISPATCH_UID, weak=False
+    )
+
+    request_finished.disconnect(dispatch_uid=REQUEST_FINISH_DISPATCH_UID)
+    request_finished.connect(
+        lambda sender, **kwargs: client.end_transaction() if _should_start_transaction(client) else None,
+        dispatch_uid=REQUEST_FINISH_DISPATCH_UID, weak=False
+    )
 
     # If we can import celery, register ourselves as exception handler
     try:
@@ -59,3 +76,10 @@ def instrument(client):
         register_instrumentation(client)
     except ImportError:
         client.logger.debug("Not instrumenting Celery, couldn't import")
+
+
+def _should_start_transaction(client):
+    middleware_attr = 'MIDDLEWARE' if getattr(django_settings, 'MIDDLEWARE', None) is not None else 'MIDDLEWARE_CLASSES'
+    middleware = getattr(django_settings, middleware_attr)
+    return ((not django_settings.DEBUG or client.config.debug) and
+            middleware and 'elasticapm.contrib.django.middleware.TracingMiddleware' in middleware)
