@@ -455,6 +455,16 @@ def test_ignore_patterns(should_collect, elasticapm_client):
     assert transactions[0]['name'] == 'GET views.users'
 
 
+@pytest.mark.parametrize('elasticapm_client', [{'transactions_ignore_patterns': [
+        '^OPTIONS',
+        'views.api.v2'
+    ]}], indirect=True)
+def test_ignore_patterns_with_none_transaction_name(elasticapm_client):
+    elasticapm_client.begin_transaction("web")
+    t = elasticapm_client.end_transaction(None, 200)
+    assert t.name == ''
+
+
 @pytest.mark.parametrize('sending_elasticapm_client', [{'disable_send': True}], indirect=True)
 def test_disable_send(sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send

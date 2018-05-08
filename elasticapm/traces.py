@@ -232,10 +232,10 @@ class TransactionsStore(object):
         transaction = get_transaction(clear=True)
         if transaction:
             transaction.end_transaction()
-            if self._should_ignore(transaction_name):
+            if transaction.name is None:
+                transaction.name = transaction_name if transaction_name is not None else ''
+            if self._should_ignore(transaction.name):
                 return
-            if not transaction.name:
-                transaction.name = transaction_name
             if transaction.result is None:
                 transaction.result = result
             self.add_transaction(transaction.to_dict())
