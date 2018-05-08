@@ -45,13 +45,15 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             # user can see it.
             if 'q' in params:
                 # 'q' is already encoded to a byte string at this point
-                query.append('q=' + params['q'].decode('utf-8'))
+                # we assume utf8, which is the default
+                query.append('q=' + params['q'].decode('utf-8', errors='replace'))
             if isinstance(body, dict) and 'query' in body:
                 query.append(json.dumps(body['query']))
             context['db']['statement'] = '\n\n'.join(query)
-        if api_method == 'Elasticsearch.update':
+        elif api_method == 'Elasticsearch.update':
             if isinstance(body, dict) and 'script' in body:
-                context['db']['statement'] = json.dumps(body)
+                # only get the `script` field from the body
+                context['db']['statement'] = json.dumps({'script': body['script']})
         # TODO: add instance.base_url to context once we agreed on a format
         with elasticapm.capture_span(signature, "db.elasticsearch", extra=context, skip_frames=2, leaf=True):
             return wrapped(*args, **kwargs)
