@@ -19,9 +19,3 @@ class BrokenResponseMiddleware(MiddlewareMixin):
 class BrokenViewMiddleware(MiddlewareMixin):
     def process_view(self, request, func, args, kwargs):
         raise ImportError('view')
-
-
-class MetricsNameOverrideMiddleware(MiddlewareMixin):
-    def process_response(self, request, response):
-        request._elasticapm_transaction_name = 'foobar'
-        return response

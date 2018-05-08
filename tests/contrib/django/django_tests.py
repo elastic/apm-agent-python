@@ -766,19 +766,6 @@ def test_request_metrics_contrib_redirect(django_elasticapm_client, client):
     assert transactions[0]['result'] == 'HTTP 3xx'
 
 
-def test_request_metrics_name_override(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
-    with override_settings(
-        **middleware_setting(django.VERSION, [
-            'elasticapm.contrib.django.middleware.TracingMiddleware',
-            'tests.contrib.django.testapp.middleware.MetricsNameOverrideMiddleware',
-        ])
-    ):
-        client.get(reverse('elasticapm-no-error'))
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
-    assert transactions[0]['name'] == 'GET foobar'
-
-
 def test_request_metrics_404_resolve_error(django_elasticapm_client, client):
     django_elasticapm_client.instrumentation_store.get_all()  # clear the store
     with override_settings(

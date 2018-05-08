@@ -168,10 +168,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             return response
         try:
             if hasattr(response, 'status_code'):
-                # check if _elasticapm_transaction_name is set
-                if hasattr(request, '_elasticapm_transaction_name'):
-                    transaction_name = request._elasticapm_transaction_name
-                elif getattr(request, '_elasticapm_view_func', False):
+                if getattr(request, '_elasticapm_view_func', False):
                     transaction_name = get_name_from_func(
                         request._elasticapm_view_func
                     )
