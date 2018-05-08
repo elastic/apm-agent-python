@@ -247,3 +247,15 @@ def test_set_user_context_merge(elasticapm_client):
     transactions = elasticapm_client.instrumentation_store.get_all()
 
     assert transactions[0]['context']['user'] == {'username': 'foo', 'email': 'foo@example.com', 'id': 42}
+
+
+def test_transaction_name_none_is_converted_to_empty_string(elasticapm_client):
+    elasticapm_client.begin_transaction('test')
+    transaction = elasticapm_client.end_transaction(None, 200)
+    assert transaction.name == ''
+
+
+def test_transaction_without_name_result(elasticapm_client):
+    elasticapm_client.begin_transaction('test')
+    transaction = elasticapm_client.end_transaction()
+    assert transaction.name == ''
