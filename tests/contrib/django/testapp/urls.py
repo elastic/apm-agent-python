@@ -29,6 +29,7 @@ urlpatterns = (
     url(r'^trigger-500-template$', views.template_exc, name='elasticapm-template-exc'),
     url(r'^trigger-500-log-request$', views.logging_request_exc, name='elasticapm-log-request-exc'),
     url(r'^streaming$', views.streaming_view, name='elasticapm-streaming-view'),
+    url(r'^name-override$', views.override_transaction_name_view, name='elasticapm-name-override'),
 )
 
 

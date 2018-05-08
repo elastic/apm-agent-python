@@ -171,6 +171,8 @@ elasticapm.set_transaction_name('myapp.billing_process')
 ----
 
  * `name`: (*required*) A string describing name of the transaction
+ * `override`: if `True` (the default), overrides any previously set transaction name.
+    If `False`, only sets the name if the transaction name hasn't already been set.
 
 
 [float]
@@ -189,7 +191,8 @@ elasticapm.set_transaction_result('SUCCESS')
 ----
 
  * `result`: (*required*) A string describing the result of the transaction, e.g. `HTTP 2xx` or `SUCCESS`
-
+ * `override`: if `True` (the default), overrides any previously set result.
+    If `False`, only sets the result if the result hasn't already been set.
 
 [float]
 [[api-set-custom-context]]

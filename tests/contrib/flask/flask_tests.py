@@ -272,3 +272,11 @@ def test_response_close_wsgi(flask_wsgi_server):
     transaction = elasticapm_client.instrumentation_store.get_all()[0]
     assert transaction['duration'] > 50
     assert len(transaction['spans']) == 5
+
+
+def test_set_transaction_name(flask_apm_client):
+    resp = flask_apm_client.app.test_client().get('/transaction-name/')
+    resp.close()
+    transaction = flask_apm_client.client.instrumentation_store.get_all()[0]
+    assert transaction['name'] == 'foo'
+    assert transaction['result'] == 'okydoky'

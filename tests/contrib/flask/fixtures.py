@@ -37,6 +37,12 @@ def flask_app():
                     yield str(i)
         return Response(generator(), mimetype='text/plain')
 
+    @app.route('/transaction-name/', methods=['GET'])
+    def transaction_name():
+        elasticapm.set_transaction_name('foo')
+        elasticapm.set_transaction_result('okydoky')
+        return Response('')
+
     return app
 
 
