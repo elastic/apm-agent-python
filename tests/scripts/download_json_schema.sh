@@ -6,22 +6,20 @@ set -x
 basedir=$(dirname "$0")/..
 
 FILES=( \
-	"context.json" \
-	"errors/error.json" \
-	"errors/payload.json" \
-	"meta.json" \
-	"process.json" \
-	"request.json" \
-	"schema.json" \
-	"service.json" \
-	"sourcemaps/payload.json" \
-	"stacktrace_frame.json" \
-	"system.json" \
-	"transactions/mark.json" \
-	"transactions/payload.json" \
-	"transactions/span.json" \
-	"transactions/transaction.json" \
-	"user.json" \
+    "errors/error.json" \
+    "errors/payload.json" \
+    "sourcemaps/payload.json" \
+    "transactions/mark.json" \
+    "transactions/payload.json" \
+    "transactions/span.json" \
+    "transactions/transaction.json" \
+    "context.json" \
+    "process.json" \
+    "request.json" \
+    "service.json" \
+    "stacktrace_frame.json" \
+    "system.json" \
+    "user.json" \
 )
 
 mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/sourcemaps
