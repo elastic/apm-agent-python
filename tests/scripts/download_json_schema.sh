@@ -26,6 +26,6 @@ mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${b
 
 for i in "${FILES[@]}"; do
     output="${basedir}/.schemacache/${i}"
-    curl -s https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} --compressed > ${output}
+    curl -sf https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} --compressed > ${output} || exit $?
 done
 echo "Done."
