@@ -91,8 +91,8 @@ def process_request_wrapper(wrapped, instance, args, kwargs):
     try:
         if response is not None:
             request = args[0]
-            request._elasticapm_transaction_name = get_name_from_middleware(
-                wrapped, instance
+            elasticapm.set_transaction_name(
+                build_name_with_http_method_prefix(get_name_from_middleware(wrapped, instance), request)
             )
     finally:
         return response
@@ -106,8 +106,8 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
         # a new response object, it's logged as the responsible transaction
         # name
         if not hasattr(request, '_elasticapm_view_func') and response is not original_response:
-            request._elasticapm_transaction_name = get_name_from_middleware(
-                wrapped, instance
+            elasticapm.set_transaction_name(
+                build_name_with_http_method_prefix(get_name_from_middleware(wrapped, instance), request)
             )
     finally:
         return response
@@ -168,35 +168,23 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             return response
         try:
             if hasattr(response, 'status_code'):
-                # check if _elasticapm_transaction_name is set
-                if hasattr(request, '_elasticapm_transaction_name'):
-                    transaction_name = request._elasticapm_transaction_name
-                elif getattr(request, '_elasticapm_view_func', False):
+                if getattr(request, '_elasticapm_view_func', False):
                     transaction_name = get_name_from_func(
                         request._elasticapm_view_func
                     )
-                else:
-                    transaction_name = ''
+                    transaction_name = build_name_with_http_method_prefix(
+                        transaction_name,
+                        request
+                    )
+                    elasticapm.set_transaction_name(transaction_name, override=False)
 
-                status_code = response.status_code
-                transaction_name = build_name_with_http_method_prefix(
-                    transaction_name,
-                    request
-                )
-                request_data = lambda: self.client.get_data_from_request(
+                elasticapm.set_context(lambda: self.client.get_data_from_request(
                     request,
                     capture_body=self.client.config.capture_body in ('all', 'transactions')
-                )
-                response_data = lambda: self.client.get_data_from_response(response)
-                elasticapm.set_context(request_data, 'request')
-                elasticapm.set_context(response_data, 'response')
-
-                user_data = lambda: self.client.get_user_info(request)
-                if user_data:
-                    elasticapm.set_context(user_data, 'user')
-
-                elasticapm.set_transaction_name(transaction_name)
-                elasticapm.set_transaction_result('HTTP {}xx'.format(status_code // 100))
+                ), 'request')
+                elasticapm.set_context(lambda: self.client.get_data_from_response(response), 'response')
+                elasticapm.set_context(lambda: self.client.get_user_info(request), 'user')
+                elasticapm.set_transaction_result('HTTP {}xx'.format(response.status_code // 100), override=False)
         except Exception:
             self.client.error_logger.error(
                 'Exception during timing of request',

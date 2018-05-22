@@ -286,18 +286,20 @@ def tag(**tags):
             error_logger.warning("Ignored tag %s. Tag names can't contain stars, dots or double quotes.", name)
 
 
-def set_transaction_name(name):
+def set_transaction_name(name, override=True):
     transaction = get_transaction()
     if not transaction:
         return
-    transaction.name = name
+    if transaction.name is None or override:
+        transaction.name = name
 
 
-def set_transaction_result(result):
+def set_transaction_result(result, override=True):
     transaction = get_transaction()
     if not transaction:
         return
-    transaction.result = result
+    if transaction.result is None or override:
+        transaction.result = result
 
 
 def set_context(data, key='custom'):

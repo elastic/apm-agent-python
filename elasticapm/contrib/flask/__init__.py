@@ -137,19 +137,17 @@ class ElasticAPM(object):
         if not self.app.debug or self.client.config.debug:
             rule = request.url_rule.rule if request.url_rule is not None else ""
             rule = build_name_with_http_method_prefix(rule, request)
-            request_data = lambda: get_data_from_request(
+            elasticapm.set_context(lambda: get_data_from_request(
                 request,
                 capture_body=self.client.config.capture_body in ('transactions', 'all')
-            )
-            response_data = lambda: get_data_from_response(response)
-            elasticapm.set_context(request_data, 'request')
-            elasticapm.set_context(response_data, 'response')
+            ), 'request')
+            elasticapm.set_context(lambda: get_data_from_response(response), 'response')
             if response.status_code:
                 result = 'HTTP {}xx'.format(response.status_code // 100)
             else:
                 result = response.status
-            elasticapm.set_transaction_name(rule)
-            elasticapm.set_transaction_result(result)
+            elasticapm.set_transaction_name(rule, override=False)
+            elasticapm.set_transaction_result(result, override=False)
             # Instead of calling end_transaction here, we defer the call until the response is closed.
             # This ensures that we capture things that happen until the WSGI server closes the response.
             response.call_on_close(self.client.end_transaction)
