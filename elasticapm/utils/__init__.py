@@ -54,10 +54,7 @@ def get_name_from_func(func):
 
 
 def build_name_with_http_method_prefix(name, request):
-    if name:
-        return request.method + " " + name
-    else:
-        return name  # 404
+    return ' '.join((request.method, name)) if name else name
 
 
 def is_master_process():

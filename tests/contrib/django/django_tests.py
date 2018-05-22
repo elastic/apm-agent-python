@@ -766,19 +766,6 @@ def test_request_metrics_contrib_redirect(django_elasticapm_client, client):
     assert transactions[0]['result'] == 'HTTP 3xx'
 
 
-def test_request_metrics_name_override(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
-    with override_settings(
-        **middleware_setting(django.VERSION, [
-            'elasticapm.contrib.django.middleware.TracingMiddleware',
-            'tests.contrib.django.testapp.middleware.MetricsNameOverrideMiddleware',
-        ])
-    ):
-        client.get(reverse('elasticapm-no-error'))
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
-    assert transactions[0]['name'] == 'GET foobar'
-
-
 def test_request_metrics_404_resolve_error(django_elasticapm_client, client):
     django_elasticapm_client.instrumentation_store.get_all()  # clear the store
     with override_settings(
@@ -794,13 +781,23 @@ def test_request_metrics_streaming(django_elasticapm_client, client):
     with override_settings(
         **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
     ):
-        resp = client.get('/streaming')
+        resp = client.get(reverse('elasticapm-streaming-view'))
         assert list(resp.streaming_content) == [b'0', b'1', b'2', b'3', b'4']
         resp.close()
     transaction = django_elasticapm_client.instrumentation_store.get_all()[0]
     assert transaction['result'] == 'HTTP 2xx'
     assert transaction['duration'] >= 50
     assert len(transaction['spans']) == 5
+
+
+def test_request_metrics_name_override(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
+    ):
+        client.get(reverse('elasticapm-name-override'))
+    transaction = django_elasticapm_client.instrumentation_store.get_all()[0]
+    assert transaction['name'] == 'foo'
+    assert transaction['result'] == 'okydoky'
 
 
 def test_get_service_info(django_elasticapm_client):
