@@ -76,6 +76,8 @@ def get_source_lines_from_loader(loader, module_name, lineno, lower_bound, upper
         return None
     if source is not None:
         source = source.splitlines()
+    else:
+        return None, None, None
     try:
         pre_context = [line.strip('\r\n') for line in source[lower_bound:lineno]]
         context_line = source[lineno].strip('\r\n')
@@ -213,7 +215,7 @@ def get_frame_info(frame, lineno, with_locals=True,
     # This changes /foo/site-packages/baz/bar.py into baz/bar.py
     try:
         base_filename = sys.modules[module_name.split('.', 1)[0]].__file__
-        filename = abs_path.split(base_filename.rsplit(os.path.sep, 2)[0], 1)[-1][1:]
+        filename = abs_path.split(base_filename.rsplit(os.path.sep, 2)[0], 1)[-1].lstrip(os.path.sep)
     except Exception:
         filename = abs_path
 
