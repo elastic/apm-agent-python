@@ -16,4 +16,6 @@ FRAMEWORK:
   - redis-newest
   - psycopg2-newest
   - memcached-newest
-
+  - elasticsearch-2
+  - elasticsearch-5
+  - elasticsearch-6
