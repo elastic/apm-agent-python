@@ -53,7 +53,7 @@ except ValueError:
  * `exc_info`: A `(type, value, traceback)` tuple as returned by https://docs.python.org/3/library/sys.html#sys.exc_info[`sys.exc_info()`]. If not provided, it will be captured automatically.
  * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the 
-    https://www.elastic.co/guide/en/apm/server/current/error-api.html#error-context-schema[Context] schema definition.
+    {apm-server-ref}/error-api.html#error-context-schema[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
  * `handled`: A boolean to indicate if this exception was handled or not.
 
@@ -91,7 +91,7 @@ client.capture_message(param_message={
  * `date`: A `datetime.datetime` object representing the occurrence time of the error.
    If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the 
-    https://www.elastic.co/guide/en/apm/server/current/error-api.html#error-context-schema[Context] schema definition.
+    {apm-server-ref}/error-api.html#error-context-schema[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
 
 Returns the id of the message as a string.
