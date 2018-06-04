@@ -16,6 +16,8 @@ _cls_register = {
     'elasticapm.instrumentation.packages.requests.RequestsInstrumentation',
     'elasticapm.instrumentation.packages.sqlite.SQLiteInstrumentation',
     'elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation',
+    'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation',
+    'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation',
 
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',

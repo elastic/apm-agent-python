@@ -12,6 +12,7 @@
 === Unreleased
 https://github.com/elastic/apm-agent-python/compare/v2.1.1\...master[Check the HEAD diff]
 
+ * added instrumentation of elasticsearch-py ({pull}191[#191])
  * added Flask 1.0 to the test matrix ({pull}207[#207])
  * fixed an issue with our minimalistic SQL parser and "fully qualified" table names ({pull}206[#206])
  * fixed issue with spans in Django's `StreamingHTTPResponse` not being captured ({issue}201[#201], {pull}202[#202])
