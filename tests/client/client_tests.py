@@ -842,3 +842,23 @@ def test_message_keyword_truncation(sending_elasticapm_client):
     assert error['log']['message'] == too_long  # message is not truncated
 
     assert error['log']['logger_name'] == expected
+
+
+@pytest.mark.parametrize('sending_elasticapm_client', [{'service_name': '*'}], indirect=True)
+@mock.patch('elasticapm.base.Client._send_remote')
+def test_config_error_stops_error_send(mock_send_remote, sending_elasticapm_client):
+    assert sending_elasticapm_client.config.disable_send is True
+    sending_elasticapm_client.capture_message('bla')
+    assert mock_send_remote.call_count == 0
+
+
+@pytest.mark.parametrize('sending_elasticapm_client', [{'service_name': '*'}], indirect=True)
+@mock.patch('elasticapm.base.Client._send_remote')
+@mock.patch('elasticapm.base.TransactionsStore.should_collect')
+def test_config_error_stops_transaction_send(should_collect, mock_send_remote, sending_elasticapm_client):
+    should_collect.return_value = False
+    assert sending_elasticapm_client.config.disable_send is True
+    sending_elasticapm_client.begin_transaction('test')
+    sending_elasticapm_client.end_transaction('test', 'OK')
+    sending_elasticapm_client.close()
+    assert mock_send_remote.call_count == 0

@@ -118,7 +118,6 @@ class Client(object):
             for msg in self.config.errors.values():
                 self.error_logger.error(msg)
             self.config.disable_send = True
-            return
 
         self._transport_class = import_string(self.config.transport_class)
 
@@ -210,7 +209,6 @@ class Client(object):
         :param url: URL of endpoint
         :param data: dictionary of data to send
         """
-
         if self.config.disable_send or self._filter_exception_type(data):
             return
 
