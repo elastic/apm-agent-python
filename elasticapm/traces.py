@@ -91,6 +91,9 @@ class Transaction(object):
         return span
 
     def end_span(self, skip_frames):
+        if not self.span_stack:
+            return None
+
         span = self.span_stack.pop()
         if span is IGNORED_SPAN:
             return None
