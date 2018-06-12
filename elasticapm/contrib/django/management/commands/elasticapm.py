@@ -8,6 +8,7 @@ from django.core.management.color import color_style
 from django.utils import termcolors
 
 from elasticapm.contrib.django.client import DjangoClient
+from elasticapm.utils.compat import urlparse
 
 try:
     from django.core.management.base import OutputWrapper
@@ -105,9 +106,8 @@ class Command(BaseCommand):
 
     def handle_test(self, command, **options):
         """Send a test error to APM Server"""
-        config = {}
         # can't be async for testing
-        config['async_mode'] = False
+        config = {'async_mode': False, }
         for key in ('service_name', 'secret_token'):
             if options.get(key):
                 config[key] = options[key]
@@ -161,6 +161,38 @@ class Command(BaseCommand):
             if not is_set(client.config.secret_token):
                 self.write("  * SECRET_TOKEN not set!", red, ending='\n')
             self.write(CONFIG_EXAMPLE)
+        self.write('')
+
+        server_url = client.config.server_url
+        if server_url:
+            parsed_url = urlparse.urlparse(server_url)
+            if parsed_url.scheme.lower() in ('http', 'https', ):
+                # parse netloc, making sure people did not supply basic auth
+                if '@' in parsed_url.netloc:
+                    credentials, _, path = parsed_url.netloc.rpartition('@')
+                    passed = False
+                    self.write(
+                        'Configuration errors detected!', red, ending='\n\n'
+                    )
+                    if ':' in credentials:
+                        self.write('  * SERVER_URL cannot contain authentication '
+                                   'credentials', red, ending='\n')
+                    else:
+                        self.write('  * SERVER_URL contains an unexpected at-sign!'
+                                   ' This is usually used for basic authentication, '
+                                   'but the colon is left out', red, ending='\n')
+                else:
+                    self.write('SERVER_URL {0} looks fine'.format(server_url, ), green)
+            else:
+                self.write('  * SERVER_URL has scheme {0} and we require '
+                           'http or https!'.format(parsed_url.scheme, ), red, ending='\n')
+                passed = False
+        else:
+            self.write(
+                'Configuration errors detected!', red, ending='\n\n'
+            )
+            self.write("  * SERVER_URL appears to be empty", red, ending='\n')
+            passed = False
         self.write('')
 
         # check if we're disabled due to DEBUG:
