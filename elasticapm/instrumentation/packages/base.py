@@ -5,7 +5,7 @@ import os
 from elasticapm.traces import get_transaction
 from elasticapm.utils import wrapt
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('elasticapm.instrument')
 
 
 class AbstractInstrumentedModule(object):
@@ -49,12 +49,12 @@ class AbstractInstrumentedModule(object):
 
         skip_env_var = 'SKIP_INSTRUMENT_' + str(self.name.upper())
         if skip_env_var in os.environ:
-            logger.debug("Skipping instrumentation of %s. %s is set.",
-                         self.name, skip_env_var)
+            logger.debug("Skipping instrumentation of %s. %s is set.", self.name, skip_env_var)
             return
         try:
             instrument_list = self.get_instrument_list()
             skipped_modules = set()
+            instrumented_methods = []
 
             for module, method in instrument_list:
                 try:
@@ -70,32 +70,35 @@ class AbstractInstrumentedModule(object):
                         functools.partial(self.call_if_sampling, module, method),
                     )
                     wrapt.apply_patch(parent, attribute, wrapper)
+                    instrumented_methods.append((module, method))
                 except ImportError:
                     # Could not import module
-                    logger.debug("Skipping instrumentation of %s."
-                                 " Module %s not found",
-                                 self.name, module)
+                    logger.debug("Skipping instrumentation of %s. Module %s not found", self.name, module)
 
                     # Keep track of modules we couldn't load so we don't
                     # try to instrument anything in that module again
                     skipped_modules.add(module)
                 except AttributeError as ex:
                     # Could not find thing in module
-                    logger.debug("Skipping instrumentation of %s.%s: %s",
-                                 module, method, ex)
+                    logger.debug("Skipping instrumentation of %s.%s: %s", module, method, ex)
+            if instrumented_methods:
+                logger.debug("Instrumented %s, %s", self.name, ', '.join('.'.join(m) for m in instrumented_methods))
 
         except ImportError as ex:
-            logger.debug("Skipping instrumentation of %s. %s",
-                         self.name, ex)
+            logger.debug("Skipping instrumentation of %s. %s", self.name, ex)
         self.instrumented = True
 
     def uninstrument(self):
         if not self.instrumented or not self.originals:
             return
+        uninstrumented_methods = []
         for module, method in self.get_instrument_list():
             if (module, method) in self.originals:
                 parent, attribute, wrapper = wrapt.resolve_path(module, method)
                 wrapt.apply_patch(parent, attribute, self.originals[(module, method)])
+                uninstrumented_methods.append((module, method))
+        if uninstrumented_methods:
+            logger.debug("Uninstrumented %s, %s", self.name, ', '.join('.'.join(m) for m in uninstrumented_methods))
         self.instrumented = False
         self.originals = {}
 
