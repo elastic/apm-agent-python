@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import types
 
 import mock
@@ -110,3 +111,16 @@ def test_skip_ignored_frames(elasticapm_client):
     transaction = elasticapm_client.end_transaction('test', 'test')
     for frame in transaction.spans[0].frames:
         assert not frame['module'].startswith('elasticapm')
+
+
+def test_end_nonexisting_span(caplog, elasticapm_client):
+    with caplog.at_level(logging.INFO):
+        t = elasticapm_client.begin_transaction('test')
+        # we're purposefully creating a case where we don't begin a span
+        # and then try to end the non-existing span
+        t.is_sampled = False
+        with elasticapm.capture_span('test_name', 'test_type'):
+            t.is_sampled = True
+    elasticapm_client.end_transaction('test', '')
+    record = caplog.records[0]
+    assert record.args == ('test_name', 'test_type')

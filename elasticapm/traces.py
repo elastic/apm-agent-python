@@ -268,7 +268,10 @@ class capture_span(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.end_span(self.skip_frames)
+            try:
+                transaction.end_span(self.skip_frames)
+            except IndexError:
+                error_logger.info('ended non-existing span %s of type %s', self.name, self.type)
 
 
 def tag(**tags):
