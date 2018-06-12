@@ -1177,6 +1177,58 @@ def test_middleware_not_first():
         assert 'MIDDLEWARE setting' in output
 
 
+def test_settings_server_url_default():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'SERVER_URL http://localhost:8200 looks fine' in output
+
+
+def test_settings_server_url_is_empty_string():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SERVER_URL': ''}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'Configuration errors detected' in output
+    assert 'SERVER_URL appears to be empty' in output
+
+
+def test_settings_server_url_not_http_nor_https():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SERVER_URL': 'xhttp://dev.brwnppr.com:8000/'}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'Configuration errors detected' in output
+    assert 'SERVER_URL has scheme xhttp and we require http or https' in output
+
+
+def test_settings_server_url_uppercase_http():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SERVER_URL': 'HTTP://dev.brwnppr.com:8000/'}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'SERVER_URL HTTP://dev.brwnppr.com:8000/ looks fine' in output
+
+
+def test_settings_server_url_with_at():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SERVER_URL': 'http://y@dev.brwnppr.com:8000/'}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'Configuration errors detected' in output
+    assert 'SERVER_URL contains an unexpected at-sign!' in output
+
+
+def test_settings_server_url_with_credentials():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SERVER_URL': 'http://x:y@dev.brwnppr.com:8000/'}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'Configuration errors detected' in output
+    assert 'SERVER_URL cannot contain authentication credentials' in output
+
+
 @pytest.mark.skipif(not ((1, 10) <= django.VERSION < (2, 0)),
                     reason='only needed in 1.10 and 1.11 when both middleware settings are valid')
 def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
