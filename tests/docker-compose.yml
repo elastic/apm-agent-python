@@ -17,6 +17,14 @@ services:
       timeout: 30s
       retries: 3
 
+  cassandra3:
+    image: cassandra:3
+    volumes:
+      - cassandradata3:/var/lib/cassandra
+    environment:
+      MAX_HEAP_SIZE: "1G"
+      HEAP_NEWSIZE: 400m
+
   mongodb30:
     image: mongo:3.0
     volumes:
@@ -118,4 +126,6 @@ volumes:
   pyesdata5:
     driver: local
   pyesdata2:
+    driver: local
+  cassandradata3:
     driver: local
