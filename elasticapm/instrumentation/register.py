@@ -18,6 +18,7 @@ _cls_register = {
     'elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation',
     'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation',
     'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation',
+    'elasticapm.instrumentation.packages.cassandra.CassandraInstrumentation',
 
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',
