@@ -14,7 +14,7 @@ elastic-apm -- Elastic APM agent for Python
     :alt: Supported Python versions
 
 
-This is the official Python module for Elastic APM.
+This is the official Python module for Elastic APM!
 
 It provides full out-of-the-box support for many of the popular frameworks,
 including Django, and Flask. Elastic APM also includes drop-in support for any
