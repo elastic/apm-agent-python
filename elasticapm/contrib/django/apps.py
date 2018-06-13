@@ -38,7 +38,7 @@ def register_handlers(client):
 
     request_started.disconnect(dispatch_uid=REQUEST_START_DISPATCH_UID)
     request_started.connect(
-        lambda sender, environ, **kwargs: client.begin_transaction('request')
+        lambda sender, *args, **kwargs: client.begin_transaction('request')
         if _should_start_transaction(client) else None,
         dispatch_uid=REQUEST_START_DISPATCH_UID, weak=False
     )
