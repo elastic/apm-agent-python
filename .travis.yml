@@ -40,15 +40,16 @@ matrix:
     services:
       - docker
     script:
-      - pip install cibuildwheel==0.6.0
+      - pip install cibuildwheel==0.8.0
       - cibuildwheel --output-dir wheelhouse/
       - python -m pip install twine
       - python setup.py sdist
-      - python -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*.tar.gz
-      - python -m twine upload --repository-url https://upload.pypi.org/legacy/ wheelhouse/*.whl
+      - python -m twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ dist/*.tar.gz
+      - python -m twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ wheelhouse/*.whl
     env:
       - CIBW_ENVIRONMENT="PIP_CACHE=/host/.pip"
       - CIBW_BEFORE_BUILD="rm -rf build elastic_apm.egg-info tests"
+      - CIBW_SKIP=cp33
 #      - CIBW_TEST_REQUIRES="pytest pytest-django mock pytest-catchlog"
 #      - CIBW_BEFORE_BUILD="yum -y install zeromq-devel libevent-devel && {pip} install -r tests/requirements/requirements-base.txt --cache-dir /host/.pip"
 #      - CIBW_TEST_COMMAND="cd {project} && py.test -m 'not integrationtest' {project}/tests --ignore={project}/tests/asyncio"

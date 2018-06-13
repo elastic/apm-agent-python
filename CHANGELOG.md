@@ -3,6 +3,7 @@
 ## v2.2.0
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.1.1...v2.2.0)
+
   - introduced consistent logger name scheme for all elasticapm internal log messages (#212)
   - added instrumentation of cassandra-driver (#205)
   - added instrumentation of elasticsearch-py (#191)
@@ -11,15 +12,19 @@
   - fixed issue with spans in Django’s `StreamingHTTPResponse` not being captured (#201, #202)
   - fixed issue with spans with Flask’s streaming response not being captured (#201, #202)
 
+**NOTE**: This will be the last release with support for Python 3.3.
+
 ## v2.1.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.1.0...v2.1.1)
+
   - fixed bug in Django management command that would be triggered on Django 1.10 or 1.11 while using the `MIDDLEWARE_CLASSES` setting (#186, #187)
   - fix an encoding issue with log messages that are hit in rare cases (#188, #189)
 
 ## v2.1.0
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.0.1...v2.1.0)
+
   - made skipping of initial `elasticapm` frames for span stack traces more generic (#167)
   - added `context.process.ppid` field (supported in apm-server 6.3+) (#168)
   - added option to disable stack frame collection for very short spans (#142)
@@ -31,12 +36,14 @@
 ## v2.0.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.0.0...v2.0.1)
+
   - fixed compatibility issue with aiohttp 3.0 (#157)
   - Added truncation for fields that have a `maxLength` in the JSON Schema (#159)
 
 ## v2.0.0
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v1.0.0...v2.0.0)
+
   - moved the library-frame detection from a processor to the stacktrace collection (#113).
   - added settings to enable/disable source code collection and local variables collection for errors and transactions (#117)
   - added `service.environment` to provide an environment name (e.g. "production", "staging") (#123)
@@ -66,6 +73,7 @@
 ## v1.0.0
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3...v1.0.0)
+
   - added `max-event-queue-length` setting. (#67)
   - changed name that the agent reports itself with to the APM server from `elasticapm-python` to `python`. This aligns the Python agent with other languages. (#104)
   - changed Celery integration to store the task state (e.g. `SUCCESS` or `FAILURE`) in `transaction.result` (#100)
@@ -77,6 +85,7 @@
 ## v1.0.0.dev3
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2...v1.0.0.dev2)
+
   - added a background thread to process the transactions queue every 60 seconds (configurable) (#68)
   - adapted trace context for SQL traces to new API (#77)
   - ensured that transaction data is also passed through processors (#84)
@@ -86,6 +95,7 @@
 ## v1.0.0.dev2
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1...v1.0.0.dev2)
+
   - added request context information for Flask (#58)
   - added response context information for Flask (#65)
   - BREAKING: changed the `SERVERS` list setting to a single `SERVER` string setting. With this change, we now only support sending events to a single server (#59)
@@ -94,6 +104,7 @@
 ## v1.0.0.dev1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev0...v1.0.0.dev1)
+
   - unified configuration across supported frameworks (#33)
   - added in-app frame detection (#36)
   - added tagging functionality (#28)
