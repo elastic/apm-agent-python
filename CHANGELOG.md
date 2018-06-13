@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.2.1
+
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.0...v2.2.1)
+
+  - fixed an issue with Django Channels (#232, #233)
+
 ## v2.2.0
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.1.1...v2.2.0)
