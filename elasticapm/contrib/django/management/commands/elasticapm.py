@@ -143,12 +143,14 @@ class Command(BaseCommand):
         """Check your settings for common misconfigurations"""
         passed = True
         client = DjangoClient()
-        # check if org/app and token are set:
-        is_set = lambda x: x and x != 'None'
-        values = [client.config.service_name, client.config.secret_token]
-        if all(map(is_set, values)):
+
+        def is_set(x):
+            return x and x != 'None'
+
+        # check if org/app is set:
+        if is_set(client.config.service_name):
             self.write(
-                'Service name and secret token are set, good job!',
+                'Service name is set, good job!',
                 green
             )
         else:
@@ -156,11 +158,12 @@ class Command(BaseCommand):
             self.write(
                 'Configuration errors detected!', red, ending='\n\n'
             )
-            if not is_set(client.config.service_name):
-                self.write("  * SERVICE_NAME not set! ", red, ending='\n')
-            if not is_set(client.config.secret_token):
-                self.write("  * SECRET_TOKEN not set!", red, ending='\n')
+            self.write("  * SERVICE_NAME not set! ", red, ending='\n')
             self.write(CONFIG_EXAMPLE)
+
+        # secret token is optional but recommended
+        if not is_set(client.config.secret_token):
+            self.write("  * optional SECRET_TOKEN not set", yellow, ending='\n')
         self.write('')
 
         server_url = client.config.server_url
@@ -183,6 +186,9 @@ class Command(BaseCommand):
                                    'but the colon is left out', red, ending='\n')
                 else:
                     self.write('SERVER_URL {0} looks fine'.format(server_url, ), green)
+                # secret token in the clear not recommended
+                if is_set(client.config.secret_token) and parsed_url.scheme.lower() == 'http':
+                    self.write("  * SECRET_TOKEN set but server not using https", yellow, ending='\n')
             else:
                 self.write('  * SERVER_URL has scheme {0} and we require '
                            'http or https!'.format(parsed_url.scheme, ), red, ending='\n')

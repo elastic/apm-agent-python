@@ -1147,7 +1147,23 @@ def test_settings_missing():
     output = stdout.getvalue()
     assert 'Configuration errors detected' in output
     assert 'SERVICE_NAME not set' in output
-    assert 'SECRET_TOKEN not set' in output
+    assert 'optional SECRET_TOKEN not set' in output
+
+
+def test_settings_missing_secret_token_no_https():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SERVER_URL': 'http://foo'}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'optional SECRET_TOKEN not set' in output
+
+
+def test_settings_secret_token_https():
+    stdout = compat.StringIO()
+    with override_settings(ELASTIC_APM={'SECRET_TOKEN': 'foo', 'SERVER_URL': 'https://foo'}):
+        call_command('elasticapm', 'check', stdout=stdout)
+    output = stdout.getvalue()
+    assert 'SECRET_TOKEN not set' not in output
 
 
 def test_middleware_not_set():
