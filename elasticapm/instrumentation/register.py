@@ -19,6 +19,7 @@ _cls_register = {
     'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation',
     'elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation',
     'elasticapm.instrumentation.packages.cassandra.CassandraInstrumentation',
+    'elasticapm.instrumentation.packages.pyodbc.PyODBCInstrumentation',
 
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation',
     'elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation',

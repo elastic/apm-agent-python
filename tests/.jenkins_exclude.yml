@@ -124,3 +124,8 @@ exclude:
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
+  # pyodbc
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: pyodbc-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: pyodbc-newest

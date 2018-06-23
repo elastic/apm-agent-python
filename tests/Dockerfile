@@ -1,7 +1,13 @@
 ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 
-RUN apt-get update && apt-get -y --no-install-recommends install ca-certificates curl netcat libmemcached-dev &&\
+RUN apt-get update && apt-get -y --no-install-recommends install \
+                                                            ca-certificates \
+                                                            curl \
+                                                            netcat \
+                                                            odbc-postgresql \
+                                                            unixodbc-dev \
+                                                            libmemcached-dev &&\
     rm -rf /var/lib/apt/lists/*
 
 # connection to ha.pool.sks-keyservers.net fails sometimes, so let's retry with couple different servers
