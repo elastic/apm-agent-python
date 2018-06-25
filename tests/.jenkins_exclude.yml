@@ -124,3 +124,6 @@ exclude:
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
+  # pymssql
+  - PYTHON_VERSION: pypy-2 # currently fails with error on pypy2
+    FRAMEWORK: pymssql-newest
