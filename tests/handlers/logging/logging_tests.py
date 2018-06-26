@@ -15,6 +15,7 @@ def logger(elasticapm_client):
     logger.handlers = []
     logger.addHandler(handler)
     logger.client = elasticapm_client
+    logger.level = logging.INFO
     return logger
 
 
