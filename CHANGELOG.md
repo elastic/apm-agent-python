@@ -4,6 +4,7 @@
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...master)
 
+ - **BREAKING**: dropped support for Python 3.3 (#242) 
  - added instrumentation for pymssql (#241)
 
 ## v2.2.1
