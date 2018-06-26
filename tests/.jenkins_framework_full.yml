@@ -42,6 +42,7 @@ FRAMEWORK:
   - psycopg2-2.5
   - psycopg2-2.6
   - psycopg2-newest
+  - pymssql-newest
   - memcached-1.51
   - memcached-newest
   - pylibmc-1.4

@@ -102,6 +102,13 @@ services:
     volumes:
       - pyesdata2:/usr/share/elasticsearch/data
 
+  mssql:
+    image: microsoft/mssql-server-linux
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Very(!)Secure
+      - MSSQL_PID=Developer
+
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
