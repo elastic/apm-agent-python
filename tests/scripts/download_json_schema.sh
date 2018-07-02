@@ -2,6 +2,22 @@
 
 set -x
 
+download_schema()
+{
+    from=$1
+    to=$2
+
+    for run in {1..5}
+    do
+        curl -sf --compressed ${from} > ${to}
+        result=$?
+        if [ $result -eq 0 ]; then break; fi
+        sleep 1
+    done
+
+    if [ $result -ne 0 ]; then exit $result; fi
+}
+
 # parent directory
 basedir=$(dirname "$0")/..
 
@@ -25,7 +41,6 @@ FILES=( \
 mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/sourcemaps
 
 for i in "${FILES[@]}"; do
-    output="${basedir}/.schemacache/${i}"
-    curl -sf https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} --compressed > ${output} || exit $?
+    download_schema https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} ${basedir}/.schemacache/${i}
 done
 echo "Done."
