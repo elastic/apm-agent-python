@@ -108,6 +108,8 @@ services:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Very(!)Secure
       - MSSQL_PID=Developer
+    volumes:
+      - mssqldata:/var/opt/mssql
 
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
@@ -135,4 +137,6 @@ volumes:
   pyesdata2:
     driver: local
   cassandradata3:
+    driver: local
+  mssqldata:
     driver: local
