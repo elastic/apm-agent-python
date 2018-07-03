@@ -1,5 +1,7 @@
 EVENTS_API_PATH = "/intake/v2/events"
 
+TRACE_CONTEXT_VERSION = 1
+
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 KEYWORD_MAX_LENGTH = 1024

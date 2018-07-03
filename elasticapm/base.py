@@ -16,6 +16,7 @@ import inspect
 import logging
 import os
 import platform
+import random
 import socket
 import sys
 from copy import deepcopy
@@ -25,6 +26,7 @@ from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.utils import compat, is_master_process, stacks, varmap
+from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 
@@ -196,10 +198,14 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type):
+    def begin_transaction(self, transaction_type, trace_parent=None):
         """Register the start of a transaction on the client
         """
-        return self.transaction_store.begin_transaction(transaction_type)
+        if not trace_parent and self.config.enable_distributed_tracing:
+            trace_parent = TraceParent(
+                "%02x" % constants.TRACE_CONTEXT_VERSION, "%032x" % random.getrandbits(128), False, "00"
+            )
+        return self.transaction_store.begin_transaction(transaction_type, trace_parent=trace_parent)
 
     def end_transaction(self, name=None, result=""):
         transaction = self.transaction_store.end_transaction(result, name)
@@ -351,7 +357,13 @@ class Client(object):
 
         transaction = get_transaction()
         if transaction:
-            event_data["transaction"] = {"id": transaction.id}
+            if self.config.enable_distributed_tracing:
+                if transaction.trace_parent:
+                    event_data["trace_id"] = transaction.trace_parent.trace_id
+                event_data["parent_id"] = transaction.id
+                event_data["transaction_id"] = transaction.id
+            else:
+                event_data["transaction"] = {"id": transaction.id}
 
         return event_data
 

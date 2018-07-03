@@ -220,6 +220,7 @@ class Config(_ConfigBase):
     framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
+    enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=False)
 
 
 def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):

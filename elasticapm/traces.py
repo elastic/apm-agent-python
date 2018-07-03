@@ -28,9 +28,15 @@ except ImportError:
 
 
 class Transaction(object):
-    def __init__(self, store, transaction_type="custom", is_sampled=True):
-        self.id = str(uuid.uuid4())
-        self.trace_id = None  # for later use in distributed tracing
+    def __init__(
+        self,
+        store,
+        transaction_type="custom",
+        trace_parent=None,
+        is_sampled=True,
+    ):
+        self.id = "%016x" % random.getrandbits(64)
+        self.trace_parent = trace_parent
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
         self.name = None
@@ -61,7 +67,12 @@ class Transaction(object):
             self._span_counter += 1
         else:
             start = _time_func() - self.start_time
-            span = Span(self._span_counter, self.id, self.trace_id, name, span_type, start, context, leaf)
+            span_id = "%016x" % random.getrandbits(64) if self.trace_parent else self._span_counter - 1
+            if self.trace_parent:
+                kwargs = {"trace_id": self.trace_parent.trace_id, "transaction_id": self.id}
+            else:
+                kwargs = {}
+            span = Span(span_id, name, span_type, start, context, **kwargs)
             span.frames = store.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -100,6 +111,10 @@ class Transaction(object):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self.trace_parent:
+            result["trace_id"] = self.trace_parent.trace_id
+            if self.trace_parent.span_id:
+                result["parent_id"] = self.trace_parent.span_id
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -142,6 +157,8 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
+        self.trace_id = trace_id
+        self.transaction_id = transaction_id
 
     def to_dict(self):
         result = {
@@ -152,11 +169,16 @@ class Span(object):
             "type": encoding.keyword_field(self.type),
             "start": self.start_time * 1000,  # milliseconds
             "duration": self.duration * 1000,  # milliseconds
-            "parent": self.parent.idx if self.parent else None,
             "context": self.context,
         }
         if self.frames:
             result["stacktrace"] = self.frames
+        if self.trace_id:
+            result["parent_id"] = self.parent
+            result["trace_id"] = self.trace_id
+            result["transaction_id"] = self.transaction_id
+        else:
+            result["parent"] = self.parent
         return result
 
 
@@ -212,14 +234,21 @@ class TransactionsStore(object):
         with self.cond:
             return len(self._transactions)
 
-    def begin_transaction(self, transaction_type):
+    def begin_transaction(self, transaction_type, trace_parent=None):
         """
         Start a new transactions and bind it in a thread-local variable
 
         :returns the Transaction object
         """
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
-        transaction = Transaction(self, transaction_type, is_sampled=is_sampled)
+        transaction = Transaction(
+            self._frames_collector_func,
+            self._queue_func,
+            transaction_type,
+            max_spans=self.max_spans,
+            span_frames_min_duration=self.span_frames_min_duration,
+            is_sampled=is_sampled,
+        )
         set_transaction(transaction)
         return transaction
 
