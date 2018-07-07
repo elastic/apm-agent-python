@@ -20,7 +20,7 @@ services:
   cassandra3:
     image: cassandra:3
     volumes:
-      - cassandradata3:/var/lib/cassandra
+      - pycassandradata3:/var/lib/cassandra
     environment:
       MAX_HEAP_SIZE: "1G"
       HEAP_NEWSIZE: 400m
@@ -109,7 +109,7 @@ services:
       - SA_PASSWORD=Very(!)Secure
       - MSSQL_PID=Developer
     volumes:
-      - mssqldata:/var/opt/mssql
+      - pymssqldata:/var/opt/mssql
 
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
@@ -136,7 +136,7 @@ volumes:
     driver: local
   pyesdata2:
     driver: local
-  cassandradata3:
+  pycassandradata3:
     driver: local
-  mssqldata:
+  pymssqldata:
     driver: local
