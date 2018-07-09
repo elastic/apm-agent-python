@@ -4,16 +4,6 @@ exclude:
     FRAMEWORK: django-2.0
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: django-1.9
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: django-1.10
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: django-1.11
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: django-2.0
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.7-rc
@@ -25,27 +15,11 @@ exclude:
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: flask-1.0
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: flask-master
   # celery
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: celery-3-django-2.0
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: celery-3-django-2.0
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: celery-3-django-1.11
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: celery-3-flask-1.0
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: celery-4-flask-1.0
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: celery-3-django-2.0
   - PYTHON_VERSION: pypy-2
@@ -59,12 +33,7 @@ exclude:
     FRAMEWORK: celery-4-django-1.11
   - PYTHON_VERSION: python-3.7-rc
     FRAMEWORK: celery-4-flask-1.0
-  # Twisted
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: twisted-18
   # requests
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.5
@@ -76,8 +45,6 @@ exclude:
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
   # pymongo
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: pymongo-newest
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.6
@@ -112,8 +79,6 @@ exclude:
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: psycopg2-2.6
   # python-memcached
-  - PYTHON_VERSION: python-3.3
-    FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.5
@@ -124,6 +89,9 @@ exclude:
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
+  # pymssql
+  - PYTHON_VERSION: pypy-2 # currently fails with error on pypy2
+    FRAMEWORK: pymssql-newest
   # pyodbc
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: pyodbc-newest

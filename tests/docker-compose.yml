@@ -20,7 +20,7 @@ services:
   cassandra3:
     image: cassandra:3
     volumes:
-      - cassandradata3:/var/lib/cassandra
+      - pycassandradata3:/var/lib/cassandra
     environment:
       MAX_HEAP_SIZE: "1G"
       HEAP_NEWSIZE: 400m
@@ -102,6 +102,15 @@ services:
     volumes:
       - pyesdata2:/usr/share/elasticsearch/data
 
+  mssql:
+    image: microsoft/mssql-server-linux
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Very(!)Secure
+      - MSSQL_PID=Developer
+    volumes:
+      - pymssqldata:/var/opt/mssql
+
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
@@ -127,5 +136,7 @@ volumes:
     driver: local
   pyesdata2:
     driver: local
-  cassandradata3:
+  pycassandradata3:
+    driver: local
+  pymssqldata:
     driver: local

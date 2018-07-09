@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...master)
+
+ - **BREAKING**: dropped support for Python 3.3 (#242) 
+ - **BREAKING**: changed default value of `span_frames_min_duration` setting 
+   from `-1` (always collect) to `5` (only collect for spans longer than 5 ms) (#243)
+ - added instrumentation for pymssql (#241)
+
 ## v2.2.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.0...v2.2.1)

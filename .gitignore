@@ -24,3 +24,4 @@ coverage
 .cache
 /testdb.sql
 venv
+benchmarks/result*

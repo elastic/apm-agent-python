@@ -7,6 +7,7 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
                                                             netcat \
                                                             odbc-postgresql \
                                                             unixodbc-dev \
+                                                            freetds-dev \
                                                             libmemcached-dev &&\
     rm -rf /var/lib/apt/lists/*
 
