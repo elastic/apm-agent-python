@@ -46,7 +46,7 @@ def test_template_rendering(should_collect, instrument, django_elasticapm_client
         client.get(reverse('render-heavy-template'))
         client.get(reverse('render-heavy-template'))
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
 
     assert len(transactions) == 3
     spans = transactions[0]['spans']
@@ -78,7 +78,7 @@ def test_template_rendering_django18_jinja2(should_collect, instrument, django_e
         client.get(reverse('render-jinja2-template'))
         client.get(reverse('render-jinja2-template'))
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
 
     assert len(transactions) == 3
     spans = transactions[0]['spans']

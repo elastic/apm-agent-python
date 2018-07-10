@@ -106,7 +106,7 @@ class Client(object):
         self.error_logger = logging.getLogger('elasticapm.errors')
         self.state = ClientState()
 
-        self.instrumentation_store = None
+        self.transaction_store = None
         self.processors = []
         self.filter_exception_types_dict = {}
         self._send_timer = None
@@ -148,7 +148,7 @@ class Client(object):
                 ), local_var)
             )
 
-        self.instrumentation_store = TransactionsStore(
+        self.transaction_store = TransactionsStore(
             frames_collector_func=frames_collector_func,
             collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
@@ -247,11 +247,11 @@ class Client(object):
     def begin_transaction(self, transaction_type):
         """Register the start of a transaction on the client
         """
-        return self.instrumentation_store.begin_transaction(transaction_type)
+        return self.transaction_store.begin_transaction(transaction_type)
 
     def end_transaction(self, name=None, result=''):
-        transaction = self.instrumentation_store.end_transaction(result, name)
-        if self.instrumentation_store.should_collect():
+        transaction = self.transaction_store.end_transaction(result, name)
+        if self.transaction_store.should_collect():
             self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
@@ -294,8 +294,8 @@ class Client(object):
     def _collect_transactions(self):
         self._stop_send_timer()
         transactions = []
-        if self.instrumentation_store:
-            for transaction in self.instrumentation_store.get_all():
+        if self.transaction_store:
+            for transaction in self.transaction_store.get_all():
                 for processor in self.processors:
                     transaction = processor(self, transaction)
                 transactions.append(transaction)

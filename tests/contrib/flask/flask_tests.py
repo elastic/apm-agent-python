@@ -128,7 +128,7 @@ def test_instrumentation(flask_apm_client):
 
     assert resp.status_code == 200, resp.response
 
-    transactions = flask_apm_client.client.instrumentation_store.get_all()
+    transactions = flask_apm_client.client.transaction_store.get_all()
 
     assert len(transactions) == 1
     transaction = transactions[0]
@@ -161,10 +161,10 @@ def test_instrumentation(flask_apm_client):
 
 def test_instrumentation_debug(flask_apm_client):
     flask_apm_client.app.debug = True
-    assert len(flask_apm_client.client.instrumentation_store) == 0
+    assert len(flask_apm_client.client.transaction_store) == 0
     resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
     resp.close()
-    assert len(flask_apm_client.client.instrumentation_store) == 0
+    assert len(flask_apm_client.client.transaction_store) == 0
 
 
 @pytest.mark.parametrize('elasticapm_client', [
@@ -172,10 +172,10 @@ def test_instrumentation_debug(flask_apm_client):
 ], indirect=True)
 def test_instrumentation_debug_client_debug(flask_apm_client):
     flask_apm_client.app.debug = True
-    assert len(flask_apm_client.client.instrumentation_store) == 0
+    assert len(flask_apm_client.client.transaction_store) == 0
     resp = flask_apm_client.app.test_client().post('/users/', data={'foo': 'bar'})
     resp.close()
-    assert len(flask_apm_client.client.instrumentation_store) == 1
+    assert len(flask_apm_client.client.transaction_store) == 1
 
 
 def test_instrumentation_404(flask_apm_client):
@@ -186,7 +186,7 @@ def test_instrumentation_404(flask_apm_client):
 
     assert resp.status_code == 404, resp.response
 
-    transactions = flask_apm_client.client.instrumentation_store.get_all()
+    transactions = flask_apm_client.client.transaction_store.get_all()
 
     assert len(transactions) == 1
     spans = transactions[0]['spans']
@@ -203,7 +203,7 @@ def test_non_standard_http_status(flask_apm_client):
     assert resp.status == "0 fail", resp.response
     assert resp.status_code == 0, resp.response
 
-    transactions = flask_apm_client.client.instrumentation_store.get_all()
+    transactions = flask_apm_client.client.transaction_store.get_all()
     assert transactions[0]['result'] == '0 fail'  # "0" is prepended by Werkzeug BaseResponse
     assert transactions[0]['context']['response']['status_code'] == 0
 
@@ -250,7 +250,7 @@ def test_post_files(flask_apm_client):
 def test_options_request(flask_apm_client):
     resp = flask_apm_client.app.test_client().options('/')
     resp.close()
-    transactions = flask_apm_client.client.instrumentation_store.get_all()
+    transactions = flask_apm_client.client.transaction_store.get_all()
     assert transactions[0]['context']['request']['method'] == 'OPTIONS'
 
 
@@ -258,7 +258,7 @@ def test_streaming_response(flask_apm_client):
     resp = flask_apm_client.app.test_client().get('/streaming/')
     assert resp.data == b'01234'
     resp.close()
-    transaction = flask_apm_client.client.instrumentation_store.get_all()[0]
+    transaction = flask_apm_client.client.transaction_store.get_all()[0]
     assert transaction['duration'] > 50
     assert len(transaction['spans']) == 5
 
@@ -269,7 +269,7 @@ def test_response_close_wsgi(flask_wsgi_server):
     url = flask_wsgi_server.url + '/streaming/'
     response = urlopen(url)
     response.read()
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
     assert transaction['duration'] > 50
     assert len(transaction['spans']) == 5
 
@@ -277,6 +277,6 @@ def test_response_close_wsgi(flask_wsgi_server):
 def test_set_transaction_name(flask_apm_client):
     resp = flask_apm_client.app.test_client().get('/transaction-name/')
     resp.close()
-    transaction = flask_apm_client.client.instrumentation_store.get_all()[0]
+    transaction = flask_apm_client.client.transaction_store.get_all()[0]
     assert transaction['name'] == 'foo'
     assert transaction['result'] == 'okydoky'
