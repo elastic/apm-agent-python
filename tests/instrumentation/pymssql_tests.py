@@ -38,7 +38,7 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert cursor.fetchall() == [(2, 'two'), (3, 'three')]
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
-        transactions = elasticapm_client.instrumentation_store.get_all()
+        transactions = elasticapm_client.transaction_store.get_all()
         spans = transactions[0]['spans']
         span = spans[0]
         assert span['name'] == 'SELECT FROM test'

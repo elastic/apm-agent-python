@@ -623,13 +623,13 @@ def test_request_capture(django_elasticapm_client):
 
 def test_transaction_request_response_data(django_elasticapm_client, client):
     client.cookies = SimpleCookie({'foo': 'bar'})
-    django_elasticapm_client.instrumentation_store.get_all()
+    django_elasticapm_client.transaction_store.get_all()
     with override_settings(**middleware_setting(
             django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
     )):
         client.get(reverse('elasticapm-no-error'))
-    assert len(django_elasticapm_client.instrumentation_store) == 1
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    assert len(django_elasticapm_client.transaction_store) == 1
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert len(transactions) == 1
     transaction = transactions[0]
     assert transaction['result'] == 'HTTP 2xx'
@@ -652,15 +652,15 @@ def test_transaction_request_response_data(django_elasticapm_client, client):
 
 
 def test_transaction_metrics(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
+    django_elasticapm_client.transaction_store.get_all()  # clear the store
     with override_settings(**middleware_setting(
             django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
     )):
-        assert len(django_elasticapm_client.instrumentation_store) == 0
+        assert len(django_elasticapm_client.transaction_store) == 0
         client.get(reverse('elasticapm-no-error'))
-        assert len(django_elasticapm_client.instrumentation_store) == 1
+        assert len(django_elasticapm_client.transaction_store) == 1
 
-        transactions = django_elasticapm_client.instrumentation_store.get_all()
+        transactions = django_elasticapm_client.transaction_store.get_all()
 
         assert len(transactions) == 1
         transaction = transactions[0]
@@ -673,9 +673,9 @@ def test_transaction_metrics_debug(django_elasticapm_client, client):
     with override_settings(DEBUG=True, **middleware_setting(
         django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
     )):
-        assert len(django_elasticapm_client.instrumentation_store) == 0
+        assert len(django_elasticapm_client.transaction_store) == 0
         client.get(reverse('elasticapm-no-error'))
-        assert len(django_elasticapm_client.instrumentation_store) == 0
+        assert len(django_elasticapm_client.transaction_store) == 0
 
 
 @pytest.mark.parametrize('django_elasticapm_client', [
@@ -687,13 +687,13 @@ def test_transaction_metrics_debug_and_client_debug(django_elasticapm_client, cl
     with override_settings(DEBUG=True, **middleware_setting(
         django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware']
     )):
-        assert len(django_elasticapm_client.instrumentation_store) == 0
+        assert len(django_elasticapm_client.transaction_store) == 0
         client.get(reverse('elasticapm-no-error'))
-        assert len(django_elasticapm_client.instrumentation_store) == 1
+        assert len(django_elasticapm_client.transaction_store) == 1
 
 
 def test_request_metrics_301_append_slash(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
+    django_elasticapm_client.transaction_store.get_all()  # clear the store
 
     # enable middleware wrapping
     django_elasticapm_client.config.instrument_django_middleware = True
@@ -709,7 +709,7 @@ def test_request_metrics_301_append_slash(django_elasticapm_client, client):
         ])
     ):
         client.get(reverse('elasticapm-no-error-slash')[:-1])
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert transactions[0]['name'] in (
         # django <= 1.8
         'GET django.middleware.common.CommonMiddleware.process_request',
@@ -720,7 +720,7 @@ def test_request_metrics_301_append_slash(django_elasticapm_client, client):
 
 
 def test_request_metrics_301_prepend_www(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
+    django_elasticapm_client.transaction_store.get_all()  # clear the store
 
     # enable middleware wrapping
     django_elasticapm_client.config.instrument_django_middleware = True
@@ -736,14 +736,14 @@ def test_request_metrics_301_prepend_www(django_elasticapm_client, client):
         ])
     ):
         client.get(reverse('elasticapm-no-error'))
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert transactions[0]['name'] == 'GET django.middleware.common.CommonMiddleware.process_request'
     assert transactions[0]['result'] == 'HTTP 3xx'
 
 
 @pytest.mark.django_db
 def test_request_metrics_contrib_redirect(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
+    django_elasticapm_client.transaction_store.get_all()  # clear the store
 
     # enable middleware wrapping
     django_elasticapm_client.config.instrument_django_middleware = True
@@ -761,18 +761,18 @@ def test_request_metrics_contrib_redirect(django_elasticapm_client, client):
     ):
         response = client.get('/redirect/me/')
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert transactions[0]['name'] == 'GET django.contrib.redirects.middleware.RedirectFallbackMiddleware.process_response'
     assert transactions[0]['result'] == 'HTTP 3xx'
 
 
 def test_request_metrics_404_resolve_error(django_elasticapm_client, client):
-    django_elasticapm_client.instrumentation_store.get_all()  # clear the store
+    django_elasticapm_client.transaction_store.get_all()  # clear the store
     with override_settings(
         **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
     ):
         client.get('/i-dont-exist/')
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert transactions[0]['name'] == ''
 
 
@@ -784,7 +784,7 @@ def test_request_metrics_streaming(django_elasticapm_client, client):
         resp = client.get(reverse('elasticapm-streaming-view'))
         assert list(resp.streaming_content) == [b'0', b'1', b'2', b'3', b'4']
         resp.close()
-    transaction = django_elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = django_elasticapm_client.transaction_store.get_all()[0]
     assert transaction['result'] == 'HTTP 2xx'
     assert transaction['duration'] >= 50
     assert len(transaction['spans']) == 5
@@ -795,7 +795,7 @@ def test_request_metrics_name_override(django_elasticapm_client, client):
         **middleware_setting(django.VERSION, ['elasticapm.contrib.django.middleware.TracingMiddleware'])
     ):
         client.get(reverse('elasticapm-name-override'))
-    transaction = django_elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = django_elasticapm_client.transaction_store.get_all()[0]
     assert transaction['name'] == 'foo'
     assert transaction['result'] == 'okydoky'
 
@@ -936,7 +936,7 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert len(transactions) == 1
     transaction = transactions[0]
     assert transaction['result'] == 'HTTP 2xx'
@@ -968,7 +968,7 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
             resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert transactions[0]['result'] == 'HTTP 2xx'
     spans = transactions[0]['spans']
 
@@ -994,7 +994,7 @@ def test_perf_template_render(benchmark, client, django_elasticapm_client):
     for resp in responses:
         assert resp.status_code == 200
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
 
     # If the test falls right at the change from one minute to another
     # this will have two items.
@@ -1016,7 +1016,7 @@ def test_perf_template_render_no_middleware(benchmark, client, django_elasticapm
     for resp in responses:
         assert resp.status_code == 200
 
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert len(transactions) == 0
 
 
@@ -1024,7 +1024,7 @@ def test_perf_template_render_no_middleware(benchmark, client, django_elasticapm
 @pytest.mark.django_db(transaction=True)
 def test_perf_database_render(benchmark, client, django_elasticapm_client):
     responses = []
-    django_elasticapm_client.instrumentation_store.get_all()
+    django_elasticapm_client.transaction_store.get_all()
 
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -1037,7 +1037,7 @@ def test_perf_database_render(benchmark, client, django_elasticapm_client):
         for resp in responses:
             assert resp.status_code == 200
 
-        transactions = django_elasticapm_client.instrumentation_store.get_all()
+        transactions = django_elasticapm_client.transaction_store.get_all()
 
         assert len(transactions) == len(responses)
         for transaction in transactions:
@@ -1047,7 +1047,7 @@ def test_perf_database_render(benchmark, client, django_elasticapm_client):
 @pytest.mark.django_db
 @pytest.mark.parametrize('django_elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_database_render_no_instrumentation(benchmark, django_elasticapm_client):
-    django_elasticapm_client.instrumentation_store.get_all()
+    django_elasticapm_client.transaction_store.get_all()
     responses = []
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
@@ -1060,7 +1060,7 @@ def test_perf_database_render_no_instrumentation(benchmark, django_elasticapm_cl
         for resp in responses:
             assert resp.status_code == 200
 
-        transactions = django_elasticapm_client.instrumentation_store.get_all()
+        transactions = django_elasticapm_client.transaction_store.get_all()
         assert len(transactions) == 0
 
 
@@ -1070,7 +1070,7 @@ def test_perf_database_render_no_instrumentation(benchmark, django_elasticapm_cl
     'flush_interval': 100
 }], indirect=True)
 def test_perf_transaction_with_collection(benchmark, django_elasticapm_client):
-    django_elasticapm_client.instrumentation_store.get_all()
+    django_elasticapm_client.transaction_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         django_elasticapm_client.events = []
@@ -1102,7 +1102,7 @@ def test_perf_transaction_with_collection(benchmark, django_elasticapm_client):
 @pytest.mark.django_db
 @pytest.mark.parametrize('django_elasticapm_client', [{'_wait_to_first_send': 100}], indirect=True)
 def test_perf_transaction_without_middleware(benchmark, django_elasticapm_client):
-    django_elasticapm_client.instrumentation_store.get_all()
+    django_elasticapm_client.transaction_store.get_all()
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         client = _TestClient()
@@ -1281,7 +1281,7 @@ def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
         'elasticapm.contrib.django.middleware.TracingMiddleware'
     ])):
         client.get('/')
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert len(transactions) == 1
     assert transactions[0]['context']['request']['url']['pathname'] == '/'
 
@@ -1387,5 +1387,5 @@ def test_options_request(client, django_elasticapm_client):
         'elasticapm.contrib.django.middleware.TracingMiddleware'
     ])):
         client.options('/')
-    transactions = django_elasticapm_client.instrumentation_store.get_all()
+    transactions = django_elasticapm_client.transaction_store.get_all()
     assert transactions[0]['context']['request']['method'] == 'OPTIONS'

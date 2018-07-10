@@ -29,7 +29,7 @@ def test_requests_instrumentation(instrument, elasticapm_client):
         requests.get('http://example.com', allow_redirects=False)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     spans = transactions[0]['spans']
     assert 'GET example.com' == spans[0]['name']
     assert 'http://example.com/' == spans[0]['context']['url']
@@ -42,7 +42,7 @@ def test_requests_instrumentation_via_session(instrument, elasticapm_client):
         s.get('http://example.com', allow_redirects=False)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     spans = transactions[0]['spans']
     assert 'GET example.com' == spans[0]['name']
     assert 'http://example.com/' == spans[0]['context']['url']
@@ -57,7 +57,7 @@ def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_cl
         s.send(pr, allow_redirects=False)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     spans = transactions[0]['spans']
     assert 'GET example.com' == spans[0]['name']
     assert 'http://example.com/' == spans[0]['context']['url']

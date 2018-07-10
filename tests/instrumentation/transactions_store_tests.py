@@ -183,7 +183,7 @@ def test_tags_merge(elasticapm_client):
     elasticapm.tag(foo=1, bar='baz')
     elasticapm.tag(bar=3, boo='biz')
     elasticapm_client.end_transaction('test', 'OK')
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     assert transactions[0]['context']['tags'] == {'foo': '1', 'bar': '3', 'boo': 'biz'}
 
@@ -198,7 +198,7 @@ def test_set_transaction_name(elasticapm_client):
 
     elasticapm_client.end_transaction('test_name', 200)
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     assert transactions[0]['name'] == 'test_name'
     assert transactions[1]['name'] == 'another_name'
 
@@ -209,7 +209,7 @@ def test_set_transaction_custom_data(elasticapm_client):
     elasticapm.set_custom_context({'foo': 'bar'})
 
     elasticapm_client.end_transaction('foo', 200)
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     assert transactions[0]['context']['custom'] == {'foo': 'bar'}
 
@@ -221,7 +221,7 @@ def test_set_transaction_custom_data_merge(elasticapm_client):
     elasticapm.set_custom_context({'bar': 'bie', 'boo': 'biz'})
 
     elasticapm_client.end_transaction('foo', 200)
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     assert transactions[0]['context']['custom'] == {'foo': 'bar', 'bar': 'bie', 'boo': 'biz'}
 
@@ -232,7 +232,7 @@ def test_set_user_context(elasticapm_client):
     elasticapm.set_user_context(username='foo', email='foo@example.com', user_id=42)
 
     elasticapm_client.end_transaction('foo', 200)
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     assert transactions[0]['context']['user'] == {'username': 'foo', 'email': 'foo@example.com', 'id': 42}
 
@@ -244,7 +244,7 @@ def test_set_user_context_merge(elasticapm_client):
     elasticapm.set_user_context(email='foo@example.com', user_id=42)
 
     elasticapm_client.end_transaction('foo', 200)
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     assert transactions[0]['context']['user'] == {'username': 'foo', 'email': 'foo@example.com', 'id': 42}
 
