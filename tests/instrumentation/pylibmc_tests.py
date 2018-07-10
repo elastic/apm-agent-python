@@ -22,7 +22,7 @@ def test_pylibmc(instrument, elasticapm_client):
         assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])
     elasticapm_client.end_transaction("BillingView")
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     spans = transactions[0]['spans']
 
     expected_signatures = {'test_memcached',

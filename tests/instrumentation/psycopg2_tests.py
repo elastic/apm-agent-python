@@ -232,7 +232,7 @@ def test_psycopg2_register_type(postgres_connection, elasticapm_client):
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the spans for the other tests.
-        elasticapm_client.instrumentation_store.get_all()
+        elasticapm_client.transaction_store.get_all()
 
     assert new_type is not None
 
@@ -257,7 +257,7 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the traces for the other tests.
-        elasticapm_client.instrumentation_store.get_all()
+        elasticapm_client.transaction_store.get_all()
 
 
 @pytest.mark.integrationtest
@@ -268,7 +268,7 @@ def test_psycopg2_tracing_outside_of_elasticapm_transaction(instrument, postgres
     # transaction
     assert isinstance(cursor, PGCursorProxy)
     cursor.execute('SELECT 1')
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     assert transactions == []
 
 
@@ -289,7 +289,7 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the spans for the other tests.
-        transactions = elasticapm_client.instrumentation_store.get_all()
+        transactions = elasticapm_client.transaction_store.get_all()
         spans = transactions[0]['spans']
         span = spans[0]
         assert span['name'] == 'SELECT FROM test'
@@ -320,7 +320,7 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
     finally:
         # make sure we've cleared out the spans for the other tests.
         assert [(2, 'two'), (3, 'three')] == result
-        transactions = elasticapm_client.instrumentation_store.get_all()
+        transactions = elasticapm_client.transaction_store.get_all()
         spans = transactions[0]['spans']
         span = spans[0]
         assert span['name'] == 'SELECT FROM test'

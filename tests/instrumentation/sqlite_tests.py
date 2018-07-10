@@ -13,7 +13,7 @@ def test_connect(instrument, elasticapm_client):
 
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     spans = transactions[0]['spans']
 
     expected_signatures = {'sqlite3.connect :memory:',

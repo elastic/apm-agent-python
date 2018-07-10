@@ -397,7 +397,7 @@ def test_metrics_collection(should_collect, sending_elasticapm_client):
         sending_elasticapm_client.begin_transaction("transaction.test")
         sending_elasticapm_client.end_transaction('test-transaction', 200)
 
-    assert len(sending_elasticapm_client.instrumentation_store) == 7
+    assert len(sending_elasticapm_client.transaction_store) == 7
     assert len(sending_elasticapm_client.httpserver.requests) == 0
     should_collect.return_value = True
 
@@ -449,7 +449,7 @@ def test_ignore_patterns(should_collect, elasticapm_client):
     elasticapm_client.begin_transaction("web")
     elasticapm_client.end_transaction('GET views.users', 200)
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     assert len(transactions) == 1
     assert transactions[0]['name'] == 'GET views.users'
@@ -583,7 +583,7 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
         a_long_local_list = list(range(100))
         pass
     elasticapm_client.end_transaction('test', 'ok')
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
     frame = transaction['spans'][0]['stacktrace'][0]
     if mode in ('transactions', 'all'):
         assert 'vars' in frame, mode
@@ -609,7 +609,7 @@ def test_collect_source_transactions(should_collect, elasticapm_client):
     with elasticapm.capture_span('foo'):
         pass
     elasticapm_client.end_transaction('test', 'ok')
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
     in_app_frame = transaction['spans'][0]['stacktrace'][0]
     library_frame = transaction['spans'][0]['stacktrace'][1]
     assert not in_app_frame['library_frame']
@@ -659,7 +659,7 @@ def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
             pass
         elasticapm_client.end_transaction('test')
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
 
     # seed is fixed by not_so_random fixture
     assert len([t for t in transactions if t['sampled']]) == 5
@@ -681,7 +681,7 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
             pass
     transaction_obj = elasticapm_client.end_transaction('test')
 
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
 
     assert transaction_obj.max_spans == 5
     assert transaction_obj.dropped_spans == 10
@@ -702,7 +702,7 @@ def test_transaction_span_frames_min_duration(should_collect, elasticapm_client)
         time.sleep(0.040)
     elasticapm_client.end_transaction('test')
 
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
     spans = transaction['spans']
 
     assert len(spans) == 2
@@ -724,7 +724,7 @@ def test_transaction_span_frames_min_duration_no_limit(should_collect, elasticap
         time.sleep(0.040)
     elasticapm_client.end_transaction('test')
 
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
     spans = transaction['spans']
 
     assert len(spans) == 2
@@ -756,7 +756,7 @@ def test_transaction_max_span_nested(should_collect, elasticapm_client):
         pass
     transaction_obj = elasticapm_client.end_transaction('test')
 
-    transaction = elasticapm_client.instrumentation_store.get_all()[0]
+    transaction = elasticapm_client.transaction_store.get_all()[0]
 
     assert transaction_obj.dropped_spans == 6
     assert len(transaction['spans']) == 3

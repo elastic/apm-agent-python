@@ -21,7 +21,7 @@ def test_urllib3(should_collect, instrument, elasticapm_client, httpserver):
 
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.instrumentation_store.get_all()
+    transactions = elasticapm_client.transaction_store.get_all()
     spans = transactions[0]['spans']
 
     expected_signatures = {'test_pipeline', expected_sig}
