@@ -3,13 +3,19 @@ exclude:
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-2.0
   - PYTHON_VERSION: python-2.7
+    FRAMEWORK: django-2.1
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.4
+    FRAMEWORK: django-2.1
+  - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-master
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: django-1.11 # see https://code.djangoproject.com/ticket/28814
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-2.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: django-2.1
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-master
   # Flask
@@ -24,14 +30,14 @@ exclude:
     FRAMEWORK: celery-3-django-2.0
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: celery-3-django-1.11 # see https://code.djangoproject.com/ticket/28814
   # celery 4 doesn't currently work on Python 3.7, see https://github.com/celery/celery/issues/4500
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: celery-4-flask-1.0
   # requests
   - PYTHON_VERSION: python-3.4
@@ -40,7 +46,7 @@ exclude:
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
@@ -49,30 +55,30 @@ exclude:
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
   # psycopg2
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: psycopg2-2.6
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: psycopg2-2.5
@@ -85,7 +91,7 @@ exclude:
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: python-3.7-rc
+  - PYTHON_VERSION: python-3.7
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
