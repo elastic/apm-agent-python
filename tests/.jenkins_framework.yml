@@ -3,6 +3,7 @@
 FRAMEWORK:
   - django-1.11
   - django-2.0
+  - django-2.1
   - flask-0.12
   - flask-1.0
   - twisted-18
