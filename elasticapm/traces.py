@@ -29,11 +29,9 @@ except ImportError:
 class Transaction(object):
     def __init__(
         self,
-        frames_collector_func,
+        store,
         transaction_type="custom",
         is_sampled=True,
-        max_spans=None,
-        span_frames_min_duration=None,
     ):
         self.id = str(uuid.uuid4())
         self.timestamp = datetime.datetime.utcnow()
@@ -42,11 +40,9 @@ class Transaction(object):
         self.duration = None
         self.result = None
         self.transaction_type = transaction_type
-        self._frames_collector_func = frames_collector_func
+        self._store = store
 
         self.spans = []
-        self.max_spans = max_spans
-        self.span_frames_min_duration = span_frames_min_duration
         self.dropped_spans = 0
         self.context = {}
         self.tags = {}
@@ -59,15 +55,17 @@ class Transaction(object):
 
     def begin_span(self, name, span_type, context=None, leaf=False):
         parent_span = get_span()
+        store = self._store
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
-        elif self.max_spans and self._span_counter > self.max_spans - 1:
+        elif store.max_spans and self._span_counter > store.max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
             start = _time_func() - self.start_time
             span = Span(self._span_counter, name, span_type, start, context, leaf)
+            span.frames = store.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
         set_span(span)
@@ -83,8 +81,10 @@ class Transaction(object):
 
         span.duration = _time_func() - span.start_time - self.start_time
 
-        if not self.span_frames_min_duration or span.duration >= self.span_frames_min_duration:
-            span.frames = self._frames_collector_func()[skip_frames:]
+        if not self._store.span_frames_min_duration or span.duration >= self._store.span_frames_min_duration:
+            span.frames = self._store.frames_processing_func(span.frames)[skip_frames:]
+        else:
+            span.frames = None
         self.spans.append(span)
         set_span(span.parent)
         return span
@@ -157,21 +157,15 @@ class DroppedSpan(object):
 
 
 class TransactionsStore(object):
-    def __init__(
-        self,
-        frames_collector_func,
-        collect_frequency,
-        sample_rate=1.0,
-        max_spans=0,
-        max_queue_size=None,
-        span_frames_min_duration=None,
-        ignore_patterns=None,
+    def __init__(self, frames_collector_func, frames_processing_func, collect_frequency, sample_rate=1.0, max_spans=0,
+                 max_queue_size=None, span_frames_min_duration=None, ignore_patterns=None,
     ):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
         self.max_queue_size = max_queue_size
         self.max_spans = max_spans
-        self._frames_collector_func = frames_collector_func
+        self.frames_processing_func = frames_processing_func
+        self.frames_collector_func = frames_collector_func
         self._transactions = []
         self._last_collect = _time_func()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
@@ -213,13 +207,9 @@ class TransactionsStore(object):
         """
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(
-            self._frames_collector_func,
-            transaction_type,
-            max_spans=self.max_spans,
-            span_frames_min_duration=self.span_frames_min_duration,
+            self, transaction_type,
             is_sampled=is_sampled,
         )
-
         set_transaction(transaction)
         return transaction
 

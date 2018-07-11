@@ -25,6 +25,6 @@ from elasticapm.traces import set_transaction_name, set_user_context, tag  # noq
 from elasticapm.traces import set_transaction_result  # noqa: F401
 
 if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span as capture_span # noqa: F401
+    from elasticapm.contrib.asyncio.traces import async_capture_span as capture_span #  noqa: F401
 else:
-    from elasticapm.traces import capture_span # noqa: F401
+    from elasticapm.traces import capture_span #  noqa: F401

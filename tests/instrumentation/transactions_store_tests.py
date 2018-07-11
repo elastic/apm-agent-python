@@ -10,8 +10,6 @@ from elasticapm.traces import TransactionsStore, capture_span, get_transaction
 
 @pytest.fixture()
 def transaction_store():
-    mock_get_frames = Mock()
-
     frames = [
         {
             "function": "something_expensive",
@@ -138,8 +136,7 @@ def transaction_store():
         },
     ]
 
-    mock_get_frames.return_value = frames
-    return TransactionsStore(mock_get_frames, 99999)
+    return TransactionsStore(lambda: frames, lambda frames: frames, 99999)
 
 
 def test_leaf_tracing(transaction_store):
@@ -167,34 +164,34 @@ def test_leaf_tracing(transaction_store):
 
 
 def test_get_transaction():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], 99999)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], 99999)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction(clear=True)
     assert get_transaction() is None
 
 
 def test_should_collect_time():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5)
+    requests_store = TransactionsStore(lambda: [], lambda: [], collect_frequency=5)
     requests_store._last_collect -= 6
 
     assert requests_store.should_collect()
 
 
 def test_should_not_collect_time():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5)
+    requests_store = TransactionsStore(lambda: [], lambda: [], collect_frequency=5)
     requests_store._last_collect -= 3
 
     assert not requests_store.should_collect()
 
 
 def test_should_collect_count():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_size=5)
+    requests_store = TransactionsStore(lambda: [], lambda: [], collect_frequency=5, max_queue_size=5)
     requests_store._transactions = 6 * [1]
     requests_store._last_collect -= 3
 
@@ -202,14 +199,14 @@ def test_should_collect_count():
 
 
 def test_should_not_collect_count():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_size=5)
+    requests_store = TransactionsStore(lambda: [], lambda: [], collect_frequency=5, max_queue_size=5)
     requests_store._transactions = 4 * [1]
 
     assert not requests_store.should_collect()
 
 
 def test_tag_transaction():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], 99999)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
     requests_store.end_transaction(200, "test")
@@ -227,7 +224,7 @@ def test_tag_while_no_transaction(caplog):
 
 
 def test_tag_with_non_string_value():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], 99999)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, "test")

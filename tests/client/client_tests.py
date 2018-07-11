@@ -693,7 +693,7 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
 
     transaction = elasticapm_client.transaction_store.get_all()[0]
 
-    assert transaction_obj.max_spans == 5
+    assert transaction_obj._store.max_spans == 5
     assert transaction_obj.dropped_spans == 10
     assert len(transaction["spans"]) == 5
     for span in transaction["spans"]:
