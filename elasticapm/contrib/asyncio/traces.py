@@ -1,7 +1,19 @@
+import functools
 from elasticapm.traces import capture_span, error_logger, get_transaction
+from elasticapm.utils import get_name_from_func
 
 
 class async_capture_span(capture_span):
+    def __call__(self, func):
+        self.name = self.name or get_name_from_func(func)
+
+        @functools.wraps(func)
+        async def decorated(*args, **kwds):
+            async with self:
+                return await func(*args, **kwds)
+
+        return decorated
+
     async def __aenter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:

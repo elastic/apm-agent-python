@@ -138,10 +138,10 @@ class Client(object):
             skip_modules = ("elasticapm.",)
 
         self.transaction_store = TransactionsStore(
-            frames_collector_func=lambda: stacks.iter_stack_frames(
+            frames_collector_func=lambda: list(stacks.iter_stack_frames(
                 start_frame=inspect.currentframe(),
                 skip_top_modules=skip_modules,
-            ),
+            )),
             frames_processing_func=lambda frames: self._get_stack_info_for_trace(
                 frames,
                 library_frame_context_lines=self.config.source_lines_span_library_frames,
