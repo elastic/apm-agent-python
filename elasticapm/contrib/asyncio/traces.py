@@ -1,4 +1,5 @@
 import functools
+
 from elasticapm.traces import capture_span, error_logger, get_transaction
 from elasticapm.utils import get_name_from_func
 

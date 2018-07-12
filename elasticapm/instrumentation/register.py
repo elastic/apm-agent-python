@@ -1,3 +1,5 @@
+import sys
+
 from elasticapm.utils.module_import import import_string
 
 _cls_register = {
@@ -24,6 +26,11 @@ _cls_register = {
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation",
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation",
 }
+
+if sys.version_info >= (3, 5):
+    _cls_register.update([
+        'elasticapm.instrumentation.packages.aiohttp.AioHttpClientInstrumentation',
+    ])
 
 
 def register(cls):
