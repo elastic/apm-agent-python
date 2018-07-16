@@ -32,9 +32,9 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
         http_method = args[0] if args_len else kwargs.get('method')
         http_path = args[1] if args_len > 1 else kwargs.get('url')
         params = args[2] if args_len > 2 else kwargs.get('params')
-        body = params.pop(BODY_REF_NAME, None)
+        body = params.pop(BODY_REF_NAME, None) if params else None
 
-        api_method = params.pop(API_METHOD_KEY_NAME, None)
+        api_method = params.pop(API_METHOD_KEY_NAME, None) if params else None
 
         signature = 'ES %s %s' % (http_method, http_path)
         context = {'db': {'type': 'elasticsearch'}}
@@ -43,7 +43,7 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             # using both q AND body is allowed in some API endpoints / ES versions,
             # but not in others. We simply capture both if they are there so the
             # user can see it.
-            if 'q' in params:
+            if params and 'q' in params:
                 # 'q' is already encoded to a byte string at this point
                 # we assume utf8, which is the default
                 query.append('q=' + params['q'].decode('utf-8', errors='replace'))
@@ -132,8 +132,11 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
         super(ElasticsearchInstrumentation, self).instrument()
 
     def call(self, module, method, wrapped, instance, args, kwargs):
+        params = kwargs.pop('params', {})
+
         # make a copy of params in case the caller reuses them for some reason
-        params = kwargs.pop('params', {}).copy()
+        params = params.copy() if params is not None else {}
+
         cls_name, method_name = method.split('.', 1)
         body_pos = (self.body_positions['all'].get(method_name) or
                     self.body_positions[self.version].get(method_name) or None)
