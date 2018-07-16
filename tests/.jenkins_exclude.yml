@@ -98,3 +98,8 @@ exclude:
   # pymssql
   - PYTHON_VERSION: pypy-2 # currently fails with error on pypy2
     FRAMEWORK: pymssql-newest
+  # pyodbc
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: pyodbc-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: pyodbc-newest
