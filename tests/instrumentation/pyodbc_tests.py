@@ -45,7 +45,7 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         cursor.fetchall()
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
-        transactions = elasticapm_client.instrumentation_store.get_all()
+        transactions = elasticapm_client.transaction_store.get_all()
         spans = transactions[0]['spans']
         span = spans[0]
         assert span['name'] == 'SELECT FROM test'
