@@ -103,6 +103,12 @@ def waiting_httpserver(httpserver):
 
 
 @pytest.fixture()
+def waiting_httpsserver(httpsserver):
+    wait_for_http_server(httpsserver)
+    return httpsserver
+
+
+@pytest.fixture()
 def validating_httpserver(request):
     server = ValidatingWSGIApp()
     server.start()
