@@ -89,22 +89,22 @@ async def test_send_timeout(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_ssl_verify_fails(httpsserver):
+async def test_ssl_verify_fails(waiting_httpsserver):
     from elasticapm.transport.asyncio import AsyncioHTTPTransport
     from elasticapm.transport.base import TransportException
 
-    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
-    transport = AsyncioHTTPTransport(urlparse(httpsserver.url))
+    waiting_httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = AsyncioHTTPTransport(urlparse(waiting_httpsserver.url))
     with pytest.raises(TransportException) as exc_info:
         await transport.send(b'x', {})
     assert 'CERTIFICATE_VERIFY_FAILED' in str(exc_info)
 
 
 @pytest.mark.asyncio
-async def test_ssl_verify_disable(httpsserver):
+async def test_ssl_verify_disable(waiting_httpsserver):
     from elasticapm.transport.asyncio import AsyncioHTTPTransport
 
-    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
-    transport = AsyncioHTTPTransport(urlparse(httpsserver.url), verify_server_cert=False)
+    waiting_httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = AsyncioHTTPTransport(urlparse(waiting_httpsserver.url), verify_server_cert=False)
     url = await transport.send(b'x', {})
     assert url == 'http://example.com/foo'
