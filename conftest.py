@@ -4,7 +4,7 @@ from os.path import abspath, dirname, join
 
 from tests.fixtures import (elasticapm_client, instrument, not_so_random,
                             sending_elasticapm_client, validating_httpserver,
-                            waiting_httpserver)
+                            waiting_httpserver, waiting_httpsserver)
 from tests.utils.compat import middleware_setting
 
 try:

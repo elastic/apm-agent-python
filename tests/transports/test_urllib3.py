@@ -17,9 +17,9 @@ except ImportError:
 responses = Responses('urllib3')
 
 
-def test_send(httpserver):
-    httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
-    transport = Transport(urlparse.urlparse(httpserver.url))
+def test_send(waiting_httpserver):
+    waiting_httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = Transport(urlparse.urlparse(waiting_httpserver.url))
     url = transport.send(compat.b('x'), {})
     assert url == 'http://example.com/foo'
 
@@ -34,9 +34,9 @@ def test_timeout():
     assert 'timeout' in str(exc_info.value)
 
 
-def test_http_error(httpserver):
-    httpserver.serve_content(code=418, content="I'm a teapot")
-    transport = Transport(urlparse.urlparse(httpserver.url))
+def test_http_error(waiting_httpserver):
+    waiting_httpserver.serve_content(code=418, content="I'm a teapot")
+    transport = Transport(urlparse.urlparse(waiting_httpserver.url))
 
     with pytest.raises(TransportException) as exc_info:
         transport.send('x', {})
@@ -98,17 +98,17 @@ def test_header_encodings():
         assert isinstance(v, compat.binary_type)
 
 
-def test_ssl_verify_fails(httpsserver):
-    httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
-    transport = Transport(compat.urlparse.urlparse(httpsserver.url))
+def test_ssl_verify_fails(waiting_httpsserver):
+    waiting_httpsserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
+    transport = Transport(compat.urlparse.urlparse(waiting_httpsserver.url))
     with pytest.raises(TransportException) as exc_info:
         url = transport.send(compat.b('x'), {})
     assert 'CERTIFICATE_VERIFY_FAILED' in str(exc_info)
 
 
 @pytest.mark.filterwarnings('ignore:Unverified HTTPS')
-def test_ssl_verify_disable(httpsserver):
-    httpsserver.serve_content(code=202, content='', headers={'Location': 'https://example.com/foo'})
-    transport = Transport(compat.urlparse.urlparse(httpsserver.url), verify_server_cert=False)
+def test_ssl_verify_disable(waiting_httpsserver):
+    waiting_httpsserver.serve_content(code=202, content='', headers={'Location': 'https://example.com/foo'})
+    transport = Transport(compat.urlparse.urlparse(waiting_httpsserver.url), verify_server_cert=False)
     url = transport.send(compat.b('x'), {})
     assert url == 'https://example.com/foo'
