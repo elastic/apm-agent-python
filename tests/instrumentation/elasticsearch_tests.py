@@ -194,7 +194,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(index='tweets', doc_type='doc', id=1, body={'user': 'kimchy', 'text': 'hola'}, refresh=True)
     elasticapm_client.begin_transaction('test')
     search_query = {"query": {"term": {"user": "kimchy"}}}
-    result = elasticsearch.search(body=search_query)
+    result = elasticsearch.search(body=search_query, params=None)
     transaction_obj = elasticapm_client.end_transaction('test', 'OK')
     assert result['hits']['hits'][0]['_source'] == {'user': 'kimchy', 'text': 'hola'}
     assert len(transaction_obj.spans) == 1
