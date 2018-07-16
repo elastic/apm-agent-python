@@ -2,6 +2,8 @@ import codecs
 import json
 import os
 import random
+import socket
+import time
 import zlib
 
 import jsonschema
@@ -95,9 +97,16 @@ def elasticapm_client(request):
 
 
 @pytest.fixture()
+def waiting_httpserver(httpserver):
+    wait_for_http_server(httpserver)
+    return httpserver
+
+
+@pytest.fixture()
 def validating_httpserver(request):
     server = ValidatingWSGIApp()
     server.start()
+    wait_for_http_server(server)
     request.addfinalizer(server.stop)
     return server
 
@@ -140,3 +149,15 @@ def instrument():
     elasticapm.instrument()
     yield
     elasticapm.uninstrument()
+
+
+def wait_for_http_server(httpserver, timeout=30):
+    start_time = time.time()
+    while True:
+        try:
+            sock = socket.create_connection(httpserver.server_address, timeout=0.1)
+            sock.close()
+            break
+        except socket.error:
+            if time.time() - start_time > timeout:
+                raise TimeoutError()
