@@ -17,6 +17,7 @@ FRAMEWORK:
   - redis-newest
   - psycopg2-newest
   - pymssql-newest
+  - pyodbc-newest
   - memcached-newest
   - pylibmc-newest
   - elasticsearch-2
