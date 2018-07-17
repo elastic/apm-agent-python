@@ -97,28 +97,28 @@ class _BoolConfigValue(_ConfigValue):
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
-    def __init__(self, config_dict=None, env_dict=None, default_dict=None):
+    def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
         self._values = {}
         self._errors = {}
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
             env_dict = os.environ
-        if default_dict is None:
-            default_dict = {}
+        if inline_dict is None:
+            inline_dict = {}
         for field, config_value in self.__class__.__dict__.items():
             if not isinstance(config_value, _ConfigValue):
                 continue
             new_value = self._NO_VALUE
-            # check config dictionary first
-            if config_value.dict_key in config_dict:
-                new_value = config_dict[config_value.dict_key]
-            # then check environment
-            elif config_value.env_key and config_value.env_key in env_dict:
+            # first check environment
+            if config_value.env_key and config_value.env_key in env_dict:
                 new_value = env_dict[config_value.env_key]
-            # finally, if no value is set, check the client-provided defaults
-            elif field in default_dict:
-                new_value = default_dict[field]
+            # check the inline config
+            elif field in inline_dict:
+                new_value = inline_dict[field]
+            # finally, check config dictionary
+            elif config_value.dict_key in config_dict:
+                new_value = config_dict[config_value.dict_key]
             # only set if new_value changed. We'll fall back to the field default if not.
             if new_value is not self._NO_VALUE:
                 try:

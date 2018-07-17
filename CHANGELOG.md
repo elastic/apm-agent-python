@@ -5,9 +5,11 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...master)
 
  - **BREAKING**: dropped support for Python 3.3 (#242) 
+ - **BREAKING**: changed order of precedence when evaluating configuration (#255, #261)
  - **BREAKING**: changed default value of `span_frames_min_duration` setting 
    from `-1` (always collect) to `5` (only collect for spans longer than 5 ms) (#243)
  - added instrumentation for pymssql (#241)
+ - added instrumentation for pyodbc (#238) 
 
 ## v2.2.1
 

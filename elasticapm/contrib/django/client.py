@@ -60,13 +60,13 @@ def get_client(client=None):
 class DjangoClient(Client):
     logger = logging.getLogger('elasticapm.errors.client.django')
 
-    def __init__(self, config=None, **defaults):
+    def __init__(self, config=None, **inline):
         if config is None:
             config = getattr(django_settings, 'ELASTIC_APM', {})
-        if 'framework_name' not in defaults:
-            defaults['framework_name'] = 'django'
-            defaults['framework_version'] = django.get_version()
-        super(DjangoClient, self).__init__(config, **defaults)
+        if 'framework_name' not in inline:
+            inline['framework_name'] = 'django'
+            inline['framework_version'] = django.get_version()
+        super(DjangoClient, self).__init__(config, **inline)
 
     def get_user_info(self, request):
         user_info = {}
