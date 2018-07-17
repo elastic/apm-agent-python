@@ -134,9 +134,9 @@ def sending_elasticapm_client(request, validating_httpserver):
 
 
 class TempStoreClient(Client):
-    def __init__(self, **defaults):
+    def __init__(self, **inline):
         self.events = []
-        super(TempStoreClient, self).__init__(**defaults)
+        super(TempStoreClient, self).__init__(**inline)
 
     def send(self, url, **kwargs):
         self.events.append(kwargs)
