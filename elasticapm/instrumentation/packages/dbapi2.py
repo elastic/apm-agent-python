@@ -15,12 +15,10 @@ class Literal(object):
         self.content = content
 
     def __eq__(self, other):
-        return (isinstance(other, Literal) and self.literal_type == other.literal_type and
-                self.content == other.content)
+        return isinstance(other, Literal) and self.literal_type == other.literal_type and self.content == other.content
 
     def __repr__(self):
-        return "<Literal {}{}{}>".format(self.literal_type, self.content,
-                                         self.literal_type)
+        return "<Literal {}{}{}>".format(self.literal_type, self.content, self.literal_type)
 
 
 def skip_to(start, tokens, value_sequence):
@@ -31,7 +29,7 @@ def skip_to(start, tokens, value_sequence):
                 break
         else:
             # Match
-            return tokens[start:i + len(value_sequence)]
+            return tokens[start : i + len(value_sequence)]
         i += 1
 
     # Not found
@@ -61,7 +59,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
 
 def tokenize(sql):
     # split on anything that is not a word character, excluding dots
-    return [t for t in re.split("([^\w.])", sql) if t != '']
+    return [t for t in re.split("([^\w.])", sql) if t != ""]
 
 
 def scan(tokens):
@@ -89,7 +87,7 @@ def scan(tokens):
                         literal_started = None
                         lexeme = []
                 else:
-                    if token == '\\':
+                    if token == "\\":
                         prev_was_escape = token
                     else:
                         prev_was_escape = False
@@ -102,18 +100,16 @@ def scan(tokens):
                 # Postgres can use arbitrary characters between two $'s as a
                 # literal separation token, e.g.: $fish$ literal $fish$
                 # This part will detect that and skip over the literal.
-                skipped_token = skip_to(i + 1, tokens, '$')
+                skipped_token = skip_to(i + 1, tokens, "$")
                 if skipped_token is not None:
-                    dollar_token = ['$'] + skipped_token
+                    dollar_token = ["$"] + skipped_token
 
-                    skipped = skip_to(i + len(dollar_token), tokens,
-                                      dollar_token)
+                    skipped = skip_to(i + len(dollar_token), tokens, dollar_token)
                     if skipped:  # end wasn't found.
-                        yield i, Literal("".join(dollar_token),
-                                         "".join(skipped[:-len(dollar_token)]))
+                        yield i, Literal("".join(dollar_token), "".join(skipped[: -len(dollar_token)]))
                         i = i + len(skipped) + len(dollar_token)
             else:
-                if token != ' ':
+                if token != " ":
                     yield i, token
         i += 1
 
@@ -128,37 +124,37 @@ def extract_signature(sql):
     :return: a string representing the signature
     """
     sql = sql.strip()
-    first_space = sql.find(' ')
+    first_space = sql.find(" ")
     if first_space < 0:
         return sql
 
-    second_space = sql.find(' ', first_space + 1)
+    second_space = sql.find(" ", first_space + 1)
 
     sql_type = sql[0:first_space].upper()
 
-    if sql_type in ['INSERT', 'DELETE']:
-        keyword = 'INTO' if sql_type == 'INSERT' else 'FROM'
+    if sql_type in ["INSERT", "DELETE"]:
+        keyword = "INTO" if sql_type == "INSERT" else "FROM"
         sql_type = sql_type + " " + keyword
 
         table_name = look_for_table(sql, keyword)
-    elif sql_type in ['CREATE', 'DROP']:
+    elif sql_type in ["CREATE", "DROP"]:
         # 2nd word is part of SQL type
         sql_type = sql_type + sql[first_space:second_space]
-        table_name = ''
-    elif sql_type == 'UPDATE':
+        table_name = ""
+    elif sql_type == "UPDATE":
         table_name = look_for_table(sql, "UPDATE")
-    elif sql_type == 'SELECT':
+    elif sql_type == "SELECT":
         # Name is first table
         try:
-            sql_type = 'SELECT FROM'
+            sql_type = "SELECT FROM"
             table_name = look_for_table(sql, "FROM")
         except Exception:
-            table_name = ''
+            table_name = ""
     else:
         # No name
-        table_name = ''
+        table_name = ""
 
-    signature = ' '.join(filter(bool, [sql_type, table_name]))
+    signature = " ".join(filter(bool, [sql_type, table_name]))
     return signature
 
 
@@ -166,15 +162,13 @@ class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
 
     def callproc(self, procname, params=None):
-        return self._trace_sql(self.__wrapped__.callproc, procname,
-                               params)
+        return self._trace_sql(self.__wrapped__.callproc, procname, params)
 
     def execute(self, sql, params=None):
         return self._trace_sql(self.__wrapped__.execute, sql, params)
 
     def executemany(self, sql, param_list):
-        return self._trace_sql(self.__wrapped__.executemany, sql,
-                               param_list)
+        return self._trace_sql(self.__wrapped__.executemany, sql, param_list)
 
     def _bake_sql(self, sql):
         """
@@ -187,7 +181,7 @@ class CursorProxy(wrapt.ObjectProxy):
         sql_string = self._bake_sql(sql)
         signature = self.extract_signature(sql_string)
         kind = "db.{0}.sql".format(self.provider_name)
-        with capture_span(signature, kind, {'db': {"type": "sql", "statement": sql_string}}):
+        with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql_string}}):
             if params is None:
                 return method(sql)
             else:

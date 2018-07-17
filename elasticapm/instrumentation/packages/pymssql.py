@@ -1,11 +1,13 @@
-from elasticapm.instrumentation.packages.dbapi2 import (ConnectionProxy,
-                                                        CursorProxy,
-                                                        DbApi2Instrumentation,
-                                                        extract_signature)
+from elasticapm.instrumentation.packages.dbapi2 import (
+    ConnectionProxy,
+    CursorProxy,
+    DbApi2Instrumentation,
+    extract_signature,
+)
 
 
 class PyMSSQLCursorProxy(CursorProxy):
-    provider_name = 'pymssql'
+    provider_name = "pymssql"
 
     def extract_signature(self, sql):
         return extract_signature(sql)
@@ -16,11 +18,9 @@ class PyMSSQLConnectionProxy(ConnectionProxy):
 
 
 class PyMSSQLInstrumentation(DbApi2Instrumentation):
-    name = 'pymssql'
+    name = "pymssql"
 
-    instrument_list = [
-        ("pymssql", "connect"),
-    ]
+    instrument_list = [("pymssql", "connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         return PyMSSQLConnectionProxy(wrapped(*args, **kwargs))

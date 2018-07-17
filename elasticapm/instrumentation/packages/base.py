@@ -5,7 +5,7 @@ import os
 from elasticapm.traces import get_transaction
 from elasticapm.utils import wrapt
 
-logger = logging.getLogger('elasticapm.instrument')
+logger = logging.getLogger("elasticapm.instrument")
 
 
 class AbstractInstrumentedModule(object):
@@ -28,13 +28,13 @@ class AbstractInstrumentedModule(object):
 
     def get_wrapped_name(self, wrapped, instance, fallback_method=None):
         wrapped_name = []
-        if hasattr(instance, '__class__') and hasattr(instance.__class__, '__name__'):
+        if hasattr(instance, "__class__") and hasattr(instance.__class__, "__name__"):
             wrapped_name.append(instance.__class__.__name__)
 
-        if hasattr(wrapped, '__name__'):
+        if hasattr(wrapped, "__name__"):
             wrapped_name.append(wrapped.__name__)
         elif fallback_method:
-            attribute = fallback_method.split('.')
+            attribute = fallback_method.split(".")
             if len(attribute) == 2:
                 wrapped_name.append(attribute[1])
 
@@ -47,7 +47,7 @@ class AbstractInstrumentedModule(object):
         if self.instrumented:
             return
 
-        skip_env_var = 'SKIP_INSTRUMENT_' + str(self.name.upper())
+        skip_env_var = "SKIP_INSTRUMENT_" + str(self.name.upper())
         if skip_env_var in os.environ:
             logger.debug("Skipping instrumentation of %s. %s is set.", self.name, skip_env_var)
             return
@@ -65,10 +65,7 @@ class AbstractInstrumentedModule(object):
                     # `module`/`method` in the call to `call_if_sampling`
                     parent, attribute, original = wrapt.resolve_path(module, method)
                     self.originals[(module, method)] = original
-                    wrapper = wrapt.FunctionWrapper(
-                        original,
-                        functools.partial(self.call_if_sampling, module, method),
-                    )
+                    wrapper = wrapt.FunctionWrapper(original, functools.partial(self.call_if_sampling, module, method))
                     wrapt.apply_patch(parent, attribute, wrapper)
                     instrumented_methods.append((module, method))
                 except ImportError:
@@ -82,7 +79,7 @@ class AbstractInstrumentedModule(object):
                     # Could not find thing in module
                     logger.debug("Skipping instrumentation of %s.%s: %s", module, method, ex)
             if instrumented_methods:
-                logger.debug("Instrumented %s, %s", self.name, ', '.join('.'.join(m) for m in instrumented_methods))
+                logger.debug("Instrumented %s, %s", self.name, ", ".join(".".join(m) for m in instrumented_methods))
 
         except ImportError as ex:
             logger.debug("Skipping instrumentation of %s. %s", self.name, ex)
@@ -98,7 +95,7 @@ class AbstractInstrumentedModule(object):
                 wrapt.apply_patch(parent, attribute, self.originals[(module, method)])
                 uninstrumented_methods.append((module, method))
         if uninstrumented_methods:
-            logger.debug("Uninstrumented %s, %s", self.name, ', '.join('.'.join(m) for m in uninstrumented_methods))
+            logger.debug("Uninstrumented %s, %s", self.name, ", ".join(".".join(m) for m in uninstrumented_methods))
         self.instrumented = False
         self.originals = {}
 

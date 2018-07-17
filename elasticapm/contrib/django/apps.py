@@ -5,15 +5,15 @@ from django.conf import settings as django_settings
 
 from elasticapm.contrib.django.client import get_client
 
-ERROR_DISPATCH_UID = 'elasticapm-exceptions'
-REQUEST_START_DISPATCH_UID = 'elasticapm-request-start'
-REQUEST_FINISH_DISPATCH_UID = 'elasticapm-request-stop'
+ERROR_DISPATCH_UID = "elasticapm-exceptions"
+REQUEST_START_DISPATCH_UID = "elasticapm-request-start"
+REQUEST_FINISH_DISPATCH_UID = "elasticapm-request-stop"
 
 
 class ElasticAPMConfig(AppConfig):
-    name = 'elasticapm.contrib.django'
-    label = 'elasticapm.contrib.django'
-    verbose_name = 'ElasticAPM'
+    name = "elasticapm.contrib.django"
+    label = "elasticapm.contrib.django"
+    verbose_name = "ElasticAPM"
 
     def __init__(self, *args, **kwargs):
         super(ElasticAPMConfig, self).__init__(*args, **kwargs)
@@ -38,15 +38,18 @@ def register_handlers(client):
 
     request_started.disconnect(dispatch_uid=REQUEST_START_DISPATCH_UID)
     request_started.connect(
-        lambda sender, *args, **kwargs: client.begin_transaction('request')
-        if _should_start_transaction(client) else None,
-        dispatch_uid=REQUEST_START_DISPATCH_UID, weak=False
+        lambda sender, *args, **kwargs: client.begin_transaction("request")
+        if _should_start_transaction(client)
+        else None,
+        dispatch_uid=REQUEST_START_DISPATCH_UID,
+        weak=False,
     )
 
     request_finished.disconnect(dispatch_uid=REQUEST_FINISH_DISPATCH_UID)
     request_finished.connect(
         lambda sender, **kwargs: client.end_transaction() if _should_start_transaction(client) else None,
-        dispatch_uid=REQUEST_FINISH_DISPATCH_UID, weak=False
+        dispatch_uid=REQUEST_FINISH_DISPATCH_UID,
+        weak=False,
     )
 
     # If we can import celery, register ourselves as exception handler
@@ -57,7 +60,7 @@ def register_handlers(client):
         try:
             register_exception_tracking(client)
         except Exception as e:
-            client.logger.exception('Failed installing django-celery hook: %s' % e)
+            client.logger.exception("Failed installing django-celery hook: %s" % e)
     except ImportError:
         client.logger.debug("Not instrumenting Celery, couldn't import")
 
@@ -79,7 +82,10 @@ def instrument(client):
 
 
 def _should_start_transaction(client):
-    middleware_attr = 'MIDDLEWARE' if getattr(django_settings, 'MIDDLEWARE', None) is not None else 'MIDDLEWARE_CLASSES'
+    middleware_attr = "MIDDLEWARE" if getattr(django_settings, "MIDDLEWARE", None) is not None else "MIDDLEWARE_CLASSES"
     middleware = getattr(django_settings, middleware_attr)
-    return ((not django_settings.DEBUG or client.config.debug) and
-            middleware and 'elasticapm.contrib.django.middleware.TracingMiddleware' in middleware)
+    return (
+        (not django_settings.DEBUG or client.config.debug)
+        and middleware
+        and "elasticapm.contrib.django.middleware.TracingMiddleware" in middleware
+    )

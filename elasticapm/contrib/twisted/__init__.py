@@ -27,10 +27,8 @@ class LogObserver(object):
         self.client = client or Client(**kwargs)
 
     def __call__(self, event):
-        failure = event.get('log_failure')
+        failure = event.get("log_failure")
         if failure is not None:
             self.client.capture_exception(
-                exc_info=(failure.type, failure.value, failure.getTracebackObject()),
-                handled=False,
-                extra=event
+                exc_info=(failure.type, failure.value, failure.getTracebackObject()), handled=False, extra=event
             )

@@ -10,9 +10,9 @@ import uuid
 from elasticapm.conf import constants
 from elasticapm.utils import compat, encoding, get_name_from_func
 
-__all__ = ('capture_span', 'tag', 'set_transaction_name', 'set_custom_context', 'set_user_context')
+__all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
-error_logger = logging.getLogger('elasticapm.errors')
+error_logger = logging.getLogger("elasticapm.errors")
 
 thread_local = threading.local()
 thread_local.transaction = None
@@ -21,7 +21,7 @@ thread_local.transaction = None
 _time_func = timeit.default_timer
 
 
-TAG_RE = re.compile('^[^.*\"]+$')
+TAG_RE = re.compile('^[^.*"]+$')
 
 
 DROPPED_SPAN = object()
@@ -42,8 +42,14 @@ def get_transaction(clear=False):
 
 
 class Transaction(object):
-    def __init__(self, frames_collector_func, transaction_type="custom", is_sampled=True, max_spans=None,
-                 span_frames_min_duration=None):
+    def __init__(
+        self,
+        frames_collector_func,
+        transaction_type="custom",
+        is_sampled=True,
+        max_spans=None,
+        span_frames_min_duration=None,
+    ):
         self.id = str(uuid.uuid4())
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
@@ -112,27 +118,27 @@ class Transaction(object):
         return span
 
     def to_dict(self):
-        self.context['tags'] = self.tags
+        self.context["tags"] = self.tags
         result = {
-            'id': self.id,
-            'name': encoding.keyword_field(self.name or ''),
-            'type': encoding.keyword_field(self.transaction_type),
-            'duration': self.duration * 1000,  # milliseconds
-            'result': encoding.keyword_field(str(self.result)),
-            'timestamp': self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
-            'sampled': self.is_sampled,
+            "id": self.id,
+            "name": encoding.keyword_field(self.name or ""),
+            "type": encoding.keyword_field(self.transaction_type),
+            "duration": self.duration * 1000,  # milliseconds
+            "result": encoding.keyword_field(str(self.result)),
+            "timestamp": self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
+            "sampled": self.is_sampled,
         }
         if self.is_sampled:
-            result['spans'] = [span_obj.to_dict() for span_obj in self.spans]
-            result['context'] = self.context
+            result["spans"] = [span_obj.to_dict() for span_obj in self.spans]
+            result["context"] = self.context
 
         if self.dropped_spans:
-            result['span_count'] = {'dropped': {'total': self.dropped_spans}}
+            result["span_count"] = {"dropped": {"total": self.dropped_spans}}
         return result
 
 
 class Span(object):
-    __slots__ = ('idx', 'name', 'type', 'context', 'leaf', 'start_time', 'duration', 'parent', 'frames')
+    __slots__ = ("idx", "name", "type", "context", "leaf", "start_time", "duration", "parent", "frames")
 
     def __init__(self, idx, name, span_type, start_time, context=None, leaf=False):
         """
@@ -157,22 +163,30 @@ class Span(object):
 
     def to_dict(self):
         result = {
-            'id': self.idx,
-            'name': encoding.keyword_field(self.name),
-            'type': encoding.keyword_field(self.type),
-            'start': self.start_time * 1000,  # milliseconds
-            'duration': self.duration * 1000,  # milliseconds
-            'parent': self.parent,
-            'context': self.context
+            "id": self.idx,
+            "name": encoding.keyword_field(self.name),
+            "type": encoding.keyword_field(self.type),
+            "start": self.start_time * 1000,  # milliseconds
+            "duration": self.duration * 1000,  # milliseconds
+            "parent": self.parent,
+            "context": self.context,
         }
         if self.frames:
-            result['stacktrace'] = self.frames
+            result["stacktrace"] = self.frames
         return result
 
 
 class TransactionsStore(object):
-    def __init__(self, frames_collector_func, collect_frequency, sample_rate=1.0, max_spans=0, max_queue_size=None,
-                 span_frames_min_duration=None, ignore_patterns=None):
+    def __init__(
+        self,
+        frames_collector_func,
+        collect_frequency,
+        sample_rate=1.0,
+        max_spans=0,
+        max_queue_size=None,
+        span_frames_min_duration=None,
+        ignore_patterns=None,
+    ):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
         self.max_queue_size = max_queue_size
@@ -203,8 +217,9 @@ class TransactionsStore(object):
         return transactions
 
     def should_collect(self):
-        return ((self.max_queue_size and len(self._transactions) >= self.max_queue_size) or
-                (_time_func() - self._last_collect) >= self.collect_frequency)
+        return (self.max_queue_size and len(self._transactions) >= self.max_queue_size) or (
+            _time_func() - self._last_collect
+        ) >= self.collect_frequency
 
     def __len__(self):
         with self.cond:
@@ -217,8 +232,13 @@ class TransactionsStore(object):
         :returns the Transaction object
         """
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
-        transaction = Transaction(self._frames_collector_func, transaction_type, max_spans=self.max_spans,
-                                  span_frames_min_duration=self.span_frames_min_duration, is_sampled=is_sampled)
+        transaction = Transaction(
+            self._frames_collector_func,
+            transaction_type,
+            max_spans=self.max_spans,
+            span_frames_min_duration=self.span_frames_min_duration,
+            is_sampled=is_sampled,
+        )
         thread_local.transaction = transaction
         return transaction
 
@@ -233,7 +253,7 @@ class TransactionsStore(object):
         if transaction:
             transaction.end_transaction()
             if transaction.name is None:
-                transaction.name = transaction_name if transaction_name is not None else ''
+                transaction.name = transaction_name if transaction_name is not None else ""
             if self._should_ignore(transaction.name):
                 return
             if transaction.result is None:
@@ -243,7 +263,7 @@ class TransactionsStore(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type='code.custom', extra=None, skip_frames=0, leaf=False):
+    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False):
         self.name = name
         self.type = span_type
         self.extra = extra
@@ -271,7 +291,7 @@ class capture_span(object):
             try:
                 transaction.end_span(self.skip_frames)
             except IndexError:
-                error_logger.info('ended non-existing span %s of type %s', self.name, self.type)
+                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
 
 def tag(**tags):
@@ -305,7 +325,7 @@ def set_transaction_result(result, override=True):
         transaction.result = result
 
 
-def set_context(data, key='custom'):
+def set_context(data, key="custom"):
     transaction = get_transaction()
     if not transaction:
         return
@@ -317,15 +337,15 @@ def set_context(data, key='custom'):
         transaction.context[key] = data
 
 
-set_custom_context = functools.partial(set_context, key='custom')
+set_custom_context = functools.partial(set_context, key="custom")
 
 
 def set_user_context(username=None, email=None, user_id=None):
     data = {}
     if username is not None:
-        data['username'] = encoding.keyword_field(username)
+        data["username"] = encoding.keyword_field(username)
     if email is not None:
-        data['email'] = encoding.keyword_field(email)
+        data["email"] = encoding.keyword_field(email)
     if user_id is not None:
-        data['id'] = encoding.keyword_field(user_id)
-    set_context(data, 'user')
+        data["id"] = encoding.keyword_field(user_id)
+    set_context(data, "user")

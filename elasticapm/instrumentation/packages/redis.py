@@ -3,12 +3,9 @@ from elasticapm.traces import capture_span
 
 
 class RedisInstrumentation(AbstractInstrumentedModule):
-    name = 'redis'
+    name = "redis"
 
-    instrument_list = [
-        ("redis.client", "Redis.execute_command"),
-        ("redis.client", "StrictRedis.execute_command"),
-    ]
+    instrument_list = [("redis.client", "Redis.execute_command"), ("redis.client", "StrictRedis.execute_command")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) > 0:
@@ -21,11 +18,9 @@ class RedisInstrumentation(AbstractInstrumentedModule):
 
 
 class RedisPipelineInstrumentation(AbstractInstrumentedModule):
-    name = 'redis'
+    name = "redis"
 
-    instrument_list = [
-        ("redis.client", "BasePipeline.execute"),
-    ]
+    instrument_list = [("redis.client", "BasePipeline.execute")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
