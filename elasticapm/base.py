@@ -99,7 +99,7 @@ class Client(object):
     """
     logger = logging.getLogger('elasticapm')
 
-    def __init__(self, config=None, **defaults):
+    def __init__(self, config=None, **inline):
         # configure loggers first
         cls = self.__class__
         self.logger = logging.getLogger('%s.%s' % (cls.__module__, cls.__name__))
@@ -113,7 +113,7 @@ class Client(object):
         self._transports = {}
         self._service_info = None
 
-        self.config = Config(config, default_dict=defaults)
+        self.config = Config(config, inline_dict=inline)
         if self.config.errors:
             for msg in self.config.errors.values():
                 self.error_logger.error(msg)

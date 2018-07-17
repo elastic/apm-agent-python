@@ -65,8 +65,8 @@ def test_config_environment():
         assert config.auto_log_stacks == False
 
 
-def test_config_defaults_dict():
-    config = Config(default_dict={
+def test_config_inline_dict():
+    config = Config(inline_dict={
         'service_name': 'foo',
         'secret_token': 'bar',
         'server_url': 'http://example.com:1234',
@@ -84,17 +84,22 @@ def test_config_defaults_dict():
 
 
 def test_config_precedence():
-    #  precendece order: config dict, environment, default dict
+    #  precedence order: environment, inline dict, config dict
     with mock.patch.dict('os.environ', {
         'ELASTIC_APM_SERVICE_NAME': 'bar',
-        'ELASTIC_APM_SECRET_TOKEN': 'secret'
     }):
         config = Config({
             'SERVICE_NAME': 'foo',
-        }, default_dict={'secret_token': 'notsecret'})
+            'SECRET_TOKEN': 'secret',
+            'COLLECT_LOCAL_VARIABLES': 'all'
+        }, inline_dict={
+            'secret_token': 'notsecret',
+            'service_name': 'baz'
+        })
 
-    assert config.service_name == 'foo'
-    assert config.secret_token == 'secret'
+    assert config.service_name == 'bar'
+    assert config.secret_token == 'notsecret'
+    assert config.collect_local_variables == 'all'
 
 
 def test_list_config_value():

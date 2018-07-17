@@ -4,6 +4,35 @@
 To adapt the Elastic APM agent to your needs, you can configure it using environment variables, or framework specific
 configuration.
 
+You can either configure the agent by setting environment variables:
+[source,bash]
+----
+ELASTIC_APM_SERVICE_NAME=foo python manage.py runserver
+----
+
+or with inline configuration: 
+
+[source,python]
+----
+apm_client = Client(service_name="foo")
+----
+
+or by using framework specific configuration e.g. in your Django `settings.py` file:
+
+[source,python]
+----
+ELASTIC_APM = {
+    "SERVICE_NAME": "foo",
+}
+----
+
+The precedence is as follows:
+
+ * environment variables
+ * inline configuration
+ * framework specific configuration
+ * default value
+
 [float]
 [[django-configuration]]
 === Django
