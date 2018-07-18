@@ -33,12 +33,23 @@ Once your changes are ready to submit for review:
     We ask this of all contributors in order to assure our users of the origin and continuing existence of the code.
     You only need to sign the CLA once.
 
-2. Test your changes
+1. Code style
+
+    This project uses several tools to maintain a consistent code style:
+    
+     * the automatic code formatter [black](https://black.readthedocs.io/en/stable/)
+     * sorting of imports via [isort](https://isort.readthedocs.io/en/latest/)
+     * [flake8](http://flake8.pycqa.org/en/latest/)
+     
+    The easiest way to make sure your pull request adheres to the the code style
+    is to install [pre-commit](https://pre-commit.com/).
+
+1. Test your changes
 
     Run the test suite to make sure that nothing is broken.
     See [testing](#testing) for details.
 
-3. Rebase your changes
+1. Rebase your changes
 
     Update your local repository with the most recent code from the main repo,
     and rebase your branch on top of the latest master branch.
@@ -49,7 +60,7 @@ Once your changes are ready to submit for review:
     This makes them easier to review.
     As a final step before merging we will either ask you to squash all commits yourself or we'll do it for you.
 
-4. Submit a pull request
+1. Submit a pull request
 
     Push your local changes to your forked copy of the repository and [submit a pull request](https://help.github.com/articles/using-pull-requests).
     In the pull request,
@@ -58,7 +69,7 @@ Once your changes are ready to submit for review:
     Also mention the number of the issue where discussion has taken place,
     eg "Closes #123".
 
-5. Be patient
+1. Be patient
 
     We might not be able to review your code as fast as we would like to,
     but we'll do our best to dedicate it the attention it deserves.
