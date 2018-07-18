@@ -3,7 +3,7 @@ from elasticapm.traces import capture_span
 
 
 class PyMongoInstrumentation(AbstractInstrumentedModule):
-    name = 'pymongo'
+    name = "pymongo"
 
     instrument_list = [
         ("pymongo.collection", "Collection.aggregate"),
@@ -40,35 +40,31 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        cls_name, method_name = method.split('.', 1)
-        signature = '.'.join([instance.full_name, method_name])
+        cls_name, method_name = method.split(".", 1)
+        signature = ".".join([instance.full_name, method_name])
         with capture_span(signature, "db.mongodb.query", leaf=True):
             return wrapped(*args, **kwargs)
 
 
 class PyMongoBulkInstrumentation(AbstractInstrumentedModule):
-    name = 'pymongo'
+    name = "pymongo"
 
-    instrument_list = [
-        ("pymongo.bulk", "BulkOperationBuilder.execute"),
-    ]
+    instrument_list = [("pymongo.bulk", "BulkOperationBuilder.execute")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance._BulkOperationBuilder__bulk.collection
-        signature = '.'.join([collection.full_name, 'bulk.execute'])
+        signature = ".".join([collection.full_name, "bulk.execute"])
         with capture_span(signature, "db.mongodb.query"):
             return wrapped(*args, **kwargs)
 
 
 class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
-    name = 'pymongo'
+    name = "pymongo"
 
-    instrument_list = [
-        ("pymongo.cursor", "Cursor._refresh"),
-    ]
+    instrument_list = [("pymongo.cursor", "Cursor._refresh")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance.collection
-        signature = '.'.join([collection.full_name, 'cursor.refresh'])
+        signature = ".".join([collection.full_name, "cursor.refresh"])
         with capture_span(signature, "db.mongodb.query"):
             return wrapped(*args, **kwargs)

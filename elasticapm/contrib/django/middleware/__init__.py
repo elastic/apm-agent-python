@@ -19,8 +19,7 @@ from django.conf import settings as django_settings
 
 import elasticapm
 from elasticapm.contrib.django.client import client, get_client
-from elasticapm.utils import (build_name_with_http_method_prefix,
-                              get_name_from_func, wrapt)
+from elasticapm.utils import build_name_with_http_method_prefix, get_name_from_func, wrapt
 
 try:
     from importlib import import_module
@@ -39,7 +38,7 @@ def _is_ignorable_404(uri):
     """
     Returns True if the given request *shouldn't* notify the site managers.
     """
-    urls = getattr(django_settings, 'IGNORABLE_404_URLS', ())
+    urls = getattr(django_settings, "IGNORABLE_404_URLS", ())
     return any(pattern.search(uri) for pattern in urls)
 
 
@@ -47,7 +46,7 @@ class ElasticAPMClientMiddlewareMixin(object):
     @property
     def client(self):
         try:
-            app = apps.get_app_config('elasticapm.contrib.django')
+            app = apps.get_app_config("elasticapm.contrib.django")
             return app.client
         except LookupError:
             return get_client()
@@ -55,27 +54,19 @@ class ElasticAPMClientMiddlewareMixin(object):
 
 class Catch404Middleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
     def process_response(self, request, response):
-        if (response.status_code != 404 or
-                _is_ignorable_404(request.get_full_path())):
+        if response.status_code != 404 or _is_ignorable_404(request.get_full_path()):
             return response
         if django_settings.DEBUG and not self.client.config.debug:
             return response
-        data = {
-            'level': logging.INFO,
-            'logger': 'http404',
-        }
+        data = {"level": logging.INFO, "logger": "http404"}
         result = self.client.capture(
-            'Message',
+            "Message",
             request=request,
-            param_message={
-                'message': 'Page Not Found: %s',
-                'params': [request.build_absolute_uri()]
-            }, logger_name='http404', level=logging.INFO
+            param_message={"message": "Page Not Found: %s", "params": [request.build_absolute_uri()]},
+            logger_name="http404",
+            level=logging.INFO,
         )
-        request._elasticapm = {
-            'service_name': data.get('service_name', self.client.config.service_name),
-            'id': result,
-        }
+        request._elasticapm = {"service_name": data.get("service_name", self.client.config.service_name), "id": result}
         return response
 
 
@@ -83,7 +74,7 @@ def get_name_from_middleware(wrapped, instance):
     name = [type(instance).__name__, wrapped.__name__]
     if type(instance).__module__:
         name = [type(instance).__module__] + name
-    return '.'.join(name)
+    return ".".join(name)
 
 
 def process_request_wrapper(wrapped, instance, args, kwargs):
@@ -105,7 +96,7 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
         # if there's no view_func on the request, and this middleware created
         # a new response object, it's logged as the responsible transaction
         # name
-        if not hasattr(request, '_elasticapm_view_func') and response is not original_response:
+        if not hasattr(request, "_elasticapm_view_func") and response is not original_response:
             elasticapm.set_transaction_name(
                 build_name_with_http_method_prefix(get_name_from_middleware(wrapped, instance), request)
             )
@@ -128,33 +119,24 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     TracingMiddleware._elasticapm_instrumented = True
 
     def instrument_middlewares(self):
-        middlewares = (getattr(django_settings, 'MIDDLEWARE', None) or
-                       getattr(django_settings, 'MIDDLEWARE_CLASSES', None))
+        middlewares = getattr(django_settings, "MIDDLEWARE", None) or getattr(
+            django_settings, "MIDDLEWARE_CLASSES", None
+        )
         if middlewares:
             for middleware_path in middlewares:
-                module_path, class_name = middleware_path.rsplit('.', 1)
+                module_path, class_name = middleware_path.rsplit(".", 1)
                 try:
                     module = import_module(module_path)
                     middleware_class = getattr(module, class_name)
                     if middleware_class == type(self):
                         # don't instrument ourselves
                         continue
-                    if hasattr(middleware_class, 'process_request'):
-                        wrapt.wrap_function_wrapper(
-                            middleware_class,
-                            'process_request',
-                            process_request_wrapper,
-                        )
-                    if hasattr(middleware_class, 'process_response'):
-                        wrapt.wrap_function_wrapper(
-                            middleware_class,
-                            'process_response',
-                            process_response_wrapper,
-                        )
+                    if hasattr(middleware_class, "process_request"):
+                        wrapt.wrap_function_wrapper(middleware_class, "process_request", process_request_wrapper)
+                    if hasattr(middleware_class, "process_response"):
+                        wrapt.wrap_function_wrapper(middleware_class, "process_response", process_response_wrapper)
                 except ImportError:
-                    client.logger.info(
-                        "Can't instrument middleware %s", middleware_path
-                    )
+                    client.logger.info("Can't instrument middleware %s", middleware_path)
 
     def process_request(self, request):
         if not django_settings.DEBUG or self.client.config.debug:
@@ -167,29 +149,23 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
         if django_settings.DEBUG and not self.client.config.debug:
             return response
         try:
-            if hasattr(response, 'status_code'):
-                if getattr(request, '_elasticapm_view_func', False):
-                    transaction_name = get_name_from_func(
-                        request._elasticapm_view_func
-                    )
-                    transaction_name = build_name_with_http_method_prefix(
-                        transaction_name,
-                        request
-                    )
+            if hasattr(response, "status_code"):
+                if getattr(request, "_elasticapm_view_func", False):
+                    transaction_name = get_name_from_func(request._elasticapm_view_func)
+                    transaction_name = build_name_with_http_method_prefix(transaction_name, request)
                     elasticapm.set_transaction_name(transaction_name, override=False)
 
-                elasticapm.set_context(lambda: self.client.get_data_from_request(
-                    request,
-                    capture_body=self.client.config.capture_body in ('all', 'transactions')
-                ), 'request')
-                elasticapm.set_context(lambda: self.client.get_data_from_response(response), 'response')
-                elasticapm.set_context(lambda: self.client.get_user_info(request), 'user')
-                elasticapm.set_transaction_result('HTTP {}xx'.format(response.status_code // 100), override=False)
+                elasticapm.set_context(
+                    lambda: self.client.get_data_from_request(
+                        request, capture_body=self.client.config.capture_body in ("all", "transactions")
+                    ),
+                    "request",
+                )
+                elasticapm.set_context(lambda: self.client.get_data_from_response(response), "response")
+                elasticapm.set_context(lambda: self.client.get_user_info(request), "user")
+                elasticapm.set_transaction_result("HTTP {}xx".format(response.status_code // 100), override=False)
         except Exception:
-            self.client.error_logger.error(
-                'Exception during timing of request',
-                exc_info=True,
-            )
+            self.client.error_logger.error("Exception during timing of request", exc_info=True)
         return response
 
 
@@ -198,10 +174,11 @@ class ErrorIdMiddleware(MiddlewareMixin):
     Appends the X-ElasticAPM-ErrorId response header for referencing a message within
     the ElasticAPM datastore.
     """
+
     def process_response(self, request, response):
-        if not getattr(request, '_elasticapm', None):
+        if not getattr(request, "_elasticapm", None):
             return response
-        response['X-ElasticAPM-ErrorId'] = request._elasticapm['id']
+        response["X-ElasticAPM-ErrorId"] = request._elasticapm["id"]
         return response
 
 

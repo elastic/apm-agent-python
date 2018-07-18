@@ -13,4 +13,5 @@ class DuplicateScheme(Exception):
     Raised when registering a handler for a particular scheme which
     is already registered
     """
+
     pass

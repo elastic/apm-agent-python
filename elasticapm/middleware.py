@@ -23,6 +23,7 @@ class ElasticAPM(object):
     >>> from elasticapm.base import Client
     >>> application = ElasticAPM(application, Client())
     """
+
     def __init__(self, application, client):
         self.application = application
         self.client = client
@@ -39,14 +40,14 @@ class ElasticAPM(object):
 
     def handle_exception(self, exc_info, environ):
         event_id = self.client.capture(
-            'Exception',
+            "Exception",
             exc_info=exc_info,
             context={
-                'request': {
-                    'method': environ.get('REQUEST_METHOD'),
-                    'url': get_url_dict(get_current_url(environ)),
-                    'headers': dict(get_headers(environ)),
-                    'env': dict(get_environ(environ)),
+                "request": {
+                    "method": environ.get("REQUEST_METHOD"),
+                    "url": get_url_dict(get_current_url(environ)),
+                    "headers": dict(get_headers(environ)),
+                    "env": dict(get_environ(environ)),
                 }
             },
             handled=False,

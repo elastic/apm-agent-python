@@ -4,15 +4,13 @@ from elasticapm.utils import default_ports
 
 
 class Urllib3Instrumentation(AbstractInstrumentedModule):
-    name = 'urllib3'
+    name = "urllib3"
 
-    instrument_list = [
-        ("urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
-    ]
+    instrument_list = [("urllib3.connectionpool", "HTTPConnectionPool.urlopen")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        if 'method' in kwargs:
-            method = kwargs['method']
+        if "method" in kwargs:
+            method = kwargs["method"]
         else:
             method = args[0]
 
@@ -21,8 +19,8 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
         if instance.port != default_ports.get(instance.scheme):
             host += ":" + str(instance.port)
 
-        if 'url' in kwargs:
-            url = kwargs['url']
+        if "url" in kwargs:
+            url = kwargs["url"]
         else:
             url = args[1]
 
@@ -30,5 +28,5 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         url = instance.scheme + "://" + host + url
 
-        with capture_span(signature, "ext.http.urllib3", {'url': url}, leaf=True):
+        with capture_span(signature, "ext.http.urllib3", {"url": url}, leaf=True):
             return wrapped(*args, **kwargs)

@@ -11,6 +11,7 @@ def noop_decorator(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         return func(*args, **kwargs)
+
     return wrapped
 
 
@@ -24,7 +25,8 @@ def atexit_register(func):
     """
     try:
         import uwsgi
-        orig = getattr(uwsgi, 'atexit', None)
+
+        orig = getattr(uwsgi, "atexit", None)
 
         def uwsgi_atexit():
             if callable(orig):
@@ -51,7 +53,7 @@ if PY2:
 
     StringIO = BytesIO = StringIO.StringIO
 
-    string_types = basestring,  # noqa F821
+    string_types = (basestring,)  # noqa F821
     integer_types = (int, long)  # noqa F821
     class_types = (type, types.ClassType)
     text_type = unicode  # noqa F821
@@ -72,6 +74,7 @@ if PY2:
     def iterlists(d, **kw):
         return d.iterlists(**kw)
 
+
 else:
     import io
     import queue  # noqa F401
@@ -81,9 +84,9 @@ else:
     StringIO = io.StringIO
     BytesIO = io.BytesIO
 
-    string_types = str,
-    integer_types = int,
-    class_types = type,
+    string_types = (str,)
+    integer_types = (int,)
+    class_types = (type,)
     text_type = str
     binary_type = bytes
 
@@ -112,15 +115,15 @@ def get_default_library_patters():
     python_version = platform.python_version_tuple()
     python_implementation = platform.python_implementation()
     system = platform.system()
-    if python_implementation == 'PyPy':
-        if python_version[0] == '2':
-            return ['*/lib-python/%s.%s/*' % python_version[:2], '*/site-packages/*']
+    if python_implementation == "PyPy":
+        if python_version[0] == "2":
+            return ["*/lib-python/%s.%s/*" % python_version[:2], "*/site-packages/*"]
         else:
-            return ['*/lib-python/%s/*' % python_version[0], '*/site-packages/*']
+            return ["*/lib-python/%s/*" % python_version[0], "*/site-packages/*"]
     else:
-        if system == 'Windows':
-            return [r'*\lib\*']
-        return ['*/lib/python%s.%s/*' % python_version[:2], '*/lib64/python%s.%s/*' % python_version[:2]]
+        if system == "Windows":
+            return [r"*\lib\*"]
+        return ["*/lib/python%s.%s/*" % python_version[:2], "*/lib64/python%s.%s/*" % python_version[:2]]
 
 
 def multidict_to_dict(d):
@@ -130,7 +133,4 @@ def multidict_to_dict(d):
     :param d: a MultiDict or MultiValueDict instance
     :return: a dict instance
     """
-    return dict(
-        (k, v[0] if len(v) == 1 else v)
-        for k, v in iterlists(d)
-    )
+    return dict((k, v[0] if len(v) == 1 else v) for k, v in iterlists(d))

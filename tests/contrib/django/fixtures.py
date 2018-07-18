@@ -17,11 +17,11 @@ class TempStoreClient(DjangoClient):
 
 @pytest.fixture()
 def django_elasticapm_client(request):
-    client_config = getattr(request, 'param', {})
-    client_config.setdefault('service_name', 'app')
-    client_config.setdefault('secret_token', 'secret')
-    client_config.setdefault('span_frames_min_duration_ms', -1)
-    app = apps.get_app_config('elasticapm.contrib.django')
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("service_name", "app")
+    client_config.setdefault("secret_token", "secret")
+    client_config.setdefault("span_frames_min_duration_ms", -1)
+    app = apps.get_app_config("elasticapm.contrib.django")
     old_client = app.client
     client = TempStoreClient(**client_config)
     register_handlers(client)
@@ -39,14 +39,14 @@ def django_elasticapm_client(request):
 
 @pytest.fixture()
 def django_sending_elasticapm_client(request, validating_httpserver):
-    validating_httpserver.serve_content(code=202, content='', headers={'Location': 'http://example.com/foo'})
-    client_config = getattr(request, 'param', {})
-    client_config.setdefault('server_url', validating_httpserver.url)
-    client_config.setdefault('service_name', 'app')
-    client_config.setdefault('secret_token', 'secret')
-    client_config.setdefault('transport_class', 'elasticapm.transport.http.Transport')
-    client_config.setdefault('span_frames_min_duration_ms', -1)
-    app = apps.get_app_config('elasticapm.contrib.django')
+    validating_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("server_url", validating_httpserver.url)
+    client_config.setdefault("service_name", "app")
+    client_config.setdefault("secret_token", "secret")
+    client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
+    client_config.setdefault("span_frames_min_duration_ms", -1)
+    app = apps.get_app_config("elasticapm.contrib.django")
     old_client = app.client
     client = DjangoClient(**client_config)
     register_handlers(client)

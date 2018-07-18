@@ -4,12 +4,11 @@ import logging
 
 import mock
 
-from elasticapm.conf import (Config, _BoolConfigValue, _ConfigBase,
-                             _ConfigValue, _ListConfigValue, setup_logging)
+from elasticapm.conf import Config, _BoolConfigValue, _ConfigBase, _ConfigValue, _ListConfigValue, setup_logging
 
 
 def test_basic_not_configured():
-    with mock.patch('logging.getLogger', spec=logging.getLogger) as getLogger:
+    with mock.patch("logging.getLogger", spec=logging.getLogger) as getLogger:
         logger = getLogger()
         logger.handlers = []
         handler = mock.Mock()
@@ -18,7 +17,7 @@ def test_basic_not_configured():
 
 
 def test_basic_already_configured():
-    with mock.patch('logging.getLogger', spec=logging.getLogger) as getLogger:
+    with mock.patch("logging.getLogger", spec=logging.getLogger) as getLogger:
         handler = mock.Mock()
         logger = getLogger()
         logger.handlers = [handler]
@@ -27,107 +26,108 @@ def test_basic_already_configured():
 
 
 def test_config_dict():
-    config = Config({
-        'SERVICE_NAME': 'foo',
-        'SECRET_TOKEN': 'bar',
-        'SERVER_URL': 'http://example.com:1234',
-        'SERVICE_VERSION': 1,
-        'HOSTNAME': 'localhost',
-        'FLUSH_INTERVAL': '5'
-    })
+    config = Config(
+        {
+            "SERVICE_NAME": "foo",
+            "SECRET_TOKEN": "bar",
+            "SERVER_URL": "http://example.com:1234",
+            "SERVICE_VERSION": 1,
+            "HOSTNAME": "localhost",
+            "FLUSH_INTERVAL": "5",
+        }
+    )
 
-    assert config.service_name == 'foo'
-    assert config.secret_token == 'bar'
-    assert config.server_url == 'http://example.com:1234'
-    assert config.service_version == '1'
-    assert config.hostname == 'localhost'
+    assert config.service_name == "foo"
+    assert config.secret_token == "bar"
+    assert config.server_url == "http://example.com:1234"
+    assert config.service_version == "1"
+    assert config.hostname == "localhost"
     assert config.flush_interval == 5
 
 
 def test_config_environment():
-    with mock.patch.dict('os.environ', {
-        'ELASTIC_APM_SERVICE_NAME': 'foo',
-        'ELASTIC_APM_SECRET_TOKEN': 'bar',
-        'ELASTIC_APM_SERVER_URL': 'http://example.com:1234',
-        'ELASTIC_APM_SERVICE_VERSION': '1',
-        'ELASTIC_APM_HOSTNAME': 'localhost',
-        'ELASTIC_APM_FLUSH_INTERVAL': '5',
-        'ELASTIC_APM_AUTO_LOG_STACKS': 'false',
-    }):
+    with mock.patch.dict(
+        "os.environ",
+        {
+            "ELASTIC_APM_SERVICE_NAME": "foo",
+            "ELASTIC_APM_SECRET_TOKEN": "bar",
+            "ELASTIC_APM_SERVER_URL": "http://example.com:1234",
+            "ELASTIC_APM_SERVICE_VERSION": "1",
+            "ELASTIC_APM_HOSTNAME": "localhost",
+            "ELASTIC_APM_FLUSH_INTERVAL": "5",
+            "ELASTIC_APM_AUTO_LOG_STACKS": "false",
+        },
+    ):
         config = Config()
 
-        assert config.service_name == 'foo'
-        assert config.secret_token == 'bar'
-        assert config.server_url == 'http://example.com:1234'
-        assert config.service_version == '1'
-        assert config.hostname == 'localhost'
+        assert config.service_name == "foo"
+        assert config.secret_token == "bar"
+        assert config.server_url == "http://example.com:1234"
+        assert config.service_version == "1"
+        assert config.hostname == "localhost"
         assert config.flush_interval == 5
         assert config.auto_log_stacks == False
 
 
 def test_config_inline_dict():
-    config = Config(inline_dict={
-        'service_name': 'foo',
-        'secret_token': 'bar',
-        'server_url': 'http://example.com:1234',
-        'service_version': '1',
-        'hostname': 'localhost',
-        'flush_interval': '5',
-    })
+    config = Config(
+        inline_dict={
+            "service_name": "foo",
+            "secret_token": "bar",
+            "server_url": "http://example.com:1234",
+            "service_version": "1",
+            "hostname": "localhost",
+            "flush_interval": "5",
+        }
+    )
 
-    assert config.service_name == 'foo'
-    assert config.secret_token == 'bar'
-    assert config.server_url == 'http://example.com:1234'
-    assert config.service_version == '1'
-    assert config.hostname == 'localhost'
+    assert config.service_name == "foo"
+    assert config.secret_token == "bar"
+    assert config.server_url == "http://example.com:1234"
+    assert config.service_version == "1"
+    assert config.hostname == "localhost"
     assert config.flush_interval == 5
 
 
 def test_config_precedence():
     #  precedence order: environment, inline dict, config dict
-    with mock.patch.dict('os.environ', {
-        'ELASTIC_APM_SERVICE_NAME': 'bar',
-    }):
-        config = Config({
-            'SERVICE_NAME': 'foo',
-            'SECRET_TOKEN': 'secret',
-            'COLLECT_LOCAL_VARIABLES': 'all'
-        }, inline_dict={
-            'secret_token': 'notsecret',
-            'service_name': 'baz'
-        })
+    with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "bar"}):
+        config = Config(
+            {"SERVICE_NAME": "foo", "SECRET_TOKEN": "secret", "COLLECT_LOCAL_VARIABLES": "all"},
+            inline_dict={"secret_token": "notsecret", "service_name": "baz"},
+        )
 
-    assert config.service_name == 'bar'
-    assert config.secret_token == 'notsecret'
-    assert config.collect_local_variables == 'all'
+    assert config.service_name == "bar"
+    assert config.secret_token == "notsecret"
+    assert config.collect_local_variables == "all"
 
 
 def test_list_config_value():
     class MyConfig(_ConfigBase):
-        my_list = _ListConfigValue('MY_LIST', list_separator='|', type=int)
+        my_list = _ListConfigValue("MY_LIST", list_separator="|", type=int)
 
-    config = MyConfig({'MY_LIST': '1|2|3'})
+    config = MyConfig({"MY_LIST": "1|2|3"})
     assert config.my_list == [1, 2, 3]
 
 
 def test_bool_config_value():
     class MyConfig(_ConfigBase):
-        my_bool = _BoolConfigValue('MY_BOOL', true_string='yup', false_string='nope')
+        my_bool = _BoolConfigValue("MY_BOOL", true_string="yup", false_string="nope")
 
-    config = MyConfig({'MY_BOOL': 'yup'})
+    config = MyConfig({"MY_BOOL": "yup"})
 
     assert config.my_bool is True
 
-    config.my_bool = 'nope'
+    config.my_bool = "nope"
 
     assert config.my_bool is False
 
 
 def test_values_not_shared_among_instances():
     class MyConfig(_ConfigBase):
-        my_bool = _BoolConfigValue('MY_BOOL', true_string='yup', false_string='nope')
+        my_bool = _BoolConfigValue("MY_BOOL", true_string="yup", false_string="nope")
 
-    c1 = MyConfig({'MY_BOOL': 'yup'})
-    c2 = MyConfig({'MY_BOOL': 'nope'})
+    c1 = MyConfig({"MY_BOOL": "yup"})
+    c2 = MyConfig({"MY_BOOL": "nope"})
 
     assert c1.my_bool is not c2.my_bool

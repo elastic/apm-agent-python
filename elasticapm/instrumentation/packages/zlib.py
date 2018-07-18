@@ -3,11 +3,8 @@ from elasticapm.traces import capture_span
 
 
 class ZLibInstrumentation(AbstractInstrumentedModule):
-    name = 'zlib'
-    instrument_list = [
-        ('zlib', 'compress'),
-        ('zlib', 'decompress'),
-    ]
+    name = "zlib"
+    instrument_list = [("zlib", "compress"), ("zlib", "decompress")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = module + "." + method

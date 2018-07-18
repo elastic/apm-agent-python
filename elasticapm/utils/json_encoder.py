@@ -22,9 +22,9 @@ class BetterJSONEncoder(json.JSONEncoder):
     ENCODERS = {
         set: list,
         frozenset: list,
-        datetime.datetime: lambda obj: obj.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        datetime.datetime: lambda obj: obj.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         uuid.UUID: lambda obj: obj.hex,
-        bytes: lambda obj: obj.decode('utf-8', errors='replace')
+        bytes: lambda obj: obj.decode("utf-8", errors="replace"),
     }
 
     def default(self, obj):

@@ -1,4 +1,5 @@
 import pytest  # isort:skip
+
 pytest.importorskip("redis")  # isort:skip
 
 import os
@@ -14,10 +15,7 @@ pytestmark = pytest.mark.redis
 
 @pytest.fixture()
 def redis_conn():
-    conn = redis.StrictRedis(
-        host=os.environ.get('REDIS_HOST', 'localhost'),
-        port=os.environ.get('REDIS_PORT', 6379),
-    )
+    conn = redis.StrictRedis(host=os.environ.get("REDIS_HOST", "localhost"), port=os.environ.get("REDIS_PORT", 6379))
     yield conn
     del conn
 
@@ -33,17 +31,17 @@ def test_pipeline(instrument, elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]['spans']
+    spans = transactions[0]["spans"]
 
-    expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
+    expected_signatures = {"test_pipeline", "StrictPipeline.execute"}
 
-    assert {t['name'] for t in spans} == expected_signatures
+    assert {t["name"] for t in spans} == expected_signatures
 
-    assert spans[0]['name'] == 'StrictPipeline.execute'
-    assert spans[0]['type'] == 'cache.redis'
+    assert spans[0]["name"] == "StrictPipeline.execute"
+    assert spans[0]["type"] == "cache.redis"
 
-    assert spans[1]['name'] == 'test_pipeline'
-    assert spans[1]['type'] == 'test'
+    assert spans[1]["name"] == "test_pipeline"
+    assert spans[1]["type"] == "test"
 
     assert len(spans) == 2
 
@@ -63,17 +61,17 @@ def test_rq_patches_redis(instrument, elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]['spans']
+    spans = transactions[0]["spans"]
 
-    expected_signatures = {'test_pipeline', 'StrictPipeline.execute'}
+    expected_signatures = {"test_pipeline", "StrictPipeline.execute"}
 
-    assert {t['name'] for t in spans} == expected_signatures
+    assert {t["name"] for t in spans} == expected_signatures
 
-    assert spans[0]['name'] == 'StrictPipeline.execute'
-    assert spans[0]['type'] == 'cache.redis'
+    assert spans[0]["name"] == "StrictPipeline.execute"
+    assert spans[0]["type"] == "cache.redis"
 
-    assert spans[1]['name'] == 'test_pipeline'
-    assert spans[1]['type'] == 'test'
+    assert spans[1]["name"] == "test_pipeline"
+    assert spans[1]["type"] == "test"
 
     assert len(spans) == 2
 
@@ -87,19 +85,19 @@ def test_redis_client(instrument, elasticapm_client, redis_conn):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]['spans']
+    spans = transactions[0]["spans"]
 
-    expected_signatures = {'test_redis_client', 'RPUSH', 'EXPIRE'}
+    expected_signatures = {"test_redis_client", "RPUSH", "EXPIRE"}
 
-    assert {t['name'] for t in spans} == expected_signatures
+    assert {t["name"] for t in spans} == expected_signatures
 
-    assert spans[0]['name'] == 'RPUSH'
-    assert spans[0]['type'] == 'cache.redis'
+    assert spans[0]["name"] == "RPUSH"
+    assert spans[0]["type"] == "cache.redis"
 
-    assert spans[1]['name'] == 'EXPIRE'
-    assert spans[1]['type'] == 'cache.redis'
+    assert spans[1]["name"] == "EXPIRE"
+    assert spans[1]["type"] == "cache.redis"
 
-    assert spans[2]['name'] == 'test_redis_client'
-    assert spans[2]['type'] == 'test'
+    assert spans[2]["name"] == "test_redis_client"
+    assert spans[2]["type"] == "test"
 
     assert len(spans) == 3

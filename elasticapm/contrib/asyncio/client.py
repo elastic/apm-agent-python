@@ -5,7 +5,6 @@ from elasticapm.base import Client as BaseClient
 
 
 class Client(BaseClient):
-
     def handle_transport_response(self, task):
         try:
             url = task.result()
@@ -20,8 +19,7 @@ class Client(BaseClient):
         parsed = urllib.parse.urlparse(url)
         transport = self._get_transport(parsed)
         loop = asyncio.get_event_loop()
-        task = loop.create_task(
-            transport.send(data, headers, timeout=self.config.server_timeout))
+        task = loop.create_task(transport.send(data, headers, timeout=self.config.server_timeout))
         task.add_done_callback(self.handle_transport_response)
 
     def _start_send_timer(self, timeout=None):

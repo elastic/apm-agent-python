@@ -1,5 +1,3 @@
-
-
 class FakeException(BaseException):
     pass
 

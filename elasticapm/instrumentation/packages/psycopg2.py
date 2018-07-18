@@ -1,18 +1,20 @@
-from elasticapm.instrumentation.packages.dbapi2 import (ConnectionProxy,
-                                                        CursorProxy,
-                                                        DbApi2Instrumentation,
-                                                        extract_signature)
+from elasticapm.instrumentation.packages.dbapi2 import (
+    ConnectionProxy,
+    CursorProxy,
+    DbApi2Instrumentation,
+    extract_signature,
+)
 from elasticapm.traces import capture_span
 from elasticapm.utils import default_ports
 
 
 class PGCursorProxy(CursorProxy):
-    provider_name = 'postgresql'
+    provider_name = "postgresql"
 
     def _bake_sql(self, sql):
         # if this is a Composable object, use its `as_string` method
         # see http://initd.org/psycopg/docs/sql.html
-        if hasattr(sql, 'as_string'):
+        if hasattr(sql, "as_string"):
             return sql.as_string(self.__wrapped__)
         return sql
 
@@ -25,20 +27,18 @@ class PGConnectionProxy(ConnectionProxy):
 
 
 class Psycopg2Instrumentation(DbApi2Instrumentation):
-    name = 'psycopg2'
+    name = "psycopg2"
 
-    instrument_list = [
-        ("psycopg2", "connect")
-    ]
+    instrument_list = [("psycopg2", "connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         signature = "psycopg2.connect"
 
-        host = kwargs.get('host')
+        host = kwargs.get("host")
         if host:
             signature += " " + str(host)
 
-            port = kwargs.get('port')
+            port = kwargs.get("port")
             if port:
                 port = str(port)
                 if int(port) != default_ports.get("postgresql"):
@@ -52,7 +52,7 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
 
 
 class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
-    name = 'psycopg2-register-type'
+    name = "psycopg2-register-type"
 
     instrument_list = [
         ("psycopg2.extensions", "register_type"),
@@ -61,15 +61,14 @@ class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        if ('conn_or_curs' in kwargs and
-                hasattr(kwargs['conn_or_curs'], "__wrapped__")):
-            kwargs['conn_or_curs'] = kwargs['conn_or_curs'].__wrapped__
+        if "conn_or_curs" in kwargs and hasattr(kwargs["conn_or_curs"], "__wrapped__"):
+            kwargs["conn_or_curs"] = kwargs["conn_or_curs"].__wrapped__
         # register_type takes the connection as second argument
         elif len(args) == 2 and hasattr(args[1], "__wrapped__"):
-                args = (args[0], args[1].__wrapped__)
+            args = (args[0], args[1].__wrapped__)
         # register_json takes the connection as first argument, and can have
         # several more arguments
-        elif method == 'register_json':
+        elif method == "register_json":
             if args and hasattr(args[0], "__wrapped__"):
                 args = (args[0].__wrapped__,) + args[1:]
 

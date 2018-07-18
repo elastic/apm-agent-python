@@ -1,12 +1,14 @@
-from elasticapm.instrumentation.packages.dbapi2 import (ConnectionProxy,
-                                                        CursorProxy,
-                                                        DbApi2Instrumentation,
-                                                        extract_signature)
+from elasticapm.instrumentation.packages.dbapi2 import (
+    ConnectionProxy,
+    CursorProxy,
+    DbApi2Instrumentation,
+    extract_signature,
+)
 from elasticapm.traces import capture_span
 
 
 class SQLiteCursorProxy(CursorProxy):
-    provider_name = 'sqlite'
+    provider_name = "sqlite"
 
     def extract_signature(self, sql):
         return extract_signature(sql)
@@ -17,13 +19,9 @@ class SQLiteConnectionProxy(ConnectionProxy):
 
 
 class SQLiteInstrumentation(DbApi2Instrumentation):
-    name = 'sqlite'
+    name = "sqlite"
 
-    instrument_list = [
-        ("sqlite3", "connect"),
-        ("sqlite3.dbapi2", "connect"),
-        ("pysqlite2.dbapi2", "connect"),
-    ]
+    instrument_list = [("sqlite3", "connect"), ("sqlite3.dbapi2", "connect"), ("pysqlite2.dbapi2", "connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         signature = ".".join([module, method])
