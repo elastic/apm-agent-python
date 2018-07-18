@@ -3,7 +3,7 @@ from elasticapm.traces import capture_span
 
 
 class PyLibMcInstrumentation(AbstractInstrumentedModule):
-    name = 'pylibmc'
+    name = "pylibmc"
 
     instrument_list = [
         ("pylibmc", "Client.get"),

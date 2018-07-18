@@ -7,13 +7,13 @@ pymssql = pytest.importorskip("pymssql")
 pytestmark = pytest.mark.pymssql
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.yield_fixture(scope="function")
 def pymssql_connection(request):
     conn = pymssql.connect(
-        os.environ.get('MSSQL_HOST', 'localhost'),
-        os.environ.get('MSSQL_USER', 'SA'),
-        os.environ.get('MSSQL_PASSWORD', ''),
-        os.environ.get('MSSQL_DATABASE', 'tempdb'),
+        os.environ.get("MSSQL_HOST", "localhost"),
+        os.environ.get("MSSQL_USER", "SA"),
+        os.environ.get("MSSQL_PASSWORD", ""),
+        os.environ.get("MSSQL_DATABASE", "tempdb"),
     )
     cursor = conn.cursor()
     cursor.execute(
@@ -35,13 +35,13 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
     try:
         elasticapm_client.begin_transaction("web.django")
         cursor.execute(query)
-        assert cursor.fetchall() == [(2, 'two'), (3, 'three')]
+        assert cursor.fetchall() == [(2, "two"), (3, "three")]
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]['spans']
+        spans = transactions[0]["spans"]
         span = spans[0]
-        assert span['name'] == 'SELECT FROM test'
-        assert 'db' in span['context']
-        assert span['context']['db']['type'] == 'sql'
-        assert span['context']['db']['statement'] == query
+        assert span["name"] == "SELECT FROM test"
+        assert "db" in span["context"]
+        assert span["context"]["db"]["type"] == "sql"
+        assert span["context"]["db"]["statement"] == query

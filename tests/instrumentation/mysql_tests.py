@@ -45,7 +45,7 @@ def test_select_with_difficult_values():
 
 
 def test_select_with_difficult_table_name():
-    sql = "SELECT id FROM `myta\n-æøåble` WHERE id = 2323"""
+    sql = "SELECT id FROM `myta\n-æøåble` WHERE id = 2323" ""
     actual = extract_signature(sql)
 
     assert "SELECT FROM myta\n-æøåble" == actual
@@ -85,7 +85,7 @@ def test_select_with_multiple_tables():
 
 
 def test_select_with_invalid_literal():
-    sql = "SELECT \"neverending literal FROM (SELECT * FROM ..."""
+    sql = 'SELECT "neverending literal FROM (SELECT * FROM ...' ""
     actual = extract_signature(sql)
 
     assert "SELECT FROM" == actual

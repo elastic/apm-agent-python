@@ -7,19 +7,13 @@ pyodbc = pytest.importorskip("pyodbc")
 pytestmark = pytest.mark.pyodbc
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.yield_fixture(scope="function")
 def pyodbc_postgres_connection(request):
-    conn_str = (
-        "DRIVER={PostgreSQL Unicode};"
-        "DATABASE=%s;"
-        "UID=%s;"
-        "SERVER=%s;"
-        "PORT=%s;"
-    ) % (
-        os.environ.get('POSTGRES_DB', 'elasticapm_test'),
-        os.environ.get('POSTGRES_USER', 'postgres'),
-        os.environ.get('POSTGRES_HOST', None),
-        os.environ.get('POSTGRES_PORT', None),
+    conn_str = ("DRIVER={PostgreSQL Unicode};" "DATABASE=%s;" "UID=%s;" "SERVER=%s;" "PORT=%s;") % (
+        os.environ.get("POSTGRES_DB", "elasticapm_test"),
+        os.environ.get("POSTGRES_USER", "postgres"),
+        os.environ.get("POSTGRES_HOST", None),
+        os.environ.get("POSTGRES_PORT", None),
     )
     conn = pyodbc.connect(conn_str)
     cursor = conn.cursor()
@@ -31,7 +25,7 @@ def pyodbc_postgres_connection(request):
     yield conn
 
     # cleanup
-    cursor.execute('ROLLBACK')
+    cursor.execute("ROLLBACK")
 
 
 @pytest.mark.integrationtest
@@ -46,9 +40,9 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]['spans']
+        spans = transactions[0]["spans"]
         span = spans[0]
-        assert span['name'] == 'SELECT FROM test'
-        assert 'db' in span['context']
-        assert span['context']['db']['type'] == 'sql'
-        assert span['context']['db']['statement'] == query
+        assert span["name"] == "SELECT FROM test"
+        assert "db" in span["context"]
+        assert span["context"]["db"]["type"] == "sql"
+        assert span["context"]["db"]["statement"] == query

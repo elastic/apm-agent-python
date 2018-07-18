@@ -12,16 +12,17 @@ def register_elasticapm(client, worker):
     worker.work()
 
     """
+
     def send_to_server(job, *exc_info):
         client.capture_exception(
             exc_info=exc_info,
             extra={
-                'job_id': job.id,
-                'func': job.func_name,
-                'args': job.args,
-                'kwargs': job.kwargs,
-                'description': job.description,
-            }
+                "job_id": job.id,
+                "func": job.func_name,
+                "args": job.args,
+                "kwargs": job.kwargs,
+                "description": job.description,
+            },
         )
 
     worker.push_exc_handler(send_to_server)

@@ -19,18 +19,17 @@ def get_headers(environ):
     """
     for key, value in compat.iteritems(environ):
         key = str(key)
-        if key.startswith('HTTP_') and key not in \
-           ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
-            yield key[5:].replace('_', '-').lower(), value
-        elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-            yield key.replace('_', '-').lower(), value
+        if key.startswith("HTTP_") and key not in ("HTTP_CONTENT_TYPE", "HTTP_CONTENT_LENGTH"):
+            yield key[5:].replace("_", "-").lower(), value
+        elif key in ("CONTENT_TYPE", "CONTENT_LENGTH"):
+            yield key.replace("_", "-").lower(), value
 
 
 def get_environ(environ):
     """
     Returns our whitelisted environment variables.
     """
-    for key in ('REMOTE_ADDR', 'SERVER_NAME', 'SERVER_PORT'):
+    for key in ("REMOTE_ADDR", "SERVER_NAME", "SERVER_PORT"):
         if key in environ:
             yield key, environ[key]
 
@@ -42,26 +41,24 @@ def get_host(environ):
 
     :param environ: the WSGI environment to get the host of.
     """
-    scheme = environ.get('wsgi.url_scheme')
-    if 'HTTP_X_FORWARDED_HOST' in environ:
-        result = environ['HTTP_X_FORWARDED_HOST']
-    elif 'HTTP_HOST' in environ:
-        result = environ['HTTP_HOST']
+    scheme = environ.get("wsgi.url_scheme")
+    if "HTTP_X_FORWARDED_HOST" in environ:
+        result = environ["HTTP_X_FORWARDED_HOST"]
+    elif "HTTP_HOST" in environ:
+        result = environ["HTTP_HOST"]
     else:
-        result = environ['SERVER_NAME']
-        if (scheme, str(environ['SERVER_PORT'])) not \
-           in (('https', '443'), ('http', '80')):
-            result += ':' + environ['SERVER_PORT']
-    if result.endswith(':80') and scheme == 'http':
+        result = environ["SERVER_NAME"]
+        if (scheme, str(environ["SERVER_PORT"])) not in (("https", "443"), ("http", "80")):
+            result += ":" + environ["SERVER_PORT"]
+    if result.endswith(":80") and scheme == "http":
         result = result[:-3]
-    elif result.endswith(':443') and scheme == 'https':
+    elif result.endswith(":443") and scheme == "https":
         result = result[:-4]
     return result
 
 
 # `get_current_url` comes from `werkzeug.wsgi`
-def get_current_url(environ, root_only=False, strip_querystring=False,
-                    host_only=False):
+def get_current_url(environ, root_only=False, strip_querystring=False, host_only=False):
     """A handy helper function that recreates the full URL for the current
     request or parts of it.  Here an example:
 
@@ -81,17 +78,17 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
     :param strip_querystring: set to `True` if you don't want the querystring.
     :param host_only: set to `True` if the host URL should be returned.
     """
-    tmp = [environ['wsgi.url_scheme'], '://', get_host(environ)]
+    tmp = [environ["wsgi.url_scheme"], "://", get_host(environ)]
     cat = tmp.append
     if host_only:
-        return ''.join(tmp) + '/'
-    cat(quote(environ.get('SCRIPT_NAME', '').rstrip('/')))
+        return "".join(tmp) + "/"
+    cat(quote(environ.get("SCRIPT_NAME", "").rstrip("/")))
     if root_only:
-        cat('/')
+        cat("/")
     else:
-        cat(quote('/' + environ.get('PATH_INFO', '').lstrip('/')))
+        cat(quote("/" + environ.get("PATH_INFO", "").lstrip("/")))
         if not strip_querystring:
-            qs = environ.get('QUERY_STRING')
+            qs = environ.get("QUERY_STRING")
             if qs:
-                cat('?' + qs)
-    return ''.join(tmp)
+                cat("?" + qs)
+    return "".join(tmp)

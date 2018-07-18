@@ -16,6 +16,7 @@ class Transport(object):
 
     You must implement a send method..
     """
+
     async_mode = False
     scheme = []
 

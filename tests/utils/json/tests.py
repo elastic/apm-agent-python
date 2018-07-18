@@ -19,18 +19,18 @@ def test_datetime():
 
 
 def test_set():
-    res = set(['foo', 'bar'])
+    res = set(["foo", "bar"])
     assert json.dumps(res) in ('["foo", "bar"]', '["bar", "foo"]')
 
 
 def test_frozenset():
-    res = frozenset(['foo', 'bar'])
+    res = frozenset(["foo", "bar"])
     assert json.dumps(res) in ('["foo", "bar"]', '["bar", "foo"]')
 
 
 def test_bytes():
     if compat.PY2:
-        res = bytes('foobar')
+        res = bytes("foobar")
     else:
-        res = bytes('foobar', encoding='ascii')
+        res = bytes("foobar", encoding="ascii")
     assert json.dumps(res) == '"foobar"'

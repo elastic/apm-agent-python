@@ -14,24 +14,22 @@ def test_connect(instrument, elasticapm_client):
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]['spans']
+    spans = transactions[0]["spans"]
 
-    expected_signatures = {'sqlite3.connect :memory:',
-                           'CREATE TABLE', 'INSERT INTO testdb',
-                           'DROP TABLE'}
+    expected_signatures = {"sqlite3.connect :memory:", "CREATE TABLE", "INSERT INTO testdb", "DROP TABLE"}
 
-    assert {t['name'] for t in spans} == expected_signatures
+    assert {t["name"] for t in spans} == expected_signatures
 
-    assert spans[0]['name'] == 'sqlite3.connect :memory:'
-    assert spans[0]['type'] == 'db.sqlite.connect'
+    assert spans[0]["name"] == "sqlite3.connect :memory:"
+    assert spans[0]["type"] == "db.sqlite.connect"
 
-    assert spans[1]['name'] == 'CREATE TABLE'
-    assert spans[1]['type'] == 'db.sqlite.sql'
+    assert spans[1]["name"] == "CREATE TABLE"
+    assert spans[1]["type"] == "db.sqlite.sql"
 
-    assert spans[2]['name'] == 'INSERT INTO testdb'
-    assert spans[2]['type'] == 'db.sqlite.sql'
+    assert spans[2]["name"] == "INSERT INTO testdb"
+    assert spans[2]["type"] == "db.sqlite.sql"
 
-    assert spans[3]['name'] == 'DROP TABLE'
-    assert spans[3]['type'] == 'db.sqlite.sql'
+    assert spans[3]["name"] == "DROP TABLE"
+    assert spans[3]["type"] == "db.sqlite.sql"
 
     assert len(spans) == 4

@@ -20,20 +20,19 @@ import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
 from elasticapm.conf import setup_logging
-from elasticapm.contrib.flask.utils import (get_data_from_request,
-                                            get_data_from_response)
+from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils import build_name_with_http_method_prefix
 
-logger = logging.getLogger('elasticapm.errors.client')
+logger = logging.getLogger("elasticapm.errors.client")
 
 
 def make_client(client_cls, app, **defaults):
-    config = app.config.get('ELASTIC_APM', {})
+    config = app.config.get("ELASTIC_APM", {})
 
-    if 'framework_name' not in defaults:
-        defaults['framework_name'] = 'flask'
-        defaults['framework_version'] = getattr(flask, '__version__', '<0.7')
+    if "framework_name" not in defaults:
+        defaults["framework_name"] = "flask"
+        defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
 
     client = client_cls(config, **defaults)
     return client
@@ -71,6 +70,7 @@ class ElasticAPM(object):
 
     >>> elasticapm.capture_message('hello, world!')
     """
+
     def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults):
         self.app = app
         self.logging = logging
@@ -88,14 +88,13 @@ class ElasticAPM(object):
             return
 
         self.client.capture_exception(
-            exc_info=kwargs.get('exc_info'),
-            context={'request': get_data_from_request(
-                request,
-                capture_body=self.client.config.capture_body in ('errors', 'all')
-            )},
-            custom={
-                'app': self.app,
+            exc_info=kwargs.get("exc_info"),
+            context={
+                "request": get_data_from_request(
+                    request, capture_body=self.client.config.capture_body in ("errors", "all")
+                )
             },
+            custom={"app": self.app},
             handled=False,
         )
 
@@ -111,6 +110,7 @@ class ElasticAPM(object):
 
         try:
             from elasticapm.contrib.celery import register_exception_tracking
+
             register_exception_tracking(self.client)
         except ImportError:
             pass
@@ -123,6 +123,7 @@ class ElasticAPM(object):
             signals.request_finished.connect(self.request_finished, sender=app)
             try:
                 from elasticapm.contrib.celery import register_instrumentation
+
                 register_instrumentation(self.client)
             except ImportError:
                 pass
@@ -137,13 +138,15 @@ class ElasticAPM(object):
         if not self.app.debug or self.client.config.debug:
             rule = request.url_rule.rule if request.url_rule is not None else ""
             rule = build_name_with_http_method_prefix(rule, request)
-            elasticapm.set_context(lambda: get_data_from_request(
-                request,
-                capture_body=self.client.config.capture_body in ('transactions', 'all')
-            ), 'request')
-            elasticapm.set_context(lambda: get_data_from_response(response), 'response')
+            elasticapm.set_context(
+                lambda: get_data_from_request(
+                    request, capture_body=self.client.config.capture_body in ("transactions", "all")
+                ),
+                "request",
+            )
+            elasticapm.set_context(lambda: get_data_from_response(response), "response")
             if response.status_code:
-                result = 'HTTP {}xx'.format(response.status_code // 100)
+                result = "HTTP {}xx".format(response.status_code // 100)
             else:
                 result = response.status
             elasticapm.set_transaction_name(rule, override=False)
@@ -153,9 +156,9 @@ class ElasticAPM(object):
             response.call_on_close(self.client.end_transaction)
 
     def capture_exception(self, *args, **kwargs):
-        assert self.client, 'capture_exception called before application configured'
+        assert self.client, "capture_exception called before application configured"
         return self.client.capture_exception(*args, **kwargs)
 
     def capture_message(self, *args, **kwargs):
-        assert self.client, 'capture_message called before application configured'
+        assert self.client, "capture_message called before application configured"
         return self.client.capture_message(*args, **kwargs)

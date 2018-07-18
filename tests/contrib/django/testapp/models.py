@@ -8,7 +8,7 @@ if DJANGO_VERSION >= (1, 5):
     from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
     class MyUser(AbstractBaseUser):
-        USERNAME_FIELD = 'my_username'
+        USERNAME_FIELD = "my_username"
         my_username = models.CharField(max_length=30)
 
         objects = BaseUserManager()

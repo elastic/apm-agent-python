@@ -17,19 +17,19 @@ def jinja_env():
 def test_from_file(should_collect, instrument, jinja_env, elasticapm_client):
     should_collect.return_value = False
     elasticapm_client.begin_transaction("transaction.test")
-    template = jinja_env.get_template('mytemplate.html')
+    template = jinja_env.get_template("mytemplate.html")
     template.render()
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]['spans']
+    spans = transactions[0]["spans"]
 
-    expected_signatures = {'mytemplate.html'}
+    expected_signatures = {"mytemplate.html"}
 
-    assert {t['name'] for t in spans} == expected_signatures
+    assert {t["name"] for t in spans} == expected_signatures
 
-    assert spans[0]['name'] == 'mytemplate.html'
-    assert spans[0]['type'] == 'template.jinja2'
+    assert spans[0]["name"] == "mytemplate.html"
+    assert spans[0]["type"] == "template.jinja2"
 
 
 def test_from_string(instrument, elasticapm_client):
@@ -39,11 +39,11 @@ def test_from_string(instrument, elasticapm_client):
     elasticapm_client.end_transaction("test")
 
     transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]['spans']
+    spans = transactions[0]["spans"]
 
-    expected_signatures = {'<template>'}
+    expected_signatures = {"<template>"}
 
-    assert {t['name'] for t in spans} == expected_signatures
+    assert {t["name"] for t in spans} == expected_signatures
 
-    assert spans[0]['name'] == '<template>'
-    assert spans[0]['type'] == 'template.jinja2'
+    assert spans[0]["name"] == "<template>"
+    assert spans[0]["type"] == "template.jinja2"

@@ -9,13 +9,12 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 
-__all__ = ('VERSION', 'Client')
+__all__ = ("VERSION", "Client")
 
 try:
-    VERSION = __import__('pkg_resources') \
-        .get_distribution('elastic-apm').version
+    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
 except Exception as e:
-    VERSION = 'unknown'
+    VERSION = "unknown"
 
 from elasticapm.base import Client
 from elasticapm.conf import setup_logging  # noqa: F401

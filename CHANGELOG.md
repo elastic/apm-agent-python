@@ -4,6 +4,7 @@
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...master)
 
+ - adapted "black" code formatter for this repository (#262)
  - **BREAKING**: dropped support for Python 3.3 (#242) 
  - **BREAKING**: changed order of precedence when evaluating configuration (#255, #261)
  - **BREAKING**: changed default value of `span_frames_min_duration` setting 

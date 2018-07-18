@@ -8,4 +8,4 @@ def successful_task():
 
 @app.task()
 def failing_task():
-    raise ValueError('foo')
+    raise ValueError("foo")

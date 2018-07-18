@@ -17,5 +17,5 @@ docker run \
   --rm python-linters \
   /bin/bash \
   -c "pip install --user -U pip
-      pip install --user -r tests/requirements/lint-isort.txt --cache-dir ${docker_pip_cache}
-      /home/user/.local/bin/isort -c -df"
+      pip install --user -U black --cache-dir ${docker_pip_cache}
+      /home/user/.local/bin/black /app --diff --check"

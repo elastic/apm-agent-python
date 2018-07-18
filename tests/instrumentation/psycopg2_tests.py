@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 import pytest  # isort:skip
+
 pytest.importorskip("psycopg2")  # isort:skip
 
 import os
 
 import psycopg2
 
-from elasticapm.instrumentation.packages.psycopg2 import (PGCursorProxy,
-                                                          extract_signature)
+from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
 
 try:
     from psycopg2 import sql
+
     has_sql_module = True
 except ImportError:
     # as of Jan 2018, psycopg2cffi doesn't have this module
@@ -19,16 +20,16 @@ except ImportError:
 
 pytestmark = pytest.mark.psycopg2
 
-has_postgres_configured = 'POSTGRES_DB' in os.environ
+has_postgres_configured = "POSTGRES_DB" in os.environ
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.yield_fixture(scope="function")
 def postgres_connection(request):
     conn = psycopg2.connect(
-        database=os.environ.get('POSTGRES_DB', 'elasticapm_test'),
-        user=os.environ.get('POSTGRES_USER', 'postgres'),
-        host=os.environ.get('POSTGRES_HOST', None),
-        port=os.environ.get('POSTGRES_PORT', None),
+        database=os.environ.get("POSTGRES_DB", "elasticapm_test"),
+        user=os.environ.get("POSTGRES_USER", "postgres"),
+        host=os.environ.get("POSTGRES_HOST", None),
+        port=os.environ.get("POSTGRES_PORT", None),
     )
     cursor = conn.cursor()
     cursor.execute(
@@ -39,7 +40,7 @@ def postgres_connection(request):
     yield conn
 
     # cleanup
-    cursor.execute('ROLLBACK')
+    cursor.execute("ROLLBACK")
 
 
 def test_insert():
@@ -120,7 +121,7 @@ def test_select_with_dollar_quotes_custom_token():
 
 
 def test_select_with_difficult_table_name():
-    sql_statement = "SELECT id FROM \"myta\n-æøåble\" WHERE id = 2323"""
+    sql_statement = 'SELECT id FROM "myta\n-æøåble" WHERE id = 2323' ""
     actual = extract_signature(sql_statement)
 
     assert "SELECT FROM myta\n-æøåble" == actual
@@ -160,14 +161,14 @@ def test_select_with_multiple_tables():
 
 
 def test_select_with_invalid_subselect():
-    sql_statement = "SELECT id FROM (SELECT * """
+    sql_statement = "SELECT id FROM (SELECT * " ""
     actual = extract_signature(sql_statement)
 
     assert "SELECT FROM" == actual
 
 
 def test_select_with_invalid_literal():
-    sql_statement = "SELECT 'neverending literal FROM (SELECT * FROM ..."""
+    sql_statement = "SELECT 'neverending literal FROM (SELECT * FROM ..." ""
     actual = extract_signature(sql_statement)
 
     assert "SELECT FROM" == actual
@@ -247,12 +248,10 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
     try:
         elasticapm_client.begin_transaction("web.django")
         # as arg
-        new_type = psycopg2.extras.register_json(postgres_connection,
-                                                 loads=lambda x: x)
+        new_type = psycopg2.extras.register_json(postgres_connection, loads=lambda x: x)
         assert new_type is not None
         # as kwarg
-        new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection,
-                                                 loads=lambda x: x)
+        new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection, loads=lambda x: x)
         assert new_type is not None
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
@@ -267,7 +266,7 @@ def test_psycopg2_tracing_outside_of_elasticapm_transaction(instrument, postgres
     # check that the cursor is a proxy, even though we're not in an elasticapm
     # transaction
     assert isinstance(cursor, PGCursorProxy)
-    cursor.execute('SELECT 1')
+    cursor.execute("SELECT 1")
     transactions = elasticapm_client.transaction_store.get_all()
     assert transactions == []
 
@@ -290,12 +289,12 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
     finally:
         # make sure we've cleared out the spans for the other tests.
         transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]['spans']
+        spans = transactions[0]["spans"]
         span = spans[0]
-        assert span['name'] == 'SELECT FROM test'
-        assert 'db' in span['context']
-        assert span['context']['db']['type'] == 'sql'
-        assert span['context']['db']['statement'] == query
+        assert span["name"] == "SELECT FROM test"
+        assert "db" in span["context"]
+        assert span["context"]["db"]["type"] == "sql"
+        assert span["context"]["db"]["statement"] == query
 
 
 @pytest.mark.integrationtest
@@ -307,8 +306,7 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
     """
     cursor = postgres_connection.cursor()
     query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
-        table=sql.Identifier('test'),
-        row=sql.Identifier('name'),
+        table=sql.Identifier("test"), row=sql.Identifier("name")
     )
     baked_query = query.as_string(cursor.__wrapped__)
     result = None
@@ -319,11 +317,11 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the spans for the other tests.
-        assert [(2, 'two'), (3, 'three')] == result
+        assert [(2, "two"), (3, "three")] == result
         transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]['spans']
+        spans = transactions[0]["spans"]
         span = spans[0]
-        assert span['name'] == 'SELECT FROM test'
-        assert 'db' in span['context']
-        assert span['context']['db']['type'] == 'sql'
-        assert span['context']['db']['statement'] == baked_query
+        assert span["name"] == "SELECT FROM test"
+        assert "db" in span["context"]
+        assert span["context"]["db"]["type"] == "sql"
+        assert span["context"]["db"]["statement"] == baked_query

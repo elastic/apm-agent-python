@@ -15,12 +15,11 @@ import uuid
 
 from elasticapm.utils import varmap
 from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
-from elasticapm.utils.stacks import (get_culprit, get_stack_info,
-                                     iter_traceback_frames)
+from elasticapm.utils.stacks import get_culprit, get_stack_info, iter_traceback_frames
 
-__all__ = ('BaseEvent', 'Exception', 'Message')
+__all__ = ("BaseEvent", "Exception", "Message")
 
-logger = logging.getLogger('elasticapm.events')
+logger = logging.getLogger("elasticapm.events")
 
 
 class BaseEvent(object):
@@ -45,18 +44,18 @@ class Exception(BaseEvent):
 
     @staticmethod
     def to_string(client, data):
-        exc = data['exception']
-        if exc['value']:
-            return '%s: %s' % (exc['type'], exc['value'])
-        return exc['type']
+        exc = data["exception"]
+        if exc["value"]:
+            return "%s: %s" % (exc["type"], exc["value"])
+        return exc["type"]
 
     @staticmethod
     def get_hash(data):
-        exc = data['exception']
-        output = [exc['type']]
-        for frame in data['stacktrace']['frames']:
-            output.append(frame['module'])
-            output.append(frame['function'])
+        exc = data["exception"]
+        output = [exc["type"]]
+        for frame in data["stacktrace"]["frames"]:
+            output.append(frame["module"])
+            output.append(frame["function"])
         return output
 
     @staticmethod
@@ -68,28 +67,31 @@ class Exception(BaseEvent):
             exc_info = sys.exc_info()
 
         if not exc_info:
-            raise ValueError('No exception found')
+            raise ValueError("No exception found")
 
         try:
             exc_type, exc_value, exc_traceback = exc_info
 
             frames = get_stack_info(
                 iter_traceback_frames(exc_traceback),
-                with_locals=client.config.collect_local_variables in ('errors', 'all'),
+                with_locals=client.config.collect_local_variables in ("errors", "all"),
                 library_frame_context_lines=client.config.source_lines_error_library_frames,
                 in_app_frame_context_lines=client.config.source_lines_error_app_frames,
                 include_paths_re=client.include_paths_re,
                 exclude_paths_re=client.exclude_paths_re,
-                locals_processor_func=lambda local_var: varmap(lambda k, val: shorten(
-                    val,
-                    list_length=client.config.local_var_list_max_length,
-                    string_length=client.config.local_var_max_length
-                ), local_var)
+                locals_processor_func=lambda local_var: varmap(
+                    lambda k, val: shorten(
+                        val,
+                        list_length=client.config.local_var_list_max_length,
+                        string_length=client.config.local_var_max_length,
+                    ),
+                    local_var,
+                ),
             )
 
             culprit = get_culprit(frames, client.config.include_paths, client.config.exclude_paths)
 
-            if hasattr(exc_type, '__module__'):
+            if hasattr(exc_type, "__module__"):
                 exc_module = exc_type.__module__
                 exc_type = exc_type.__name__
             else:
@@ -102,20 +104,20 @@ class Exception(BaseEvent):
                     del exc_traceback
                 except Exception as e:
                     logger.exception(e)
-        if 'message' in kwargs:
-            message = kwargs['message']
+        if "message" in kwargs:
+            message = kwargs["message"]
         else:
-            message = '%s: %s' % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
+            message = "%s: %s" % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
 
         return {
-            'id': str(uuid.uuid4()),
-            'culprit': culprit,
-            'exception': {
-                'message': message,
-                'type': keyword_field(str(exc_type)),
-                'module': keyword_field(str(exc_module)),
-                'stacktrace': frames,
-            }
+            "id": str(uuid.uuid4()),
+            "culprit": culprit,
+            "exception": {
+                "message": message,
+                "type": keyword_field(str(exc_type)),
+                "module": keyword_field(str(exc_module)),
+                "stacktrace": frames,
+            },
         }
 
 
@@ -129,32 +131,32 @@ class Message(BaseEvent):
 
     @staticmethod
     def to_string(client, data):
-        return data['log']['message']
+        return data["log"]["message"]
 
     @staticmethod
     def get_hash(data):
-        msg = data['param_message']
-        return [msg['message']]
+        msg = data["param_message"]
+        return [msg["message"]]
 
     @staticmethod
     def capture(client, param_message=None, message=None, level=None, logger_name=None, **kwargs):
         if message:
-            param_message = {'message': message}
-        params = param_message.get('params')
-        message = param_message['message'] % params if params else param_message['message']
-        data = kwargs.get('data', {})
+            param_message = {"message": message}
+        params = param_message.get("params")
+        message = param_message["message"] % params if params else param_message["message"]
+        data = kwargs.get("data", {})
         message_data = {
-            'id': str(uuid.uuid4()),
-            'log': {
-                'level': keyword_field(level or 'error'),
-                'logger_name': keyword_field(logger_name or '__root__'),
-                'message': message,
-                'param_message': keyword_field(param_message['message']),
-            }
+            "id": str(uuid.uuid4()),
+            "log": {
+                "level": keyword_field(level or "error"),
+                "logger_name": keyword_field(logger_name or "__root__"),
+                "message": message,
+                "param_message": keyword_field(param_message["message"]),
+            },
         }
-        if isinstance(data.get('stacktrace'), dict):
-            message_data['log']['stacktrace'] = data['stacktrace']['frames']
-        if kwargs.get('exception'):
-            message_data['culprit'] = kwargs['exception']['culprit']
-            message_data['exception'] = kwargs['exception']['exception']
+        if isinstance(data.get("stacktrace"), dict):
+            message_data["log"]["stacktrace"] = data["stacktrace"]["frames"]
+        if kwargs.get("exception"):
+            message_data["culprit"] = kwargs["exception"]["culprit"]
+            message_data["exception"] = kwargs["exception"]["exception"]
         return message_data

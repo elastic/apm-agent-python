@@ -10,6 +10,7 @@ def deprecated(alternative=None):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
+
     def real_decorator(func):
         @functools.wraps(func)
         def new_func(*args, **kwargs):
@@ -20,8 +21,10 @@ def deprecated(alternative=None):
                 msg,
                 category=DeprecationWarning,
                 filename=compat.get_function_code(func).co_filename,
-                lineno=compat.get_function_code(func).co_firstlineno + 1
+                lineno=compat.get_function_code(func).co_firstlineno + 1,
             )
             return func(*args, **kwargs)
+
         return new_func
+
     return real_decorator

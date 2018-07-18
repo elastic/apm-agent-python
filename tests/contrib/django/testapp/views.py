@@ -19,13 +19,13 @@ class IgnoredException(Exception):
 
 
 def no_error(request):
-    resp = HttpResponse('')
-    resp['My-Header'] = 'foo'
+    resp = HttpResponse("")
+    resp["My-Header"] = "foo"
     return resp
 
 
 def fake_login(request):
-    return HttpResponse('')
+    return HttpResponse("")
 
 
 def django_exc(request):
@@ -33,11 +33,11 @@ def django_exc(request):
 
 
 def raise_exc(request):
-    raise MyException(request.GET.get('message', 'view exception'))
+    raise MyException(request.GET.get("message", "view exception"))
 
 
 def raise_ioerror(request):
-    raise IOError(request.GET.get('message', 'view exception'))
+    raise IOError(request.GET.get("message", "view exception"))
 
 
 def decorated_raise_exc(request):
@@ -45,7 +45,7 @@ def decorated_raise_exc(request):
 
 
 def template_exc(request):
-    return render_to_response('error.html')
+    return render_to_response("error.html")
 
 
 def ignored_exception(request):
@@ -55,25 +55,24 @@ def ignored_exception(request):
 def logging_request_exc(request):
     logger = logging.getLogger(__name__)
     try:
-        raise Exception(request.GET.get('message', 'view exception'))
+        raise Exception(request.GET.get("message", "view exception"))
     except Exception as e:
-        logger.error(e, exc_info=True, extra={'request': request})
-    return HttpResponse('')
+        logger.error(e, exc_info=True, extra={"request": request})
+    return HttpResponse("")
 
 
 def logging_view(request):
-    logger = logging.getLogger('logmiddleware')
+    logger = logging.getLogger("logmiddleware")
     logger.info("Just loggin'")
-    return HttpResponse('')
+    return HttpResponse("")
 
 
 def render_template_view(request):
     def something_expensive():
         with elasticapm.capture_span("something_expensive", "code"):
-            return [User(username='Ron'), User(username='Beni')]
+            return [User(username="Ron"), User(username="Beni")]
 
-    return render(request, "list_users.html",
-                            {'users': something_expensive})
+    return render(request, "list_users.html", {"users": something_expensive})
 
 
 def render_jinja2_template(request):
@@ -87,21 +86,21 @@ def render_user_view(request):
                 users = list(User.objects.all())
         return users
 
-    return render(request, "list_users.html",
-                  {'users': something_expensive})
+    return render(request, "list_users.html", {"users": something_expensive})
 
 
 def streaming_view(request):
     def my_generator():
         for i in range(5):
-            with elasticapm.capture_span('iter', 'code'):
+            with elasticapm.capture_span("iter", "code"):
                 time.sleep(0.01)
                 yield str(i)
+
     resp = StreamingHttpResponse(my_generator())
     return resp
 
 
 def override_transaction_name_view(request):
-    elasticapm.set_transaction_name('foo')
-    elasticapm.set_transaction_result('okydoky')
+    elasticapm.set_transaction_name("foo")
+    elasticapm.set_transaction_result("okydoky")
     return HttpResponse()

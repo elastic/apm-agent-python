@@ -26,10 +26,10 @@ from elasticapm.utils import compat, encoding, get_url_dict
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
 
-__all__ = ('DjangoClient',)
+__all__ = ("DjangoClient",)
 
 
-default_client_class = 'elasticapm.contrib.django.DjangoClient'
+default_client_class = "elasticapm.contrib.django.DjangoClient"
 _client = (None, None)
 
 
@@ -45,8 +45,8 @@ def get_client(client=None):
 
     tmp_client = client is not None
     if not tmp_client:
-        config = getattr(django_settings, 'ELASTIC_APM', {})
-        client = config.get('CLIENT', default_client_class)
+        config = getattr(django_settings, "ELASTIC_APM", {})
+        client = config.get("CLIENT", default_client_class)
 
     if _client[0] != client:
         client_class = import_string(client)
@@ -58,37 +58,37 @@ def get_client(client=None):
 
 
 class DjangoClient(Client):
-    logger = logging.getLogger('elasticapm.errors.client.django')
+    logger = logging.getLogger("elasticapm.errors.client.django")
 
     def __init__(self, config=None, **inline):
         if config is None:
-            config = getattr(django_settings, 'ELASTIC_APM', {})
-        if 'framework_name' not in inline:
-            inline['framework_name'] = 'django'
-            inline['framework_version'] = django.get_version()
+            config = getattr(django_settings, "ELASTIC_APM", {})
+        if "framework_name" not in inline:
+            inline["framework_name"] = "django"
+            inline["framework_version"] = django.get_version()
         super(DjangoClient, self).__init__(config, **inline)
 
     def get_user_info(self, request):
         user_info = {}
 
-        if not hasattr(request, 'user'):
+        if not hasattr(request, "user"):
             return user_info
         try:
             user = request.user
-            if hasattr(user, 'is_authenticated'):
+            if hasattr(user, "is_authenticated"):
                 if callable(user.is_authenticated):
-                    user_info['is_authenticated'] = user.is_authenticated()
+                    user_info["is_authenticated"] = user.is_authenticated()
                 else:
-                    user_info['is_authenticated'] = bool(user.is_authenticated)
-            if hasattr(user, 'id'):
-                user_info['id'] = encoding.keyword_field(user.id)
-            if hasattr(user, 'get_username'):
-                user_info['username'] = encoding.keyword_field(user.get_username())
-            elif hasattr(user, 'username'):
-                user_info['username'] = encoding.keyword_field(user.username)
+                    user_info["is_authenticated"] = bool(user.is_authenticated)
+            if hasattr(user, "id"):
+                user_info["id"] = encoding.keyword_field(user.id)
+            if hasattr(user, "get_username"):
+                user_info["username"] = encoding.keyword_field(user.get_username())
+            elif hasattr(user, "username"):
+                user_info["username"] = encoding.keyword_field(user.username)
 
-            if hasattr(user, 'email'):
-                user_info['email'] = user.email
+            if hasattr(user, "email"):
+                user_info["email"] = user.email
         except DatabaseError:
             # If the connection is closed or similar, we'll just skip this
             return {}
@@ -97,33 +97,30 @@ class DjangoClient(Client):
 
     def get_data_from_request(self, request, capture_body=False):
         result = {
-            'env': dict(get_environ(request.META)),
-            'headers': dict(get_headers(request.META)),
-            'method': request.method,
-            'socket': {
-                'remote_address': request.META.get('REMOTE_ADDR'),
-                'encrypted': request.is_secure()
-            },
-            'cookies': dict(request.COOKIES),
+            "env": dict(get_environ(request.META)),
+            "headers": dict(get_headers(request.META)),
+            "method": request.method,
+            "socket": {"remote_address": request.META.get("REMOTE_ADDR"), "encrypted": request.is_secure()},
+            "cookies": dict(request.COOKIES),
         }
 
         if request.method in constants.HTTP_WITH_BODY:
-            content_type = request.META.get('CONTENT_TYPE')
-            if content_type == 'application/x-www-form-urlencoded':
+            content_type = request.META.get("CONTENT_TYPE")
+            if content_type == "application/x-www-form-urlencoded":
                 data = compat.multidict_to_dict(request.POST)
-            elif content_type and content_type.startswith('multipart/form-data'):
+            elif content_type and content_type.startswith("multipart/form-data"):
                 data = compat.multidict_to_dict(request.POST)
                 if request.FILES:
-                    data['_files'] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+                    data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
             else:
                 try:
                     data = request.body
                 except Exception:
-                    data = '<unavailable>'
+                    data = "<unavailable>"
 
-            result['body'] = data if (capture_body or not data) else '[REDACTED]'
+            result["body"] = data if (capture_body or not data) else "[REDACTED]"
 
-        if hasattr(request, 'get_raw_uri'):
+        if hasattr(request, "get_raw_uri"):
             # added in Django 1.9
             url = request.get_raw_uri()
         else:
@@ -134,61 +131,64 @@ class DjangoClient(Client):
             except DisallowedHost:
                 # We can't figure out the real URL, so we have to set it to
                 # DisallowedHost
-                result['url'] = {'full': 'DisallowedHost'}
+                result["url"] = {"full": "DisallowedHost"}
                 url = None
         if url:
-            result['url'] = get_url_dict(url)
+            result["url"] = get_url_dict(url)
         return result
 
     def get_data_from_response(self, response):
-        result = {'status_code': response.status_code}
+        result = {"status_code": response.status_code}
 
         # Django does not expose a public API to iterate over the headers of a response.
         # Unfortunately, we have to access the private _headers dictionary here, which is
         # a mapping of the form lower-case-header: (Original-Header, value)
-        if getattr(response, '_headers', {}):
-            result['headers'] = {key: value[1] for key, value in response._headers.items()}
+        if getattr(response, "_headers", {}):
+            result["headers"] = {key: value[1] for key, value in response._headers.items()}
         return result
 
     def capture(self, event_type, request=None, **kwargs):
-        if 'context' not in kwargs:
-            kwargs['context'] = context = {}
+        if "context" not in kwargs:
+            kwargs["context"] = context = {}
         else:
-            context = kwargs['context']
+            context = kwargs["context"]
 
         is_http_request = isinstance(request, HttpRequest)
         if is_http_request:
-            context['request'] = self.get_data_from_request(request,
-                                                            capture_body=self.config.capture_body in ('all', 'errors'))
-            context['user'] = self.get_user_info(request)
+            context["request"] = self.get_data_from_request(
+                request, capture_body=self.config.capture_body in ("all", "errors")
+            )
+            context["user"] = self.get_user_info(request)
 
         result = super(DjangoClient, self).capture(event_type, **kwargs)
 
         if is_http_request:
             # attach the elasticapm object to the request
-            request._elasticapm = {
-                'service_name': self.config.service_name,
-                'id': result,
-            }
+            request._elasticapm = {"service_name": self.config.service_name, "id": result}
 
         return result
 
-    def _get_stack_info_for_trace(self, frames,
-                                  library_frame_context_lines=None,
-                                  in_app_frame_context_lines=None,
-                                  with_locals=True,
-                                  locals_processor_func=None):
+    def _get_stack_info_for_trace(
+        self,
+        frames,
+        library_frame_context_lines=None,
+        in_app_frame_context_lines=None,
+        with_locals=True,
+        locals_processor_func=None,
+    ):
         """If the stacktrace originates within the elasticapm module, it will skip
         frames until some other module comes up."""
-        return list(iterate_with_template_sources(
-            frames,
-            with_locals=with_locals,
-            library_frame_context_lines=library_frame_context_lines,
-            in_app_frame_context_lines=in_app_frame_context_lines,
-            include_paths_re=self.include_paths_re,
-            exclude_paths_re=self.exclude_paths_re,
-            locals_processor_func=locals_processor_func,
-        ))
+        return list(
+            iterate_with_template_sources(
+                frames,
+                with_locals=with_locals,
+                library_frame_context_lines=library_frame_context_lines,
+                in_app_frame_context_lines=in_app_frame_context_lines,
+                include_paths_re=self.include_paths_re,
+                exclude_paths_re=self.exclude_paths_re,
+                locals_processor_func=locals_processor_func,
+            )
+        )
 
     def send(self, url, **kwargs):
         """
@@ -200,7 +200,7 @@ class DjangoClient(Client):
         if self.config.server_url:
             return super(DjangoClient, self).send(url, **kwargs)
         else:
-            self.error_logger.error('No server configured, and elasticapm not installed. Cannot send message')
+            self.error_logger.error("No server configured, and elasticapm not installed. Cannot send message")
             return None
 
 
@@ -208,6 +208,7 @@ class ProxyClient(object):
     """
     A proxy which represents the current client at all times.
     """
+
     # introspection support:
     __members__ = property(lambda x: x.__dir__())
 

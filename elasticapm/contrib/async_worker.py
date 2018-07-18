@@ -16,7 +16,7 @@ from threading import Lock, Thread
 
 from elasticapm.utils.compat import queue
 
-logger = logging.getLogger('elasticapm')
+logger = logging.getLogger("elasticapm")
 
 ELASTIC_APM_WAIT_SECONDS = 10
 
@@ -49,23 +49,17 @@ class AsyncWorker(object):
                 # add or remove items
                 size = self._queue.qsize()
 
-                sys.stdout.write(
-                    "PID %i: ElasticAPM is attempting to send %i pending messages\n" % (
-                        os.getpid(),
-                        size,
-                    )
-                )
+                sys.stdout.write("PID %i: ElasticAPM is attempting to send %i pending messages\n" % (os.getpid(), size))
                 sys.stdout.write("Waiting up to %s seconds, " % ELASTIC_APM_WAIT_SECONDS)
                 wait_start = time.time()
-                if os.name == 'nt':
+                if os.name == "nt":
                     sys.stdout.write("press Ctrl-Break to quit.\n")
                 else:
                     sys.stdout.write("press Ctrl-C to quit.\n")
                 self._timed_queue_join(ELASTIC_APM_WAIT_SECONDS - initial_timeout)
-                sys.stdout.write('PID %i: done, took %.2f seconds to complete.\n' % (
-                    os.getpid(),
-                    time.time() - wait_start,
-                ))
+                sys.stdout.write(
+                    "PID %i: done, took %.2f seconds to complete.\n" % (os.getpid(), time.time() - wait_start)
+                )
             self._thread = None
 
         finally:
@@ -132,7 +126,7 @@ class AsyncWorker(object):
                 try:
                     callback(**kwargs)
                 except Exception:
-                    logger.error('Error while sending', exc_info=True)
+                    logger.error("Error while sending", exc_info=True)
             finally:
                 self._queue.task_done()
             time.sleep(0)
@@ -146,11 +140,12 @@ class Worker(object):
     >>> from elasticapm.base import Client
     >>> application = Worker(application)
     """
+
     def __init__(self, application):
         self.application = application
         self.worker = AsyncWorker()
 
     def __call__(self, environ, start_response):
-        environ['elasticapm.worker'] = self.worker
+        environ["elasticapm.worker"] = self.worker
         for event in self.application(environ, start_response):
             yield event

@@ -30,7 +30,7 @@ def is_protected_type(obj):
     return isinstance(obj, PROTECTED_TYPES)
 
 
-def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
+def force_text(s, encoding="utf-8", strings_only=False, errors="strict"):
     """
     Similar to smart_text, except that lazy instances are resolved to
     strings, rather than kept as lazy objects.
@@ -47,7 +47,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
         return s
     try:
         if not isinstance(s, compat.string_types):
-            if hasattr(s, '__unicode__'):
+            if hasattr(s, "__unicode__"):
                 s = s.__unicode__()
             else:
                 if compat.PY3:
@@ -71,7 +71,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
             # working unicode method. Try to handle this without raising a
             # further exception by individually forcing the exception args
             # to unicode.
-            s = ' '.join([force_text(arg, encoding, strings_only, errors) for arg in s])
+            s = " ".join([force_text(arg, encoding, strings_only, errors) for arg in s])
     return s
 
 
@@ -91,13 +91,13 @@ def transform(value, stack=None, context=None):
 
     objid = id(value)
     if objid in context:
-        return '<...>'
+        return "<...>"
 
     context[objid] = 1
     transform_rec = lambda o: transform(o, stack + [value], context)
 
     if any(value is s for s in stack):
-        ret = 'cycle'
+        ret = "cycle"
     elif isinstance(value, (tuple, list, set, frozenset)):
         try:
             ret = type(value)(transform_rec(o) for o in value)
@@ -105,6 +105,7 @@ def transform(value, stack=None, context=None):
             # We may be dealing with a namedtuple
             class value_type(list):
                 __name__ = type(value).__name__
+
             ret = value_type(transform_rec(o) for o in value)
     elif isinstance(value, uuid.UUID):
         ret = repr(value)
@@ -114,8 +115,7 @@ def transform(value, stack=None, context=None):
         ret = to_unicode(value)
     elif isinstance(value, compat.binary_type):
         ret = to_string(value)
-    elif not isinstance(value, compat.class_types) and \
-            _has_elasticapm_metadata(value):
+    elif not isinstance(value, compat.class_types) and _has_elasticapm_metadata(value):
         ret = transform_rec(value.__elasticapm__())
     elif isinstance(value, bool):
         ret = bool(value)
@@ -131,7 +131,7 @@ def transform(value, stack=None, context=None):
         except Exception:
             # It's common case that a model's __unicode__ definition may try to query the database
             # which if it was not cleaned up correctly, would hit a transaction aborted exception
-            ret = u'<BadRepr: %s>' % type(value)
+            ret = u"<BadRepr: %s>" % type(value)
     else:
         ret = None
     del context[objid]
@@ -142,35 +142,35 @@ def to_unicode(value):
     try:
         value = compat.text_type(force_text(value))
     except (UnicodeEncodeError, UnicodeDecodeError):
-        value = '(Error decoding value)'
+        value = "(Error decoding value)"
     except Exception:  # in some cases we get a different exception
         try:
             value = compat.binary_type(repr(type(value)))
         except Exception:
-            value = '(Error decoding value)'
+            value = "(Error decoding value)"
     return value
 
 
 def to_string(value):
     try:
-        return compat.binary_type(value.decode('utf-8').encode('utf-8'))
+        return compat.binary_type(value.decode("utf-8").encode("utf-8"))
     except Exception:
-        return to_unicode(value).encode('utf-8')
+        return to_unicode(value).encode("utf-8")
 
 
 def shorten(var, list_length=50, string_length=200):
     var = transform(var)
     if isinstance(var, compat.string_types) and len(var) > string_length:
-        var = var[:string_length - 3] + '...'
+        var = var[: string_length - 3] + "..."
     elif isinstance(var, (list, tuple, set, frozenset)) and len(var) > list_length:
         # TODO: we should write a real API for storing some metadata with vars when
         # we get around to doing ref storage
         # TODO: when we finish the above, we should also implement this for dicts
-        var = list(var)[:list_length] + ['...', '(%d more elements)' % (len(var) - list_length,)]
+        var = list(var)[:list_length] + ["...", "(%d more elements)" % (len(var) - list_length,)]
     return var
 
 
 def keyword_field(string):
     if not isinstance(string, compat.string_types) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
-    return string[:KEYWORD_MAX_LENGTH - 1] + u'…'
+    return string[: KEYWORD_MAX_LENGTH - 1] + u"…"
