@@ -28,9 +28,7 @@ _cls_register = {
 }
 
 if sys.version_info >= (3, 5):
-    _cls_register.update([
-        'elasticapm.instrumentation.packages.aiohttp.AioHttpClientInstrumentation',
-    ])
+    _cls_register.update(["elasticapm.instrumentation.packages.aiohttp.AioHttpClientInstrumentation"])
 
 
 def register(cls):

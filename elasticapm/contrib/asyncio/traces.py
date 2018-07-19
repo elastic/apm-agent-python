@@ -26,4 +26,4 @@ class async_capture_span(capture_span):
             try:
                 transaction.end_span(self.skip_frames)
             except LookupError:
-                error_logger.info('ended non-existing span %s of type %s', self.name, self.type)
+                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)

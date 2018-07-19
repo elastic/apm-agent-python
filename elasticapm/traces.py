@@ -27,12 +27,7 @@ except ImportError:
 
 
 class Transaction(object):
-    def __init__(
-        self,
-        store,
-        transaction_type="custom",
-        is_sampled=True,
-    ):
+    def __init__(self, store, transaction_type="custom", is_sampled=True):
         self.id = str(uuid.uuid4())
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
@@ -149,7 +144,7 @@ class Span(object):
 
 
 class DroppedSpan(object):
-    __slots__ = ('leaf', 'parent')
+    __slots__ = ("leaf", "parent")
 
     def __init__(self, parent, leaf=False):
         self.parent = parent
@@ -157,8 +152,16 @@ class DroppedSpan(object):
 
 
 class TransactionsStore(object):
-    def __init__(self, frames_collector_func, frames_processing_func, collect_frequency, sample_rate=1.0, max_spans=0,
-                 max_queue_size=None, span_frames_min_duration=None, ignore_patterns=None,
+    def __init__(
+        self,
+        frames_collector_func,
+        frames_processing_func,
+        collect_frequency,
+        sample_rate=1.0,
+        max_spans=0,
+        max_queue_size=None,
+        span_frames_min_duration=None,
+        ignore_patterns=None,
     ):
         self.cond = threading.Condition()
         self.collect_frequency = collect_frequency
@@ -206,10 +209,7 @@ class TransactionsStore(object):
         :returns the Transaction object
         """
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
-        transaction = Transaction(
-            self, transaction_type,
-            is_sampled=is_sampled,
-        )
+        transaction = Transaction(self, transaction_type, is_sampled=is_sampled)
         set_transaction(transaction)
         return transaction
 

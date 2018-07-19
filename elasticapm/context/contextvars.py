@@ -2,8 +2,8 @@ from __future__ import absolute_import
 
 import contextvars
 
-elasticapm_transaction_var = contextvars.ContextVar('elasticapm_transaction_var')
-elasticapm_span_var = contextvars.ContextVar('elasticapm_span_var')
+elasticapm_transaction_var = contextvars.ContextVar("elasticapm_transaction_var")
+elasticapm_span_var = contextvars.ContextVar("elasticapm_span_var")
 
 
 def get_transaction(clear=False):
