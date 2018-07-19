@@ -28,10 +28,6 @@ matrix:
     python: 3.6
     script: pip install isort && isort -c -df && echo "OK"
 
-  - stage: linters
-    script: make docs
-    perl: "5.26"
-
   - stage: build
     if: tag =~ ^v\d # only build if this is a version-tag
     dist: trusty
