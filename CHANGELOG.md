@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## v3.0.0
 
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...master)
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...v3.0.0)
 
  - adapted "black" code formatter for this repository (#262)
  - **BREAKING**: dropped support for Python 3.3 (#242) 
