@@ -88,6 +88,21 @@ def sanitize_http_request_cookies(client, event):
     return event
 
 
+def sanitize_http_response_cookies(client, event):
+    """
+    Sanitizes the set-cookie header of the response
+    :param client: an ElasticAPM client
+    :param event: a transaction or error event
+    :return: The modified event
+    """
+    try:
+        cookie_string = event["context"]["response"]["headers"]["set-cookie"]
+        event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(cookie_string, ";", "=")
+    except (KeyError, TypeError):
+        pass
+    return event
+
+
 def sanitize_http_headers(client, event):
     """
     Sanitizes http request/response headers
