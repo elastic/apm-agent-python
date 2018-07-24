@@ -645,7 +645,9 @@ def test_transaction_request_response_data(django_elasticapm_client, client):
     assert request["method"] == "GET"
     assert "headers" in request
     headers = request["headers"]
-    assert headers["cookie"] == " foo=bar"
+    # cookie serialization in the test client changed in Django 2.2, see
+    # https://code.djangoproject.com/ticket/29576
+    assert headers["cookie"] in (" foo=bar", "foo=bar")
     env = request["env"]
     assert "SERVER_NAME" in env, env.keys()
     assert env["SERVER_NAME"] == "testserver"

@@ -91,6 +91,19 @@ def test_sanitize_http_request_cookies(http_test_data):
     ] == "foo=bar; password={0}; the_secret={0}; csrftoken={0}".format(processors.MASK)
 
 
+def test_sanitize_http_response_cookies(http_test_data):
+    http_test_data["context"]["response"]["headers"][
+        "set-cookie"
+    ] = "foo=bar; httponly; secure ; sessionid=bar; httponly; secure"
+
+    result = processors.sanitize_http_response_cookies(None, http_test_data)
+
+    assert (
+        result["context"]["response"]["headers"]["set-cookie"]
+        == "foo=bar; httponly; secure ; sessionid=%s; httponly; secure" % processors.MASK
+    )
+
+
 def test_sanitize_http_headers(http_test_data):
     result = processors.sanitize_http_headers(None, http_test_data)
     expected = {
