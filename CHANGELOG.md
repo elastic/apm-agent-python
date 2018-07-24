@@ -1,5 +1,11 @@
 # Changelog
 
+## Next release
+
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...master)
+
+ * added sanitization for `Set-Cookie` response headers (#264)
+
 ## v3.0.0
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...v3.0.0)
