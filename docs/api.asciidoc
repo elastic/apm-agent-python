@@ -226,12 +226,12 @@ Example:
 ----
 import elasticapm
 
-elasticapm.set_user_context(username=user.username, email=user.email, id=user.id)
+elasticapm.set_user_context(username=user.username, email=user.email, user_id=user.id)
 ----
 
  * `username`: The username of the logged in user
  * `email`: The email of the logged in user
- * `id`: The unique identifier of the logged in user, e.g. the primary key value
+ * `user_id`: The unique identifier of the logged in user, e.g. the primary key value
 
 Errors that happen after this call will also have the user context attached to them.
 You can call this function multiple times, new user data will be merged with existing data,
