@@ -657,7 +657,7 @@ def test_transaction_request_response_data(django_elasticapm_client, client):
     assert "response" in transaction["context"]
     response = transaction["context"]["response"]
     assert response["status_code"] == 200
-    assert response["headers"]["my-header"] == "foo"
+    assert response["headers"]["My-Header"] == "foo"
 
 
 def test_transaction_metrics(django_elasticapm_client, client):
