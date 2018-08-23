@@ -1067,7 +1067,8 @@ def test_perf_database_render(benchmark, client, django_elasticapm_client):
 
         assert len(transactions) == len(responses)
         for transaction in transactions:
-            assert len(transaction["spans"]) in (102, 103)
+            # number of spans per transaction can vary slightly
+            assert 102 <= len(transaction["spans"]) < 105
 
 
 @pytest.mark.django_db

@@ -5,6 +5,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...master)
 
  * added sanitization for `Set-Cookie` response headers (#264)
+ * added instrumentation for the non-standard `Connection.execute()` method for SQLite3 (#271)
 
 ## v3.0.0
 
