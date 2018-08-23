@@ -17,6 +17,24 @@ class SQLiteCursorProxy(CursorProxy):
 class SQLiteConnectionProxy(ConnectionProxy):
     cursor_proxy = SQLiteCursorProxy
 
+    # we need to implement wrappers for the non-standard Connection.execute and
+    # Connection.executemany methods
+
+    def _trace_sql(self, method, sql, params):
+        signature = extract_signature(sql)
+        kind = "db.sqlite.sql"
+        with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql}}):
+            if params is None:
+                return method(sql)
+            else:
+                return method(sql, params)
+
+    def execute(self, sql, params=None):
+        return self._trace_sql(self.__wrapped__.execute, sql, params)
+
+    def executemany(self, sql, params=None):
+        return self._trace_sql(self.__wrapped__.executemany, sql, params)
+
 
 class SQLiteInstrumentation(DbApi2Instrumentation):
     name = "sqlite"
