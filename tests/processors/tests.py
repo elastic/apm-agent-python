@@ -15,7 +15,13 @@ def http_test_data():
             "request": {
                 "body": "foo=bar&password=123456&the_secret=abc&cc=1234567890098765",
                 "env": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"},
-                "headers": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"},
+                "headers": {
+                    "foo": "bar",
+                    "password": "hello",
+                    "the_secret": "hello",
+                    "a_password_here": "hello",
+                    "authorization": "bearer xyz",
+                },
                 "cookies": {
                     "foo": "bar",
                     "password": "topsecret",
@@ -30,7 +36,13 @@ def http_test_data():
             },
             "response": {
                 "status_code": "200",
-                "headers": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"},
+                "headers": {
+                    "foo": "bar",
+                    "password": "hello",
+                    "the_secret": "hello",
+                    "a_password_here": "hello",
+                    "authorization": "bearer xyz",
+                },
             },
         }
     }
@@ -111,6 +123,7 @@ def test_sanitize_http_headers(http_test_data):
         "password": processors.MASK,
         "the_secret": processors.MASK,
         "a_password_here": processors.MASK,
+        "authorization": processors.MASK,
     }
     assert result["context"]["request"]["headers"] == expected
     assert result["context"]["response"]["headers"] == expected
