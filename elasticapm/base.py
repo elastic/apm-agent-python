@@ -318,9 +318,10 @@ class Client(object):
         self._send_timer.start()
 
     def _stop_send_timer(self):
-        if self._send_timer and self._send_timer.is_alive() and not self._send_timer == threading.current_thread():
+        if self._send_timer and not self._send_timer == threading.current_thread():
             self._send_timer.cancel()
-            self._send_timer.join()
+            if self._send_timer.is_alive():
+                self._send_timer.join()
 
     def _send_remote(self, url, data, headers=None):
         if headers is None:
