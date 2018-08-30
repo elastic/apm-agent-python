@@ -96,7 +96,7 @@ should "Squash and merge".
 If you have commit access, the process is as follows:
 
 1. Update the version in `elasticapm/version.py` according to the scale of the change. (major, minor or patch)
-1. Update `CHANGELOG.asciidoc`
+1. Update `CHANGELOG.md`
 1. Commit changes with message `update CHANGELOG and bump version to x.y.z` where `x.y.z` is the version in `elasticapm/version.py`
 1. Tag the commit with `git tag vx.y.x`, for example `git tag v1.2.3`
 1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current master, e.g. `git branch -f 1.x master`
