@@ -8,6 +8,7 @@
  * added instrumentation for the non-standard `Connection.execute()` method for SQLite3 (#271)
  * added "authorization" to list of sensitive keywords, to ensure that "Authorization" 
    HTTP headers are properly sanitized (#275)
+ * taught the Logbook handler how to handle the `stack=False` option (#278)
 
 ## v3.0.0
 

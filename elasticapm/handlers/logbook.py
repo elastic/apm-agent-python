@@ -85,4 +85,5 @@ class LogbookHandler(logbook.Handler):
             level=LOOKBOOK_LEVELS[record.level],
             logger_name=record.channel,
             custom=record.extra,
+            stack=record.kwargs.get("stack"),
         )

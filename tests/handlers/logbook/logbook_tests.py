@@ -45,11 +45,21 @@ def test_logger_warning_level(logbook_logger, logbook_handler):
     assert event["log"]["param_message"] == "This is a test warning"
 
 
-def test_logger_without_stacktrace(logbook_logger, logbook_handler):
+def test_logger_without_stacktrace_config(logbook_logger, logbook_handler):
     logbook_handler.client.config.auto_log_stacks = False
 
     with logbook_handler.applicationbound():
         logbook_logger.warning("This is a test warning")
+
+    event = logbook_handler.client.events.pop(0)["errors"][0]
+    assert "stacktrace" not in event["log"]
+
+
+def test_logger_without_stacktrace_stack_false(logbook_logger, logbook_handler):
+    logbook_handler.client.config.auto_log_stacks = True
+
+    with logbook_handler.applicationbound():
+        logbook_logger.warning("This is a test warning", stack=False)
 
     event = logbook_handler.client.events.pop(0)["errors"][0]
     assert "stacktrace" not in event["log"]
