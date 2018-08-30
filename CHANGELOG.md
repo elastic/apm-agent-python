@@ -6,6 +6,8 @@
 
  * added sanitization for `Set-Cookie` response headers (#264)
  * added instrumentation for the non-standard `Connection.execute()` method for SQLite3 (#271)
+ * added "authorization" to list of sensitive keywords, to ensure that "Authorization" 
+   HTTP headers are properly sanitized (#275)
 
 ## v3.0.0
 

@@ -17,7 +17,9 @@ from elasticapm.utils.encoding import force_text
 
 MASK = 8 * "*"
 
-SANITIZE_FIELD_NAMES = frozenset(["password", "secret", "passwd", "token", "api_key", "access_token", "sessionid"])
+SANITIZE_FIELD_NAMES = frozenset(
+    ["authorization", "password", "secret", "passwd", "token", "api_key", "access_token", "sessionid"]
+)
 
 SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
 
