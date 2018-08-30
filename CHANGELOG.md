@@ -9,6 +9,7 @@
  * added "authorization" to list of sensitive keywords, to ensure that "Authorization" 
    HTTP headers are properly sanitized (#275)
  * taught the Logbook handler how to handle the `stack=False` option (#278)
+ * fixed a race condition with managing the timer-send thread (#279)
 
 ## v3.0.0
 
