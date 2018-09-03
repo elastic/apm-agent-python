@@ -23,6 +23,7 @@ from copy import deepcopy
 
 import elasticapm
 from elasticapm.conf import Config, constants
+from elasticapm.conf.constants import ERROR
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
 from elasticapm.utils import compat, is_master_process, stacks, varmap
@@ -163,7 +164,7 @@ class Client(object):
 
         self.transaction_store = TransactionsStore(
             frames_collector_func=frames_collector_func,
-            queue_func=self._transport.queue,
+            queue_func=self.queue,
             collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
@@ -191,7 +192,7 @@ class Client(object):
 
         if data:
             # queue data, and flush the queue if this is an unhandled exception
-            self.queue("error", data, flush=not handled)
+            self.queue(ERROR, data, flush=not handled)
             return data["id"]
 
     def capture_message(self, message=None, param_message=None, **kwargs):
@@ -221,6 +222,10 @@ class Client(object):
     def queue(self, event_type, data, flush=False):
         if self.config.disable_send:
             return
+        # Run the data through processors
+        for processor in self.processors:
+            if not hasattr(processor, "event_types") or event_type in processor.event_types:
+                data = processor(self, data)
         self._transport.queue(event_type, data, flush)
 
     def sendd(self, url, **data):
@@ -446,10 +451,6 @@ class Client(object):
             context["custom"].update(custom)
         else:
             context["custom"] = custom
-
-        # Run the data through processors
-        for processor in self.processors:
-            event_data = processor(self, event_data)
 
         # Make sure all data is coerced
         event_data = transform(event_data)

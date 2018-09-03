@@ -5,6 +5,7 @@ import random
 import socket
 import time
 import zlib
+from collections import defaultdict
 
 import jsonschema
 import pytest
@@ -13,6 +14,7 @@ from werkzeug.wrappers import Request, Response
 
 import elasticapm
 from elasticapm.base import Client
+from elasticapm.transport.base import Transport
 
 try:
     from urllib.request import pathname2url
@@ -134,13 +136,23 @@ def sending_elasticapm_client(request, validating_httpserver):
     client.close()
 
 
+class DummyTransport(Transport):
+    def __init__(self, **kwargs):
+        super(DummyTransport, self).__init__(**kwargs)
+        self.events = defaultdict(list)
+
+    def queue(self, event_type, data, flush=False):
+        self.events[event_type].append(data)
+
+
 class TempStoreClient(Client):
     def __init__(self, **inline):
-        self.events = []
         super(TempStoreClient, self).__init__(**inline)
+        self._transport = DummyTransport()
 
-    def send(self, url, **kwargs):
-        self.events.append(kwargs)
+    @property
+    def events(self):
+        return self._transport.events
 
 
 @pytest.fixture()

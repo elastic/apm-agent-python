@@ -8,6 +8,7 @@ import timeit
 import uuid
 
 from elasticapm.conf import constants
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding, get_name_from_func
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
@@ -116,7 +117,7 @@ class Transaction(object):
 
         if not self.span_frames_min_duration or span.duration >= self.span_frames_min_duration:
             span.frames = self._frames_collector_func()[skip_frames:]
-        self._queue_func("span", span.to_dict())
+        self._queue_func(SPAN, span.to_dict())
         return span
 
     def to_dict(self):
@@ -277,7 +278,7 @@ class TransactionsStore(object):
                 return
             if transaction.result is None:
                 transaction.result = result
-            self._queue_func("transaction", transaction.to_dict())
+            self._queue_func(TRANSACTION, transaction.to_dict())
         return transaction
 
 
