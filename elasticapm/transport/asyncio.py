@@ -12,20 +12,20 @@ class AsyncioHTTPTransport(HTTPTransportBase):
     HTTP Transport ready for asyncio
     """
 
-    def __init__(self, parsed_url, **kwargs):
-        super(AsyncioHTTPTransport, self).__init__(parsed_url, **kwargs)
+    def __init__(self, url, **kwargs):
+        super(AsyncioHTTPTransport, self).__init__(url, **kwargs)
         loop = asyncio.get_event_loop()
         session_kwargs = {"loop": loop}
         if not self._verify_server_cert:
             session_kwargs["connector"] = aiohttp.TCPConnector(verify_ssl=False)
         self.client = aiohttp.ClientSession(**session_kwargs)
 
-    async def send(self, data, headers, timeout=None):
+    async def send(self, data, timeout=None):
         """Use synchronous interface, because this is a coroutine."""
 
         try:
             with async_timeout.timeout(timeout):
-                async with self.client.post(self._url, data=data, headers=headers) as response:
+                async with self.client.post(self._url, data=data, headers=self._headers) as response:
                     assert response.status == 202
         except asyncio.TimeoutError as e:
             print_trace = True

@@ -45,12 +45,14 @@ class Transaction(object):
     def __init__(
         self,
         frames_collector_func,
+        queue_func,
         transaction_type="custom",
         is_sampled=True,
         max_spans=None,
         span_frames_min_duration=None,
     ):
         self.id = str(uuid.uuid4())
+        self.trace_id = None  # for later use in distributed tracing
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
         self.name = None
@@ -58,6 +60,7 @@ class Transaction(object):
         self.result = None
         self.transaction_type = transaction_type
         self._frames_collector_func = frames_collector_func
+        self._queue_func = queue_func
 
         self.spans = []
         self.span_stack = []
@@ -92,7 +95,7 @@ class Transaction(object):
             return None
 
         start = _time_func() - self.start_time
-        span = Span(self._span_counter - 1, name, span_type, start, context)
+        span = Span(self._span_counter - 1, self.id, self.trace_id, name, span_type, start, context)
         self.span_stack.append(span)
         return span
 
@@ -113,14 +116,14 @@ class Transaction(object):
 
         if not self.span_frames_min_duration or span.duration >= self.span_frames_min_duration:
             span.frames = self._frames_collector_func()[skip_frames:]
-        self.spans.append(span)
-
+        self._queue_func("span", span.to_dict())
         return span
 
     def to_dict(self):
         self.context["tags"] = self.tags
         result = {
             "id": self.id,
+            "trace_id": self.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration * 1000,  # milliseconds
@@ -129,7 +132,6 @@ class Transaction(object):
             "sampled": self.is_sampled,
         }
         if self.is_sampled:
-            result["spans"] = [span_obj.to_dict() for span_obj in self.spans]
             result["context"] = self.context
 
         if self.dropped_spans:
@@ -138,9 +140,21 @@ class Transaction(object):
 
 
 class Span(object):
-    __slots__ = ("idx", "name", "type", "context", "leaf", "start_time", "duration", "parent", "frames")
+    __slots__ = (
+        "idx",
+        "transaction_id",
+        "trace_id",
+        "name",
+        "type",
+        "context",
+        "leaf",
+        "start_time",
+        "duration",
+        "parent",
+        "frames",
+    )
 
-    def __init__(self, idx, name, span_type, start_time, context=None, leaf=False):
+    def __init__(self, idx, transaction_id, trace_id, name, span_type, start_time, context=None, leaf=False):
         """
         Create a new Span
 
@@ -152,6 +166,8 @@ class Span(object):
         :param leaf: is this transaction a leaf transaction?
         """
         self.idx = idx
+        self.transaction_id = transaction_id
+        self.trace_id = trace_id
         self.name = name
         self.type = span_type
         self.context = context
@@ -163,7 +179,9 @@ class Span(object):
 
     def to_dict(self):
         result = {
-            "id": self.idx,
+            "id": compat.text_type(self.idx),
+            "transaction_id": self.transaction_id,
+            "trace_id": self.trace_id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "start": self.start_time * 1000,  # milliseconds
@@ -180,6 +198,7 @@ class TransactionsStore(object):
     def __init__(
         self,
         frames_collector_func,
+        queue_func,
         collect_frequency,
         sample_rate=1.0,
         max_spans=0,
@@ -191,6 +210,7 @@ class TransactionsStore(object):
         self.collect_frequency = collect_frequency
         self.max_queue_size = max_queue_size
         self.max_spans = max_spans
+        self._queue_func = queue_func
         self._frames_collector_func = frames_collector_func
         self._transactions = []
         self._last_collect = _time_func()
@@ -217,9 +237,7 @@ class TransactionsStore(object):
         return transactions
 
     def should_collect(self):
-        return (self.max_queue_size and len(self._transactions) >= self.max_queue_size) or (
-            _time_func() - self._last_collect
-        ) >= self.collect_frequency
+        return _time_func() - self._last_collect >= self.collect_frequency
 
     def __len__(self):
         with self.cond:
@@ -234,6 +252,7 @@ class TransactionsStore(object):
         is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(
             self._frames_collector_func,
+            self._queue_func,
             transaction_type,
             max_spans=self.max_spans,
             span_frames_min_duration=self.span_frames_min_duration,
@@ -258,7 +277,7 @@ class TransactionsStore(object):
                 return
             if transaction.result is None:
                 transaction.result = result
-            self.add_transaction(transaction.to_dict())
+            self._queue_func("transaction", transaction.to_dict())
         return transaction
 
 

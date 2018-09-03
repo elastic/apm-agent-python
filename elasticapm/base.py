@@ -19,16 +19,13 @@ import socket
 import sys
 import threading
 import time
-import zlib
 from copy import deepcopy
 
 import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.traces import TransactionsStore, get_transaction
 from elasticapm.transport.base import TransportException
-from elasticapm.utils import compat, is_master_process
-from elasticapm.utils import json_encoder as json
-from elasticapm.utils import stacks, varmap
+from elasticapm.utils import compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 
@@ -111,7 +108,6 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._send_timer = None
-        self._transports = {}
         self._service_info = None
 
         self.config = Config(config, inline_dict=inline)
@@ -120,7 +116,20 @@ class Client(object):
                 self.error_logger.error(msg)
             self.config.disable_send = True
 
-        self._transport_class = import_string(self.config.transport_class)
+        headers = {
+            "Content-Type": "application/x-ndjson",
+            "Content-Encoding": "gzip",
+            "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+        }
+
+        if self.config.secret_token:
+            headers["Authorization"] = "Bearer %s" % self.config.secret_token
+
+        self._transport = import_string(self.config.transport_class)(
+            compat.urlparse.urljoin(self.config.server_url, "/v2/intake"),
+            metadata=self._build_metadata(),
+            headers=headers,
+        )
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -154,6 +163,7 @@ class Client(object):
 
         self.transaction_store = TransactionsStore(
             frames_collector_func=frames_collector_func,
+            queue_func=self._transport.queue,
             collect_frequency=self.config.flush_interval,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
@@ -180,9 +190,9 @@ class Client(object):
         )
 
         if data:
-            url = self.config.server_url + constants.ERROR_API_PATH
-            self.send(url, **data)
-            return data["errors"][0]["id"]
+            # queue data, and flush the queue if this is an unhandled exception
+            self.queue("error", data, flush=not handled)
+            return data["id"]
 
     def capture_message(self, message=None, param_message=None, **kwargs):
         """
@@ -208,7 +218,12 @@ class Client(object):
         """
         return self.capture("Exception", exc_info=exc_info, handled=handled, **kwargs)
 
-    def send(self, url, **data):
+    def queue(self, event_type, data, flush=False):
+        if self.config.disable_send:
+            return
+        self._transport.queue(event_type, data, flush)
+
+    def sendd(self, url, **data):
         """
         Encodes and sends data to remote URL using configured transport
         :param url: URL of endpoint
@@ -219,35 +234,14 @@ class Client(object):
 
         payload = self.encode(data)
 
-        headers = {
-            "Content-Type": "application/json",
-            "Content-Encoding": "deflate",
-            "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
-        }
-
-        if self.config.secret_token:
-            headers["Authorization"] = "Bearer %s" % self.config.secret_token
-
         if not self.state.should_try():
             message = self._get_log_message(payload)
             self.error_logger.error(message)
             return
         try:
-            self._send_remote(url=url, data=payload, headers=headers)
+            self._send_remote(url=url, data=payload)
         except Exception as e:
             self.handle_transport_fail(exception=e)
-
-    def encode(self, data):
-        """
-        Serializes ``data`` into a raw string.
-        """
-        return zlib.compress(json.dumps(data).encode("utf8"))
-
-    def decode(self, data):
-        """
-        Unserializes a string, ``data``.
-        """
-        return json.loads(zlib.decompress(data).decode("utf8"))
 
     def begin_transaction(self, transaction_type):
         """Register the start of a transaction on the client
@@ -256,8 +250,6 @@ class Client(object):
 
     def end_transaction(self, name=None, result=""):
         transaction = self.transaction_store.end_transaction(result, name)
-        if self.transaction_store.should_collect():
-            self._collect_transactions()
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
             self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.flush_interval))
@@ -267,9 +259,7 @@ class Client(object):
         self._collect_transactions()
         if self._send_timer:
             self._stop_send_timer()
-        for url, transport in list(self._transports.items()):
-            transport.close()
-            self._transports.pop(url)
+        self._transport.close()
 
     def handle_transport_success(self, **kwargs):
         """
@@ -296,25 +286,12 @@ class Client(object):
 
     def _collect_transactions(self):
         self._stop_send_timer()
-        transactions = []
-        if self.transaction_store:
-            for transaction in self.transaction_store.get_all():
-                for processor in self.processors:
-                    transaction = processor(self, transaction)
-                transactions.append(transaction)
-        if not transactions:
-            return
-
-        data = self._build_msg({"transactions": transactions})
-
-        api_path = constants.TRANSACTIONS_API_PATH
-
-        self.send(self.config.server_url + api_path, **data)
+        self._transport.flush()
         self._start_send_timer()
 
     def _start_send_timer(self, timeout=None):
         timeout = timeout or self.config.flush_interval
-        self._send_timer = threading.Timer(timeout, self._collect_transactions)
+        self._send_timer = threading.Timer(timeout, self._transport.flush)
         self._send_timer.start()
 
     def _stop_send_timer(self):
@@ -378,13 +355,12 @@ class Client(object):
             "platform": platform.system().lower(),
         }
 
-    def _build_msg(self, data=None, **kwargs):
-        data = data or {}
-        data["service"] = self.get_service_info()
-        data["process"] = self.get_process_info()
-        data["system"] = self.get_system_info()
-        data.update(**kwargs)
-        return data
+    def _build_metadata(self):
+        return {
+            "service": self.get_service_info(),
+            "process": self.get_process_info(),
+            "system": self.get_system_info(),
+        }
 
     def _build_msg_for_logging(
         self, event_type, date=None, context=None, custom=None, stack=None, handled=True, **kwargs
@@ -486,7 +462,7 @@ class Client(object):
         if transaction:
             event_data["transaction"] = {"id": transaction.id}
 
-        return self._build_msg({"errors": [event_data]})
+        return event_data
 
     def _filter_exception_type(self, data):
         exception = data.get("exception")
