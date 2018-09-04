@@ -3,13 +3,14 @@ import os
 import platform
 import sys
 import time
+from collections import defaultdict
 
 import mock
 import pytest
 
 import elasticapm
 from elasticapm.base import Client, ClientState
-from elasticapm.conf.constants import KEYWORD_MAX_LENGTH
+from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
 from elasticapm.transport.base import Transport
 from elasticapm.utils import compat, encoding
 
@@ -123,7 +124,7 @@ def test_config_non_string_types():
     "elasticapm_client", [{"transport_class": "tests.client.client_tests.DummyTransport"}], indirect=True
 )
 def test_custom_transport(elasticapm_client):
-    assert elasticapm_client._transport_class == DummyTransport
+    assert isinstance(elasticapm_client._transport, DummyTransport)
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"processors": []}], indirect=True)
@@ -272,13 +273,6 @@ def test_client_shutdown_async(mock_traces_collect, sending_elasticapm_client):
     assert len(sending_elasticapm_client._transports) == 0
 
 
-def test_encode_decode(elasticapm_client):
-    data = {"foo": "bar"}
-    encoded = elasticapm_client.encode(data)
-    assert isinstance(encoded, compat.binary_type)
-    assert data == elasticapm_client.decode(encoded)
-
-
 def test_explicit_message_on_exception_event(elasticapm_client):
     try:
         raise ValueError("foo")
@@ -286,7 +280,7 @@ def test_explicit_message_on_exception_event(elasticapm_client):
         elasticapm_client.capture("Exception", message="foobar")
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     assert event["exception"]["message"] == "foobar"
 
 
@@ -305,7 +299,7 @@ def test_exception_event(elasticapm_client):
         elasticapm_client.capture("Exception")
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     assert "exception" in event
     exc = event["exception"]
     assert exc["message"] == "ValueError: foo"
@@ -344,7 +338,7 @@ def test_message_event(elasticapm_client):
     elasticapm_client.capture("Message", message="test")
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "test"
     assert "stacktrace" not in event
     assert "timestamp" in event
@@ -366,7 +360,7 @@ def test_param_message_event(elasticapm_client):
     elasticapm_client.capture("Message", param_message={"message": "test %s %d", "params": ("x", 1)})
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "test x 1"
     assert event["log"]["param_message"] == "test %s %d"
 
@@ -375,7 +369,7 @@ def test_message_with_percent(elasticapm_client):
     elasticapm_client.capture("Message", message="This works 100% of the time")
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "This works 100% of the time"
     assert event["log"]["param_message"] == "This works 100% of the time"
 
@@ -384,7 +378,7 @@ def test_logger(elasticapm_client):
     elasticapm_client.capture("Message", message="test", logger_name="test")
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     assert event["log"]["logger_name"] == "test"
     assert "timestamp" in event
 
@@ -442,7 +436,7 @@ def test_ignore_patterns(should_collect, elasticapm_client):
     elasticapm_client.begin_transaction("web")
     elasticapm_client.end_transaction("GET views.users", 200)
 
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
 
     assert len(transactions) == 1
     assert transactions[0]["name"] == "GET views.users"
@@ -516,7 +510,7 @@ def test_collect_local_variables_errors(elasticapm_client):
         1 / 0
     except ZeroDivisionError:
         elasticapm_client.capture_exception()
-    event = elasticapm_client.events[0]["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     if mode in ("errors", "all"):
         assert "vars" in event["exception"]["stacktrace"][0], mode
     else:
@@ -541,7 +535,7 @@ def test_collect_source_errors(elasticapm_client):
         json.dumps(datetime.datetime.now())
     except TypeError:
         elasticapm_client.capture_exception()
-    event = elasticapm_client.events[0]["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
     in_app_frame = event["exception"]["stacktrace"][0]
     library_frame = event["exception"]["stacktrace"][1]
     assert not in_app_frame["library_frame"]
@@ -589,8 +583,7 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
         a_long_local_list = list(range(100))
         pass
     elasticapm_client.end_transaction("test", "ok")
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    frame = transaction["spans"][0]["stacktrace"][0]
+    frame = elasticapm_client.events[SPAN][0]["stacktrace"][0]
     if mode in ("transactions", "all"):
         assert "vars" in frame, mode
         assert frame["vars"]["a_local_var"] == 1
@@ -619,9 +612,9 @@ def test_collect_source_transactions(should_collect, elasticapm_client):
     with elasticapm.capture_span("foo"):
         pass
     elasticapm_client.end_transaction("test", "ok")
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    in_app_frame = transaction["spans"][0]["stacktrace"][0]
-    library_frame = transaction["spans"][0]["stacktrace"][1]
+    span = elasticapm_client.events[SPAN][0]
+    in_app_frame = span["stacktrace"][0]
+    library_frame = span["stacktrace"][1]
     assert not in_app_frame["library_frame"]
     assert library_frame["library_frame"]
     if library_frame_context:
@@ -653,10 +646,10 @@ def test_transaction_id_is_attached(elasticapm_client):
     transaction = elasticapm_client.end_transaction("test", "test")
     elasticapm_client.capture_message("noid")
 
-    errors = elasticapm_client.events
-    assert "transaction" not in errors[0]["errors"][0]
-    assert errors[1]["errors"][0]["transaction"]["id"] == transaction.id
-    assert "transaction" not in errors[2]["errors"][0]
+    errors = elasticapm_client.events[ERROR]
+    assert "transaction" not in errors[0]
+    assert errors[1]["transaction"]["id"] == transaction.id
+    assert "transaction" not in errors[2]
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_sample_rate": 0.4}], indirect=True)
@@ -669,12 +662,15 @@ def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
             pass
         elasticapm_client.end_transaction("test")
 
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans_per_transaction = defaultdict(list)
+    for span in elasticapm_client.events[SPAN]:
+        spans_per_transaction[span["transaction_id"]].append(span)
 
     # seed is fixed by not_so_random fixture
     assert len([t for t in transactions if t["sampled"]]) == 5
     for transaction in transactions:
-        assert transaction["sampled"] or not "spans" in transaction
+        assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
         assert transaction["sampled"] or not "context" in transaction
 
 
@@ -691,12 +687,14 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
             pass
     transaction_obj = elasticapm_client.end_transaction("test")
 
-    transaction = elasticapm_client.transaction_store.get_all()[0]
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.events[SPAN]
+    assert all(span["transaction_id"] == transaction["id"] for span in spans)
 
     assert transaction_obj.max_spans == 5
     assert transaction_obj.dropped_spans == 10
-    assert len(transaction["spans"]) == 5
-    for span in transaction["spans"]:
+    assert len(spans) == 5
+    for span in spans:
         assert span["name"] == "nodrop"
     assert transaction["span_count"] == {"dropped": {"total": 10}}
 
@@ -712,8 +710,7 @@ def test_transaction_span_frames_min_duration(should_collect, elasticapm_client)
         time.sleep(0.040)
     elasticapm_client.end_transaction("test")
 
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    spans = transaction["spans"]
+    spans = elasticapm_client.events[SPAN]
 
     assert len(spans) == 2
     assert spans[0]["name"] == "noframes"
@@ -734,8 +731,7 @@ def test_transaction_span_frames_min_duration_no_limit(should_collect, elasticap
         time.sleep(0.040)
     elasticapm_client.end_transaction("test")
 
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    spans = transaction["spans"]
+    spans = elasticapm_client.events[SPAN]
 
     assert len(spans) == 2
     assert spans[0]["name"] == "frames"
@@ -766,11 +762,12 @@ def test_transaction_max_span_nested(should_collect, elasticapm_client):
         pass
     transaction_obj = elasticapm_client.end_transaction("test")
 
-    transaction = elasticapm_client.transaction_store.get_all()[0]
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.events[SPAN]
 
     assert transaction_obj.dropped_spans == 6
-    assert len(transaction["spans"]) == 3
-    for span in transaction["spans"]:
+    assert len(spans) == 3
+    for span in spans:
         assert span["name"] in ("1", "2", "3")
     assert transaction["span_count"] == {"dropped": {"total": 6}}
 
@@ -782,7 +779,7 @@ def test_transaction_context_is_used_in_errors(elasticapm_client):
     elasticapm.set_user_context(username="foo", email="foo@example.com", user_id=42)
     elasticapm_client.capture_message("x", custom={"foo": "bar"})
     transaction = elasticapm_client.end_transaction("test", "OK")
-    message = elasticapm_client.events[0]["errors"][0]
+    message = elasticapm_client.events[ERROR][0]
     assert message["context"]["custom"] == {"a": "b", "foo": "bar"}
     assert message["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
     assert message["context"]["tags"] == {"foo": "baz"}

@@ -11,6 +11,7 @@ import mock
 import pytest
 
 from conftest import BASE_TEMPLATE_DIR
+from elasticapm.conf.constants import TRANSACTION
 from tests.utils.compat import middleware_setting
 
 try:
@@ -37,10 +38,10 @@ def test_template_rendering(should_collect, instrument, django_elasticapm_client
         client.get(reverse("render-heavy-template"))
         client.get(reverse("render-heavy-template"))
 
-    transactions = django_elasticapm_client.transaction_store.get_all()
+    transactions = django_elasticapm_client.events[TRANSACTION]
 
     assert len(transactions) == 3
-    spans = transactions[0]["spans"]
+    spans = django_elasticapm_client.spans_for_transaction(transactions[0])
     assert len(spans) == 2, [t["name"] for t in spans]
 
     kinds = ["code", "template.django"]
@@ -67,10 +68,10 @@ def test_template_rendering_django18_jinja2(should_collect, instrument, django_e
         client.get(reverse("render-jinja2-template"))
         client.get(reverse("render-jinja2-template"))
 
-    transactions = django_elasticapm_client.transaction_store.get_all()
+    transactions = django_elasticapm_client.events[TRANSACTION]
 
     assert len(transactions) == 3
-    spans = transactions[0]["spans"]
+    spans = django_elasticapm_client.spans_for_transaction(transactions[0])
     assert len(spans) == 1, [t["name"] for t in spans]
 
     kinds = ["template.jinja2"]

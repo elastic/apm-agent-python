@@ -4,15 +4,11 @@ import pytest
 
 from elasticapm.contrib.django.apps import instrument, register_handlers
 from elasticapm.contrib.django.client import DjangoClient
+from tests.fixtures import TempStoreClient as TempStoreClientBase
 
 
-class TempStoreClient(DjangoClient):
-    def __init__(self, *args, **kwargs):
-        self.events = []
-        super(TempStoreClient, self).__init__(*args, **kwargs)
-
-    def send(self, url, **kwargs):
-        self.events.append(kwargs)
+class TempStoreClient(TempStoreClientBase, DjangoClient):
+    pass
 
 
 @pytest.fixture()

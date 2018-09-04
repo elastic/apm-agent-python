@@ -1,6 +1,7 @@
 import mock
 import urllib3
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
 
@@ -21,8 +22,8 @@ def test_urllib3(should_collect, instrument, elasticapm_client, waiting_httpserv
 
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"test_pipeline", expected_sig}
 

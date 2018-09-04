@@ -5,6 +5,8 @@ import pytest
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
+from elasticapm.conf.constants import TRANSACTION
+
 
 @pytest.fixture()
 def jinja_env():
@@ -21,8 +23,8 @@ def test_from_file(should_collect, instrument, jinja_env, elasticapm_client):
     template.render()
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"mytemplate.html"}
 
@@ -38,8 +40,8 @@ def test_from_string(instrument, elasticapm_client):
     template.render()
     elasticapm_client.end_transaction("test")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"<template>"}
 

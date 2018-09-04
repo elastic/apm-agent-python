@@ -6,6 +6,7 @@ import requests
 from requests.exceptions import InvalidURL, MissingSchema
 from urllib3_mock import Responses
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
 try:
@@ -31,8 +32,8 @@ def test_requests_instrumentation(instrument, elasticapm_client):
         requests.get("http://example.com", allow_redirects=False)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert "GET example.com" == spans[0]["name"]
     assert "http://example.com/" == spans[0]["context"]["url"]
 
@@ -44,8 +45,8 @@ def test_requests_instrumentation_via_session(instrument, elasticapm_client):
         s.get("http://example.com", allow_redirects=False)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert "GET example.com" == spans[0]["name"]
     assert "http://example.com/" == spans[0]["context"]["url"]
 
@@ -59,8 +60,8 @@ def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_cl
         s.send(pr, allow_redirects=False)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert "GET example.com" == spans[0]["name"]
     assert "http://example.com/" == spans[0]["context"]["url"]
 

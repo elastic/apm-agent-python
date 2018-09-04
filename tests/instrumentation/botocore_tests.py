@@ -1,11 +1,11 @@
-import pytest  # isort:skip
-
-pytest.importorskip("boto3")  # isort:skip
-
-import boto3
 import mock
+import pytest
 
+from elasticapm.conf.constants import SPAN
 from elasticapm.instrumentation.packages.botocore import BotocoreInstrumentation
+
+boto3 = pytest.importorskip("boto3")
+
 
 pytestmark = pytest.mark.boto3
 
@@ -20,8 +20,8 @@ def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_clie
     session = boto3.Session(aws_access_key_id="foo", aws_secret_access_key="bar", region_name="us-west-2")
     ec2 = session.client("ec2")
     ec2.describe_instances()
-    transaction = elasticapm_client.end_transaction("MyView")
-    span = transaction.spans[0]
+    elasticapm_client.end_transaction("MyView")
+    span = elasticapm_client.events[SPAN][0]
 
     assert span.name == "ec2:DescribeInstances"
     assert span.context["service"] == "ec2"
@@ -36,7 +36,7 @@ def test_nonstandard_endpoint_url(instrument, elasticapm_client):
     instance = mock.Mock(_endpoint=mock.Mock(host="https://example"))
     instrument.call(module, method, lambda *args, **kwargs: None, instance, ("DescribeInstances",), {})
     transaction = elasticapm_client.end_transaction("test", "test")
-    span = transaction.spans[0]
+    span = elasticapm_client.events[SPAN][0]
 
     assert span.name == "example:DescribeInstances"
     assert span.context["service"] == "example"

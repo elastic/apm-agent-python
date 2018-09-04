@@ -14,6 +14,7 @@ from werkzeug.wrappers import Request, Response
 
 import elasticapm
 from elasticapm.base import Client
+from elasticapm.conf.constants import SPAN
 from elasticapm.transport.base import Transport
 
 try:
@@ -153,6 +154,10 @@ class TempStoreClient(Client):
     @property
     def events(self):
         return self._transport.events
+
+    def spans_for_transaction(self, transaction):
+        """Test helper method to get all spans of a specific transaction"""
+        return [span for span in self.events[SPAN] if span["transaction_id"] == transaction["id"]]
 
 
 @pytest.fixture()
