@@ -68,11 +68,9 @@ def test_proxy_responds_as_client():
 
 def test_basic(django_elasticapm_client):
     config = {"APP_ID": "key", "ORGANIZATION_ID": "org", "SECRET_TOKEN": "99"}
-    event_count = len(django_elasticapm_client.events)
     with override_settings(ELASTIC_APM=config):
         django_elasticapm_client.capture("Message", message="foo")
-        assert len(django_elasticapm_client.events) == event_count + 1
-        django_elasticapm_client.events.pop(0)
+        assert len(django_elasticapm_client.events[ERROR]) == 1
 
 
 def test_basic_django(django_elasticapm_client):
@@ -142,7 +140,7 @@ def test_user_info(django_elasticapm_client, client):
     with pytest.raises(Exception):
         client.get(reverse("elasticapm-raise-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert "user" in event["context"]
     user_info = event["context"]["user"]
@@ -318,7 +316,8 @@ def test_broken_500_handler_with_middleware(django_elasticapm_client, client):
             with pytest.raises(Exception):
                 client.get(reverse("elasticapm-raise-exc"))
 
-        assert len(django_elasticapm_client.events) == 2
+        assert len(django_elasticapm_client.events[ERROR]) == 2
+
         event = django_elasticapm_client.events[ERROR][0]
 
         assert "exception" in event
@@ -327,7 +326,7 @@ def test_broken_500_handler_with_middleware(django_elasticapm_client, client):
         assert exc["message"] == "MyException: view exception"
         assert event["culprit"] == "tests.contrib.django.testapp.views.raise_exc"
 
-        event = django_elasticapm_client.events[ERROR][0]
+        event = django_elasticapm_client.events[ERROR][1]
 
         assert "exception" in event
         exc = event["exception"]
@@ -656,7 +655,11 @@ def test_transaction_request_response_data(django_elasticapm_client, client):
     assert "response" in transaction["context"]
     response = transaction["context"]["response"]
     assert response["status_code"] == 200
-    assert response["headers"]["my-header"] == "foo"
+    if "my-header" in response["headers"]:
+        # Django >= 2
+        assert response["headers"]["my-header"] == "foo"
+    else:
+        assert response["headers"]["My-Header"] == "foo"
 
 
 def test_transaction_metrics(django_elasticapm_client, client):
@@ -1304,11 +1307,11 @@ def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
 def test_capture_post_errors_dict(client, django_elasticapm_client):
     with pytest.raises(MyException):
         client.post(reverse("elasticapm-raise-exc"), {"username": "john", "password": "smith"})
-    error = django_elasticapm_client.events[0]
+    error = django_elasticapm_client.events[ERROR][0]
     if django_elasticapm_client.config.capture_body in ("errors", "all"):
-        assert error["errors"][0]["context"]["request"]["body"] == {"username": "john", "password": "smith"}
+        assert error["context"]["request"]["body"] == {"username": "john", "password": "smith"}
     else:
-        assert error["errors"][0]["context"]["request"]["body"] == "[REDACTED]"
+        assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
 @pytest.mark.parametrize(
@@ -1323,14 +1326,11 @@ def test_capture_post_errors_multivalue_dict(client, django_elasticapm_client):
             "key=value1&key=value2&test=test&key=value3",
             content_type="application/x-www-form-urlencoded",
         )
-    error = django_elasticapm_client.events[0]
+    error = django_elasticapm_client.events[ERROR][0]
     if django_elasticapm_client.config.capture_body in ("errors", "all"):
-        assert error["errors"][0]["context"]["request"]["body"] == {
-            "key": ["value1", "value2", "value3"],
-            "test": "test",
-        }
+        assert error["context"]["request"]["body"] == {"key": ["value1", "value2", "value3"], "test": "test"}
     else:
-        assert error["errors"][0]["context"]["request"]["body"] == "[REDACTED]"
+        assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
 @pytest.mark.parametrize(
@@ -1346,9 +1346,9 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
         )
     error = django_sending_elasticapm_client.httpserver.payloads[0]
     if django_sending_elasticapm_client.config.capture_body in ("errors", "all"):
-        assert error["errors"][0]["context"]["request"]["body"] == '{"a": "b"}'
+        assert error["context"]["request"]["body"] == '{"a": "b"}'
     else:
-        assert error["errors"][0]["context"]["request"]["body"] == "[REDACTED]"
+        assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
 @pytest.mark.parametrize(
@@ -1359,9 +1359,9 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
 def test_capture_empty_body(client, django_elasticapm_client):
     with pytest.raises(MyException):
         client.post(reverse("elasticapm-raise-exc"), data={})
-    error = django_elasticapm_client.events[0]
+    error = django_elasticapm_client.events[ERROR][0]
     # body should be empty no matter if we capture it or not
-    assert error["errors"][0]["context"]["request"]["body"] == {}
+    assert error["context"]["request"]["body"] == {}
 
 
 @pytest.mark.parametrize(
@@ -1374,14 +1374,11 @@ def test_capture_files(client, django_elasticapm_client):
         client.post(
             reverse("elasticapm-raise-exc"), data={"a": "b", "f1": compat.BytesIO(100 * compat.b("1")), "f2": f}
         )
-    error = django_elasticapm_client.events[0]
+    error = django_elasticapm_client.events[ERROR][0]
     if django_elasticapm_client.config.capture_body in ("errors", "all"):
-        assert error["errors"][0]["context"]["request"]["body"] == {
-            "a": "b",
-            "_files": {"f1": "f1", "f2": "django_tests.py"},
-        }
+        assert error["context"]["request"]["body"] == {"a": "b", "_files": {"f1": "f1", "f2": "django_tests.py"}}
     else:
-        assert error["errors"][0]["context"]["request"]["body"] == "[REDACTED]"
+        assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "transactions"}], indirect=True)

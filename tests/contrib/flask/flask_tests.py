@@ -252,8 +252,9 @@ def test_streaming_response(flask_apm_client):
     assert resp.data == b"01234"
     resp.close()
     transaction = flask_apm_client.client.events[TRANSACTION][0]
+    spans = flask_apm_client.client.spans_for_transaction(transaction)
     assert transaction["duration"] > 50
-    assert len(transaction["spans"]) == 5
+    assert len(spans) == 5
 
 
 def test_response_close_wsgi(flask_wsgi_server):
@@ -263,8 +264,9 @@ def test_response_close_wsgi(flask_wsgi_server):
     response = urlopen(url)
     response.read()
     transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
     assert transaction["duration"] > 50
-    assert len(transaction["spans"]) == 5
+    assert len(spans) == 5
 
 
 def test_set_transaction_name(flask_apm_client):
