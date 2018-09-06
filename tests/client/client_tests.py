@@ -701,7 +701,7 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
     assert transaction["span_count"] == {"dropped": {"total": 10}}
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration_ms": 20}], indirect=True)
+@pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
 @mock.patch("elasticapm.base.TransactionsStore.should_collect")
 def test_transaction_span_frames_min_duration(should_collect, elasticapm_client):
     should_collect.return_value = False
