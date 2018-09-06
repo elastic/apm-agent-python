@@ -20,16 +20,25 @@ download_schema()
 
 # parent directory
 basedir=$(dirname "$0")/..
+branch="v2"
 
 FILES=( \
-    "errors/error.json" \
-    "errors/payload.json" \
+    "errors/common_error.json" \
+    "errors/v1_error.json" \
+    "errors/v2_error.json" \
     "sourcemaps/payload.json" \
+    "metrics/metric.json" \
+    "metrics/payload.json" \
+    "metrics/sample.json" \
+    "spans/common_span.json" \
+    "spans/v1_span.json" \
+    "spans/v2_span.json" \
+    "transactions/common_transaction.json" \
     "transactions/mark.json" \
-    "transactions/payload.json" \
-    "transactions/span.json" \
-    "transactions/transaction.json" \
+    "transactions/v1_transaction.json" \
+    "transactions/v2_transaction.json" \
     "context.json" \
+    "metadata.json" \
     "process.json" \
     "request.json" \
     "service.json" \
@@ -39,9 +48,9 @@ FILES=( \
     "user.json" \
 )
 
-mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/sourcemaps
+mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/spans ${basedir}/.schemacache/metrics ${basedir}/.schemacache/sourcemaps
 
 for i in "${FILES[@]}"; do
-    download_schema https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} ${basedir}/.schemacache/${i}
+    download_schema https://raw.githubusercontent.com/elastic/apm-server/${branch}/docs/spec/${i} ${basedir}/.schemacache/${i}
 done
 echo "Done."
