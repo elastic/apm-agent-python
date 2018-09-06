@@ -125,11 +125,14 @@ class Client(object):
 
         if self.config.secret_token:
             headers["Authorization"] = "Bearer %s" % self.config.secret_token
-
+        transport_kwargs = {
+            "metadata": self._build_metadata(),
+            "headers": headers,
+            "verify_server_cert": self.config.verify_server_cert,
+            "timeout": self.config.server_timeout,
+        }
         self._transport = import_string(self.config.transport_class)(
-            compat.urlparse.urljoin(self.config.server_url, "/v2/intake"),
-            metadata=self._build_metadata(),
-            headers=headers,
+            compat.urlparse.urljoin(self.config.server_url, "/v2/intake"), **transport_kwargs
         )
 
         for exc_to_filter in self.config.filter_exception_types or []:

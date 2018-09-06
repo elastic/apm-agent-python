@@ -13,6 +13,7 @@ from elasticapm.base import Client, ClientState
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
 from elasticapm.transport.base import Transport
 from elasticapm.utils import compat, encoding
+from tests.fixtures import DummyTransport
 
 
 def test_client_state_should_try_online():
@@ -53,11 +54,6 @@ def test_client_state_set_success():
     assert state.status == state.ONLINE
     assert state.last_check is None
     assert state.retry_number == 0
-
-
-class DummyTransport(Transport):
-    def send(self, data, headers):
-        pass
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"environment": "production"}], indirect=True)
@@ -120,9 +116,7 @@ def test_config_non_string_types():
     client.close()
 
 
-@pytest.mark.parametrize(
-    "elasticapm_client", [{"transport_class": "tests.client.client_tests.DummyTransport"}], indirect=True
-)
+@pytest.mark.parametrize("elasticapm_client", [{"transport_class": "tests.fixtures.DummyTransport"}], indirect=True)
 def test_custom_transport(elasticapm_client):
     assert isinstance(elasticapm_client._transport, DummyTransport)
 
@@ -421,7 +415,7 @@ def test_client_uses_sync_mode_when_master_process(is_master_process):
 @pytest.mark.parametrize("elasticapm_client", [{"verify_server_cert": False}], indirect=True)
 def test_client_disables_ssl_verification(elasticapm_client):
     assert not elasticapm_client.config.verify_server_cert
-    assert not elasticapm_client._get_transport(compat.urlparse.urlparse("https://example.com"))._verify_server_cert
+    assert not elasticapm_client._transport._verify_server_cert
 
 
 @pytest.mark.parametrize(

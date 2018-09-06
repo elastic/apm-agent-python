@@ -1084,47 +1084,11 @@ def test_perf_database_render_no_instrumentation(benchmark, django_elasticapm_cl
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    "django_elasticapm_client", [{"_wait_to_first_send": 100, "flush_interval": 100}], indirect=True
-)
-def test_perf_transaction_with_collection(benchmark, django_elasticapm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        django_elasticapm_client.events = []
-
-        client = _TestClient()
-
-        with override_settings(
-            **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-        ):
-            for i in range(10):
-                resp = client_get(client, reverse("render-user-template"))
-                assert resp.status_code == 200
-
-        assert len(django_elasticapm_client.events[TRANSACTION]) == 0
-
-        # Force collection on next request
-        should_collect.return_value = True
-
-        @benchmark
-        def result():
-            # Code to be measured
-            with override_settings(
-                **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-            ):
-                return client_get(client, reverse("render-user-template"))
-
-        assert result.status_code is 200
-        assert len(django_elasticapm_client.events) > 0
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("django_elasticapm_client", [{"_wait_to_first_send": 100}], indirect=True)
 def test_perf_transaction_without_middleware(benchmark, django_elasticapm_client):
     with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
         should_collect.return_value = False
         client = _TestClient()
-        django_elasticapm_client.events = []
         for i in range(10):
             resp = client_get(client, reverse("render-user-template"))
             assert resp.status_code == 200
