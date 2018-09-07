@@ -78,6 +78,6 @@ Another option to reduce overhead of collecting contextual data for spans is to 
 While this contextual data (specifically, the stack trace) can be very useful to pinpoint where exectly the span is caused in your code,
 it is less interesting for very short spans.
 You can define a minimal threshold for span duration in milliseconds,
-using the <<config-span-frames-min-duration,`span_frames_min_duration_ms`>> setting.
+using the <<config-span-frames-min-duration,`span_frames_min_duration`>> setting.
 If a span takes less than this duration, no stack frames will be collected for this span.
 Other contextual information, like the SQL query, will still be available.
