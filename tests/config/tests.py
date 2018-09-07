@@ -4,7 +4,17 @@ import logging
 
 import mock
 
-from elasticapm.conf import Config, _BoolConfigValue, _ConfigBase, _ConfigValue, _ListConfigValue, setup_logging
+from elasticapm.conf import (
+    Config,
+    RegexValidator,
+    _BoolConfigValue,
+    _ConfigBase,
+    _ConfigValue,
+    _ListConfigValue,
+    duration_validator,
+    setup_logging,
+    size_validator,
+)
 
 
 def test_basic_not_configured():
@@ -131,3 +141,51 @@ def test_values_not_shared_among_instances():
     c2 = MyConfig({"MY_BOOL": "nope"})
 
     assert c1.my_bool is not c2.my_bool
+
+
+def test_regex_validation():
+    class MyConfig(_ConfigBase):
+        my_regex = _ConfigValue("MY_REGEX", validators=[RegexValidator("\d+")])
+
+    c1 = MyConfig({"MY_REGEX": "123"})
+    c2 = MyConfig({"MY_REGEX": "abc"})
+    assert not c1.errors
+    assert "MY_REGEX" in c2.errors
+
+
+def test_size_validation():
+    class MyConfig(_ConfigBase):
+        byte = _ConfigValue("BYTE", type=int, validators=[size_validator])
+        kbyte = _ConfigValue("KBYTE", type=int, validators=[size_validator])
+        mbyte = _ConfigValue("MBYTE", type=int, validators=[size_validator])
+        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[size_validator])
+
+    c = MyConfig({"BYTE": "10b", "KBYTE": "5kib", "MBYTE": "17mib", "WRONG_PATTERN": "5 kb"})
+    assert c.byte == 10
+    assert c.kbyte == 5 * 1024
+    assert c.mbyte == 17 * 1024 * 1024
+    assert c.wrong_pattern is None
+    assert "WRONG_PATTERN" in c.errors
+
+
+def test_duration_validation():
+    class MyConfig(_ConfigBase):
+        millisecond = _ConfigValue("MS", type=int, validators=[duration_validator])
+        second = _ConfigValue("S", type=int, validators=[duration_validator])
+        minute = _ConfigValue("M", type=int, validators=[duration_validator])
+        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[duration_validator])
+
+    c = MyConfig({"MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
+    assert c.millisecond == -10
+    assert c.second == 5 * 1000
+    assert c.minute == 17 * 1000 * 60
+    assert c.wrong_pattern is None
+    assert "WRONG_PATTERN" in c.errors
+
+
+def test_chained_validators():
+    class MyConfig(_ConfigBase):
+        chained = _ConfigValue("CHAIN", validators=[lambda val, field: val.upper(), lambda val, field: val * 2])
+
+    c = MyConfig({"CHAIN": "x"})
+    assert c.chained == "XX"
