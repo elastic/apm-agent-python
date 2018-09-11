@@ -26,7 +26,7 @@ any Python application.
 Read the documentation_.
 
 .. _documentation: https://www.elastic.co/guide/en/apm/agent/python/current/index.html
-.. _integrations: https://www.elastic.co/blog/creating-custom-framework-integrations-with-the-elastic-apm-python-agent
+.. _`custom integrations`: https://www.elastic.co/blog/creating-custom-framework-integrations-with-the-elastic-apm-python-agent
 
 License
 -------
