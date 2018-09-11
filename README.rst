@@ -17,8 +17,8 @@ elastic-apm -- Elastic APM agent for Python
 This is the official Python module for Elastic APM.
 
 It provides full out-of-the-box support for many of the popular frameworks,
-including Django, and Flask. Elastic APM also includes drop-in support for any
-WSGI-compatible web application.
+including Django, and Flask. Elastic APM is also easy to adapt for most
+WSGI-compatible web applications via `custom integrations`_.
 
 Your application doesn't live on the web? No problem! Elastic APM is easy to use in
 any Python application.
@@ -26,6 +26,7 @@ any Python application.
 Read the documentation_.
 
 .. _documentation: https://www.elastic.co/guide/en/apm/agent/python/current/index.html
+.. _integrations: https://www.elastic.co/blog/creating-custom-framework-integrations-with-the-elastic-apm-python-agent
 
 License
 -------
