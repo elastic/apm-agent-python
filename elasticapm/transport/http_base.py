@@ -58,5 +58,6 @@ class AsyncHTTPTransportBase(AsyncTransport, HTTPTransportBase):
         self.worker.queue(self.send_sync, {"data": data})
 
     def close(self):
+        super(AsyncHTTPTransportBase, self).close()
         if self._worker:
             self._worker.main_thread_terminated()

@@ -17,6 +17,7 @@ import elasticapm
 from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
 from elasticapm.transport.http_base import HTTPTransportBase
+from elasticapm.utils import compat
 
 try:
     from urllib.request import pathname2url
@@ -72,13 +73,12 @@ with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
 
 class ValidatingWSGIApp(ContentServer):
     def __init__(self, **kwargs):
+        self.skip_validate = kwargs.pop("skip_validate", False)
         super(ValidatingWSGIApp, self).__init__(**kwargs)
         self.payloads = []
         self.responses = []
-        self.skip_validate = False
 
     def __call__(self, environ, start_response):
-        code = self.code
         content = self.content
         request = Request(environ)
         self.requests.append(request)
@@ -86,23 +86,25 @@ class ValidatingWSGIApp(ContentServer):
         if request.content_encoding == "deflate":
             data = zlib.decompress(data)
         elif request.content_encoding == "gzip":
-            data = gzip.decompress(data)
+            with gzip.GzipFile(fileobj=compat.BytesIO(data)) as f:
+                data = f.read()
         data = data.decode(request.charset)
         if request.content_type == "application/x-ndjson":
-            data = [json.loads(line) for line in data.split("\n")]
+            data = [json.loads(line) for line in data.split("\n") if line]
         self.payloads.append(data)
-        code = None
+        code = 202
         success = 0
         fail = 0
         if not self.skip_validate:
             for line in data:
-                item_type, item = line.items()[0]
+                item_type, item = list(line.items())[0]
                 validator = VALIDATORS[item_type]
                 try:
                     validator.validate(item)
                     success += 1
                 except jsonschema.ValidationError as e:
                     fail += 1
+            code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()
         response.headers.extend(self.headers)
@@ -137,7 +139,8 @@ def waiting_httpsserver(httpsserver):
 
 @pytest.fixture()
 def validating_httpserver(request):
-    server = ValidatingWSGIApp()
+    config = getattr(request, "param", {})
+    server = ValidatingWSGIApp(**config)
     server.start()
     wait_for_http_server(server)
     request.addfinalizer(server.stop)

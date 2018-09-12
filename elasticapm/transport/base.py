@@ -63,7 +63,8 @@ class Transport(object):
             if queued_data:
                 fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
                 queued_data.close()
-                data = fileobj.getbuffer()
+                # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
+                data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
                 if hasattr(self, "send_async") and not sync:
                     self.send_async(data)
                 else:
@@ -82,7 +83,7 @@ class Transport(object):
         Cleans up resources and closes connection
         :return:
         """
-        pass
+        self.flush(sync=True)
 
 
 class AsyncTransport(Transport):

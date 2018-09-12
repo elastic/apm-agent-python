@@ -154,8 +154,8 @@ def test_user_info(django_elasticapm_client, client):
     with pytest.raises(Exception):
         client.get(reverse("elasticapm-raise-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
-    event = django_elasticapm_client.events[ERROR][0]
+    assert len(django_elasticapm_client.events[ERROR]) == 2
+    event = django_elasticapm_client.events[ERROR][1]
     assert "user" in event["context"]
     user_info = event["context"]["user"]
     assert "is_authenticated" in user_info
@@ -857,7 +857,7 @@ def test_filter_matches_type_but_not_module(django_sending_elasticapm_client):
     try:
         raise FakeException("foo")
     except FakeException:
-        django_sending_elasticapm_client.capture("Exception")
+        django_sending_elasticapm_client.capture("Exception", handled=False)
 
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
@@ -873,7 +873,7 @@ def test_filter_matches_type_and_module(django_sending_elasticapm_client):
     try:
         raise FakeException("foo")
     except FakeException:
-        django_sending_elasticapm_client.capture("Exception")
+        django_sending_elasticapm_client.capture("Exception", handled=False)
 
     assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
@@ -889,7 +889,7 @@ def test_filter_matches_module_only(django_sending_elasticapm_client):
     try:
         raise OtherFakeException("foo")
     except OtherFakeException:
-        django_sending_elasticapm_client.capture("Exception")
+        django_sending_elasticapm_client.capture("Exception", handled=False)
 
         assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
@@ -1308,7 +1308,7 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
         client.post(
             reverse("elasticapm-raise-exc"), json.dumps({"a": "b"}), content_type="application/json; charset=utf8"
         )
-    error = django_sending_elasticapm_client.httpserver.payloads[0]
+    error = django_sending_elasticapm_client.httpserver.payloads[0][1]["error"]
     if django_sending_elasticapm_client.config.capture_body in ("errors", "all"):
         assert error["context"]["request"]["body"] == '{"a": "b"}'
     else:

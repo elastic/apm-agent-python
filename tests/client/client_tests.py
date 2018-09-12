@@ -208,16 +208,17 @@ def test_send_remote_failover_async(should_try, sending_elasticapm_client):
     assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ONLINE
 
 
+@pytest.mark.parametrize("validating_httpserver", [{"skip_validate": True}], indirect=True)
 @mock.patch("elasticapm.base.time.time")
 def test_send(time, sending_elasticapm_client):
     time.return_value = 1328055286.51
 
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo="bar")
+    sending_elasticapm_client.queue("x", {})
     sending_elasticapm_client.close()
     request = sending_elasticapm_client.httpserver.requests[0]
     expected_headers = {
-        "Content-Type": "application/json",
-        "Content-Encoding": "deflate",
+        "Content-Type": "application/x-ndjson",
+        "Content-Encoding": "gzip",
         "Authorization": "Bearer %s" % sending_elasticapm_client.config.secret_token,
         "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
     }
@@ -225,7 +226,7 @@ def test_send(time, sending_elasticapm_client):
     for k, v in expected_headers.items():
         assert seen_headers[k] == v
 
-    assert request.content_length == 22
+    assert 270 < request.content_length < 300
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
@@ -233,7 +234,7 @@ def test_send(time, sending_elasticapm_client):
 def test_send_not_enabled(time, sending_elasticapm_client):
     time.return_value = 1328055286.51
     assert sending_elasticapm_client.config.disable_send
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo="bar")
+    sending_elasticapm_client.queue("x", {})
     sending_elasticapm_client.close()
 
     assert len(sending_elasticapm_client.httpserver.requests) == 0
@@ -246,11 +247,10 @@ def test_send_not_enabled(time, sending_elasticapm_client):
 )
 @mock.patch("elasticapm.base.Client._collect_transactions")
 def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo="bar")
+    sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
     assert len(sending_elasticapm_client.httpserver.requests) == 1
     assert mock_traces_collect.call_count == 1
-    assert len(sending_elasticapm_client._transports) == 0
 
 
 @pytest.mark.parametrize(
@@ -260,11 +260,10 @@ def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
 )
 @mock.patch("elasticapm.base.Client._collect_transactions")
 def test_client_shutdown_async(mock_traces_collect, sending_elasticapm_client):
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, foo="bar")
+    sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
     assert mock_traces_collect.call_count == 1
     assert len(sending_elasticapm_client.httpserver.requests) == 1
-    assert len(sending_elasticapm_client._transports) == 0
 
 
 def test_explicit_message_on_exception_event(elasticapm_client):
@@ -462,14 +461,12 @@ def test_invalid_service_name_disables_send(elasticapm_client):
     assert elasticapm_client.config.disable_send
 
 
-@pytest.mark.parametrize(
-    "elasticapm_client", [{"service_name": "foo", "config": {"TRANSPORT_CLASS": None}}], indirect=True
-)
-def test_empty_transport_disables_send(elasticapm_client):
-    assert len(elasticapm_client.config.errors) == 1
-    assert "TRANSPORT_CLASS" in elasticapm_client.config.errors
+def test_empty_transport_disables_send():
+    client = Client(service_name="x", transport_class=None)
+    assert len(client.config.errors) == 1
+    assert "TRANSPORT_CLASS" in client.config.errors
 
-    assert elasticapm_client.config.disable_send
+    assert client.config.disable_send
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"flush_interval": 2}], indirect=True)
@@ -795,8 +792,8 @@ def test_transaction_keyword_truncation(sending_elasticapm_client):
     sending_elasticapm_client.end_transaction(too_long, too_long)
     sending_elasticapm_client.close()
     assert sending_elasticapm_client.httpserver.responses[0]["code"] == 202
-    transaction = sending_elasticapm_client.httpserver.payloads[0]["transactions"][0]
-    span = transaction["spans"][0]
+    span = sending_elasticapm_client.httpserver.payloads[0][1]["span"]
+    transaction = sending_elasticapm_client.httpserver.payloads[0][2]["transaction"]
 
     assert transaction["name"] == expected
     assert transaction["type"] == expected
@@ -822,8 +819,8 @@ def test_error_keyword_truncation(sending_elasticapm_client):
     try:
         raise WayTooLongException()
     except WayTooLongException:
-        sending_elasticapm_client.capture_exception()
-    error = sending_elasticapm_client.httpserver.payloads[0]["errors"][0]
+        sending_elasticapm_client.capture_exception(handled=False)
+    error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["exception"]["type"] == expected.upper()
     assert error["exception"]["module"] == expected
@@ -832,9 +829,11 @@ def test_error_keyword_truncation(sending_elasticapm_client):
 def test_message_keyword_truncation(sending_elasticapm_client):
     too_long = "x" * (KEYWORD_MAX_LENGTH + 1)
     expected = encoding.keyword_field(too_long)
-    sending_elasticapm_client.capture_message(param_message={"message": too_long, "params": []}, logger_name=too_long)
+    sending_elasticapm_client.capture_message(
+        param_message={"message": too_long, "params": []}, logger_name=too_long, handled=False
+    )
 
-    error = sending_elasticapm_client.httpserver.payloads[0]["errors"][0]
+    error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["log"]["param_message"] == expected
     assert error["log"]["message"] == too_long  # message is not truncated

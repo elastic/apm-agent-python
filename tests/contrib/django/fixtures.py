@@ -2,13 +2,23 @@ from django.apps import apps
 
 import pytest
 
+from elasticapm.conf.constants import SPAN
 from elasticapm.contrib.django.apps import instrument, register_handlers
 from elasticapm.contrib.django.client import DjangoClient
-from tests.fixtures import TempStoreClient as TempStoreClientBase
 
 
-class TempStoreClient(TempStoreClientBase, DjangoClient):
-    pass
+class TempStoreClient(DjangoClient):
+    def __init__(self, **inline):
+        inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
+        super(TempStoreClient, self).__init__(**inline)
+
+    @property
+    def events(self):
+        return self._transport.events
+
+    def spans_for_transaction(self, transaction):
+        """Test helper method to get all spans of a specific transaction"""
+        return [span for span in self.events[SPAN] if span["transaction_id"] == transaction["id"]]
 
 
 @pytest.fixture()
