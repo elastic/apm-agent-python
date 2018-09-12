@@ -20,16 +20,19 @@ class AsyncioHTTPTransport(HTTPTransportBase):
             session_kwargs["connector"] = aiohttp.TCPConnector(verify_ssl=False)
         self.client = aiohttp.ClientSession(**session_kwargs)
 
-    async def send(self, data, timeout=None):
+    async def send(self, data):
         """Use synchronous interface, because this is a coroutine."""
 
         try:
-            with async_timeout.timeout(timeout):
+            with async_timeout.timeout(self._timeout):
                 async with self.client.post(self._url, data=data, headers=self._headers) as response:
                     assert response.status == 202
         except asyncio.TimeoutError as e:
             print_trace = True
-            message = "Connection to APM Server timed out " "(url: %s, timeout: %s seconds)" % (self._url, timeout)
+            message = "Connection to APM Server timed out " "(url: %s, timeout: %s seconds)" % (
+                self._url,
+                self._timeout,
+            )
             raise TransportException(message, data, print_trace=print_trace) from e
         except AssertionError as e:
             print_trace = True

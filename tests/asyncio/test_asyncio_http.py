@@ -41,16 +41,16 @@ def mock_client(mocker):
 async def test_send(mock_client):
     from elasticapm.transport.asyncio import AsyncioHTTPTransport
 
-    transport = AsyncioHTTPTransport(urlparse("http://localhost:9999"))
+    transport = AsyncioHTTPTransport("http://localhost:9999", timeout=2, headers={"a": "b"})
 
     mock_client.status = 202
     mock_client.headers = {"Location": "http://example.com/foo"}
     transport.client = mock_client
 
-    url = await transport.send(b"data", {"a": "b"}, timeout=2)
+    url = await transport.send(b"data")
     assert url == "http://example.com/foo"
     assert mock_client.args == ("http://localhost:9999",)
-    assert mock_client.kwargs == {"headers": {"a": "b"}, "data": b"data"}
+    assert mock_client.kwargs == {"headers": {b"a": b"b"}, "data": b"data"}
 
 
 @pytest.mark.asyncio
@@ -58,7 +58,7 @@ async def test_send_not_found(mock_client):
     from elasticapm.transport.asyncio import AsyncioHTTPTransport
     from elasticapm.transport.base import TransportException
 
-    transport = AsyncioHTTPTransport(urlparse("http://localhost:9999"))
+    transport = AsyncioHTTPTransport("http://localhost:9999", timeout=2)
 
     mock_client.status = 404
     mock_client.headers = {}
@@ -66,7 +66,7 @@ async def test_send_not_found(mock_client):
     transport.client = mock_client
 
     with pytest.raises(TransportException) as excinfo:
-        await transport.send(b"data", {}, timeout=2)
+        await transport.send(b"data")
     assert "Not Found" in str(excinfo.value)
     assert excinfo.value.data == b"data"
 
@@ -76,13 +76,13 @@ async def test_send_timeout(mock_client):
     from elasticapm.transport.asyncio import AsyncioHTTPTransport
     from elasticapm.transport.base import TransportException
 
-    transport = AsyncioHTTPTransport(urlparse("http://localhost:9999"))
+    transport = AsyncioHTTPTransport("http://localhost:9999", timeout=0.0001)
 
     mock_client.config.server_timeout = 0.1
     transport.client = mock_client
 
     with pytest.raises(TransportException) as excinfo:
-        await transport.send(b"data", {}, timeout=0.0001)
+        await transport.send(b"data")
     assert "Connection to APM Server timed out" in str(excinfo.value)
 
 
@@ -92,9 +92,9 @@ async def test_ssl_verify_fails(waiting_httpsserver):
     from elasticapm.transport.base import TransportException
 
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
-    transport = AsyncioHTTPTransport(urlparse(waiting_httpsserver.url))
+    transport = AsyncioHTTPTransport(waiting_httpsserver.url)
     with pytest.raises(TransportException) as exc_info:
-        await transport.send(b"x", {})
+        await transport.send(b"x")
     assert "CERTIFICATE_VERIFY_FAILED" in str(exc_info)
 
 
@@ -103,6 +103,7 @@ async def test_ssl_verify_disable(waiting_httpsserver):
     from elasticapm.transport.asyncio import AsyncioHTTPTransport
 
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
-    transport = AsyncioHTTPTransport(urlparse(waiting_httpsserver.url), verify_server_cert=False)
-    url = await transport.send(b"x", {})
+    transport = AsyncioHTTPTransport(waiting_httpsserver.url, verify_server_cert=False)
+    url = await transport.send(b"x")
+    transport.close()
     assert url == "http://example.com/foo"
