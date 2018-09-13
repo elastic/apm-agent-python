@@ -131,12 +131,10 @@ class Transaction(object):
             "result": encoding.keyword_field(str(self.result)),
             "timestamp": self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             "sampled": self.is_sampled,
+            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
         if self.is_sampled:
             result["context"] = self.context
-
-        if self.dropped_spans:
-            result["span_count"] = {"dropped": {"total": self.dropped_spans}}
         return result
 
 

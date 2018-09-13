@@ -226,7 +226,7 @@ def test_send(time, sending_elasticapm_client):
     for k, v in expected_headers.items():
         assert seen_headers[k] == v
 
-    assert 270 < request.content_length < 300
+    assert 250 < request.content_length < 350
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
@@ -687,7 +687,7 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
     assert len(spans) == 5
     for span in spans:
         assert span["name"] == "nodrop"
-    assert transaction["span_count"] == {"dropped": {"total": 10}}
+    assert transaction["span_count"] == {"dropped": 10, "started": 5}
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
@@ -760,7 +760,7 @@ def test_transaction_max_span_nested(should_collect, elasticapm_client):
     assert len(spans) == 3
     for span in spans:
         assert span["name"] in ("1", "2", "3")
-    assert transaction["span_count"] == {"dropped": {"total": 6}}
+    assert transaction["span_count"] == {"dropped": 6, "started": 3}
 
 
 def test_transaction_context_is_used_in_errors(elasticapm_client):
