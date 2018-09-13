@@ -43,7 +43,7 @@ def test_config_dict():
             "SERVER_URL": "http://example.com:1234",
             "SERVICE_VERSION": 1,
             "HOSTNAME": "localhost",
-            "FLUSH_INTERVAL": "5",
+            "API_REQUEST_TIME": "5s",
         }
     )
 
@@ -52,7 +52,7 @@ def test_config_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.flush_interval == 5
+    assert config.api_request_time == 5
 
 
 def test_config_environment():
@@ -64,7 +64,7 @@ def test_config_environment():
             "ELASTIC_APM_SERVER_URL": "http://example.com:1234",
             "ELASTIC_APM_SERVICE_VERSION": "1",
             "ELASTIC_APM_HOSTNAME": "localhost",
-            "ELASTIC_APM_FLUSH_INTERVAL": "5",
+            "ELASTIC_APM_API_REQUEST_TIME": "5s",
             "ELASTIC_APM_AUTO_LOG_STACKS": "false",
         },
     ):
@@ -75,8 +75,8 @@ def test_config_environment():
         assert config.server_url == "http://example.com:1234"
         assert config.service_version == "1"
         assert config.hostname == "localhost"
-        assert config.flush_interval == 5
-        assert config.auto_log_stacks == False
+        assert config.api_request_time == 5
+        assert config.auto_log_stacks is False
 
 
 def test_config_inline_dict():
@@ -87,7 +87,7 @@ def test_config_inline_dict():
             "server_url": "http://example.com:1234",
             "service_version": "1",
             "hostname": "localhost",
-            "flush_interval": "5",
+            "api_request_time": "5s",
         }
     )
 
@@ -96,7 +96,7 @@ def test_config_inline_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.flush_interval == 5
+    assert config.api_request_time == 5
 
 
 def test_config_precedence():

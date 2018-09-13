@@ -5,8 +5,9 @@ from elasticapm.utils import compat
 
 
 class HTTPTransportBase(Transport):
-    def __init__(self, url, verify_server_cert=True, compress_level=5, metadata=None, headers=None, timeout=None):
-
+    def __init__(
+        self, url, verify_server_cert=True, compress_level=5, metadata=None, headers=None, timeout=None, **kwargs
+    ):
         self._url = url
         self._verify_server_cert = verify_server_cert
         self._timeout = timeout
@@ -18,7 +19,7 @@ class HTTPTransportBase(Transport):
             else v
             for k, v in (headers if headers is not None else {}).items()
         }
-        super(HTTPTransportBase, self).__init__(metadata=metadata, compress_level=compress_level)
+        super(HTTPTransportBase, self).__init__(metadata=metadata, compress_level=compress_level, **kwargs)
 
     def send(self, data):
         """

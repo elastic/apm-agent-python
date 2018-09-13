@@ -176,9 +176,7 @@ class Config(_ConfigBase):
     server_timeout = _ConfigValue(
         "SERVER_TIMEOUT",
         type=float,
-        validators=[
-            UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1000})
-        ],
+        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})],
         default=5,
     )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
@@ -196,14 +194,8 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
-    flush_interval = _ConfigValue(
-        "FLUSH_INTERVAL",
-        type=int,
-        validators=[
-            UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 0.001, "s": 1.0, "m": 60.0, None: 1})
-        ],
-        default=10,
-    )
+    api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
+    api_request_time = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     span_frames_min_duration = _ConfigValue(
@@ -212,7 +204,6 @@ class Config(_ConfigBase):
         validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})],
         type=int,
     )
-    max_queue_size = _ConfigValue("MAX_QUEUE_SIZE", type=int, default=500)
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)
     source_lines_error_library_frames = _ConfigValue("SOURCE_LINES_ERROR_LIBRARY_FRAMES", type=int, default=5)
@@ -231,7 +222,7 @@ class Config(_ConfigBase):
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
 
     # undocumented configuration
-    _wait_to_first_send = _ConfigValue("_WAIT_TO_FIRST_SEND", type=int, default=5)
+    _wait_to_first_send = _ConfigValue("_WAIT_TO_FIRST_SEND", type=int, default=5 * 1000)
 
 
 def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):

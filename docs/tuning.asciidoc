@@ -47,11 +47,11 @@ holding on to the transaction data in a queue uses memory.
 If you notice that using the Python agent results in a large increase of memory use,
 you can use these settings:
 
- * <<config-flush-interval,`flush_interval`>> to reduce the time between queue flushes
- * <<config-max-queue-size,`max_queue_size`>> to reduce the maximum size of the queue
+ * <<config-api-request-time,`api_request_time`>> to reduce the time between queue flushes
+ * <<config-api-request-size,`api_request_size`>> to reduce the maximum size of the queue
 
-The first setting, `flush_interval`, is helpful if you have a sustained high number of transactions.
-The second setting, `max_queue_size`, can help if you experience peaks of transactions
+The first setting, `api_request_time`, is helpful if you have a sustained high number of transactions.
+The second setting, `api_request_size`, can help if you experience peaks of transactions
 (a large amount of transactions in a short period of time).
 
 Keep in mind that reducing the value of either setting will cause the agent to send more HTTP requests to the APM Server,

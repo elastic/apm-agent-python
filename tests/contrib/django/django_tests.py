@@ -827,7 +827,7 @@ def test_filter_no_match(django_sending_elasticapm_client):
     try:
         raise ValueError("foo")
     except ValueError:
-        django_sending_elasticapm_client.capture("Exception")
+        django_sending_elasticapm_client.capture("Exception", handled=False)
 
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 

@@ -469,10 +469,10 @@ def test_empty_transport_disables_send():
     assert client.config.disable_send
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"flush_interval": 2}], indirect=True)
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "2s"}], indirect=True)
 def test_send_timer(elasticapm_client):
     assert elasticapm_client._send_timer is None
-    assert elasticapm_client.config.flush_interval == 2
+    assert elasticapm_client.config.api_request_time == 2
     elasticapm_client.begin_transaction("test_type")
     elasticapm_client.end_transaction("test")
 

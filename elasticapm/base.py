@@ -130,6 +130,8 @@ class Client(object):
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "timeout": self.config.server_timeout,
+            "max_flush_time": self.config.api_request_time,
+            "max_buffer_size": self.config.api_request_size,
         }
         self._transport = import_string(self.config.transport_class)(
             compat.urlparse.urljoin(self.config.server_url, "/v2/intake"), **transport_kwargs
@@ -168,11 +170,10 @@ class Client(object):
         self.transaction_store = TransactionsStore(
             frames_collector_func=frames_collector_func,
             queue_func=self.queue,
-            collect_frequency=self.config.flush_interval,
+            collect_frequency=self.config.api_request_time,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
             span_frames_min_duration=self.config.span_frames_min_duration,
-            max_queue_size=self.config.max_queue_size,
             ignore_patterns=self.config.transactions_ignore_patterns,
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
@@ -260,7 +261,7 @@ class Client(object):
         transaction = self.transaction_store.end_transaction(result, name)
         if not self._send_timer:
             # send first batch of data after config._wait_to_first_send
-            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.flush_interval))
+            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.api_request_time))
         return transaction
 
     def close(self):
@@ -298,8 +299,8 @@ class Client(object):
         self._start_send_timer()
 
     def _start_send_timer(self, timeout=None):
-        timeout = timeout or self.config.flush_interval
-        self._send_timer = threading.Timer(timeout, self._transport.flush)
+        timeout = timeout or self.config.api_request_time
+        self._send_timer = threading.Timer(timeout / 1000.0, self._transport.flush)
         self._send_timer.start()
 
     def _stop_send_timer(self):
@@ -500,7 +501,7 @@ class Client(object):
         return message
 
     def _get_transport(self, parsed_url):
-        if hasattr(self._transport_class, "sync_transport") and is_master_process():
+        if hasattr(self._transport, "sync_transport") and is_master_process():
             # when in the master process, always use SYNC mode. This avoids
             # the danger of being forked into an inconsistent threading state
             self.logger.info("Sending message synchronously while in master " "process. PID: %s", os.getpid())
