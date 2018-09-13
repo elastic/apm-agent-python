@@ -5,6 +5,7 @@ import time
 import mock
 
 from elasticapm.transport.base import Transport
+from elasticapm.utils import compat
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
@@ -17,10 +18,13 @@ def test_empty_queue_flush_is_not_sent(mock_send):
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_metadata_prepended(mock_send):
     transport = Transport(metadata={"x": "y"}, max_flush_time=5, compress_level=0)
-    transport.queue("error", {})
+    transport.queue("error", {}, flush=True)
     assert mock_send.call_count == 1
     args, kwargs = mock_send.call_args
-    data = args[0].decode("utf-8").split("\n")
+    data = args[0]
+    if compat.PY3:
+        data = data.tobytes()
+    data = data.decode("utf-8").split("\n")
     assert "metadata" in data[0]
 
 
