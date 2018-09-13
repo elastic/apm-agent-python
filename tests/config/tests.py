@@ -52,7 +52,7 @@ def test_config_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5
+    assert config.api_request_time == 5000
 
 
 def test_config_environment():
@@ -75,7 +75,7 @@ def test_config_environment():
         assert config.server_url == "http://example.com:1234"
         assert config.service_version == "1"
         assert config.hostname == "localhost"
-        assert config.api_request_time == 5
+        assert config.api_request_time == 5000
         assert config.auto_log_stacks is False
 
 
@@ -96,7 +96,7 @@ def test_config_inline_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5
+    assert config.api_request_time == 5000
 
 
 def test_config_precedence():
