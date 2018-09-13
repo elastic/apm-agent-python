@@ -61,7 +61,7 @@ class Transport(object):
         self._last_flush = time.time()
 
     def queue(self, event_type, data, flush=False):
-        self._queue(self.queued_data, (self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
+        self._queue(self.queued_data, {event_type: data})
         since_last_flush = time.time() - self._last_flush
         queue_size = self.queued_data_size
         if flush:
@@ -90,7 +90,7 @@ class Transport(object):
                 self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
             else:
                 self._queued_data = BytesIO()
-            self._queue(self.queued_data, {"metadata": self._metadata})
+            self._queue(self._queued_data, {"metadata": self._metadata})
         return self._queued_data
 
     @property
