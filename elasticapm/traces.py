@@ -233,9 +233,6 @@ class TransactionsStore(object):
         self._last_collect = _time_func()
         return transactions
 
-    def should_collect(self):
-        return 1000 * (_time_func() - self._last_collect) >= self.collect_frequency
-
     def __len__(self):
         with self.cond:
             return len(self._transactions)

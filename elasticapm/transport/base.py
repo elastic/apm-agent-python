@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 
+from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import json_encoder
 from elasticapm.utils.compat import BytesIO
 
@@ -33,8 +34,6 @@ class Transport(object):
         json_serializer=json_encoder.dumps,
         max_flush_time=None,
         max_buffer_size=None,
-        success_callback=None,
-        failure_callback=None,
         **kwargs
     ):
         """
@@ -45,17 +44,14 @@ class Transport(object):
         :param json_serializer: serializer to use for JSON encoding
         :param max_flush_time: Maximum time between flushes in seconds
         :param max_buffer_size: Maximum size of buffer before flush
-        :param success_callback: function to call after successful flush
-        :param failure_callback: function to call after failed flush
         :param kwargs:
         """
+        self.state = TransportState()
         self._metadata = metadata if metadata is not None else {}
         self._compress_level = compress_level
         self._json_serializer = json_serializer
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
-        self._success_callback = success_callback
-        self._failure_callback = failure_callback
         self._queued_data = None
         self._flush_lock = threading.Lock()
         self._last_flush = time.time()
@@ -102,7 +98,9 @@ class Transport(object):
     def flush(self, sync=False):
         with self._flush_lock:
             queued_data, self._queued_data = self._queued_data, None
-            if queued_data:
+            if queued_data and not self.state.should_try():
+                logger.error("dropping flushed data due to transport failure back-off")
+            elif queued_data:
                 if self._compress_level:
                     fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
                     queued_data.close()
@@ -113,7 +111,11 @@ class Transport(object):
                 if hasattr(self, "send_async") and not sync:
                     self.send_async(data)
                 else:
-                    self.send(data)
+                    try:
+                        self.send(data)
+                        self.handle_transport_success()
+                    except Exception as e:
+                        self.handle_transport_fail(e)
             self._last_flush = time.time()
 
     def send(self, data):
@@ -130,9 +132,80 @@ class Transport(object):
         """
         self.flush(sync=True)
 
+    def handle_transport_success(self, **kwargs):
+        """
+        Success handler called by the transport on successful send
+        """
+        self.state.set_success()
+
+    def handle_transport_fail(self, exception=None, **kwargs):
+        """
+        Failure handler called by the transport on send failure
+        """
+        message = str(exception)
+        logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
+        self.state.set_fail()
+
 
 class AsyncTransport(Transport):
     async_mode = True
+    sync_transport = Transport
 
-    def send_async(self, data, success_callback=None, fail_callback=None):
-        raise NotImplementedError
+    def __init__(self, *args, **kwargs):
+        super(AsyncTransport, self).__init__(*args, **kwargs)
+        self._worker = None
+
+    @property
+    def worker(self):
+        if not self._worker or not self._worker.is_alive():
+            self._worker = AsyncWorker()
+        return self._worker
+
+    def send_sync(self, data=None):
+        try:
+            self.sync_transport.send(self, data)
+            self.handle_transport_success()
+        except Exception as e:
+            self.handle_transport_fail(exception=e)
+
+    def send_async(self, data):
+        self.worker.queue(self.send_sync, {"data": data})
+
+    def close(self):
+        super(AsyncTransport, self).close()
+        if self._worker:
+            self._worker.main_thread_terminated()
+
+
+class TransportState(object):
+    ONLINE = 1
+    ERROR = 0
+
+    def __init__(self):
+        self.status = self.ONLINE
+        self.last_check = None
+        self.retry_number = -1
+
+    def should_try(self):
+        if self.status == self.ONLINE:
+            return True
+
+        interval = min(self.retry_number, 6) ** 2
+
+        if time.time() - self.last_check > interval:
+            return True
+
+        return False
+
+    def set_fail(self):
+        self.status = self.ERROR
+        self.retry_number += 1
+        self.last_check = time.time()
+
+    def set_success(self):
+        self.status = self.ONLINE
+        self.last_check = None
+        self.retry_number = -1
+
+    def did_fail(self):
+        return self.status == self.ERROR

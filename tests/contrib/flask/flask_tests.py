@@ -121,10 +121,8 @@ def test_post(flask_apm_client):
     indirect=True,
 )
 def test_instrumentation(flask_apm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
-        resp.close()
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
 
     assert resp.status_code == 200, resp.response
 
@@ -177,10 +175,8 @@ def test_instrumentation_debug_client_debug(flask_apm_client):
 
 
 def test_instrumentation_404(flask_apm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().post("/no-such-page/")
-        resp.close()
+    resp = flask_apm_client.app.test_client().post("/no-such-page/")
+    resp.close()
 
     assert resp.status_code == 404, resp.response
 
@@ -194,10 +190,8 @@ def test_instrumentation_404(flask_apm_client):
 
 
 def test_non_standard_http_status(flask_apm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().get("/non-standard-status/")
-        resp.close()
+    resp = flask_apm_client.app.test_client().get("/non-standard-status/")
+    resp.close()
     assert resp.status == "0 fail", resp.response
     assert resp.status_code == 0, resp.response
 

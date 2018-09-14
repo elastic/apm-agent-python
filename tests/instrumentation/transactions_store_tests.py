@@ -187,35 +187,6 @@ def test_get_transaction_clear():
     assert get_transaction() is None
 
 
-def test_should_collect_time():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, collect_frequency=5)
-    requests_store._last_collect -= 6
-
-    assert requests_store.should_collect()
-
-
-def test_should_not_collect_time():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, collect_frequency=5)
-    requests_store._last_collect -= 3
-
-    assert not requests_store.should_collect()
-
-
-def test_should_collect_count():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, collect_frequency=5, max_queue_size=5)
-    requests_store._transactions = 6 * [1]
-    requests_store._last_collect -= 3
-
-    assert requests_store.should_collect()
-
-
-def test_should_not_collect_count():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, collect_frequency=5, max_queue_size=5)
-    requests_store._transactions = 4 * [1]
-
-    assert not requests_store.should_collect()
-
-
 def test_tag_transaction():
     requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
     t = requests_store.begin_transaction("test")

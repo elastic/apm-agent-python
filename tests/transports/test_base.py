@@ -4,8 +4,48 @@ import time
 
 import mock
 
-from elasticapm.transport.base import Transport
+from elasticapm.transport.base import AsyncTransport, Transport, TransportException, TransportState
 from elasticapm.utils import compat
+
+
+def test_transport_state_should_try_online():
+    state = TransportState()
+    assert state.should_try() is True
+
+
+def test_transport_state_should_try_new_error():
+    state = TransportState()
+    state.status = state.ERROR
+    state.last_check = time.time()
+    state.retry_number = 1
+    assert state.should_try() is False
+
+
+def test_transport_state_should_try_time_passed_error():
+    state = TransportState()
+    state.status = state.ERROR
+    state.last_check = time.time() - 10
+    state.retry_number = 1
+    assert state.should_try() is True
+
+
+def test_transport_state_set_fail():
+    state = TransportState()
+    state.set_fail()
+    assert state.status == state.ERROR
+    assert state.last_check is not None
+    assert state.retry_number == 0
+
+
+def test_transport_state_set_success():
+    state = TransportState()
+    state.status = state.ERROR
+    state.last_check = "foo"
+    state.retry_number = 5
+    state.set_success()
+    assert state.status == state.ONLINE
+    assert state.last_check is None
+    assert state.retry_number == -1
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
@@ -62,3 +102,37 @@ def test_forced_flush(mock_send, caplog):
     assert "forced" in record.message
     assert mock_send.call_count == 1
     assert transport._queued_data is None
+
+
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_sync_transport_fail_and_recover(mock_send, caplog):
+    mock_send.side_effect = TransportException("meh")
+    transport = Transport()
+    transport.queue("x", {}, flush=True)
+    assert transport.state.did_fail()
+    # first retry should be allowed immediately
+    assert transport.state.should_try()
+
+    # recover
+    mock_send.side_effect = None
+    transport.queue("x", {}, flush=True)
+    assert not transport.state.did_fail()
+
+
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_sync_transport_fail_and_recover(mock_send, caplog):
+    mock_send.side_effect = TransportException("meh")
+    transport = AsyncTransport()
+    transport.queue("x", {}, flush=True)
+    transport.worker._timed_queue_join(1)
+    assert transport.state.did_fail()
+    # first retry should be allowed immediately
+    assert transport.state.should_try()
+
+    # recover
+    mock_send.side_effect = None
+    transport.queue("x", {}, flush=True)
+    transport.worker._timed_queue_join(1)
+    assert not transport.state.did_fail()
+
+    transport.close()

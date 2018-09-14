@@ -15,9 +15,7 @@ def jinja_env():
     return Environment(loader=loader)
 
 
-@mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_from_file(should_collect, instrument, jinja_env, elasticapm_client):
-    should_collect.return_value = False
+def test_from_file(instrument, jinja_env, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     template = jinja_env.get_template("mytemplate.html")
     template.render()

@@ -952,16 +952,14 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
 
     TEMPLATE_DEBUG = django.VERSION < (1, 9)
 
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        TEMPLATES_copy = deepcopy(settings.TEMPLATES)
-        TEMPLATES_copy[0]["OPTIONS"]["debug"] = TEMPLATE_DEBUG
-        with override_settings(
-            TEMPLATE_DEBUG=TEMPLATE_DEBUG,
-            TEMPLATES=TEMPLATES_copy,
-            **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-        ):
-            resp = client.get(reverse("render-heavy-template"))
+    TEMPLATES_copy = deepcopy(settings.TEMPLATES)
+    TEMPLATES_copy[0]["OPTIONS"]["debug"] = TEMPLATE_DEBUG
+    with override_settings(
+        TEMPLATE_DEBUG=TEMPLATE_DEBUG,
+        TEMPLATES=TEMPLATES_copy,
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
     transactions = django_elasticapm_client.events[TRANSACTION]
@@ -988,12 +986,10 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
 
 
 def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        with override_settings(
-            **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-        ):
-            resp = client.get(reverse("render-heavy-template"))
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
 
     transactions = django_elasticapm_client.events[TRANSACTION]
@@ -1011,12 +1007,10 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
 @pytest.mark.parametrize("django_elasticapm_client", [{"_wait_to_first_send": 100}], indirect=True)
 def test_perf_template_render(benchmark, client, django_elasticapm_client):
     responses = []
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        with override_settings(
-            **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-        ):
-            benchmark(lambda: responses.append(client_get(client, reverse("render-heavy-template"))))
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        benchmark(lambda: responses.append(client_get(client, reverse("render-heavy-template"))))
     for resp in responses:
         assert resp.status_code == 200
 
@@ -1033,9 +1027,7 @@ def test_perf_template_render(benchmark, client, django_elasticapm_client):
 @pytest.mark.parametrize("django_elasticapm_client", [{"_wait_to_first_send": 100}], indirect=True)
 def test_perf_template_render_no_middleware(benchmark, client, django_elasticapm_client):
     responses = []
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        benchmark(lambda: responses.append(client_get(client, reverse("render-heavy-template"))))
+    benchmark(lambda: responses.append(client_get(client, reverse("render-heavy-template"))))
     for resp in responses:
         assert resp.status_code == 200
 
@@ -1048,59 +1040,52 @@ def test_perf_template_render_no_middleware(benchmark, client, django_elasticapm
 def test_perf_database_render(benchmark, client, django_elasticapm_client):
     responses = []
 
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        benchmark(lambda: responses.append(client_get(client, reverse("render-user-template"))))
+    for resp in responses:
+        assert resp.status_code == 200
 
-        with override_settings(
-            **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-        ):
-            benchmark(lambda: responses.append(client_get(client, reverse("render-user-template"))))
-        for resp in responses:
-            assert resp.status_code == 200
+    transactions = django_elasticapm_client.events[TRANSACTION]
 
-        transactions = django_elasticapm_client.events[TRANSACTION]
-
-        assert len(transactions) == len(responses)
-        for transaction in transactions:
-            # number of spans per transaction can vary slightly
-            assert 102 <= len(django_elasticapm_client.spans_for_transaction(transaction)) < 105
+    assert len(transactions) == len(responses)
+    for transaction in transactions:
+        # number of spans per transaction can vary slightly
+        assert 102 <= len(django_elasticapm_client.spans_for_transaction(transaction)) < 105
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("django_elasticapm_client", [{"_wait_to_first_send": 100}], indirect=True)
 def test_perf_database_render_no_instrumentation(benchmark, django_elasticapm_client):
     responses = []
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
 
-        client = _TestClient()
-        benchmark(lambda: responses.append(client_get(client, reverse("render-user-template"))))
+    client = _TestClient()
+    benchmark(lambda: responses.append(client_get(client, reverse("render-user-template"))))
 
-        for resp in responses:
-            assert resp.status_code == 200
+    for resp in responses:
+        assert resp.status_code == 200
 
-        transactions = django_elasticapm_client.events[TRANSACTION]
-        assert len(transactions) == 0
+    transactions = django_elasticapm_client.events[TRANSACTION]
+    assert len(transactions) == 0
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("django_elasticapm_client", [{"_wait_to_first_send": 100}], indirect=True)
 def test_perf_transaction_without_middleware(benchmark, django_elasticapm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        client = _TestClient()
-        for i in range(10):
-            resp = client_get(client, reverse("render-user-template"))
-            assert resp.status_code == 200
+    client = _TestClient()
+    for i in range(10):
+        resp = client_get(client, reverse("render-user-template"))
+        assert resp.status_code == 200
 
-        assert len(django_elasticapm_client.events) == 0
+    assert len(django_elasticapm_client.events) == 0
 
-        @benchmark
-        def result():
-            # Code to be measured
-            return client_get(client, reverse("render-user-template"))
+    @benchmark
+    def result():
+        # Code to be measured
+        return client_get(client, reverse("render-user-template"))
 
-        assert len(django_elasticapm_client.events) == 0
+    assert len(django_elasticapm_client.events) == 0
 
 
 @pytest.mark.skipif(django.VERSION > (1, 7), reason="argparse raises CommandError in this case")

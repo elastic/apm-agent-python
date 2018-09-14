@@ -18,53 +18,17 @@ import platform
 import socket
 import sys
 import threading
-import time
 from copy import deepcopy
 
 import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.traces import TransactionsStore, get_transaction
-from elasticapm.transport.base import TransportException
 from elasticapm.utils import compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 
 __all__ = ("Client",)
-
-
-class ClientState(object):
-    ONLINE = 1
-    ERROR = 0
-
-    def __init__(self):
-        self.status = self.ONLINE
-        self.last_check = None
-        self.retry_number = 0
-
-    def should_try(self):
-        if self.status == self.ONLINE:
-            return True
-
-        interval = min(self.retry_number, 6) ** 2
-
-        if time.time() - self.last_check > interval:
-            return True
-
-        return False
-
-    def set_fail(self):
-        self.status = self.ERROR
-        self.retry_number += 1
-        self.last_check = time.time()
-
-    def set_success(self):
-        self.status = self.ONLINE
-        self.last_check = None
-        self.retry_number = 0
-
-    def did_fail(self):
-        return self.status == self.ERROR
 
 
 class Client(object):
@@ -103,7 +67,6 @@ class Client(object):
         cls = self.__class__
         self.logger = logging.getLogger("%s.%s" % (cls.__module__, cls.__name__))
         self.error_logger = logging.getLogger("elasticapm.errors")
-        self.state = ClientState()
 
         self.transaction_store = None
         self.processors = []
@@ -134,7 +97,7 @@ class Client(object):
             "max_buffer_size": self.config.api_request_size,
         }
         self._transport = import_string(self.config.transport_class)(
-            compat.urlparse.urljoin(self.config.server_url, "/v2/intake"), **transport_kwargs
+            compat.urlparse.urljoin(self.config.server_url, "/intake/v2/events"), **transport_kwargs
         )
 
         for exc_to_filter in self.config.filter_exception_types or []:
@@ -232,26 +195,6 @@ class Client(object):
                 data = processor(self, data)
         self._transport.queue(event_type, data, flush)
 
-    def sendd(self, url, **data):
-        """
-        Encodes and sends data to remote URL using configured transport
-        :param url: URL of endpoint
-        :param data: dictionary of data to send
-        """
-        if self.config.disable_send or self._filter_exception_type(data):
-            return
-
-        payload = self.encode(data)
-
-        if not self.state.should_try():
-            message = self._get_log_message(payload)
-            self.error_logger.error(message)
-            return
-        try:
-            self._send_remote(url=url, data=payload)
-        except Exception as e:
-            self.handle_transport_fail(exception=e)
-
     def begin_transaction(self, transaction_type):
         """Register the start of a transaction on the client
         """
@@ -270,29 +213,6 @@ class Client(object):
             self._stop_send_timer()
         self._transport.close()
 
-    def handle_transport_success(self, **kwargs):
-        """
-        Success handler called by the transport
-        """
-        if kwargs.get("url"):
-            self.logger.info("Logged error at " + kwargs["url"])
-        self.state.set_success()
-
-    def handle_transport_fail(self, exception=None, **kwargs):
-        """
-        Failure handler called by the transport
-        """
-        if isinstance(exception, TransportException):
-            message = self._get_log_message(exception.data)
-            self.error_logger.error(exception.args[0])
-        else:
-            # stdlib exception
-            message = str(exception)
-        self.error_logger.error(
-            "Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True)
-        )
-        self.state.set_fail()
-
     def _collect_transactions(self):
         self._stop_send_timer()
         self._transport.flush()
@@ -308,19 +228,6 @@ class Client(object):
             self._send_timer.cancel()
             if self._send_timer.is_alive():
                 self._send_timer.join()
-
-    def _send_remote(self, url, data, headers=None):
-        if headers is None:
-            headers = {}
-        parsed = compat.urlparse.urlparse(url)
-        transport = self._get_transport(parsed)
-        if transport.async_mode:
-            transport.send_async(
-                data, headers, success_callback=self.handle_transport_success, fail_callback=self.handle_transport_fail
-            )
-        else:
-            url = transport.send(data, headers, timeout=self.config.server_timeout)
-            self.handle_transport_success(url=url)
 
     def get_service_info(self):
         if self._service_info:
@@ -489,16 +396,6 @@ class Client(object):
                 self.logger.info("Ignored %s exception due to exception type filter", exc_name)
                 return True
         return False
-
-    def _get_log_message(self, data):
-        # decode message so we can show the actual event
-        try:
-            data = self.decode(data)
-        except Exception:
-            message = "<failed decoding data>"
-        else:
-            message = data.pop("message", "<no message value>")
-        return message
 
     def _get_transport(self, parsed_url):
         if hasattr(self._transport, "sync_transport") and is_master_process():

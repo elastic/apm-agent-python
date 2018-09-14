@@ -7,53 +7,13 @@ from collections import defaultdict
 
 import mock
 import pytest
+from pytest_localserver.http import ContentServer
 
 import elasticapm
-from elasticapm.base import Client, ClientState
+from elasticapm.base import Client
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
-from elasticapm.transport.base import Transport
 from elasticapm.utils import compat, encoding
 from tests.fixtures import DummyTransport
-
-
-def test_client_state_should_try_online():
-    state = ClientState()
-    assert state.should_try() is True
-
-
-def test_client_state_should_try_new_error():
-    state = ClientState()
-    state.status = state.ERROR
-    state.last_check = time.time()
-    state.retry_number = 1
-    assert state.should_try() is False
-
-
-def test_client_state_should_try_time_passed_error():
-    state = ClientState()
-    state.status = state.ERROR
-    state.last_check = time.time() - 10
-    state.retry_number = 1
-    assert state.should_try() is True
-
-
-def test_client_state_set_fail():
-    state = ClientState()
-    state.set_fail()
-    assert state.status == state.ERROR
-    assert state.last_check is not None
-    assert state.retry_number == 1
-
-
-def test_client_state_set_success():
-    state = ClientState()
-    state.status = state.ERROR
-    state.last_check = "foo"
-    state.retry_number = 0
-    state.set_success()
-    assert state.status == state.ONLINE
-    assert state.last_check is None
-    assert state.retry_number == 0
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"environment": "production"}], indirect=True)
@@ -131,31 +91,29 @@ def test_empty_processor_list(elasticapm_client):
     [{"transport_class": "elasticapm.transport.http.Transport", "async_mode": False}],
     indirect=True,
 )
-@mock.patch("elasticapm.base.ClientState.should_try")
-def test_send_remote_failover_sync(should_try, sending_elasticapm_client):
+@pytest.mark.parametrize("validating_httpserver", [{"app": ContentServer}], indirect=True)
+@mock.patch("elasticapm.transport.base.TransportState.should_try")
+def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog):
     sending_elasticapm_client.httpserver.code = 400
     sending_elasticapm_client.httpserver.content = "go away"
     should_try.return_value = True
 
-    logger = mock.Mock()
-    sending_elasticapm_client.error_logger.error = logger
-
     # test error
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{"message": "foo"})
-    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ERROR
-    assert len(logger.call_args_list) == 2
-    assert "go away" in logger.call_args_list[0][0][0]
-    assert "foo" in logger.call_args_list[1][0][1]
+    with caplog.at_level("ERROR", "elasticapm.transport"):
+        sending_elasticapm_client.capture_message("foo", handled=False)
+    assert sending_elasticapm_client._transport.state.did_fail()
+    record = caplog.records[0]
+    assert "go away" in record.message
 
     # test recovery
     sending_elasticapm_client.httpserver.code = 202
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{"message": "foo"})
-    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ONLINE
+    sending_elasticapm_client.capture_message("bar", handled=False)
+    assert not sending_elasticapm_client._transport.state.did_fail()
 
 
 @mock.patch("elasticapm.transport.http.Transport.send")
-@mock.patch("elasticapm.base.ClientState.should_try")
-def test_send_remote_failover_sync_stdlib(should_try, http_send):
+@mock.patch("elasticapm.transport.base.TransportState.should_try")
+def test_send_remote_failover_sync_non_transport_exception_error(should_try, http_send, caplog):
     should_try.return_value = True
 
     client = Client(
@@ -164,20 +122,18 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
         secret_token="secret",
         transport_class="elasticapm.transport.http.Transport",
     )
-    logger = mock.Mock()
-    client.error_logger.error = logger
-
     # test error
     http_send.side_effect = ValueError("oopsie")
-    client.send("http://example.com/api/store", **{"message": "oh no"})
-    assert client.state.status == client.state.ERROR
-    assert len(logger.call_args_list) == 1
-    assert "oopsie" in logger.call_args_list[0][0][1]
+    with caplog.at_level("ERROR", "elasticapm.transport"):
+        client.capture_message("foo", handled=False)
+    record = caplog.records[0]
+    assert client._transport.state.did_fail()
+    assert "oopsie" in record.message
 
     # test recovery
     http_send.side_effect = None
-    client.send("http://example.com/api/store", **{"message": "oh no"})
-    assert client.state.status == client.state.ONLINE
+    client.capture_message("foo", handled=False)
+    assert not client._transport.state.did_fail()
     client.close()
 
 
@@ -186,33 +142,29 @@ def test_send_remote_failover_sync_stdlib(should_try, http_send):
     [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
     indirect=True,
 )
-@mock.patch("elasticapm.base.ClientState.should_try")
-def test_send_remote_failover_async(should_try, sending_elasticapm_client):
+@pytest.mark.parametrize("validating_httpserver", [{"app": ContentServer}], indirect=True)
+@mock.patch("elasticapm.transport.base.TransportState.should_try")
+def test_send_remote_failover_async(should_try, sending_elasticapm_client, caplog):
     should_try.return_value = True
     sending_elasticapm_client.httpserver.code = 400
-    logger = mock.Mock()
-    sending_elasticapm_client.error_logger.error = logger
 
     # test error
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{"message": "oh no"})
-    sending_elasticapm_client.close()
-    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ERROR
-    assert len(logger.call_args_list) == 2
-    assert "400" in logger.call_args_list[0][0][0]
-    assert "oh no" in logger.call_args_list[1][0][1]
+    with caplog.at_level("ERROR", "elasticapm.transport"):
+        sending_elasticapm_client.capture_message("foo", handled=False)
+        sending_elasticapm_client.close()
+    assert sending_elasticapm_client._transport.state.did_fail()
+    assert "400" in caplog.records[0].message
 
     # test recovery
     sending_elasticapm_client.httpserver.code = 202
-    sending_elasticapm_client.send(sending_elasticapm_client.config.server_url, **{"message": "yay"})
-    sending_elasticapm_client.close()
-    assert sending_elasticapm_client.state.status == sending_elasticapm_client.state.ONLINE
+    with caplog.at_level("ERROR", "elasticapm.transport"):
+        sending_elasticapm_client.capture_message("bar", handled=False)
+        sending_elasticapm_client.close()
+    assert not sending_elasticapm_client._transport.state.did_fail()
 
 
 @pytest.mark.parametrize("validating_httpserver", [{"skip_validate": True}], indirect=True)
-@mock.patch("elasticapm.base.time.time")
-def test_send(time, sending_elasticapm_client):
-    time.return_value = 1328055286.51
-
+def test_send(sending_elasticapm_client):
     sending_elasticapm_client.queue("x", {})
     sending_elasticapm_client.close()
     request = sending_elasticapm_client.httpserver.requests[0]
@@ -230,9 +182,7 @@ def test_send(time, sending_elasticapm_client):
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
-@mock.patch("elasticapm.base.time.time")
-def test_send_not_enabled(time, sending_elasticapm_client):
-    time.return_value = 1328055286.51
+def test_send_not_enabled(sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send
     sending_elasticapm_client.queue("x", {})
     sending_elasticapm_client.close()
@@ -376,25 +326,7 @@ def test_logger(elasticapm_client):
     assert "timestamp" in event
 
 
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_metrics_collection(should_collect, sending_elasticapm_client):
-    should_collect.return_value = False
-    for i in range(7):
-        sending_elasticapm_client.begin_transaction("transaction.test")
-        sending_elasticapm_client.end_transaction("test-transaction", 200)
-
-    assert len(sending_elasticapm_client.transaction_store) == 7
-    assert len(sending_elasticapm_client.httpserver.requests) == 0
-    should_collect.return_value = True
-
-    sending_elasticapm_client.begin_transaction("transaction.test")
-    sending_elasticapm_client.end_transaction("my-other-transaction", 200)
-    assert len(sending_elasticapm_client.httpserver.requests) == 1
-
-
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_call_end_twice(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_call_end_twice(elasticapm_client):
     elasticapm_client.begin_transaction("celery")
 
     elasticapm_client.end_transaction("test-transaction", 200)
@@ -420,9 +352,7 @@ def test_client_disables_ssl_verification(elasticapm_client):
 @pytest.mark.parametrize(
     "elasticapm_client", [{"transactions_ignore_patterns": ["^OPTIONS", "views.api.v2"]}], indirect=True
 )
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_ignore_patterns(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_ignore_patterns(elasticapm_client):
     elasticapm_client.begin_transaction("web")
     elasticapm_client.end_transaction("OPTIONS views.healthcheck", 200)
 
@@ -563,9 +493,7 @@ def test_collect_source_errors(elasticapm_client):
     ],
     indirect=True,
 )
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_collect_local_variables_transactions(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_collect_local_variables_transactions(elasticapm_client):
     mode = elasticapm_client.config.collect_local_variables
     elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span("foo"):
@@ -594,9 +522,7 @@ def test_collect_local_variables_transactions(should_collect, elasticapm_client)
     ],
     indirect=True,
 )
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_collect_source_transactions(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_collect_source_transactions(elasticapm_client):
     library_frame_context = elasticapm_client.config.source_lines_span_library_frames
     in_app_frame_context = elasticapm_client.config.source_lines_span_app_frames
     elasticapm_client.begin_transaction("test")
@@ -644,9 +570,7 @@ def test_transaction_id_is_attached(elasticapm_client):
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_sample_rate": 0.4}], indirect=True)
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
-    should_collect.return_value = False
+def test_transaction_sampling(elasticapm_client, not_so_random):
     for i in range(10):
         elasticapm_client.begin_transaction("test_type")
         with elasticapm.capture_span("xyz"):
@@ -666,9 +590,7 @@ def test_transaction_sampling(should_collect, elasticapm_client, not_so_random):
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_transaction_max_spans(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_transaction_max_spans(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     for i in range(5):
         with elasticapm.capture_span("nodrop"):
@@ -691,9 +613,7 @@ def test_transaction_max_spans(should_collect, elasticapm_client):
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_transaction_span_frames_min_duration(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_transaction_span_frames_min_duration(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("noframes"):
         time.sleep(0.001)
@@ -712,9 +632,7 @@ def test_transaction_span_frames_min_duration(should_collect, elasticapm_client)
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_durarion_ms": -1}], indirect=True)
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_transaction_span_frames_min_duration_no_limit(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("frames"):
         pass
@@ -733,9 +651,7 @@ def test_transaction_span_frames_min_duration_no_limit(should_collect, elasticap
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 3}], indirect=True)
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_transaction_max_span_nested(should_collect, elasticapm_client):
-    should_collect.return_value = False
+def test_transaction_max_span_nested(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("1"):
         with elasticapm.capture_span("2"):
@@ -842,20 +758,18 @@ def test_message_keyword_truncation(sending_elasticapm_client):
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
-@mock.patch("elasticapm.base.Client._send_remote")
-def test_config_error_stops_error_send(mock_send_remote, sending_elasticapm_client):
+@mock.patch("elasticapm.transport.base.Transport.queue")
+def test_config_error_stops_error_send(mock_queue, sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send is True
-    sending_elasticapm_client.capture_message("bla")
-    assert mock_send_remote.call_count == 0
+    sending_elasticapm_client.capture_message("bla", handled=False)
+    assert mock_queue.call_count == 0
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
-@mock.patch("elasticapm.base.Client._send_remote")
-@mock.patch("elasticapm.base.TransactionsStore.should_collect")
-def test_config_error_stops_transaction_send(should_collect, mock_send_remote, sending_elasticapm_client):
-    should_collect.return_value = False
+@mock.patch("elasticapm.transport.base.Transport.queue")
+def test_config_error_stops_transaction_send(mock_queue, sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send is True
     sending_elasticapm_client.begin_transaction("test")
     sending_elasticapm_client.end_transaction("test", "OK")
     sending_elasticapm_client.close()
-    assert mock_send_remote.call_count == 0
+    assert mock_queue.call_count == 0

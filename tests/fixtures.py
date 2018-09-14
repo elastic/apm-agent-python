@@ -140,7 +140,8 @@ def waiting_httpsserver(httpsserver):
 @pytest.fixture()
 def validating_httpserver(request):
     config = getattr(request, "param", {})
-    server = ValidatingWSGIApp(**config)
+    app = config.pop("app", ValidatingWSGIApp)
+    server = app(**config)
     server.start()
     wait_for_http_server(server)
     request.addfinalizer(server.stop)
