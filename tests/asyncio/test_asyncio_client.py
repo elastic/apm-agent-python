@@ -1,109 +1,76 @@
 import asyncio
 import sys
-from urllib.parse import urlparse
 
-import mock
+import asynctest
 import pytest
+from pytest_localserver.http import ContentServer
+
+from elasticapm.transport.base import TransportException
 
 pytestmark = pytest.mark.skipif(sys.version_info < (3, 5), reason="python3.5+ requried for asyncio")
 
 
-class MockTransport(mock.MagicMock):
-    async_mode = False
-
-    def __init__(self, url=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.url = url
-
-    async def send(self, data, headers, timeout):
-        from elasticapm.transport.base import TransportException
-
-        self.data = data
-        if self.url == urlparse("http://error"):
-            raise TransportException("", data, False)
-        await asyncio.sleep(0.0001)
-
-
-class DummyTransport:
-    async_mode = False
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-    async def send(self, data, headers, timeout):
-        return
-
-    def close(self):
-        pass
-
-
 @pytest.mark.asyncio
-async def test_client_success():
-    from elasticapm.contrib.asyncio import Client
-
-    client = Client(
-        server_url="http://localhost",
-        service_name="service_name",
-        secret_token="secret",
-        transport_class=".".join((__name__, MockTransport.__name__)),
-    )
-    client.send(client.config.server_url, foo="bar")
+@pytest.mark.parametrize(
+    "sending_elasticapm_client",
+    [{"transport_class": "elasticapm.transport.asyncio.AsyncioHTTPTransport"}],
+    indirect=True,
+)
+async def test_client_success(sending_elasticapm_client):
+    sending_elasticapm_client.capture_message("foo", handled=False)
     tasks = asyncio.Task.all_tasks()
     task = next(t for t in tasks if t is not asyncio.Task.current_task())
     await task
-    assert client.state.status == 1
-    transport = client._get_transport(urlparse("http://localhost"))
-    assert transport.data == client.encode({"foo": "bar"})
+    assert not sending_elasticapm_client._transport.state.did_fail()
+    error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
+    assert error["log"]["message"] == "foo"
+    await sending_elasticapm_client._transport.close()
 
 
 @pytest.mark.asyncio
-async def test_client_failure():
-    from elasticapm.contrib.asyncio import Client
-    from elasticapm.transport.base import TransportException
+@pytest.mark.parametrize(
+    "sending_elasticapm_client",
+    [{"transport_class": "elasticapm.transport.asyncio.AsyncioHTTPTransport"}],
+    indirect=True,
+)
+@pytest.mark.parametrize("validating_httpserver", [{"app": ContentServer}], indirect=True)
+async def test_client_failure(sending_elasticapm_client, caplog):
+    sending_elasticapm_client.httpserver.code = 400
+    sending_elasticapm_client.httpserver.content = "Go away"
 
-    client = Client(
-        server_url="http://error",
-        service_name="service_name",
-        secret_token="secret",
-        transport_class=".".join((__name__, MockTransport.__name__)),
-    )
-    client.send(client.config.server_url, foo="bar")
-    tasks = asyncio.Task.all_tasks()
-    task = next(t for t in tasks if t is not asyncio.Task.current_task())
-    with pytest.raises(TransportException):
-        await task
-    assert client.state.status == 0
+    # test error
+    with caplog.at_level("ERROR", "elasticapm.transport"):
+        sending_elasticapm_client.capture_message("foo", handled=False)
+        tasks = asyncio.Task.all_tasks()
+        task = next(t for t in tasks if t is not asyncio.Task.current_task())
+        with pytest.raises(TransportException):
+            await task
+    assert sending_elasticapm_client._transport.state.did_fail()
+    assert "400" in caplog.records[0].message
 
 
 @pytest.mark.asyncio
-async def test_client_failure_stdlib_exception(mocker):
-    from elasticapm.contrib.asyncio import Client
-    from elasticapm.transport.base import TransportException
-
-    client = Client(
-        server_url="http://elastic.co",
-        service_name="service_name",
-        secret_token="secret",
-        async_mode=False,
-        transport_class="elasticapm.transport.asyncio.AsyncioHTTPTransport",
-    )
-    mock_client = mocker.Mock()
-    mock_client.post = mocker.Mock(side_effect=RuntimeError("oops"))
-    transport = client._get_transport(urlparse("http://elastic.co"))
-    transport.client = mock_client
-    client.send(client.config.server_url, foo="bar")
-    tasks = asyncio.Task.all_tasks()
-    task = next(t for t in tasks if t is not asyncio.Task.current_task())
-    with pytest.raises(TransportException):
-        await task
-    assert client.state.status == 0
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"transport_class": "elasticapm.transport.asyncio.AsyncioHTTPTransport"}], indirect=True
+)
+@asynctest.patch("elasticapm.transport.asyncio.AsyncioHTTPTransport._send")
+async def test_client_failure_stdlib_exception(mock_send, elasticapm_client, caplog):
+    mock_send.side_effect = RuntimeError("oops")
+    with caplog.at_level("ERROR", "elasticapm.transport"):
+        elasticapm_client.capture_message("foo", handled=False)
+        tasks = asyncio.Task.all_tasks()
+        task = next(t for t in tasks if t is not asyncio.Task.current_task())
+        with pytest.raises(RuntimeError):
+            await task
+    assert elasticapm_client._transport.state.did_fail()
+    assert "oops" in caplog.records[0].message
 
 
 @pytest.mark.asyncio
 async def test_client_send_timer():
     from elasticapm.contrib.asyncio.client import Client, AsyncTimer
 
-    client = Client(transport_class="tests.asyncio.test_asyncio_client.DummyTransport")
+    client = Client(transport_class="elasticapm.transport.asyncio.AsyncioHTTPTransport")
 
     assert client._send_timer is None
 
@@ -111,6 +78,6 @@ async def test_client_send_timer():
     client.end_transaction("test")
 
     assert isinstance(client._send_timer, AsyncTimer)
-    assert client._send_timer.interval == 5
+    assert client._send_timer.interval == 5000
 
     client.close()

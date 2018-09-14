@@ -45,10 +45,9 @@ async def test_send(mock_client):
 
     mock_client.status = 202
     mock_client.headers = {"Location": "http://example.com/foo"}
-    transport.client = mock_client
+    transport._client = mock_client
 
-    url = await transport.send(b"data")
-    assert url == "http://example.com/foo"
+    transport.send(b"data")
     assert mock_client.args == ("http://localhost:9999",)
     assert mock_client.kwargs == {"headers": {b"a": b"b"}, "data": b"data"}
 
@@ -63,10 +62,10 @@ async def test_send_not_found(mock_client):
     mock_client.status = 404
     mock_client.headers = {}
     mock_client.body = b"Not Found"
-    transport.client = mock_client
+    transport._client = mock_client
 
     with pytest.raises(TransportException) as excinfo:
-        await transport.send(b"data")
+        transport.send(b"data")
     assert "Not Found" in str(excinfo.value)
     assert excinfo.value.data == b"data"
 
@@ -79,7 +78,7 @@ async def test_send_timeout(mock_client):
     transport = AsyncioHTTPTransport("http://localhost:9999", timeout=0.0001)
 
     mock_client.config.server_timeout = 0.1
-    transport.client = mock_client
+    transport._client = mock_client
 
     with pytest.raises(TransportException) as excinfo:
         await transport.send(b"data")
