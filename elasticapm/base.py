@@ -17,7 +17,6 @@ import os
 import platform
 import socket
 import sys
-import threading
 from copy import deepcopy
 
 import elasticapm
@@ -71,7 +70,6 @@ class Client(object):
         self.transaction_store = None
         self.processors = []
         self.filter_exception_types_dict = {}
-        self._send_timer = None
         self._service_info = None
 
         self.config = Config(config, inline_dict=inline)
@@ -93,7 +91,7 @@ class Client(object):
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "timeout": self.config.server_timeout,
-            "max_flush_time": self.config.api_request_time,
+            "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
         }
         self._transport = import_string(self.config.transport_class)(
@@ -205,32 +203,10 @@ class Client(object):
 
     def end_transaction(self, name=None, result=""):
         transaction = self.transaction_store.end_transaction(result, name)
-        if not self._send_timer:
-            # send first batch of data after config._wait_to_first_send
-            self._start_send_timer(timeout=min(self.config._wait_to_first_send, self.config.api_request_time))
         return transaction
 
     def close(self):
-        self._collect_transactions()
-        if self._send_timer:
-            self._stop_send_timer()
         self._transport.close()
-
-    def _collect_transactions(self):
-        self._stop_send_timer()
-        self._transport.flush()
-        self._start_send_timer()
-
-    def _start_send_timer(self, timeout=None):
-        timeout = timeout or self.config.api_request_time
-        self._send_timer = threading.Timer(timeout / 1000.0, self._transport.flush)
-        self._send_timer.start()
-
-    def _stop_send_timer(self):
-        if self._send_timer and not self._send_timer == threading.current_thread():
-            self._send_timer.cancel()
-            if self._send_timer.is_alive():
-                self._send_timer.join()
 
     def get_service_info(self):
         if self._service_info:

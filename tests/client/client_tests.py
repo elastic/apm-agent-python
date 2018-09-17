@@ -195,12 +195,10 @@ def test_send_not_enabled(sending_elasticapm_client):
     [{"transport_class": "elasticapm.transport.http.Transport", "async_mode": False}],
     indirect=True,
 )
-@mock.patch("elasticapm.base.Client._collect_transactions")
-def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
+def test_client_shutdown_sync(sending_elasticapm_client):
     sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
     assert len(sending_elasticapm_client.httpserver.requests) == 1
-    assert mock_traces_collect.call_count == 1
 
 
 @pytest.mark.parametrize(
@@ -208,11 +206,9 @@ def test_client_shutdown_sync(mock_traces_collect, sending_elasticapm_client):
     [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
     indirect=True,
 )
-@mock.patch("elasticapm.base.Client._collect_transactions")
-def test_client_shutdown_async(mock_traces_collect, sending_elasticapm_client):
+def test_client_shutdown_async(sending_elasticapm_client):
     sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
-    assert mock_traces_collect.call_count == 1
     assert len(sending_elasticapm_client.httpserver.requests) == 1
 
 
@@ -399,22 +395,6 @@ def test_empty_transport_disables_send():
     assert "TRANSPORT_CLASS" in client.config.errors
 
     assert client.config.disable_send
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "2s"}], indirect=True)
-def test_send_timer(elasticapm_client):
-    assert elasticapm_client._send_timer is None
-    assert elasticapm_client.config.api_request_time == 2000
-    elasticapm_client.begin_transaction("test_type")
-    elasticapm_client.end_transaction("test")
-
-    assert elasticapm_client._send_timer is not None
-    assert elasticapm_client._send_timer.interval == 2
-    assert elasticapm_client._send_timer.is_alive()
-
-    elasticapm_client.close()
-
-    assert not elasticapm_client._send_timer.is_alive()
 
 
 @pytest.mark.parametrize(

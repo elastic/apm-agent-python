@@ -221,9 +221,6 @@ class Config(_ConfigBase):
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
 
-    # undocumented configuration
-    _wait_to_first_send = _ConfigValue("_WAIT_TO_FIRST_SEND", type=int, default=5 * 1000)
-
 
 def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):
     """

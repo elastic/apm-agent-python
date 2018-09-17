@@ -3,6 +3,7 @@ import string
 import time
 
 import mock
+import pytest
 
 from elasticapm.transport.base import AsyncTransport, Transport, TransportException, TransportState
 from elasticapm.utils import compat
@@ -87,7 +88,7 @@ def test_flush_time_size(mock_send, caplog):
         # we need to add lots of uncompressible data to fill up the gzip-internal buffer
         for i in range(9):
             transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
-    record = caplog.records[0]
+    record = caplog.records[1]
     assert "queue size" in record.message
     assert mock_send.call_count == 1
     assert transport._queued_data is None
@@ -136,3 +137,23 @@ def test_sync_transport_fail_and_recover(mock_send, caplog):
     assert not transport.state.did_fail()
 
     transport.close()
+
+
+@pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "2s"}], indirect=True)
+def test_send_timer(sending_elasticapm_client, caplog):
+    with caplog.at_level("DEBUG", "elasticapm.transport"):
+        assert sending_elasticapm_client._transport._flush_timer is None
+        assert sending_elasticapm_client.config.api_request_time == 2000
+        sending_elasticapm_client.begin_transaction("test_type")
+        sending_elasticapm_client.end_transaction("test")
+
+        assert sending_elasticapm_client._transport._flush_timer is not None
+        assert sending_elasticapm_client._transport._flush_timer.interval == 2
+        assert sending_elasticapm_client._transport._flush_timer.is_alive()
+
+        sending_elasticapm_client.close()
+
+    assert sending_elasticapm_client._transport._flush_timer.finished.is_set()
+    assert "Starting flush timer" in caplog.records[0].message
+    assert "Cancelling flush timer" in caplog.records[1].message
+    assert "Sent request" in caplog.records[2].message

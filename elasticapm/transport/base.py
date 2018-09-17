@@ -55,6 +55,7 @@ class Transport(object):
         self._queued_data = None
         self._flush_lock = threading.Lock()
         self._last_flush = time.time()
+        self._flush_timer = None
 
     def queue(self, event_type, data, flush=False):
         self._queue(self.queued_data, {event_type: data})
@@ -75,6 +76,9 @@ class Transport(object):
                 "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
             )
             self.flush()
+        elif not self._flush_timer:
+            with self._flush_lock:
+                self._start_flush_timer()
 
     def _queue(self, queue, data):
         queue.write((self._json_serializer(data) + "\n").encode("utf-8"))
@@ -95,8 +99,15 @@ class Transport(object):
         # return size of the underlying BytesIO object if it is compressed
         return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
 
-    def flush(self, sync=False):
+    def flush(self, sync=False, start_flush_timer=True):
+        """
+        Flush the queue
+        :param sync: if true, flushes the queue synchronously in the current thread
+        :param start_flush_timer: set to True if the flush timer thread should be restarted at the end of the flush
+        :return: None
+        """
         with self._flush_lock:
+            self._stop_flush_timer()
             queued_data, self._queued_data = self._queued_data, None
             if queued_data and not self.state.should_try():
                 logger.error("dropping flushed data due to transport failure back-off")
@@ -117,6 +128,8 @@ class Transport(object):
                     except Exception as e:
                         self.handle_transport_fail(e)
             self._last_flush = time.time()
+            if start_flush_timer:
+                self._start_flush_timer()
 
     def send(self, data):
         """
@@ -130,7 +143,7 @@ class Transport(object):
         Cleans up resources and closes connection
         :return:
         """
-        self.flush(sync=True)
+        self.flush(sync=True, start_flush_timer=False)
 
     def handle_transport_success(self, **kwargs):
         """
@@ -145,6 +158,19 @@ class Transport(object):
         message = str(exception)
         logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
         self.state.set_fail()
+
+    def _start_flush_timer(self, timeout=None):
+        timeout = timeout or self._max_flush_time
+        self._flush_timer = threading.Timer(timeout, self.flush)
+        self._flush_timer.name = "elasticapm flush timer"
+        self._flush_timer.daemon = True
+        logger.debug("Starting flush timer")
+        self._flush_timer.start()
+
+    def _stop_flush_timer(self):
+        if self._flush_timer:
+            logger.debug("Cancelling flush timer")
+            self._flush_timer.cancel()
 
 
 class AsyncTransport(Transport):
