@@ -4,25 +4,20 @@ from elasticapm.utils import compat
 
 
 class HTTPTransportBase(Transport):
-    binary_headers = True
-
     def __init__(
         self, url, verify_server_cert=True, compress_level=5, metadata=None, headers=None, timeout=None, **kwargs
     ):
         self._url = url
         self._verify_server_cert = verify_server_cert
         self._timeout = timeout
-        if self.binary_headers:
-            self._headers = {
-                k.encode("ascii")
-                if isinstance(k, compat.text_type)
-                else k: v.encode("ascii")
-                if isinstance(v, compat.text_type)
-                else v
-                for k, v in (headers if headers is not None else {}).items()
-            }
-        else:
-            self._headers = headers
+        self._headers = {
+            k.encode("ascii")
+            if isinstance(k, compat.text_type)
+            else k: v.encode("ascii")
+            if isinstance(v, compat.text_type)
+            else v
+            for k, v in (headers if headers is not None else {}).items()
+        }
         super(HTTPTransportBase, self).__init__(metadata=metadata, compress_level=compress_level, **kwargs)
 
     def send(self, data):

@@ -95,7 +95,7 @@ class Client(object):
             "max_buffer_size": self.config.api_request_size,
         }
         self._transport = import_string(self.config.transport_class)(
-            compat.urlparse.urljoin(self.config.server_url, "/intake/v2/events"), **transport_kwargs
+            compat.urlparse.urljoin(self.config.server_url, constants.EVENTS_API_PATH), **transport_kwargs
         )
 
         for exc_to_filter in self.config.filter_exception_types or []:

@@ -1,8 +1,4 @@
-# Error API path
-ERROR_API_PATH = "/v1/errors"
-
-# Transactions API path
-TRANSACTIONS_API_PATH = "/v1/transactions"
+EVENTS_API_PATH = "/intake/v2/events"
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
