@@ -218,9 +218,8 @@ class TransportState(object):
 
         interval = min(self.retry_number, 6) ** 2
 
-        if time.time() - self.last_check > interval:
+        if time.time() - self.last_check >= interval:
             return True
-
         return False
 
     def set_fail(self):
