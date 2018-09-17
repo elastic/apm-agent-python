@@ -193,6 +193,9 @@ class Client(object):
         for processor in self.processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
                 data = processor(self, data)
+        if flush and is_master_process():
+            # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
+            flush = False
         self._transport.queue(event_type, data, flush)
 
     def begin_transaction(self, transaction_type):
@@ -396,18 +399,6 @@ class Client(object):
                 self.logger.info("Ignored %s exception due to exception type filter", exc_name)
                 return True
         return False
-
-    def _get_transport(self, parsed_url):
-        if hasattr(self._transport, "sync_transport") and is_master_process():
-            # when in the master process, always use SYNC mode. This avoids
-            # the danger of being forked into an inconsistent threading state
-            self.logger.info("Sending message synchronously while in master " "process. PID: %s", os.getpid())
-            return self._transport_class.sync_transport(parsed_url)
-        if parsed_url not in self._transports:
-            self._transports[parsed_url] = self._transport_class(
-                parsed_url, verify_server_cert=self.config.verify_server_cert
-            )
-        return self._transports[parsed_url]
 
     def _get_stack_info_for_trace(
         self,

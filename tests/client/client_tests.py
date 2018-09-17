@@ -333,14 +333,16 @@ def test_call_end_twice(elasticapm_client):
     elasticapm_client.end_transaction("test-transaction", 200)
 
 
+@mock.patch("elasticapm.transport.base.Transport.queue")
 @mock.patch("elasticapm.base.is_master_process")
-def test_client_uses_sync_mode_when_master_process(is_master_process):
-    # when in the master process, the client should use the non-async
-    # HTTP transport, even if async_mode is True
+def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_queue):
+    # when in the master process, the client should not flush the
+    # HTTP transport
     is_master_process.return_value = True
-    client = Client(server_url="http://example.com", service_name="app_name", secret_token="secret", async_mode=True)
-    transport = client._get_transport(compat.urlparse.urlparse("http://exampe.com"))
-    assert transport.async_mode is False
+    client = Client(server_url="http://example.com", service_name="app_name", secret_token="secret")
+    client.queue("x", {}, flush=True)
+    assert mock_queue.call_count == 1
+    assert mock_queue.call_args[0] == ("x", {}, False)
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"verify_server_cert": False}], indirect=True)
