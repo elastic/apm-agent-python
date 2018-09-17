@@ -7,6 +7,7 @@ import os
 from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
 pytestmark = pytest.mark.cassandra
@@ -39,8 +40,8 @@ def test_cassandra_connect(instrument, elasticapm_client, cassandra_cluster):
     sess = cassandra_cluster.connect()
     elasticapm_client.end_transaction("test")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    span = transactions[0]["spans"][0]
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
 
     assert span["type"] == "db.cassandra.connect"
     assert span["duration"] > 0
@@ -51,8 +52,8 @@ def test_select_query_string(instrument, cassandra_session, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     cassandra_session.execute("SELECT name from users")
     elasticapm_client.end_transaction("test")
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    span = transaction["spans"][0]
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
     assert span["type"] == "db.cassandra.query"
     assert span["name"] == "SELECT FROM users"
     assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
@@ -63,8 +64,8 @@ def test_select_simple_statement(instrument, cassandra_session, elasticapm_clien
     elasticapm_client.begin_transaction("transaction.test")
     cassandra_session.execute(statement)
     elasticapm_client.end_transaction("test")
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    span = transaction["spans"][0]
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
     assert span["type"] == "db.cassandra.query"
     assert span["name"] == "SELECT FROM users"
     assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
@@ -75,8 +76,8 @@ def test_select_prepared_statement(instrument, cassandra_session, elasticapm_cli
     elasticapm_client.begin_transaction("transaction.test")
     cassandra_session.execute(prepared_statement)
     elasticapm_client.end_transaction("test")
-    transaction = elasticapm_client.transaction_store.get_all()[0]
-    span = transaction["spans"][0]
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
     assert span["type"] == "db.cassandra.query"
     assert span["name"] == "SELECT FROM users"
     assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}

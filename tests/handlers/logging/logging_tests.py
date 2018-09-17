@@ -3,6 +3,7 @@ from logging import LogRecord
 
 import pytest
 
+from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils.stacks import iter_stack_frames
 
@@ -23,7 +24,7 @@ def test_logger_basic(logger):
     logger.error("This is a test error")
 
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert event["log"]["logger_name"] == __name__
     assert event["log"]["level"] == "error"
     assert event["log"]["message"] == "This is a test error"
@@ -36,7 +37,7 @@ def test_logger_basic(logger):
 def test_logger_warning(logger):
     logger.warning("This is a test warning")
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert event["log"]["logger_name"] == __name__
     assert event["log"]["level"] == "warning"
     assert "exception" not in event
@@ -47,7 +48,7 @@ def test_logger_warning(logger):
 def test_logger_extra_data(logger):
     logger.info("This is a test info with a url", extra=dict(data=dict(url="http://example.com")))
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert event["context"]["custom"]["url"] == "http://example.com"
     assert "stacktrace" in event["log"]
     assert "exception" not in event
@@ -62,7 +63,7 @@ def test_logger_exc_info(logger):
         logger.info("This is a test info with an exception", exc_info=True)
 
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
 
     # assert event['message'] == 'This is a test info with an exception'
     assert "exception" in event
@@ -77,7 +78,7 @@ def test_logger_exc_info(logger):
 def test_message_params(logger):
     logger.info("This is a test of %s", "args")
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert "exception" not in event
     assert "param_message" in event["log"]
     assert event["log"]["message"] == "This is a test of args"
@@ -87,7 +88,7 @@ def test_message_params(logger):
 def test_record_stack(logger):
     logger.info("This is a test of stacks", extra={"stack": True})
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     frames = event["log"]["stacktrace"]
     assert len(frames) != 1
     frame = frames[0]
@@ -102,7 +103,7 @@ def test_record_stack(logger):
 def test_no_record_stack(logger):
     logger.info("This is a test of no stacks", extra={"stack": False})
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert event.get("culprit") == None
     assert event["log"]["message"] == "This is a test of no stacks"
     assert "stacktrace" not in event["log"]
@@ -115,7 +116,7 @@ def test_no_record_stack_via_config(logger):
     logger.client.config.auto_log_stacks = False
     logger.info("This is a test of no stacks")
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert event.get("culprit") == None
     assert event["log"]["message"] == "This is a test of no stacks"
     assert "stacktrace" not in event["log"]
@@ -127,7 +128,7 @@ def test_no_record_stack_via_config(logger):
 def test_explicit_stack(logger):
     logger.info("This is a test of stacks", extra={"stack": iter_stack_frames()})
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert "culprit" in event, event
     assert event["culprit"] == "tests.handlers.logging.logging_tests.test_explicit_stack"
     assert "message" in event["log"], event
@@ -141,7 +142,7 @@ def test_explicit_stack(logger):
 def test_extra_culprit(logger):
     logger.info("This is a test of stacks", extra={"culprit": "foo.bar"})
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert event["culprit"] == "foo.bar"
     assert "culprit" not in event["context"]["custom"]
 
@@ -153,7 +154,7 @@ def test_logger_exception(logger):
         logger.exception("This is a test with an exception", extra={"stack": True})
 
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
 
     assert event["log"]["message"] == "This is a test with an exception"
     assert "stacktrace" in event["log"]
