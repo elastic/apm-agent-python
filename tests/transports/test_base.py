@@ -1,6 +1,6 @@
 import random
 import string
-import time
+import timeit
 
 import mock
 import pytest
@@ -17,7 +17,7 @@ def test_transport_state_should_try_online():
 def test_transport_state_should_try_new_error():
     state = TransportState()
     state.status = state.ERROR
-    state.last_check = time.time()
+    state.last_check = timeit.default_timer()
     state.retry_number = 1
     assert state.should_try() is False
 
@@ -25,7 +25,7 @@ def test_transport_state_should_try_new_error():
 def test_transport_state_should_try_time_passed_error():
     state = TransportState()
     state.status = state.ERROR
-    state.last_check = time.time() - 10
+    state.last_check = timeit.default_timer() - 10
     state.retry_number = 1
     assert state.should_try() is True
 
@@ -72,7 +72,7 @@ def test_metadata_prepended(mock_send):
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_flush_time(mock_send, caplog):
     transport = Transport(metadata={}, max_flush_time=5)
-    transport._last_flush = time.time() - 5.1
+    transport._last_flush = timeit.default_timer() - 5.1
     with caplog.at_level("DEBUG", "elasticapm.transport"):
         transport.queue("error", {})
     record = caplog.records[0]

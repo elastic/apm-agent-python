@@ -2,7 +2,7 @@
 import gzip
 import logging
 import threading
-import time
+import timeit
 
 from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import json_encoder
@@ -54,12 +54,12 @@ class Transport(object):
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
         self._flush_lock = threading.Lock()
-        self._last_flush = time.time()
+        self._last_flush = timeit.default_timer()
         self._flush_timer = None
 
     def queue(self, event_type, data, flush=False):
         self._queue(self.queued_data, {event_type: data})
-        since_last_flush = time.time() - self._last_flush
+        since_last_flush = timeit.default_timer() - self._last_flush
         queue_size = self.queued_data_size
         if flush:
             logger.debug("forced flush")
@@ -127,7 +127,7 @@ class Transport(object):
                         self.handle_transport_success()
                     except Exception as e:
                         self.handle_transport_fail(e)
-            self._last_flush = time.time()
+            self._last_flush = timeit.default_timer()
             if start_flush_timer:
                 self._start_flush_timer()
 
@@ -218,14 +218,12 @@ class TransportState(object):
 
         interval = min(self.retry_number, 6) ** 2
 
-        if time.time() - self.last_check >= interval:
-            return True
-        return False
+        return timeit.default_timer() - self.last_check > interval
 
     def set_fail(self):
         self.status = self.ERROR
         self.retry_number += 1
-        self.last_check = time.time()
+        self.last_check = timeit.default_timer()
 
     def set_success(self):
         self.status = self.ONLINE
