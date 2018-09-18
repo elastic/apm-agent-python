@@ -6,6 +6,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2RegisterTypeInstrumentation",
     "elasticapm.instrumentation.packages.mysql.MySQLInstrumentation",
+    "elasticapm.instrumentation.packages.mysqlconnector.MySQLConnectorInstrumentation",
     "elasticapm.instrumentation.packages.pylibmc.PyLibMcInstrumentation",
     "elasticapm.instrumentation.packages.pymongo.PyMongoInstrumentation",
     "elasticapm.instrumentation.packages.pymongo.PyMongoBulkInstrumentation",
