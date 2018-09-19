@@ -1,10 +1,12 @@
 import codecs
+import gzip
 import json
 import os
 import random
 import socket
 import time
 import zlib
+from collections import defaultdict
 
 import jsonschema
 import pytest
@@ -13,6 +15,9 @@ from werkzeug.wrappers import Request, Response
 
 import elasticapm
 from elasticapm.base import Client
+from elasticapm.conf.constants import SPAN
+from elasticapm.transport.http_base import HTTPTransportBase
+from elasticapm.utils import compat
 
 try:
     from urllib.request import pathname2url
@@ -22,8 +27,10 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "payload.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "payload.json")
+ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "v2_error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "v2_transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "v2_span.json")
+METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
 
 assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
     TRANSACTIONS_SCHEMA
@@ -32,19 +39,33 @@ assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
     TRANSACTIONS_SCHEMA, encoding="utf8"
-) as transactions_json:
+) as transactions_json, codecs.open(SPAN_SCHEMA, encoding="utf8") as span_json, codecs.open(
+    METADATA_SCHEMA, encoding="utf8"
+) as metadata_json:
     VALIDATORS = {
-        "/v1/errors": jsonschema.Draft4Validator(
+        "error": jsonschema.Draft4Validator(
             json.load(errors_json),
             resolver=jsonschema.RefResolver(
                 base_uri="file:" + pathname2url(ERRORS_SCHEMA), referrer="file:" + pathname2url(ERRORS_SCHEMA)
             ),
         ),
-        "/v1/transactions": jsonschema.Draft4Validator(
+        "transaction": jsonschema.Draft4Validator(
             json.load(transactions_json),
             resolver=jsonschema.RefResolver(
                 base_uri="file:" + pathname2url(TRANSACTIONS_SCHEMA),
                 referrer="file:" + pathname2url(TRANSACTIONS_SCHEMA),
+            ),
+        ),
+        "span": jsonschema.Draft4Validator(
+            json.load(span_json),
+            resolver=jsonschema.RefResolver(
+                base_uri="file:" + pathname2url(SPAN_SCHEMA), referrer="file:" + pathname2url(SPAN_SCHEMA)
+            ),
+        ),
+        "metadata": jsonschema.Draft4Validator(
+            json.load(metadata_json),
+            resolver=jsonschema.RefResolver(
+                base_uri="file:" + pathname2url(METADATA_SCHEMA), referrer="file:" + pathname2url(METADATA_SCHEMA)
             ),
         ),
     }
@@ -52,31 +73,38 @@ with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
 
 class ValidatingWSGIApp(ContentServer):
     def __init__(self, **kwargs):
+        self.skip_validate = kwargs.pop("skip_validate", False)
         super(ValidatingWSGIApp, self).__init__(**kwargs)
         self.payloads = []
         self.responses = []
-        self.skip_validate = False
 
     def __call__(self, environ, start_response):
-        code = self.code
         content = self.content
         request = Request(environ)
         self.requests.append(request)
         data = request.data
         if request.content_encoding == "deflate":
             data = zlib.decompress(data)
+        elif request.content_encoding == "gzip":
+            with gzip.GzipFile(fileobj=compat.BytesIO(data)) as f:
+                data = f.read()
         data = data.decode(request.charset)
-        if request.content_type == "application/json":
-            data = json.loads(data)
+        if request.content_type == "application/x-ndjson":
+            data = [json.loads(line) for line in data.split("\n") if line]
         self.payloads.append(data)
-        validator = VALIDATORS.get(request.path, None)
-        if validator and not self.skip_validate:
-            try:
-                validator.validate(data)
-                code = 202
-            except jsonschema.ValidationError as e:
-                code = 400
-                content = json.dumps({"status": "error", "message": str(e)})
+        code = 202
+        success = 0
+        fail = 0
+        if not self.skip_validate:
+            for line in data:
+                item_type, item = list(line.items())[0]
+                validator = VALIDATORS[item_type]
+                try:
+                    validator.validate(item)
+                    success += 1
+                except jsonschema.ValidationError as e:
+                    fail += 1
+            code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()
         response.headers.extend(self.headers)
@@ -91,7 +119,7 @@ def elasticapm_client(request):
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("include_paths", ("*/tests/*",))
-    client_config.setdefault("span_frames_min_duration_ms", -1)
+    client_config.setdefault("span_frames_min_duration", -1)
     client = TempStoreClient(**client_config)
     yield client
     client.close()
@@ -111,7 +139,9 @@ def waiting_httpsserver(httpsserver):
 
 @pytest.fixture()
 def validating_httpserver(request):
-    server = ValidatingWSGIApp()
+    config = getattr(request, "param", {})
+    app = config.pop("app", ValidatingWSGIApp)
+    server = app(**config)
     server.start()
     wait_for_http_server(server)
     request.addfinalizer(server.stop)
@@ -126,7 +156,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
-    client_config.setdefault("span_frames_min_duration_ms", -1)
+    client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("include_paths", ("*/tests/*",))
     client = Client(**client_config)
     client.httpserver = validating_httpserver
@@ -134,13 +164,27 @@ def sending_elasticapm_client(request, validating_httpserver):
     client.close()
 
 
+class DummyTransport(HTTPTransportBase):
+    def __init__(self, url, **kwargs):
+        super(DummyTransport, self).__init__(url, **kwargs)
+        self.events = defaultdict(list)
+
+    def queue(self, event_type, data, flush=False):
+        self.events[event_type].append(data)
+
+
 class TempStoreClient(Client):
     def __init__(self, **inline):
-        self.events = []
+        inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
         super(TempStoreClient, self).__init__(**inline)
 
-    def send(self, url, **kwargs):
-        self.events.append(kwargs)
+    @property
+    def events(self):
+        return self._transport.events
+
+    def spans_for_transaction(self, transaction):
+        """Test helper method to get all spans of a specific transaction"""
+        return [span for span in self.events[SPAN] if span["transaction_id"] == transaction["id"]]
 
 
 @pytest.fixture()

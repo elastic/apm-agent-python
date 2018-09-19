@@ -1,10 +1,12 @@
 import logging
 import time
+from collections import defaultdict
 
 import pytest
 from mock import Mock
 
 import elasticapm
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import TransactionsStore, capture_span, get_transaction
 
 
@@ -139,7 +141,14 @@ def transaction_store():
     ]
 
     mock_get_frames.return_value = frames
-    return TransactionsStore(mock_get_frames, 99999)
+    events = defaultdict(list)
+
+    def queue(event_type, event, flush=False):
+        events[event_type].append(event)
+
+    store = TransactionsStore(mock_get_frames, queue, 99999)
+    store.events = events
+    return store
 
 
 def test_leaf_tracing(transaction_store):
@@ -157,8 +166,7 @@ def test_leaf_tracing(transaction_store):
 
     transaction_store.end_transaction(None, "transaction")
 
-    transactions = transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    spans = transaction_store.events[SPAN]
 
     assert len(spans) == 2
 
@@ -167,49 +175,20 @@ def test_leaf_tracing(transaction_store):
 
 
 def test_get_transaction():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction(clear=True)
     assert get_transaction() is None
 
 
-def test_should_collect_time():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5)
-    requests_store._last_collect -= 6
-
-    assert requests_store.should_collect()
-
-
-def test_should_not_collect_time():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5)
-    requests_store._last_collect -= 3
-
-    assert not requests_store.should_collect()
-
-
-def test_should_collect_count():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_size=5)
-    requests_store._transactions = 6 * [1]
-    requests_store._last_collect -= 3
-
-    assert requests_store.should_collect()
-
-
-def test_should_not_collect_count():
-    requests_store = TransactionsStore(lambda: [], collect_frequency=5, max_queue_size=5)
-    requests_store._transactions = 4 * [1]
-
-    assert not requests_store.should_collect()
-
-
 def test_tag_transaction():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
     requests_store.end_transaction(200, "test")
@@ -227,7 +206,7 @@ def test_tag_while_no_transaction(caplog):
 
 
 def test_tag_with_non_string_value():
-    requests_store = TransactionsStore(lambda: [], 99999)
+    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, "test")
@@ -239,7 +218,7 @@ def test_tags_merge(elasticapm_client):
     elasticapm.tag(foo=1, bar="baz")
     elasticapm.tag(bar=3, boo="biz")
     elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["tags"] == {"foo": "1", "bar": "3", "boo": "biz"}
 
@@ -254,7 +233,7 @@ def test_set_transaction_name(elasticapm_client):
 
     elasticapm_client.end_transaction("test_name", 200)
 
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
     assert transactions[0]["name"] == "test_name"
     assert transactions[1]["name"] == "another_name"
 
@@ -265,7 +244,7 @@ def test_set_transaction_custom_data(elasticapm_client):
     elasticapm.set_custom_context({"foo": "bar"})
 
     elasticapm_client.end_transaction("foo", 200)
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["custom"] == {"foo": "bar"}
 
@@ -277,7 +256,7 @@ def test_set_transaction_custom_data_merge(elasticapm_client):
     elasticapm.set_custom_context({"bar": "bie", "boo": "biz"})
 
     elasticapm_client.end_transaction("foo", 200)
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["custom"] == {"foo": "bar", "bar": "bie", "boo": "biz"}
 
@@ -288,7 +267,7 @@ def test_set_user_context(elasticapm_client):
     elasticapm.set_user_context(username="foo", email="foo@example.com", user_id=42)
 
     elasticapm_client.end_transaction("foo", 200)
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 
@@ -300,7 +279,7 @@ def test_set_user_context_merge(elasticapm_client):
     elasticapm.set_user_context(email="foo@example.com", user_id=42)
 
     elasticapm_client.end_transaction("foo", 200)
-    transactions = elasticapm_client.transaction_store.get_all()
+    transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 

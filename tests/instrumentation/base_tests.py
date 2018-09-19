@@ -6,6 +6,7 @@ import mock
 import pytest
 
 import elasticapm
+from elasticapm.conf.constants import SPAN
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat, wrapt
 
@@ -123,8 +124,9 @@ def test_skip_ignored_frames(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span("test"):
         pass
-    transaction = elasticapm_client.end_transaction("test", "test")
-    for frame in transaction.spans[0].frames:
+    elasticapm_client.end_transaction("test", "test")
+    span = elasticapm_client.events[SPAN][0]
+    for frame in span["stacktrace"]:
         assert not frame["module"].startswith("elasticapm")
 
 
