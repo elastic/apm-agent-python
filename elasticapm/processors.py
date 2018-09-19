@@ -12,6 +12,7 @@ Large portions are
 import re
 import warnings
 
+from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
 
@@ -24,6 +25,22 @@ SANITIZE_FIELD_NAMES = frozenset(
 SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
 
 
+def for_events(*events):
+    """
+    :param events: list of event types
+
+    Only calls wrapped function if given event_type is in list of events
+    """
+    events = set(events)
+
+    def wrap(func):
+        func.event_types = events
+        return func
+
+    return wrap
+
+
+@for_events(ERROR, TRANSACTION)
 def remove_http_request_body(client, event):
     """
     Removes request.body from context
@@ -37,6 +54,7 @@ def remove_http_request_body(client, event):
     return event
 
 
+@for_events(ERROR, SPAN)
 def remove_stacktrace_locals(client, event):
     """
     Removes local variables from any frames.
@@ -49,6 +67,7 @@ def remove_stacktrace_locals(client, event):
     return _process_stack_frames(event, func)
 
 
+@for_events(ERROR, SPAN)
 def sanitize_stacktrace_locals(client, event):
     """
     Sanitizes local variables in all frames
@@ -65,6 +84,7 @@ def sanitize_stacktrace_locals(client, event):
     return _process_stack_frames(event, func)
 
 
+@for_events(ERROR, TRANSACTION)
 def sanitize_http_request_cookies(client, event):
     """
     Sanitizes http request cookies
@@ -90,6 +110,7 @@ def sanitize_http_request_cookies(client, event):
     return event
 
 
+@for_events(ERROR, TRANSACTION)
 def sanitize_http_response_cookies(client, event):
     """
     Sanitizes the set-cookie header of the response
@@ -105,6 +126,7 @@ def sanitize_http_response_cookies(client, event):
     return event
 
 
+@for_events(ERROR, TRANSACTION)
 def sanitize_http_headers(client, event):
     """
     Sanitizes http request/response headers
@@ -130,6 +152,7 @@ def sanitize_http_headers(client, event):
     return event
 
 
+@for_events(ERROR, TRANSACTION)
 def sanitize_http_wsgi_env(client, event):
     """
     Sanitizes WSGI environment variables
@@ -146,6 +169,7 @@ def sanitize_http_wsgi_env(client, event):
     return event
 
 
+@for_events(ERROR, TRANSACTION)
 def sanitize_http_request_querystring(client, event):
     """
     Sanitizes http request query string
@@ -166,6 +190,7 @@ def sanitize_http_request_querystring(client, event):
     return event
 
 
+@for_events(ERROR, TRANSACTION)
 def sanitize_http_request_body(client, event):
     """
     Sanitizes http request body. This only works if the request body
@@ -186,9 +211,10 @@ def sanitize_http_request_body(client, event):
     return event
 
 
+@for_events(ERROR, SPAN)
 def mark_in_app_frames(client, event):
     warnings.warn(
-        "The mark_in_app_frames processor is deprecated " "and can be removed from your PROCESSORS setting",
+        "The mark_in_app_frames processor is deprecated and can be removed from your PROCESSORS setting",
         DeprecationWarning,
     )
     return event
@@ -232,12 +258,9 @@ def _sanitize_string(unsanitized, itemsep, kvsep):
 
 
 def _process_stack_frames(event, func):
-    if "spans" in event:
-        # every capture_span can have a stack capture_span
-        for span in event["spans"]:
-            if "stacktrace" in span:
-                for frame in span["stacktrace"]:
-                    func(frame)
+    if "stacktrace" in event:
+        for frame in event["stacktrace"]:
+            func(frame)
     # an error can have two stacktraces, one in "exception", one in "log"
     if "exception" in event and "stacktrace" in event["exception"]:
         for frame in event["exception"]["stacktrace"]:

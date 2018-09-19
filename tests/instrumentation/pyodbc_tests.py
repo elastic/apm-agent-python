@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from elasticapm.conf.constants import TRANSACTION
+
 pyodbc = pytest.importorskip("pyodbc")
 
 pytestmark = pytest.mark.pyodbc
@@ -39,8 +41,8 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         cursor.fetchall()
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
-        transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]["spans"]
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
         assert "db" in span["context"]

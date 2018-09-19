@@ -1,10 +1,24 @@
 # Changelog
 
+## v4.0.0
+
+**BREAKING** Version 4 of the agent implements a new wire protocol for communicating with
+the APM Server. This format is only supported in APM Server 6.5+.
+
+Further breaking changes:
+
+ * the undocumented `AsyncioHTTPTransport` has been removed.
+ * the `flush_interval` and `max_queue_size` settings have been removed.
+ * new settings introduced: `api_request_time` and `api_request_size`.
+ * Some settings now require a unit for duration or size. See documentation on
+   configuration for more information.
+
 ## v3.0.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.1...v3.0.2)
 
  * fixed an issue with detecting names of wrapped functions that are partials (#294)
  * fixed a bug in Flask instrumentation that could appear together with FlaskAPI (#286)
+ 
 ## v3.0.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...v3.0.1)
