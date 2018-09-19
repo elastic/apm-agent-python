@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import pytest
 import webob
 
+from elasticapm.conf.constants import ERROR
 from elasticapm.middleware import ElasticAPM
 
 
@@ -20,7 +21,7 @@ def test_error_handler(elasticapm_client):
         list(response)
 
     assert len(elasticapm_client.events) == 1
-    event = elasticapm_client.events.pop(0)["errors"][0]
+    event = elasticapm_client.events[ERROR][0]
 
     assert "exception" in event
     exc = event["exception"]
