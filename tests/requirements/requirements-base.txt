@@ -37,6 +37,7 @@ pytz
 
 aiohttp ; python_version >= '3.5'
 pytest-asyncio ; python_version >= '3.5'
+asynctest==0.12.2 ; python_version >= '3.5'
 
 pyzmq==16.0.2 ; python_version == '2.7'
 gevent==1.2.2 ; python_version == '2.7'

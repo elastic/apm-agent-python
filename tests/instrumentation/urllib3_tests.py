@@ -1,13 +1,12 @@
 import mock
 import urllib3
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
 
 
-@mock.patch("elasticapm.traces.TransactionsStore.should_collect")
-def test_urllib3(should_collect, instrument, elasticapm_client, waiting_httpserver):
-    should_collect.return_value = False
+def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
     parsed_url = urlparse.urlparse(url)
@@ -21,8 +20,8 @@ def test_urllib3(should_collect, instrument, elasticapm_client, waiting_httpserv
 
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"test_pipeline", expected_sig}
 

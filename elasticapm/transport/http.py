@@ -15,11 +15,8 @@ logger = logging.getLogger("elasticapm.transport.http")
 
 
 class Transport(HTTPTransportBase):
-
-    scheme = ["http", "https"]
-
-    def __init__(self, parsed_url, **kwargs):
-        super(Transport, self).__init__(parsed_url, **kwargs)
+    def __init__(self, url, **kwargs):
+        super(Transport, self).__init__(url, **kwargs)
         pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": certifi.where(), "block": True}
         if not self._verify_server_cert:
             pool_kwargs["cert_reqs"] = ssl.CERT_NONE
@@ -30,18 +27,9 @@ class Transport(HTTPTransportBase):
         else:
             self.http = urllib3.PoolManager(**pool_kwargs)
 
-    def send(self, data, headers, timeout=None):
+    def send(self, data):
         response = None
 
-        # ensure headers are byte strings
-        headers = {
-            k.encode("ascii")
-            if isinstance(k, compat.text_type)
-            else k: v.encode("ascii")
-            if isinstance(v, compat.text_type)
-            else v
-            for k, v in headers.items()
-        }
         if compat.PY2 and isinstance(self._url, compat.text_type):
             url = self._url.encode("utf-8")
         else:
@@ -49,7 +37,7 @@ class Transport(HTTPTransportBase):
         try:
             try:
                 response = self.http.urlopen(
-                    "POST", url, body=data, headers=headers, timeout=timeout, preload_content=False
+                    "POST", url, body=data, headers=self._headers, timeout=self._timeout, preload_content=False
                 )
                 logger.info("Sent request, url=%s size=%.2fkb status=%s", url, len(data) / 1024.0, response.status)
             except Exception as e:
@@ -57,7 +45,7 @@ class Transport(HTTPTransportBase):
                 if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):
                     message = "Connection to APM Server timed out " "(url: %s, timeout: %s seconds)" % (
                         self._url,
-                        timeout,
+                        self._timeout,
                     )
                     print_trace = False
                 else:
@@ -80,6 +68,5 @@ class Transport(HTTPTransportBase):
 
 
 class AsyncTransport(AsyncHTTPTransportBase, Transport):
-    scheme = ["http", "https"]
     async_mode = True
     sync_transport = Transport

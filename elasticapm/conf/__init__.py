@@ -43,10 +43,10 @@ class _ConfigValue(object):
             return self.default
 
     def __set__(self, instance, value):
+        value = self._validate(instance, value)
         if value is not None:
             value = self.type(value)
-        if self._validate(instance, value):
-            instance._values[self.dict_key] = value
+        instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
         if value is None and self.required:
@@ -54,12 +54,10 @@ class _ConfigValue(object):
                 "Configuration error: value for {} is required.".format(self.dict_key), self.dict_key
             )
         if self.validators and value is not None:
-            if not all(validator(value) for validator in self.validators):
-                raise ConfigurationError(
-                    "Configuration error: value {} is not valid for {}.".format(value, self.dict_key), self.dict_key
-                )
+            for validator in self.validators:
+                value = validator(value, self.dict_key)
         instance._errors.pop(self.dict_key, None)
-        return True
+        return value
 
 
 class _ListConfigValue(_ConfigValue):
@@ -90,6 +88,42 @@ class _BoolConfigValue(_ConfigValue):
             elif value.lower() == self.false_string:
                 value = False
         instance._values[self.dict_key] = bool(value)
+
+
+class RegexValidator(object):
+    def __init__(self, regex, verbose_pattern=None):
+        self.regex = regex
+        self.verbose_pattern = verbose_pattern or regex
+
+    def __call__(self, value, field_name):
+        value = compat.text_type(value)
+        match = re.match(self.regex, value)
+        if match:
+            return value
+        raise ConfigurationError("{} does not match pattern {}".format(value, self.verbose_pattern), field_name)
+
+
+class UnitValidator(object):
+    def __init__(self, regex, verbose_pattern, unit_multipliers):
+        self.regex = regex
+        self.verbose_pattern = verbose_pattern
+        self.unit_multipliers = unit_multipliers
+
+    def __call__(self, value, field_name):
+        value = compat.text_type(value)
+        match = re.match(self.regex, value, re.IGNORECASE)
+        if not match:
+            raise ConfigurationError("{} does not match pattern {}".format(value, self.verbose_pattern), field_name)
+        val, unit = match.groups()
+        try:
+            val = int(val) * self.unit_multipliers[unit]
+        except KeyError:
+            raise ConfigurationError("{} is not a supported unit".format(unit), field_name)
+        return val
+
+
+duration_validator = UnitValidator("^((?:-)?\d+)(ms|s|m)$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
+size_validator = UnitValidator("^(\d+)(b|kib|mib)$", "\d+(b|KiB|MiB)", {"b": 1, "kib": 1024, "mib": 1024 * 1024})
 
 
 class _ConfigBase(object):
@@ -130,9 +164,7 @@ class _ConfigBase(object):
 
 
 class Config(_ConfigBase):
-    service_name = _ConfigValue(
-        "SERVICE_NAME", validators=[lambda val: re.match("^[a-zA-Z0-9 _-]+$", val)], required=True
-    )
+    service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
     environment = _ConfigValue("ENVIRONMENT", default=None)
     secret_token = _ConfigValue("SECRET_TOKEN")
     debug = _BoolConfigValue("DEBUG", default=False)
@@ -141,7 +173,12 @@ class Config(_ConfigBase):
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
     filter_exception_types = _ListConfigValue("FILTER_EXCEPTION_TYPES")
-    server_timeout = _ConfigValue("SERVER_TIMEOUT", type=float, default=5)
+    server_timeout = _ConfigValue(
+        "SERVER_TIMEOUT",
+        type=float,
+        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})],
+        default=5,
+    )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue("AUTO_LOG_STACKS", default=True)
     transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.AsyncTransport", required=True)
@@ -157,11 +194,16 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
-    flush_interval = _ConfigValue("FLUSH_INTERVAL", type=int, default=10)
+    api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
+    api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
-    span_frames_min_duration_ms = _ConfigValue("SPAN_FRAMES_MIN_DURATION", default=5, type=int)
-    max_queue_size = _ConfigValue("MAX_QUEUE_SIZE", type=int, default=500)
+    span_frames_min_duration = _ConfigValue(
+        "SPAN_FRAMES_MIN_DURATION",
+        default=5,
+        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})],
+        type=int,
+    )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)
     source_lines_error_library_frames = _ConfigValue("SOURCE_LINES_ERROR_LIBRARY_FRAMES", type=int, default=5)
@@ -178,9 +220,7 @@ class Config(_ConfigBase):
     framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
-
-    # undocumented configuration
-    _wait_to_first_send = _ConfigValue("_WAIT_TO_FIRST_SEND", type=int, default=5)
+    enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=False)
 
 
 def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):

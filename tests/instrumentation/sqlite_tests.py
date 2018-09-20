@@ -1,5 +1,7 @@
 import sqlite3
 
+from elasticapm.conf.constants import TRANSACTION
+
 
 def test_connect(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
@@ -7,8 +9,8 @@ def test_connect(instrument, elasticapm_client):
     sqlite3.connect(":memory:")
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     assert spans[0]["name"] == "sqlite3.connect :memory:"
     assert spans[0]["type"] == "db.sqlite.connect"
@@ -25,8 +27,8 @@ def test_cursor(instrument, elasticapm_client):
     cursor.execute("DROP TABLE testdb")
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {"CREATE TABLE", "INSERT INTO testdb", "DROP TABLE"}
 
     assert {t["name"] for t in spans} == expected_signatures
@@ -56,8 +58,8 @@ def test_nonstandard_connection_execute(instrument, elasticapm_client):
     conn.execute("DROP TABLE testdb")
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {"CREATE TABLE", "INSERT INTO testdb", "DROP TABLE"}
 
     assert {t["name"] for t in spans} == expected_signatures

@@ -5,18 +5,15 @@ import random
 import re
 import threading
 import timeit
-import uuid
 
 from elasticapm.conf import constants
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
 error_logger = logging.getLogger("elasticapm.errors")
-
-thread_local = threading.local()
-thread_local.transaction = None
-
 
 _time_func = timeit.default_timer
 
@@ -24,47 +21,32 @@ _time_func = timeit.default_timer
 TAG_RE = re.compile('^[^.*"]+$')
 
 
-DROPPED_SPAN = object()
-IGNORED_SPAN = object()
-
-
-def get_transaction(clear=False):
-    """
-    Get the transaction registered for the current thread.
-
-    :return:
-    :rtype: Transaction
-    """
-    transaction = getattr(thread_local, "transaction", None)
-    if clear:
-        thread_local.transaction = None
-    return transaction
+try:
+    from elasticapm.context.contextvars import get_transaction, set_transaction, get_span, set_span
+except ImportError:
+    from elasticapm.context.threadlocal import get_transaction, set_transaction, get_span, set_span
 
 
 class Transaction(object):
     def __init__(
         self,
-        frames_collector_func,
+        store,
         transaction_type="custom",
+        trace_parent=None,
         is_sampled=True,
-        max_spans=None,
-        span_frames_min_duration=None,
     ):
-        self.id = str(uuid.uuid4())
+        self.id = "%016x" % random.getrandbits(64)
+        self.trace_parent = trace_parent
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
         self.name = None
         self.duration = None
         self.result = None
         self.transaction_type = transaction_type
-        self._frames_collector_func = frames_collector_func
+        self._store = store
 
         self.spans = []
-        self.span_stack = []
-        self.max_spans = max_spans
-        self.span_frames_min_duration = span_frames_min_duration
         self.dropped_spans = 0
-        self.ignore_subtree = False
         self.context = {}
         self.tags = {}
 
@@ -75,72 +57,81 @@ class Transaction(object):
         self.duration = _time_func() - self.start_time
 
     def begin_span(self, name, span_type, context=None, leaf=False):
-        # If we were already called with `leaf=True`, we'll just push
-        # a placeholder on the stack.
-        if self.ignore_subtree:
-            self.span_stack.append(IGNORED_SPAN)
-            return None
-
-        if leaf:
-            self.ignore_subtree = True
-
-        self._span_counter += 1
-
-        if self.max_spans and self._span_counter > self.max_spans:
+        parent_span = get_span()
+        store = self._store
+        if parent_span and parent_span.leaf:
+            span = DroppedSpan(parent_span, leaf=True)
+        elif store.max_spans and self._span_counter > store.max_spans - 1:
             self.dropped_spans += 1
-            self.span_stack.append(DROPPED_SPAN)
-            return None
-
-        start = _time_func() - self.start_time
-        span = Span(self._span_counter - 1, name, span_type, start, context)
-        self.span_stack.append(span)
+            span = DroppedSpan(parent_span)
+            self._span_counter += 1
+        else:
+            start = _time_func() - self.start_time
+            span_id = "%016x" % random.getrandbits(64) if self.trace_parent else self._span_counter - 1
+            span = Span(span_id, self.id, self.trace_parent.trace_id, name, span_type, start, context)
+            span.frames = store.frames_collector_func()
+            span.parent = parent_span
+            self._span_counter += 1
+        set_span(span)
         return span
 
     def end_span(self, skip_frames):
-        span = self.span_stack.pop()
-        if span is IGNORED_SPAN:
-            return None
-
-        self.ignore_subtree = False
-
-        if span is DROPPED_SPAN:
+        span = get_span()
+        if span is None:
+            raise LookupError()
+        if isinstance(span, DroppedSpan):
+            set_span(span.parent)
             return
 
         span.duration = _time_func() - span.start_time - self.start_time
 
-        if self.span_stack:
-            span.parent = self.span_stack[-1].idx
-
-        if not self.span_frames_min_duration or span.duration >= self.span_frames_min_duration:
-            span.frames = self._frames_collector_func()[skip_frames:]
+        if not self._store.span_frames_min_duration or span.duration >= self._store.span_frames_min_duration:
+            span.frames = self._store.frames_processing_func(span.frames)[skip_frames:]
+        else:
+            span.frames = None
         self.spans.append(span)
-
+        set_span(span.parent)
+        self._store.queue_func(SPAN, span.to_dict())
         return span
 
     def to_dict(self):
         self.context["tags"] = self.tags
         result = {
             "id": self.id,
+            "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration * 1000,  # milliseconds
             "result": encoding.keyword_field(str(self.result)),
             "timestamp": self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
             "sampled": self.is_sampled,
+            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self.trace_parent:
+            result["trace_id"] = self.trace_parent.trace_id
+            if self.trace_parent.span_id:
+                result["parent_id"] = self.trace_parent.span_id
         if self.is_sampled:
-            result["spans"] = [span_obj.to_dict() for span_obj in self.spans]
             result["context"] = self.context
-
-        if self.dropped_spans:
-            result["span_count"] = {"dropped": {"total": self.dropped_spans}}
         return result
 
 
 class Span(object):
-    __slots__ = ("idx", "name", "type", "context", "leaf", "start_time", "duration", "parent", "frames")
+    __slots__ = (
+        "idx",
+        "transaction_id",
+        "trace_id",
+        "name",
+        "type",
+        "context",
+        "leaf",
+        "start_time",
+        "duration",
+        "parent",
+        "frames",
+    )
 
-    def __init__(self, idx, name, span_type, start_time, context=None, leaf=False):
+    def __init__(self, idx, transaction_id, trace_id, name, span_type, start_time, context=None, leaf=False):
         """
         Create a new Span
 
@@ -152,6 +143,8 @@ class Span(object):
         :param leaf: is this transaction a leaf transaction?
         """
         self.idx = idx
+        self.transaction_id = transaction_id
+        self.trace_id = trace_id
         self.name = name
         self.type = span_type
         self.context = context
@@ -160,38 +153,55 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
+        self.trace_id = trace_id
+        self.transaction_id = transaction_id
 
     def to_dict(self):
         result = {
-            "id": self.idx,
+            "id": compat.text_type(self.idx),
+            "transaction_id": self.transaction_id,
+            "trace_id": self.trace_id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "start": self.start_time * 1000,  # milliseconds
             "duration": self.duration * 1000,  # milliseconds
-            "parent": self.parent,
             "context": self.context,
         }
         if self.frames:
             result["stacktrace"] = self.frames
+        if self.trace_id:
+            result["parent_id"] = self.parent
+            result["trace_id"] = self.trace_id
+            result["transaction_id"] = self.transaction_id
+        else:
+            result["parent"] = self.parent
         return result
+
+
+class DroppedSpan(object):
+    __slots__ = ("leaf", "parent")
+
+    def __init__(self, parent, leaf=False):
+        self.parent = parent
+        self.leaf = leaf
 
 
 class TransactionsStore(object):
     def __init__(
         self,
         frames_collector_func,
-        collect_frequency,
+        frames_processing_func,
+        queue_func,
         sample_rate=1.0,
         max_spans=0,
-        max_queue_size=None,
         span_frames_min_duration=None,
         ignore_patterns=None,
     ):
         self.cond = threading.Condition()
-        self.collect_frequency = collect_frequency
-        self.max_queue_size = max_queue_size
         self.max_spans = max_spans
-        self._frames_collector_func = frames_collector_func
+        self.queue_func = queue_func
+        self.frames_processing_func = frames_processing_func
+        self.frames_collector_func = frames_collector_func
         self._transactions = []
         self._last_collect = _time_func()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
@@ -216,30 +226,37 @@ class TransactionsStore(object):
         self._last_collect = _time_func()
         return transactions
 
-    def should_collect(self):
-        return (self.max_queue_size and len(self._transactions) >= self.max_queue_size) or (
-            _time_func() - self._last_collect
-        ) >= self.collect_frequency
-
     def __len__(self):
         with self.cond:
             return len(self._transactions)
 
-    def begin_transaction(self, transaction_type):
+    def begin_transaction(self, transaction_type, trace_parent=None):
         """
         Start a new transactions and bind it in a thread-local variable
 
         :returns the Transaction object
         """
-        is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
+        requested = bool(trace_parent and trace_parent.trace_options.requested)
+        if requested:
+            is_sampled = True
+        else:
+            is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(
             self._frames_collector_func,
+            self._queue_func,
             transaction_type,
             max_spans=self.max_spans,
             span_frames_min_duration=self.span_frames_min_duration,
             is_sampled=is_sampled,
         )
-        thread_local.transaction = transaction
+        if not trace_parent:
+            transaction.trace_parent = TraceParent(
+                constants.TRACE_CONTEXT_VERSION,
+                "%032x" % random.getrandbits(128),
+                transaction.id,
+                TracingOptions(recorded=is_sampled, requested=requested),
+            )
+        set_transaction(transaction)
         return transaction
 
     def _should_ignore(self, transaction_name):
@@ -258,7 +275,7 @@ class TransactionsStore(object):
                 return
             if transaction.result is None:
                 transaction.result = result
-            self.add_transaction(transaction.to_dict())
+            self.queue_func(TRANSACTION, transaction.to_dict())
         return transaction
 
 
@@ -283,14 +300,14 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
             try:
                 transaction.end_span(self.skip_frames)
-            except IndexError:
+            except LookupError:
                 error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
 
