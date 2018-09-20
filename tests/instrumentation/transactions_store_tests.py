@@ -12,8 +12,6 @@ from elasticapm.traces import TransactionsStore, capture_span, get_transaction
 
 @pytest.fixture()
 def transaction_store():
-    mock_get_frames = Mock()
-
     frames = [
         {
             "function": "something_expensive",
@@ -140,13 +138,12 @@ def transaction_store():
         },
     ]
 
-    mock_get_frames.return_value = frames
     events = defaultdict(list)
 
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = TransactionsStore(mock_get_frames, queue, 99999)
+    store = TransactionsStore(lambda: frames, lambda frames: frames, queue)
     store.events = events
     return store
 
@@ -175,20 +172,20 @@ def test_leaf_tracing(transaction_store):
 
 
 def test_get_transaction():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction(clear=True)
     assert get_transaction() is None
 
 
 def test_tag_transaction():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
     requests_store.end_transaction(200, "test")
@@ -206,7 +203,7 @@ def test_tag_while_no_transaction(caplog):
 
 
 def test_tag_with_non_string_value():
-    requests_store = TransactionsStore(lambda: [], lambda *args: None, 99999)
+    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, "test")

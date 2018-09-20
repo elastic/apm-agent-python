@@ -12,6 +12,7 @@ Large portions are
 from __future__ import absolute_import
 
 import datetime
+import inspect
 import logging
 import os
 import platform
@@ -112,9 +113,12 @@ class Client(object):
         else:
             skip_modules = ("elasticapm.",)
 
-        def frames_collector_func():
-            return self._get_stack_info_for_trace(
-                stacks.iter_stack_frames(skip_top_modules=skip_modules),
+        self.transaction_store = TransactionsStore(
+            frames_collector_func=lambda: list(
+                stacks.iter_stack_frames(start_frame=inspect.currentframe(), skip_top_modules=skip_modules)
+            ),
+            frames_processing_func=lambda frames: self._get_stack_info_for_trace(
+                frames,
                 library_frame_context_lines=self.config.source_lines_span_library_frames,
                 in_app_frame_context_lines=self.config.source_lines_span_app_frames,
                 with_locals=self.config.collect_local_variables in ("all", "transactions"),
@@ -126,12 +130,8 @@ class Client(object):
                     ),
                     local_var,
                 ),
-            )
-
-        self.transaction_store = TransactionsStore(
-            frames_collector_func=frames_collector_func,
+            ),
             queue_func=self.queue,
-            collect_frequency=self.config.api_request_time,
             sample_rate=self.config.transaction_sample_rate,
             max_spans=self.config.transaction_max_spans,
             span_frames_min_duration=self.config.span_frames_min_duration,
