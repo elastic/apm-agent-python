@@ -231,7 +231,7 @@ class TransactionsStore(object):
         else:
             is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled)
-        if not trace_parent:
+        if trace_parent is None:
             transaction.trace_parent = TraceParent(
                 constants.TRACE_CONTEXT_VERSION,
                 "%032x" % random.getrandbits(128),

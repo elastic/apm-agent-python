@@ -4,8 +4,7 @@ pytest.importorskip("flask")  # isort:skip
 
 import os
 
-import mock
-
+from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.utils import compat
@@ -187,6 +186,22 @@ def test_instrumentation_404(flask_apm_client):
     assert transactions[0]["result"] == "HTTP 4xx"
     assert transactions[0]["context"]["response"]["status_code"] == 404
     assert len(spans) == 0, [t["signature"] for t in spans]
+
+
+def test_traceparent_handling(flask_apm_client):
+    resp = flask_apm_client.app.test_client().post(
+        "/users/",
+        data={"foo": "bar"},
+        headers={constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"},
+    )
+    resp.close()
+
+    assert resp.status_code == 200, resp.response
+
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+
+    assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+    assert transaction["parent_id"] == "b7ad6b7169203331"
 
 
 def test_non_standard_http_status(flask_apm_client):

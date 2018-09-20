@@ -3,12 +3,15 @@ from functools import partial
 from django.apps import AppConfig
 from django.conf import settings as django_settings
 
+from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
 from elasticapm.utils.disttracing import parse_traceparent_header
 
 ERROR_DISPATCH_UID = "elasticapm-exceptions"
 REQUEST_START_DISPATCH_UID = "elasticapm-request-start"
 REQUEST_FINISH_DISPATCH_UID = "elasticapm-request-stop"
+
+TRACEPARENT_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
 
 
 class ElasticAPMConfig(AppConfig):
@@ -67,10 +70,8 @@ def _request_started_handler(client, sender, *args, **kwargs):
         return
     # try to find trace id
     traceparent_header = None
-    if not client.config.enable_distributed_tracing:
-        traceparent_header = None
-    elif "environ" in kwargs:
-        traceparent_header = kwargs["environ"].get("HTTP_TRACEPARENT")
+    if "environ" in kwargs:
+        traceparent_header = kwargs["environ"].get(TRACEPARENT_HEADER_NAME_WSGI)
     elif "scope" in kwargs:
         # TODO handle Django Channels
         traceparent_header = None
