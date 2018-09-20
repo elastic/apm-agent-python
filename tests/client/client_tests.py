@@ -547,7 +547,7 @@ def test_transaction_id_is_attached(elasticapm_client):
 
     errors = elasticapm_client.events[ERROR]
     assert "transaction" not in errors[0]
-    assert errors[1]["transaction"]["id"] == transaction.id
+    assert errors[1]["transaction_id"] == transaction.id
     assert "transaction" not in errors[2]
 
 
