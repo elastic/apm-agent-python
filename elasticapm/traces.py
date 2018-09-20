@@ -5,11 +5,11 @@ import random
 import re
 import threading
 import timeit
-import uuid
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -68,11 +68,7 @@ class Transaction(object):
         else:
             start = _time_func() - self.start_time
             span_id = "%016x" % random.getrandbits(64) if self.trace_parent else self._span_counter - 1
-            if self.trace_parent:
-                kwargs = {"trace_id": self.trace_parent.trace_id, "transaction_id": self.id}
-            else:
-                kwargs = {}
-            span = Span(span_id, name, span_type, start, context, **kwargs)
+            span = Span(span_id, self.id, self.trace_parent.trace_id, name, span_type, start, context)
             span.frames = store.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -102,7 +98,7 @@ class Transaction(object):
         self.context["tags"] = self.tags
         result = {
             "id": self.id,
-            "trace_id": self.trace_id,
+            "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration * 1000,  # milliseconds
@@ -240,7 +236,11 @@ class TransactionsStore(object):
 
         :returns the Transaction object
         """
-        is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
+        requested = bool(trace_parent and trace_parent.trace_options.requested)
+        if requested:
+            is_sampled = True
+        else:
+            is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(
             self._frames_collector_func,
             self._queue_func,
@@ -249,6 +249,13 @@ class TransactionsStore(object):
             span_frames_min_duration=self.span_frames_min_duration,
             is_sampled=is_sampled,
         )
+        if not trace_parent:
+            transaction.trace_parent = TraceParent(
+                constants.TRACE_CONTEXT_VERSION,
+                "%032x" % random.getrandbits(128),
+                transaction.id,
+                TracingOptions(recorded=is_sampled, requested=requested),
+            )
         set_transaction(transaction)
         return transaction
 
@@ -293,7 +300,7 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()

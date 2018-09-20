@@ -1,6 +1,7 @@
 EVENTS_API_PATH = "/intake/v2/events"
 
-TRACE_CONTEXT_VERSION = 1
+TRACE_CONTEXT_VERSION = 0
+TRACEPARENT_HEADER_NAME = "Elastic-Apm-Traceparent"
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
