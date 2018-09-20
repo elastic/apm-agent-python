@@ -565,7 +565,7 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
         spans_per_transaction[span["transaction_id"]].append(span)
 
     # seed is fixed by not_so_random fixture
-    assert len([t for t in transactions if t["sampled"]]) == 5
+    assert len([t for t in transactions if t["sampled"]]) == 3
     for transaction in transactions:
         assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
         assert transaction["sampled"] or not "context" in transaction

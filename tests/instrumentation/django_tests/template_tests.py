@@ -47,11 +47,11 @@ def test_template_rendering(instrument, django_elasticapm_client, client):
 
     assert spans[0]["type"] == "code"
     assert spans[0]["name"] == "something_expensive"
-    assert spans[0]["parent"] == 0
+    assert spans[0]["parent_id"] == spans[1]["id"]
 
     assert spans[1]["type"] == "template.django"
     assert spans[1]["name"] == "list_users.html"
-    assert spans[1]["parent"] is None
+    assert spans[1]["parent_id"] == transactions[0]["id"]
 
 
 @pytest.mark.skipif(django.VERSION < (1, 8), reason="Jinja2 support introduced with Django 1.8")
@@ -75,4 +75,4 @@ def test_template_rendering_django18_jinja2(instrument, django_elasticapm_client
 
     assert spans[0]["type"] == "template.jinja2"
     assert spans[0]["name"] == "jinja2_template.html"
-    assert spans[0]["parent"] is None
+    assert spans[0]["parent_id"] == transactions[0]["id"]

@@ -32,7 +32,8 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     assert spans[0]["name"] == expected_sig
     assert spans[0]["type"] == "ext.http.urllib3"
     assert spans[0]["context"]["url"] == url
-    assert spans[0]["parent"] == 0
+    assert spans[0]["parent_id"] == spans[1]["id"]
 
     assert spans[1]["name"] == "test_pipeline"
     assert spans[1]["type"] == "test"
+    assert spans[1]["parent_id"] == transactions[0]["id"]

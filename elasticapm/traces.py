@@ -5,11 +5,11 @@ import random
 import re
 import threading
 import timeit
-import uuid
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -28,13 +28,7 @@ except ImportError:
 
 
 class Transaction(object):
-    def __init__(
-        self,
-        store,
-        transaction_type="custom",
-        trace_parent=None,
-        is_sampled=True,
-    ):
+    def __init__(self, store, transaction_type="custom", trace_parent=None, is_sampled=True):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         self.timestamp = datetime.datetime.utcnow()
@@ -68,11 +62,7 @@ class Transaction(object):
         else:
             start = _time_func() - self.start_time
             span_id = "%016x" % random.getrandbits(64) if self.trace_parent else self._span_counter - 1
-            if self.trace_parent:
-                kwargs = {"trace_id": self.trace_parent.trace_id, "transaction_id": self.id}
-            else:
-                kwargs = {}
-            span = Span(span_id, name, span_type, start, context, **kwargs)
+            span = Span(span_id, self.id, self.trace_parent.trace_id, name, span_type, start, context, leaf=leaf)
             span.frames = store.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -102,7 +92,7 @@ class Transaction(object):
         self.context["tags"] = self.tags
         result = {
             "id": self.id,
-            "trace_id": self.trace_id,
+            "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration * 1000,  # milliseconds
@@ -162,9 +152,10 @@ class Span(object):
 
     def to_dict(self):
         result = {
-            "id": compat.text_type(self.idx),
+            "id": self.idx,
             "transaction_id": self.transaction_id,
             "trace_id": self.trace_id,
+            "parent_id": self.parent.idx if self.parent else self.transaction_id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "start": self.start_time * 1000,  # milliseconds
@@ -173,12 +164,6 @@ class Span(object):
         }
         if self.frames:
             result["stacktrace"] = self.frames
-        if self.trace_id:
-            result["parent_id"] = self.parent
-            result["trace_id"] = self.trace_id
-            result["transaction_id"] = self.transaction_id
-        else:
-            result["parent"] = self.parent
         return result
 
 
@@ -240,15 +225,19 @@ class TransactionsStore(object):
 
         :returns the Transaction object
         """
-        is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
-        transaction = Transaction(
-            self._frames_collector_func,
-            self._queue_func,
-            transaction_type,
-            max_spans=self.max_spans,
-            span_frames_min_duration=self.span_frames_min_duration,
-            is_sampled=is_sampled,
-        )
+        requested = bool(trace_parent and trace_parent.trace_options.requested)
+        if requested:
+            is_sampled = True
+        else:
+            is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
+        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled)
+        if not trace_parent:
+            transaction.trace_parent = TraceParent(
+                constants.TRACE_CONTEXT_VERSION,
+                "%032x" % random.getrandbits(128),
+                transaction.id,
+                TracingOptions(recorded=is_sampled, requested=requested),
+            )
         set_transaction(transaction)
         return transaction
 
@@ -293,7 +282,7 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
