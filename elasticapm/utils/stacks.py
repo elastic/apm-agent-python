@@ -158,7 +158,7 @@ def iter_traceback_frames(tb):
         tb = tb.tb_next
 
 
-def iter_stack_frames(frames=None, skip=0, skip_top_modules=()):
+def iter_stack_frames(frames=None, start_frame=None, skip=0, skip_top_modules=()):
     """
     Given an optional list of frames (defaults to current stack),
     iterates over all frames that do not contain the ``__traceback_hide__``
@@ -173,12 +173,13 @@ def iter_stack_frames(frames=None, skip=0, skip_top_modules=()):
     itself.
 
     :param frames: a list of frames, or None
+    :param start_frame: a Frame object or None
     :param skip: number of frames to skip from the beginning
     :param skip_top_modules: tuple of strings
 
     """
     if not frames:
-        frame = inspect.currentframe().f_back
+        frame = start_frame if start_frame is not None else inspect.currentframe().f_back
         frames = _walk_stack(frame)
     stop_ignoring = False
     for i, frame in enumerate(frames):
