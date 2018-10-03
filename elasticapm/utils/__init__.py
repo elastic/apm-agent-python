@@ -9,8 +9,18 @@ Large portions are
 :license: BSD, see LICENSE for more details.
 """
 import os
+from functools import partial
 
 from elasticapm.utils import compat, encoding
+
+try:
+    from functools import partialmethod
+
+    partial_types = (partial, partialmethod)
+except ImportError:
+    # Python 2
+    partial_types = (partial,)
+
 
 default_ports = {"https": 433, "http": 80, "postgresql": 5432}
 
@@ -38,7 +48,12 @@ def varmap(func, var, context=None, name=None):
 
 
 def get_name_from_func(func):
-    # If no view was set we ignore the request
+    # partials don't have `__module__` or `__name__`, so we use the values from the "inner" function
+    if isinstance(func, partial_types):
+        return "partial({})".format(get_name_from_func(func.func))
+    elif hasattr(func, "_partialmethod") and hasattr(func._partialmethod, "func"):
+        return "partial({})".format(get_name_from_func(func._partialmethod.func))
+
     module = func.__module__
 
     if hasattr(func, "__name__"):

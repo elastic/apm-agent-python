@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ * fixed an issue with detecting names of wrapped functions that are partials (#294)
+
 ## v3.0.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...v3.0.1)
