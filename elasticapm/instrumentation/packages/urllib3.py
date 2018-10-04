@@ -46,10 +46,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
             if headers is not None:
                 trace_parent = transaction.trace_parent.copy_from(
-                    span_id=leaf_span.idx,
-                    trace_options=TracingOptions(
-                        requested=transaction.trace_parent.trace_options.requested, recorded=True
-                    ),
+                    span_id=leaf_span.idx, trace_options=TracingOptions(recorded=True)
                 )
                 headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
             return wrapped(*args, **kwargs)
@@ -57,8 +54,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
         # since we don't have a span, we set the span id to the transaction id
         trace_parent = transaction.trace_parent.copy_from(
-            span_id=transaction.id,
-            trace_options=TracingOptions(requested=transaction.trace_parent.trace_options.requested, recorded=False),
+            span_id=transaction.id, trace_options=TracingOptions(recorded=False)
         )
         if "headers" in kwargs:
             headers = kwargs["headers"]

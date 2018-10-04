@@ -225,9 +225,8 @@ class TransactionsStore(object):
 
         :returns the Transaction object
         """
-        requested = bool(trace_parent and trace_parent.trace_options.requested)
-        if requested:
-            is_sampled = True
+        if trace_parent:
+            is_sampled = bool(trace_parent.trace_options.recorded)
         else:
             is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
         transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled)
@@ -236,7 +235,7 @@ class TransactionsStore(object):
                 constants.TRACE_CONTEXT_VERSION,
                 "%032x" % random.getrandbits(128),
                 transaction.id,
-                TracingOptions(recorded=is_sampled, requested=requested),
+                TracingOptions(recorded=is_sampled),
             )
         set_transaction(transaction)
         return transaction

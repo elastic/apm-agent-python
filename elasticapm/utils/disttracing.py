@@ -48,7 +48,7 @@ class TraceParent(object):
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
-    _fields_ = [("requested", ctypes.c_uint8, 1), ("recorded", ctypes.c_uint8, 1)]
+    _fields_ = [("recorded", ctypes.c_uint8, 1)]
 
 
 class TracingOptions(ctypes.Union):
