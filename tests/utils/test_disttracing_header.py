@@ -41,7 +41,7 @@ def test_trace_parent_wrong_version_255(caplog):
         trace_parent = TraceParent.from_string(header)
     record = caplog.records[0]
     assert trace_parent is None
-    assert record.message == "Invalid version field, value ff"
+    assert record.message == "Invalid version field, value 255"
 
 
 def test_trace_parent_wrong_trace_options_field(caplog):
