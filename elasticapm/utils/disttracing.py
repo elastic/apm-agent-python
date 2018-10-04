@@ -29,20 +29,23 @@ class TraceParent(object):
     @classmethod
     def from_string(cls, traceparent_string):
         try:
-            version, trace_id, span_id, trace_flags = traceparent_string.split("-")
+            parts = traceparent_string.split("-")
+            version, trace_id, span_id, trace_flags = parts[:4]
         except ValueError:
-            logger.debug("Wrong traceparent header format, value %s", traceparent_string)
+            logger.debug("Invalid traceparent header format, value %s", traceparent_string)
             return
         try:
             version = int(version, 16)
+            if version == 255:
+                raise ValueError()
         except ValueError:
-            logger.debug("Can't parse version field, value %s", version)
+            logger.debug("Invalid version field, value %s", version)
             return
         try:
             tracing_options = TracingOptions()
             tracing_options.asByte = int(trace_flags, 16)
         except ValueError:
-            logger.debug("Can't parse trace-options field, value %s", trace_flags)
+            logger.debug("Invalid trace-options field, value %s", trace_flags)
             return
         return TraceParent(version, trace_id, span_id, tracing_options)
 
