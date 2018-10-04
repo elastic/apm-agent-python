@@ -8,7 +8,7 @@ from requests.exceptions import InvalidURL, MissingSchema
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
-from elasticapm.utils.disttracing import parse_traceparent_header
+from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = pytest.mark.requests
 
@@ -27,7 +27,7 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
     assert url == spans[0]["context"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = parse_traceparent_header(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
 
     # this should be the span id of `requests`, not of urllib3
@@ -50,7 +50,7 @@ def test_requests_instrumentation_via_session(instrument, elasticapm_client, wai
     assert url == spans[0]["context"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = parse_traceparent_header(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
 
     # this should be the span id of `requests`, not of urllib3
@@ -75,7 +75,7 @@ def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_cl
     assert url == spans[0]["context"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = parse_traceparent_header(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
 
     # this should be the span id of `requests`, not of urllib3

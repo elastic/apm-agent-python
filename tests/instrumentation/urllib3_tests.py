@@ -5,7 +5,7 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
-from elasticapm.utils.disttracing import TraceParent, parse_traceparent_header
+from elasticapm.utils.disttracing import TraceParent
 
 
 def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
@@ -52,7 +52,7 @@ def test_trace_parent_propagation_sampled(instrument, elasticapm_client, waiting
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = parse_traceparent_header(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
@@ -72,7 +72,7 @@ def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiti
     assert not spans
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = parse_traceparent_header(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == transaction_object.id
     assert not trace_parent.trace_options.recorded

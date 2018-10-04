@@ -26,6 +26,26 @@ class TraceParent(object):
             self.version, self.trace_id, self.span_id, self.trace_options.asByte
         ).encode("ascii")
 
+    @classmethod
+    def from_string(cls, traceparent_string):
+        try:
+            version, trace_id, span_id, trace_flags = traceparent_string.split("-")
+        except ValueError:
+            logger.debug("Wrong traceparent header format, value %s", traceparent_string)
+            return
+        try:
+            version = int(version, 16)
+        except ValueError:
+            logger.debug("Can't parse version field, value %s", version)
+            return
+        try:
+            tracing_options = TracingOptions()
+            tracing_options.asByte = int(trace_flags, 16)
+        except ValueError:
+            logger.debug("Can't parse trace-options field, value %s", trace_flags)
+            return
+        return TraceParent(version, trace_id, span_id, tracing_options)
+
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
     _fields_ = [("requested", ctypes.c_uint8, 1), ("recorded", ctypes.c_uint8, 1)]
@@ -39,23 +59,3 @@ class TracingOptions(ctypes.Union):
         super(TracingOptions, self).__init__()
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-
-def parse_traceparent_header(header_value):
-    try:
-        version, trace_id, span_id, trace_flags = header_value.split("-")
-    except ValueError:
-        logger.debug("Wrong traceparent header format, value %s", header_value)
-        return
-    try:
-        version = int(version, 16)
-    except ValueError:
-        logger.debug("Can't parse version field, value %s", version)
-        return
-    try:
-        tracing_options = TracingOptions()
-        tracing_options.asByte = int(trace_flags, 16)
-    except ValueError:
-        logger.debug("Can't parse trace-options field, value %s", trace_flags)
-        return
-    return TraceParent(version, trace_id, span_id, tracing_options)

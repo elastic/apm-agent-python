@@ -5,7 +5,7 @@ from django.conf import settings as django_settings
 
 from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
-from elasticapm.utils.disttracing import parse_traceparent_header
+from elasticapm.utils.disttracing import TraceParent
 
 ERROR_DISPATCH_UID = "elasticapm-exceptions"
 REQUEST_START_DISPATCH_UID = "elasticapm-request-start"
@@ -76,7 +76,7 @@ def _request_started_handler(client, sender, *args, **kwargs):
         # TODO handle Django Channels
         traceparent_header = None
     if traceparent_header:
-        trace_parent = parse_traceparent_header(traceparent_header)
+        trace_parent = TraceParent.from_string(traceparent_header)
     else:
         trace_parent = None
     client.begin_transaction("request", trace_parent=trace_parent)
