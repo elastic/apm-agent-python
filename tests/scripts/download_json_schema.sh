@@ -27,7 +27,6 @@ FILES=( \
     "errors/v1_error.json" \
     "errors/v2_error.json" \
     "sourcemaps/payload.json" \
-    "metricsets/metricset.json" \
     "metricsets/payload.json" \
     "metricsets/sample.json" \
     "metricsets/common_metricset.json" \
