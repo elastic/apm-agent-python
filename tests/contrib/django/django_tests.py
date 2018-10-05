@@ -25,6 +25,7 @@ from django.test.utils import override_settings
 import mock
 
 from elasticapm.base import Client
+from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.contrib.django.handlers import LoggingHandler
@@ -809,6 +810,18 @@ def test_request_metrics_name_override(django_elasticapm_client, client):
     transaction = django_elasticapm_client.events[TRANSACTION][0]
     assert transaction["name"] == "foo"
     assert transaction["result"] == "okydoky"
+
+
+def test_traceparent_header_handling(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        header_name = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
+        kwargs = {header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"}
+        client.get(reverse("elasticapm-no-error"), **kwargs)
+        transaction = django_elasticapm_client.events[TRANSACTION][0]
+        assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+        assert transaction["parent_id"] == "b7ad6b7169203331"
 
 
 def test_get_service_info(django_elasticapm_client):

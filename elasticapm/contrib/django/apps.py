@@ -3,11 +3,15 @@ from functools import partial
 from django.apps import AppConfig
 from django.conf import settings as django_settings
 
+from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
+from elasticapm.utils.disttracing import TraceParent
 
 ERROR_DISPATCH_UID = "elasticapm-exceptions"
 REQUEST_START_DISPATCH_UID = "elasticapm-request-start"
 REQUEST_FINISH_DISPATCH_UID = "elasticapm-request-stop"
+
+TRACEPARENT_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
 
 
 class ElasticAPMConfig(AppConfig):
@@ -38,11 +42,7 @@ def register_handlers(client):
 
     request_started.disconnect(dispatch_uid=REQUEST_START_DISPATCH_UID)
     request_started.connect(
-        lambda sender, *args, **kwargs: client.begin_transaction("request")
-        if _should_start_transaction(client)
-        else None,
-        dispatch_uid=REQUEST_START_DISPATCH_UID,
-        weak=False,
+        partial(_request_started_handler, client), dispatch_uid=REQUEST_START_DISPATCH_UID, weak=False
     )
 
     request_finished.disconnect(dispatch_uid=REQUEST_FINISH_DISPATCH_UID)
@@ -63,6 +63,23 @@ def register_handlers(client):
             client.logger.exception("Failed installing django-celery hook: %s" % e)
     except ImportError:
         client.logger.debug("Not instrumenting Celery, couldn't import")
+
+
+def _request_started_handler(client, sender, *args, **kwargs):
+    if not _should_start_transaction(client):
+        return
+    # try to find trace id
+    traceparent_header = None
+    if "environ" in kwargs:
+        traceparent_header = kwargs["environ"].get(TRACEPARENT_HEADER_NAME_WSGI)
+    elif "scope" in kwargs:
+        # TODO handle Django Channels
+        traceparent_header = None
+    if traceparent_header:
+        trace_parent = TraceParent.from_string(traceparent_header)
+    else:
+        trace_parent = None
+    client.begin_transaction("request", trace_parent=trace_parent)
 
 
 def instrument(client):

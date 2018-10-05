@@ -5,11 +5,11 @@ import random
 import re
 import threading
 import timeit
-import uuid
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -28,9 +28,9 @@ except ImportError:
 
 
 class Transaction(object):
-    def __init__(self, store, transaction_type="custom", is_sampled=True):
-        self.id = str(uuid.uuid4())
-        self.trace_id = None  # for later use in distributed tracing
+    def __init__(self, store, transaction_type="custom", trace_parent=None, is_sampled=True):
+        self.id = "%016x" % random.getrandbits(64)
+        self.trace_parent = trace_parent
         self.timestamp = datetime.datetime.utcnow()
         self.start_time = _time_func()
         self.name = None
@@ -61,7 +61,8 @@ class Transaction(object):
             self._span_counter += 1
         else:
             start = _time_func() - self.start_time
-            span = Span(self._span_counter, self.id, self.trace_id, name, span_type, start, context, leaf)
+            span_id = "%016x" % random.getrandbits(64) if self.trace_parent else self._span_counter - 1
+            span = Span(span_id, self.id, self.trace_parent.trace_id, name, span_type, start, context, leaf=leaf)
             span.frames = store.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -91,7 +92,7 @@ class Transaction(object):
         self.context["tags"] = self.tags
         result = {
             "id": self.id,
-            "trace_id": self.trace_id,
+            "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration * 1000,  # milliseconds
@@ -100,6 +101,10 @@ class Transaction(object):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self.trace_parent:
+            result["trace_id"] = self.trace_parent.trace_id
+            if self.trace_parent.span_id:
+                result["parent_id"] = self.trace_parent.span_id
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -142,17 +147,19 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
+        self.trace_id = trace_id
+        self.transaction_id = transaction_id
 
     def to_dict(self):
         result = {
-            "id": compat.text_type(self.idx),
+            "id": self.idx,
             "transaction_id": self.transaction_id,
             "trace_id": self.trace_id,
+            "parent_id": self.parent.idx if self.parent else self.transaction_id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "start": self.start_time * 1000,  # milliseconds
             "duration": self.duration * 1000,  # milliseconds
-            "parent": self.parent.idx if self.parent else None,
             "context": self.context,
         }
         if self.frames:
@@ -212,14 +219,24 @@ class TransactionsStore(object):
         with self.cond:
             return len(self._transactions)
 
-    def begin_transaction(self, transaction_type):
+    def begin_transaction(self, transaction_type, trace_parent=None):
         """
         Start a new transactions and bind it in a thread-local variable
 
         :returns the Transaction object
         """
-        is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
-        transaction = Transaction(self, transaction_type, is_sampled=is_sampled)
+        if trace_parent:
+            is_sampled = bool(trace_parent.trace_options.recorded)
+        else:
+            is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
+        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled)
+        if trace_parent is None:
+            transaction.trace_parent = TraceParent(
+                constants.TRACE_CONTEXT_VERSION,
+                "%032x" % random.getrandbits(128),
+                transaction.id,
+                TracingOptions(recorded=is_sampled),
+            )
         set_transaction(transaction)
         return transaction
 
@@ -264,7 +281,7 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
