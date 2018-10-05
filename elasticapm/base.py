@@ -196,10 +196,10 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type):
+    def begin_transaction(self, transaction_type, trace_parent=None):
         """Register the start of a transaction on the client
         """
-        return self.transaction_store.begin_transaction(transaction_type)
+        return self.transaction_store.begin_transaction(transaction_type, trace_parent=trace_parent)
 
     def end_transaction(self, name=None, result=""):
         transaction = self.transaction_store.end_transaction(result, name)
@@ -351,7 +351,10 @@ class Client(object):
 
         transaction = get_transaction()
         if transaction:
-            event_data["transaction"] = {"id": transaction.id}
+            if transaction.trace_parent:
+                event_data["trace_id"] = transaction.trace_parent.trace_id
+            event_data["parent_id"] = transaction.id
+            event_data["transaction_id"] = transaction.id
 
         return event_data
 

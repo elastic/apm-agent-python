@@ -27,9 +27,12 @@ FILES=( \
     "errors/v1_error.json" \
     "errors/v2_error.json" \
     "sourcemaps/payload.json" \
-    "metrics/metricset.json" \
-    "metrics/payload.json" \
-    "metrics/sample.json" \
+    "metricsets/metricset.json" \
+    "metricsets/payload.json" \
+    "metricsets/sample.json" \
+    "metricsets/common_metricset.json" \
+    "metricsets/v1_metricset.json" \
+    "metricsets/v2_metricset.json" \
     "spans/common_span.json" \
     "spans/v1_span.json" \
     "spans/v2_span.json" \
@@ -48,7 +51,7 @@ FILES=( \
     "user.json" \
 )
 
-mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/spans ${basedir}/.schemacache/metrics ${basedir}/.schemacache/sourcemaps
+mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/spans ${basedir}/.schemacache/metricsets ${basedir}/.schemacache/sourcemaps
 
 for i in "${FILES[@]}"; do
     download_schema https://raw.githubusercontent.com/elastic/apm-server/${branch}/docs/spec/${i} ${basedir}/.schemacache/${i}

@@ -13,7 +13,6 @@ Further breaking changes:
  * Some settings now require a unit for duration or size. See documentation on
    configuration for more information.
 
-
 Other changes:
  * on Python 3.7, use [contextvars](https://docs.python.org/3/library/contextvars.html) instead of threadlocals for storing
    current transaction and span. This is a necessary precursor for full asyncio support. (#291)
@@ -21,7 +20,7 @@ Other changes:
 ## Unreleased
 
  * fixed an issue with detecting names of wrapped functions that are partials (#294)
-  
+
 ## v3.0.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...v3.0.1)

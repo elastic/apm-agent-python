@@ -10,6 +10,7 @@ logger = logging.getLogger("elasticapm.instrument")
 
 class AbstractInstrumentedModule(object):
     name = None
+    mutates_unsampled_arguments = False
 
     instrument_list = [
         # List of (module, method) pairs to instrument. E.g.:
@@ -101,10 +102,41 @@ class AbstractInstrumentedModule(object):
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
         transaction = get_transaction()
-        if not transaction or not transaction.is_sampled:
+        if not transaction:
+            return wrapped(*args, **kwargs)
+        elif not transaction.is_sampled:
+            args, kwargs = self.mutate_unsampled_call_args(module, method, wrapped, instance, args, kwargs, transaction)
             return wrapped(*args, **kwargs)
         else:
             return self.call(module, method, wrapped, instance, args, kwargs)
 
+    def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
+        """
+        Method called for unsampled wrapped calls. This can e.g. be used to add traceparent headers to the
+        underlying http call for HTTP instrumentations.
+
+        :param module:
+        :param method:
+        :param wrapped:
+        :param instance:
+        :param args:
+        :param kwargs:
+        :param transaction:
+        :return:
+        """
+        return args, kwargs
+
     def call(self, module, method, wrapped, instance, args, kwargs):
+        """
+        Wrapped call. This method should gather all necessary data, then call `wrapped` in a `capture_span` context
+        manager.
+
+        :param module: Name of the wrapped module
+        :param method: Name of the wrapped method/function
+        :param wrapped: the wrapped method/function object
+        :param instance: the wrapped instance
+        :param args: arguments to the wrapped method/function
+        :param kwargs: keyword arguments to the wrapped method/function
+        :return: the result of calling the wrapped method/function
+        """
         raise NotImplemented

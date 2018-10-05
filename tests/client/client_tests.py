@@ -547,7 +547,7 @@ def test_transaction_id_is_attached(elasticapm_client):
 
     errors = elasticapm_client.events[ERROR]
     assert "transaction" not in errors[0]
-    assert errors[1]["transaction"]["id"] == transaction.id
+    assert errors[1]["transaction_id"] == transaction.id
     assert "transaction" not in errors[2]
 
 
@@ -565,7 +565,7 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
         spans_per_transaction[span["transaction_id"]].append(span)
 
     # seed is fixed by not_so_random fixture
-    assert len([t for t in transactions if t["sampled"]]) == 5
+    assert len([t for t in transactions if t["sampled"]]) == 3
     for transaction in transactions:
         assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
         assert transaction["sampled"] or not "context" in transaction
