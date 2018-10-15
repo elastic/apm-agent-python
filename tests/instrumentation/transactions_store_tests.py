@@ -7,11 +7,11 @@ from mock import Mock
 
 import elasticapm
 from elasticapm.conf.constants import SPAN, TRANSACTION
-from elasticapm.traces import TransactionsStore, capture_span, get_transaction
+from elasticapm.traces import Tracer, capture_span, get_transaction
 
 
 @pytest.fixture()
-def transaction_store():
+def tracer():
     frames = [
         {
             "function": "something_expensive",
@@ -143,13 +143,13 @@ def transaction_store():
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = TransactionsStore(lambda: frames, lambda frames: frames, queue)
+    store = Tracer(lambda: frames, lambda frames: frames, queue)
     store.events = events
     return store
 
 
-def test_leaf_tracing(transaction_store):
-    transaction_store.begin_transaction("transaction.test")
+def test_leaf_tracing(tracer):
+    tracer.begin_transaction("transaction.test")
 
     with capture_span("root", "custom"):
         with capture_span("child1-leaf", "custom", leaf=True):
@@ -161,9 +161,9 @@ def test_leaf_tracing(transaction_store):
             with capture_span("ignored-child2", "custom", leaf=False):
                 time.sleep(0.01)
 
-    transaction_store.end_transaction(None, "transaction")
+    tracer.end_transaction(None, "transaction")
 
-    spans = transaction_store.events[SPAN]
+    spans = tracer.events[SPAN]
 
     assert len(spans) == 2
 
@@ -172,20 +172,20 @@ def test_leaf_tracing(transaction_store):
 
 
 def test_get_transaction():
-    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     assert t == get_transaction(clear=True)
     assert get_transaction() is None
 
 
 def test_tag_transaction():
-    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
     requests_store.end_transaction(200, "test")
@@ -203,7 +203,7 @@ def test_tag_while_no_transaction(caplog):
 
 
 def test_tag_with_non_string_value():
-    requests_store = TransactionsStore(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, "test")

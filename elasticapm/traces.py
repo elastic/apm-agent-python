@@ -3,7 +3,6 @@ import functools
 import logging
 import random
 import re
-import threading
 import timeit
 
 from elasticapm.conf import constants
@@ -28,7 +27,7 @@ except ImportError:
 
 
 class Transaction(object):
-    def __init__(self, store, transaction_type="custom", trace_parent=None, is_sampled=True):
+    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         self.timestamp = datetime.datetime.utcnow()
@@ -37,7 +36,7 @@ class Transaction(object):
         self.duration = None
         self.result = None
         self.transaction_type = transaction_type
-        self._store = store
+        self._tracer = tracer
 
         self.spans = []
         self.dropped_spans = 0
@@ -52,7 +51,7 @@ class Transaction(object):
 
     def begin_span(self, name, span_type, context=None, leaf=False):
         parent_span = get_span()
-        store = self._store
+        store = self._tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
         elif store.max_spans and self._span_counter > store.max_spans - 1:
@@ -79,13 +78,13 @@ class Transaction(object):
 
         span.duration = _time_func() - span.start_time - self.start_time
 
-        if not self._store.span_frames_min_duration or span.duration >= self._store.span_frames_min_duration:
-            span.frames = self._store.frames_processing_func(span.frames)[skip_frames:]
+        if not self._tracer.span_frames_min_duration or span.duration >= self._tracer.span_frames_min_duration:
+            span.frames = self._tracer.frames_processing_func(span.frames)[skip_frames:]
         else:
             span.frames = None
         self.spans.append(span)
         set_span(span.parent)
-        self._store.queue_func(SPAN, span.to_dict())
+        self._tracer.queue_func(SPAN, span.to_dict())
         return span
 
     def to_dict(self):
@@ -175,7 +174,7 @@ class DroppedSpan(object):
         self.leaf = leaf
 
 
-class TransactionsStore(object):
+class Tracer(object):
     def __init__(
         self,
         frames_collector_func,
@@ -186,13 +185,10 @@ class TransactionsStore(object):
         span_frames_min_duration=None,
         ignore_patterns=None,
     ):
-        self.cond = threading.Condition()
         self.max_spans = max_spans
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
         self.frames_collector_func = frames_collector_func
-        self._transactions = []
-        self._last_collect = _time_func()
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
         self._sample_rate = sample_rate
         if span_frames_min_duration in (-1, None):
@@ -200,24 +196,6 @@ class TransactionsStore(object):
             self.span_frames_min_duration = None
         else:
             self.span_frames_min_duration = span_frames_min_duration / 1000.0
-
-    def add_transaction(self, transaction):
-        with self.cond:
-            self._transactions.append(transaction)
-            self.cond.notify()
-
-    def get_all(self, blocking=False):
-        with self.cond:
-            # If blocking is true, always return at least 1 item
-            while blocking and len(self._transactions) == 0:
-                self.cond.wait()
-            transactions, self._transactions = self._transactions, []
-        self._last_collect = _time_func()
-        return transactions
-
-    def __len__(self):
-        with self.cond:
-            return len(self._transactions)
 
     def begin_transaction(self, transaction_type, trace_parent=None):
         """
