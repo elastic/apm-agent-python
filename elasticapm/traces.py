@@ -1,8 +1,8 @@
-import datetime
 import functools
 import logging
 import random
 import re
+import time
 import timeit
 
 from elasticapm.conf import constants
@@ -30,8 +30,7 @@ class Transaction(object):
     def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
-        self.timestamp = datetime.datetime.utcnow()
-        self.start_time = _time_func()
+        self.timestamp, self.start_time = time.time(), _time_func()
         self.name = None
         self.duration = None
         self.result = None
@@ -46,7 +45,7 @@ class Transaction(object):
         self.is_sampled = is_sampled
         self._span_counter = 0
 
-    def end_transaction(self, skip_frames=8):
+    def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
     def begin_span(self, name, span_type, context=None, leaf=False):
@@ -59,9 +58,7 @@ class Transaction(object):
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
-            start = _time_func() - self.start_time
-            span_id = "%016x" % random.getrandbits(64) if self.trace_parent else self._span_counter - 1
-            span = Span(span_id, self.id, self.trace_parent.trace_id, name, span_type, start, context, leaf=leaf)
+            span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf)
             span.frames = store.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -76,7 +73,7 @@ class Transaction(object):
             set_span(span.parent)
             return
 
-        span.duration = _time_func() - span.start_time - self.start_time
+        span.duration = _time_func() - span.start_time
 
         if not self._tracer.span_frames_min_duration or span.duration >= self._tracer.span_frames_min_duration:
             span.frames = self._tracer.frames_processing_func(span.frames)[skip_frames:]
@@ -96,7 +93,7 @@ class Transaction(object):
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration * 1000,  # milliseconds
             "result": encoding.keyword_field(str(self.result)),
-            "timestamp": self.timestamp.strftime(constants.TIMESTAMP_FORMAT),
+            "timestamp": int(self.timestamp * 1000000),  # microseconds
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
@@ -111,53 +108,54 @@ class Transaction(object):
 
 class Span(object):
     __slots__ = (
-        "idx",
-        "transaction_id",
-        "trace_id",
+        "id",
+        "transaction",
         "name",
         "type",
         "context",
         "leaf",
+        "timestamp",
         "start_time",
         "duration",
         "parent",
         "frames",
     )
 
-    def __init__(self, idx, transaction_id, trace_id, name, span_type, start_time, context=None, leaf=False):
+    def __init__(self, transaction, name, span_type, context=None, leaf=False):
         """
         Create a new Span
 
-        :param idx: Index of this span
+        :param transaction: transaction object that this span relates to
         :param name: Generic name of the span
         :param span_type: type of the span
-        :param start_time: start time relative to the transaction
         :param context: context dictionary
-        :param leaf: is this transaction a leaf transaction?
+        :param leaf: is this span a leaf span?
         """
-        self.idx = idx
-        self.transaction_id = transaction_id
-        self.trace_id = trace_id
+        self.start_time = _time_func()
+        self.id = "%016x" % random.getrandbits(64)
+        self.transaction = transaction
         self.name = name
         self.type = span_type
         self.context = context
         self.leaf = leaf
-        self.start_time = start_time
+        # timestamp is bit of a mix of monotonic and non-monotonic time sources.
+        # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
+        # start time and transaction start time. In this respect, the span timestamp is guaranteed to grow
+        # monotonically with respect to the transaction timestamp
+        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         self.duration = None
         self.parent = None
         self.frames = None
-        self.trace_id = trace_id
-        self.transaction_id = transaction_id
 
     def to_dict(self):
         result = {
-            "id": self.idx,
-            "transaction_id": self.transaction_id,
-            "trace_id": self.trace_id,
-            "parent_id": self.parent.idx if self.parent else self.transaction_id,
+            "id": self.id,
+            "transaction_id": self.transaction.id,
+            "trace_id": self.transaction.trace_parent.trace_id,
+            "parent_id": self.parent.id if self.parent else self.transaction.id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
-            "start": self.start_time * 1000,  # milliseconds
+            "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
             "context": self.context,
         }

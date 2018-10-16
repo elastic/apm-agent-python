@@ -46,7 +46,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
             if headers is not None:
                 trace_parent = transaction.trace_parent.copy_from(
-                    span_id=leaf_span.idx, trace_options=TracingOptions(recorded=True)
+                    span_id=leaf_span.id, trace_options=TracingOptions(recorded=True)
                 )
                 headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
             return wrapped(*args, **kwargs)
