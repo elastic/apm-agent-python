@@ -42,6 +42,6 @@ FILES=( \
 mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/sourcemaps
 
 for i in "${FILES[@]}"; do
-    download_schema https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} ${basedir}/.schemacache/${i}
+    download_schema https://raw.githubusercontent.com/elastic/apm-server/6.x/docs/spec/${i} ${basedir}/.schemacache/${i}
 done
 echo "Done."
