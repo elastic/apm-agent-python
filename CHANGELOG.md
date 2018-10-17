@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## v3.0.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.1...v3.0.2)
 
  * fixed an issue with detecting names of wrapped functions that are partials (#294)
-
+ * fixed a bug in Flask instrumentation that could appear together with FlaskAPI (#286)
 ## v3.0.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...v3.0.1)
