@@ -26,7 +26,7 @@ def get_data_from_request(request, capture_body=False):
                 }
         else:
             try:
-                body = request.data
+                body = request.get_data(as_text=True)
             except ClientDisconnected:
                 pass
 
