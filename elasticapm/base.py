@@ -23,7 +23,7 @@ from copy import deepcopy
 import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
-from elasticapm.traces import TransactionsStore, get_transaction
+from elasticapm.traces import Tracer, get_transaction
 from elasticapm.utils import compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
@@ -68,7 +68,7 @@ class Client(object):
         self.logger = logging.getLogger("%s.%s" % (cls.__module__, cls.__name__))
         self.error_logger = logging.getLogger("elasticapm.errors")
 
-        self.transaction_store = None
+        self.tracer = None
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
@@ -113,7 +113,7 @@ class Client(object):
         else:
             skip_modules = ("elasticapm.",)
 
-        self.transaction_store = TransactionsStore(
+        self.tracer = Tracer(
             frames_collector_func=lambda: list(
                 stacks.iter_stack_frames(start_frame=inspect.currentframe(), skip_top_modules=skip_modules)
             ),
@@ -199,10 +199,10 @@ class Client(object):
     def begin_transaction(self, transaction_type, trace_parent=None):
         """Register the start of a transaction on the client
         """
-        return self.transaction_store.begin_transaction(transaction_type, trace_parent=trace_parent)
+        return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent)
 
     def end_transaction(self, name=None, result=""):
-        transaction = self.transaction_store.end_transaction(result, name)
+        transaction = self.tracer.end_transaction(result, name)
         return transaction
 
     def close(self):

@@ -586,7 +586,7 @@ def test_transaction_max_spans(elasticapm_client):
     spans = elasticapm_client.events[SPAN]
     assert all(span["transaction_id"] == transaction["id"] for span in spans)
 
-    assert transaction_obj._store.max_spans == 5
+    assert transaction_obj._tracer.max_spans == 5
     assert transaction_obj.dropped_spans == 10
     assert len(spans) == 5
     for span in spans:
@@ -676,22 +676,22 @@ def test_transaction_context_is_used_in_errors(elasticapm_client):
     assert "foo" not in transaction.context["custom"]
 
 
-def test_transaction_keyword_truncation(sending_elasticapm_client):
+def test_transaction_keyword_truncation(elasticapm_client):
     too_long = "x" * (KEYWORD_MAX_LENGTH + 1)
     expected = encoding.keyword_field(too_long)
     assert too_long != expected
     assert len(expected) == KEYWORD_MAX_LENGTH
     assert expected[-1] != "x"
-    sending_elasticapm_client.begin_transaction(too_long)
+    elasticapm_client.begin_transaction(too_long)
     elasticapm.tag(val=too_long)
     elasticapm.set_user_context(username=too_long, email=too_long, user_id=too_long)
     with elasticapm.capture_span(name=too_long, span_type=too_long):
         pass
-    sending_elasticapm_client.end_transaction(too_long, too_long)
-    sending_elasticapm_client.close()
-    assert sending_elasticapm_client.httpserver.responses[0]["code"] == 202
-    span = sending_elasticapm_client.httpserver.payloads[0][1]["span"]
-    transaction = sending_elasticapm_client.httpserver.payloads[0][2]["transaction"]
+    elasticapm_client.end_transaction(too_long, too_long)
+    elasticapm_client.close()
+
+    span = elasticapm_client.events["span"][0]
+    transaction = elasticapm_client.events["transaction"][0]
 
     assert transaction["name"] == expected
     assert transaction["type"] == expected
