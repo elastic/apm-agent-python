@@ -11,13 +11,14 @@ Large portions are
 
 from __future__ import absolute_import
 
-import datetime
 import inspect
 import logging
 import os
 import platform
 import socket
 import sys
+import time
+import warnings
 from copy import deepcopy
 
 import elasticapm
@@ -271,8 +272,11 @@ class Client(object):
         event_data = {}
         if custom is None:
             custom = {}
-        if not date:
-            date = datetime.datetime.utcnow()
+        if date is not None:
+            warnings.warn(
+                "The date argument is no longer evaluated and will be removed in a future release", DeprecationWarning
+            )
+        date = time.time()
         if stack is None:
             stack = self.config.auto_log_stacks
         if context:
@@ -347,7 +351,7 @@ class Client(object):
         if "exception" in event_data:
             event_data["exception"]["handled"] = bool(handled)
 
-        event_data.update({"timestamp": date.strftime(constants.TIMESTAMP_FORMAT)})
+        event_data["timestamp"] = int(date * 1000000)
 
         transaction = get_transaction()
         if transaction:

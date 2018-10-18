@@ -10,8 +10,8 @@ Large portions are
 """
 
 import logging
+import random
 import sys
-import uuid
 
 from elasticapm.utils import varmap
 from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
@@ -110,7 +110,7 @@ class Exception(BaseEvent):
             message = "%s: %s" % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
 
         return {
-            "id": str(uuid.uuid4()),
+            "id": "%032x" % random.getrandbits(128),
             "culprit": culprit,
             "exception": {
                 "message": message,
@@ -146,7 +146,7 @@ class Message(BaseEvent):
         message = param_message["message"] % params if params else param_message["message"]
         data = kwargs.get("data", {})
         message_data = {
-            "id": str(uuid.uuid4()),
+            "id": "%032x" % random.getrandbits(128),
             "log": {
                 "level": keyword_field(level or "error"),
                 "logger_name": keyword_field(logger_name or "__root__"),

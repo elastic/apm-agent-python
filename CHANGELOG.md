@@ -12,6 +12,7 @@ Further breaking changes:
  * new settings introduced: `api_request_time` and `api_request_size`.
  * Some settings now require a unit for duration or size. See documentation on
    configuration for more information.
+ * The option to provide a custom date for exceptions and messages has been removed.
 
 Other changes:
  * on Python 3.7, use [contextvars](https://docs.python.org/3/library/contextvars.html) instead of threadlocals for storing

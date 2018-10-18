@@ -104,6 +104,7 @@ class ValidatingWSGIApp(ContentServer):
                     success += 1
                 except jsonschema.ValidationError as e:
                     fail += 1
+                    content += "/".join(map(compat.text_type, e.absolute_schema_path)) + ": " + e.message + "\n"
             code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()

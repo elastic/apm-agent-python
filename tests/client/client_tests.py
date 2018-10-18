@@ -265,6 +265,17 @@ def test_exception_event(elasticapm_client):
     )
 
 
+def test_sending_exception(sending_elasticapm_client):
+    try:
+        1 / 0
+    except Exception:
+        sending_elasticapm_client.capture_exception()
+    sending_elasticapm_client.close()
+    assert (
+        sending_elasticapm_client.httpserver.responses[0]["code"] == 202
+    ), sending_elasticapm_client.httpserver.responses[0]
+
+
 @pytest.mark.parametrize(
     "elasticapm_client",
     [{"include_paths": ("*/tests/*",), "local_var_max_length": 20, "local_var_list_max_length": 10}],
