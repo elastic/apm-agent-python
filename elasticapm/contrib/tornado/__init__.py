@@ -17,14 +17,17 @@ def make_client(client_cls, app, **defaults):
     return client
 
 
-class ElasticAPM(object):
+class TornadoApm(object):
 
-    def __init__(self, app_tornado=None, client=None, client_cls=Client):
-        if not app_tornado:
+    def __validate_app(self, app):
+        if not app:
             raise Exception("Handle tornado invalid")
+
+    def __init__(self, aplication=None, client=None, client_cls=Client):
+        self.__validate_app(aplication)
         self.client = client
         self.client_cls = client_cls
-        self.__init_app(app_tornado)
+        self.__init_app(aplication)
 
     def __init_app(self, app, **defaults):
         self.app = app
@@ -52,7 +55,7 @@ class ApiElasticHandlerAPM(RequestHandler):
             context={
                 "request": get_data_from_request(self.request)
             },
-            handled=False,  # indicate that this exception bubbled all the way up to the user
+            handled=False,
         )
 
     def capture_message(self, message_error):
@@ -69,7 +72,6 @@ class ApiElasticHandlerAPM(RequestHandler):
 
     def write_error(self, status_code, **kwargs):
         self.capture_exception()
-        super(ApiElasticHandlerAPM, self).write_error(status_code, **kwargs)
 
     def prepare(self):
         apm_elastic = self.settings.get("apm_elastic")
