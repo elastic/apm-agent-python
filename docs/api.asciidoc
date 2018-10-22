@@ -71,10 +71,10 @@ client.capture_message('Billing process succeeded.')
 ----
 
  * `message`: The message as a string.
- * `param_message`: Alternatively, a parametrized message as a dictionary.
+ * `param_message`: Alternatively, a parameterized message as a dictionary.
     The dictionary contains two values: `message`, and `params`.
     This allows the APM server to group messages together that share the same
-    parametrized message. Example:
+    parameterized message. Example:
 +
 [source,python]
 ----
@@ -144,7 +144,7 @@ they have to be set beforehand by calling <<api-set-transaction-name, `elasticap
 
 Instruments libraries automatically.
 This includes a wide range of standard library and 3rd party modules.
-A list of instrumented modules can be found in `elasticapm.intrumentation.register`.
+A list of instrumented modules can be found in `elasticapm.instrumentation.register`.
 This function should be called as early as possibly in the startup of your application.
 For <<framework-support, supported frameworks>>, this is called automatically. Example:
 

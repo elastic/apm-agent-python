@@ -51,7 +51,7 @@ ELASTIC_APM = {
 [[flask-configuration]]
 === Flask
 
-To configure Flask, add an `ELASTIC_APM` dictonary to your `app.config`:
+To configure Flask, add an `ELASTIC_APM` dictionary to your `app.config`:
 
 [source,python]
 ----
