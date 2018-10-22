@@ -50,16 +50,16 @@ class Transaction(object):
 
     def begin_span(self, name, span_type, context=None, leaf=False):
         parent_span = get_span()
-        store = self._tracer
+        tracer = self._tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
-        elif store.max_spans and self._span_counter > store.max_spans - 1:
+        elif tracer.max_spans and self._span_counter > tracer.max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
             span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf)
-            span.frames = store.frames_collector_func()
+            span.frames = tracer.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
         set_span(span)

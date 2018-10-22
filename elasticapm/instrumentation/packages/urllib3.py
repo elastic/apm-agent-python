@@ -45,8 +45,11 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
                 leaf_span = leaf_span.parent
 
             if headers is not None:
+                # It's possible that there are only dropped spans, e.g. if we started dropping spans.
+                # In this case, the transaction.id is used
+                parent_id = leaf_span.id if leaf_span else transaction.id
                 trace_parent = transaction.trace_parent.copy_from(
-                    span_id=leaf_span.id, trace_options=TracingOptions(recorded=True)
+                    span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
                 headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
             return wrapped(*args, **kwargs)
