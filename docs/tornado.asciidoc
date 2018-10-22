@@ -1,0 +1,87 @@
+[[tornado-support]]
+== Tornado support
+
+Getting Elastic APM set up for your Tornado project is easy,
+and there are various ways you can tweak it to fit to your needs.
+
+This configuration is much same with flask-apm
+
+[float]
+[[Tornado-installation]]
+=== Installation
+
+Install the Elastic APM agent using pip:
+
+[source,bash]
+----
+$ pip install elastic-apm
+----
+
+
+[float]
+[[tornado-setup]]
+=== Setup
+
+To set up the agent, you need to initialize it with appropriate settings.
+
+The settings are configured either via environment variables,
+the application's settings, or as initialization arguments.
+
+You can find a list of all available settings in the <<configuration, Configuration>> page.
+
+Below an example of as configure the apm with tornado framework.
+
+[source,python]
+----
+from elasticapm.contrib.tornado import TornadoApm, ApiElasticHandlerAPM
+import tornado
+import tornado.ioloop
+import tornado.web
+from tornado.httpserver import HTTPServer
+
+class MainTest1(ApiElasticHandlerAPM):
+
+    def get(self, *args, **kwargs):
+        self.write({'status': 'ok'})
+        self.finish()
+
+
+class MainTest2(ApiElasticHandlerAPM):
+
+    def get(self):
+        raise Exception("Value Error")
+
+    def post(self):
+        try:
+            raise Exception("erro message")
+        except Exception as error:
+            # This error(Personalized) captured an send elastic
+            self.capture_message("personalized error test")
+            self.set_status(500)
+            self.write("Internal Server Error")
+            self.finish()
+
+
+def make_app():
+    settings = {
+        'ELASTIC_APM':
+            {
+                "SERVICE_NAME": "Teste tornado",
+                "SECRET_TOKEN": "",
+                "Debug": False},
+        "compress_response": True,
+    }
+    application = tornado.web.Application([
+        (r"/", MainTest1),
+        (r"/error", MainTest2),
+    ], **settings)
+    TornadoApm(application)
+    return application
+
+
+if __name__ == "__main__":
+    app = make_app()
+    server = HTTPServer(app)
+    server.bind(8888)
+    server.start(1)
+    tornado.ioloop.IOLoop.current().start()
