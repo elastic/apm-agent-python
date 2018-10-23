@@ -14,7 +14,7 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     parsed_url = urlparse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
-    with capture_span("test", "test"):
+    with capture_span("test_name", "test_type"):
         pool = urllib3.PoolManager(timeout=0.1)
 
         url = "http://{0}/hello_world".format(parsed_url.netloc)
@@ -25,7 +25,7 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
-    expected_signatures = {"test_pipeline", expected_sig}
+    expected_signatures = {"test_name", expected_sig}
 
     assert {t["name"] for t in spans} == expected_signatures
 
@@ -36,8 +36,8 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     assert spans[0]["context"]["url"] == url
     assert spans[0]["parent_id"] == spans[1]["id"]
 
-    assert spans[1]["name"] == "test_pipeline"
-    assert spans[1]["type"] == "test"
+    assert spans[1]["name"] == "test_name"
+    assert spans[1]["type"] == "test_type"
     assert spans[1]["parent_id"] == transactions[0]["id"]
 
 
@@ -79,7 +79,7 @@ def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiti
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
-def test_span_only_dropped(elasticapm_client, waiting_httpserver):
+def test_span_only_dropped(instrument, elasticapm_client, waiting_httpserver):
     """test that urllib3 instrumentation does not fail if no parent span can be found"""
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
