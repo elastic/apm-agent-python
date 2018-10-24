@@ -8,6 +8,7 @@ from functools import partial
 import redis
 from redis.client import StrictRedis
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
 pytestmark = pytest.mark.redis
@@ -30,8 +31,8 @@ def test_pipeline(instrument, elasticapm_client, redis_conn):
         pipeline.execute()
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"test_pipeline", "StrictPipeline.execute"}
 
@@ -60,8 +61,8 @@ def test_rq_patches_redis(instrument, elasticapm_client, redis_conn):
         pipeline.execute()
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"test_pipeline", "StrictPipeline.execute"}
 
@@ -84,8 +85,8 @@ def test_redis_client(instrument, elasticapm_client, redis_conn):
         redis_conn.expire("mykey", 1000)
     elasticapm_client.end_transaction("MyView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"test_redis_client", "RPUSH", "EXPIRE"}
 

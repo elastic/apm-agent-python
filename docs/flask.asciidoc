@@ -164,7 +164,7 @@ if __name__ == '__main__':
     app.logger.addHandler(handler)
 ----
 
-You can also capture exceptions and send them explictly:
+You can also capture exceptions and send them explicitly:
 
 [source,python]
 ----

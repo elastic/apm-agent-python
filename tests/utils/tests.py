@@ -1,5 +1,15 @@
-from elasticapm.utils import get_url_dict
+from functools import partial
+
+import pytest
+
+from elasticapm.utils import get_name_from_func, get_url_dict
 from elasticapm.utils.deprecation import deprecated
+
+try:
+    from functools import partialmethod
+except ImportError:
+    # Python 2
+    partialmethod = None
 
 
 @deprecated("alternative")
@@ -51,3 +61,53 @@ def test_get_url_dict():
     }
     for url, expected in data.items():
         assert get_url_dict(url) == expected
+
+
+def test_get_name_from_func():
+    def x():
+        pass
+
+    assert "tests.utils.tests.x" == get_name_from_func(x)
+
+
+def test_get_name_from_func_class():
+    class X(object):
+        def x(self):
+            pass
+
+    assert "tests.utils.tests.x" == get_name_from_func(X.x)
+    assert "tests.utils.tests.x" == get_name_from_func(X().x)
+
+
+def test_get_name_from_func_partial():
+    def x(x):
+        pass
+
+    p = partial(x, "x")
+    assert "partial(tests.utils.tests.x)" == get_name_from_func(p)
+
+
+@pytest.mark.skipif(partialmethod is None, reason="partialmethod not available on Python 2")
+def test_get_name_from_func_partialmethod_unbound():
+    class X(object):
+        def x(self, x):
+            pass
+
+        p = partialmethod(x, "x")
+
+    assert "partial(tests.utils.tests.x)" == get_name_from_func(X.p)
+
+
+@pytest.mark.skipif(partialmethod is None, reason="partialmethod not available on Python 2")
+def test_get_name_from_func_partialmethod_bound():
+    class X(object):
+        def x(self, x):
+            pass
+
+        p = partialmethod(x, "x")
+
+    assert "partial(tests.utils.tests.x)" == get_name_from_func(X().p)
+
+
+def test_get_name_from_func_lambda():
+    assert "tests.utils.tests.<lambda>" == get_name_from_func(lambda x: "x")

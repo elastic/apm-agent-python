@@ -1,12 +1,12 @@
-import pytest  # isort:skip
-
-pytest.importorskip("memcache")  # isort:skip
-
 import os
 
-import memcache
+import pytest
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
+
+memcache = pytest.importorskip("memcache")  # isort:skip
+
 
 pytestmark = pytest.mark.memcached
 
@@ -22,8 +22,8 @@ def test_memcached(instrument, elasticapm_client):
         assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])
     elasticapm_client.end_transaction("BillingView")
 
-    transactions = elasticapm_client.transaction_store.get_all()
-    spans = transactions[0]["spans"]
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     expected_signatures = {"test_memcached", "Client.set", "Client.get", "Client.get_multi"}
 
@@ -31,15 +31,15 @@ def test_memcached(instrument, elasticapm_client):
 
     assert spans[0]["name"] == "Client.set"
     assert spans[0]["type"] == "cache.memcached"
-    assert spans[0]["parent"] == 0
+    assert spans[0]["parent_id"] == spans[3]["id"]
 
     assert spans[1]["name"] == "Client.get"
     assert spans[1]["type"] == "cache.memcached"
-    assert spans[1]["parent"] == 0
+    assert spans[1]["parent_id"] == spans[3]["id"]
 
     assert spans[2]["name"] == "Client.get_multi"
     assert spans[2]["type"] == "cache.memcached"
-    assert spans[2]["parent"] == 0
+    assert spans[2]["parent_id"] == spans[3]["id"]
 
     assert spans[3]["name"] == "test_memcached"
     assert spans[3]["type"] == "test"

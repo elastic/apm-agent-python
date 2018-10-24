@@ -12,11 +12,18 @@ This is an example of a processor that removes the exception stacktrace from an 
 
 [source,python]
 ----
+from elasticapm.conf.constants import ERROR
+from elasticapm.processors import for_events
+
+@for_events(ERROR)
 def my_processor(client, event):
     if 'exception' in event and 'stacktrace' in event['exception']:
         event['exception'].pop('stacktrace')
     return event
 ----
+
+You can use the `@for_events` decorator to limit for which event type the processor should be called.
+Possible choices are `ERROR`, `TRANSACTION`, and `SPAN`, all of which are defined in `elasticapm.conf.constants`.
 
 To use this processor, update your `ELASTIC_APM` settings like this:
 
