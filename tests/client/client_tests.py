@@ -13,6 +13,7 @@ import elasticapm
 from elasticapm.base import Client
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding
+from elasticapm.utils.disttracing import TraceParent
 from tests.fixtures import DummyTransport
 
 
@@ -766,3 +767,20 @@ def test_config_error_stops_transaction_send(mock_queue, sending_elasticapm_clie
     sending_elasticapm_client.end_transaction("test", "OK")
     sending_elasticapm_client.close()
     assert mock_queue.call_count == 0
+
+
+def test_trace_parent(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    transaction = elasticapm_client.end_transaction("test", "OK")
+    data = transaction.to_dict()
+    assert data["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+    assert data["parent_id"] == "b7ad6b7169203331"
+
+
+def test_trace_parent_not_set(elasticapm_client):
+    elasticapm_client.begin_transaction("test", trace_parent=None)
+    transaction = elasticapm_client.end_transaction("test", "OK")
+    data = transaction.to_dict()
+    assert data["trace_id"] is not None
+    assert "parent_id" not in data
