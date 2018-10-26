@@ -99,7 +99,8 @@ class Transaction(object):
         }
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
-            if self.trace_parent.span_id:
+            # only set parent_id if this transaction isn't the root
+            if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
         if self.is_sampled:
             result["context"] = self.context
