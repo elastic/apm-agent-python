@@ -123,7 +123,9 @@ class UnitValidator(object):
 
 
 duration_validator = UnitValidator("^((?:-)?\d+)(ms|s|m)$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
-size_validator = UnitValidator("^(\d+)(b|kib|mib)$", "\d+(b|KiB|MiB)", {"b": 1, "kib": 1024, "mib": 1024 * 1024})
+size_validator = UnitValidator(
+    "^(\d+)(b|kb|mb|gb)$", "\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
+)
 
 
 class _ConfigBase(object):
