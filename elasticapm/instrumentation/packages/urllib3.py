@@ -8,7 +8,10 @@ from elasticapm.utils.disttracing import TracingOptions
 class Urllib3Instrumentation(AbstractInstrumentedModule):
     name = "urllib3"
 
-    instrument_list = [("urllib3.connectionpool", "HTTPConnectionPool.urlopen")]
+    instrument_list = [
+        ("urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
+        ("requests.packages.urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
+    ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if "method" in kwargs:
