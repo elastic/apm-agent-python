@@ -134,6 +134,11 @@ Note however that this can have adverse effects on performance.
 The name of the environment this service is deployed in,
 e.g. "production" or "staging".
 
+NOTE: `environment` is currently not supported in the Kibana APM UI.
+This means that data from different environments that share the same
+`<<config-service-name,service name>>` will be shown together in the APM UI.
+For the time being, we recommend to also append the environment name to the service name.
+
 [float]
 [[config-secret-token]]
 ==== `secret_token`
