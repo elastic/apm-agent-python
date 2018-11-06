@@ -74,7 +74,7 @@ class Transaction(object):
     def end_transaction(self, skip_frames=8):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False):
+    def begin_span(self, name, span_type, context=None, leaf=False, async_process=False):
         # If we were already called with `leaf=True`, we'll just push
         # a placeholder on the stack.
         if self.ignore_subtree:
@@ -92,11 +92,16 @@ class Transaction(object):
             return None
 
         start = _time_func() - self.start_time
+        if async_process:
+            start = 0
+            if self.spans:
+                span = self.spans[len(self.spans) - 1]
+                start = span.start_time + span.duration
         span = Span(self._span_counter - 1, name, span_type, start, context)
         self.span_stack.append(span)
         return span
 
-    def end_span(self, skip_frames):
+    def end_span(self, skip_frames, duration=None):
         span = self.span_stack.pop()
         if span is IGNORED_SPAN:
             return None
@@ -107,6 +112,8 @@ class Transaction(object):
             return
 
         span.duration = _time_func() - span.start_time - self.start_time
+        if duration:
+            span.duration = duration
 
         if self.span_stack:
             span.parent = self.span_stack[-1].idx
@@ -263,12 +270,15 @@ class TransactionsStore(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False):
+    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False,
+                 async_process=None, duration=None):
         self.name = name
         self.type = span_type
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
+        self.duration = duration
+        self.async_process = async_process
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -283,13 +293,14 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            transaction.begin_span(self.name, self.type, context=self.extra,
+                                   leaf=self.leaf, async_process=self.async_process)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
             try:
-                transaction.end_span(self.skip_frames)
+                transaction.end_span(self.skip_frames, duration=self.duration)
             except IndexError:
                 error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
