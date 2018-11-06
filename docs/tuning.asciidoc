@@ -2,7 +2,7 @@
 == Tuning and Overhead considerations
 
 Using an APM solution comes with certain trade-offs, and the Python agent for Elastic APM is no different.
-Instrumenting your code, measuring timings, recording context data etc. all need resources: 
+Instrumenting your code, measuring timings, recording context data, etc., all need resources: 
 
  * CPU time
  * memory
@@ -16,11 +16,10 @@ But because every deployment is different, there are some knobs you can turn to 
 [[tuning-sample-rate]]
 === Transaction Sample Rate
 
-The most straight forward way to reduce the overhead of the agent is to tell the agent to do less.
+The easiest way to reduce the overhead of the agent is to tell the agent to do less.
 If you set the <<config-transaction-sample-rate,`transaction_sample_rate`>> to a value below `1.0`,
 the agent will randomly sample only a subset of transactions.
-If a transaction is not sampled, the agent has to do a lot less work,
-as we only record the the name of the transaction, the overall transaction time and the result for unsampled transactions.
+Unsampled transactions only record the name of the transaction, the overall transaction time, and the result:
 
 [options="header"]
 |============
@@ -40,7 +39,7 @@ Reducing the sample rate to a fraction of all transactions can make a huge diffe
 === Transaction Queue
 
 To reduce the load on the APM Server, the agent does not send every transaction up as it happens.
-Instead, it queues them up, and flushes the queue periodically, or when it reaches a maximum size, using a background thread.
+Instead, it queues them up and flushes the queue periodically, or when it reaches a maximum size, using a background thread.
 
 While this reduces the load on the APM Server (and to a certain extent on the agent),
 holding on to the transaction data in a queue uses memory.
@@ -57,21 +56,20 @@ The second setting, `max_queue_size`, can help if you experience peaks of transa
 Keep in mind that reducing the value of either setting will cause the agent to send more HTTP requests to the APM Server,
 potentially causing a higher load.
 
-
 [float]
 [[tuning-max-spans]]
 === Spans per transaction
 
 The average amount of spans per transaction can influence how much time the agent spends in each transaction collecting contextual data for each span,
-and the the storage space needed in Elasticsearch.
-In our experience, most usual transactions should have well below 100 spans.
-In some cases however, the number of spans can explode:
+and the storage space needed in Elasticsearch.
+In our experience, most _usual_ transactions should have well below 100 spans.
+In some cases, however, the number of spans can explode:
 
  * long-running transactions
  * unoptimized code, e.g. doing hundreds of SQL queries in a loop
  
-To avoid that such edge cases overload both the agent and the APM Server,
-the agent stops recording spans when a limit is reached.
+To avoid these edge cases overloading both the agent and the APM Server,
+the agent stops recording spans when a specified limit is reached.
 You can configure this limit by changing the <<config-transaction-max-spans,`transaction_max_spans`>> setting.
 
 Another option to reduce overhead of collecting contextual data for spans is to disable collection for very short spans.
@@ -81,3 +79,20 @@ You can define a minimal threshold for span duration in milliseconds,
 using the <<config-span-frames-min-duration,`span_frames_min_duration_ms`>> setting.
 If a span takes less than this duration, no stack frames will be collected for this span.
 Other contextual information, like the SQL query, will still be available.
+
+[float]
+[[tuning-frame-context]]
+=== Collecting Frame Context
+
+When a stack trace is captured, the agent will also capture several lines of source code around each frame location in the stack trace. This allows the APM UI to give greater insight into where exactly the error or span happens. 
+
+There are four settings you can modify to control this behavior:
+
+* <<config-source-lines-error-app-frames, `source_lines_error_app_frames`>>
+* <<config-source-lines-error-library-frames,`source_lines_error_library_frames`>>
+* <<config-source-lines-span-app-frames,`source_lines_span_app_frames`>>
+* <<config-source-lines-span-library-frames,`source_lines_span_library_frames`>>
+
+As you can see, these settings are divided between app frames, which represent your application code, and library frames, which represent the code of your dependencies. Each of these categories are also split into separate error and span settings. 
+
+Reading source files inside a running application can cause a lot of disk I/O, and sending up source lines for each frame will have a network and storage cost that is quite high. Turning down these limits will help prevent excessive memory usage. 
