@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+set -ex
 
 download_schema()
 {
@@ -13,10 +13,10 @@ download_schema()
         sleep 1
     done
 
+    if [ $result -ne 0 ]; then exit $result; fi
+
     mv -f ${1}/docs/spec/* ${1}/
     rm -rf ${1}/docs
-
-    if [ $result -ne 0 ]; then exit $result; fi
 }
 
 # parent directory
