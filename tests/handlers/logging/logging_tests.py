@@ -209,6 +209,6 @@ def test_logging_handler_dont_emit_elasticapm(capsys, elasticapm_client):
 def test_arbitrary_object(logger):
     logger.error(["a", "list", "of", "strings"])
     assert len(logger.client.events) == 1
-    event = logger.client.events.pop(0)["errors"][0]
+    event = logger.client.events[ERROR][0]
     assert "param_message" in event["log"]
     assert event["log"]["param_message"] == "['a', 'list', 'of', 'strings']"
