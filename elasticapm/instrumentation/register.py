@@ -15,6 +15,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.redis.RedisPipelineInstrumentation",
     "elasticapm.instrumentation.packages.requests.RequestsInstrumentation",
     "elasticapm.instrumentation.packages.sqlite.SQLiteInstrumentation",
+    "elasticapm.instrumentation.packages.suds.SUDSInstrumentation",
     "elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation",
     "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation",
     "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation",
