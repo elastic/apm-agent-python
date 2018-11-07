@@ -16,6 +16,7 @@ import traceback
 import logbook
 
 from elasticapm.base import Client
+from elasticapm.utils import compat
 from elasticapm.utils.encoding import to_unicode
 
 LOOKBOOK_LEVELS = {
@@ -80,7 +81,7 @@ class LogbookHandler(logbook.Handler):
             exception = None
 
         return self.client.capture_message(
-            param_message={"message": record.msg, "params": record.args},
+            param_message={"message": compat.text_type(record.msg), "params": record.args},
             exception=exception,
             level=LOOKBOOK_LEVELS[record.level],
             logger_name=record.channel,

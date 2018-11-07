@@ -143,3 +143,12 @@ def test_logbook_handler_dont_emit_elasticapm(capsys, elasticapm_client):
     handler.emit(LogRecord("elasticapm.errors", 1, "Oops"))
     out, err = capsys.readouterr()
     assert "Oops" in err
+
+
+def test_arbitrary_object(elasticapm_client, logbook_logger, logbook_handler):
+    with logbook_handler.applicationbound():
+        logbook_logger.info(["a", "list", "of", "strings"])
+    assert len(logbook_handler.client.events) == 1
+    event = logbook_handler.client.events.pop(0)["errors"][0]
+    assert "param_message" in event["log"]
+    assert event["log"]["param_message"] == "['a', 'list', 'of', 'strings']"
