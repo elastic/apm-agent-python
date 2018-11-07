@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.0.3
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.2...v3.0.3)
+ * fixed an issue when logging messages that are not strings (#295, #312)
+ * backported some documentation fixes
+
 ## v3.0.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.1...v3.0.2)
 
