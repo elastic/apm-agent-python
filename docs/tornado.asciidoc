@@ -12,9 +12,12 @@ This configuration is much same with flask-apm
 
 Install the Elastic APM agent using pip:
 
+>> Attention the tornado version should be> = 4.5
+
 [source,bash]
 ----
 $ pip install elastic-apm
+$ pip install tornado
 ----
 
 
