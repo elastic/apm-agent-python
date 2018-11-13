@@ -784,3 +784,18 @@ def test_trace_parent_not_set(elasticapm_client):
     data = transaction.to_dict()
     assert data["trace_id"] is not None
     assert "parent_id" not in data
+
+
+def test_ensure_parent_sets_new_id(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test", trace_parent=None)
+    assert transaction.id == transaction.trace_parent.span_id
+    span_id = transaction.ensure_parent_id()
+    assert span_id == transaction.trace_parent.span_id
+
+
+def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test", trace_parent=None)
+    assert transaction.id == transaction.trace_parent.span_id
+    span_id = transaction.ensure_parent_id()
+    span_id_2 = transaction.ensure_parent_id()
+    assert span_id == span_id_2

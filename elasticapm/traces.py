@@ -13,6 +13,7 @@ from elasticapm.utils.disttracing import TraceParent, TracingOptions
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
 error_logger = logging.getLogger("elasticapm.errors")
+logger = logging.getLogger("elasticapm.traces")
 
 _time_func = timeit.default_timer
 
@@ -83,6 +84,17 @@ class Transaction(object):
         set_span(span.parent)
         self._tracer.queue_func(SPAN, span.to_dict())
         return span
+
+    def ensure_parent_id(self):
+        """If current trace_parent has no span_id, generate one, then return it
+
+        This is used to generate a span ID which the RUM agent will use to correlated
+        the RUM transaction with the backend transaction.
+        """
+        if self.trace_parent.span_id == self.id:
+            self.trace_parent.span_id = "%016x" % random.getrandbits(64)
+            logger.debug("Set parent id to generated %s", self.trace_parent.span_id)
+        return self.trace_parent.span_id
 
     def to_dict(self):
         self.context["tags"] = self.tags

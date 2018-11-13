@@ -22,6 +22,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
+from elasticapm.traces import get_transaction
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 
@@ -130,6 +131,23 @@ class ElasticAPM(object):
                 pass
         else:
             logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
+
+        @app.context_processor
+        def rum_tracing():
+            """
+            Adds APM related IDs to the context used for correlating the backend transaction with the RUM transaction
+            """
+            transaction = get_transaction()
+            if transaction.trace_parent:
+                return {
+                    "apm": {
+                        "trace_id": transaction.trace_parent.trace_id,
+                        "span_id": lambda: transaction.ensure_parent_id(),
+                        "is_sampled": transaction.is_sampled,
+                        "is_sampled_js": "true" if transaction.is_sampled else "false",
+                    }
+                }
+            return {}
 
     def request_started(self, app):
         if not self.app.debug or self.client.config.debug:

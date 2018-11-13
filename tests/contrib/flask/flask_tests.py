@@ -8,6 +8,7 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.utils import compat
+from tests.contrib.flask.utils import captured_templates
 
 try:
     from urllib.request import urlopen
@@ -284,3 +285,15 @@ def test_set_transaction_name(flask_apm_client):
     transaction = flask_apm_client.client.events[TRANSACTION][0]
     assert transaction["name"] == "foo"
     assert transaction["result"] == "okydoky"
+
+
+def test_rum_tracing_context_processor(flask_apm_client):
+    with captured_templates(flask_apm_client.app) as templates:
+        resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+        resp.close()
+        transaction = flask_apm_client.client.events[TRANSACTION][0]
+        template, context = templates[0]
+        assert context["apm"]["trace_id"] == transaction["trace_id"]
+        assert context["apm"]["is_sampled"]
+        assert context["apm"]["is_sampled_js"] == "true"
+        assert callable(context["apm"]["span_id"])
