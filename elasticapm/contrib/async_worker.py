@@ -93,6 +93,7 @@ class AsyncWorker(object):
             if not self._thread:
                 self._thread = Thread(target=self._target)
                 self._thread.setDaemon(True)
+                self._thread.name = "elasticapm sender thread"
                 self._thread.start()
         finally:
             self._lock.release()

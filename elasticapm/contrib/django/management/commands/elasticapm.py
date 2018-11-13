@@ -108,8 +108,6 @@ class Command(BaseCommand):
         client = DjangoClient(**config)
         client.error_logger = ColoredLogger(self.stderr)
         client.logger = ColoredLogger(self.stderr)
-        client.state.logger = client.logger
-        client.state.error_logger = client.error_logger
         self.write(
             "Trying to send a test error to APM Server using these settings:\n\n"
             "SERVICE_NAME:\t%s\n"

@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from elasticapm.conf.constants import TRANSACTION
+
 pymssql = pytest.importorskip("pymssql")
 
 pytestmark = pytest.mark.pymssql
@@ -38,8 +40,8 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert cursor.fetchall() == [(2, "two"), (3, "three")]
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
-        transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]["spans"]
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
         assert "db" in span["context"]

@@ -4,7 +4,9 @@ from __future__ import absolute_import
 import mock
 import pytest
 
+import elasticapm
 from elasticapm import Client, processors
+from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat
 
 
@@ -194,31 +196,65 @@ def test_remove_stacktrace_locals():
         assert "vars" not in frame
 
 
+@processors.for_events(ERROR, TRANSACTION, SPAN)
 def dummy_processor(client, data):
     data["processed"] = True
     return data
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"processors": "tests.processors.tests.dummy_processor"}], indirect=True)
+@processors.for_events()
+def dummy_processor_no_events(client, data):
+    data["processed_no_events"] = True
+    return data
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"processors": "tests.processors.tests.dummy_processor,tests.processors.tests.dummy_processor_no_events"}],
+    indirect=True,
+)
 def test_transactions_processing(elasticapm_client):
     for i in range(5):
         elasticapm_client.begin_transaction("dummy")
+        with elasticapm.capture_span("bla"):
+            pass
         elasticapm_client.end_transaction("dummy_transaction", "success")
-    elasticapm_client._collect_transactions()
-    for transaction in elasticapm_client.events[0]["transactions"]:
+    for transaction in elasticapm_client.events[TRANSACTION]:
         assert transaction["processed"] is True
+        assert "processed_no_events" not in transaction
+    for span in elasticapm_client.events[SPAN]:
+        assert span["processed"] is True
+        assert "processed_no_events" not in span
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"processors": "tests.processors.tests.dummy_processor"}], indirect=True)
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"processors": "tests.processors.tests.dummy_processor,tests.processors.tests.dummy_processor_no_events"}],
+    indirect=True,
+)
 def test_exception_processing(elasticapm_client):
     try:
         1 / 0
     except ZeroDivisionError:
         elasticapm_client.capture_exception()
-    assert elasticapm_client.events[0]["errors"][0]["processed"] is True
+    assert elasticapm_client.events[ERROR][0]["processed"] is True
+    assert "processed_no_events" not in elasticapm_client.events[ERROR][0]
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"processors": "tests.processors.tests.dummy_processor"}], indirect=True)
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"processors": "tests.processors.tests.dummy_processor,tests.processors.tests.dummy_processor_no_events"}],
+    indirect=True,
+)
 def test_message_processing(elasticapm_client):
     elasticapm_client.capture_message("foo")
-    assert elasticapm_client.events[0]["errors"][0]["processed"] is True
+    assert elasticapm_client.events[ERROR][0]["processed"] is True
+    assert "processed_no_events" not in elasticapm_client.events[ERROR][0]
+
+
+def test_for_events_decorator():
+    @processors.for_events("error", "transaction")
+    def foo(client, event):
+        return True
+
+    assert foo.event_types == {"error", "transaction"}

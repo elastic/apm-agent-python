@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-import pytest  # isort:skip
-
-pytest.importorskip("psycopg2")  # isort:skip
-
 import os
 
-import psycopg2
+import pytest
 
+from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+
+psycopg2 = pytest.importorskip("psycopg2")
+
 
 try:
     from psycopg2 import sql
@@ -227,13 +227,9 @@ def test_fully_qualified_table_name():
 def test_psycopg2_register_type(postgres_connection, elasticapm_client):
     import psycopg2.extras
 
-    try:
-        elasticapm_client.begin_transaction("web.django")
-        new_type = psycopg2.extras.register_uuid(None, postgres_connection)
-        elasticapm_client.end_transaction(None, "test-transaction")
-    finally:
-        # make sure we've cleared out the spans for the other tests.
-        elasticapm_client.transaction_store.get_all()
+    elasticapm_client.begin_transaction("web.django")
+    new_type = psycopg2.extras.register_uuid(None, postgres_connection)
+    elasticapm_client.end_transaction(None, "test-transaction")
 
     assert new_type is not None
 
@@ -245,18 +241,14 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
     # separately
     import psycopg2.extras
 
-    try:
-        elasticapm_client.begin_transaction("web.django")
-        # as arg
-        new_type = psycopg2.extras.register_json(postgres_connection, loads=lambda x: x)
-        assert new_type is not None
-        # as kwarg
-        new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection, loads=lambda x: x)
-        assert new_type is not None
-        elasticapm_client.end_transaction(None, "test-transaction")
-    finally:
-        # make sure we've cleared out the traces for the other tests.
-        elasticapm_client.transaction_store.get_all()
+    elasticapm_client.begin_transaction("web.django")
+    # as arg
+    new_type = psycopg2.extras.register_json(postgres_connection, loads=lambda x: x)
+    assert new_type is not None
+    # as kwarg
+    new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection, loads=lambda x: x)
+    assert new_type is not None
+    elasticapm_client.end_transaction(None, "test-transaction")
 
 
 @pytest.mark.integrationtest
@@ -267,8 +259,8 @@ def test_psycopg2_tracing_outside_of_elasticapm_transaction(instrument, postgres
     # transaction
     assert isinstance(cursor, PGCursorProxy)
     cursor.execute("SELECT 1")
-    transactions = elasticapm_client.transaction_store.get_all()
-    assert transactions == []
+    transactions = elasticapm_client.events[TRANSACTION]
+    assert not transactions
 
 
 @pytest.mark.integrationtest
@@ -288,8 +280,8 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         # make sure we've cleared out the spans for the other tests.
-        transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]["spans"]
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
         assert "db" in span["context"]
@@ -318,8 +310,8 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
     finally:
         # make sure we've cleared out the spans for the other tests.
         assert [(2, "two"), (3, "three")] == result
-        transactions = elasticapm_client.transaction_store.get_all()
-        spans = transactions[0]["spans"]
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
         assert "db" in span["context"]
