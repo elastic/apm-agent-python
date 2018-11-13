@@ -14,6 +14,7 @@ env:
   matrix:
   - WEBFRAMEWORK=django-master
   - WEBFRAMEWORK=flask-master
+  - WEBFRAMEWORK=tornado-master
 
 matrix:
   exclude:
@@ -21,6 +22,7 @@ matrix:
   - env:
     - WEBFRAMEWORK=django-master
     - WEBFRAMEWORK=flask-master
+    - WEBFRAMEWORK=tornado-master
   - python: nightly
   include:
   - stage: linters

@@ -8,6 +8,8 @@ FRAMEWORK:
   - django-2.0
   - django-2.1
 #  - django-master
+  - tornado-5.1
+  - tornado-4.5
   - flask-0.10
   - flask-0.11
   - flask-0.12
