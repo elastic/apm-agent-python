@@ -11,7 +11,7 @@ def make_client(client_cls, app, **defaults):
 
     if 'framework_name' not in defaults:
         defaults['framework_name'] = 'tornado'
-        defaults['framework_version'] = getattr(tornado, '__version__', '<0.7')
+        defaults['framework_version'] = getattr(tornado, 'version', ">=4.5")
 
     client = client_cls(config, **defaults)
     return client
