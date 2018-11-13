@@ -1,3 +1,5 @@
+from unittest import TestCase
+
 import tornado
 from tornado.testing import AsyncHTTPTestCase
 
@@ -36,6 +38,10 @@ def make_app():
     ], **settings)
     TornadoApm(application)
     return application
+
+
+class BaseTestClass(TestCase):
+    pass
 
 
 class BaseTestClassTornado(AsyncHTTPTestCase):

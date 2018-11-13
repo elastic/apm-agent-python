@@ -5,7 +5,8 @@ from tests.contrib.tornado import BaseTestClass
 
 
 class MockMatcher:
-    _path = "test/%s/extref"
+    _path = "test/%s/extref/%s"
+    regex = mock.MagicMock()
 
 
 class MockWillCardRouter:
@@ -57,10 +58,12 @@ class TestApiElasticHandlerAPM(BaseTestClass):
         request = mock.MagicMock()
         handler = ApiElasticHandlerAPM(application, request)
         mock_will = MockWillCardRouter()
+        mock_will.matcher.regex.groupindex.values.return_value = [1, 2]
+        mock_will.matcher.regex.groupindex.items.return_value = [('operator', 1), ('extref', 2)]
         mock_will.target = handler.__class__
         application.wildcard_router.rules = [mock_will]
         url = handler.get_url()
-        self.assertEqual(url, 'test/<param>/extref')
+        self.assertEqual(url, 'test/:operator/extref/:extref')
 
     @mock.patch("elasticapm.contrib.tornado.elasticapm")
     def test_on_finish(self, mock_elastic):
