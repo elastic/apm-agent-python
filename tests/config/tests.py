@@ -4,7 +4,17 @@ import logging
 
 import mock
 
-from elasticapm.conf import Config, _BoolConfigValue, _ConfigBase, _ConfigValue, _ListConfigValue, setup_logging
+from elasticapm.conf import (
+    Config,
+    RegexValidator,
+    _BoolConfigValue,
+    _ConfigBase,
+    _ConfigValue,
+    _ListConfigValue,
+    duration_validator,
+    setup_logging,
+    size_validator,
+)
 
 
 def test_basic_not_configured():
@@ -33,7 +43,7 @@ def test_config_dict():
             "SERVER_URL": "http://example.com:1234",
             "SERVICE_VERSION": 1,
             "HOSTNAME": "localhost",
-            "FLUSH_INTERVAL": "5",
+            "API_REQUEST_TIME": "5s",
         }
     )
 
@@ -42,7 +52,7 @@ def test_config_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.flush_interval == 5
+    assert config.api_request_time == 5000
 
 
 def test_config_environment():
@@ -54,7 +64,7 @@ def test_config_environment():
             "ELASTIC_APM_SERVER_URL": "http://example.com:1234",
             "ELASTIC_APM_SERVICE_VERSION": "1",
             "ELASTIC_APM_HOSTNAME": "localhost",
-            "ELASTIC_APM_FLUSH_INTERVAL": "5",
+            "ELASTIC_APM_API_REQUEST_TIME": "5s",
             "ELASTIC_APM_AUTO_LOG_STACKS": "false",
         },
     ):
@@ -65,8 +75,8 @@ def test_config_environment():
         assert config.server_url == "http://example.com:1234"
         assert config.service_version == "1"
         assert config.hostname == "localhost"
-        assert config.flush_interval == 5
-        assert config.auto_log_stacks == False
+        assert config.api_request_time == 5000
+        assert config.auto_log_stacks is False
 
 
 def test_config_inline_dict():
@@ -77,7 +87,7 @@ def test_config_inline_dict():
             "server_url": "http://example.com:1234",
             "service_version": "1",
             "hostname": "localhost",
-            "flush_interval": "5",
+            "api_request_time": "5s",
         }
     )
 
@@ -86,7 +96,7 @@ def test_config_inline_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.flush_interval == 5
+    assert config.api_request_time == 5000
 
 
 def test_config_precedence():
@@ -131,3 +141,53 @@ def test_values_not_shared_among_instances():
     c2 = MyConfig({"MY_BOOL": "nope"})
 
     assert c1.my_bool is not c2.my_bool
+
+
+def test_regex_validation():
+    class MyConfig(_ConfigBase):
+        my_regex = _ConfigValue("MY_REGEX", validators=[RegexValidator("\d+")])
+
+    c1 = MyConfig({"MY_REGEX": "123"})
+    c2 = MyConfig({"MY_REGEX": "abc"})
+    assert not c1.errors
+    assert "MY_REGEX" in c2.errors
+
+
+def test_size_validation():
+    class MyConfig(_ConfigBase):
+        byte = _ConfigValue("BYTE", type=int, validators=[size_validator])
+        kbyte = _ConfigValue("KBYTE", type=int, validators=[size_validator])
+        mbyte = _ConfigValue("MBYTE", type=int, validators=[size_validator])
+        gbyte = _ConfigValue("GBYTE", type=int, validators=[size_validator])
+        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[size_validator])
+
+    c = MyConfig({"BYTE": "10b", "KBYTE": "5kb", "MBYTE": "17mb", "GBYTE": "2gb", "WRONG_PATTERN": "5 kb"})
+    assert c.byte == 10
+    assert c.kbyte == 5 * 1024
+    assert c.mbyte == 17 * 1024 * 1024
+    assert c.gbyte == 2 * 1024 * 1024 * 1024
+    assert c.wrong_pattern is None
+    assert "WRONG_PATTERN" in c.errors
+
+
+def test_duration_validation():
+    class MyConfig(_ConfigBase):
+        millisecond = _ConfigValue("MS", type=int, validators=[duration_validator])
+        second = _ConfigValue("S", type=int, validators=[duration_validator])
+        minute = _ConfigValue("M", type=int, validators=[duration_validator])
+        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[duration_validator])
+
+    c = MyConfig({"MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
+    assert c.millisecond == -10
+    assert c.second == 5 * 1000
+    assert c.minute == 17 * 1000 * 60
+    assert c.wrong_pattern is None
+    assert "WRONG_PATTERN" in c.errors
+
+
+def test_chained_validators():
+    class MyConfig(_ConfigBase):
+        chained = _ConfigValue("CHAIN", validators=[lambda val, field: val.upper(), lambda val, field: val * 2])
+
+    c = MyConfig({"CHAIN": "x"})
+    assert c.chained == "XX"

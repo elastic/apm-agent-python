@@ -1,47 +1,28 @@
 #!/usr/bin/env bash
 
-set -x
+set -ex
 
 download_schema()
 {
-    from=$1
-    to=$2
-
-    for run in {1..5}
+    rm -rf ${1} && mkdir -p ${1}
+    for run in 1 2 3 4 5
     do
-        curl -sf --compressed ${from} > ${to}
+        curl --silent --fail https://codeload.github.com/elastic/apm-server/tar.gz/${2} | tar xzvf - --wildcards --directory=${1} --strip-components=1 "*/docs/spec/*"
         result=$?
         if [ $result -eq 0 ]; then break; fi
         sleep 1
     done
 
     if [ $result -ne 0 ]; then exit $result; fi
+
+    mv -f ${1}/docs/spec/* ${1}/
+    rm -rf ${1}/docs
 }
 
 # parent directory
 basedir=$(dirname "$0")/..
 
-FILES=( \
-    "errors/error.json" \
-    "errors/payload.json" \
-    "sourcemaps/payload.json" \
-    "transactions/mark.json" \
-    "transactions/payload.json" \
-    "transactions/span.json" \
-    "transactions/transaction.json" \
-    "context.json" \
-    "process.json" \
-    "request.json" \
-    "service.json" \
-    "stacktrace_frame.json" \
-    "system.json" \
-    "tags.json" \
-    "user.json" \
-)
 
-mkdir -p ${basedir}/.schemacache/errors ${basedir}/.schemacache/transactions ${basedir}/.schemacache/sourcemaps
+download_schema ${basedir}/.schemacache master
 
-for i in "${FILES[@]}"; do
-    download_schema https://raw.githubusercontent.com/elastic/apm-server/master/docs/spec/${i} ${basedir}/.schemacache/${i}
-done
 echo "Done."

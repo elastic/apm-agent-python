@@ -138,10 +138,6 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                 except ImportError:
                     client.logger.info("Can't instrument middleware %s", middleware_path)
 
-    def process_request(self, request):
-        if not django_settings.DEBUG or self.client.config.debug:
-            self.client.begin_transaction("request")
-
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._elasticapm_view_func = view_func
 

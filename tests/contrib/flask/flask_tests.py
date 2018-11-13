@@ -4,8 +4,8 @@ pytest.importorskip("flask")  # isort:skip
 
 import os
 
-import mock
-
+from elasticapm.conf import constants
+from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.utils import compat
 
@@ -21,7 +21,7 @@ def test_error_handler(flask_apm_client):
     assert response.status_code == 500
     assert len(flask_apm_client.client.events) == 1
 
-    event = flask_apm_client.client.events.pop(0)["errors"][0]
+    event = flask_apm_client.client.events[ERROR][0]
 
     assert "exception" in event
     exc = event["exception"]
@@ -37,7 +37,7 @@ def test_get(flask_apm_client):
     assert response.status_code == 500
     assert len(flask_apm_client.client.events) == 1
 
-    event = flask_apm_client.client.events.pop(0)["errors"][0]
+    event = flask_apm_client.client.events[ERROR][0]
 
     assert "request" in event["context"]
     request = event["context"]["request"]
@@ -86,9 +86,9 @@ def test_post(flask_apm_client):
     client = flask_apm_client.app.test_client()
     response = client.post("/an-error/?biz=baz", data={"foo": "bar"})
     assert response.status_code == 500
-    assert len(flask_apm_client.client.events) == 1
+    assert len(flask_apm_client.client.events[ERROR]) == 1
 
-    event = flask_apm_client.client.events.pop(0)["errors"][0]
+    event = flask_apm_client.client.events[ERROR][0]
 
     assert "request" in event["context"]
     request = event["context"]["request"]
@@ -120,14 +120,12 @@ def test_post(flask_apm_client):
     indirect=True,
 )
 def test_instrumentation(flask_apm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
-        resp.close()
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
 
     assert resp.status_code == 200, resp.response
 
-    transactions = flask_apm_client.client.transaction_store.get_all()
+    transactions = flask_apm_client.client.events[TRANSACTION]
 
     assert len(transactions) == 1
     transaction = transactions[0]
@@ -147,7 +145,7 @@ def test_instrumentation(flask_apm_client):
         "Content-Length": "78",
         "Content-Type": "text/html; charset=utf-8",
     }
-    spans = transactions[0]["spans"]
+    spans = flask_apm_client.client.spans_for_transaction(transactions[0])
     assert len(spans) == 1, [t["name"] for t in spans]
 
     expected_signatures = {"users.html"}
@@ -160,47 +158,59 @@ def test_instrumentation(flask_apm_client):
 
 def test_instrumentation_debug(flask_apm_client):
     flask_apm_client.app.debug = True
-    assert len(flask_apm_client.client.transaction_store) == 0
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 0
     resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
     resp.close()
-    assert len(flask_apm_client.client.transaction_store) == 0
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 0
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"debug": True}], indirect=True)
 def test_instrumentation_debug_client_debug(flask_apm_client):
     flask_apm_client.app.debug = True
-    assert len(flask_apm_client.client.transaction_store) == 0
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 0
     resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
     resp.close()
-    assert len(flask_apm_client.client.transaction_store) == 1
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 1
 
 
 def test_instrumentation_404(flask_apm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().post("/no-such-page/")
-        resp.close()
+    resp = flask_apm_client.app.test_client().post("/no-such-page/")
+    resp.close()
 
     assert resp.status_code == 404, resp.response
 
-    transactions = flask_apm_client.client.transaction_store.get_all()
+    transactions = flask_apm_client.client.events[TRANSACTION]
 
     assert len(transactions) == 1
-    spans = transactions[0]["spans"]
+    spans = flask_apm_client.client.spans_for_transaction(transactions[0])
     assert transactions[0]["result"] == "HTTP 4xx"
     assert transactions[0]["context"]["response"]["status_code"] == 404
     assert len(spans) == 0, [t["signature"] for t in spans]
 
 
+def test_traceparent_handling(flask_apm_client):
+    resp = flask_apm_client.app.test_client().post(
+        "/users/",
+        data={"foo": "bar"},
+        headers={constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"},
+    )
+    resp.close()
+
+    assert resp.status_code == 200, resp.response
+
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+
+    assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+    assert transaction["parent_id"] == "b7ad6b7169203331"
+
+
 def test_non_standard_http_status(flask_apm_client):
-    with mock.patch("elasticapm.traces.TransactionsStore.should_collect") as should_collect:
-        should_collect.return_value = False
-        resp = flask_apm_client.app.test_client().get("/non-standard-status/")
-        resp.close()
+    resp = flask_apm_client.app.test_client().get("/non-standard-status/")
+    resp.close()
     assert resp.status == "0 fail", resp.response
     assert resp.status_code == 0, resp.response
 
-    transactions = flask_apm_client.client.transaction_store.get_all()
+    transactions = flask_apm_client.client.events[TRANSACTION]
     assert transactions[0]["result"] == "0 fail"  # "0" is prepended by Werkzeug BaseResponse
     assert transactions[0]["context"]["response"]["status_code"] == 0
 
@@ -228,8 +238,7 @@ def test_post_files(flask_apm_client):
     assert response.status_code == 500
     assert len(flask_apm_client.client.events) == 1
 
-    event = flask_apm_client.client.events.pop(0)["errors"][0]
-    print(flask_apm_client.client.config.capture_body)
+    event = flask_apm_client.client.events[ERROR][0]
     if flask_apm_client.client.config.capture_body in ("errors", "all"):
         assert event["context"]["request"]["body"] == {
             "foo": ["bar", "baz"],
@@ -243,7 +252,7 @@ def test_post_files(flask_apm_client):
 def test_options_request(flask_apm_client):
     resp = flask_apm_client.app.test_client().options("/")
     resp.close()
-    transactions = flask_apm_client.client.transaction_store.get_all()
+    transactions = flask_apm_client.client.events[TRANSACTION]
     assert transactions[0]["context"]["request"]["method"] == "OPTIONS"
 
 
@@ -251,9 +260,10 @@ def test_streaming_response(flask_apm_client):
     resp = flask_apm_client.app.test_client().get("/streaming/")
     assert resp.data == b"01234"
     resp.close()
-    transaction = flask_apm_client.client.transaction_store.get_all()[0]
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+    spans = flask_apm_client.client.spans_for_transaction(transaction)
     assert transaction["duration"] > 50
-    assert len(transaction["spans"]) == 5
+    assert len(spans) == 5
 
 
 def test_response_close_wsgi(flask_wsgi_server):
@@ -262,14 +272,15 @@ def test_response_close_wsgi(flask_wsgi_server):
     url = flask_wsgi_server.url + "/streaming/"
     response = urlopen(url)
     response.read()
-    transaction = elasticapm_client.transaction_store.get_all()[0]
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
     assert transaction["duration"] > 50
-    assert len(transaction["spans"]) == 5
+    assert len(spans) == 5
 
 
 def test_set_transaction_name(flask_apm_client):
     resp = flask_apm_client.app.test_client().get("/transaction-name/")
     resp.close()
-    transaction = flask_apm_client.client.transaction_store.get_all()[0]
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
     assert transaction["name"] == "foo"
     assert transaction["result"] == "okydoky"

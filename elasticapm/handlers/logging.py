@@ -130,7 +130,7 @@ class LoggingHandler(logging.Handler):
 
         return self.client.capture(
             "Message",
-            param_message={"message": record.msg, "params": record.args},
+            param_message={"message": compat.text_type(record.msg), "params": record.args},
             stack=stack,
             custom=custom,
             exception=exception,
