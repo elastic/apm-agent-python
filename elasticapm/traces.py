@@ -88,7 +88,7 @@ class Transaction(object):
     def ensure_parent_id(self):
         """If current trace_parent has no span_id, generate one, then return it
 
-        This is used to generate a span ID which the RUM agent will use to correlated
+        This is used to generate a span ID which the RUM agent will use to correlate
         the RUM transaction with the backend transaction.
         """
         if self.trace_parent.span_id == self.id:

@@ -138,7 +138,7 @@ class ElasticAPM(object):
             Adds APM related IDs to the context used for correlating the backend transaction with the RUM transaction
             """
             transaction = get_transaction()
-            if transaction.trace_parent:
+            if transaction and transaction.trace_parent:
                 return {
                     "apm": {
                         "trace_id": transaction.trace_parent.trace_id,
