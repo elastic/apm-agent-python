@@ -1,9 +1,10 @@
 # Changelog
 
 ## v4.0.0
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.2...v4.0.0)
 
 **BREAKING** Version 4 of the agent implements a new wire protocol for communicating with
-the APM Server. This format is only supported in APM Server 6.5+.
+the APM Server. This format is only supported in *APM Server 6.5+*.
 
 Further breaking changes:
 
