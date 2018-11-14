@@ -24,6 +24,7 @@ from django.test.utils import override_settings
 
 import mock
 
+from conftest import BASE_TEMPLATE_DIR
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
@@ -1351,3 +1352,29 @@ def test_options_request(client, django_elasticapm_client):
         client.options("/")
     transactions = django_elasticapm_client.events[TRANSACTION]
     assert transactions[0]["context"]["request"]["method"] == "OPTIONS"
+
+
+def test_rum_tracing_context_processor(client, django_elasticapm_client):
+    with override_settings(
+        TEMPLATES=[
+            {
+                "BACKEND": "django.template.backends.django.DjangoTemplates",
+                "DIRS": [BASE_TEMPLATE_DIR],
+                "OPTIONS": {
+                    "context_processors": [
+                        "django.contrib.auth.context_processors.auth",
+                        "elasticapm.contrib.django.context_processors.rum_tracing",
+                    ],
+                    "loaders": ["django.template.loaders.filesystem.Loader"],
+                    "debug": False,
+                },
+            }
+        ],
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        response = client.get(reverse("render-heavy-template"))
+        transactions = django_elasticapm_client.events[TRANSACTION]
+        assert response.context["apm"]["trace_id"] == transactions[0]["trace_id"]
+        assert response.context["apm"]["is_sampled"]
+        assert response.context["apm"]["is_sampled_js"] == "true"
+        assert callable(response.context["apm"]["span_id"])

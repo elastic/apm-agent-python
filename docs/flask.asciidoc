@@ -232,3 +232,28 @@ app.config['ELASTIC_APM'] = {
 
 This would ignore any requests using the `OPTIONS` method
 and any requests containing `/api/`.
+
+
+[float]
+[[flask-integrating-with-the-rum-agent]]
+==== Integrating with the RUM agent
+
+To correlate performance measurement in the browser with measurements in your Flask app,
+you can help the RUM (Real User Monitoring) agent by configuring it with the Trace ID and Span ID of the backend request.
+We provide a handy template context processor which adds all the necessary bits into the context of your templates.
+
+The context processor is installed automatically when you initialize `ElasticAPM`.
+All that is left to do is to update the call to initialize the RUM agent (which probably happens in your base template) like this:
+
+[source,javascript]
+----
+elasticApm.init({
+    serviceName: "my-frontend-service",
+    pageLoadTraceId: "{{ apm["trace_id"] }}",
+    pageLoadSpanId: "{{ apm["span_id"]() }}",
+    pageLoadSampled: {{ apm["is_sampled_js"] }}
+})
+
+----
+
+See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
