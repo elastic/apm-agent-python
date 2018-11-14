@@ -1,10 +1,11 @@
 [[upgrading]]
 == Upgrading
 
-Upgrades between minor versions of the agent, like from 3.1 to 3.2 are always backwards incompatible.
+Upgrades between minor versions of the agent, like from 3.1 to 3.2 are always backwards compatible.
 Upgrades that involve a major version bump often come with some backwards incompatible changes.
 
-We highly recommend to always pin the version of `elastic-apm` in your `requirements.txt` or `Pipfile` to avoid automatic upgrades to potentially incompatible versions.
+We highly recommend to always pin the version of `elastic-apm` in your `requirements.txt` or `Pipfile`.
+This avoids automatic upgrades to potentially incompatible versions.
 
 [[upgrading-4.x]]
 === Upgrading to version 4 of the agent
