@@ -1,0 +1,36 @@
+[[upgrading]]
+== Upgrading
+
+Upgrades between minor versions of the agent, like from 3.1 to 3.2 are always backwards incompatible.
+Upgrades that involve a major version bump often come with some backwards incompatible changes.
+
+We highly recommend to always pin the version of `elastic-apm` in your `requirements.txt` or `Pipfile` to avoid automatic upgrades to potentially incompatible versions.
+
+[[upgrading-4.x]]
+=== Upgrading to version 4 of the agent
+
+4.0 of the Elastic APM Python Agent comes with several backwards incompatible changes.
+
+[[upgrading-4.x-apm-server]]
+==== APM Server 6.5 required
+This version of the agent is *only compatible with APM Server 6.5+*.
+To upgrade, we recommend to first upgrade APM Server, and then the agent.
+APM Server 6.5+ is backwards compatible with versions 2.x and 3.x of the agent.
+
+[[upgrading-4.x-configuration]]
+==== Configuration options
+
+Several configuration options have been removed, or renamed
+
+ * `flush_interval` has been removed
+ * the `flush_interval` and `max_queue_size` settings have been removed.
+ * new settings introduced: `api_request_time` and `api_request_size`.
+ * Some settings now require a unit for duration or size. See <<config-format-size, size format>> and <<config-format-duration, duration format>>.
+
+[[upgrading-4.x-processors]]
+==== Processors
+
+The method to write processors for sanitizing events has been changed.
+It will now be called for every type of event (transactions, spans and errors),
+unless the event types are limited using a decorator.
+See <<sanitizing-data, Sanitizing data>> for more information.
