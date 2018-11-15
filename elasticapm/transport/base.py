@@ -93,9 +93,11 @@ class Transport(object):
 
     @property
     def queued_data_size(self):
-        f = self.queued_data
-        # return size of the underlying BytesIO object if it is compressed
-        return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
+        f = self._queued_data
+        if f:
+            # return size of the underlying BytesIO object if it is compressed
+            return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
+        return 0
 
     def flush(self, sync=False, start_flush_timer=True):
         """
