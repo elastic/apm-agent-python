@@ -5,7 +5,19 @@ from elasticapm.traces import capture_span
 class RedisInstrumentation(AbstractInstrumentedModule):
     name = "redis"
 
+    # no need to instrument StrictRedis in redis-py >= 3.0
+    instrument_list_3 = [("redis.client", "Redis.execute_command")]
     instrument_list = [("redis.client", "Redis.execute_command"), ("redis.client", "StrictRedis.execute_command")]
+
+    def get_instrument_list(self):
+        try:
+            from redis import VERSION
+
+            if VERSION[0] >= 3:
+                return self.instrument_list_3
+            return self.instrument_list
+        except ImportError:
+            return self.instrument_list
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) > 0:
