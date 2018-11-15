@@ -22,11 +22,6 @@ matrix:
   - env: WEBFRAMEWORK=flask-master
   - python: nightly
   include:
-  - stage: linters
-    env: LINTER="isort"
-    python: "3.6"
-    script: pip install isort && isort -c -df && echo "OK"
-
   - stage: build
     if: tag =~ ^v\d # only build if this is a version-tag
     dist: trusty
