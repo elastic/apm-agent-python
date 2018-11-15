@@ -2,8 +2,8 @@ sudo: false
 language: python
 python:
 - nightly
-- 3.5
-- 3.6
+- "3.5"
+- "3.6"
 
 env:
   global:
@@ -18,24 +18,14 @@ env:
 matrix:
   exclude:
   allow_failures:
-  - env:
-    - WEBFRAMEWORK=django-master
-    - WEBFRAMEWORK=flask-master
+  - env: WEBFRAMEWORK=django-master
+  - env: WEBFRAMEWORK=flask-master
   - python: nightly
   include:
-  - stage: linters
-    env: LINTER="isort"
-    python: 3.6
-    script: pip install isort && isort -c -df && echo "OK"
-
-  - stage: linters
-    script: make docs
-    perl: "5.26"
-
   - stage: build
     if: tag =~ ^v\d # only build if this is a version-tag
     dist: trusty
-    python: 3.6
+    python: "3.6"
     sudo: required
     services:
       - docker
