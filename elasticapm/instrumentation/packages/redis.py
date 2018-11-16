@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 
