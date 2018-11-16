@@ -34,11 +34,7 @@ def test_pipeline(instrument, elasticapm_client, redis_conn):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
-    expected_signatures = {"test_pipeline", "StrictPipeline.execute"}
-
-    assert {t["name"] for t in spans} == expected_signatures
-
-    assert spans[0]["name"] == "StrictPipeline.execute"
+    assert spans[0]["name"] in ("StrictPipeline.execute", "Pipeline.execute")
     assert spans[0]["type"] == "cache.redis"
 
     assert spans[1]["name"] == "test_pipeline"
@@ -64,11 +60,7 @@ def test_rq_patches_redis(instrument, elasticapm_client, redis_conn):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
-    expected_signatures = {"test_pipeline", "StrictPipeline.execute"}
-
-    assert {t["name"] for t in spans} == expected_signatures
-
-    assert spans[0]["name"] == "StrictPipeline.execute"
+    assert spans[0]["name"] in ("StrictPipeline.execute", "Pipeline.execute")
     assert spans[0]["type"] == "cache.redis"
 
     assert spans[1]["name"] == "test_pipeline"
