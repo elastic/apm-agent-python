@@ -4,7 +4,8 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.0...v4.0.1)
 
  * fixed an issue with instrumenting redis-py 3.0+
-
+ * fixed a multithreading issue that occurs when using threaded workers (#335)
+ 
 ## v4.0.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.2...v4.0.0)
 

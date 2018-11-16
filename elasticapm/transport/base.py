@@ -53,12 +53,13 @@ class Transport(object):
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
-        self._flush_lock = threading.Lock()
+        self._queue_lock = threading.Lock()
         self._last_flush = timeit.default_timer()
         self._flush_timer = None
 
     def queue(self, event_type, data, flush=False):
-        self._queue(self.queued_data, {event_type: data})
+        with self._queue_lock:
+            self.queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
         since_last_flush = timeit.default_timer() - self._last_flush
         queue_size = self.queued_data_size
         if flush:
@@ -77,11 +78,8 @@ class Transport(object):
             )
             self.flush()
         elif not self._flush_timer:
-            with self._flush_lock:
+            with self._queue_lock:
                 self._start_flush_timer()
-
-    def _queue(self, queue, data):
-        queue.write((self._json_serializer(data) + "\n").encode("utf-8"))
 
     @property
     def queued_data(self):
@@ -90,14 +88,16 @@ class Transport(object):
                 self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
             else:
                 self._queued_data = BytesIO()
-            self._queue(self._queued_data, {"metadata": self._metadata})
+            self._queued_data.write((self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8"))
         return self._queued_data
 
     @property
     def queued_data_size(self):
-        f = self.queued_data
-        # return size of the underlying BytesIO object if it is compressed
-        return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
+        f = self._queued_data
+        if f:
+            # return size of the underlying BytesIO object if it is compressed
+            return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
+        return 0
 
     def flush(self, sync=False, start_flush_timer=True):
         """
@@ -106,7 +106,7 @@ class Transport(object):
         :param start_flush_timer: set to True if the flush timer thread should be restarted at the end of the flush
         :return: None
         """
-        with self._flush_lock:
+        with self._queue_lock:
             self._stop_flush_timer()
             queued_data, self._queued_data = self._queued_data, None
             if queued_data and not self.state.should_try():

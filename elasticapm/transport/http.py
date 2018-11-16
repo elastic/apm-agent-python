@@ -59,7 +59,7 @@ class Transport(HTTPTransportBase):
                 else:
                     message = "HTTP %s: " % response.status
                     print_trace = True
-                message += body.decode("utf8")
+                message += body.decode("utf8", errors="replace")
                 raise TransportException(message, data, print_trace=print_trace)
             return response.getheader("Location")
         finally:
