@@ -22,7 +22,7 @@ endif::[]
 [[framework-support]]
 The Elastic APM Python Agent comes with support for the following frameworks:
 
- * <<django-support,Django>> 1.8 - 2.0
+ * <<django-support,Django>> 1.8 - 2.1
  * <<flask-support,Flask>> 0.10+
  
 For other frameworks and custom Python code, the agent exposes a set of <<api,APIs>> for integration.
@@ -42,4 +42,5 @@ include::./sanitizing-data.asciidoc[Sanitizing Data]
 include::./run-tests-locally.asciidoc[Run Tests Locally]
 
 include::./api.asciidoc[API documentation]
+include::./upgrading.asciidoc[Upgrading from previous versions]
 include::./tuning.asciidoc[Tuning and Overhead considerations]

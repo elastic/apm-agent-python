@@ -1,10 +1,29 @@
+from __future__ import absolute_import
+
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 
 
-class RedisInstrumentation(AbstractInstrumentedModule):
+class Redis3CheckMixin(object):
+    instrument_list_3 = []
+    instrument_list = []
+
+    def get_instrument_list(self):
+        try:
+            from redis import VERSION
+
+            if VERSION[0] >= 3:
+                return self.instrument_list_3
+            return self.instrument_list
+        except ImportError:
+            return self.instrument_list
+
+
+class RedisInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule):
     name = "redis"
 
+    # no need to instrument StrictRedis in redis-py >= 3.0
+    instrument_list_3 = [("redis.client", "Redis.execute_command")]
     instrument_list = [("redis.client", "Redis.execute_command"), ("redis.client", "StrictRedis.execute_command")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
@@ -17,9 +36,11 @@ class RedisInstrumentation(AbstractInstrumentedModule):
             return wrapped(*args, **kwargs)
 
 
-class RedisPipelineInstrumentation(AbstractInstrumentedModule):
+class RedisPipelineInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule):
     name = "redis"
 
+    # BasePipeline has been renamed to Pipeline in redis-py 3
+    instrument_list_3 = [("redis.client", "Pipeline.execute")]
     instrument_list = [("redis.client", "BasePipeline.execute")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):

@@ -416,7 +416,7 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 
 |============
 | Environment                    | Django/Flask       | Default
-| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_TIME` | `"724kb"`
+| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"724kb"`
 |============
 
 Maximum queue length of the request buffer before sending the request to the APM server.
@@ -427,13 +427,15 @@ A higher value also impacts the time until data is indexed and searchable in Ela
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
 It has to be provided in *<<config-format-size, size format>>*.
 
+NOTE: by default, the APM Server limits request payload size to 1 MByte.
+
 [float]
 [[config-api-request-time]]
-==== `api_request_size`
+==== `api_request_time`
 
 |============
 | Environment                    | Django/Flask       | Default
-| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"724kb"`
+| `ELASTIC_APM_API_REQUEST_TIME` | `API_REQUEST_TIME` | `"10s"`
 |============
 
 Maximum queue time of the request buffer before sending the request to the APM server.

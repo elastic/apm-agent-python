@@ -1,9 +1,16 @@
 # Changelog
 
+## v4.0.1
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.0...v4.0.1)
+
+ * fixed an issue with instrumenting redis-py 3.0+
+ * fixed a multithreading issue that occurs when using threaded workers (#335)
+ 
 ## v4.0.0
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.2...v4.0.0)
 
 **BREAKING** Version 4 of the agent implements a new wire protocol for communicating with
-the APM Server. This format is only supported in APM Server 6.5+.
+the APM Server. This format is only supported in *APM Server 6.5+*.
 
 Further breaking changes:
 
