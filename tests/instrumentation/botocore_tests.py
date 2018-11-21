@@ -1,7 +1,7 @@
 import mock
 import pytest
 
-from elasticapm.conf.constants import SPAN
+from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.botocore import BotocoreInstrumentation
 
 boto3 = pytest.importorskip("boto3")
@@ -21,7 +21,7 @@ def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_clie
     ec2 = session.client("ec2")
     ec2.describe_instances()
     elasticapm_client.end_transaction("MyView")
-    span = elasticapm_client.events[SPAN][0]
+    span = elasticapm_client.events[constants.SPAN][0]
 
     assert span["name"] == "ec2:DescribeInstances"
 
@@ -59,12 +59,11 @@ def test_botocore_http_instrumentation(instrument, elasticapm_client, waiting_ht
     s3 = session.client("s3", endpoint_url=waiting_httpserver.url.replace("127.0.0.1", "localhost"))
     s3.list_buckets()
     elasticapm_client.end_transaction("MyView")
-    span = elasticapm_client.events[SPAN][0]
+    span = elasticapm_client.events[constants.SPAN][0]
 
     assert span["name"] == "localhost:ListBuckets"
-    assert span["context"]["service"] == "localhost"
-    assert span["context"]["region"] is None
-    assert span["context"]["operation"] == "ListBuckets"
+
+    assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
 
 
 def test_nonstandard_endpoint_url(instrument, elasticapm_client):
@@ -74,6 +73,6 @@ def test_nonstandard_endpoint_url(instrument, elasticapm_client):
     instance = mock.Mock(_endpoint=mock.Mock(host="https://example"))
     instrument.call(module, method, lambda *args, **kwargs: None, instance, ("DescribeInstances",), {})
     transaction = elasticapm_client.end_transaction("test", "test")
-    span = elasticapm_client.events[SPAN][0]
+    span = elasticapm_client.events[constants.SPAN][0]
 
     assert span["name"] == "example:DescribeInstances"
