@@ -26,6 +26,47 @@ def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_clie
     assert span["name"] == "ec2:DescribeInstances"
 
 
+def test_botocore_http_instrumentation(instrument, elasticapm_client, waiting_httpserver):
+    # use a real http connection to ensure that our http instrumentation doesn't break anything
+    list_bucket_response_body = b"""
+<?xml version="1.0" encoding="UTF-8"?>\n
+<ListAllMyBucketsResult
+    xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    <Owner>
+        <ID>1111111111111111111111111111111111111111111111111111111111111111</ID>
+        <DisplayName>foo</DisplayName>
+    </Owner>
+    <Buckets>
+        <Bucket>
+            <Name>mybucket</Name>
+            <CreationDate>2013-11-06T03:26:06.000Z</CreationDate>
+        </Bucket>
+    </Buckets>
+</ListAllMyBucketsResult>"""
+
+    list_bucket_response_headers = {
+        "x-amz-id-2": "x+x+x/x=",
+        "x-amz-request-id": "FA07A1210D2A2380",
+        "Date": "Wed, 21 Nov 2018 08:32:24 GMT",
+        "Content-Type": "application/xml",
+        "Server": "AmazonS3",
+    }
+
+    waiting_httpserver.headers = list_bucket_response_headers
+    waiting_httpserver.content = list_bucket_response_body
+    elasticapm_client.begin_transaction("transaction.test")
+    session = boto3.Session(aws_access_key_id="foo", aws_secret_access_key="bar", region_name="us-west-2")
+    s3 = session.client("s3", endpoint_url=waiting_httpserver.url.replace("127.0.0.1", "localhost"))
+    s3.list_buckets()
+    elasticapm_client.end_transaction("MyView")
+    span = elasticapm_client.events[SPAN][0]
+
+    assert span["name"] == "localhost:ListBuckets"
+    assert span["context"]["service"] == "localhost"
+    assert span["context"]["region"] is None
+    assert span["context"]["operation"] == "ListBuckets"
+
+
 def test_nonstandard_endpoint_url(instrument, elasticapm_client):
     instrument = BotocoreInstrumentation()
     elasticapm_client.begin_transaction("test")
