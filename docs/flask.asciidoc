@@ -143,6 +143,18 @@ from elasticapm.contrib.flask import ElasticAPM
 apm = ElasticAPM(app, logging=True)
 ----
 
+You can also limit logging to a certain level:
+
+[source,python]
+----
+import logging
+
+apm = ElasticAPM(app, logging=logging.ERROR)
+----
+
+NOTE: using `logging=True` can lead to high number of logs being sent to Elastic APM.
+We recommend to always limit logging with Elastic APM to a high level (`WARNING` or `ERROR`).
+
 For fine-grained control, you can initialize a logging handler and add it,
 just as you would with any other handler.
 

@@ -225,7 +225,7 @@ class Config(_ConfigBase):
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
 
 
-def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):
+def setup_logging(handler, exclude=("elasticapm", "gunicorn", "south", "elasticapm.errors")):
     """
     Configures logging to pipe to Elastic APM.
 
