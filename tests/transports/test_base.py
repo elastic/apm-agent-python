@@ -7,6 +7,7 @@ import mock
 import pytest
 
 from elasticapm.transport.base import AsyncTransport, Transport, TransportException, TransportState
+from elasticapm.utils import compat
 
 
 def test_transport_state_should_try_online():
@@ -62,7 +63,10 @@ def test_metadata_prepended(mock_send):
     transport.queue("error", {}, flush=True)
     assert mock_send.call_count == 1
     args, kwargs = mock_send.call_args
-    data = gzip.decompress(args[0])
+    if compat.PY2:
+        data = gzip.GzipFile(fileobj=compat.StringIO(args[0])).read()
+    else:
+        data = gzip.decompress(args[0])
     data = data.decode("utf-8").split("\n")
     assert "metadata" in data[0]
 
