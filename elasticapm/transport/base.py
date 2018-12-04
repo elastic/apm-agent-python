@@ -48,7 +48,7 @@ class Transport(object):
         """
         self.state = TransportState()
         self._metadata = metadata if metadata is not None else {}
-        self._compress_level = compress_level
+        self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
@@ -85,10 +85,7 @@ class Transport(object):
     @property
     def queued_data(self):
         if self._queued_data is None:
-            if self._compress_level:
-                self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
-            else:
-                self._queued_data = BytesIO()
+            self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
             self._queued_data.write((self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8"))
         return self._queued_data
 
@@ -105,11 +102,9 @@ class Transport(object):
             if queued_data and not self.state.should_try():
                 logger.error("dropping flushed data due to transport failure back-off")
             elif queued_data:
-                if self._compress_level:
-                    fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
-                    queued_data.close()
-                else:
-                    fileobj = queued_data
+                fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
+                queued_data.close()
+
                 # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
                 data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
                 if hasattr(self, "send_async") and not sync:
