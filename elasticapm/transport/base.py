@@ -59,9 +59,10 @@ class Transport(object):
 
     def queue(self, event_type, data, flush=False):
         with self._queue_lock:
-            self.queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
-        since_last_flush = timeit.default_timer() - self._last_flush
-        queue_size = self.queued_data_size
+            queued_data = self.queued_data
+            queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
+            since_last_flush = timeit.default_timer() - self._last_flush
+            queue_size = 0 if queued_data is None or queued_data.fileobj is None else queued_data.fileobj.tell()
         if flush:
             logger.debug("forced flush")
             self.flush()
@@ -90,14 +91,6 @@ class Transport(object):
                 self._queued_data = BytesIO()
             self._queued_data.write((self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8"))
         return self._queued_data
-
-    @property
-    def queued_data_size(self):
-        f = self._queued_data
-        if f:
-            # return size of the underlying BytesIO object if it is compressed
-            return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
-        return 0
 
     def flush(self, sync=False, start_flush_timer=True):
         """
