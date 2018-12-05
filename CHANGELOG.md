@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.0.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.1...v4.0.2)
+
+ * fixed another issue in the new v2 transport (#351)
+
 ## v4.0.1
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.0...v4.0.1)
 
