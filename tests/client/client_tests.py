@@ -48,11 +48,14 @@ def test_system_info(elasticapm_client):
 
 def test_docker_kubernetes_system_info(elasticapm_client):
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mocked:
-        mocked.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
+    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mock_metadata, mock.patch(
+        "socket.gethostname"
+    ) as mock_gethostname:
+        mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
+        mock_gethostname.return_value = "foo"
         system_info = elasticapm_client.get_system_info()
     assert system_info["container"] == {"id": "123"}
-    assert system_info["kubernetes"] == {"pod": {"uid": "456"}}
+    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": "foo"}}
 
 
 @mock.patch.dict(
@@ -64,12 +67,12 @@ def test_docker_kubernetes_system_info(elasticapm_client):
         "KUBERNETES_POD_UID": "podid",
     },
 )
-def test_docker_kubernetes_system_info_from_environ(monkeypatch):
+def test_docker_kubernetes_system_info_from_environ():
     # initialize agent only after overriding environment
     elasticapm_client = Client()
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mocked:
-        mocked.return_value = {}
+    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mock_metadata:
+        mock_metadata.return_value = {}
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
     assert system_info["kubernetes"] == {
@@ -88,12 +91,15 @@ def test_docker_kubernetes_system_info_from_environ(monkeypatch):
         "KUBERNETES_POD_UID": "podid",
     },
 )
-def test_docker_kubernetes_system_info_from_environ_overrides_cgroups(monkeypatch):
+def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
     # initialize agent only after overriding environment
     elasticapm_client = Client()
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mocked:
-        mocked.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
+    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mock_metadata, mock.patch(
+        "socket.gethostname"
+    ) as mock_gethostname:
+        mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
+        mock_gethostname.return_value = "foo"
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
     assert system_info["kubernetes"] == {
@@ -243,7 +249,7 @@ def test_send(sending_elasticapm_client):
     for k, v in expected_headers.items():
         assert seen_headers[k] == v
 
-    assert 250 < request.content_length < 350
+    assert 250 < request.content_length < 400
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
