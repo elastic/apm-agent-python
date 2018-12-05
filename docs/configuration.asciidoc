@@ -427,7 +427,8 @@ A higher value also impacts the time until data is indexed and searchable in Ela
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
 It has to be provided in *<<config-format-size, size format>>*.
 
-NOTE: by default, the APM Server limits request payload size to 1 MByte.
+NOTE: Due to internal buffering of gzip, the actual request size can be a few kilobites larger than the given limit.
+By default, the APM Server limits request payload size to 1 MByte.
 
 [float]
 [[config-api-request-time]]

@@ -62,7 +62,7 @@ class Transport(object):
             queued_data = self.queued_data
             queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
             since_last_flush = timeit.default_timer() - self._last_flush
-            queue_size = 0 if queued_data is None or queued_data.fileobj is None else queued_data.fileobj.tell()
+            queue_size = 0 if queued_data.fileobj is None else queued_data.fileobj.tell()
         if flush:
             logger.debug("forced flush")
             self.flush()
@@ -86,7 +86,8 @@ class Transport(object):
     def queued_data(self):
         if self._queued_data is None:
             self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
-            self._queued_data.write((self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8"))
+            data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
+            self._queued_data.write(data)
         return self._queued_data
 
     def flush(self, sync=False, start_flush_timer=True):
