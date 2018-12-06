@@ -210,6 +210,9 @@ elasticapm.set_custom_context({'billing_amount': product.price * item_count})
 ----
 
  * `data`: (*required*) A dictionary with the data to be attached. This should be a flat key/value `dict` object.
+ 
+NOTE: `.`, `*`, and `"` are invalid characters for key names and will be replaced with `_`.
+
 
 Errors that happen after this call will also have the custom context attached to them.
 You can call this function multiple times, new context data will be merged with existing data,
@@ -255,3 +258,7 @@ elasticapm.tag(ecommerce=True, dollar_value=47.12)
 Errors that happen after this call will also have the tags attached to them.
 You can call this function multiple times, new tags will be merged with existing tags,
 following the `update()` semantics of Python dictionaries.
+
+The value is converted to a string.
+
+NOTE: `.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.

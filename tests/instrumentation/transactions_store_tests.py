@@ -220,6 +220,19 @@ def test_tags_merge(elasticapm_client):
     assert transactions[0]["context"]["tags"] == {"foo": "1", "bar": "3", "boo": "biz"}
 
 
+def test_tags_dedot(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm.tag(**{"d.o.t": "dot"})
+    elasticapm.tag(**{"s*t*a*r": "star"})
+    elasticapm.tag(**{'q"u"o"t"e': "quote"})
+
+    elasticapm_client.end_transaction("test_name", 200)
+
+    transactions = elasticapm_client.events[TRANSACTION]
+
+    assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
+
+
 def test_set_transaction_name(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     elasticapm_client.end_transaction("test_name", 200)
@@ -279,6 +292,14 @@ def test_set_user_context_merge(elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
+
+
+def test_dedot_context_keys(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm.set_context({"d.o.t": "d_o_t", "s*t*a*r": "s_t_a_r", "q*u*o*t*e": "q_u_o_t_e"})
+    elasticapm_client.end_transaction("foo", 200)
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert transaction["context"]["custom"] == {"s_t_a_r": "s_t_a_r", "q_u_o_t_e": "q_u_o_t_e", "d_o_t": "d_o_t"}
 
 
 def test_transaction_name_none_is_converted_to_empty_string(elasticapm_client):
