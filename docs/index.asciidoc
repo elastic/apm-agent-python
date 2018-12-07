@@ -1,6 +1,7 @@
 = APM Python Agent Reference
 
-:branch: current
+:branch: 6.4
+:server-branch: {branch}
 include::{asciidoc-dir}/../../shared/attributes.asciidoc[]
 
 [[getting-started]]
@@ -12,7 +13,7 @@ The Elastic APM Python agent sends performance metrics and error logs to the APM
 It has built-in support for Django and Flask performance metrics and error logging, as well as generic support of other WSGI frameworks for error logging.
 The agent is only one of multiple components you need to get started with APM. Please also have a look at the documentation for
 
- * {apm-server-ref-64}/index.html[APM Server]
+ * {apm-server-ref-v}/index.html[APM Server]
  * {ref}/index.html[Elasticsearch]
 
 ifdef::env-github[]
