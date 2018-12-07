@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ * implemented de-dotting of tag names and context keys (#353)
+
 ## v4.0.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.1...v4.0.2)
 
