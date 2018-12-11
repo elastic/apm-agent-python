@@ -1,3 +1,4 @@
+import gzip
 import random
 import string
 import timeit
@@ -62,9 +63,10 @@ def test_metadata_prepended(mock_send):
     transport.queue("error", {}, flush=True)
     assert mock_send.call_count == 1
     args, kwargs = mock_send.call_args
-    data = args[0]
-    if compat.PY3:
-        data = data.tobytes()
+    if compat.PY2:
+        data = gzip.GzipFile(fileobj=compat.StringIO(args[0])).read()
+    else:
+        data = gzip.decompress(args[0])
     data = data.decode("utf-8").split("\n")
     assert "metadata" in data[0]
 
@@ -157,3 +159,9 @@ def test_send_timer(sending_elasticapm_client, caplog):
     assert "Starting flush timer" in caplog.records[0].message
     assert "Cancelling flush timer" in caplog.records[1].message
     assert "Sent request" in caplog.records[2].message
+
+
+def test_compress_level_sanitization():
+    assert Transport(compress_level=None)._compress_level == 0
+    assert Transport(compress_level=-1)._compress_level == 0
+    assert Transport(compress_level=10)._compress_level == 9
