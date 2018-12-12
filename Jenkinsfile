@@ -68,8 +68,31 @@ pipeline {
           steps {
             deleteDir()
             unstash 'source'
-            dir("${BASE_DIR}"){
-              sh "./tests/scripts/docker/run_tests.sh ${PYTHON_VERSION} ${WEBFRAMEWORK}"
+            script{
+              def pythonVersions = readYaml(file: "${BASE_DIR}/tests/.jenkins_python.yml")['PYTHON_VERSION']
+              def frameworks = readYaml(file: "${BASE_DIR}/tests/.jenkins_framework.yml")['FRAMEWORK']
+              def excludes = readYaml(file: "${BASE_DIR}/tests/.jenkins_exclude.yml")['exclude'].collect{ "${it.PYTHON_VERSION}#${it.FRAMEWORK}"}
+              def matrix = [:]
+              pythonVersions.each{ py ->
+                frameworks.each{ fw ->
+                  def key = "${py}#${fw}"
+                  if(!excludes.contains(key)){
+                    matrix[key] = [python: py, framework: fw]
+                  }
+                }
+              }
+              
+              def parallelStages = [:]
+              matrix.each{ key, value ->
+                parallelStages[key] = { 
+                  stage("${key}"){
+                    dir("${BASE_DIR}"){
+                      sh "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}"
+                    }
+                  }
+                }
+              }
+              parallel(parallelStages)
             }
           }
           post { 
