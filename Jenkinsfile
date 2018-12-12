@@ -39,7 +39,7 @@ pipeline {
         /**
          Build the project from code..
         */
-        stage('Build') {
+        stage('docker && linux && immutable') {
           steps {
             withEnvWrapper() {
               unstash 'source'
