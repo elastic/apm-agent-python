@@ -19,7 +19,7 @@ pipeline {
   }
   stages {
     stage('Initializing'){
-      agent { label 'linux && immutable' }
+      agent { label 'docker' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
