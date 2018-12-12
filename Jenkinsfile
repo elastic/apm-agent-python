@@ -70,7 +70,7 @@ pipeline {
             withEnvWrapper() {
               unstash 'source'
               dir("${BASE_DIR}"){
-                sh './scripts/jenkins/run_tests.sh'
+                sh "./scripts/jenkins/run_tests.sh ${PYTHON_VERSION} ${WEBFRAMEWORK}"
               }
             }
           }
