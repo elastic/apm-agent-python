@@ -62,9 +62,9 @@ pipeline {
         */
         stage('Test') {
           environment{
-            PYTHON_VERSION = "3.6"
+            PYTHON_VERSION = "python-3.6"
             PIP_CACHE = "${WORKSPACE}/.pip"
-            WEBFRAMEWORK = "django-master"
+            WEBFRAMEWORK = "django-2.1"
           }
           steps {
             withEnvWrapper() {
