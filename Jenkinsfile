@@ -45,7 +45,6 @@ pipeline {
             deleteDir()
             unstash 'source'
             dir("${BASE_DIR}"){
-              //sh './scripts/jenkins/build.sh'
               sh """
               ./tests/scripts/docker/cleanup.sh
               ./tests/scripts/docker/isort.sh
@@ -70,7 +69,7 @@ pipeline {
             deleteDir()
             unstash 'source'
             dir("${BASE_DIR}"){
-              sh "./scripts/jenkins/run_tests.sh ${PYTHON_VERSION} ${WEBFRAMEWORK}"
+              sh "./tests/scripts/docker/run_tests.sh ${PYTHON_VERSION} ${WEBFRAMEWORK}"
             }
           }
           post { 
