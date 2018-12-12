@@ -32,6 +32,7 @@ pipeline {
         */
         stage('Checkout') {
           steps {
+            deleteDir()
             gitCheckout(basedir: "${BASE_DIR}")
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
           }
@@ -41,19 +42,18 @@ pipeline {
         */
         stage('Build') {
           steps {
-            withEnvWrapper() {
-              unstash 'source'
-              dir("${BASE_DIR}"){
-                //sh './scripts/jenkins/build.sh'
-                sh """
-                ./tests/scripts/docker/cleanup.sh
-                ./tests/scripts/docker/isort.sh
-                """
-                sh """
-                ./tests/scripts/docker/cleanup.sh
-                ./tests/scripts/docker/black.sh
-                """
-              }
+            deleteDir()
+            unstash 'source'
+            dir("${BASE_DIR}"){
+              //sh './scripts/jenkins/build.sh'
+              sh """
+              ./tests/scripts/docker/cleanup.sh
+              ./tests/scripts/docker/isort.sh
+              """
+              sh """
+              ./tests/scripts/docker/cleanup.sh
+              ./tests/scripts/docker/black.sh
+              """
             }
           }
         }
@@ -67,11 +67,10 @@ pipeline {
             WEBFRAMEWORK = "django-2.1"
           }
           steps {
-            withEnvWrapper() {
-              unstash 'source'
-              dir("${BASE_DIR}"){
-                sh "./scripts/jenkins/run_tests.sh ${PYTHON_VERSION} ${WEBFRAMEWORK}"
-              }
+            deleteDir()
+            unstash 'source'
+            dir("${BASE_DIR}"){
+              sh "./scripts/jenkins/run_tests.sh ${PYTHON_VERSION} ${WEBFRAMEWORK}"
             }
           }
           post { 
@@ -104,12 +103,11 @@ pipeline {
             }
           }
           steps {
-            withEnvWrapper() {
-              unstash 'source'
-              checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
-              dir("${BASE_DIR}"){
-                sh './scripts/jenkins/docs.sh'
-              }
+            deleteDir()
+            unstash 'source'
+            checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
+            dir("${BASE_DIR}"){
+              sh './scripts/jenkins/docs.sh'
             }
           }
           post{
