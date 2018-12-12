@@ -19,7 +19,7 @@ pipeline {
   }
   stages {
     stage('Initializing'){
-      agent { label 'docker' }
+      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
@@ -39,7 +39,7 @@ pipeline {
         /**
          Build the project from code..
         */
-        stage('docker && linux && immutable') {
+        stage('Build') {
           steps {
             withEnvWrapper() {
               unstash 'source'
@@ -70,8 +70,7 @@ pipeline {
             withEnvWrapper() {
               unstash 'source'
               dir("${BASE_DIR}"){
-                /** TODO see run_test*/
-                sh './scripts/jenkins/test.sh'
+                sh './scripts/jenkins/run_tests.sh'
               }
             }
           }
