@@ -16,8 +16,8 @@ It has built-in support for Django and Flask performance metrics and error loggi
 [[additional-components]]
 === Additional Components
 
-APM Agents work in conjunction with the {apm-server-ref}/index.html[APM Server], {ref}/index.html[Elasticsearch], and {kibana-ref}/index.html[Kibana].
-Please view the {apm-get-started-ref}/index.html[APM Overview] for details on how these components work together.
+APM Agents work in conjunction with the {apm-server-ref-v}/index.html[APM Server], {ref}/index.html[Elasticsearch], and {kibana-ref}/index.html[Kibana].
+Please view the {apm-overview-ref-v}/index.html[APM Overview] for details on how these components work together.
 
 [[framework-support]]
 The Elastic APM Python Agent comes with support for the following frameworks:
