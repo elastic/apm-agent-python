@@ -83,7 +83,7 @@ pipeline {
               }
               
               def parallelStages = [:]
-              matrix.findAll{it.key.starsWith('python-3.6')}.each{ key, value ->
+              matrix.findAll{it.key.startsWith('python-3.6')}.each{ key, value ->
                 parallelStages[key] = {
                   node('docker && linux && immutable'){
                     stage("${key}"){
