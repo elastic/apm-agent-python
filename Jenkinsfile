@@ -145,7 +145,7 @@ def launchInParallel(stageName, matrix){
           deleteDir()
           unstash 'source'
           dir("${BASE_DIR}"){
-            def ret = sh(returnStatus: true, script: "echo ./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
+            def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
           }
           junit(allowEmptyResults: true, 
             keepLongStdio: true, 
