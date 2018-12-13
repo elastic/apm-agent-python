@@ -90,7 +90,7 @@ pipeline {
                       deleteDir()
                       unstash 'source'
                       dir("${BASE_DIR}"){
-                        def ret = sh returnStatus: true, "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}"
+                        def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
                         sh 'docker ps -a'
                       }
                       junit(allowEmptyResults: true, 
