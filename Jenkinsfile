@@ -139,7 +139,7 @@ def launchInParallel(stageName, matrix){
   def parallelStages = [:]
   matrix.each{ key, value ->
     parallelStages[key] = {
-      node('docker && linux && immutable'){
+      //node('docker && linux && immutable'){
         stage("${key}"){
           env.PIP_CACHE = "${WORKSPACE}/.pip"
           deleteDir()
@@ -151,12 +151,14 @@ def launchInParallel(stageName, matrix){
             keepLongStdio: true, 
             testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
         }
-      }
+      //}
     }
   }
   return {
-    stage(stageName){
-      parallel(parallelStages)
+    node('docker && linux && immutable'){
+      stage(stageName){
+        parallel(parallelStages)
+      }
     }
   }
 }
