@@ -157,8 +157,11 @@ def launchInParallel(stageName, matrix){
   return {
     node('docker && linux && immutable'){
       //stage(stageName){
-        parallel(parallelStages)
+      //  parallel(parallelStages)
       //}
+      parallelStages.each{
+        it()
+      }
     }
   }
 }
