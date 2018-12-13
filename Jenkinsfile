@@ -83,11 +83,19 @@ pipeline {
               }
               
               def parallelStages = [:]
-              matrix.each{ key, value ->
-                parallelStages[key] = { 
-                  stage("${key}"){
-                    dir("${BASE_DIR}"){
-                      sh "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}"
+              matrix.findAll{it.key.starsWith('python-3.6')}.each{ key, value ->
+                parallelStages[key] = {
+                  node('docker && linux && immutable'){
+                    stage("${key}"){
+                      deleteDir()
+                      unstash 'source'
+                      dir("${BASE_DIR}"){
+                        def ret = sh returnStatus: true, "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}"
+                        sh 'docker ps -a'
+                      }
+                      junit(allowEmptyResults: true, 
+                        keepLongStdio: true, 
+                        testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
                     }
                   }
                 }
