@@ -63,7 +63,12 @@ pipeline {
           steps {
             deleteDir()
             unstash 'source'
-            launchInParallel('python-3.6',buildMatrix().findAll{it.key.startsWith('python-3.6')})
+            script {
+              getPythonVersions().each{ py ->
+                def matrix = buildMatrix(py)
+                launchInParallel(py, matrix)
+              }
+            }
           }
           post { 
             always { 
@@ -156,17 +161,14 @@ def getPythonVersions(){
   return readYaml(file: "${BASE_DIR}/tests/.jenkins_python.yml")['PYTHON_VERSION']
 }
 
-def buildMatrix(){
-  def pythonVersions = getPythonVersions()
+def buildMatrix(py){
   def frameworks = readYaml(file: "${BASE_DIR}/tests/.jenkins_framework.yml")['FRAMEWORK']
   def excludes = readYaml(file: "${BASE_DIR}/tests/.jenkins_exclude.yml")['exclude'].collect{ "${it.PYTHON_VERSION}#${it.FRAMEWORK}"}
   def matrix = [:]
-  pythonVersions.each{ py ->
-    frameworks.each{ fw ->
-      def key = "${py}#${fw}"
-      if(!excludes.contains(key)){
-        matrix[key] = [python: py, framework: fw]
-      }
+  frameworks.each{ fw ->
+    def key = "${py}#${fw}"
+    if(!excludes.contains(key)){
+      matrix[key] = [python: py, framework: fw]
     }
   }
   return matrix
