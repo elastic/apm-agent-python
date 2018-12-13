@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+def results = [:]
 
 pipeline {
   agent none
@@ -65,11 +66,13 @@ pipeline {
             unstash 'source'
             script {
               def parallelStages = [:]
-              getPythonVersions().findAll{ ! it.startsWith('pypy') }.each{ py ->
+              getPythonVersions().findAll{ it.startsWith('pypy') }.each{ py ->
                 def matrix = buildMatrix(py)
                 parallelStages[py] = launchInParallel(py, matrix)
               }
               parallel(parallelStages)
+              writeJson(file: 'results.json', data: results)
+              archive('results.json')
             }
           }
           post { 
@@ -146,6 +149,7 @@ def launchInParallel(stageName, matrix){
           unstash 'source'
           dir("${BASE_DIR}"){
             def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
+            results[value.python][value.framework] = ret
           }
           junit(allowEmptyResults: true, 
             keepLongStdio: true, 
