@@ -140,7 +140,7 @@ def launchInParallel(stageName, matrix){
   matrix.each{ key, value ->
     parallelStages[key] = {
       //node('docker && linux && immutable'){
-        stage("${key}"){
+        //stage("${key}"){
           env.PIP_CACHE = "${WORKSPACE}/.pip"
           deleteDir()
           unstash 'source'
@@ -150,15 +150,15 @@ def launchInParallel(stageName, matrix){
           junit(allowEmptyResults: true, 
             keepLongStdio: true, 
             testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-        }
+        //}
       //}
     }
   }
   return {
     node('docker && linux && immutable'){
-      stage(stageName){
+      //stage(stageName){
         parallel(parallelStages)
-      }
+      //}
     }
   }
 }
