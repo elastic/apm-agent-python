@@ -159,8 +159,8 @@ def launchInParallel(stageName, matrix){
       //stage(stageName){
       //  parallel(parallelStages)
       //}
-      parallelStages.each{
-        it()
+      parallelStages.each{ key, value ->
+        value()
       }
     }
   }
