@@ -65,7 +65,7 @@ pipeline {
             unstash 'source'
             script {
               def parallelStages = [:]
-              getPythonVersions().each{ py ->
+              getPythonVersions().findAll{ ! it.startsWith('pypy') }.each{ py ->
                 def matrix = buildMatrix(py)
                 parallelStages[py] = launchInParallel(py, matrix)
               }
@@ -156,11 +156,11 @@ def launchInParallel(stageName, matrix){
   }
   return {
     node('docker && linux && immutable'){
-      //stage(stageName){
+      stage(stageName){
       //  parallel(parallelStages)
-      //}
-      parallelStages.each{ key, value ->
-        value()
+        parallelStages.each{ key, value ->
+          value()
+        }
       }
     }
   }
