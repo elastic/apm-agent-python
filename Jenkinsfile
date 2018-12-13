@@ -60,48 +60,10 @@ pipeline {
          Execute unit tests.
         */
         stage('Test') {
-          environment{
-            PYTHON_VERSION = "python-3.6"
-            PIP_CACHE = "${WORKSPACE}/.pip"
-            WEBFRAMEWORK = "django-2.1"
-          }
           steps {
             deleteDir()
             unstash 'source'
-            script{
-              def pythonVersions = readYaml(file: "${BASE_DIR}/tests/.jenkins_python.yml")['PYTHON_VERSION']
-              def frameworks = readYaml(file: "${BASE_DIR}/tests/.jenkins_framework.yml")['FRAMEWORK']
-              def excludes = readYaml(file: "${BASE_DIR}/tests/.jenkins_exclude.yml")['exclude'].collect{ "${it.PYTHON_VERSION}#${it.FRAMEWORK}"}
-              def matrix = [:]
-              pythonVersions.each{ py ->
-                frameworks.each{ fw ->
-                  def key = "${py}#${fw}"
-                  if(!excludes.contains(key)){
-                    matrix[key] = [python: py, framework: fw]
-                  }
-                }
-              }
-              
-              def parallelStages = [:]
-              matrix.findAll{it.key.startsWith('python-3.6')}.each{ key, value ->
-                parallelStages[key] = {
-                  node('docker && linux && immutable'){
-                    stage("${key}"){
-                      deleteDir()
-                      unstash 'source'
-                      dir("${BASE_DIR}"){
-                        def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
-                        sh 'docker ps -a'
-                      }
-                      junit(allowEmptyResults: true, 
-                        keepLongStdio: true, 
-                        testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-                    }
-                  }
-                }
-              }
-              parallel(parallelStages)
-            }
+            launchInParallel('python-3.6',buildMatrix().findAll{it.key.startsWith('python-3.6')})
           }
           post { 
             always { 
@@ -164,4 +126,48 @@ pipeline {
       echoColor(text: '[UNSTABLE]', colorfg: 'yellow', colorbg: 'default')
     }
   }
+}
+
+def launchInParallel(stageName, matrix){
+  def parallelStages = [:]
+  matrix.each{ key, value ->
+    parallelStages[key] = {
+      node('docker && linux && immutable'){
+        stage("${key}"){
+          env.PIP_CACHE = "${WORKSPACE}/.pip"
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
+          }
+          junit(allowEmptyResults: true, 
+            keepLongStdio: true, 
+            testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
+        }
+      }
+    }
+  }
+  stage(stageName){
+    parallel(parallelStages)
+  }
+}
+
+def getPythonVersions(){
+  return readYaml(file: "${BASE_DIR}/tests/.jenkins_python.yml")['PYTHON_VERSION']
+}
+
+def buildMatrix(){
+  def pythonVersions = getPythonVersions()
+  def frameworks = readYaml(file: "${BASE_DIR}/tests/.jenkins_framework.yml")['FRAMEWORK']
+  def excludes = readYaml(file: "${BASE_DIR}/tests/.jenkins_exclude.yml")['exclude'].collect{ "${it.PYTHON_VERSION}#${it.FRAMEWORK}"}
+  def matrix = [:]
+  pythonVersions.each{ py ->
+    frameworks.each{ fw ->
+      def key = "${py}#${fw}"
+      if(!excludes.contains(key)){
+        matrix[key] = [python: py, framework: fw]
+      }
+    }
+  }
+  return matrix
 }
