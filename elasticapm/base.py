@@ -24,6 +24,7 @@ from copy import deepcopy
 import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
+from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, get_transaction
 from elasticapm.utils import compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
@@ -140,6 +141,9 @@ class Client(object):
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
+        self._metrics = MetricsRegistry(self.config.metrics_interval / 1000.0, self.queue)
+        for path in self.config.metrics_sets:
+            self._metrics.register(path)
         compat.atexit_register(self.close)
 
     def get_handler(self, name):
