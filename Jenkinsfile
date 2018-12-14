@@ -83,7 +83,9 @@ pipeline {
           //.findAll{ it.startsWith('pypy') }
           getPythonVersions().each{ py ->
             def matrix = buildMatrix(py)
-            parallelStages[py] = launchInParallel(py, matrix)
+            def stagesMap = launchInParallel(py, matrix)
+            parallelStages["${py}-01"] = stagesMap.odd
+            parallelStages["${py}-02"] = stagesMap.even
           }
           parallel(parallelStages)
           writeJSON(file: 'results.json', data: results)
@@ -186,22 +188,26 @@ def launchInParallel(stageName, matrix){
     }
     i++
   }
-  return {
-    node('docker && linux && immutable'){
-      stage("${stageName}-01"){
-        testOdd.each{ key, value ->
-          value()
+  return [
+    odd: {
+      node('docker && linux && immutable'){
+        stage("${stageName}-01"){
+          testOdd.each{ key, value ->
+            value()
+          }
+        }
+      }
+    },
+    even: {
+      node('docker && linux && immutable'){
+        stage("${stageName}-02"){
+          testEven.each{ key, value ->
+            value()
+          }
         }
       }
     }
-    node('docker && linux && immutable'){
-      stage("${stageName}-02"){
-        testEven.each{ key, value ->
-          value()
-        }
-      }
-    }
-  }
+  ]
 }
 
 def getPythonVersions(){
