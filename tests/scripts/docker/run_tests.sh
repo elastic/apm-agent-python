@@ -56,3 +56,5 @@ PYTHON_VERSION=${1} docker-compose run \
   --rm run_tests \
 	/bin/bash \
   -c "timeout 5m ./tests/scripts/run_tests.sh"
+
+exit 0
