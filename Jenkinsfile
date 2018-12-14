@@ -1,5 +1,7 @@
 #!/usr/bin/env groovy
-def results = [:]
+import groovy.transform.Field
+
+@Field def results = [:]
 
 pipeline {
   agent none
@@ -36,6 +38,8 @@ pipeline {
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}")
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
+            
+            sh "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}"
           }
         }
         /**
@@ -57,66 +61,66 @@ pipeline {
             }
           }
         }
-        /**
-         Execute unit tests.
-        */
-        stage('Test') {
-          steps {
-            deleteDir()
-            unstash 'source'
-            script {
-              def parallelStages = [:]
-              getPythonVersions().findAll{ it.startsWith('pypy') }.each{ py ->
-                def matrix = buildMatrix(py)
-                parallelStages[py] = launchInParallel(py, matrix)
-              }
-              parallel(parallelStages)
-              writeJson(file: 'results.json', data: results)
-              archive('results.json')
-            }
+      }
+    }
+    /**
+     Execute unit tests.
+    */
+    stage('Test') {
+      steps {
+        deleteDir()
+        unstash 'source'
+        script {
+          def parallelStages = [:]
+          getPythonVersions().findAll{ it.startsWith('pypy') }.each{ py ->
+            def matrix = buildMatrix(py)
+            parallelStages[py] = launchInParallel(py, matrix)
           }
-          post { 
-            always { 
-              junit(allowEmptyResults: true, 
-                keepLongStdio: true, 
-                testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-              //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
-            }
-          }
+          parallel(parallelStages)
+          writeJson(file: 'results.json', data: results)
+          archive('results.json')
         }
-        /**
-          Build the documentation.
-        */
-        stage('Documentation') {
-          when {
-            beforeAgent true
-            allOf {
-              anyOf {
-                not {
-                  changeRequest()
-                }
-                branch 'master'
-                branch "\\d+\\.\\d+"
-                branch "v\\d?"
-                tag "v\\d+\\.\\d+\\.\\d+*"
-                environment name: 'Run_As_Master_Branch', value: 'true'
-              }
-              environment name: 'doc_ci', value: 'true'
+      }
+      post { 
+        always { 
+          junit(allowEmptyResults: true, 
+            keepLongStdio: true, 
+            testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
+          //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
+        }
+      }
+    }
+    /**
+      Build the documentation.
+    */
+    stage('Documentation') {
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            not {
+              changeRequest()
             }
+            branch 'master'
+            branch "\\d+\\.\\d+"
+            branch "v\\d?"
+            tag "v\\d+\\.\\d+\\.\\d+*"
+            environment name: 'Run_As_Master_Branch', value: 'true'
           }
-          steps {
-            deleteDir()
-            unstash 'source'
-            checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
-            dir("${BASE_DIR}"){
-              sh './scripts/jenkins/docs.sh'
-            }
-          }
-          post{
-            success {
-              tar(file: "doc-files.tgz", archive: true, dir: "html", pathPrefix: "${BASE_DIR}/docs")
-            }
-          }
+          environment name: 'doc_ci', value: 'true'
+        }
+      }
+      steps {
+        deleteDir()
+        unstash 'source'
+        checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
+        dir("${BASE_DIR}"){
+          sh './scripts/jenkins/docs.sh'
+        }
+      }
+      post{
+        success {
+          tar(file: "doc-files.tgz", archive: true, dir: "html", pathPrefix: "${BASE_DIR}/docs")
         }
       }
     }
@@ -149,6 +153,9 @@ def launchInParallel(stageName, matrix){
           unstash 'source'
           dir("${BASE_DIR}"){
             def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
+            if(results[value.python] == null){
+              results[value.python] = [:]
+            }
             results[value.python][value.framework] = ret
           }
           junit(allowEmptyResults: true, 
