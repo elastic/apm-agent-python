@@ -143,8 +143,8 @@ pipeline {
 }
 
 def launchParallelTests() {
+  results = readJSON(text: '{}')
   def parallelStages = [:]
-  //.findAll{ it.startsWith('pypy') }
   getPythonVersions().each{ py ->
     def matrix = buildMatrix(py)
     def stagesMap = generateParallelSteps(py, matrix)
