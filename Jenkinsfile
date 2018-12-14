@@ -39,7 +39,7 @@ pipeline {
             gitCheckout(basedir: "${BASE_DIR}")
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
             dir("${BASE_DIR}"){
-              sh "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}"
+              sh "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_SHA}"
             }
           }
         }
