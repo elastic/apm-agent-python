@@ -191,19 +191,15 @@ def launchInParallel(stageName, matrix){
   return [
     odd: {
       node('docker && linux && immutable'){
-        stage("${stageName}-01"){
-          testOdd.each{ key, value ->
-            value()
-          }
+        testOdd.each{ key, value ->
+          value()
         }
       }
     },
     even: {
       node('docker && linux && immutable'){
-        stage("${stageName}-02"){
-          testEven.each{ key, value ->
-            value()
-          }
+        testEven.each{ key, value ->
+          value()
         }
       }
     }
