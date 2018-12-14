@@ -159,7 +159,7 @@ def saveResult(python, framework, result){
   if(results[python] == null){
     results[python] = [:]
   }
-  results[python][framework] = ret
+  results[python][framework] = result
 }
 
 def testStep(python, framework){
