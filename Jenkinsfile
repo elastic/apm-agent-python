@@ -39,7 +39,7 @@ pipeline {
             gitCheckout(basedir: "${BASE_DIR}")
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
             dir("${BASE_DIR}"){
-              sh "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_SHA}"
+              sh "git log origin/${env.CHANGE_TARGET}...${env.GIT_SHA}"
             }
           }
         }
@@ -68,6 +68,13 @@ pipeline {
      Execute unit tests.
     */
     stage('Test') {
+      agent { label 'docker && linux && immutable' }
+      options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
+        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
+      }
       steps {
         deleteDir()
         unstash 'source'
@@ -95,6 +102,13 @@ pipeline {
       Build the documentation.
     */
     stage('Documentation') {
+      agent { label 'docker && linux && immutable' }
+      options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
+        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
+      }
       when {
         beforeAgent true
         allOf {
