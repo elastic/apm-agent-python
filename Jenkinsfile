@@ -170,7 +170,7 @@ def testStep(python, framework){
     unstash 'source'
     dir("${BASE_DIR}"){
       def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${python} ${framework}")
-      saveResult(value.python, value.framework, ret)
+      saveResult(python, framework, ret)
     }
     junit(allowEmptyResults: true, 
       keepLongStdio: true, 
