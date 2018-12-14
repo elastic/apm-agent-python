@@ -78,27 +78,9 @@ pipeline {
       steps {
         deleteDir()
         unstash 'source'
-        script {
-          def parallelStages = [:]
-          //.findAll{ it.startsWith('pypy') }
-          getPythonVersions().each{ py ->
-            def matrix = buildMatrix(py)
-            def stagesMap = launchInParallel(py, matrix)
-            parallelStages["${py}-01"] = stagesMap.odd
-            parallelStages["${py}-02"] = stagesMap.even
-          }
-          parallel(parallelStages)
-          writeJSON(file: 'results.json', data: results)
-          archive('results.json')
-        }
-      }
-      post { 
-        always { 
-          junit(allowEmptyResults: true, 
-            keepLongStdio: true, 
-            testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-          //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
-        }
+        launchParallelTests()
+        writeJSON(file: 'results.json', json: results, pretty: 2)
+        archive('results.json')
       }
     }
     /**
@@ -160,49 +142,75 @@ pipeline {
   }
 }
 
-def launchInParallel(stageName, matrix){
-  def testOdd = [:]
-  def testEven = [:]
+def launchParallelTests() {
+  def parallelStages = [:]
+  //.findAll{ it.startsWith('pypy') }
+  getPythonVersions().each{ py ->
+    def matrix = buildMatrix(py)
+    def stagesMap = generateParallelSteps(py, matrix)
+    parallelStages["${py}-01"] = stagesMap.testGrp01
+    parallelStages["${py}-02"] = stagesMap.testGrp02
+    parallelStages["${py}-03"] = stagesMap.testGrp03
+  }
+  parallel(parallelStages)
+}
+
+def saveResult(python, framework, result){
+  if(results[python] == null){
+    results[python] = [:]
+  }
+  results[python][framework] = ret
+}
+
+def testStep(python, framework){
+  return {
+    env.PIP_CACHE = "${WORKSPACE}/.pip"
+    deleteDir()
+    sh "mkdir ${PIP_CACHE}"
+    unstash 'source'
+    dir("${BASE_DIR}"){
+      def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      saveResult(value.python, value.framework, ret)
+    }
+    junit(allowEmptyResults: true, 
+      keepLongStdio: true, 
+      testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
+    //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
+  }
+}
+
+def nodeTestGrp(grp){
+  return {
+    node('docker && linux && immutable'){
+      grp.each{ key, value ->
+        echoColor(text: "Test : ${key}", colorfg: 'blue', colorbg: 'default')
+        value()
+      }
+      echoColor(text: "Number of Test : ${grp.size()}", colorfg: 'blue', colorbg: 'default')
+    }
+  }
+}
+
+def generateParallelSteps(stageName, matrix){
+  def testGrp01 = [:]
+  def testGrp02 = [:]
+  def testGrp03 = [:]
   def i = 1
   matrix.each{ key, value ->
-    def body = {
-      env.PIP_CACHE = "${WORKSPACE}/.pip"
-      deleteDir()
-      sh "mkdir ${PIP_CACHE}"
-      unstash 'source'
-      dir("${BASE_DIR}"){
-        def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
-        if(results[value.python] == null){
-          results[value.python] = [:]
-        }
-        results[value.python][value.framework] = ret
-      }
-      junit(allowEmptyResults: true, 
-        keepLongStdio: true, 
-        testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-    }
-    if( i % 2 == 0 ){
-      testOdd[key] = body
+    def body = testStep(value.python,value.framework)
+    if( 1 % 3 == 0 ){
+      testGrp03[key] = body
+    } else if( i % 2 == 0 ){
+      testGrp02[key] = body
     } else {
-      testEven[key] = body
+      testGrp01[key] = body
     }
     i++
   }
   return [
-    odd: {
-      node('docker && linux && immutable'){
-        testOdd.each{ key, value ->
-          value()
-        }
-      }
-    },
-    even: {
-      node('docker && linux && immutable'){
-        testEven.each{ key, value ->
-          value()
-        }
-      }
-    }
+    testGrp03: nodeTestGrp(testGrp03),
+    testGrp02: nodeTestGrp(testGrp02),
+    testGrp01: nodeTestGrp(testGrp01)
   ]
 }
 
