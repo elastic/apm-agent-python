@@ -80,12 +80,13 @@ pipeline {
         unstash 'source'
         script {
           def parallelStages = [:]
-          getPythonVersions().findAll{ it.startsWith('pypy') }.each{ py ->
+          //.findAll{ it.startsWith('pypy') }
+          getPythonVersions().each{ py ->
             def matrix = buildMatrix(py)
             parallelStages[py] = launchInParallel(py, matrix)
           }
           parallel(parallelStages)
-          writeJson(file: 'results.json', data: results)
+          writeJSON(file: 'results.json', data: results)
           archive('results.json')
         }
       }
@@ -158,34 +159,42 @@ pipeline {
 }
 
 def launchInParallel(stageName, matrix){
-  def parallelStages = [:]
-  matrix.each{ key, value ->
-    parallelStages[key] = {
-      //node('docker && linux && immutable'){
-        //stage("${key}"){
-          env.PIP_CACHE = "${WORKSPACE}/.pip"
-          deleteDir()
-          sh "mkdir ${PIP_CACHE}"
-          unstash 'source'
-          dir("${BASE_DIR}"){
-            def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
-            if(results[value.python] == null){
-              results[value.python] = [:]
-            }
-            results[value.python][value.framework] = ret
-          }
-          junit(allowEmptyResults: true, 
-            keepLongStdio: true, 
-            testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-        //}
-      //}
+  def testOdd = [:]
+  def testEven = [:]
+  matrix.each{ key, value, i ->
+    def body = {
+      env.PIP_CACHE = "${WORKSPACE}/.pip"
+      deleteDir()
+      sh "mkdir ${PIP_CACHE}"
+      unstash 'source'
+      dir("${BASE_DIR}"){
+        def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${value.python} ${value.framework}")
+        if(results[value.python] == null){
+          results[value.python] = [:]
+        }
+        results[value.python][value.framework] = ret
+      }
+      junit(allowEmptyResults: true, 
+        keepLongStdio: true, 
+        testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
+    }
+    if(i%2 == 0){
+      testOdd[key] = body
+    } else {
+      testEven[key] = body
     }
   }
   return {
     node('docker && linux && immutable'){
-      stage(stageName){
-      //  parallel(parallelStages)
-        parallelStages.each{ key, value ->
+      stage("${stageName}-01"){
+        testOdd.each{ key, value ->
+          value()
+        }
+      }
+    }
+    node('docker && linux && immutable'){
+      stage("${stageName}-02"){
+        testEven.each{ key, value ->
           value()
         }
       }
