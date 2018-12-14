@@ -319,9 +319,10 @@ def set_context(data, key="custom"):
         data = data()
 
     # remove invalid characters from key names
-    for k in list(data.keys()):
-        if TAG_RE.search(k):
-            data[TAG_RE.sub("_", k)] = data.pop(k)
+    if not callable(data):  # if transaction wasn't sampled, data is still a callable here and can be ignored
+        for k in list(data.keys()):
+            if TAG_RE.search(k):
+                data[TAG_RE.sub("_", k)] = data.pop(k)
 
     if key in transaction.context:
         transaction.context[key].update(data)
