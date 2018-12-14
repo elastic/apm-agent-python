@@ -161,7 +161,8 @@ pipeline {
 def launchInParallel(stageName, matrix){
   def testOdd = [:]
   def testEven = [:]
-  matrix.each{ key, value, i ->
+  def i = 1
+  matrix.each{ key, value ->
     def body = {
       env.PIP_CACHE = "${WORKSPACE}/.pip"
       deleteDir()
@@ -178,11 +179,12 @@ def launchInParallel(stageName, matrix){
         keepLongStdio: true, 
         testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
     }
-    if(i%2 == 0){
+    if( i % 2 == 0 ){
       testOdd[key] = body
     } else {
       testEven[key] = body
     }
+    i++
   }
   return {
     node('docker && linux && immutable'){
