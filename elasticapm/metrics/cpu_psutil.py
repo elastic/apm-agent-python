@@ -12,7 +12,7 @@ class CPUMetricSet(MetricsSet):
         super(CPUMetricSet, self).__init__()
 
     def collect(self):
-        cpu_count = psutil.cpu_count()
+        cpu_count = float(psutil.cpu_count())
         self.gauge("system.cpu.total.norm.pct").val = psutil.cpu_percent(interval=None) / cpu_count
         self.gauge("system.memory.actual.free").val = psutil.virtual_memory().available
         self.gauge("system.memory.total").val = psutil.virtual_memory().total
