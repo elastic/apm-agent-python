@@ -37,14 +37,14 @@ class CPUMetricSet(MetricsSet):
         with self._read_data_lock:
             prev = self.previous
             delta = {k: new[k] - prev[k] for k in new.keys()}
-            cpu_percent = delta["cpu_usage"] / delta["cpu_total"]
-            self.gauge("system.cpu.total.norm.pct").val = cpu_percent / cpu_count * 100
+            cpu_usage_ratio = (delta["cpu_total"] - delta["cpu_usage"]) / delta["cpu_total"]
+            self.gauge("system.cpu.total.norm.pct").val = cpu_usage_ratio / cpu_count
             self.gauge("system.memory.actual.free").val = new["mem_available"]
             self.gauge("system.memory.total").val = new["mem_total"]
 
             cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
 
-            self.gauge("system.process.cpu.total.norm.pct").val = cpu_process_percent / cpu_count * 100
+            self.gauge("system.process.cpu.total.norm.pct").val = cpu_process_percent / cpu_count
             self.gauge("system.process.memory.size").val = new["vsize"]
             self.gauge("system.process.memory.rss.bytes").val = new["rss"] * self.page_size
             self.previous = new
