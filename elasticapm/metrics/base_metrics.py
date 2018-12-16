@@ -29,19 +29,19 @@ class MetricsRegistry(object):
                 logger.warning("Could not register %s metricset: %s", class_path, compat.text_type(e))
 
     def collect(self, start_timer=True):
-        logger.debug("Starting metrics collect timer")
+        if start_timer:
+            self._start_collect_timer()
+
+        logger.debug("Collecting metrics")
 
         for name, metricset in compat.iteritems(self._metricsets):
             data = metricset.collect()
             if data:
                 self._queue_func("metricset", data)
 
-        if start_timer:
-            self._start_collect_timer()
-
     def _start_collect_timer(self, timeout=None):
         timeout = timeout or self._collect_interval
-        self._collect_timer = threading.Timer(timeout, self.collect)
+        self._collect_timer = threading.Timer(timeout, self.collect, kwargs={"start_timer": True})
         self._collect_timer.name = "elasticapm metrics collect timer"
         self._collect_timer.daemon = True
         logger.debug("Starting metrics collect timer")
