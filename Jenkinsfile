@@ -174,7 +174,7 @@ def testStep(python, framework){
         sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
         saveResult(python, framework, 1)
       } catch(e){
-        log(level: 'WARNING', text: "Some ${key} tests failed")
+        log(level: 'WARNING', text: "Some ${python} ${framework} tests failed")
         saveResult(python, framework, 0)
         currentBuild.currentResult='UNSTABLE'
       }
