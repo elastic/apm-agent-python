@@ -7,6 +7,7 @@ pipeline {
   agent none
   environment {
     BASE_DIR="src/github.com/elastic/apm-agent-python"
+    PIPELINE_LOG_LEVEL='DEBUG'
   }
   options {
     timeout(time: 1, unit: 'HOURS') 
@@ -169,8 +170,14 @@ def testStep(python, framework){
     sh "mkdir ${PIP_CACHE}"
     unstash 'source'
     dir("${BASE_DIR}"){
-      def ret = sh(returnStatus: true, script: "./tests/scripts/docker/run_tests.sh ${python} ${framework}")
-      saveResult(python, framework, ret)
+      try {
+        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+        saveResult(python, framework, 1)
+      } catch(e){
+        log(level: 'WARNING', text: "Some ${key} tests failed")
+        saveResult(python, framework, 0)
+        currentBuild.currentResult='UNSTABLE'
+      }
     }
     junit(allowEmptyResults: true, 
       keepLongStdio: true, 
@@ -181,12 +188,14 @@ def testStep(python, framework){
 
 def nodeTestGrp(grp){
   return {
-    node('docker && linux && immutable'){
-      grp.each{ key, value ->
-        echoColor(text: "Test : ${key}", colorfg: 'blue', colorbg: 'default')
-        value()
+    if(grp.size() > 0){
+      node('docker && linux && immutable'){
+        grp.each{ key, value ->
+          log(level: 'DEBUG', text: "Test : ${key}")
+          value()
+        }
+        log(level: 'DEBUG', text: "Number of ${key} Test : ${grp.size()}")
       }
-      echoColor(text: "Number of Test : ${grp.size()}", colorfg: 'blue', colorbg: 'default')
     }
   }
 }
