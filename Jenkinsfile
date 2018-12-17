@@ -174,15 +174,15 @@ def testStep(python, framework){
         sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
         saveResult(python, framework, 1)
       } catch(e){
-        log(level: 'WARNING', text: "Some ${python} ${framework} tests failed")
         saveResult(python, framework, 0)
-        currentBuild.result = 'FAILURE'
+        error("Some ${python} ${framework} tests failed")
+      } finally {
+        junit(allowEmptyResults: true, 
+          keepLongStdio: true, 
+          testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
+        //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
       }
     }
-    junit(allowEmptyResults: true, 
-      keepLongStdio: true, 
-      testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-    //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
   }
 }
 
