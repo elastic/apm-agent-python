@@ -207,7 +207,7 @@ def generateParallelSteps(stageName, matrix){
   def i = 1
   matrix.each{ key, value ->
     def body = testStep(value.python,value.framework)
-    if( 1 % 3 == 0 ){
+    if( i % 3 == 0 ){
       testGrp03[key] = body
     } else if( i % 2 == 0 ){
       testGrp02[key] = body
