@@ -176,7 +176,7 @@ def testStep(python, framework){
       } catch(e){
         log(level: 'WARNING', text: "Some ${python} ${framework} tests failed")
         saveResult(python, framework, 0)
-        currentBuild.currentResult='UNSTABLE'
+        currentBuild.result = 'UNSTABLE'
       }
     }
     junit(allowEmptyResults: true, 
