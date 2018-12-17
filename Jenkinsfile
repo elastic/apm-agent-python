@@ -186,7 +186,7 @@ def testStep(python, framework){
   }
 }
 
-def nodeTestGrp(grp){
+def nodeTestGrp(label, grp){
   return {
     if(grp.size() > 0){
       node('docker && linux && immutable'){
@@ -194,7 +194,7 @@ def nodeTestGrp(grp){
           log(level: 'DEBUG', text: "Test : ${key}")
           value()
         }
-        log(level: 'DEBUG', text: "Number of ${key} Test : ${grp.size()}")
+        log(level: 'DEBUG', text: "Number of ${label} Test : ${grp.size()}")
       }
     }
   }
@@ -217,9 +217,9 @@ def generateParallelSteps(stageName, matrix){
     i++
   }
   return [
-    testGrp03: nodeTestGrp(testGrp03),
-    testGrp02: nodeTestGrp(testGrp02),
-    testGrp01: nodeTestGrp(testGrp01)
+    testGrp03: nodeTestGrp("${stageName}-03", testGrp03),
+    testGrp02: nodeTestGrp("${stageName}-02", testGrp02),
+    testGrp01: nodeTestGrp("${stageName}-01", testGrp01)
   ]
 }
 
