@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-docker stop $(docker ps -a -q) 
-docker rm -v $(docker ps -q -a) 
-docker volume prune -f
+DOCKER_IDS=$(docker ps -a -q) 
+
+if [ -n "${DOCKER_IDS}" ]; then
+  docker stop ${DOCKER_IDS}
+  docker rm -v ${DOCKER_IDS}
+  docker volume prune -f
+fi
 
 exit 0
