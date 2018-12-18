@@ -15,8 +15,8 @@ class DummyMetricSet(object):
 def test_metrics_registry():
     mock_queue = mock.Mock()
     registry = MetricsRegistry(0.001, queue_func=mock_queue)
-    registry.register("tests.metrics.tests_base.DummyMetricSet")
-    time.sleep(0.01)
+    registry.register("tests.metrics.base_tests.DummyMetricSet")
+    time.sleep(0.1)
     assert mock_queue.call_count > 0
     registry._stop_collect_timer()
 
