@@ -40,7 +40,7 @@ def test_process_info(elasticapm_client):
 
 def test_system_info(elasticapm_client):
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mocked:
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mocked:
         mocked.return_value = {}
         system_info = elasticapm_client.get_system_info()
     assert {"hostname", "architecture", "platform"} == set(system_info.keys())
@@ -48,7 +48,7 @@ def test_system_info(elasticapm_client):
 
 def test_docker_kubernetes_system_info(elasticapm_client):
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mock_metadata, mock.patch(
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
         "socket.gethostname"
     ) as mock_gethostname:
         mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
@@ -71,7 +71,7 @@ def test_docker_kubernetes_system_info_from_environ():
     # initialize agent only after overriding environment
     elasticapm_client = Client()
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mock_metadata:
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata:
         mock_metadata.return_value = {}
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
@@ -95,7 +95,7 @@ def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
     # initialize agent only after overriding environment
     elasticapm_client = Client()
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.docker.get_docker_metadata") as mock_metadata, mock.patch(
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
         "socket.gethostname"
     ) as mock_gethostname:
         mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}

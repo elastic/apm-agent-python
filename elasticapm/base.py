@@ -26,7 +26,7 @@ from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, get_transaction
-from elasticapm.utils import compat, docker, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 
@@ -256,7 +256,7 @@ class Client(object):
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }
-        system_data.update(docker.get_docker_metadata())
+        system_data.update(cgroup.get_cgroup_container_metadata())
         pod_name = os.environ.get("KUBERNETES_POD_NAME") or system_data["hostname"]
         changed = False
         if "kubernetes" in system_data:

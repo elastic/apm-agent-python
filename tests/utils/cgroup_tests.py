@@ -1,7 +1,7 @@
 import mock
 import pytest
 
-from elasticapm.utils import compat, docker
+from elasticapm.utils import cgroup, compat
 
 
 @pytest.mark.parametrize(
@@ -33,5 +33,5 @@ from elasticapm.utils import compat, docker
 )
 def test_cgroup_parsing(test_input, expected):
     f = compat.StringIO(test_input)
-    result = docker.parse_cgroups(f)
-    assert expected == result
+    result = cgroup.parse_cgroups(f)
+    assert result == expected
