@@ -123,6 +123,8 @@ def extract_signature(sql):
     :param sql: the SQL statement
     :return: a string representing the signature
     """
+    if isinstance(sql, bytes):
+        sql = sql.decode()
     sql = sql.strip()
     first_space = sql.find(" ")
     if first_space < 0:
