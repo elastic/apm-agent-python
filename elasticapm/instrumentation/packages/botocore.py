@@ -17,12 +17,11 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         target_endpoint = instance._endpoint.host
         parsed_url = urlparse.urlparse(target_endpoint)
         if "." in parsed_url.hostname:
-            service, region = parsed_url.hostname.split(".", 2)[:2]
+            service = parsed_url.hostname.split(".", 2)[0]
         else:
-            service, region = parsed_url.hostname, None
+            service = parsed_url.hostname
 
         signature = "{}:{}".format(service, operation_name)
-        extra_data = {"service": service, "region": region, "operation": operation_name}
 
-        with capture_span(signature, "ext.http.aws", extra_data, leaf=True):
+        with capture_span(signature, "ext.http.aws", leaf=True):
             return wrapped(*args, **kwargs)

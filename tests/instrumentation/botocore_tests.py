@@ -24,9 +24,6 @@ def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_clie
     span = transaction.spans[0]
 
     assert span.name == "ec2:DescribeInstances"
-    assert span.context["service"] == "ec2"
-    assert span.context["region"] == "us-west-2"
-    assert span.context["operation"] == "DescribeInstances"
 
 
 def test_nonstandard_endpoint_url(instrument, elasticapm_client):
@@ -39,6 +36,3 @@ def test_nonstandard_endpoint_url(instrument, elasticapm_client):
     span = transaction.spans[0]
 
     assert span.name == "example:DescribeInstances"
-    assert span.context["service"] == "example"
-    assert span.context["region"] is None
-    assert span.context["operation"] == "DescribeInstances"
