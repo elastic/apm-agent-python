@@ -3,6 +3,7 @@
 ## Unreleased
 
  * implemented de-dotting of tag names and context keys (#353)
+ * wrote a quickfix for the boto3/botocore instrumentation (#367)
 
 ## v4.0.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.1...v4.0.2)
