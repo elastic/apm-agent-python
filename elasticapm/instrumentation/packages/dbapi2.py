@@ -7,6 +7,7 @@ import re
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils import compat, wrapt
+from elasticapm.utils.encoding import force_text
 
 
 class Literal(object):
@@ -59,7 +60,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
 
 def tokenize(sql):
     # split on anything that is not a word character, excluding dots
-    return [t for t in re.split("([^\w.])", sql) if t != ""]
+    return [t for t in re.split(r"([^\w.])", sql) if t != ""]
 
 
 def scan(tokens):
@@ -123,6 +124,7 @@ def extract_signature(sql):
     :param sql: the SQL statement
     :return: a string representing the signature
     """
+    sql = force_text(sql)
     sql = sql.strip()
     first_space = sql.find(" ")
     if first_space < 0:
