@@ -1,4 +1,4 @@
-from elasticapm.instrumentation.packages.dbapi2 import Literal, scan, tokenize
+from elasticapm.instrumentation.packages.dbapi2 import Literal, extract_signature, scan, tokenize
 
 
 def test_scan_simple():
@@ -38,4 +38,18 @@ def test_scan_double_quotes_at_end():
     tokens = tokenize(sql)
     actual = [t[1] for t in scan(tokens)]
     expected = ["Hello", "Peter", "Pan", "at", "Disney", Literal("'", "World")]
+    assert actual == expected
+
+
+def test_extract_signature_string():
+    sql = "Hello 'Peter Pan' at Disney World"
+    actual = extract_signature(sql)
+    expected = "HELLO"
+    assert actual == expected
+
+
+def test_extract_signature_bytes():
+    sql = b"Hello 'Peter Pan' at Disney World"
+    actual = extract_signature(sql)
+    expected = "HELLO"
     assert actual == expected
