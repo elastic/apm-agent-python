@@ -1,4 +1,4 @@
-from elasticapm.instrumentation.packages.dbapi2 import Literal, scan, tokenize, extract_signature
+from elasticapm.instrumentation.packages.dbapi2 import Literal, extract_signature, scan, tokenize
 
 
 def test_scan_simple():
