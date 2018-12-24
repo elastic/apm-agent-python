@@ -353,12 +353,12 @@ class Client(object):
 
         event_data["timestamp"] = int(date * 1000000)
 
-        transaction = get_transaction()
         if transaction:
             if transaction.trace_parent:
                 event_data["trace_id"] = transaction.trace_parent.trace_id
             event_data["parent_id"] = transaction.id
             event_data["transaction_id"] = transaction.id
+            event_data["transaction"] = {"sampled": transaction.is_sampled}
 
         return event_data
 
