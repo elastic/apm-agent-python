@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.0.5
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.4...v3.0.5)
+
+ * backported a quickfix for the boto3/botocore instrumentation (#372)
+
 ## v3.0.4
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.3...v3.0.4)
 
