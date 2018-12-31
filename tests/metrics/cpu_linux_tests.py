@@ -1,6 +1,12 @@
 import os
 
-from elasticapm.metrics.sets.cpu_linux import CPUMetricSet
+import pytest
+
+try:
+    from elasticapm.metrics.sets.cpu_linux import CPUMetricSet
+except ImportError:
+    pytest.skip("Not a Linux system", allow_module_level=True)
+
 
 TEMPLATE_PROC_STAT_SELF = """32677 (python) R 5333 32677 5333 34822 32677 4194304 13815 176 2 0 {utime} {stime} 0 0 20 0 7 0 6010710 3686981632 11655 18446744073709551615 94580847771648 94580849947501 140732830512176 0 0 0 0 16781312 134217730 0 0 0 17 1 0 0 6 0 0 94580850578256 94580851016824 94580875862016 140732830518932 140732830518950 140732830518950 140732830523339 0"""
 TEMPLATE_PROC_STAT = """cpu  {user} 2037 278561 {idle} 15536 0 178811 0 0 0
