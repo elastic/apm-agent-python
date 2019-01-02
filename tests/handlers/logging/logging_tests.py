@@ -182,7 +182,7 @@ def test_invalid_first_arg_type():
 
 
 def test_logger_setup():
-    handler = LoggingHandler(server_url="foo", service_name="bar", secret_token="baz")
+    handler = LoggingHandler(server_url="foo", service_name="bar", secret_token="baz", metrics_interval="0ms")
     client = handler.client
     assert client.config.server_url == "foo"
     assert client.config.service_name == "bar"

@@ -145,7 +145,7 @@ def test_values_not_shared_among_instances():
 
 def test_regex_validation():
     class MyConfig(_ConfigBase):
-        my_regex = _ConfigValue("MY_REGEX", validators=[RegexValidator("\d+")])
+        my_regex = _ConfigValue("MY_REGEX", validators=[RegexValidator(r"\d+")])
 
     c1 = MyConfig({"MY_REGEX": "123"})
     c2 = MyConfig({"MY_REGEX": "abc"})
