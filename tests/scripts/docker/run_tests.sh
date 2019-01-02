@@ -6,7 +6,7 @@ function cleanup {
 
     if [[ $CODECOV_TOKEN ]]; then
         cd ..
-        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK
+        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK || true
     fi
 }
 trap cleanup EXIT
