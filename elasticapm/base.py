@@ -97,9 +97,11 @@ class Client(object):
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
         }
-        self._transport = import_string(self.config.transport_class)(
-            compat.urlparse.urljoin(self.config.server_url, constants.EVENTS_API_PATH), **transport_kwargs
+        self._api_endpoint_url = compat.urlparse.urljoin(
+            self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
+            constants.EVENTS_API_PATH,
         )
+        self._transport = import_string(self.config.transport_class)(self._api_endpoint_url, **transport_kwargs)
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]

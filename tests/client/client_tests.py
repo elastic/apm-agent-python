@@ -804,3 +804,19 @@ def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
     span_id = transaction.ensure_parent_id()
     span_id_2 = transaction.ensure_parent_id()
     assert span_id == span_id_2
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({"server_url": "http://localhost"}, "http://localhost/intake/v2/events"),
+        ({"server_url": "http://localhost/"}, "http://localhost/intake/v2/events"),
+        ({"server_url": "http://localhost:8200"}, "http://localhost:8200/intake/v2/events"),
+        ({"server_url": "http://localhost:8200/"}, "http://localhost:8200/intake/v2/events"),
+        ({"server_url": "http://localhost/a"}, "http://localhost/a/intake/v2/events"),
+        ({"server_url": "http://localhost/a/"}, "http://localhost/a/intake/v2/events"),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_server_url_joining(elasticapm_client, expected):
+    assert elasticapm_client._api_endpoint_url == expected
