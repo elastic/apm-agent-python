@@ -69,7 +69,7 @@ def test_docker_kubernetes_system_info(elasticapm_client):
 )
 def test_docker_kubernetes_system_info_from_environ():
     # initialize agent only after overriding environment
-    elasticapm_client = Client()
+    elasticapm_client = Client(metrics_interval="0ms")
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata:
         mock_metadata.return_value = {}
@@ -93,7 +93,7 @@ def test_docker_kubernetes_system_info_from_environ():
 )
 def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
     # initialize agent only after overriding environment
-    elasticapm_client = Client()
+    elasticapm_client = Client(metrics_interval="0ms")
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
         "socket.gethostname"
@@ -108,6 +108,21 @@ def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
         "namespace": "namespace",
     }
     assert system_info["container"] == {"id": "123"}
+
+
+@mock.patch.dict("os.environ", {"KUBERNETES_NAMESPACE": "namespace"})
+def test_docker_kubernetes_system_info_except_hostname_from_environ():
+    # initialize agent only after overriding environment
+    elasticapm_client = Client(metrics_interval="0ms")
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
+        "socket.gethostname"
+    ) as mock_gethostname:
+        mock_metadata.return_value = {}
+        mock_gethostname.return_value = "foo"
+        system_info = elasticapm_client.get_system_info()
+    assert "kubernetes" in system_info
+    assert system_info["kubernetes"] == {"pod": {"name": "foo"}, "namespace": "namespace"}
 
 
 def test_config_by_environment():
