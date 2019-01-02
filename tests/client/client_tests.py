@@ -45,12 +45,12 @@ def test_system_info(elasticapm_client):
 
 def test_config_by_environment():
     with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "app", "ELASTIC_APM_SECRET_TOKEN": "token"}):
-        client = Client()
+        client = Client(metrics_interval="0ms")
         assert client.config.service_name == "app"
         assert client.config.secret_token == "token"
         assert client.config.disable_send is False
     with mock.patch.dict("os.environ", {"ELASTIC_APM_DISABLE_SEND": "true"}):
-        client = Client()
+        client = Client(metrics_interval="0ms")
         assert client.config.disable_send is True
     client.close()
 
@@ -71,7 +71,9 @@ def test_config_non_string_types():
         def __repr__(self):
             return repr(self.content)
 
-    client = Client(server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"))
+    client = Client(
+        server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"), metrics_interval="0ms"
+    )
     assert isinstance(client.config.secret_token, compat.string_types)
     assert isinstance(client.config.service_name, compat.string_types)
     client.close()
@@ -122,6 +124,7 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
         service_name="app_name",
         secret_token="secret",
         transport_class="elasticapm.transport.http.Transport",
+        metrics_interval="0ms",
     )
     # test error
     http_send.side_effect = ValueError("oopsie")
@@ -347,7 +350,9 @@ def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_queu
     # when in the master process, the client should not flush the
     # HTTP transport
     is_master_process.return_value = True
-    client = Client(server_url="http://example.com", service_name="app_name", secret_token="secret")
+    client = Client(
+        server_url="http://example.com", service_name="app_name", secret_token="secret", metrics_interval="0ms"
+    )
     client.queue("x", {}, flush=True)
     assert mock_queue.call_count == 1
     assert mock_queue.call_args[0] == ("x", {}, False)
@@ -402,7 +407,7 @@ def test_invalid_service_name_disables_send(elasticapm_client):
 
 
 def test_empty_transport_disables_send():
-    client = Client(service_name="x", transport_class=None)
+    client = Client(service_name="x", transport_class=None, metrics_interval="0ms")
     assert len(client.config.errors) == 1
     assert "TRANSPORT_CLASS" in client.config.errors
 

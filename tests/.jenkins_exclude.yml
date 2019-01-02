@@ -105,3 +105,10 @@ exclude:
     FRAMEWORK: pyodbc-newest
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
+  # boto3
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: boto3-1.0
+  - PYTHON_VERSION: python-3.7
+    FRAMEWORK: boto3-1.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: boto3-1.0

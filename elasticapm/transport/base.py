@@ -3,6 +3,7 @@ import gzip
 import logging
 import threading
 import timeit
+from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import json_encoder
@@ -56,11 +57,13 @@ class Transport(object):
         self._queue_lock = threading.Lock()
         self._last_flush = timeit.default_timer()
         self._flush_timer = None
+        self._counts = defaultdict(int)
 
     def queue(self, event_type, data, flush=False):
         with self._queue_lock:
             queued_data = self.queued_data
             queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
+            self._counts[event_type] += 1
             since_last_flush = timeit.default_timer() - self._last_flush
             queue_size = 0 if queued_data.fileobj is None else queued_data.fileobj.tell()
         if flush:

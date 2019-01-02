@@ -50,5 +50,8 @@ FRAMEWORK:
   - pylibmc-newest
   - cassandra-3.4
   - cassandra-newest
+  - psutil-newest
+  - psutil-5.0
+  - psutil-4.0
 
 

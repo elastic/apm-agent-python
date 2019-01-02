@@ -17,6 +17,8 @@ include::./django.asciidoc[Django support]
 
 include::./flask.asciidoc[Flask support]
 
+include::./metrics.asciidoc[Metrics]
+
 include::./advanced-topics.asciidoc[Advanced Topics]
 
 include::./api.asciidoc[API documentation]

@@ -130,7 +130,7 @@ class Command(BaseCommand):
     def handle_check(self, command, **options):
         """Check your settings for common misconfigurations"""
         passed = True
-        client = DjangoClient()
+        client = DjangoClient(metrics_interval="0ms")
 
         def is_set(x):
             return x and x != "None"
