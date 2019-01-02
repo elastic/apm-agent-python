@@ -815,6 +815,8 @@ def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
         ({"server_url": "http://localhost:8200/"}, "http://localhost:8200/intake/v2/events"),
         ({"server_url": "http://localhost/a"}, "http://localhost/a/intake/v2/events"),
         ({"server_url": "http://localhost/a/"}, "http://localhost/a/intake/v2/events"),
+        ({"server_url": "http://localhost:8200/a"}, "http://localhost:8200/a/intake/v2/events"),
+        ({"server_url": "http://localhost:8200/a/"}, "http://localhost:8200/a/intake/v2/events"),
     ],
     indirect=["elasticapm_client"],
 )
