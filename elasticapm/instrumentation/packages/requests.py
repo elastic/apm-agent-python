@@ -25,8 +25,8 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         else:
             request = args[0]
 
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
+        scheme, host = get_host_from_url(request.url)
+        signature = " ".join((request.method.upper(), host))
 
-        with capture_span(signature, "ext.http.requests", {"url": request.url}, leaf=True):
+        with capture_span(signature, "external.http", {"url": request.url}, leaf=True):
             return wrapped(*args, **kwargs)

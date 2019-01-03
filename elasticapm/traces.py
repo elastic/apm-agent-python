@@ -49,7 +49,7 @@ class Transaction(object):
     def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False):
+    def begin_span(self, name, span_type, context=None, leaf=False, span_subtype=None, span_action=None):
         parent_span = get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
@@ -59,7 +59,15 @@ class Transaction(object):
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
-            span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf)
+            span = Span(
+                transaction=self,
+                name=name,
+                span_type=span_type,
+                context=context,
+                leaf=leaf,
+                span_subtype=span_subtype,
+                span_action=span_action,
+            )
             span.frames = tracer.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -125,6 +133,8 @@ class Span(object):
         "transaction",
         "name",
         "type",
+        "subtype",
+        "action",
         "context",
         "leaf",
         "timestamp",
@@ -134,21 +144,22 @@ class Span(object):
         "frames",
     )
 
-    def __init__(self, transaction, name, span_type, context=None, leaf=False):
+    def __init__(self, transaction, name, span_type, context=None, leaf=False, span_subtype=None, span_action=None):
         """
         Create a new Span
 
         :param transaction: transaction object that this span relates to
         :param name: Generic name of the span
-        :param span_type: type of the span
+        :param span_type: type of the span, e.g. db
         :param context: context dictionary
         :param leaf: is this span a leaf span?
+        :param span_subtype: sub type of the span, e.g. mysql
+        :param span_action: sub type of the span, e.g. query
         """
         self.start_time = _time_func()
         self.id = "%016x" % random.getrandbits(64)
         self.transaction = transaction
         self.name = name
-        self.type = span_type
         self.context = context
         self.leaf = leaf
         # timestamp is bit of a mix of monotonic and non-monotonic time sources.
@@ -159,6 +170,16 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
+        if not span_subtype and "." in span_type:
+            # old style dottet type, let's split it up
+            type_bits = span_type.split(".")
+            if len(type_bits) == 2:
+                span_type, span_subtype = type_bits[:2]
+            else:
+                span_type, span_subtype, span_action = type_bits[:3]
+        self.type = span_type
+        self.subtype = span_subtype
+        self.action = span_action
 
     def to_dict(self):
         result = {
@@ -168,6 +189,8 @@ class Span(object):
             "parent_id": self.parent.id if self.parent else self.transaction.id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
+            "subtype": encoding.keyword_field(self.subtype),
+            "action": encoding.keyword_field(self.action),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
             "context": self.context,
@@ -250,9 +273,22 @@ class Tracer(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False):
+    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf")
+
+    def __init__(
+        self,
+        name=None,
+        span_type="code.custom",
+        extra=None,
+        skip_frames=0,
+        leaf=False,
+        span_subtype=None,
+        span_action=None,
+    ):
         self.name = name
         self.type = span_type
+        self.subtype = span_subtype
+        self.action = span_action
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
@@ -270,7 +306,14 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            return transaction.begin_span(
+                self.name,
+                self.type,
+                context=self.extra,
+                leaf=self.leaf,
+                span_subtype=self.subtype,
+                span_action=self.action,
+            )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()

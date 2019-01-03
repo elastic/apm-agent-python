@@ -32,7 +32,7 @@ class RedisInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule):
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with capture_span(wrapped_name, "cache.redis", leaf=True):
+        with capture_span(wrapped_name, "db.redis.query", leaf=True):
             return wrapped(*args, **kwargs)
 
 
@@ -45,5 +45,5 @@ class RedisPipelineInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule)
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
-        with capture_span(wrapped_name, "cache.redis", leaf=True):
+        with capture_span(wrapped_name, "db.redis.query", leaf=True):
             return wrapped(*args, **kwargs)

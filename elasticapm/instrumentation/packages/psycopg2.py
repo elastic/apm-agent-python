@@ -47,7 +47,7 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
             # Parse connection string and extract host/port
             pass
 
-        with capture_span(signature, "db.postgreql.connect"):
+        with capture_span(signature, "db.postgresql.connect"):
             return PGConnectionProxy(wrapped(*args, **kwargs))
 
 

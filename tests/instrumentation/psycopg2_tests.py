@@ -284,6 +284,9 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
         spans = elasticapm_client.spans_for_transaction(transactions[0])
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
+        assert span["type"] == "db"
+        assert span["type"] == "postgresql"
+        assert span["type"] == "query"
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query

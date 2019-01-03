@@ -22,7 +22,7 @@ class SQLiteConnectionProxy(ConnectionProxy):
 
     def _trace_sql(self, method, sql, params):
         signature = extract_signature(sql)
-        kind = "db.sqlite.sql"
+        kind = "db.sqlite.query"
         with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql}}):
             if params is None:
                 return method(sql)

@@ -51,7 +51,7 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
                 # only get the `script` field from the body
                 context["db"]["statement"] = json.dumps({"script": body["script"]})
         # TODO: add instance.base_url to context once we agreed on a format
-        with elasticapm.capture_span(signature, "db.elasticsearch", extra=context, skip_frames=2, leaf=True):
+        with elasticapm.capture_span(signature, "db.elasticsearch.query", extra=context, skip_frames=2, leaf=True):
             return wrapped(*args, **kwargs)
 
 

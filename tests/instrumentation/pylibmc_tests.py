@@ -33,11 +33,15 @@ def test_pylibmc(instrument, elasticapm_client):
     assert spans[0]["parent_id"] == spans[3]["id"]
 
     assert spans[1]["name"] == "Client.get"
-    assert spans[1]["type"] == "cache.memcached"
+    assert spans[1]["type"] == "cache"
+    assert spans[1]["subtype"] == "memcached"
+    assert spans[1]["action"] == "query"
     assert spans[1]["parent_id"] == spans[3]["id"]
 
     assert spans[2]["name"] == "Client.get_multi"
-    assert spans[2]["type"] == "cache.memcached"
+    assert spans[2]["type"] == "cache"
+    assert spans[2]["subtype"] == "memcached"
+    assert spans[2]["action"] == "query"
     assert spans[2]["parent_id"] == spans[3]["id"]
 
     assert spans[3]["name"] == "test_memcached"

@@ -24,6 +24,8 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert spans[0]["name"].startswith("GET 127.0.0.1:")
+    assert spans[0]["type"] == "external"
+    assert spans[0]["subtype"] == "http"
     assert url == spans[0]["context"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers

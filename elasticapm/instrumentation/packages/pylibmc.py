@@ -26,5 +26,5 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
-        with capture_span(wrapped_name, "cache.memcached"):
+        with capture_span(wrapped_name, "cache.memcached.query"):
             return wrapped(*args, **kwargs)

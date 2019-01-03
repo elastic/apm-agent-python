@@ -9,5 +9,5 @@ class Jinja2Instrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         signature = instance.name or instance.filename
-        with capture_span(signature, "template.jinja2"):
+        with capture_span(signature, "template.jinja2.render"):
             return wrapped(*args, **kwargs)
