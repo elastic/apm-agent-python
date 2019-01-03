@@ -154,7 +154,9 @@ def test_instrumentation(flask_apm_client):
     assert {t["name"] for t in spans} == expected_signatures
 
     assert spans[0]["name"] == "users.html"
-    assert spans[0]["type"] == "template.jinja2"
+    assert spans[0]["type"] == "template"
+    assert spans[0]["subtype"] == "jinja2"
+    assert spans[0]["action"] == "render"
 
 
 def test_instrumentation_debug(flask_apm_client):

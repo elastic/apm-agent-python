@@ -29,7 +29,9 @@ def test_pylibmc(instrument, elasticapm_client):
     assert {t["name"] for t in spans} == expected_signatures
 
     assert spans[0]["name"] == "Client.set"
-    assert spans[0]["type"] == "cache.memcached"
+    assert spans[0]["type"] == "cache"
+    assert spans[0]["subtype"] == "memcached"
+    assert spans[0]["action"] == "query"
     assert spans[0]["parent_id"] == spans[3]["id"]
 
     assert spans[1]["name"] == "Client.get"
