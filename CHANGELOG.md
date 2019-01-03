@@ -4,6 +4,8 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...master)
 
  * Added support for collecting system and process metrics (#361)
+ * Added `transaction.sampled` to errors (#371)
+ * Added parsing of `/proc/self/cgroup` to capture container meta data (#352)
 
 ## v4.0.3
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.2...v4.0.3)
