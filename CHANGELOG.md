@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...master)
 
  * Added support for collecting system and process metrics (#361)
+ * Added `transaction.sampled` to errors (#371)
 
 ## v4.0.3
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.2...v4.0.3)

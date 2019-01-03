@@ -555,7 +555,7 @@ def test_collect_source_transactions(elasticapm_client):
         assert "post_context" not in in_app_frame, in_app_frame_context
 
 
-def test_transaction_id_is_attached(elasticapm_client):
+def test_transaction_data_is_attached_to_errors(elasticapm_client):
     elasticapm_client.capture_message("noid")
     elasticapm_client.begin_transaction("test")
     elasticapm_client.capture_message("id")
@@ -563,9 +563,10 @@ def test_transaction_id_is_attached(elasticapm_client):
     elasticapm_client.capture_message("noid")
 
     errors = elasticapm_client.events[ERROR]
-    assert "transaction" not in errors[0]
+    assert "transaction_id" not in errors[0]
     assert errors[1]["transaction_id"] == transaction.id
-    assert "transaction" not in errors[2]
+    assert errors[1]["transaction"]["sampled"]
+    assert "transaction_id" not in errors[2]
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_sample_rate": 0.4}], indirect=True)
