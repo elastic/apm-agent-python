@@ -10,7 +10,9 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
     instrument_list = [
         ("urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
+        # packages that vendor or vendored urllib3 in the past
         ("requests.packages.urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
+        ("botocore.vendored.requests.packages.urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):

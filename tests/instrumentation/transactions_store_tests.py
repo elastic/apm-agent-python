@@ -233,6 +233,17 @@ def test_tags_dedot(elasticapm_client):
     assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
 
 
+def test_dedot_is_not_run_when_unsampled(elasticapm_client):
+    for sampled in (True, False):
+        t = elasticapm_client.begin_transaction("test")
+        t.is_sampled = sampled
+        elasticapm.set_context(lambda: {"a.b": "b"})
+        elasticapm_client.end_transaction("x", "OK")
+    sampled_transaction, unsampled_transaction = transactions = elasticapm_client.events[TRANSACTION]
+    assert "a_b" in sampled_transaction["context"]["custom"]
+    assert "context" not in unsampled_transaction
+
+
 def test_set_transaction_name(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     elasticapm_client.end_transaction("test_name", 200)

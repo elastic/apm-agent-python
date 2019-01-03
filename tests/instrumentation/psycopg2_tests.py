@@ -121,10 +121,10 @@ def test_select_with_dollar_quotes_custom_token():
 
 
 def test_select_with_difficult_table_name():
-    sql_statement = 'SELECT id FROM "myta\n-æøåble" WHERE id = 2323' ""
+    sql_statement = u"""SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
     actual = extract_signature(sql_statement)
 
-    assert "SELECT FROM myta\n-æøåble" == actual
+    assert u"SELECT FROM myta\n-æøåble" == actual
 
 
 def test_select_subselect():

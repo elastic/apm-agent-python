@@ -58,6 +58,7 @@ if PY2:
     class_types = (type, types.ClassType)
     text_type = unicode  # noqa F821
     binary_type = str
+    irange = xrange  # noqa F821
 
     def b(s):
         return s
@@ -89,6 +90,7 @@ else:
     class_types = (type,)
     text_type = str
     binary_type = bytes
+    irange = range
 
     def b(s):
         return s.encode("latin-1")

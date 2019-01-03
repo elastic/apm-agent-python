@@ -10,6 +10,7 @@ Large portions are
 """
 from elasticapm.base import Client
 from elasticapm.middleware import ElasticAPM as Middleware
+from elasticapm.utils import compat
 
 
 def list_from_setting(config, setting):
@@ -21,13 +22,6 @@ def list_from_setting(config, setting):
 
 class ElasticAPM(Middleware):
     def __init__(self, app, config, client_cls=Client):
-        client = client_cls(
-            server_url=config.get("elasticapm.server_url"),
-            server_timeout=config.get("elasticapm.server_timeout"),
-            name=config.get("elasticapm.name"),
-            service_name=config.get("elasticapm.service_name"),
-            secret_token=config.get("elasticapm.secret_token"),
-            include_paths=list_from_setting(config, "elasticapm.include_paths"),
-            exclude_paths=list_from_setting(config, "elasticapm.exclude_paths"),
-        )
+        client_config = {key[11:]: val for key, val in compat.iteritems(config) if key.startswith("elasticapm.")}
+        client = client_cls(**client_config)
         super(ElasticAPM, self).__init__(app, client)
