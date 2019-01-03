@@ -218,7 +218,7 @@ def test_non_standard_http_status(flask_apm_client):
 
 
 def test_framework_name(flask_app):
-    elasticapm = ElasticAPM(app=flask_app)
+    elasticapm = ElasticAPM(app=flask_app, metrics_interval="0ms")
     assert elasticapm.client.config.framework_name == "flask"
     app_info = elasticapm.client.get_service_info()
     assert app_info["framework"]["name"] == "flask"

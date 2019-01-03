@@ -53,7 +53,7 @@ except ValueError:
  * `exc_info`: A `(type, value, traceback)` tuple as returned by https://docs.python.org/3/library/sys.html#sys.exc_info[`sys.exc_info()`]. If not provided, it will be captured automatically.
  * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the 
-    {apm-server-ref}/events-api.html#events-api-errors[Context] schema definition.
+    {apm-server-ref-v}/events-api.html#events-api-errors[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
  * `handled`: A boolean to indicate if this exception was handled or not.
 
@@ -91,7 +91,7 @@ client.capture_message(param_message={
  * `date`: A `datetime.datetime` object representing the occurrence time of the error.
    If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the 
-    {apm-server-ref}/events-api.html#events-api-errors[Context] schema definition.
+    {apm-server-ref-v}/events-api.html#events-api-errors[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
 
 Returns the id of the message as a string.
@@ -210,6 +210,9 @@ elasticapm.set_custom_context({'billing_amount': product.price * item_count})
 ----
 
  * `data`: (*required*) A dictionary with the data to be attached. This should be a flat key/value `dict` object.
+ 
+NOTE: `.`, `*`, and `"` are invalid characters for key names and will be replaced with `_`.
+
 
 Errors that happen after this call will also have the custom context attached to them.
 You can call this function multiple times, new context data will be merged with existing data,
@@ -255,3 +258,7 @@ elasticapm.tag(ecommerce=True, dollar_value=47.12)
 Errors that happen after this call will also have the tags attached to them.
 You can call this function multiple times, new tags will be merged with existing tags,
 following the `update()` semantics of Python dictionaries.
+
+The value is converted to a string.
+
+NOTE: `.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.

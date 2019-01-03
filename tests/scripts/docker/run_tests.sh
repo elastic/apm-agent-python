@@ -6,7 +6,7 @@ function cleanup {
 
     if [[ $CODECOV_TOKEN ]]; then
         cd ..
-        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK
+        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK || true
     fi
 }
 trap cleanup EXIT
@@ -55,4 +55,4 @@ PYTHON_VERSION=${1} docker-compose run \
   -v "$(dirname $(pwd))":/app \
   --rm run_tests \
 	/bin/bash \
-  -c "timeout 5m ./tests/scripts/run_tests.sh"
+  -c "timeout 5m /bin/bash ./tests/scripts/run_tests.sh"

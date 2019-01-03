@@ -18,7 +18,7 @@ logger = logging.getLogger("elasticapm.traces")
 _time_func = timeit.default_timer
 
 
-TAG_RE = re.compile('^[^.*"]+$')
+TAG_RE = re.compile('[.*"]')
 
 
 try:
@@ -290,10 +290,9 @@ def tag(**tags):
         if not transaction:
             error_logger.warning("Ignored tag %s. No transaction currently active.", name)
             return
-        if TAG_RE.match(name):
-            transaction.tags[compat.text_type(name)] = encoding.keyword_field(compat.text_type(value))
-        else:
-            error_logger.warning("Ignored tag %s. Tag names can't contain stars, dots or double quotes.", name)
+        # replace invalid characters for Elasticsearch field names with underscores
+        name = TAG_RE.sub("_", compat.text_type(name))
+        transaction.tags[compat.text_type(name)] = encoding.keyword_field(compat.text_type(value))
 
 
 def set_transaction_name(name, override=True):
@@ -318,6 +317,13 @@ def set_context(data, key="custom"):
         return
     if callable(data) and transaction.is_sampled:
         data = data()
+
+    # remove invalid characters from key names
+    if not callable(data):  # if transaction wasn't sampled, data is still a callable here and can be ignored
+        for k in list(data.keys()):
+            if TAG_RE.search(k):
+                data[TAG_RE.sub("_", k)] = data.pop(k)
+
     if key in transaction.context:
         transaction.context[key].update(data)
     else:

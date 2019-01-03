@@ -1,0 +1,10 @@
+[[advanced-topics]]
+== Advanced Topics
+
+* <<instrumenting-custom-code>>
+* <<sanitizing-data>>
+* <<run-tests-locally>>
+
+include::./custom-instrumentation.asciidoc[Custom Instrumentation]
+include::./sanitizing-data.asciidoc[Sanitizing Data]
+include::./run-tests-locally.asciidoc[Run Tests Locally]

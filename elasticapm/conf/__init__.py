@@ -122,10 +122,27 @@ class UnitValidator(object):
         return val
 
 
-duration_validator = UnitValidator("^((?:-)?\d+)(ms|s|m)$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
+duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
 size_validator = UnitValidator(
-    "^(\d+)(b|kb|mb|gb)$", "\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
+    r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
+
+
+class ExcludeRangeValidator(object):
+    def __init__(self, range_start, range_end, range_desc):
+        self.range_start = range_start
+        self.range_end = range_end
+        self.range_desc = range_desc
+
+    def __call__(self, value, field_name):
+        if self.range_start <= value <= self.range_end:
+            raise ConfigurationError(
+                "{} cannot be in range: {}".format(
+                    value, self.range_desc.format(**{"range_start": self.range_start, "range_end": self.range_end})
+                ),
+                field_name,
+            )
+        return value
 
 
 class _ConfigBase(object):
@@ -178,7 +195,9 @@ class Config(_ConfigBase):
     server_timeout = _ConfigValue(
         "SERVER_TIMEOUT",
         type=float,
-        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})],
+        validators=[
+            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})
+        ],
         default=5,
     )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
@@ -196,6 +215,13 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
+    metrics_sets = _ListConfigValue("METRICS_SETS", default=["elasticapm.metrics.sets.cpu.CPUMetricSet"])
+    metrics_interval = _ConfigValue(
+        "METRICS_INTERVAL",
+        type=int,
+        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
+        default=30000,
+    )
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
@@ -203,7 +229,9 @@ class Config(_ConfigBase):
     span_frames_min_duration = _ConfigValue(
         "SPAN_FRAMES_MIN_DURATION",
         default=5,
-        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})],
+        validators=[
+            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
+        ],
         type=int,
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
