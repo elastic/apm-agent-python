@@ -11,7 +11,6 @@ Large portions are
 
 from __future__ import absolute_import
 
-import datetime
 import logging
 import sys
 import traceback
@@ -117,8 +116,6 @@ class LoggingHandler(logging.Handler):
                 continue
             custom[k] = record.__dict__[k]
 
-        date = datetime.datetime.utcfromtimestamp(record.created)
-
         # If there's no exception being processed,
         # exc_info may be a 3-tuple of None
         # http://docs.python.org/library/sys.html#sys.exc_info
@@ -134,7 +131,6 @@ class LoggingHandler(logging.Handler):
             stack=stack,
             custom=custom,
             exception=exception,
-            date=date,
             level=record.levelno,
             logger_name=record.name,
             **kwargs
