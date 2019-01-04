@@ -1,3 +1,4 @@
+import logging
 import time
 
 import pytest
@@ -53,17 +54,47 @@ def flask_wsgi_server(request, flask_app, elasticapm_client):
     apm_client = ElasticAPM(app=flask_app, client=elasticapm_client)
     flask_app.apm_client = apm_client
     server.start()
-    yield server
-    server.stop()
-    apm_client.client.close()
+    try:
+        yield server
+    finally:
+        server.stop()
+        apm_client.client.close()
 
 
 @pytest.fixture()
-def flask_apm_client(flask_app, elasticapm_client):
-    client = ElasticAPM(app=flask_app, client=elasticapm_client)
-    yield client
-    signals.request_started.disconnect(client.request_started)
-    signals.request_finished.disconnect(client.request_finished)
+def flask_apm_client(request, flask_app, elasticapm_client):
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("app", flask_app)
+    client_config.setdefault("client", elasticapm_client)
+    client = ElasticAPM(**client_config)
+    try:
+        yield client
+    finally:
+        signals.request_started.disconnect(client.request_started)
+        signals.request_finished.disconnect(client.request_finished)
+        # remove logging handler if it was added
+        logger = logging.getLogger()
+        for handler in list(logger.handlers):
+            if getattr(handler, "client", None) is client.client:
+                logger.removeHandler(handler)
+
+
+@pytest.fixture()
+def sending_flask_apm_client(request, flask_app, sending_elasticapm_client):
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("app", flask_app)
+    client_config.setdefault("client", sending_elasticapm_client)
+    client = ElasticAPM(**client_config)
+    try:
+        yield client
+    finally:
+        signals.request_started.disconnect(client.request_started)
+        signals.request_finished.disconnect(client.request_finished)
+        # remove logging handler if it was added
+        logger = logging.getLogger()
+        for handler in list(logger.handlers):
+            if getattr(handler, "client", None) is client.client:
+                logger.removeHandler(handler)
 
 
 @pytest.fixture()
