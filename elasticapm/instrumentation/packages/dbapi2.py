@@ -160,6 +160,10 @@ def extract_signature(sql):
     return signature
 
 
+QUERY_ACTION = "query"
+EXEC_ACTION = "exec"
+
+
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
 
@@ -180,10 +184,14 @@ class CursorProxy(wrapt.ObjectProxy):
         return sql
 
     def _trace_sql(self, method, sql, params):
+        action = EXEC_ACTION if method == self.__wrapped__.callproc else QUERY_ACTION
         sql_string = self._bake_sql(sql)
-        signature = self.extract_signature(sql_string)
-        kind = "db.{0}.query".format(self.provider_name)
-        with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql_string}}):
+        if action == EXEC_ACTION:
+            signature = sql_string + "()"
+        else:
+            signature = self.extract_signature(sql_string)
+        kind = "db.{0}.{1}".format(self.provider_name, action)
+        with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql_string}}, skip_frames=1):
             if params is None:
                 return method(sql)
             else:

@@ -320,3 +320,28 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == baked_query
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_psycopg2_call_stored_procedure(instrument, postgres_connection, elasticapm_client):
+    cursor = postgres_connection.cursor()
+    cursor.execute(
+        """
+        CREATE OR REPLACE FUNCTION squareme(me INT)
+        RETURNS INTEGER
+        LANGUAGE SQL
+        AS $$
+            SELECT me*me;
+        $$;
+        """
+    )
+    elasticapm_client.begin_transaction("test")
+    cursor.callproc("squareme", [2])
+    result = cursor.fetchall()
+    assert result[0][0] == 4
+    elasticapm_client.end_transaction("test", "OK")
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+    assert span["name"] == "squareme()"
+    assert span["action"] == "exec"
