@@ -196,7 +196,8 @@ def test_tag_transaction():
 
 
 def test_tag_while_no_transaction(caplog):
-    elasticapm.tag(foo="bar")
+    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
+        elasticapm.tag(foo="bar")
     record = caplog.records[0]
     assert record.levelno == logging.WARNING
     assert "foo" in record.args
