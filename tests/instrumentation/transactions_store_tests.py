@@ -324,3 +324,12 @@ def test_transaction_without_name_result(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     transaction = elasticapm_client.end_transaction()
     assert transaction.name == ""
+
+
+def test_span_tagging(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}):
+        pass
+    elasticapm_client.end_transaction("test", "OK")
+    span = elasticapm_client.events[SPAN][0]
+    assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga"}

@@ -242,6 +242,39 @@ following the `update()` semantics of Python dictionaries.
 
 
 [float]
+[[api-capture-span]]
+==== `elasticapm.capture_span`
+
+Capture a custom span.
+This can be used either as a function decorator or as a context manager (in a `with` statement).
+When used as a decorator, the name of the span will be set to the name of the function.
+When used as a context manager, a name has to be provided.
+
+[source,python]
+----
+import elasticapm
+
+@elasticapm.capture_span()
+def coffee_maker(strength):
+    fetch_water()
+
+    with elasticapm.capture_span('near-to-machine', tags={"type": "arabica"}):
+        insert_filter()
+        for i in range(strengh):
+            pour_coffee()
+
+        start_drip()
+
+    fresh_pots()
+----
+
+ * `name`: The name of the span
+ * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`
+ * `skip_frames`: The number of stack frames to skip when collecting stack traces. Defaults to `0`.
+ * `leaf`: if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
+ * `tags`: a dictionary of tags. Both keys and values must be strings. Defaults to `None`.
+
+[float]
 [[api-tag]]
 ==== `elasticapm.tag()`
 
