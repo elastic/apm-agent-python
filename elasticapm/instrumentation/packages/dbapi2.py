@@ -168,7 +168,7 @@ class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
 
     def callproc(self, procname, params=None):
-        return self._trace_sql(self.__wrapped__.callproc, procname, params)
+        return self._trace_sql(self.__wrapped__.callproc, procname, params, action=EXEC_ACTION)
 
     def execute(self, sql, params=None):
         return self._trace_sql(self.__wrapped__.execute, sql, params)
@@ -183,8 +183,7 @@ class CursorProxy(wrapt.ObjectProxy):
         """
         return sql
 
-    def _trace_sql(self, method, sql, params):
-        action = EXEC_ACTION if method == self.__wrapped__.callproc else QUERY_ACTION
+    def _trace_sql(self, method, sql, params, action=QUERY_ACTION):
         sql_string = self._bake_sql(sql)
         if action == EXEC_ACTION:
             signature = sql_string + "()"
