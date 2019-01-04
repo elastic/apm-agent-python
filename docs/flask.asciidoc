@@ -134,7 +134,20 @@ apm.capture_message('hello, world!')
 [[flask-logging]]
 === Logging
 
-Passing `logging=True` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module.
+Passing `logging=LEVEL` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module,
+with the given level or higher.
+`LEVEL` has to be one of the levels defined in the https://docs.python.org/3/library/logging.html#logging-levels[`logging`] module.
+
+[source,python]
+----
+import logging
+
+from elasticapm.contrib.flask import ElasticAPM
+
+apm = ElasticAPM(app, logging=logging.ERROR)
+----
+
+To log all messages independent of log levels to Elastic APM, pass `logging=True` to the constructor:
 
 [source,python]
 ----
@@ -142,6 +155,9 @@ from elasticapm.contrib.flask import ElasticAPM
 
 apm = ElasticAPM(app, logging=True)
 ----
+
+NOTE: using `logging=True` can lead to high number of logs being sent to Elastic APM.
+We recommend to always limit logging with Elastic APM to a high level (`WARNING` or `ERROR`).
 
 For fine-grained control, you can initialize a logging handler and add it,
 just as you would with any other handler.
