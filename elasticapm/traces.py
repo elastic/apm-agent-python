@@ -170,7 +170,7 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
-        if not span_subtype and "." in span_type:
+        if span_subtype is None and "." in span_type:
             # old style dottet type, let's split it up
             type_bits = span_type.split(".")
             if len(type_bits) == 2:
