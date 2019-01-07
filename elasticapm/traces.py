@@ -49,7 +49,7 @@ class Transaction(object):
     def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False):
+    def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
         parent_span = get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
@@ -59,7 +59,7 @@ class Transaction(object):
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
-            span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf)
+            span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf, tags=tags)
             span.frames = tracer.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
@@ -132,9 +132,10 @@ class Span(object):
         "duration",
         "parent",
         "frames",
+        "tags",
     )
 
-    def __init__(self, transaction, name, span_type, context=None, leaf=False):
+    def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None):
         """
         Create a new Span
 
@@ -143,6 +144,7 @@ class Span(object):
         :param span_type: type of the span
         :param context: context dictionary
         :param leaf: is this span a leaf span?
+        :param tags: a dict of tags
         """
         self.start_time = _time_func()
         self.id = "%016x" % random.getrandbits(64)
@@ -159,6 +161,12 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
+        self.tags = tags
+        if self.tags:
+            for key in list(self.tags.keys()):
+                self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(
+                    compat.text_type(self.tags.pop(key))
+                )
 
     def to_dict(self):
         result = {
@@ -170,8 +178,13 @@ class Span(object):
             "type": encoding.keyword_field(self.type),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
-            "context": self.context,
         }
+        if self.tags:
+            if self.context is None:
+                self.context = {}
+            self.context["tags"] = self.tags
+        if self.context:
+            result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
         return result
@@ -250,12 +263,13 @@ class Tracer(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False):
+    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False, tags=None):
         self.name = name
         self.type = span_type
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
+        self.tags = tags
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -270,7 +284,7 @@ class capture_span(object):
     def __enter__(self):
         transaction = get_transaction()
         if transaction and transaction.is_sampled:
-            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf)
+            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf, tags=self.tags)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = get_transaction()
@@ -278,7 +292,7 @@ class capture_span(object):
             try:
                 transaction.end_span(self.skip_frames)
             except LookupError:
-                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
 
 def tag(**tags):
