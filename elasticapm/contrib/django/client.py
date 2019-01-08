@@ -115,7 +115,8 @@ class DjangoClient(Client):
             else:
                 try:
                     data = request.body
-                except Exception:
+                except Exception as e:
+                    self.logger.debug("Can't capture request body: %s", compat.text_type(e))
                     data = "<unavailable>"
 
             result["body"] = data if (capture_body or not data) else "[REDACTED]"
