@@ -196,7 +196,8 @@ def test_tag_transaction():
 
 
 def test_tag_while_no_transaction(caplog):
-    elasticapm.tag(foo="bar")
+    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
+        elasticapm.tag(foo="bar")
     record = caplog.records[0]
     assert record.levelno == logging.WARNING
     assert "foo" in record.args
@@ -218,6 +219,30 @@ def test_tags_merge(elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["tags"] == {"foo": "1", "bar": "3", "boo": "biz"}
+
+
+def test_tags_dedot(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm.tag(**{"d.o.t": "dot"})
+    elasticapm.tag(**{"s*t*a*r": "star"})
+    elasticapm.tag(**{'q"u"o"t"e': "quote"})
+
+    elasticapm_client.end_transaction("test_name", 200)
+
+    transactions = elasticapm_client.events[TRANSACTION]
+
+    assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
+
+
+def test_dedot_is_not_run_when_unsampled(elasticapm_client):
+    for sampled in (True, False):
+        t = elasticapm_client.begin_transaction("test")
+        t.is_sampled = sampled
+        elasticapm.set_context(lambda: {"a.b": "b"})
+        elasticapm_client.end_transaction("x", "OK")
+    sampled_transaction, unsampled_transaction = transactions = elasticapm_client.events[TRANSACTION]
+    assert "a_b" in sampled_transaction["context"]["custom"]
+    assert "context" not in unsampled_transaction
 
 
 def test_set_transaction_name(elasticapm_client):
@@ -281,6 +306,14 @@ def test_set_user_context_merge(elasticapm_client):
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 
 
+def test_dedot_context_keys(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm.set_context({"d.o.t": "d_o_t", "s*t*a*r": "s_t_a_r", "q*u*o*t*e": "q_u_o_t_e"})
+    elasticapm_client.end_transaction("foo", 200)
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert transaction["context"]["custom"] == {"s_t_a_r": "s_t_a_r", "q_u_o_t_e": "q_u_o_t_e", "d_o_t": "d_o_t"}
+
+
 def test_transaction_name_none_is_converted_to_empty_string(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     transaction = elasticapm_client.end_transaction(None, 200)
@@ -291,3 +324,12 @@ def test_transaction_without_name_result(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     transaction = elasticapm_client.end_transaction()
     assert transaction.name == ""
+
+
+def test_span_tagging(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}):
+        pass
+    elasticapm_client.end_transaction("test", "OK")
+    span = elasticapm_client.events[SPAN][0]
+    assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga"}

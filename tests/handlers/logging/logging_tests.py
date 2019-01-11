@@ -182,7 +182,7 @@ def test_invalid_first_arg_type():
 
 
 def test_logger_setup():
-    handler = LoggingHandler(server_url="foo", service_name="bar", secret_token="baz")
+    handler = LoggingHandler(server_url="foo", service_name="bar", secret_token="baz", metrics_interval="0ms")
     client = handler.client
     assert client.config.server_url == "foo"
     assert client.config.service_name == "bar"
@@ -204,3 +204,11 @@ def test_logging_handler_dont_emit_elasticapm(capsys, elasticapm_client):
     handler.emit(LogRecord("elasticapm.errors", 1, "/ab/c/", 10, "Oops", [], None))
     out, err = capsys.readouterr()
     assert "Oops" in err
+
+
+def test_arbitrary_object(logger):
+    logger.error(["a", "list", "of", "strings"])
+    assert len(logger.client.events) == 1
+    event = logger.client.events[ERROR][0]
+    assert "param_message" in event["log"]
+    assert event["log"]["param_message"] == "['a', 'list', 'of', 'strings']"

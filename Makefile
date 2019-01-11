@@ -19,6 +19,6 @@ docs:
 	bash ./scripts/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
 
 update-json-schema:
-	python ./tests/scripts/download_json_schema.py master tests/.schemacache
+	bash ./tests/scripts/download_json_schema.sh
 
 .PHONY: isort flake8 test coverage docs update-json-schema

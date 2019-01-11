@@ -145,7 +145,7 @@ def test_values_not_shared_among_instances():
 
 def test_regex_validation():
     class MyConfig(_ConfigBase):
-        my_regex = _ConfigValue("MY_REGEX", validators=[RegexValidator("\d+")])
+        my_regex = _ConfigValue("MY_REGEX", validators=[RegexValidator(r"\d+")])
 
     c1 = MyConfig({"MY_REGEX": "123"})
     c2 = MyConfig({"MY_REGEX": "abc"})
@@ -158,12 +158,14 @@ def test_size_validation():
         byte = _ConfigValue("BYTE", type=int, validators=[size_validator])
         kbyte = _ConfigValue("KBYTE", type=int, validators=[size_validator])
         mbyte = _ConfigValue("MBYTE", type=int, validators=[size_validator])
+        gbyte = _ConfigValue("GBYTE", type=int, validators=[size_validator])
         wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[size_validator])
 
-    c = MyConfig({"BYTE": "10b", "KBYTE": "5kib", "MBYTE": "17mib", "WRONG_PATTERN": "5 kb"})
+    c = MyConfig({"BYTE": "10b", "KBYTE": "5kb", "MBYTE": "17mb", "GBYTE": "2gb", "WRONG_PATTERN": "5 kb"})
     assert c.byte == 10
     assert c.kbyte == 5 * 1024
     assert c.mbyte == 17 * 1024 * 1024
+    assert c.gbyte == 2 * 1024 * 1024 * 1024
     assert c.wrong_pattern is None
     assert "WRONG_PATTERN" in c.errors
 

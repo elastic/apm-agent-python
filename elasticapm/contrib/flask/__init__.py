@@ -22,6 +22,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
+from elasticapm.traces import get_transaction
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 
@@ -104,8 +105,13 @@ class ElasticAPM(object):
         if not self.client:
             self.client = make_client(self.client_cls, app, **defaults)
 
-        if self.logging:
-            setup_logging(LoggingHandler(self.client))
+        # 0 is a valid log level (NOTSET), so we need to check explicitly for it
+        if self.logging or self.logging is 0:
+            if self.logging is not True:
+                kwargs = {"level": self.logging}
+            else:
+                kwargs = {}
+            setup_logging(LoggingHandler(self.client, **kwargs))
 
         signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 
@@ -130,6 +136,23 @@ class ElasticAPM(object):
                 pass
         else:
             logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
+
+        @app.context_processor
+        def rum_tracing():
+            """
+            Adds APM related IDs to the context used for correlating the backend transaction with the RUM transaction
+            """
+            transaction = get_transaction()
+            if transaction and transaction.trace_parent:
+                return {
+                    "apm": {
+                        "trace_id": transaction.trace_parent.trace_id,
+                        "span_id": lambda: transaction.ensure_parent_id(),
+                        "is_sampled": transaction.is_sampled,
+                        "is_sampled_js": "true" if transaction.is_sampled else "false",
+                    }
+                }
+            return {}
 
     def request_started(self, app):
         if not self.app.debug or self.client.config.debug:

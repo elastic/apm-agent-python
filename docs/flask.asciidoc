@@ -134,7 +134,20 @@ apm.capture_message('hello, world!')
 [[flask-logging]]
 === Logging
 
-Passing `logging=True` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module.
+Passing `logging=LEVEL` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module,
+with the given level or higher.
+`LEVEL` has to be one of the levels defined in the https://docs.python.org/3/library/logging.html#logging-levels[`logging`] module.
+
+[source,python]
+----
+import logging
+
+from elasticapm.contrib.flask import ElasticAPM
+
+apm = ElasticAPM(app, logging=logging.ERROR)
+----
+
+To log all messages independent of log levels to Elastic APM, pass `logging=True` to the constructor:
 
 [source,python]
 ----
@@ -142,6 +155,9 @@ from elasticapm.contrib.flask import ElasticAPM
 
 apm = ElasticAPM(app, logging=True)
 ----
+
+NOTE: using `logging=True` can lead to high number of logs being sent to Elastic APM.
+We recommend to always limit logging with Elastic APM to a high level (`WARNING` or `ERROR`).
 
 For fine-grained control, you can initialize a logging handler and add it,
 just as you would with any other handler.
@@ -232,3 +248,28 @@ app.config['ELASTIC_APM'] = {
 
 This would ignore any requests using the `OPTIONS` method
 and any requests containing `/api/`.
+
+
+[float]
+[[flask-integrating-with-the-rum-agent]]
+==== Integrating with the RUM agent
+
+To correlate performance measurement in the browser with measurements in your Flask app,
+you can help the RUM (Real User Monitoring) agent by configuring it with the Trace ID and Span ID of the backend request.
+We provide a handy template context processor which adds all the necessary bits into the context of your templates.
+
+The context processor is installed automatically when you initialize `ElasticAPM`.
+All that is left to do is to update the call to initialize the RUM agent (which probably happens in your base template) like this:
+
+[source,javascript]
+----
+elasticApm.init({
+    serviceName: "my-frontend-service",
+    pageLoadTraceId: "{{ apm["trace_id"] }}",
+    pageLoadSpanId: "{{ apm["span_id"]() }}",
+    pageLoadSampled: {{ apm["is_sampled_js"] }}
+})
+
+----
+
+See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.

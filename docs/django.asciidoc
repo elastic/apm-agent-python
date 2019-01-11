@@ -115,6 +115,48 @@ ELASTIC_APM['TRANSACTIONS_IGNORE_PATTERNS'] = ['^OPTIONS ', 'views.api.v2']
 This example ignores any requests using the `OPTIONS` method and any requests containing `views.api.v2`.
 
 [float]
+[[django-integrating-with-the-rum-agent]]
+==== Integrating with the RUM agent
+
+To correlate performance measurement in the browser with measurements in your Django app,
+you can help the RUM (Real User Monitoring) agent by configuring it with the Trace ID and Span ID of the backend request.
+We provide a handy template context processor which adds all the necessary bits into the context of your templates.
+
+To enable this feature, first add the `rum_tracing` context processor to your `TEMPLATES` setting.
+You most likely already have a list of `context_processors`, in which case you can simply append ours to the list.
+
+[source,python]
+----
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'OPTIONS': {
+            'context_processors': [
+                # ...
+                'elasticapm.contrib.django.context_processors.rum_tracing',
+            ],
+        },
+    },
+]
+
+----
+
+Then, update the call to initialize the RUM agent (which probably happens in your base template) like this:
+
+[source,javascript]
+----
+elasticApm.init({
+    serviceName: "my-frontend-service",
+    pageLoadTraceId: "{{ apm.trace_id }}",
+    pageLoadSpanId: "{{ apm.span_id }}",
+    pageLoadSampled: {{ apm.is_sampled_js }}
+})
+
+----
+
+See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
+
+[float]
 [[django-enabling-and-disabling-the-agent]]
 === Enabling and disabling the agent
 

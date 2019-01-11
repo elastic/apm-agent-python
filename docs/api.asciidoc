@@ -53,7 +53,7 @@ except ValueError:
  * `exc_info`: A `(type, value, traceback)` tuple as returned by https://docs.python.org/3/library/sys.html#sys.exc_info[`sys.exc_info()`]. If not provided, it will be captured automatically.
  * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the 
-    {apm-server-ref}/error-api.html#error-context-schema[Context] schema definition.
+    {apm-server-ref-v}/events-api.html#events-api-errors[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
  * `handled`: A boolean to indicate if this exception was handled or not.
 
@@ -91,7 +91,7 @@ client.capture_message(param_message={
  * `date`: A `datetime.datetime` object representing the occurrence time of the error.
    If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the 
-    {apm-server-ref}/error-api.html#error-context-schema[Context] schema definition.
+    {apm-server-ref-v}/events-api.html#events-api-errors[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
 
 Returns the id of the message as a string.
@@ -210,6 +210,9 @@ elasticapm.set_custom_context({'billing_amount': product.price * item_count})
 ----
 
  * `data`: (*required*) A dictionary with the data to be attached. This should be a flat key/value `dict` object.
+ 
+NOTE: `.`, `*`, and `"` are invalid characters for key names and will be replaced with `_`.
+
 
 Errors that happen after this call will also have the custom context attached to them.
 You can call this function multiple times, new context data will be merged with existing data,
@@ -239,6 +242,39 @@ following the `update()` semantics of Python dictionaries.
 
 
 [float]
+[[api-capture-span]]
+==== `elasticapm.capture_span`
+
+Capture a custom span.
+This can be used either as a function decorator or as a context manager (in a `with` statement).
+When used as a decorator, the name of the span will be set to the name of the function.
+When used as a context manager, a name has to be provided.
+
+[source,python]
+----
+import elasticapm
+
+@elasticapm.capture_span()
+def coffee_maker(strength):
+    fetch_water()
+
+    with elasticapm.capture_span('near-to-machine', tags={"type": "arabica"}):
+        insert_filter()
+        for i in range(strengh):
+            pour_coffee()
+
+        start_drip()
+
+    fresh_pots()
+----
+
+ * `name`: The name of the span
+ * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`
+ * `skip_frames`: The number of stack frames to skip when collecting stack traces. Defaults to `0`.
+ * `leaf`: if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
+ * `tags`: a dictionary of tags. Both keys and values must be strings. Defaults to `None`.
+
+[float]
 [[api-tag]]
 ==== `elasticapm.tag()`
 
@@ -255,3 +291,7 @@ elasticapm.tag(ecommerce=True, dollar_value=47.12)
 Errors that happen after this call will also have the tags attached to them.
 You can call this function multiple times, new tags will be merged with existing tags,
 following the `update()` semantics of Python dictionaries.
+
+The value is converted to a string.
+
+NOTE: `.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.

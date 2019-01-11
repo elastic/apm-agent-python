@@ -19,7 +19,13 @@ except ImportError:
     pass
 
 try:
-    from tests.contrib.flask.fixtures import flask_app, flask_celery, flask_apm_client, flask_wsgi_server
+    from tests.contrib.flask.fixtures import (
+        flask_app,
+        flask_celery,
+        flask_apm_client,
+        flask_wsgi_server,
+        sending_flask_apm_client,
+    )
 except ImportError:
     pass
 
@@ -93,6 +99,7 @@ def pytest_configure(config):
                     },
                 }
             ],
+            ELASTIC_APM={"METRICS_INTERVAL": "0ms"},  # avoid autostarting the metrics collector thread
         )
         settings_dict.update(
             **middleware_setting(

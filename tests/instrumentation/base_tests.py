@@ -131,7 +131,7 @@ def test_skip_ignored_frames(elasticapm_client):
 
 
 def test_end_nonexisting_span(caplog, elasticapm_client):
-    with caplog.at_level(logging.INFO):
+    with caplog.at_level(logging.INFO, "elasticapm.traces"):
         t = elasticapm_client.begin_transaction("test")
         # we're purposefully creating a case where we don't begin a span
         # and then try to end the non-existing span

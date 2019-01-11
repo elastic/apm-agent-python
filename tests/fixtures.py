@@ -27,9 +27,9 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "v2_error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "v2_transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "v2_span.json")
+ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "span.json")
 METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
 
 assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
@@ -121,6 +121,7 @@ def elasticapm_client(request):
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("metrics_interval", "0ms")
     client = TempStoreClient(**client_config)
     yield client
     client.close()
@@ -159,6 +160,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("include_paths", ("*/tests/*",))
+    client_config.setdefault("metrics_interval", "0ms")
     client = Client(**client_config)
     client.httpserver = validating_httpserver
     yield client

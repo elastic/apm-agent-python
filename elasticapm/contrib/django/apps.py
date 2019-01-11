@@ -1,3 +1,4 @@
+import logging
 from functools import partial
 
 from django.apps import AppConfig
@@ -6,6 +7,8 @@ from django.conf import settings as django_settings
 from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
 from elasticapm.utils.disttracing import TraceParent
+
+logger = logging.getLogger("elasticapm.traces")
 
 ERROR_DISPATCH_UID = "elasticapm-exceptions"
 REQUEST_START_DISPATCH_UID = "elasticapm-request-start"
@@ -77,6 +80,7 @@ def _request_started_handler(client, sender, *args, **kwargs):
         traceparent_header = None
     if traceparent_header:
         trace_parent = TraceParent.from_string(traceparent_header)
+        logger.debug("Read traceparent header %s", traceparent_header)
     else:
         trace_parent = None
     client.begin_transaction("request", trace_parent=trace_parent)

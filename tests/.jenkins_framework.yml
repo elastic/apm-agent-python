@@ -24,4 +24,5 @@ FRAMEWORK:
   - elasticsearch-5
   - elasticsearch-6
   - cassandra-newest
+  - psutil-newest
 

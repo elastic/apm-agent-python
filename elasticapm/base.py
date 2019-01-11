@@ -24,8 +24,9 @@ from copy import deepcopy
 import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
+from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, get_transaction
-from elasticapm.utils import compat, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 
@@ -96,9 +97,11 @@ class Client(object):
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
         }
-        self._transport = import_string(self.config.transport_class)(
-            compat.urlparse.urljoin(self.config.server_url, constants.EVENTS_API_PATH), **transport_kwargs
+        self._api_endpoint_url = compat.urlparse.urljoin(
+            self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
+            constants.EVENTS_API_PATH,
         )
+        self._transport = import_string(self.config.transport_class)(self._api_endpoint_url, **transport_kwargs)
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -140,6 +143,9 @@ class Client(object):
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
+        self._metrics = MetricsRegistry(self.config.metrics_interval / 1000.0, self.queue)
+        for path in self.config.metrics_sets:
+            self._metrics.register(path)
         compat.atexit_register(self.close)
 
     def get_handler(self, name):
@@ -245,11 +251,33 @@ class Client(object):
         }
 
     def get_system_info(self):
-        return {
+        system_data = {
             "hostname": keyword_field(socket.gethostname()),
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }
+        system_data.update(cgroup.get_cgroup_container_metadata())
+        pod_name = os.environ.get("KUBERNETES_POD_NAME") or system_data["hostname"]
+        changed = False
+        if "kubernetes" in system_data:
+            k8s = system_data["kubernetes"]
+            k8s["pod"]["name"] = pod_name
+        else:
+            k8s = {"pod": {"name": pod_name}}
+        # get kubernetes metadata from environment
+        if "KUBERNETES_NODE_NAME" in os.environ:
+            k8s["node"] = {"name": os.environ["KUBERNETES_NODE_NAME"]}
+            changed = True
+        if "KUBERNETES_NAMESPACE" in os.environ:
+            k8s["namespace"] = os.environ["KUBERNETES_NAMESPACE"]
+            changed = True
+        if "KUBERNETES_POD_UID" in os.environ:
+            # this takes precedence over any value from /proc/self/cgroup
+            k8s["pod"]["uid"] = os.environ["KUBERNETES_POD_UID"]
+            changed = True
+        if changed:
+            system_data["kubernetes"] = k8s
+        return system_data
 
     def _build_metadata(self):
         return {
@@ -353,12 +381,12 @@ class Client(object):
 
         event_data["timestamp"] = int(date * 1000000)
 
-        transaction = get_transaction()
         if transaction:
             if transaction.trace_parent:
                 event_data["trace_id"] = transaction.trace_parent.trace_id
             event_data["parent_id"] = transaction.id
             event_data["transaction_id"] = transaction.id
+            event_data["transaction"] = {"sampled": transaction.is_sampled}
 
         return event_data
 

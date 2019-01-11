@@ -2,8 +2,8 @@ sudo: false
 language: python
 python:
 - nightly
-- 3.5
-- 3.6
+- "3.5"
+- "3.6"
 
 env:
   global:
@@ -18,20 +18,14 @@ env:
 matrix:
   exclude:
   allow_failures:
-  - env:
-    - WEBFRAMEWORK=django-master
-    - WEBFRAMEWORK=flask-master
+  - env: WEBFRAMEWORK=django-master
+  - env: WEBFRAMEWORK=flask-master
   - python: nightly
   include:
-  - stage: linters
-    env: LINTER="isort"
-    python: 3.6
-    script: pip install isort && isort -c -df && echo "OK"
-
   - stage: build
     if: tag =~ ^v\d # only build if this is a version-tag
     dist: trusty
-    python: 3.6
+    python: "3.6"
     sudo: required
     services:
       - docker
@@ -88,14 +82,3 @@ services:
   - mongodb
   - mysql
   - postgresql
-deploy:
-  skip_cleanup: true
-  provider: releases
-  api_key:
-    secure: KEydyJx3qePSGAECmkOgn5M0rvcprmlmo7NZh9K+zsTOnb2Z3kaP6GxnmAJ0Ru50tHY6qEYwknDcMp7mAXGtA9fF4Xek8KyJBhGwRShvc6XVpyH3B6oHgyRLE19iRNMzZP15i318uIqwasA6E153UfCAP1hkZswBzu8AXHG+SdgWKiWNCjc8Yj92zJ1nFqxnm1vleseWan0hm5KqM8d2M7Wgp43RKj7VlLLKr6zhvZCFdgruuvfXiGPtKoGAI2/hsBHMrGjHSyUhk8cR1jHYK2KQ44gwiJvcl6nykMQb1PRy6xTGEG0ow2BFPGPyxaN3ETkn/4a+tsqbLpcm67HDpljVUv6UG0U5a8wQIY0J8o5yZNYqF3bjYBtrdEYlcI7w2uGwD2mtP1T51cnXbKMLIPvtcsul39/ji/hFAsAQuPh0BugNh1oiHd9dAx2GdKohWk1unGxRHdoRGON4w1W7sd7K5fC3mSlPIGWr5RgqnKBV2XqqvbxpIzaaDTyuIkdDlPoCBtqyfooPhH8eFzYlcj6BaD0ZtJAfRDeNNqOftzM5dLjImuKYscHUtRSdCSym7y4yYwk8Sf2556LYMmv5phANydTVgv1VjfhKPRViIier3C1xP4TL13np2mZm9tCA2FCFyuKv/ZELXCYiS2W5QOV2SFNRvZjMdKToGgHmBFM=
-  file_glob: true
-  file: wheelhouse/*.whl
-  on:
-    repo: elastic/apm-agent-python
-    tags: true
-    branch: master
