@@ -96,6 +96,10 @@ class Transaction(object):
             logger.debug("Set parent id to generated %s", self.trace_parent.span_id)
         return self.trace_parent.span_id
 
+    def tag(self, **tags):
+        for key in tags.keys():
+            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
+
     def to_dict(self):
         self.context["tags"] = self.tags
         result = {
@@ -161,12 +165,13 @@ class Span(object):
         self.duration = None
         self.parent = None
         self.frames = None
-        self.tags = tags
-        if self.tags:
-            for key in list(self.tags.keys()):
-                self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(
-                    compat.text_type(self.tags.pop(key))
-                )
+        self.tags = {}
+        if tags:
+            self.tag(**tags)
+
+    def tag(self, **tags):
+        for key in tags.keys():
+            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
     def to_dict(self):
         result = {
@@ -300,13 +305,10 @@ def tag(**tags):
     Tags current transaction. Both key and value of the tag should be strings.
     """
     transaction = get_transaction()
-    for name, value in tags.items():
-        if not transaction:
-            error_logger.warning("Ignored tag %s. No transaction currently active.", name)
-            return
-        # replace invalid characters for Elasticsearch field names with underscores
-        name = TAG_RE.sub("_", compat.text_type(name))
-        transaction.tags[compat.text_type(name)] = encoding.keyword_field(compat.text_type(value))
+    if not transaction:
+        error_logger.warning("Ignored tags %s. No transaction currently active.", ", ".join(tags.keys()))
+    else:
+        transaction.tag(**tags)
 
 
 def set_transaction_name(name, override=True):

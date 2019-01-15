@@ -34,7 +34,7 @@ METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
 
 assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
     TRANSACTIONS_SCHEMA
-), 'JSON Schema files not found. Run "make update-json-schema to download'
+), 'JSON Schema files not found. Run "make update-json-schema" to download'
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
