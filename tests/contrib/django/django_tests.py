@@ -550,6 +550,19 @@ def test_post_raw_data(django_elasticapm_client):
         assert request["body"] == "[REDACTED]"
 
 
+def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
+    request = rf.post("/test", data="{}", content_type="application/json")
+
+    def read():
+        raise IOError("foobar")
+
+    request.read = read
+    with caplog.at_level(logging.DEBUG):
+        django_elasticapm_client.get_data_from_request(request, capture_body=True)
+    record = caplog.records[0]
+    assert record.message == "Can't capture request body: foobar"
+
+
 @pytest.mark.skipif(django.VERSION < (1, 9), reason="get-raw-uri-not-available")
 def test_disallowed_hosts_error_django_19(django_elasticapm_client):
     request = WSGIRequest(
