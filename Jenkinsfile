@@ -95,7 +95,7 @@ pipeline {
                             name: "Python",
                             steps: this
                             )
-                            def mapPatallelTasks = integrationTestsGen.generateParallelTests()
+                            def mapPatallelTasks = pythonTasksGen.generateParallelTests()
                             parallel(mapPatallelTasks)
                         }
                     }
