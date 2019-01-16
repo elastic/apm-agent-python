@@ -88,9 +88,9 @@ pipeline {
                         pythonTasksGen = new PythonParallelTaskGenerator(
                             xKey: 'PYTHON_VERSION',
                             yKey: 'FRAMEWORK',
-                            xFile: "${BASE_DIR}/tests/.jenkins_python.yml",
-                            yFile: "${BASE_DIR}/tests/.jenkins_framework.yml",
-                            exclusionFile: "${BASE_DIR}/tests/.jenkins_exclude.yml",
+                            xFile: "./tests/.jenkins_python.yml",
+                            yFile: "./tests/.jenkins_framework.yml",
+                            exclusionFile: "./tests/.jenkins_exclude.yml",
                             tag: "Python",
                             name: "Python",
                             steps: this
