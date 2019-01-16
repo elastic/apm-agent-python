@@ -191,7 +191,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
         def groups = [:]
         def index = 1
         column.each{ key, value ->
-            def keyGrp = "${this.tag}-${value.X}-${value.Y}-${index % 5}"
+            def keyGrp = "${this.tag}-${value.X}-${index % 5}"
             if(groups[keyGrp] == null){
                 groups[keyGrp] = [:]
                 groups[keyGrp].key = value.X
