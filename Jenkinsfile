@@ -1,241 +1,253 @@
 #!/usr/bin/env groovy
+@Library('apm@axis-tests') _
+
+import co.elastic.axis.*
 import groovy.transform.Field
 
-@Field def results = [:]
+/**
+  This is the parallel tasks generator,
+  it is need as field to store the results of the tests.
+*/
+@Field def pythonTasksGen
 
 pipeline {
-  agent none
-  environment {
-    BASE_DIR="src/github.com/elastic/apm-agent-python"
-    PIPELINE_LOG_LEVEL='DEBUG'
-  }
-  options {
-    timeout(time: 1, unit: 'HOURS') 
-    buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
-    timestamps()
-    ansiColor('xterm')
-    disableResume()
-    durabilityHint('PERFORMANCE_OPTIMIZED')
-  }
-  parameters {
-    booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
-    booleanParam(name: 'doc_ci', defaultValue: true, description: 'Enable build docs.')
-  }
-  stages {
-    stage('Initializing'){
-      agent { label 'docker && linux && immutable' }
-      options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
-      stages {
+    agent any
+    environment {
+        BASE_DIR="src/github.com/elastic/apm-agent-python"
+        PIPELINE_LOG_LEVEL='DEBUG'
+        NOTIFY_TO = credentials('notify-to')
+        JOB_GCS_BUCKET = credentials('gcs-bucket')
+    }
+    options {
+        timeout(time: 1, unit: 'HOURS')
+        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
+        timestamps()
+        ansiColor('xterm')
+        disableResume()
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+    }
+    parameters {
+        booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+        booleanParam(name: 'doc_ci', defaultValue: true, description: 'Enable build docs.')
+    }
+    stages {
+        stage('Initializing'){
+            agent { label 'docker && linux && immutable' }
+            options { skipDefaultCheckout() }
+            environment {
+                HOME = "${env.WORKSPACE}"
+                PATH = "${env.PATH}:${env.WORKSPACE}/bin"
+                ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
+            }
+            stages {
+                /**
+                Checkout the code and stash it, to use it on other stages.
+                */
+                stage('Checkout') {
+                    steps {
+                        deleteDir()
+                        gitCheckout(basedir: "${BASE_DIR}")
+                        stash allowEmpty: true, name: 'source', useDefaultExcludes: false
+                        dir("${BASE_DIR}"){
+                            sh "git log origin/${env.CHANGE_TARGET}...${env.GIT_SHA}"
+                        }
+                    }
+                }
+                /**
+                Build the project from code..
+                */
+                stage('Build') {
+                    steps {
+                        deleteDir()
+                        unstash 'source'
+                        dir("${BASE_DIR}"){
+                            sh """
+                            ./tests/scripts/docker/cleanup.sh
+                            ./tests/scripts/docker/isort.sh
+                            """
+                            sh """
+                            ./tests/scripts/docker/cleanup.sh
+                            ./tests/scripts/docker/black.sh
+                            """
+                        }
+                    }
+                }
+            }
+        }
         /**
-         Checkout the code and stash it, to use it on other stages.
+        Execute unit tests.
         */
-        stage('Checkout') {
-          steps {
-            deleteDir()
-            gitCheckout(basedir: "${BASE_DIR}")
-            stash allowEmpty: true, name: 'source', useDefaultExcludes: false
-            dir("${BASE_DIR}"){
-              sh "git log origin/${env.CHANGE_TARGET}...${env.GIT_SHA}"
+        stage('Test') {
+            agent { label 'linux && immutable' }
+            options { skipDefaultCheckout() }
+            steps {
+                deleteDir()
+                unstash "source"
+                dir("${BASE_DIR}"){
+                    script {
+                        pythonTasksGen = new PythonParallelTaskGenerator(
+                            xKey: 'PYTHON_VERSION',
+                            yKey: 'FRAMEWORK',
+                            xFile: "${BASE_DIR}/tests/.jenkins_python.yml",
+                            yFile: "${BASE_DIR}/tests/.jenkins_framework.yml",
+                            exclusionFile: "${BASE_DIR}/tests/.jenkins_exclude.yml",
+                            tag: "Python",
+                            name: "Python",
+                            steps: this
+                            )
+                            def mapPatallelTasks = integrationTestsGen.generateParallelTests()
+                            parallel(mapPatallelTasks)
+                        }
+                    }
+                }
             }
-          }
-        }
-        /**
-         Build the project from code..
-        */
-        stage('Build') {
-          steps {
-            deleteDir()
-            unstash 'source'
-            dir("${BASE_DIR}"){
-              sh """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/isort.sh
-              """
-              sh """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/black.sh
-              """
+            /**
+            Build the documentation.
+            */
+            stage('Documentation') {
+                agent { label 'docker && linux && immutable' }
+                options { skipDefaultCheckout() }
+                environment {
+                    HOME = "${env.WORKSPACE}"
+                    PATH = "${env.PATH}:${env.WORKSPACE}/bin"
+                    ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
+                }
+                when {
+                    beforeAgent true
+                    allOf {
+                        anyOf {
+                            not {
+                                changeRequest()
+                            }
+                            branch 'master'
+                            branch "\\d+\\.\\d+"
+                            branch "v\\d?"
+                            tag "v\\d+\\.\\d+\\.\\d+*"
+                            expression { return params.Run_As_Master_Branch }
+                        }
+                        expression { return params.doc_ci }
+                    }
+                }
+                steps {
+                    deleteDir()
+                    unstash 'source'
+                    checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
+                    dir("${BASE_DIR}"){
+                        sh './scripts/jenkins/docs.sh'
+                    }
+                }
+                post{
+                    success {
+                        tar(file: "doc-files.tgz", archive: true, dir: "html", pathPrefix: "${BASE_DIR}/docs")
+                    }
+                }
             }
-          }
         }
-      }
+        post {
+            always{
+              script{
+                if(pythonTasksGen?.results){
+                  writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
+                  def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
+                  def processor = new ResultsProcessor()
+                  processor.processResults(mapResults)
+                  archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+                }
+              }
+            }
+            success {
+                echoColor(text: '[SUCCESS]', colorfg: 'green', colorbg: 'default')
+            }
+            aborted {
+                echoColor(text: '[ABORTED]', colorfg: 'magenta', colorbg: 'default')
+            }
+            failure {
+                echoColor(text: '[FAILURE]', colorfg: 'red', colorbg: 'default')
+                step([$class: 'Mailer', notifyEveryUnstableBuild: true, recipients: "${NOTIFY_TO}", sendToIndividuals: false])
+            }
+            unstable {
+                echoColor(text: '[UNSTABLE]', colorfg: 'yellow', colorbg: 'default')
+            }
+        }
     }
+
+
+/**
+  Parallel task generator for the integration tests.
+*/
+class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
+
+    public PythonParallelTaskGenerator(Map params){
+        super(params)
+    }
+
     /**
-     Execute unit tests.
+      build a map of closures to be used as parallel steps.
+      Make 5 groups per column so it will spin 5 Nodes,
+      this makes fewer Docker image Builds.
     */
-    stage('Test') {
-      agent { label 'docker && linux && immutable' }
-      options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
-      steps {
-        deleteDir()
-        unstash 'source'
-        launchParallelTests()
-        writeJSON(file: 'results.json', json: results, pretty: 2)
-        archive('results.json')
-      }
-    }
-    /**
-      Build the documentation.
-    */
-    stage('Documentation') {
-      agent { label 'docker && linux && immutable' }
-      options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
-      when {
-        beforeAgent true
-        allOf {
-          anyOf {
-            not {
-              changeRequest()
+    protected Map generateParallelSteps(column){
+        def parallelStep = [:]
+        def groups = [:]
+        def index = 1
+        column.each{ key, value ->
+            def keyGrp = "${this.tag}-${value.X}-${value.Y}-${index % 5}"
+            if(groups[keyGrp] == null){
+                groups[keyGrp] = [:]
+                groups[keyGrp].key = value.X
+                groups[keyGrp].values = []
             }
-            branch 'master'
-            branch "\\d+\\.\\d+"
-            branch "v\\d?"
-            tag "v\\d+\\.\\d+\\.\\d+*"
-            environment name: 'Run_As_Master_Branch', value: 'true'
-          }
-          environment name: 'doc_ci', value: 'true'
+            groups[keyGrp].values.add(generateStep(value.key, value.values))
+            index++
         }
-      }
-      steps {
-        deleteDir()
-        unstash 'source'
-        checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
-        dir("${BASE_DIR}"){
-          sh './scripts/jenkins/docs.sh'
+        groups.each{ key, value ->
+            parallelStep[key] = generateStep(value.key, value.values)
         }
-      }
-      post{
-        success {
-          tar(file: "doc-files.tgz", archive: true, dir: "html", pathPrefix: "${BASE_DIR}/docs")
-        }
-      }
+        return parallelStep
     }
-  }
-  post { 
-    success {
-      echoColor(text: '[SUCCESS]', colorfg: 'green', colorbg: 'default')
+
+  /**
+    build a clousure that launch and agent and execute the corresponding test script,
+    then store the results.
+  */
+    public Closure generateStep(x, yList){
+        return {
+                steps.node('linux && immutable'){
+                    yList.each{ y ->
+                        try {
+                            def label = "${tag}-${x}-${y}"
+                            steps.runScript(label: label, python: x, framework: y)
+                            saveResult(x, y, 1)
+                        } catch(e){
+                            saveResult(x, y, 0)
+                            error("${label} tests failed : ${e}\n")
+                        } finally {
+                            /** TODO change allowEmptyResults to false */
+                            steps.junit(allowEmptyResults: true,
+                            keepLongStdio: true,
+                            testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+                            //steps.codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
+                        }
+                    }
+                }
+            }
     }
-    aborted {
-      echoColor(text: '[ABORTED]', colorfg: 'magenta', colorbg: 'default')
-    }
-    failure { 
-      echoColor(text: '[FAILURE]', colorfg: 'red', colorbg: 'default')
-      //step([$class: 'Mailer', notifyEveryUnstableBuild: true, recipients: "${NOTIFY_TO}", sendToIndividuals: false])
-    }
-    unstable { 
-      echoColor(text: '[UNSTABLE]', colorfg: 'yellow', colorbg: 'default')
-    }
-  }
 }
 
-def launchParallelTests() {
-  results = readJSON(text: '{}')
-  def parallelStages = [:]
-  getPythonVersions().each{ py ->
-    def matrix = buildMatrix(py)
-    def stagesMap = generateParallelSteps(py, matrix)
-    parallelStages["${py}-01"] = stagesMap.testGrp01
-    parallelStages["${py}-02"] = stagesMap.testGrp02
-    parallelStages["${py}-03"] = stagesMap.testGrp03
-  }
-  parallel(parallelStages)
-}
-
-def saveResult(python, framework, result){
-  if(results[python] == null){
-    results[python] = [:]
-  }
-  results[python][framework] = result
-}
-
-def testStep(python, framework){
-  return {
+def runScript(Map params = [:]){
+    def label = params.label
+    def python = params.python
+    def framework = params.framework
+    log(level: 'INFO', text: "${label}")
+    env.HOME = "${env.WORKSPACE}"
+    env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
     env.PIP_CACHE = "${WORKSPACE}/.pip"
     deleteDir()
     sh "mkdir ${PIP_CACHE}"
     unstash 'source'
     dir("${BASE_DIR}"){
-      try {
-        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
-        saveResult(python, framework, 1)
-      } catch(e){
-        saveResult(python, framework, 0)
-        error("Some ${python} ${framework} tests failed")
-      } finally {
-        junit(allowEmptyResults: true, 
-          keepLongStdio: true, 
-          testResults: "${BASE_DIR}/**/python-agent-junit.xml,${BASE_DIR}/target/**/TEST-*.xml")
-        //codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
-      }
+        /** TODO enable test */
+        //sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+        echo "${label}"
     }
-  }
-}
-
-def nodeTestGrp(label, grp){
-  return {
-    if(grp.size() > 0){
-      node('docker && linux && immutable'){
-        grp.each{ key, value ->
-          log(level: 'DEBUG', text: "Test : ${key}")
-          value()
-        }
-        log(level: 'DEBUG', text: "Number of ${label} Test : ${grp.size()}")
-      }
-    }
-  }
-}
-
-def generateParallelSteps(stageName, matrix){
-  def testGrp01 = [:]
-  def testGrp02 = [:]
-  def testGrp03 = [:]
-  def i = 1
-  matrix.each{ key, value ->
-    def body = testStep(value.python,value.framework)
-    if( i % 3 == 0 ){
-      testGrp03[key] = body
-    } else if( i % 2 == 0 ){
-      testGrp02[key] = body
-    } else {
-      testGrp01[key] = body
-    }
-    i++
-  }
-  return [
-    testGrp03: nodeTestGrp("${stageName}-03", testGrp03),
-    testGrp02: nodeTestGrp("${stageName}-02", testGrp02),
-    testGrp01: nodeTestGrp("${stageName}-01", testGrp01)
-  ]
-}
-
-def getPythonVersions(){
-  return readYaml(file: "${BASE_DIR}/tests/.jenkins_python.yml")['PYTHON_VERSION']
-}
-
-def buildMatrix(py){
-  def frameworks = readYaml(file: "${BASE_DIR}/tests/.jenkins_framework.yml")['FRAMEWORK']
-  def excludes = readYaml(file: "${BASE_DIR}/tests/.jenkins_exclude.yml")['exclude'].collect{ "${it.PYTHON_VERSION}#${it.FRAMEWORK}"}
-  def matrix = [:]
-  frameworks.each{ fw ->
-    def key = "${py}#${fw}"
-    if(!excludes.contains(key)){
-      matrix[key] = [python: py, framework: fw]
-    }
-  }
-  return matrix
 }
