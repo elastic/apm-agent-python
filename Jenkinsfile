@@ -214,8 +214,8 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
         return {
                 steps.node('linux && immutable'){
                     yList.each{ y ->
+                        def label = "${tag}-${x}-${y}"
                         try {
-                            def label = "${tag}-${x}-${y}"
                             steps.runScript(label: label, python: x, framework: y)
                             saveResult(x, y, 1)
                         } catch(e){
