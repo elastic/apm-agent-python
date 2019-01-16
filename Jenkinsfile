@@ -61,15 +61,14 @@ pipeline {
                         deleteDir()
                         unstash 'source'
                         dir("${BASE_DIR}"){
-                            /** TODO enable build */
-                            // sh """
-                            // ./tests/scripts/docker/cleanup.sh
-                            // ./tests/scripts/docker/isort.sh
-                            // """
-                            // sh """
-                            // ./tests/scripts/docker/cleanup.sh
-                            // ./tests/scripts/docker/black.sh
-                            // """
+                            sh """
+                            ./tests/scripts/docker/cleanup.sh
+                            ./tests/scripts/docker/isort.sh
+                            """
+                            sh """
+                            ./tests/scripts/docker/cleanup.sh
+                            ./tests/scripts/docker/black.sh
+                            """
                         }
                     }
                 }
@@ -223,8 +222,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                             saveResult(x, y, 0)
                             error("${label} tests failed : ${e}\n")
                         } finally {
-                            /** TODO change allowEmptyResults to false */
-                            steps.junit(allowEmptyResults: true,
+                            steps.junit(allowEmptyResults: false,
                             keepLongStdio: true,
                             testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
                             //steps.codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
@@ -247,8 +245,6 @@ def runScript(Map params = [:]){
     sh "mkdir ${PIP_CACHE}"
     unstash 'source'
     dir("${BASE_DIR}"){
-        /** TODO enable test */
-        //sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
-        echo "${label}"
+        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
     }
 }
