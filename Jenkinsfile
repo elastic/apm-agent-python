@@ -61,14 +61,15 @@ pipeline {
                         deleteDir()
                         unstash 'source'
                         dir("${BASE_DIR}"){
-                            sh """
-                            ./tests/scripts/docker/cleanup.sh
-                            ./tests/scripts/docker/isort.sh
-                            """
-                            sh """
-                            ./tests/scripts/docker/cleanup.sh
-                            ./tests/scripts/docker/black.sh
-                            """
+                            /** TODO enable build */
+                            // sh """
+                            // ./tests/scripts/docker/cleanup.sh
+                            // ./tests/scripts/docker/isort.sh
+                            // """
+                            // sh """
+                            // ./tests/scripts/docker/cleanup.sh
+                            // ./tests/scripts/docker/black.sh
+                            // """
                         }
                     }
                 }
@@ -197,7 +198,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                 groups[keyGrp].key = value.X
                 groups[keyGrp].values = []
             }
-            groups[keyGrp].values.add(generateStep(value.key, value.values))
+            groups[keyGrp].values.add(value.Y)
             index++
         }
         groups.each{ key, value ->
