@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 @Library('apm@axis-tests') _
 
-import co.elastic.axis.*
+import co.elastic.matrix.*
 import groovy.transform.Field
 
 /**
