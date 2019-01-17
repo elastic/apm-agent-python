@@ -14,7 +14,7 @@ pipeline {
     agent any
     environment {
         BASE_DIR="src/github.com/elastic/apm-agent-python"
-        PIPELINE_LOG_LEVEL='DEBUG'
+        PIPELINE_LOG_LEVEL='INFO'
         NOTIFY_TO = credentials('notify-to')
         JOB_GCS_BUCKET = credentials('gcs-bucket')
     }
