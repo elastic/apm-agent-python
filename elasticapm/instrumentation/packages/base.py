@@ -2,7 +2,7 @@ import functools
 import logging
 import os
 
-from elasticapm.traces import get_transaction
+from elasticapm.traces import context
 from elasticapm.utils import wrapt
 
 logger = logging.getLogger("elasticapm.instrument")
@@ -101,7 +101,7 @@ class AbstractInstrumentedModule(object):
         self.originals = {}
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
-        transaction = get_transaction()
+        transaction = context.get_transaction()
         if not transaction:
             return wrapped(*args, **kwargs)
         elif not transaction.is_sampled:
@@ -139,4 +139,4 @@ class AbstractInstrumentedModule(object):
         :param kwargs: keyword arguments to the wrapped method/function
         :return: the result of calling the wrapped method/function
         """
-        raise NotImplemented
+        raise NotImplementedError
