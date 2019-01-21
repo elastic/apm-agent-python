@@ -30,4 +30,4 @@ class ContextVarsContext(BaseContext):
         self.elasticapm_span_var.set(span)
 
 
-context = ContextVarsContext()
+execution_context = ContextVarsContext()
