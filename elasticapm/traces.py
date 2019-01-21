@@ -22,9 +22,9 @@ TAG_RE = re.compile('[.*"]')
 
 
 try:
-    from elasticapm.context.contextvars import context
+    from elasticapm.context.contextvars import execution_context
 except ImportError:
-    from elasticapm.context.threadlocal import context
+    from elasticapm.context.threadlocal import execution_context
 
 
 class Transaction(object):
@@ -49,7 +49,7 @@ class Transaction(object):
         self.duration = _time_func() - self.start_time
 
     def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
-        parent_span = context.get_span()
+        parent_span = execution_context.get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
@@ -62,15 +62,15 @@ class Transaction(object):
             span.frames = tracer.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
-        context.set_span(span)
+        execution_context.set_span(span)
         return span
 
     def end_span(self, skip_frames):
-        span = context.get_span()
+        span = execution_context.get_span()
         if span is None:
             raise LookupError()
         if isinstance(span, DroppedSpan):
-            context.set_span(span.parent)
+            execution_context.set_span(span.parent)
             return
 
         span.duration = _time_func() - span.start_time
@@ -79,7 +79,7 @@ class Transaction(object):
             span.frames = self._tracer.frames_processing_func(span.frames)[skip_frames:]
         else:
             span.frames = None
-        context.set_span(span.parent)
+        execution_context.set_span(span.parent)
         self._tracer.queue_func(SPAN, span.to_dict())
         return span
 
@@ -256,7 +256,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
-        context.set_transaction(transaction)
+        execution_context.set_transaction(transaction)
         return transaction
 
     def _should_ignore(self, transaction_name):
@@ -266,7 +266,7 @@ class Tracer(object):
         return False
 
     def end_transaction(self, result=None, transaction_name=None):
-        transaction = context.get_transaction(clear=True)
+        transaction = execution_context.get_transaction(clear=True)
         if transaction:
             transaction.end_transaction()
             if transaction.name is None:
@@ -299,12 +299,12 @@ class capture_span(object):
         return decorated
 
     def __enter__(self):
-        transaction = context.get_transaction()
+        transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf, tags=self.tags)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        transaction = context.get_transaction()
+        transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             try:
                 transaction.end_span(self.skip_frames)
@@ -316,7 +316,7 @@ def tag(**tags):
     """
     Tags current transaction. Both key and value of the tag should be strings.
     """
-    transaction = context.get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         error_logger.warning("Ignored tags %s. No transaction currently active.", ", ".join(tags.keys()))
     else:
@@ -324,7 +324,7 @@ def tag(**tags):
 
 
 def set_transaction_name(name, override=True):
-    transaction = context.get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         return
     if transaction.name is None or override:
@@ -332,7 +332,7 @@ def set_transaction_name(name, override=True):
 
 
 def set_transaction_result(result, override=True):
-    transaction = context.get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         return
     if transaction.result is None or override:
@@ -340,7 +340,7 @@ def set_transaction_result(result, override=True):
 
 
 def set_context(data, key="custom"):
-    transaction = context.get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         return
     if callable(data) and transaction.is_sampled:

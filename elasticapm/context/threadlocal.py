@@ -32,4 +32,4 @@ class ThreadLocalContext(BaseContext):
         self.thread_local.span = span
 
 
-context = ThreadLocalContext()
+execution_context = ThreadLocalContext()

@@ -25,8 +25,7 @@ import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
-from elasticapm.traces import Tracer
-from elasticapm.traces import context as execution_context
+from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
