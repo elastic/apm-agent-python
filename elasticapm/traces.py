@@ -38,7 +38,6 @@ class Transaction(object):
         self.transaction_type = transaction_type
         self._tracer = tracer
 
-        self.spans = []
         self.dropped_spans = 0
         self.context = {}
         self.tags = {}
@@ -80,7 +79,6 @@ class Transaction(object):
             span.frames = self._tracer.frames_processing_func(span.frames)[skip_frames:]
         else:
             span.frames = None
-        self.spans.append(span)
         set_span(span.parent)
         self._tracer.queue_func(SPAN, span.to_dict())
         return span
