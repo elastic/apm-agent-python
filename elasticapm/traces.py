@@ -48,7 +48,7 @@ class Transaction(object):
     def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
+    def begin_span(self, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
         parent_span = execution_context.get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
@@ -58,14 +58,22 @@ class Transaction(object):
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
-            span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf, tags=tags)
+            span = Span(
+                transaction=self,
+                name=name,
+                span_type=span_type or "code.custom",
+                context=context,
+                leaf=leaf,
+                tags=tags,
+                parent_span_id=parent_span_id,
+            )
             span.frames = tracer.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
         execution_context.set_span(span)
         return span
 
-    def end_span(self, skip_frames):
+    def end_span(self, skip_frames=0):
         span = execution_context.get_span()
         if span is None:
             raise LookupError()
@@ -140,11 +148,12 @@ class Span(object):
         "start_time",
         "duration",
         "parent",
+        "parent_span_id",
         "frames",
         "tags",
     )
 
-    def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None):
+    def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
         """
         Create a new Span
 
@@ -154,6 +163,7 @@ class Span(object):
         :param context: context dictionary
         :param leaf: is this span a leaf span?
         :param tags: a dict of tags
+        :param parent_span_id: override of the span ID
         """
         self.start_time = _time_func()
         self.id = "%016x" % random.getrandbits(64)
@@ -169,6 +179,7 @@ class Span(object):
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         self.duration = None
         self.parent = None
+        self.parent_span_id = parent_span_id
         self.frames = None
         self.tags = {}
         if tags:
@@ -190,7 +201,8 @@ class Span(object):
             "id": self.id,
             "transaction_id": self.transaction.id,
             "trace_id": self.transaction.trace_parent.trace_id,
-            "parent_id": self.parent.id if self.parent else self.transaction.id,
+            # use either the explicitly set parent_span_id, or the id of the parent, or finally the transaction id
+            "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
