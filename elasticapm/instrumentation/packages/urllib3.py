@@ -56,7 +56,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
                 trace_parent = transaction.trace_parent.copy_from(
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
-                headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
+                headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_str()
             return wrapped(*args, **kwargs)
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
@@ -69,5 +69,5 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
             if headers is None:
                 headers = {}
                 kwargs["headers"] = headers
-            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
+            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_str()
         return args, kwargs
