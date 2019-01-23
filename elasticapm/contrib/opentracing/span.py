@@ -58,7 +58,21 @@ class OTSpan(OTSpanBase):
             else:
                 self.elastic_apm_ref.tag(**{key: value})
         else:
-            if key == tags.SPAN_KIND:
+            if key.startswith("db."):
+                span_context = self.elastic_apm_ref.context or {}
+                if "db" not in span_context:
+                    span_context["db"] = {}
+                if key == tags.DATABASE_STATEMENT:
+                    span_context["db"]["statement"] = value
+                elif key == tags.DATABASE_USER:
+                    span_context["db"]["user"] = value
+                elif key == tags.DATABASE_TYPE:
+                    span_context["db"]["type"] = value
+                    self.elastic_apm_ref.type = "db." + value
+                else:
+                    self.elastic_apm_ref.tag(**{key: value})
+                self.elastic_apm_ref.context = span_context
+            elif key == tags.SPAN_KIND:
                 self.elastic_apm_ref.type = value
             else:
                 self.elastic_apm_ref.tag(**{key: value})

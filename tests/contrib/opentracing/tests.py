@@ -46,3 +46,49 @@ def test_ot_span(tracer):
     assert span3["transaction_id"] == transaction["id"]
     assert span3["parent_id"] == span1["id"]
     assert span3["name"] == "testspan3"
+
+
+def test_transaction_tags(tracer):
+    with tracer.start_active_span("test") as ot_scope:
+        ot_scope.span.set_tag("http.status_code", 200)
+        ot_scope.span.set_tag("http.url", "http://example.com/foo")
+        ot_scope.span.set_tag("http.method", "GET")
+        ot_scope.span.set_tag("user.id", 1)
+        ot_scope.span.set_tag("user.email", "foo@example.com")
+        ot_scope.span.set_tag("user.username", "foo")
+        ot_scope.span.set_tag("component", "Django")
+        ot_scope.span.set_tag("something.else", "foo")
+    client = tracer._agent
+    transaction = client.events[constants.TRANSACTION][0]
+
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["context"]["response"]["status_code"] == 200
+    assert transaction["context"]["request"]["url"]["full"] == "http://example.com/foo"
+    assert transaction["context"]["request"]["method"] == "GET"
+    assert transaction["context"]["user"] == {"id": 1, "email": "foo@example.com", "username": "foo"}
+    assert transaction["context"]["service"]["framework"]["name"] == "Django"
+    assert transaction["context"]["tags"] == {"something_else": "foo"}
+
+
+def test_span_tags(tracer):
+    with tracer.start_active_span("transaction") as ot_scope_t:
+        with tracer.start_active_span("span") as ot_scope_s:
+            s = ot_scope_s.span
+            s.set_tag("db.type", "sql")
+            s.set_tag("db.statement", "SELECT * FROM foo")
+            s.set_tag("db.user", "bar")
+            s.set_tag("db.instance", "baz")
+        with tracer.start_active_span("span") as ot_scope_s:
+            s = ot_scope_s.span
+            s.set_tag("span.kind", "foo")
+            s.set_tag("something.else", "bar")
+    client = tracer._agent
+    span1 = client.events[constants.SPAN][0]
+    span2 = client.events[constants.SPAN][1]
+
+    assert span1["context"]["db"] == {"type": "sql", "user": "bar", "statement": "SELECT * FROM foo"}
+    assert span1["type"] == "db.sql"
+    assert span1["context"]["tags"] == {"db_instance": "baz"}
+
+    assert span2["type"] == "foo"
+    assert span2["context"]["tags"] == {"something_else": "bar"}
