@@ -2,6 +2,8 @@ import pytest  # isort:skip
 
 opentracing = pytest.importorskip("opentracing")  # isort:skip
 
+import sys
+
 from elasticapm.conf import constants
 from elasticapm.contrib.opentracing import Tracer
 
@@ -92,3 +94,30 @@ def test_span_tags(tracer):
 
     assert span2["type"] == "foo"
     assert span2["context"]["tags"] == {"something_else": "bar"}
+
+
+def test_error_log(tracer):
+    with tracer.start_active_span("transaction") as tx_scope:
+        try:
+            raise ValueError("oops")
+        except ValueError:
+            exc_type, exc_val, exc_tb = sys.exc_info()[:3]
+            tx_scope.span.log_kv(
+                {"python.exception.type": exc_type, "python.exception.val": exc_val, "python.exception.tb": exc_tb}
+            )
+    client = tracer._agent
+    error = client.events[constants.ERROR][0]
+
+    assert error["exception"]["message"] == "ValueError: oops"
+
+
+def test_error_log_automatic_in_span_context_manager(tracer):
+    scope = tracer.start_active_span("transaction")
+    with pytest.raises(ValueError):
+        with scope.span:
+            raise ValueError("oops")
+
+    client = tracer._agent
+    error = client.events[constants.ERROR][0]
+
+    assert error["exception"]["message"] == "ValueError: oops"
