@@ -186,17 +186,19 @@ def test_get_transaction_clear():
 
 def test_tag_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
-    t = requests_store.begin_transaction("test")
+    transaction = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
+    transaction.tag(baz="bazzinga")
     requests_store.end_transaction(200, "test")
 
-    assert t.tags == {"foo": "bar"}
-    transaction_dict = t.to_dict()
-    assert transaction_dict["context"]["tags"] == {"foo": "bar"}
+    assert transaction.tags == {"foo": "bar", "baz": "bazzinga"}
+    transaction_dict = transaction.to_dict()
+    assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
 
 
 def test_tag_while_no_transaction(caplog):
-    elasticapm.tag(foo="bar")
+    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
+        elasticapm.tag(foo="bar")
     record = caplog.records[0]
     assert record.levelno == logging.WARNING
     assert "foo" in record.args
@@ -323,3 +325,12 @@ def test_transaction_without_name_result(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     transaction = elasticapm_client.end_transaction()
     assert transaction.name == ""
+
+
+def test_span_tagging(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:
+        span.tag(lorem="ipsum")
+    elasticapm_client.end_transaction("test", "OK")
+    span = elasticapm_client.events[SPAN][0]
+    assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga", "lorem": "ipsum"}

@@ -105,8 +105,13 @@ class ElasticAPM(object):
         if not self.client:
             self.client = make_client(self.client_cls, app, **defaults)
 
-        if self.logging:
-            setup_logging(LoggingHandler(self.client))
+        # 0 is a valid log level (NOTSET), so we need to check explicitly for it
+        if self.logging or self.logging is 0:
+            if self.logging is not True:
+                kwargs = {"level": self.logging}
+            else:
+                kwargs = {}
+            setup_logging(LoggingHandler(self.client, **kwargs))
 
         signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 

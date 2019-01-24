@@ -25,3 +25,5 @@ def coffee_maker(strength):
 
     fresh_pots()
 ----
+
+See <<api-capture-span, the API docs>> for more information on `capture_span`. 

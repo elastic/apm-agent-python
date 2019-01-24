@@ -253,7 +253,7 @@ class Config(_ConfigBase):
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
 
 
-def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):
+def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
     """
     Configures logging to pipe to Elastic APM.
 
@@ -277,11 +277,5 @@ def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elastica
         return False
 
     logger.addHandler(handler)
-
-    # Add StreamHandler to sentry's default so you can catch missed exceptions
-    for logger_name in exclude:
-        logger = logging.getLogger(logger_name)
-        logger.propagate = False
-        logger.addHandler(logging.StreamHandler())
 
     return True
