@@ -4,6 +4,8 @@ opentracing = pytest.importorskip("opentracing")  # isort:skip
 
 import sys
 
+import mock
+
 from elasticapm.conf import constants
 from elasticapm.contrib.opentracing import Tracer
 
@@ -13,6 +15,29 @@ pytestmark = pytest.mark.opentracing
 @pytest.fixture()
 def tracer(elasticapm_client):
     yield Tracer(client_instance=elasticapm_client)
+
+
+def test_tracer_with_instantiated_client(elasticapm_client):
+    tracer = Tracer(client_instance=elasticapm_client)
+    assert tracer._agent is elasticapm_client
+
+
+def test_tracer_with_config():
+    config = {"METRICS_INTERVAL": "0s", "SERVER_URL": "https://example.com/test"}
+    tracer = Tracer(config=config)
+    assert tracer._agent.config.metrics_interval == 0
+    assert tracer._agent.config.server_url == "https://example.com/test"
+
+
+def test_tracer_instrument(elasticapm_client):
+    with mock.patch("elasticapm.contrib.opentracing.tracer.instrument") as mock_instrument:
+        elasticapm_client.config.instrument = False
+        Tracer(client_instance=elasticapm_client)
+        assert mock_instrument.call_count == 0
+
+        elasticapm_client.config.instrument = True
+        Tracer(client_instance=elasticapm_client)
+        assert mock_instrument.call_count == 1
 
 
 def test_ot_transaction_started(tracer):

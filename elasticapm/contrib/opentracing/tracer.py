@@ -1,3 +1,5 @@
+import warnings
+
 from opentracing import Format, InvalidCarrierException, SpanContextCorruptedException, UnsupportedFormatException
 from opentracing.scope_managers import ThreadLocalScopeManager
 from opentracing.tracer import ReferenceType
@@ -15,8 +17,14 @@ class Tracer(TracerBase):
 
     def __init__(self, client_instance=None, config=None, scope_manager=None):
         self._agent = client_instance or self._elasticapm_client_class(config=config)
+        if scope_manager and not isinstance(scope_manager, ThreadLocalScopeManager):
+            warnings.warn(
+                "Currently, the Elastic APM opentracing bridge only supports the ThreadLocalScopeManager. "
+                "Usage of other scope managers will lead to unpredictable results."
+            )
         self._scope_manager = scope_manager or ThreadLocalScopeManager()
-        instrument()
+        if self._agent.config.instrument:
+            instrument()
 
     def start_active_span(
         self,
