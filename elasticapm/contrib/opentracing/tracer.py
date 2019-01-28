@@ -71,7 +71,7 @@ class Tracer(TracerBase):
                 if parent_context and parent_context.span and not parent_context.span.is_transaction
                 else None
             )
-            span = transaction.begin_span(operation_name, None, parent_span_id=parent_span_id)
+            span = transaction._begin_span(operation_name, None, parent_span_id=parent_span_id)
             trace_parent = parent_context.trace_parent if parent_context else transaction.trace_parent
             span_context = OTSpanContext(trace_parent=trace_parent.copy_from(span_id=span.id))
             ot_span = OTSpan(self, span_context, span)

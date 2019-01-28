@@ -48,7 +48,7 @@ class Transaction(object):
     def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
+    def _begin_span(self, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
         parent_span = execution_context.get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
@@ -72,6 +72,8 @@ class Transaction(object):
             self._span_counter += 1
         execution_context.set_span(span)
         return span
+
+    begin_span = functools.partialmethod(_begin_span, parent_span_id=None)
 
     def end_span(self, skip_frames=0):
         span = execution_context.get_span()
