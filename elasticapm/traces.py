@@ -73,7 +73,17 @@ class Transaction(object):
         execution_context.set_span(span)
         return span
 
-    begin_span = functools.partialmethod(_begin_span, parent_span_id=None)
+    def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
+        """
+        Begin a new span
+        :param name: name of the span
+        :param span_type: type of the span
+        :param context: a context dict
+        :param leaf: True if this is a leaf span
+        :param tags: a flat string/string dict of tags
+        :return: the Span object
+        """
+        return self._begin_span(name, span_type, context=context, leaf=leaf, tags=tags, parent_span_id=None)
 
     def end_span(self, skip_frames=0):
         span = execution_context.get_span()
