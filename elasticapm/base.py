@@ -386,7 +386,7 @@ class Client(object):
                 event_data["trace_id"] = transaction.trace_parent.trace_id
             event_data["parent_id"] = transaction.id
             event_data["transaction_id"] = transaction.id
-            event_data["transaction"] = {"sampled": transaction.is_sampled}
+            event_data["transaction"] = {"sampled": transaction.is_sampled, "type": transaction.transaction_type}
 
         return event_data
 
