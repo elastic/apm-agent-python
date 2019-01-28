@@ -5,6 +5,7 @@
 
  * Added support for collecting system and process metrics (#361)
  * Added `transaction.sampled` to errors (#371)
+ * Added `transaction.type` to errors (#391)
  * Added parsing of `/proc/self/cgroup` to capture container meta data (#352)
  * Added option to configure logging for Flask using a log level (#344)
 
