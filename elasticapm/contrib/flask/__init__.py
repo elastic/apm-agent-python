@@ -22,7 +22,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
-from elasticapm.traces import get_transaction
+from elasticapm.traces import execution_context
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 
@@ -93,7 +93,9 @@ class ElasticAPM(object):
             exc_info=kwargs.get("exc_info"),
             context={
                 "request": get_data_from_request(
-                    request, capture_body=self.client.config.capture_body in ("errors", "all")
+                    request,
+                    capture_body=self.client.config.capture_body in ("errors", "all"),
+                    capture_headers=self.client.config.capture_headers,
                 )
             },
             custom={"app": self.app},
@@ -142,7 +144,7 @@ class ElasticAPM(object):
             """
             Adds APM related IDs to the context used for correlating the backend transaction with the RUM transaction
             """
-            transaction = get_transaction()
+            transaction = execution_context.get_transaction()
             if transaction and transaction.trace_parent:
                 return {
                     "apm": {
@@ -168,11 +170,15 @@ class ElasticAPM(object):
             rule = build_name_with_http_method_prefix(rule, request)
             elasticapm.set_context(
                 lambda: get_data_from_request(
-                    request, capture_body=self.client.config.capture_body in ("transactions", "all")
+                    request,
+                    capture_body=self.client.config.capture_body in ("transactions", "all"),
+                    capture_headers=self.client.config.capture_headers,
                 ),
                 "request",
             )
-            elasticapm.set_context(lambda: get_data_from_response(response), "response")
+            elasticapm.set_context(
+                lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
+            )
             if response.status_code:
                 result = "HTTP {}xx".format(response.status_code // 100)
             else:

@@ -24,6 +24,9 @@ class TraceParent(object):
     def to_string(self):
         return "{:02x}-{}-{}-{:02x}".format(self.version, self.trace_id, self.span_id, self.trace_options.asByte)
 
+    def to_ascii(self):
+        return self.to_string().encode("ascii")
+
     @classmethod
     def from_string(cls, traceparent_string):
         try:

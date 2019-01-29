@@ -7,7 +7,7 @@ from mock import Mock
 
 import elasticapm
 from elasticapm.conf.constants import SPAN, TRANSACTION
-from elasticapm.traces import Tracer, capture_span, get_transaction
+from elasticapm.traces import Tracer, capture_span, execution_context
 
 
 @pytest.fixture()
@@ -174,14 +174,14 @@ def test_leaf_tracing(tracer):
 def test_get_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
-    assert t == get_transaction()
+    assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
-    assert t == get_transaction(clear=True)
-    assert get_transaction() is None
+    assert t == execution_context.get_transaction(clear=True)
+    assert execution_context.get_transaction() is None
 
 
 def test_tag_transaction():

@@ -251,6 +251,7 @@ class Config(_ConfigBase):
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
+    capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
 
 
 def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):

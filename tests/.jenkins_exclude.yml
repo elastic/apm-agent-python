@@ -112,3 +112,6 @@ exclude:
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: boto3-1.0
+  # opentracing
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: opentracing-newest
