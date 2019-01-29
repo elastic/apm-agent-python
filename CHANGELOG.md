@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...master)
+## v4.1.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
 
  * Added support for collecting system and process metrics (#361)
  * Added an OpenTracing bridge (#388)
