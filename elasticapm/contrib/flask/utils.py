@@ -5,14 +5,15 @@ from elasticapm.utils import compat, get_url_dict
 from elasticapm.utils.wsgi import get_environ, get_headers
 
 
-def get_data_from_request(request, capture_body=False):
+def get_data_from_request(request, capture_body=False, capture_headers=True):
     result = {
         "env": dict(get_environ(request.environ)),
-        "headers": dict(get_headers(request.environ)),
         "method": request.method,
         "socket": {"remote_address": request.environ.get("REMOTE_ADDR"), "encrypted": request.is_secure},
         "cookies": request.cookies,
     }
+    if capture_headers:
+        result["headers"] = dict(get_headers(request.environ))
     if request.method in constants.HTTP_WITH_BODY:
         body = None
         if request.content_type == "application/x-www-form-urlencoded":
@@ -37,13 +38,13 @@ def get_data_from_request(request, capture_body=False):
     return result
 
 
-def get_data_from_response(response):
+def get_data_from_response(response, capture_headers=True):
     result = {}
 
     if isinstance(getattr(response, "status_code", None), compat.integer_types):
         result["status_code"] = response.status_code
 
-    if getattr(response, "headers", None):
+    if capture_headers and getattr(response, "headers", None):
         headers = response.headers
         result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
     return result
