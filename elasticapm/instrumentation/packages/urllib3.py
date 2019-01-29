@@ -43,7 +43,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
         url = instance.scheme + "://" + host + url
         transaction = get_transaction()
 
-        with capture_span(signature, "ext.http.urllib3", {"url": url}, leaf=True) as span:
+        with capture_span(signature, "ext.http.urllib3", {"http": {"url": url}}, leaf=True) as span:
             # if urllib3 has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span
             while isinstance(leaf_span, DroppedSpan):
