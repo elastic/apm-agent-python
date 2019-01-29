@@ -96,4 +96,5 @@ class Tracer(TracerBase):
             if not isinstance(carrier, dict):
                 raise InvalidCarrierException("carrier for {} format should be dict-like".format(format))
             carrier[constants.TRACEPARENT_HEADER_NAME] = span_context.trace_parent.to_ascii()
+            return
         raise UnsupportedFormatException

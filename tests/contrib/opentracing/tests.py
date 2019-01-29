@@ -5,9 +5,12 @@ opentracing = pytest.importorskip("opentracing")  # isort:skip
 import sys
 
 import mock
+from opentracing import Format
 
 from elasticapm.conf import constants
 from elasticapm.contrib.opentracing import Tracer
+from elasticapm.contrib.opentracing.span import OTSpanContext
+from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = pytest.mark.opentracing
 
@@ -148,3 +151,64 @@ def test_error_log_automatic_in_span_context_manager(tracer):
     error = client.events[constants.ERROR][0]
 
     assert error["exception"]["message"] == "ValueError: oops"
+
+
+def test_span_set_bagge_item_noop(tracer):
+    scope = tracer.start_active_span("transaction")
+    assert scope.span.set_baggage_item("key", "val") == scope.span
+
+
+def test_tracer_extract_http(tracer):
+    span_context = tracer.extract(
+        Format.HTTP_HEADERS, {"elastic-apm-traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"}
+    )
+
+    assert span_context.trace_parent.version == 0
+    assert span_context.trace_parent.trace_id == "0af7651916cd43dd8448eb211c80319c"
+    assert span_context.trace_parent.span_id == "b7ad6b7169203331"
+
+
+def test_tracer_extract_map(tracer):
+    span_context = tracer.extract(
+        Format.TEXT_MAP, {"elastic-apm-traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"}
+    )
+
+    assert span_context.trace_parent.version == 0
+    assert span_context.trace_parent.trace_id == "0af7651916cd43dd8448eb211c80319c"
+    assert span_context.trace_parent.span_id == "b7ad6b7169203331"
+
+
+def test_tracer_extract_binary(tracer):
+    with pytest.raises(opentracing.UnsupportedFormatException):
+        tracer.extract(Format.BINARY, b"foo")
+
+
+def test_tracer_extract_corrupted(tracer):
+    with pytest.raises(opentracing.SpanContextCorruptedException):
+        tracer.extract(Format.HTTP_HEADERS, {"nothing-to": "see-here"})
+
+
+def test_tracer_inject_http(tracer):
+    span_context = OTSpanContext(
+        trace_parent=TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
+    )
+    carrier = {}
+    tracer.inject(span_context, Format.HTTP_HEADERS, carrier)
+    assert carrier["elastic-apm-traceparent"] == b"00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+
+
+def test_tracer_inject_map(tracer):
+    span_context = OTSpanContext(
+        trace_parent=TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
+    )
+    carrier = {}
+    tracer.inject(span_context, Format.TEXT_MAP, carrier)
+    assert carrier["elastic-apm-traceparent"] == b"00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+
+
+def test_tracer_inject_binary(tracer):
+    span_context = OTSpanContext(
+        trace_parent=TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
+    )
+    with pytest.raises(opentracing.UnsupportedFormatException):
+        tracer.inject(span_context, Format.BINARY, {})
