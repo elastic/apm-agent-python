@@ -45,7 +45,7 @@ def test_ot_transaction_started(tracer):
         ot_scope.span.set_tag("result", "OK")
     client = tracer._agent
     transaction = client.events[constants.TRANSACTION][0]
-    assert transaction["type"] == "opentracing"
+    assert transaction["type"] == "custom"
     assert transaction["name"] == "test"
     assert transaction["result"] == "OK"
 
@@ -77,6 +77,7 @@ def test_ot_span(tracer):
 
 def test_transaction_tags(tracer):
     with tracer.start_active_span("test") as ot_scope:
+        ot_scope.span.set_tag("type", "foo")
         ot_scope.span.set_tag("http.status_code", 200)
         ot_scope.span.set_tag("http.url", "http://example.com/foo")
         ot_scope.span.set_tag("http.method", "GET")
@@ -88,6 +89,7 @@ def test_transaction_tags(tracer):
     client = tracer._agent
     transaction = client.events[constants.TRANSACTION][0]
 
+    assert transaction["type"] == "foo"
     assert transaction["result"] == "HTTP 2xx"
     assert transaction["context"]["response"]["status_code"] == 200
     assert transaction["context"]["request"]["url"]["full"] == "http://example.com/foo"

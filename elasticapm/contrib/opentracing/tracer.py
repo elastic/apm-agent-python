@@ -61,11 +61,14 @@ class Tracer(TracerBase):
         transaction = traces.execution_context.get_transaction()
         if not transaction:
             trace_parent = parent_context.trace_parent if parent_context else None
-            transaction = self._agent.begin_transaction("opentracing", trace_parent=trace_parent)
+            transaction = self._agent.begin_transaction("custom", trace_parent=trace_parent)
             transaction.name = operation_name
             span_context = OTSpanContext(trace_parent=transaction.trace_parent)
             ot_span = OTSpan(self, span_context, transaction)
         else:
+            # to allow setting an explicit parent span, we check if the parent_context is set
+            # and if it is a span. In all other cases, the parent is found implicitly through the
+            # execution context.
             parent_span_id = (
                 parent_context.span.elastic_apm_ref.id
                 if parent_context and parent_context.span and not parent_context.span.is_transaction

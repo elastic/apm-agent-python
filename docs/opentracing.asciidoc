@@ -87,7 +87,8 @@ Using other scope managers will lead to unpredictable and possibly app-breaking 
 [[opentracing-instrumentation]]
 ==== Instrumentation
 
-It is recommended to not use the built-in instrumentations of Elastic APM together with third-party OpenTracing instrumentations like https://pypi.org/project/opentracing_instrumentation/[opentracing_instrumentation].
+It is recommended to not use the built-in instrumentations of Elastic APM together with third-party OpenTracing instrumentations
+like https://pypi.org/project/opentracing_instrumentation/[opentracing_instrumentation] in the same service.
 If you would like to use such instrumentations, we recommend to disable the built-in instrumentation using the <<config-instrument,`instrument`>> config option.
 
 [float]

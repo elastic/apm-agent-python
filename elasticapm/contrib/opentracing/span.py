@@ -38,7 +38,9 @@ class OTSpan(OTSpanBase):
 
     def set_tag(self, key, value):
         if self.is_transaction:
-            if key == "result":
+            if key == "type":
+                self.elastic_apm_ref.transaction_type = value
+            elif key == "result":
                 self.elastic_apm_ref.result = value
             elif key == tags.HTTP_STATUS_CODE:
                 self.elastic_apm_ref.result = "HTTP {}xx".format(compat.text_type(value)[0])
