@@ -22,7 +22,7 @@ class TraceParent(object):
         )
 
     def to_string(self):
-        return u"{:02x}-{}-{}-{:02x}".format(self.version, self.trace_id, self.span_id, self.trace_options.asByte)
+        return "{:02x}-{}-{}-{:02x}".format(self.version, self.trace_id, self.span_id, self.trace_options.asByte)
 
     def to_ascii(self):
         return self.to_string().encode("ascii")

@@ -1,6 +1,5 @@
 import pytest
 
-from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 
 
@@ -14,15 +13,15 @@ def test_tracing_options(tracing_bits, expected):
 def test_unknown_header_components_ignored():
     header = "01-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03-xyz"
     trace_parent = TraceParent.from_string(header)
-    assert trace_parent.to_ascii().decode("ascii") == "01-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    assert trace_parent.to_string() == "01-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
 
 
-def test_trace_parent_to_ascii():
+def test_trace_parent_to_str():
     header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
     trace_parent = TraceParent.from_string(header)
-    result = trace_parent.to_ascii()
-    assert isinstance(result, compat.binary_type)
-    assert header.encode("ascii") == result
+    result = trace_parent.to_string()
+    assert isinstance(result, str)
+    assert header == result
 
 
 def test_trace_parent_wrong_version(caplog):
