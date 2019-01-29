@@ -2,8 +2,6 @@ import threading
 
 from elasticapm.context.base import BaseContext
 
-elasticapm_span_var = None
-
 
 class ThreadLocalContext(BaseContext):
     thread_local = threading.local()
