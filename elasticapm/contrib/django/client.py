@@ -98,11 +98,12 @@ class DjangoClient(Client):
     def get_data_from_request(self, request, capture_body=False):
         result = {
             "env": dict(get_environ(request.META)),
-            "headers": dict(get_headers(request.META)),
             "method": request.method,
             "socket": {"remote_address": request.META.get("REMOTE_ADDR"), "encrypted": request.is_secure()},
             "cookies": dict(request.COOKIES),
         }
+        if self.config.capture_headers:
+            result["headers"] = dict(get_headers(request.META))
 
         if request.method in constants.HTTP_WITH_BODY:
             content_type = request.META.get("CONTENT_TYPE")
@@ -141,7 +142,7 @@ class DjangoClient(Client):
     def get_data_from_response(self, response):
         result = {"status_code": response.status_code}
 
-        if hasattr(response, "items"):
+        if self.config.capture_headers and hasattr(response, "items"):
             result["headers"] = dict(response.items())
         return result
 

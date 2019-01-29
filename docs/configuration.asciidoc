@@ -376,6 +376,24 @@ WARNING: request bodies often contain sensitive values like passwords, credit ca
 If your service handles data like this, we advise to only enable this feature with care.
 
 [float]
+[[config-capture-headers]]
+==== `capture_headers`
+
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_CAPTURE_HEADERS` | `CAPTURE_HEADERS` | `true`
+|============
+
+For transactions and errors that happen due to HTTP requests,
+the Python agent can optionally capture the request and response headers.
+
+Possible values: `true`, `false`
+
+WARNING: request headers often contain sensitive values like session IDs, cookies etc.
+See our documentation on <<sanitizing-data, sanitizing data>> for more information on how to
+filter such data.
+
+[float]
 [[config-transaction-max-spans]]
 ==== `transaction_max_spans`
 

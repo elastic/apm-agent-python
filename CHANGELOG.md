@@ -8,6 +8,7 @@
  * Added `transaction.type` to errors (#391)
  * Added parsing of `/proc/self/cgroup` to capture container meta data (#352)
  * Added option to configure logging for Flask using a log level (#344)
+ * Added `capture_headers` config option (#392)
 
 ## v4.0.3
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.2...v4.0.3)

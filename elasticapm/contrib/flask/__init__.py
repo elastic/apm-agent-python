@@ -93,7 +93,9 @@ class ElasticAPM(object):
             exc_info=kwargs.get("exc_info"),
             context={
                 "request": get_data_from_request(
-                    request, capture_body=self.client.config.capture_body in ("errors", "all")
+                    request,
+                    capture_body=self.client.config.capture_body in ("errors", "all"),
+                    capture_headers=self.client.config.capture_headers,
                 )
             },
             custom={"app": self.app},
@@ -168,11 +170,15 @@ class ElasticAPM(object):
             rule = build_name_with_http_method_prefix(rule, request)
             elasticapm.set_context(
                 lambda: get_data_from_request(
-                    request, capture_body=self.client.config.capture_body in ("transactions", "all")
+                    request,
+                    capture_body=self.client.config.capture_body in ("transactions", "all"),
+                    capture_headers=self.client.config.capture_headers,
                 ),
                 "request",
             )
-            elasticapm.set_context(lambda: get_data_from_response(response), "response")
+            elasticapm.set_context(
+                lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
+            )
             if response.status_code:
                 result = "HTTP {}xx".format(response.status_code // 100)
             else:
