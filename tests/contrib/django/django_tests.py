@@ -1358,6 +1358,26 @@ def test_capture_files(client, django_elasticapm_client):
         assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"capture_headers": "true"}, {"capture_headers": "false"}], indirect=True
+)
+def test_capture_headers(client, django_elasticapm_client):
+    with pytest.raises(MyException), override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-raise-exc"), **{"HTTP_SOME_HEADER": "foo"})
+    error = django_elasticapm_client.events[ERROR][0]
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    if django_elasticapm_client.config.capture_headers:
+        assert error["context"]["request"]["headers"]["some-header"] == "foo"
+        assert transaction["context"]["request"]["headers"]["some-header"] == "foo"
+        assert "headers" in transaction["context"]["response"]
+    else:
+        assert "headers" not in error["context"]["request"]
+        assert "headers" not in transaction["context"]["request"]
+        assert "headers" not in transaction["context"]["response"]
+
+
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "transactions"}], indirect=True)
 def test_options_request(client, django_elasticapm_client):
     with override_settings(
