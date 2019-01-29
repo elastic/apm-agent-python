@@ -1,8 +1,8 @@
-from elasticapm.traces import get_transaction
+from elasticapm.traces import execution_context
 
 
 def rum_tracing(request):
-    transaction = get_transaction()
+    transaction = execution_context.get_transaction()
     if transaction and transaction.trace_parent:
         return {
             "apm": {

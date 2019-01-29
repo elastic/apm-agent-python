@@ -19,6 +19,8 @@ include::./flask.asciidoc[Flask support]
 
 include::./metrics.asciidoc[Metrics]
 
+include::./opentracing.asciidoc[OpenTracing]
+
 include::./advanced-topics.asciidoc[Advanced Topics]
 
 include::./api.asciidoc[API documentation]

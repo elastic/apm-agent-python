@@ -18,6 +18,7 @@ FRAMEWORK:
   - celery-4-flask-1.0
   - celery-4-django-1.11
   - celery-4-django-2.0
+  - opentracing-newest
   - twisted-18
   - twisted-17
   - twisted-16

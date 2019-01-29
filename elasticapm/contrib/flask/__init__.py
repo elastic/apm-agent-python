@@ -22,7 +22,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
-from elasticapm.traces import get_transaction
+from elasticapm.traces import execution_context
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 
@@ -144,7 +144,7 @@ class ElasticAPM(object):
             """
             Adds APM related IDs to the context used for correlating the backend transaction with the RUM transaction
             """
-            transaction = get_transaction()
+            transaction = execution_context.get_transaction()
             if transaction and transaction.trace_parent:
                 return {
                     "apm": {

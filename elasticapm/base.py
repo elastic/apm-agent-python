@@ -25,7 +25,7 @@ import elasticapm
 from elasticapm.conf import Config, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
-from elasticapm.traces import Tracer, get_transaction
+from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
@@ -292,7 +292,7 @@ class Client(object):
         """
         Captures, processes and serializes an event into a dict object
         """
-        transaction = get_transaction()
+        transaction = execution_context.get_transaction()
         if transaction:
             transaction_context = deepcopy(transaction.context)
         else:

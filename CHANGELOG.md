@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...master)
 
  * Added support for collecting system and process metrics (#361)
+ * Added an OpenTracing bridge (#388)
  * Added `transaction.sampled` to errors (#371)
  * Added `transaction.type` to errors (#391)
  * Added parsing of `/proc/self/cgroup` to capture container meta data (#352)

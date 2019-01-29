@@ -1,0 +1,2 @@
+opentracing >= 2.0.0
+-r requirements-base.txt
