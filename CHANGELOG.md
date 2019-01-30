@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleaded
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...master)
+
+ * Moved context.url to context.http.url for requests/urllib3 spans (#393, #394)
+
 ## v4.1.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
 
