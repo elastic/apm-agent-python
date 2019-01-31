@@ -68,7 +68,7 @@ Additionally, the instrumentation wraps the following methods of the `Elasticsea
 
 Collected trace data:
 
- * if available, the query string
+ * the query string (if available)
  * if available, the `query` element from the request body
 
 [float]
