@@ -69,7 +69,7 @@ Additionally, the instrumentation wraps the following methods of the `Elasticsea
 Collected trace data:
 
  * the query string (if available)
- * if available, the `query` element from the request body
+ * the `query` element from the request body (if available)
 
 [float]
 [[automatic-instrumentation-db-sqlite]]
