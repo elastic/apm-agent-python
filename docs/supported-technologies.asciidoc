@@ -233,7 +233,7 @@ Collected trace data:
 [[automatic-instrumentation-http]]
 === External HTTP requests
 
-[float[
+[float]
 [[automatic-instrumentation-urllib3]]
 ==== urllib3
 
