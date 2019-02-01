@@ -1412,3 +1412,25 @@ def test_rum_tracing_context_processor(client, django_elasticapm_client):
         assert response.context["apm"]["is_sampled"]
         assert response.context["apm"]["is_sampled_js"] == "true"
         assert callable(response.context["apm"]["span_id"])
+
+
+@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/route/1/")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET route/<int:id>/"
+
+
+@pytest.mark.skipif(django.VERSION >= (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/no-error")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"

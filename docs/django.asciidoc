@@ -115,6 +115,21 @@ ELASTIC_APM['TRANSACTIONS_IGNORE_PATTERNS'] = ['^OPTIONS ', 'views.api.v2']
 This example ignores any requests using the `OPTIONS` method and any requests containing `views.api.v2`.
 
 [float]
+[[django-transaction-name-route]]
+==== Using the route as transaction name
+
+By default, we use the function or class name of the view as the transaction name.
+Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
+If you want to use the route instead of the view name as the transaction name, you can set the <<config-django-transaction-name-from-route,`django_transaction_name_from_route`>> config option to `true`>
+
+[source,python]
+----
+ELASTIC_APM['DJANGO_TRANSACTION_NAME_FROM_ROUTE'] = True
+----
+
+NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
+
+[float]
 [[django-integrating-with-the-rum-agent]]
 ==== Integrating with the RUM agent
 

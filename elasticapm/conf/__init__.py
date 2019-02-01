@@ -252,6 +252,7 @@ class Config(_ConfigBase):
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
+    django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
 
 
 def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):

@@ -35,3 +35,8 @@ urlpatterns = (
 
 if django.VERSION >= (1, 8):
     urlpatterns += (url(r"^render-jinja2-template$", views.render_jinja2_template, name="render-jinja2-template"),)
+
+if django.VERSION >= (2, 2):
+    from django.urls import path
+
+    urlpatterns += (path("route/<int:id>/", views.no_error, name="route-view"),)
