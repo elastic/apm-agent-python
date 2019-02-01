@@ -120,7 +120,7 @@ This example ignores any requests using the `OPTIONS` method and any requests co
 
 By default, we use the function or class name of the view as the transaction name.
 Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
-If you want to use the route instead of the view name as the transaction name, you can set the <<config-django-transaction-name-from-route,`django_transaction_name_from_route`>> config option to `true`>
+If you want to use the route instead of the view name as the transaction name, you can set the <<config-django-transaction-name-from-route,`django_transaction_name_from_route`>> config option to `true`.
 
 [source,python]
 ----
