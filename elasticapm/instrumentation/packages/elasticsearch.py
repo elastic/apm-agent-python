@@ -44,7 +44,7 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
                 # we assume utf8, which is the default
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
             if isinstance(body, dict) and "query" in body:
-                query.append(json.dumps(body["query"]))
+                query.append(json.dumps(body["query"], default=str))
             context["db"]["statement"] = "\n\n".join(query)
         elif api_method == "Elasticsearch.update":
             if isinstance(body, dict) and "script" in body:
