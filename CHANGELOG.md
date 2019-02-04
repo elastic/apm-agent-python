@@ -5,6 +5,7 @@
 
  * Moved context.url to context.http.url for requests/urllib3 spans (#393, #394)
  * Added support for using route as transaction name in Django 2.2+ (#86, #396)
+ * Fixed an issue with custom user models in Django using non-string usernames (#397, #398)
 
 ## v4.1.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
