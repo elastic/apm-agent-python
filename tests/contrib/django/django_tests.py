@@ -212,6 +212,28 @@ def test_user_info_with_custom_user(django_elasticapm_client, client):
         assert "email" not in user_info
 
 
+@pytest.mark.django_db
+def test_user_info_with_custom_user_non_string_username(django_elasticapm_client, client):
+    with override_settings(AUTH_USER_MODEL="testapp.MyIntUser"):
+        from django.contrib.auth import get_user_model
+
+        MyIntUser = get_user_model()
+        user = MyIntUser(my_username=1)
+        user.set_password("admin")
+        user.save()
+        assert client.login(username=1, password="admin")
+        with pytest.raises(Exception):
+            client.get(reverse("elasticapm-raise-exc"))
+
+        assert len(django_elasticapm_client.events) == 1
+        event = django_elasticapm_client.events[ERROR][0]
+        assert "user" in event["context"]
+        user_info = event["context"]["user"]
+        assert "username" in user_info
+        assert isinstance(user_info["username"], compat.text_type)
+        assert user_info["username"] == "1"
+
+
 @pytest.mark.skipif(django.VERSION > (1, 9), reason="MIDDLEWARE_CLASSES removed in Django 2.0")
 def test_user_info_with_non_django_auth(django_elasticapm_client, client):
     with override_settings(

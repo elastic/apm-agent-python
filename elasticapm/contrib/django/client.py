@@ -83,12 +83,12 @@ class DjangoClient(Client):
             if hasattr(user, "id"):
                 user_info["id"] = encoding.keyword_field(user.id)
             if hasattr(user, "get_username"):
-                user_info["username"] = encoding.keyword_field(user.get_username())
+                user_info["username"] = encoding.keyword_field(encoding.force_text(user.get_username()))
             elif hasattr(user, "username"):
-                user_info["username"] = encoding.keyword_field(user.username)
+                user_info["username"] = encoding.keyword_field(encoding.force_text(user.username))
 
             if hasattr(user, "email"):
-                user_info["email"] = user.email
+                user_info["email"] = encoding.force_text(user.email)
         except DatabaseError:
             # If the connection is closed or similar, we'll just skip this
             return {}
