@@ -140,4 +140,4 @@ def starmatch_to_regex(pattern):
             res.append(".*")
         else:
             res.append(re.escape(c))
-    return re.compile(r"(?is:%s)\Z" % "".join(res))
+    return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)
