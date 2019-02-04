@@ -163,7 +163,9 @@ class Client(object):
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
-        self._metrics = MetricsRegistry(self.config.metrics_interval / 1000.0, self.queue)
+        self._metrics = MetricsRegistry(
+            self.config.metrics_interval / 1000.0, self.queue, ignore_patterns=self.config.disable_metrics
+        )
         for path in self.config.metrics_sets:
             self._metrics.register(path)
         compat.atexit_register(self.close)
@@ -233,6 +235,8 @@ class Client(object):
         return transaction
 
     def close(self):
+        if self._metrics:
+            self._metrics._stop_collect_timer()
         self._transport.close()
 
     def get_service_info(self):

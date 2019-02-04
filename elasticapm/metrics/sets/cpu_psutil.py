@@ -37,11 +37,11 @@ except ImportError:
 
 
 class CPUMetricSet(MetricsSet):
-    def __init__(self):
+    def __init__(self, registry):
         psutil.cpu_percent(interval=None)
         self._process = psutil.Process()
         self._process.cpu_percent(interval=None)
-        super(CPUMetricSet, self).__init__()
+        super(CPUMetricSet, self).__init__(registry)
 
     def collect(self):
         self.gauge("system.cpu.total.norm.pct").val = psutil.cpu_percent(interval=None) / 100.0

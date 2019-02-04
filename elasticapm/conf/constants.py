@@ -42,3 +42,4 @@ HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
 ERROR = "error"
 TRANSACTION = "transaction"
 SPAN = "span"
+METRICSET = "metricset"
