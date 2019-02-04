@@ -587,6 +587,25 @@ NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python
 
 
 [float]
+[[config-django-specific]]
+=== Django-specific configuration
+
+[float]
+[[config-django-transaction-name-from-route]]
+==== `django_transaction_name_from_route`
+|============
+| Environment                                       | Django                               | Default
+| `ELASTIC_APM_DJANGO_TRANSACTION_NAME_FROM_ROUTE`  | `DJANGO_TRANSACTION_NAME_FROM_ROUTE` | `False`
+|============
+
+
+By default, we use the function or class name of the view as the transaction name.
+Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
+If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
+
+NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
+
+[float]
 [[config-formats]]
 === Configuration formats
 

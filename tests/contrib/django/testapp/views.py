@@ -8,6 +8,7 @@ from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 
 import elasticapm
+from elasticapm.utils import compat
 
 
 class MyException(Exception):
@@ -18,8 +19,8 @@ class IgnoredException(Exception):
     skip_elasticapm = True
 
 
-def no_error(request):
-    resp = HttpResponse("")
+def no_error(request, id=None):
+    resp = HttpResponse(compat.text_type(id))
     resp["My-Header"] = "foo"
     return resp
 
