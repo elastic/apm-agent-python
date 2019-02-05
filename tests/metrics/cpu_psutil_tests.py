@@ -32,6 +32,7 @@ import time
 
 import pytest
 
+from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.utils import compat
 
 cpu_psutil = pytest.importorskip("elasticapm.metrics.sets.cpu_psutil")
@@ -39,7 +40,7 @@ pytestmark = pytest.mark.psutil
 
 
 def test_cpu_mem_from_psutil():
-    metricset = cpu_psutil.CPUMetricSet()
+    metricset = cpu_psutil.CPUMetricSet(MetricsRegistry(0, lambda x: None))
     # do something that generates some CPU load
     for i in compat.irange(10 ** 6):
         j = i * i
@@ -61,8 +62,8 @@ cpu_linux = pytest.importorskip("elasticapm.metrics.sets.cpu_linux")
 
 
 def test_compare_psutil_linux_metricsets():
-    psutil_metricset = cpu_psutil.CPUMetricSet()
-    linux_metricset = cpu_linux.CPUMetricSet()
+    psutil_metricset = cpu_psutil.CPUMetricSet(MetricsRegistry(0, lambda x: None))
+    linux_metricset = cpu_linux.CPUMetricSet(MetricsRegistry(0, lambda x: None))
     # do something that generates some CPU load
     for i in compat.irange(10 ** 6):
         j = i * i

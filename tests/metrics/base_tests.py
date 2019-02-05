@@ -73,7 +73,7 @@ def test_disable_metrics(elasticapm_client):
 
 
 def test_metrics_counter():
-    metricset = MetricsSet()
+    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
     metricset.counter("x").inc()
     data = metricset.collect()
     assert data["samples"]["x"]["value"] == 1
@@ -89,7 +89,7 @@ def test_metrics_counter():
 
 
 def test_metrics_multithreaded():
-    metricset = MetricsSet()
+    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
     pool = Pool(5)
 
     def target():
