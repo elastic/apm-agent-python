@@ -145,6 +145,18 @@ class ExcludeRangeValidator(object):
         return value
 
 
+class FileIsReadableValidator(object):
+    def __call__(self, value, field_name):
+        value = os.path.normpath(value)
+        if not os.path.exists(value):
+            raise ConfigurationError("{} does not exist".format(value), field_name)
+        elif not os.path.isfile(value):
+            raise ConfigurationError("{} is not a file".format(value), field_name)
+        elif not os.access(value):
+            raise ConfigurationError("{} is not accessible".format(value), field_name)
+        return value
+
+
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
@@ -188,6 +200,7 @@ class Config(_ConfigBase):
     secret_token = _ConfigValue("SECRET_TOKEN")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
+    server_cert = _ConfigValue("SERVER_CERT", default=None, required=False, validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())

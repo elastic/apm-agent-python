@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import hashlib
 import logging
 import os
 import ssl
@@ -9,7 +10,7 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http_base import AsyncHTTPTransportBase, HTTPTransportBase
-from elasticapm.utils import compat
+from elasticapm.utils import compat, read_pem_file
 
 logger = logging.getLogger("elasticapm.transport.http")
 
@@ -18,7 +19,12 @@ class Transport(HTTPTransportBase):
     def __init__(self, url, **kwargs):
         super(Transport, self).__init__(url, **kwargs)
         pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": certifi.where(), "block": True}
-        if not self._verify_server_cert:
+        if self._server_cert:
+            pool_kwargs.update(
+                {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
+            )
+            del pool_kwargs["ca_certs"]
+        elif not self._verify_server_cert:
             pool_kwargs["cert_reqs"] = ssl.CERT_NONE
             pool_kwargs["assert_hostname"] = False
         proxy_url = os.environ.get("HTTPS_PROXY", os.environ.get("HTTP_PROXY"))
@@ -65,6 +71,16 @@ class Transport(HTTPTransportBase):
         finally:
             if response:
                 response.close()
+
+    @property
+    def cert_fingerprint(self):
+        if self._server_cert:
+            with open(self._server_cert, "rb") as f:
+                cert_data = read_pem_file(f)
+            digest = hashlib.sha256()
+            digest.update(cert_data)
+            return digest.hexdigest()
+        return None
 
 
 class AsyncTransport(AsyncHTTPTransportBase, Transport):

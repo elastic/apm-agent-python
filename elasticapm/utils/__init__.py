@@ -8,6 +8,7 @@ Large portions are
 :copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
+import base64
 import os
 from functools import partial
 
@@ -95,3 +96,14 @@ def get_url_dict(url):
     if query:
         url_dict["search"] = encoding.keyword_field("?" + query)
     return url_dict
+
+
+def read_pem_file(file_obj):
+    cert = b""
+    for line in file_obj:
+        if line.startswith(b"-----BEGIN CERTIFICATE-----"):
+            break
+    for line in file_obj:
+        if not line.startswith(b"-----END CERTIFICATE-----"):
+            cert += line.strip()
+    return base64.b64decode(cert)
