@@ -19,14 +19,14 @@ from elasticapm.utils import cgroup, compat
             "1:name=systemd:/kubepods/besteffort/pode9b90526-f47d-11e8-b2a5-080027b9f4fb/15aa6e53-b09a-40c7-8558-c6c31e36c88a",
             {
                 "container": {"id": "15aa6e53-b09a-40c7-8558-c6c31e36c88a"},
-                "pod": {"uid": "e9b90526-f47d-11e8-b2a5-080027b9f4fb"},
+                "kubernetes": {"pod": {"uid": "e9b90526-f47d-11e8-b2a5-080027b9f4fb"}},
             },
         ),
         (
             "1:name=systemd:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod90d81341_92de_11e7_8cf2_507b9d4141fa.slice/crio-2227daf62df6694645fee5df53c1f91271546a9560e8600a525690ae252b7f63.scope",
             {
                 "container": {"id": "2227daf62df6694645fee5df53c1f91271546a9560e8600a525690ae252b7f63"},
-                "pod": {"uid": "90d81341_92de_11e7_8cf2_507b9d4141fa"},
+                "kubernetes": {"pod": {"uid": "90d81341_92de_11e7_8cf2_507b9d4141fa"}},
             },
         ),
     ],
