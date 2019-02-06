@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@axis-tests') _
+@Library('apm@v1.0.6') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
@@ -25,6 +25,9 @@ pipeline {
     ansiColor('xterm')
     disableResume()
     durabilityHint('PERFORMANCE_OPTIMIZED')
+  }
+  triggers {
+    issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tav\\W+tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
