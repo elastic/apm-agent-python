@@ -119,11 +119,19 @@ def test_ssl_cert_pinning(waiting_httpsserver):
 
 
 def test_ssl_cert_pinning_fails(waiting_httpsserver):
-    waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+    if compat.PY3:
+        waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+        url = waiting_httpsserver.url
+    else:
+        # if we use the local test server here, execution blocks somewhere deep in OpenSSL on Python 2.7, presumably
+        # due to a threading issue that has been fixed in later versions. To avoid that, we have to commit a minor
+        # cardinal sin here and do an outside request to https://example.com (which will also fail the fingerprint
+        # assertion).
+        #
+        # May the Testing Goat have mercy on our souls.
+        url = "https://example.com"
     transport = Transport(
-        waiting_httpsserver.url,
-        server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"),
-        verify_server_cert=True,
+        url, server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"), verify_server_cert=True
     )
     with pytest.raises(TransportException) as exc_info:
         transport.send(compat.b("x"))
