@@ -1,6 +1,6 @@
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import DroppedSpan, capture_span, get_transaction
+from elasticapm.traces import DroppedSpan, capture_span, execution_context
 from elasticapm.utils import default_ports
 from elasticapm.utils.disttracing import TracingOptions
 
@@ -41,9 +41,9 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
         signature = method.upper() + " " + host
 
         url = instance.scheme + "://" + host + url
-        transaction = get_transaction()
+        transaction = execution_context.get_transaction()
 
-        with capture_span(signature, "ext.http.urllib3", {"url": url}, leaf=True) as span:
+        with capture_span(signature, "ext.http.urllib3", {"http": {"url": url}}, leaf=True) as span:
             # if urllib3 has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span
             while isinstance(leaf_span, DroppedSpan):
@@ -56,7 +56,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
                 trace_parent = transaction.trace_parent.copy_from(
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
-                headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
+                headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
             return wrapped(*args, **kwargs)
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
@@ -69,5 +69,5 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
             if headers is None:
                 headers = {}
                 kwargs["headers"] = headers
-            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_ascii()
+            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
         return args, kwargs

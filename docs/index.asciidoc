@@ -13,11 +13,15 @@ include::./getting-started.asciidoc[Getting Started]
 
 include::./configuration.asciidoc[Configuration]
 
+include::./supported-technologies.asciidoc[Supported Technologies]
+
 include::./django.asciidoc[Django support]
 
 include::./flask.asciidoc[Flask support]
 
 include::./metrics.asciidoc[Metrics]
+
+include::./opentracing.asciidoc[OpenTracing]
 
 include::./advanced-topics.asciidoc[Advanced Topics]
 

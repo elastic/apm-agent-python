@@ -83,12 +83,12 @@ class DjangoClient(Client):
             if hasattr(user, "id"):
                 user_info["id"] = encoding.keyword_field(user.id)
             if hasattr(user, "get_username"):
-                user_info["username"] = encoding.keyword_field(user.get_username())
+                user_info["username"] = encoding.keyword_field(encoding.force_text(user.get_username()))
             elif hasattr(user, "username"):
-                user_info["username"] = encoding.keyword_field(user.username)
+                user_info["username"] = encoding.keyword_field(encoding.force_text(user.username))
 
             if hasattr(user, "email"):
-                user_info["email"] = user.email
+                user_info["email"] = encoding.force_text(user.email)
         except DatabaseError:
             # If the connection is closed or similar, we'll just skip this
             return {}
@@ -98,11 +98,12 @@ class DjangoClient(Client):
     def get_data_from_request(self, request, capture_body=False):
         result = {
             "env": dict(get_environ(request.META)),
-            "headers": dict(get_headers(request.META)),
             "method": request.method,
             "socket": {"remote_address": request.META.get("REMOTE_ADDR"), "encrypted": request.is_secure()},
             "cookies": dict(request.COOKIES),
         }
+        if self.config.capture_headers:
+            result["headers"] = dict(get_headers(request.META))
 
         if request.method in constants.HTTP_WITH_BODY:
             content_type = request.META.get("CONTENT_TYPE")
@@ -141,7 +142,7 @@ class DjangoClient(Client):
     def get_data_from_response(self, response):
         result = {"status_code": response.status_code}
 
-        if hasattr(response, "items"):
+        if self.config.capture_headers and hasattr(response, "items"):
             result["headers"] = dict(response.items())
         return result
 

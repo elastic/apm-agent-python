@@ -648,6 +648,7 @@ def test_transaction_data_is_attached_to_errors(elasticapm_client):
     assert "transaction_id" not in errors[0]
     assert errors[1]["transaction_id"] == transaction.id
     assert errors[1]["transaction"]["sampled"]
+    assert errors[1]["transaction"]["type"] == "test"
     assert "transaction_id" not in errors[2]
 
 

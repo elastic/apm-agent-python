@@ -95,4 +95,17 @@ There are four settings you can modify to control this behavior:
 
 As you can see, these settings are divided between app frames, which represent your application code, and library frames, which represent the code of your dependencies. Each of these categories are also split into separate error and span settings. 
 
-Reading source files inside a running application can cause a lot of disk I/O, and sending up source lines for each frame will have a network and storage cost that is quite high. Turning down these limits will help prevent excessive memory usage. 
+Reading source files inside a running application can cause a lot of disk I/O, and sending up source lines for each frame will have a network and storage cost that is quite high. Turning down these limits will help prevent excessive memory usage.
+
+[float]
+[[tuning-body-headers]]
+=== Collecting headers and request body
+
+You can configure the Elastic APM agent to capture headers of both requests and responses (<<config-capture-headers,`capture_headers`>>),
+as well as request bodies (<<config-capture-body,`capture_body`>>).
+By default, capturing request bodies is disabled.
+Enabling it for transactions may introduce noticeable overhead, as well as increased storage use, depending on the nature of your POST requests.
+In most scenarios, we advise against enabling request body capturing for transactions, and only enable it if necessary for errors.
+
+Capturing request/response headers has less overhead on the agent, but can have an impact on storage use.
+If storage use is a problem for you, it might be worth disabling.

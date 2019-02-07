@@ -24,7 +24,7 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert spans[0]["name"].startswith("GET 127.0.0.1:")
-    assert url == spans[0]["context"]["url"]
+    assert url == spans[0]["context"]["http"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
@@ -47,7 +47,7 @@ def test_requests_instrumentation_via_session(instrument, elasticapm_client, wai
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert spans[0]["name"].startswith("GET 127.0.0.1:")
-    assert url == spans[0]["context"]["url"]
+    assert url == spans[0]["context"]["http"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
@@ -72,7 +72,7 @@ def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_cl
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert spans[0]["name"].startswith("GET 127.0.0.1:")
-    assert url == spans[0]["context"]["url"]
+    assert url == spans[0]["context"]["http"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])

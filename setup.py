@@ -148,7 +148,12 @@ setup_kwargs = dict(
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
-    extras_require={"tests": tests_require, "flask": ["blinker"], "asyncio": ["aiohttp"]},
+    extras_require={
+        "tests": tests_require,
+        "flask": ["blinker"],
+        "asyncio": ["aiohttp"],
+        "opentracing": ["opentracing>=2.0.0"],
+    },
     cmdclass={"test": PyTest},
     test_suite="tests",
     include_package_data=True,
