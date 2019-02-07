@@ -59,7 +59,7 @@ pipeline {
         /**
         Build the project from code..
         */
-        stage('Build') {
+        stage('Lint') {
           steps {
             deleteDir()
             unstash 'source'
