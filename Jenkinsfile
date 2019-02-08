@@ -240,9 +240,9 @@ def runScript(Map params = [:]){
   log(level: 'INFO', text: "${label}")
   env.HOME = "${env.WORKSPACE}"
   env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${WORKSPACE}/.pip"
+  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
   deleteDir()
-  sh "mkdir ${PIP_CACHE}"
+  sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
   dir("${BASE_DIR}"){
     retry(2){
