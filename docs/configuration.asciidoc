@@ -376,6 +376,24 @@ WARNING: request bodies often contain sensitive values like passwords, credit ca
 If your service handles data like this, we advise to only enable this feature with care.
 
 [float]
+[[config-capture-headers]]
+==== `capture_headers`
+
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_CAPTURE_HEADERS` | `CAPTURE_HEADERS` | `true`
+|============
+
+For transactions and errors that happen due to HTTP requests,
+the Python agent can optionally capture the request and response headers.
+
+Possible values: `true`, `false`
+
+WARNING: request headers often contain sensitive values like session IDs, cookies etc.
+See our documentation on <<sanitizing-data, sanitizing data>> for more information on how to
+filter such data.
+
+[float]
 [[config-transaction-max-spans]]
 ==== `transaction_max_spans`
 
@@ -567,6 +585,25 @@ Verification can be disabled by changing this setting to `False`.
 
 NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python 3.4.3+.
 
+
+[float]
+[[config-django-specific]]
+=== Django-specific configuration
+
+[float]
+[[config-django-transaction-name-from-route]]
+==== `django_transaction_name_from_route`
+|============
+| Environment                                       | Django                               | Default
+| `ELASTIC_APM_DJANGO_TRANSACTION_NAME_FROM_ROUTE`  | `DJANGO_TRANSACTION_NAME_FROM_ROUTE` | `False`
+|============
+
+
+By default, we use the function or class name of the view as the transaction name.
+Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
+If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
+
+NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
 [float]
 [[config-formats]]

@@ -7,7 +7,7 @@ from mock import Mock
 
 import elasticapm
 from elasticapm.conf.constants import SPAN, TRANSACTION
-from elasticapm.traces import Tracer, capture_span, get_transaction
+from elasticapm.traces import Tracer, capture_span, execution_context
 
 
 @pytest.fixture()
@@ -174,25 +174,26 @@ def test_leaf_tracing(tracer):
 def test_get_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
-    assert t == get_transaction()
+    assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
-    assert t == get_transaction(clear=True)
-    assert get_transaction() is None
+    assert t == execution_context.get_transaction(clear=True)
+    assert execution_context.get_transaction() is None
 
 
 def test_tag_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
-    t = requests_store.begin_transaction("test")
+    transaction = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
+    transaction.tag(baz="bazzinga")
     requests_store.end_transaction(200, "test")
 
-    assert t.tags == {"foo": "bar"}
-    transaction_dict = t.to_dict()
-    assert transaction_dict["context"]["tags"] == {"foo": "bar"}
+    assert transaction.tags == {"foo": "bar", "baz": "bazzinga"}
+    transaction_dict = transaction.to_dict()
+    assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
 
 
 def test_tag_while_no_transaction(caplog):
@@ -328,8 +329,8 @@ def test_transaction_without_name_result(elasticapm_client):
 
 def test_span_tagging(elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}):
-        pass
+    with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:
+        span.tag(lorem="ipsum")
     elasticapm_client.end_transaction("test", "OK")
     span = elasticapm_client.events[SPAN][0]
-    assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga"}
+    assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga", "lorem": "ipsum"}

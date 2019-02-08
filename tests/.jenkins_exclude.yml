@@ -5,9 +5,13 @@ exclude:
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-2.1
   - PYTHON_VERSION: python-2.7
+    FRAMEWORK: django-2.2
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-2.1
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: django-2.2
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.7
@@ -16,6 +20,8 @@ exclude:
     FRAMEWORK: django-2.0
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-2.1
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: django-2.2
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-master
   # Flask
@@ -112,3 +118,6 @@ exclude:
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: boto3-1.0
+  # opentracing
+  - PYTHON_VERSION: python-3.3
+    FRAMEWORK: opentracing-newest

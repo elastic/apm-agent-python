@@ -22,9 +22,9 @@ TAG_RE = re.compile('[.*"]')
 
 
 try:
-    from elasticapm.context.contextvars import get_transaction, set_transaction, get_span, set_span
+    from elasticapm.context.contextvars import execution_context
 except ImportError:
-    from elasticapm.context.threadlocal import get_transaction, set_transaction, get_span, set_span
+    from elasticapm.context.threadlocal import execution_context
 
 
 class Transaction(object):
@@ -38,7 +38,6 @@ class Transaction(object):
         self.transaction_type = transaction_type
         self._tracer = tracer
 
-        self.spans = []
         self.dropped_spans = 0
         self.context = {}
         self.tags = {}
@@ -49,8 +48,8 @@ class Transaction(object):
     def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
-    def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
-        parent_span = get_span()
+    def _begin_span(self, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
+        parent_span = execution_context.get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
@@ -59,19 +58,39 @@ class Transaction(object):
             span = DroppedSpan(parent_span)
             self._span_counter += 1
         else:
-            span = Span(transaction=self, name=name, span_type=span_type, context=context, leaf=leaf, tags=tags)
+            span = Span(
+                transaction=self,
+                name=name,
+                span_type=span_type or "code.custom",
+                context=context,
+                leaf=leaf,
+                tags=tags,
+                parent_span_id=parent_span_id,
+            )
             span.frames = tracer.frames_collector_func()
             span.parent = parent_span
             self._span_counter += 1
-        set_span(span)
+        execution_context.set_span(span)
         return span
 
-    def end_span(self, skip_frames):
-        span = get_span()
+    def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
+        """
+        Begin a new span
+        :param name: name of the span
+        :param span_type: type of the span
+        :param context: a context dict
+        :param leaf: True if this is a leaf span
+        :param tags: a flat string/string dict of tags
+        :return: the Span object
+        """
+        return self._begin_span(name, span_type, context=context, leaf=leaf, tags=tags, parent_span_id=None)
+
+    def end_span(self, skip_frames=0):
+        span = execution_context.get_span()
         if span is None:
             raise LookupError()
         if isinstance(span, DroppedSpan):
-            set_span(span.parent)
+            execution_context.set_span(span.parent)
             return
 
         span.duration = _time_func() - span.start_time
@@ -80,8 +99,7 @@ class Transaction(object):
             span.frames = self._tracer.frames_processing_func(span.frames)[skip_frames:]
         else:
             span.frames = None
-        self.spans.append(span)
-        set_span(span.parent)
+        execution_context.set_span(span.parent)
         self._tracer.queue_func(SPAN, span.to_dict())
         return span
 
@@ -95,6 +113,17 @@ class Transaction(object):
             self.trace_parent.span_id = "%016x" % random.getrandbits(64)
             logger.debug("Set parent id to generated %s", self.trace_parent.span_id)
         return self.trace_parent.span_id
+
+    def tag(self, **tags):
+        """
+        Tag this transaction with one or multiple key/value tags. Both the values should be strings
+
+            transaction_obj.tag(key1="value1", key2="value2")
+
+        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
+        """
+        for key in tags.keys():
+            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
     def to_dict(self):
         self.context["tags"] = self.tags
@@ -131,11 +160,12 @@ class Span(object):
         "start_time",
         "duration",
         "parent",
+        "parent_span_id",
         "frames",
         "tags",
     )
 
-    def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None):
+    def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
         """
         Create a new Span
 
@@ -145,6 +175,7 @@ class Span(object):
         :param context: context dictionary
         :param leaf: is this span a leaf span?
         :param tags: a dict of tags
+        :param parent_span_id: override of the span ID
         """
         self.start_time = _time_func()
         self.id = "%016x" % random.getrandbits(64)
@@ -160,20 +191,30 @@ class Span(object):
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         self.duration = None
         self.parent = None
+        self.parent_span_id = parent_span_id
         self.frames = None
-        self.tags = tags
-        if self.tags:
-            for key in list(self.tags.keys()):
-                self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(
-                    compat.text_type(self.tags.pop(key))
-                )
+        self.tags = {}
+        if tags:
+            self.tag(**tags)
+
+    def tag(self, **tags):
+        """
+        Tag this span with one or multiple key/value tags. Both the values should be strings
+
+            span_obj.tag(key1="value1", key2="value2")
+
+        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
+        """
+        for key in tags.keys():
+            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
     def to_dict(self):
         result = {
             "id": self.id,
             "transaction_id": self.transaction.id,
             "trace_id": self.transaction.trace_parent.trace_id,
-            "parent_id": self.parent.id if self.parent else self.transaction.id,
+            # use either the explicitly set parent_span_id, or the id of the parent, or finally the transaction id
+            "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
@@ -239,7 +280,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
-        set_transaction(transaction)
+        execution_context.set_transaction(transaction)
         return transaction
 
     def _should_ignore(self, transaction_name):
@@ -249,7 +290,7 @@ class Tracer(object):
         return False
 
     def end_transaction(self, result=None, transaction_name=None):
-        transaction = get_transaction(clear=True)
+        transaction = execution_context.get_transaction(clear=True)
         if transaction:
             transaction.end_transaction()
             if transaction.name is None:
@@ -282,12 +323,12 @@ class capture_span(object):
         return decorated
 
     def __enter__(self):
-        transaction = get_transaction()
+        transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf, tags=self.tags)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        transaction = get_transaction()
+        transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             try:
                 transaction.end_span(self.skip_frames)
@@ -299,18 +340,15 @@ def tag(**tags):
     """
     Tags current transaction. Both key and value of the tag should be strings.
     """
-    transaction = get_transaction()
-    for name, value in tags.items():
-        if not transaction:
-            error_logger.warning("Ignored tag %s. No transaction currently active.", name)
-            return
-        # replace invalid characters for Elasticsearch field names with underscores
-        name = TAG_RE.sub("_", compat.text_type(name))
-        transaction.tags[compat.text_type(name)] = encoding.keyword_field(compat.text_type(value))
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        error_logger.warning("Ignored tags %s. No transaction currently active.", ", ".join(tags.keys()))
+    else:
+        transaction.tag(**tags)
 
 
 def set_transaction_name(name, override=True):
-    transaction = get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         return
     if transaction.name is None or override:
@@ -318,7 +356,7 @@ def set_transaction_name(name, override=True):
 
 
 def set_transaction_result(result, override=True):
-    transaction = get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         return
     if transaction.result is None or override:
@@ -326,7 +364,7 @@ def set_transaction_result(result, override=True):
 
 
 def set_context(data, key="custom"):
-    transaction = get_transaction()
+    transaction = execution_context.get_transaction()
     if not transaction:
         return
     if callable(data) and transaction.is_sampled:

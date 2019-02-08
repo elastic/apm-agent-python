@@ -5,9 +5,10 @@ import time
 
 from django.contrib.auth.models import User
 from django.http import HttpResponse, StreamingHttpResponse
-from django.shortcuts import get_object_or_404, render, render_to_response
+from django.shortcuts import get_object_or_404, render
 
 import elasticapm
+from elasticapm.utils import compat
 
 
 class MyException(Exception):
@@ -18,8 +19,8 @@ class IgnoredException(Exception):
     skip_elasticapm = True
 
 
-def no_error(request):
-    resp = HttpResponse("")
+def no_error(request, id=None):
+    resp = HttpResponse(compat.text_type(id))
     resp["My-Header"] = "foo"
     return resp
 
@@ -45,7 +46,7 @@ def decorated_raise_exc(request):
 
 
 def template_exc(request):
-    return render_to_response("error.html")
+    return render(request, "error.html")
 
 
 def ignored_exception(request):

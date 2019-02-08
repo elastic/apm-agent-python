@@ -146,8 +146,12 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             return response
         try:
             if hasattr(response, "status_code"):
-                if getattr(request, "_elasticapm_view_func", False):
+                transaction_name = None
+                if self.client.config.django_transaction_name_from_route and hasattr(request.resolver_match, "route"):
+                    transaction_name = request.resolver_match.route
+                elif getattr(request, "_elasticapm_view_func", False):
                     transaction_name = get_name_from_func(request._elasticapm_view_func)
+                if transaction_name:
                     transaction_name = build_name_with_http_method_prefix(transaction_name, request)
                     elasticapm.set_transaction_name(transaction_name, override=False)
 

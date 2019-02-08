@@ -212,6 +212,28 @@ def test_user_info_with_custom_user(django_elasticapm_client, client):
         assert "email" not in user_info
 
 
+@pytest.mark.django_db
+def test_user_info_with_custom_user_non_string_username(django_elasticapm_client, client):
+    with override_settings(AUTH_USER_MODEL="testapp.MyIntUser"):
+        from django.contrib.auth import get_user_model
+
+        MyIntUser = get_user_model()
+        user = MyIntUser(my_username=1)
+        user.set_password("admin")
+        user.save()
+        assert client.login(username=1, password="admin")
+        with pytest.raises(Exception):
+            client.get(reverse("elasticapm-raise-exc"))
+
+        assert len(django_elasticapm_client.events) == 1
+        event = django_elasticapm_client.events[ERROR][0]
+        assert "user" in event["context"]
+        user_info = event["context"]["user"]
+        assert "username" in user_info
+        assert isinstance(user_info["username"], compat.text_type)
+        assert user_info["username"] == "1"
+
+
 @pytest.mark.skipif(django.VERSION > (1, 9), reason="MIDDLEWARE_CLASSES removed in Django 2.0")
 def test_user_info_with_non_django_auth(django_elasticapm_client, client):
     with override_settings(
@@ -548,6 +570,19 @@ def test_post_raw_data(django_elasticapm_client):
         assert request["body"] == compat.b("foobar")
     else:
         assert request["body"] == "[REDACTED]"
+
+
+def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
+    request = rf.post("/test", data="{}", content_type="application/json")
+
+    def read():
+        raise IOError("foobar")
+
+    request.read = read
+    with caplog.at_level(logging.DEBUG):
+        django_elasticapm_client.get_data_from_request(request, capture_body=True)
+    record = caplog.records[0]
+    assert record.message == "Can't capture request body: foobar"
 
 
 @pytest.mark.skipif(django.VERSION < (1, 9), reason="get-raw-uri-not-available")
@@ -1345,6 +1380,26 @@ def test_capture_files(client, django_elasticapm_client):
         assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"capture_headers": "true"}, {"capture_headers": "false"}], indirect=True
+)
+def test_capture_headers(client, django_elasticapm_client):
+    with pytest.raises(MyException), override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-raise-exc"), **{"HTTP_SOME_HEADER": "foo"})
+    error = django_elasticapm_client.events[ERROR][0]
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    if django_elasticapm_client.config.capture_headers:
+        assert error["context"]["request"]["headers"]["some-header"] == "foo"
+        assert transaction["context"]["request"]["headers"]["some-header"] == "foo"
+        assert "headers" in transaction["context"]["response"]
+    else:
+        assert "headers" not in error["context"]["request"]
+        assert "headers" not in transaction["context"]["request"]
+        assert "headers" not in transaction["context"]["response"]
+
+
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "transactions"}], indirect=True)
 def test_options_request(client, django_elasticapm_client):
     with override_settings(
@@ -1379,3 +1434,25 @@ def test_rum_tracing_context_processor(client, django_elasticapm_client):
         assert response.context["apm"]["is_sampled"]
         assert response.context["apm"]["is_sampled_js"] == "true"
         assert callable(response.context["apm"]["span_id"])
+
+
+@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/route/1/")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET route/<int:id>/"
+
+
+@pytest.mark.skipif(django.VERSION >= (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/no-error")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"

@@ -1,12 +1,23 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...master)
+## Unreleaded
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...master)
+
+ * Moved context.url to context.http.url for requests/urllib3 spans (#393, #394)
+ * Added support for using route as transaction name in Django 2.2+ (#86, #396)
+ * Fixed an issue with custom user models in Django using non-string usernames (#397, #398)
+ * Fixed an issue with sending kubernetes metadata to the API (#401, #402)
+
+## v4.1.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
 
  * Added support for collecting system and process metrics (#361)
+ * Added an OpenTracing bridge (#388)
  * Added `transaction.sampled` to errors (#371)
+ * Added `transaction.type` to errors (#391)
  * Added parsing of `/proc/self/cgroup` to capture container meta data (#352)
  * Added option to configure logging for Flask using a log level (#344)
+ * Added `capture_headers` config option (#392)
 
 ## v4.0.3
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.2...v4.0.3)
