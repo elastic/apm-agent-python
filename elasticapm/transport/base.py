@@ -6,8 +6,7 @@ import timeit
 from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import json_encoder
-from elasticapm.utils.compat import BytesIO
+from elasticapm.utils import compat, json_encoder
 
 logger = logging.getLogger("elasticapm.transport")
 
@@ -82,13 +81,12 @@ class Transport(object):
             )
             self.flush()
         elif not self._flush_timer:
-            with self._queue_lock:
-                self._start_flush_timer()
+            self._start_flush_timer()
 
     @property
     def queued_data(self):
         if self._queued_data is None:
-            self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
+            self._queued_data = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
             data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
             self._queued_data.write(data)
         return self._queued_data
@@ -100,28 +98,28 @@ class Transport(object):
         :param start_flush_timer: set to True if the flush timer thread should be restarted at the end of the flush
         :return: None
         """
+        self._stop_flush_timer()
         with self._queue_lock:
-            self._stop_flush_timer()
             queued_data, self._queued_data = self._queued_data, None
-            if queued_data and not self.state.should_try():
-                logger.error("dropping flushed data due to transport failure back-off")
-            elif queued_data:
-                fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
-                queued_data.close()
+        if queued_data and not self.state.should_try():
+            logger.error("dropping flushed data due to transport failure back-off")
+        elif queued_data:
+            fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
+            queued_data.close()
 
-                # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
-                data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
-                if hasattr(self, "send_async") and not sync:
-                    self.send_async(data)
-                else:
-                    try:
-                        self.send(data)
-                        self.handle_transport_success()
-                    except Exception as e:
-                        self.handle_transport_fail(e)
-            self._last_flush = timeit.default_timer()
-            if start_flush_timer:
-                self._start_flush_timer()
+            # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
+            data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
+            if hasattr(self, "send_async") and not sync:
+                self.send_async(data)
+            else:
+                try:
+                    self.send(data)
+                    self.handle_transport_success()
+                except Exception as e:
+                    self.handle_transport_fail(e)
+        self._last_flush = timeit.default_timer()
+        if start_flush_timer:
+            self._start_flush_timer()
 
     def send(self, data):
         """
