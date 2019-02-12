@@ -26,6 +26,6 @@ dest_dir="$html_dir/${name}"
 mkdir -p "$dest_dir"
 params="--chunk=1"
 if [ "$PREVIEW" = "1" ]; then
-  params="--chunk=1 -open chunk=1 -open"
+  params="--chunk=1 --open"
 fi
-$docs_dir/build_docs.pl $params --doc "$index" -out "$dest_dir"
+$docs_dir/build_docs $params --doc "$index" --out "$dest_dir"
