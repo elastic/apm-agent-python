@@ -6,8 +6,7 @@ import timeit
 from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import json_encoder
-from elasticapm.utils.compat import BytesIO
+from elasticapm.utils import compat, json_encoder
 
 logger = logging.getLogger("elasticapm.transport")
 
@@ -54,74 +53,93 @@ class Transport(object):
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
-        self._queue_lock = threading.Lock()
+        self._event_queue = compat.queue.Queue(maxsize=100)
+        self._event_process_thread = threading.Thread(
+            target=self._process_queue, name="eapm event processor", daemon=True
+        )
         self._last_flush = timeit.default_timer()
-        self._flush_timer = None
         self._counts = defaultdict(int)
+        self._closed = False
 
     def queue(self, event_type, data, flush=False):
-        with self._queue_lock:
-            queued_data = self.queued_data
-            queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
-            self._counts[event_type] += 1
+        if not self._event_process_thread.is_alive() and not self._closed:
+            self._event_process_thread.start()
+        try:
+            self._event_queue.put_nowait((event_type, data, flush))
+        except compat.queue.Full:
+            logger.warning("Event of type %s dropped due to full event queue", event_type)
+
+    def _process_queue(self):
+        while True:
             since_last_flush = timeit.default_timer() - self._last_flush
+            # take max flush time into account to calculate timeout
+            timeout = max(0, self._max_flush_time - since_last_flush) if self._max_flush_time else None
+            timed_out = False
+            try:
+                event_type, data, flush = self._event_queue.get(block=True, timeout=timeout)
+            except compat.queue.Empty:
+                event_type, data, flush = None, None, None
+                timed_out = True
+
+            if event_type == "close":
+                self.flush(sync=True)
+                return  # time to go home!
+
+            queued_data = self.queued_data
+            if data is not None:
+                queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
+                self._counts[event_type] += 1
+
             queue_size = 0 if queued_data.fileobj is None else queued_data.fileobj.tell()
-        if flush:
-            logger.debug("forced flush")
-            self.flush()
-        elif self._max_flush_time and since_last_flush > self._max_flush_time:
-            logger.debug(
-                "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
-                since_last_flush,
-                self._max_flush_time,
-            )
-            self.flush()
-        elif self._max_buffer_size and queue_size > self._max_buffer_size:
-            logger.debug(
-                "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
-            )
-            self.flush()
-        elif not self._flush_timer:
-            with self._queue_lock:
-                self._start_flush_timer()
+
+            if flush:
+                logger.debug("forced flush")
+                self.flush()
+            elif timed_out or timeout == 0:
+                logger.debug(
+                    "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
+                    since_last_flush,
+                    self._max_flush_time,
+                )
+                self.flush()
+            elif self._max_buffer_size and queue_size > self._max_buffer_size:
+                logger.debug(
+                    "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
+                )
+                self.flush()
 
     @property
     def queued_data(self):
         if self._queued_data is None:
-            self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
+            self._queued_data = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
             data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
             self._queued_data.write(data)
         return self._queued_data
 
-    def flush(self, sync=False, start_flush_timer=True):
+    def flush(self, sync=False):
         """
         Flush the queue
         :param sync: if true, flushes the queue synchronously in the current thread
-        :param start_flush_timer: set to True if the flush timer thread should be restarted at the end of the flush
         :return: None
         """
-        with self._queue_lock:
-            self._stop_flush_timer()
-            queued_data, self._queued_data = self._queued_data, None
-            if queued_data and not self.state.should_try():
-                logger.error("dropping flushed data due to transport failure back-off")
-            elif queued_data:
-                fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
-                queued_data.close()
+        queued_data, self._queued_data = self._queued_data, None
+        if queued_data and not self.state.should_try():
+            logger.error("dropping flushed data due to transport failure back-off")
+        elif queued_data:
+            fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
+            queued_data.close()
 
-                # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
-                data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
-                if hasattr(self, "send_async") and not sync:
-                    self.send_async(data)
-                else:
-                    try:
-                        self.send(data)
-                        self.handle_transport_success()
-                    except Exception as e:
-                        self.handle_transport_fail(e)
-            self._last_flush = timeit.default_timer()
-            if start_flush_timer:
-                self._start_flush_timer()
+            # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
+            data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
+            if hasattr(self, "send_async") and not sync:
+                self.send_async(data)
+            else:
+                try:
+                    self.send(data)
+                    self.handle_transport_success()
+                except Exception as e:
+                    self.handle_transport_fail(e)
+        self._last_flush = timeit.default_timer()
 
     def send(self, data):
         """
@@ -135,7 +153,10 @@ class Transport(object):
         Cleans up resources and closes connection
         :return:
         """
-        self.flush(sync=True, start_flush_timer=False)
+        self._closed = True
+        self.queue("close", None)
+        if self._event_process_thread.is_alive():
+            self._event_process_thread.join()
 
     def handle_transport_success(self, **kwargs):
         """
@@ -150,19 +171,6 @@ class Transport(object):
         message = str(exception)
         logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
         self.state.set_fail()
-
-    def _start_flush_timer(self, timeout=None):
-        timeout = timeout or self._max_flush_time
-        self._flush_timer = threading.Timer(timeout, self.flush)
-        self._flush_timer.name = "elasticapm flush timer"
-        self._flush_timer.daemon = True
-        logger.debug("Starting flush timer")
-        self._flush_timer.start()
-
-    def _stop_flush_timer(self):
-        if self._flush_timer:
-            logger.debug("Cancelling flush timer")
-            self._flush_timer.cancel()
 
 
 class AsyncTransport(Transport):
