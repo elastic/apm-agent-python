@@ -54,9 +54,8 @@ class Transport(object):
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
         self._event_queue = compat.queue.Queue(maxsize=100)
-        self._event_process_thread = threading.Thread(
-            target=self._process_queue, name="eapm event processor", daemon=True
-        )
+        self._event_process_thread = threading.Thread(target=self._process_queue, name="eapm event processor")
+        self._event_process_thread.daemon = True
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._closed = False
