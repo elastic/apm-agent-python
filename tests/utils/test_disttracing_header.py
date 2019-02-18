@@ -1,6 +1,7 @@
 import pytest
 
 from elasticapm.utils.disttracing import TraceParent
+from tests.utils import assert_any_record_contains
 
 
 @pytest.mark.parametrize("tracing_bits,expected", [("00", {"recorded": 0}), ("01", {"recorded": 1})])
@@ -28,9 +29,8 @@ def test_trace_parent_wrong_version(caplog):
     header = "xx-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
     with caplog.at_level("DEBUG", "elasticapm.utils"):
         trace_parent = TraceParent.from_string(header)
-    record = caplog.records[0]
     assert trace_parent is None
-    assert record.message == "Invalid version field, value xx"
+    assert_any_record_contains(caplog.records, "Invalid version field, value xx")
 
 
 def test_trace_parent_wrong_version_255(caplog):
@@ -38,24 +38,21 @@ def test_trace_parent_wrong_version_255(caplog):
     header = "ff-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
     with caplog.at_level("DEBUG", "elasticapm.utils"):
         trace_parent = TraceParent.from_string(header)
-    record = caplog.records[0]
     assert trace_parent is None
-    assert record.message == "Invalid version field, value 255"
+    assert_any_record_contains(caplog.records, "Invalid version field, value 255")
 
 
 def test_trace_parent_wrong_trace_options_field(caplog):
     header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-xx"
     with caplog.at_level("DEBUG", "elasticapm.utils"):
         trace_parent = TraceParent.from_string(header)
-    record = caplog.records[0]
     assert trace_parent is None
-    assert record.message == "Invalid trace-options field, value xx"
+    assert_any_record_contains(caplog.records, "Invalid trace-options field, value xx")
 
 
 def test_trace_parent_wrong_format(caplog):
     header = "00"
     with caplog.at_level("DEBUG", "elasticapm.utils"):
         trace_parent = TraceParent.from_string(header)
-    record = caplog.records[0]
     assert trace_parent is None
-    assert record.message == "Invalid traceparent header format, value 00"
+    assert_any_record_contains(caplog.records, "Invalid traceparent header format, value 00")

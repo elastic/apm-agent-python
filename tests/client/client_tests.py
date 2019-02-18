@@ -15,6 +15,7 @@ from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTI
 from elasticapm.utils import compat, encoding
 from elasticapm.utils.disttracing import TraceParent
 from tests.fixtures import DummyTransport
+from tests.utils import assert_any_record_contains
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"environment": "production"}], indirect=True)
@@ -187,10 +188,9 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
     sending_elasticapm_client._transport.flush()
-    time.sleep(0.1)  # wait for event processor thread
+    time.sleep(0.2)  # wait for event processor thread
     assert sending_elasticapm_client._transport.state.did_fail()
-    record = caplog.records[0]
-    assert "go away" in record.message
+    assert_any_record_contains(caplog.records, "go away")
 
     # test recovery
     sending_elasticapm_client.httpserver.code = 202
