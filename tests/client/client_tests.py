@@ -433,9 +433,9 @@ def test_call_end_twice(elasticapm_client):
     elasticapm_client.end_transaction("test-transaction", 200)
 
 
-@mock.patch("elasticapm.transport.base.Transport.queue")
+@mock.patch("elasticapm.transport.base.Transport.send")
 @mock.patch("elasticapm.base.is_master_process")
-def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_queue):
+def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_send):
     # when in the master process, the client should not flush the
     # HTTP transport
     is_master_process.return_value = True
@@ -443,8 +443,8 @@ def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_queu
         server_url="http://example.com", service_name="app_name", secret_token="secret", metrics_interval="0ms"
     )
     client.queue("x", {}, flush=True)
-    assert mock_queue.call_count == 1
-    assert mock_queue.call_args[0] == ("x", {}, False)
+    assert mock_send.call_count == 1
+    assert mock_send.call_args[0] == ("x", {}, False)
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"verify_server_cert": False}], indirect=True)
@@ -849,21 +849,21 @@ def test_message_keyword_truncation(sending_elasticapm_client):
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
-@mock.patch("elasticapm.transport.base.Transport.queue")
-def test_config_error_stops_error_send(mock_queue, sending_elasticapm_client):
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_config_error_stops_error_send(mock_send, sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send is True
     sending_elasticapm_client.capture_message("bla", handled=False)
-    assert mock_queue.call_count == 0
+    assert mock_send.call_count == 0
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
-@mock.patch("elasticapm.transport.base.Transport.queue")
-def test_config_error_stops_transaction_send(mock_queue, sending_elasticapm_client):
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_config_error_stops_transaction_send(mock_send, sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send is True
     sending_elasticapm_client.begin_transaction("test")
     sending_elasticapm_client.end_transaction("test", "OK")
     sending_elasticapm_client.close()
-    assert mock_queue.call_count == 0
+    assert mock_send.call_count == 0
 
 
 def test_trace_parent(elasticapm_client):

@@ -878,7 +878,7 @@ def test_filter_no_match(django_sending_elasticapm_client):
         raise ValueError("foo")
     except ValueError:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
@@ -892,7 +892,7 @@ def test_filter_matches_type(django_sending_elasticapm_client):
         raise KeyError("foo")
     except KeyError:
         django_sending_elasticapm_client.capture("Exception")
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
 
@@ -908,7 +908,7 @@ def test_filter_matches_type_but_not_module(django_sending_elasticapm_client):
         raise FakeException("foo")
     except FakeException:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
@@ -924,7 +924,7 @@ def test_filter_matches_type_and_module(django_sending_elasticapm_client):
         raise FakeException("foo")
     except FakeException:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
 
@@ -940,8 +940,8 @@ def test_filter_matches_module_only(django_sending_elasticapm_client):
         raise OtherFakeException("foo")
     except OtherFakeException:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
-        assert len(django_sending_elasticapm_client.httpserver.requests) == 1
+    django_sending_elasticapm_client.close()
+    assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
 def test_django_logging_request_kwarg(django_elasticapm_client):
@@ -1343,6 +1343,7 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
         client.post(
             reverse("elasticapm-raise-exc"), json.dumps({"a": "b"}), content_type="application/json; charset=utf8"
         )
+    django_sending_elasticapm_client.close()
     error = django_sending_elasticapm_client.httpserver.payloads[0][1]["error"]
     if django_sending_elasticapm_client.config.capture_body in ("errors", "all"):
         assert error["context"]["request"]["body"] == '{"a": "b"}'
