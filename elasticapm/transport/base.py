@@ -34,6 +34,7 @@ class Transport(object):
         json_serializer=json_encoder.dumps,
         max_flush_time=None,
         max_buffer_size=None,
+        start_event_processor=True,
         **kwargs
     ):
         """
@@ -59,6 +60,8 @@ class Transport(object):
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._closed = False
+        if start_event_processor:
+            self._event_process_thread.start()
 
     def queue(self, event_type, data, flush=False):
         if not self._event_process_thread.is_alive() and not self._closed:
@@ -81,7 +84,7 @@ class Transport(object):
                 timed_out = True
 
             if event_type == "close":
-                self.flush(sync=True)
+                self._flush(sync=True)
                 return  # time to go home!
 
             queued_data = self.queued_data
@@ -92,20 +95,23 @@ class Transport(object):
             queue_size = 0 if queued_data.fileobj is None else queued_data.fileobj.tell()
 
             if flush:
-                logger.debug("forced flush")
-                self.flush()
+                logger.debug("forced _flush")
+                self._flush()
             elif timed_out or timeout == 0:
+                # update last flush time, as we might have waited for a non trivial amount of time in
+                # _event_queue.get()
+                since_last_flush = timeit.default_timer() - self._last_flush
                 logger.debug(
-                    "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
+                    "flushing due to time since last _flush %.3fs > max_flush_time %.3fs",
                     since_last_flush,
                     self._max_flush_time,
                 )
-                self.flush()
+                self._flush()
             elif self._max_buffer_size and queue_size > self._max_buffer_size:
                 logger.debug(
                     "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
                 )
-                self.flush()
+                self._flush()
 
     @property
     def queued_data(self):
@@ -115,9 +121,9 @@ class Transport(object):
             self._queued_data.write(data)
         return self._queued_data
 
-    def flush(self, sync=False):
+    def _flush(self, sync=False):
         """
-        Flush the queue
+        Flush the queue. This method should only be called from the event processing queue
         :param sync: if true, flushes the queue synchronously in the current thread
         :return: None
         """
@@ -156,6 +162,14 @@ class Transport(object):
         self.queue("close", None)
         if self._event_process_thread.is_alive():
             self._event_process_thread.join()
+
+    def flush(self):
+        """
+        Trigger a flush of the queue.
+        Note: the flush happens asynchronously in a background thread, which means that the queue won't be immediately
+        in a flushed state after calling this method.
+        """
+        self.queue(None, None, flush=True)
 
     def handle_transport_success(self, **kwargs):
         """

@@ -55,7 +55,7 @@ def test_transport_state_set_success():
 def test_empty_queue_flush_is_not_sent(mock_send):
     transport = Transport(metadata={"x": "y"}, max_flush_time=5)
     try:
-        transport.flush()
+        transport._flush()
         assert mock_send.call_count == 0
     finally:
         transport.close()
@@ -78,7 +78,7 @@ def test_metadata_prepended(mock_send):
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_flush_time(mock_send, caplog):
-    transport = Transport(metadata={}, max_flush_time=5)
+    transport = Transport(metadata={}, max_flush_time=5, start_event_processor=False)
     transport._last_flush = timeit.default_timer() - 5.1
     with caplog.at_level("DEBUG", "elasticapm.transport"):
         transport.queue("error", {})
@@ -89,7 +89,7 @@ def test_flush_time(mock_send, caplog):
     assert transport._queued_data is None
 
 
-@mock.patch("elasticapm.transport.base.Transport.flush")
+@mock.patch("elasticapm.transport.base.Transport._flush")
 def test_flush_time_size(mock_flush, caplog):
     transport = Transport(metadata={}, max_buffer_size=100)
     with caplog.at_level("DEBUG", "elasticapm.transport"):

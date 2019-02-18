@@ -186,6 +186,8 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     # test error
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
+    sending_elasticapm_client._transport.flush()
+    time.sleep(0.1)  # wait for event processor thread
     assert sending_elasticapm_client._transport.state.did_fail()
     record = caplog.records[0]
     assert "go away" in record.message
@@ -193,6 +195,7 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     # test recovery
     sending_elasticapm_client.httpserver.code = 202
     sending_elasticapm_client.capture_message("bar", handled=False)
+    sending_elasticapm_client.close()
     assert not sending_elasticapm_client._transport.state.did_fail()
 
 
@@ -212,6 +215,8 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     http_send.side_effect = ValueError("oopsie")
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
+    client._transport.flush()
+    time.sleep(0.1)  # wait for event processor thread
     record = caplog.records[0]
     assert client._transport.state.did_fail()
     assert "oopsie" in record.message
@@ -219,6 +224,7 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     # test recovery
     http_send.side_effect = None
     client.capture_message("foo", handled=False)
+    client.close()
     assert not client._transport.state.did_fail()
     client.close()
 
@@ -237,7 +243,8 @@ def test_send_remote_failover_async(should_try, sending_elasticapm_client, caplo
     # test error
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
-        sending_elasticapm_client.close()
+        sending_elasticapm_client._transport.flush()
+        time.sleep(0.1)  # give event processor thread some time to do its thing
     assert sending_elasticapm_client._transport.state.did_fail()
     assert "400" in caplog.records[0].message
 
@@ -819,6 +826,7 @@ def test_error_keyword_truncation(sending_elasticapm_client):
         raise WayTooLongException()
     except WayTooLongException:
         sending_elasticapm_client.capture_exception(handled=False)
+    sending_elasticapm_client.close()
     error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["exception"]["type"] == expected.upper()
@@ -831,7 +839,7 @@ def test_message_keyword_truncation(sending_elasticapm_client):
     sending_elasticapm_client.capture_message(
         param_message={"message": too_long, "params": []}, logger_name=too_long, handled=False
     )
-
+    sending_elasticapm_client.close()
     error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["log"]["param_message"] == expected
