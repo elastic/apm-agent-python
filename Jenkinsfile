@@ -220,7 +220,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 1)
           } catch(e){
             saveResult(x, y, 0)
-            error("${label} tests failed : ${e}\n")
+            error("${label} tests failed : ${e.toString()}\n")
           } finally {
             steps.junit(allowEmptyResults: false,
               keepLongStdio: true,
