@@ -6,7 +6,7 @@ import timeit
 from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import compat, json_encoder
+from elasticapm.utils import compat, is_master_process, json_encoder
 
 logger = logging.getLogger("elasticapm.transport")
 
@@ -34,7 +34,6 @@ class Transport(object):
         json_serializer=json_encoder.dumps,
         max_flush_time=None,
         max_buffer_size=None,
-        start_event_processor=True,
         **kwargs
     ):
         """
@@ -60,12 +59,14 @@ class Transport(object):
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._closed = False
-        if start_event_processor:
+        # only start the event processing thread if we are not in a uwsgi master process
+        if not is_master_process():
             self._event_process_thread.start()
+        else:
+            # if we _are_ in a uwsgi master process, use the postfork mixup to start the thread after the fork
+            compat.postfork(lambda: self._event_process_thread.start())
 
     def queue(self, event_type, data, flush=False):
-        if not self._event_process_thread.is_alive() and not self._closed:
-            self._event_process_thread.start()
         try:
             self._event_queue.put_nowait((event_type, data, flush))
         except compat.queue.Full:
@@ -145,6 +146,13 @@ class Transport(object):
                 except Exception as e:
                     self.handle_transport_fail(e)
         self._last_flush = timeit.default_timer()
+
+    def _start_event_processor(self):
+        if not self._event_process_thread.is_alive() and not self._closed:
+            try:
+                self._event_process_thread.start()
+            except RuntimeError:
+                pass
 
     def send(self, data):
         """
