@@ -478,8 +478,13 @@ def test_response_error_id_middleware(django_elasticapm_client, client):
 
 def test_get_client(django_elasticapm_client):
     with mock.patch.dict("os.environ", {"ELASTIC_APM_METRICS_INTERVAL": "0ms"}):
-        assert get_client() is get_client()
-        assert get_client("elasticapm.base.Client").__class__ == Client
+        client2 = get_client("elasticapm.base.Client")
+        try:
+            assert get_client() is get_client()
+            assert client2.__class__ == Client
+        finally:
+            get_client().close()
+            client2.close()
 
 
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)

@@ -6,6 +6,7 @@ import pytest
 from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.utils.stacks import iter_stack_frames
+from tests.fixtures import TempStoreClient
 
 
 @pytest.fixture()
@@ -182,7 +183,9 @@ def test_invalid_first_arg_type():
 
 
 def test_logger_setup():
-    handler = LoggingHandler(server_url="foo", service_name="bar", secret_token="baz", metrics_interval="0ms")
+    handler = LoggingHandler(
+        server_url="foo", service_name="bar", secret_token="baz", metrics_interval="0ms", client_cls=TempStoreClient
+    )
     client = handler.client
     assert client.config.server_url == "foo"
     assert client.config.service_name == "bar"

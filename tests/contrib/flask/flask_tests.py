@@ -222,6 +222,7 @@ def test_framework_name(flask_app):
     assert elasticapm.client.config.framework_name == "flask"
     app_info = elasticapm.client.get_service_info()
     assert app_info["framework"]["name"] == "flask"
+    elasticapm.client.close()
 
 
 @pytest.mark.parametrize(

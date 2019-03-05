@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from elasticapm.contrib.pylons import ElasticAPM
+from tests.fixtures import TempStoreClient
 
 
 def example_app(environ, start_response):
@@ -14,7 +15,7 @@ def test_init():
         "elasticapm.secret_token": "a" * 32,
         "elasticapm.metrics_interval": "0ms",
     }
-    middleware = ElasticAPM(example_app, config)
+    middleware = ElasticAPM(example_app, config, client_cls=TempStoreClient)
     assert middleware.client.config.server_url == "http://localhost/api/store"
     assert middleware.client.config.service_name == "p" * 32
     assert middleware.client.config.secret_token == "a" * 32

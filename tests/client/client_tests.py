@@ -16,7 +16,7 @@ from elasticapm.base import Client
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding
 from elasticapm.utils.disttracing import TraceParent
-from tests.fixtures import DummyTransport
+from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
 
 
@@ -72,7 +72,7 @@ def test_docker_kubernetes_system_info(elasticapm_client):
 )
 def test_docker_kubernetes_system_info_from_environ():
     # initialize agent only after overriding environment
-    elasticapm_client = Client(metrics_interval="0ms")
+    elasticapm_client = TempStoreClient(metrics_interval="0ms")
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata:
         mock_metadata.return_value = {}
@@ -96,7 +96,7 @@ def test_docker_kubernetes_system_info_from_environ():
 )
 def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
     # initialize agent only after overriding environment
-    elasticapm_client = Client(metrics_interval="0ms")
+    elasticapm_client = TempStoreClient(metrics_interval="0ms")
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
         "socket.gethostname"
@@ -116,7 +116,7 @@ def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
 @mock.patch.dict("os.environ", {"KUBERNETES_NAMESPACE": "namespace"})
 def test_docker_kubernetes_system_info_except_hostname_from_environ():
     # initialize agent only after overriding environment
-    elasticapm_client = Client(metrics_interval="0ms")
+    elasticapm_client = TempStoreClient(metrics_interval="0ms")
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
         "socket.gethostname"
@@ -130,12 +130,12 @@ def test_docker_kubernetes_system_info_except_hostname_from_environ():
 
 def test_config_by_environment():
     with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "envapp", "ELASTIC_APM_SECRET_TOKEN": "envtoken"}):
-        client = Client(metrics_interval="0ms")
+        client = TempStoreClient(metrics_interval="0ms")
         assert client.config.service_name == "envapp"
         assert client.config.secret_token == "envtoken"
         assert client.config.disable_send is False
     with mock.patch.dict("os.environ", {"ELASTIC_APM_DISABLE_SEND": "true"}):
-        client = Client(metrics_interval="0ms")
+        client = TempStoreClient(metrics_interval="0ms")
         assert client.config.disable_send is True
     client.close()
 
@@ -156,7 +156,7 @@ def test_config_non_string_types():
         def __repr__(self):
             return repr(self.content)
 
-    client = Client(
+    client = TempStoreClient(
         server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"), metrics_interval="0ms"
     )
     assert isinstance(client.config.secret_token, compat.string_types)
@@ -190,7 +190,6 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
     sending_elasticapm_client._transport.flush()
-    time.sleep(0.2)  # wait for event processor thread
     assert sending_elasticapm_client._transport.state.did_fail()
     assert_any_record_contains(caplog.records, "go away")
 
@@ -218,7 +217,6 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
     client._transport.flush()
-    time.sleep(0.1)  # wait for event processor thread
     record = caplog.records[0]
     assert client._transport.state.did_fail()
     assert "oopsie" in record.message
@@ -435,20 +433,6 @@ def test_call_end_twice(elasticapm_client):
     elasticapm_client.end_transaction("test-transaction", 200)
 
 
-@mock.patch("elasticapm.transport.base.Transport.send")
-@mock.patch("elasticapm.base.is_master_process")
-def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_send):
-    # when in the master process, the client should not flush the
-    # HTTP transport
-    is_master_process.return_value = True
-    client = Client(
-        server_url="http://example.com", service_name="app_name", secret_token="secret", metrics_interval="0ms"
-    )
-    client.queue("x", {}, flush=True)
-    assert mock_send.call_count == 1
-    assert mock_send.call_args[0] == ("x", {}, False)
-
-
 @pytest.mark.parametrize("elasticapm_client", [{"verify_server_cert": False}], indirect=True)
 def test_client_disables_ssl_verification(elasticapm_client):
     assert not elasticapm_client.config.verify_server_cert
@@ -498,11 +482,12 @@ def test_invalid_service_name_disables_send(elasticapm_client):
 
 
 def test_empty_transport_disables_send():
-    client = Client(service_name="x", transport_class=None, metrics_interval="0ms")
+    client = TempStoreClient(service_name="x", transport_class=None, metrics_interval="0ms")
     assert len(client.config.errors) == 1
     assert "TRANSPORT_CLASS" in client.config.errors
 
     assert client.config.disable_send
+    client.close()
 
 
 @pytest.mark.parametrize(

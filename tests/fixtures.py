@@ -169,12 +169,16 @@ def sending_elasticapm_client(request, validating_httpserver):
 
 class DummyTransport(HTTPTransportBase):
     def __init__(self, url, **kwargs):
-        kwargs.setdefault("start_event_processor", False)
         super(DummyTransport, self).__init__(url, **kwargs)
         self.events = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
+        self._flushed.clear()
         self.events[event_type].append(data)
+        self._flushed.set()
+
+    def _start_event_processor(self):
+        pass
 
 
 class TempStoreClient(Client):
