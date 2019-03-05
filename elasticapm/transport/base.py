@@ -2,6 +2,7 @@
 import gzip
 import logging
 import threading
+import time
 import timeit
 from collections import defaultdict
 
@@ -34,6 +35,8 @@ class Transport(object):
         json_serializer=json_encoder.dumps,
         max_flush_time=None,
         max_buffer_size=None,
+        queue_chill_count=500,
+        queue_chill_time=1.0,
         **kwargs
     ):
         """
@@ -53,7 +56,7 @@ class Transport(object):
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
-        self._event_queue = compat.queue.Queue(maxsize=10000)
+        self._event_queue = ChilledQueue(maxsize=10000, chill_until=queue_chill_count, max_chill_time=queue_chill_time)
         self._event_process_thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
         self._event_process_thread.daemon = True
         self._last_flush = timeit.default_timer()
@@ -62,15 +65,15 @@ class Transport(object):
         self._closed = False
         # only start the event processing thread if we are not in a uwsgi master process
         if not is_master_process():
-            self._event_process_thread.start()
+            self._start_event_processor()
         else:
             # if we _are_ in a uwsgi master process, use the postfork mixup to start the thread after the fork
-            compat.postfork(lambda: self._event_process_thread.start())
+            compat.postfork(lambda: self._start_event_processor())
 
     def queue(self, event_type, data, flush=False):
         try:
             self._flushed.clear()
-            self._event_queue.put_nowait((event_type, data, flush))
+            self._event_queue.put((event_type, data, flush), block=False, chill=not (event_type == "close" or flush))
         except compat.queue.Full:
             logger.warning("Event of type %s dropped due to full event queue", event_type)
 
@@ -131,6 +134,7 @@ class Transport(object):
                 self._last_flush = timeit.default_timer()
                 buffer = init_buffer()
                 buffer_written = False
+                self._flushed.set()
 
     def _flush(self, buffer):
         """
@@ -151,8 +155,6 @@ class Transport(object):
                 self.handle_transport_success()
             except Exception as e:
                 self.handle_transport_fail(e)
-            finally:
-                self._flushed.set()
 
     def _start_event_processor(self):
         if not self._event_process_thread.is_alive() and not self._closed:
@@ -264,3 +266,53 @@ class TransportState(object):
 
     def did_fail(self):
         return self.status == self.ERROR
+
+
+class ChilledQueue(compat.queue.Queue):
+    """
+    A queue subclass that is a bit more chill about how often it notifies the not empty event
+    """
+
+    def __init__(self, maxsize=0, chill_until=100, max_chill_time=1.0):
+        self._chill_until = chill_until
+        self._max_chill_time = max_chill_time
+        self._last_unchill = time.time()
+        super(ChilledQueue, self).__init__(maxsize=maxsize)
+
+    def put(self, item, block=True, timeout=None, chill=True):
+        """Put an item into the queue.
+
+        If optional args 'block' is true and 'timeout' is None (the default),
+        block if necessary until a free slot is available. If 'timeout' is
+        a non-negative number, it blocks at most 'timeout' seconds and raises
+        the Full exception if no free slot was available within that time.
+        Otherwise ('block' is false), put an item on the queue if a free slot
+        is immediately available, else raise the Full exception ('timeout'
+        is ignored in that case).
+        """
+        with self.not_full:
+            if self.maxsize > 0:
+                if not block:
+                    if self._qsize() >= self.maxsize:
+                        raise compat.queue.Full
+                elif timeout is None:
+                    while self._qsize() >= self.maxsize:
+                        self.not_full.wait()
+                elif timeout < 0:
+                    raise ValueError("'timeout' must be a non-negative number")
+                else:
+                    endtime = time.time() + timeout
+                    while self._qsize() >= self.maxsize:
+                        remaining = endtime - time.time()
+                        if remaining <= 0.0:
+                            raise compat.queue.Full
+                        self.not_full.wait(remaining)
+            self._put(item)
+            self.unfinished_tasks += 1
+            if (
+                not chill
+                or self._qsize() > self._chill_until
+                or (time.time() - self._last_unchill) > self._max_chill_time
+            ):
+                self.not_empty.notify()
+                self._last_unchill = time.time()
