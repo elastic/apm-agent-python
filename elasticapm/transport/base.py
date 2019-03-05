@@ -268,9 +268,12 @@ class TransportState(object):
         return self.status == self.ERROR
 
 
-class ChilledQueue(compat.queue.Queue):
+class ChilledQueue(compat.queue.Queue, object):
     """
     A queue subclass that is a bit more chill about how often it notifies the not empty event
+
+    Note: we inherit from object because queue.Queue is an old-style class in Python 2. This can
+    be removed once we stop support for Python 2
     """
 
     def __init__(self, maxsize=0, chill_until=100, max_chill_time=1.0):
