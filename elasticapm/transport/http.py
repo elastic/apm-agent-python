@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import socket
 import ssl
+import sys
 
 import certifi
 import urllib3
+from urllib3.connection import HTTPConnection
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.transport.base import TransportException
@@ -22,6 +25,20 @@ class Transport(HTTPTransportBase):
             pool_kwargs["cert_reqs"] = ssl.CERT_NONE
             pool_kwargs["assert_hostname"] = False
         proxy_url = os.environ.get("HTTPS_PROXY", os.environ.get("HTTP_PROXY"))
+        if sys.platform.startswith("linux"):
+            pool_kwargs["socket_options"] = HTTPConnection.default_socket_options + [
+                (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+                (socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1),
+                (socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 3),
+                (socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3),
+            ]
+        elif sys.platform == "darwin":
+            TCP_KEEPALIVE = 0x10
+            pool_kwargs["socket_options"] = HTTPConnection.default_socket_options + [
+                (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+                (socket.IPPROTO_TCP, TCP_KEEPALIVE, 3),
+            ]
+        # TODO: Windows, BSDs?
         if proxy_url:
             self.http = urllib3.ProxyManager(proxy_url, **pool_kwargs)
         else:
