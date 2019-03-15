@@ -54,7 +54,7 @@ def test_metrics_multithreaded():
     assert metricset.counter("x").val == expected
 
 
-@mock.patch("elasticapm.metrics.base_metrics.MetricsRegistry._start_collect_timer")
+@mock.patch("elasticapm.base.MetricsRegistry._start_collect_timer")
 @mock.patch("elasticapm.metrics.base_metrics.is_master_process")
 def test_client_doesnt_start_collector_thread_in_master_process(is_master_process, mock_start_collect_timer):
     # when in the master process, the client should not start worker threads
