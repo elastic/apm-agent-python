@@ -94,7 +94,7 @@ def test_flush_time_size(mock_flush, caplog):
     transport = Transport(metadata={}, max_buffer_size=100, queue_chill_count=1)
     with caplog.at_level("DEBUG", "elasticapm.transport"):
         # we need to add lots of uncompressible data to fill up the gzip-internal buffer
-        for i in range(9):
+        for i in range(12):
             transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
         transport._flushed.wait(timeout=0.1)
     assert mock_flush.call_count == 1
