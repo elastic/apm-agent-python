@@ -45,7 +45,7 @@ class LoggingHandler(logging.Handler):
         self.format(record)
 
         # Avoid typical config issues by overriding loggers behavior
-        if record.name.startswith("elasticapm.errors"):
+        if record.name.startswith(("elasticapm.errors",)):
             sys.stderr.write(to_unicode(record.message) + "\n")
             return
 
