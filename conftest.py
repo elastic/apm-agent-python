@@ -99,7 +99,10 @@ def pytest_configure(config):
                     },
                 }
             ],
-            ELASTIC_APM={"METRICS_INTERVAL": "0ms"},  # avoid autostarting the metrics collector thread
+            ELASTIC_APM={
+                "METRICS_INTERVAL": "0ms",
+                "TRANSPORT_CLASS": "tests.fixtures.DummyTransport",
+            },  # avoid autostarting the metrics collector thread
         )
         settings_dict.update(
             **middleware_setting(

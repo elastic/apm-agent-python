@@ -1,6 +1,7 @@
 import gzip
 import random
 import string
+import time
 import timeit
 
 import mock
@@ -8,6 +9,7 @@ import pytest
 
 from elasticapm.transport.base import AsyncTransport, Transport, TransportException, TransportState
 from elasticapm.utils import compat
+from tests.fixtures import DummyTransport, TempStoreClient
 
 
 def test_transport_state_should_try_online():
@@ -53,14 +55,18 @@ def test_transport_state_set_success():
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_empty_queue_flush_is_not_sent(mock_send):
     transport = Transport(metadata={"x": "y"}, max_flush_time=5)
-    transport.flush()
-    assert mock_send.call_count == 0
+    try:
+        transport.flush()
+        assert mock_send.call_count == 0
+    finally:
+        transport.close()
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_metadata_prepended(mock_send):
     transport = Transport(metadata={"x": "y"}, max_flush_time=5, compress_level=0)
     transport.queue("error", {}, flush=True)
+    transport.close()
     assert mock_send.call_count == 1
     args, kwargs = mock_send.call_args
     if compat.PY2:
@@ -73,95 +79,88 @@ def test_metadata_prepended(mock_send):
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_flush_time(mock_send, caplog):
-    transport = Transport(metadata={}, max_flush_time=5)
-    transport._last_flush = timeit.default_timer() - 5.1
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport.queue("error", {})
+        transport = Transport(metadata={}, max_flush_time=0.1)
+        # let first run finish
+        time.sleep(0.2)
+        transport.close()
     record = caplog.records[0]
-    assert "5.1" in record.message
-    assert mock_send.call_count == 1
-    assert transport._queued_data is None
+    assert "0.1" in record.message
+    assert mock_send.call_count == 0
 
 
-@mock.patch("elasticapm.transport.base.Transport.send")
-def test_flush_time_size(mock_send, caplog):
+@mock.patch("elasticapm.transport.base.Transport._flush")
+def test_flush_time_size(mock_flush, caplog):
+    transport = Transport(metadata={}, max_buffer_size=100, queue_chill_count=1)
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(metadata={}, max_buffer_size=100)
         # we need to add lots of uncompressible data to fill up the gzip-internal buffer
-        for i in range(9):
+        for i in range(12):
             transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
-    record = caplog.records[1]
-    assert "queue size" in record.message
-    assert mock_send.call_count == 1
-    assert transport._queued_data is None
+        transport._flushed.wait(timeout=0.1)
+    assert mock_flush.call_count == 1
+    transport.close()
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_forced_flush(mock_send, caplog):
+    transport = Transport(metadata={}, max_buffer_size=1000, compress_level=0)
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(metadata={}, max_buffer_size=1000, compress_level=0)
         transport.queue("error", "x", flush=True)
-    record = caplog.records[0]
-    assert "forced" in record.message
+    transport.close()
     assert mock_send.call_count == 1
     assert transport._queued_data is None
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_sync_transport_fail_and_recover(mock_send, caplog):
-    mock_send.side_effect = TransportException("meh")
     transport = Transport()
-    transport.queue("x", {}, flush=True)
-    assert transport.state.did_fail()
-    # first retry should be allowed immediately
-    assert transport.state.should_try()
+    try:
+        mock_send.side_effect = TransportException("meh")
+        transport.queue("x", {})
+        transport.flush()
+        assert transport.state.did_fail()
+        # first retry should be allowed immediately
+        assert transport.state.should_try()
 
-    # recover
-    mock_send.side_effect = None
-    transport.queue("x", {}, flush=True)
-    assert not transport.state.did_fail()
-
-
-@mock.patch("elasticapm.transport.base.Transport.send")
-def test_sync_transport_fail_and_recover(mock_send, caplog):
-    mock_send.side_effect = TransportException("meh")
-    transport = AsyncTransport()
-    transport.queue("x", {}, flush=True)
-    transport.worker._timed_queue_join(1)
-    assert transport.state.did_fail()
-    # first retry should be allowed immediately
-    assert transport.state.should_try()
-
-    # recover
-    mock_send.side_effect = None
-    transport.queue("x", {}, flush=True)
-    transport.worker._timed_queue_join(1)
-    assert not transport.state.did_fail()
-
-    transport.close()
+        # recover
+        mock_send.side_effect = None
+        transport.queue("x", {})
+        transport.flush()
+        assert not transport.state.did_fail()
+    finally:
+        transport.close()
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "2s"}], indirect=True)
 def test_send_timer(sending_elasticapm_client, caplog):
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        assert sending_elasticapm_client._transport._flush_timer is None
         assert sending_elasticapm_client.config.api_request_time == 2000
         sending_elasticapm_client.begin_transaction("test_type")
         sending_elasticapm_client.end_transaction("test")
 
-        assert sending_elasticapm_client._transport._flush_timer is not None
-        assert sending_elasticapm_client._transport._flush_timer.interval == 2
-        assert sending_elasticapm_client._transport._flush_timer.is_alive()
+        sending_elasticapm_client._transport.flush()
 
-        sending_elasticapm_client.close()
+    assert "Sent request" in caplog.records[1].message
 
-    assert sending_elasticapm_client._transport._flush_timer.finished.is_set()
-    assert "Starting flush timer" in caplog.records[0].message
-    assert "Cancelling flush timer" in caplog.records[1].message
-    assert "Sent request" in caplog.records[2].message
+
+@mock.patch("tests.fixtures.DummyTransport._start_event_processor")
+@mock.patch("elasticapm.transport.base.is_master_process")
+def test_client_doesnt_start_processor_thread_in_master_process(is_master_process, mock_start_event_processor):
+    # when in the master process, the client should not start worker threads
+    is_master_process.return_value = True
+    before = mock_start_event_processor.call_count
+    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
+    assert mock_start_event_processor.call_count == before
+    client.close()
+
+    is_master_process.return_value = False
+    before = mock_start_event_processor.call_count
+    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
+    assert mock_start_event_processor.call_count == before + 1
+    client.close()
 
 
 def test_compress_level_sanitization():
-    assert Transport(compress_level=None)._compress_level == 0
-    assert Transport(compress_level=-1)._compress_level == 0
-    assert Transport(compress_level=10)._compress_level == 9
+    assert DummyTransport(compress_level=None, url="")._compress_level == 0
+    assert DummyTransport(compress_level=-1, url="")._compress_level == 0
+    assert DummyTransport(compress_level=10, url="")._compress_level == 9

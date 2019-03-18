@@ -28,8 +28,11 @@ def test_tracer_with_instantiated_client(elasticapm_client):
 def test_tracer_with_config():
     config = {"METRICS_INTERVAL": "0s", "SERVER_URL": "https://example.com/test"}
     tracer = Tracer(config=config)
-    assert tracer._agent.config.metrics_interval == 0
-    assert tracer._agent.config.server_url == "https://example.com/test"
+    try:
+        assert tracer._agent.config.metrics_interval == 0
+        assert tracer._agent.config.server_url == "https://example.com/test"
+    finally:
+        tracer._agent.close()
 
 
 def test_tracer_instrument(elasticapm_client):
