@@ -85,7 +85,7 @@ def test_flush_time(mock_send, caplog):
         time.sleep(0.2)
         transport.close()
     record = caplog.records[0]
-    assert "0.1" in record.message
+    assert "due to time since last flush" in record.message
     assert mock_send.call_count == 0
 
 
