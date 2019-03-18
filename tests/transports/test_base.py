@@ -148,13 +148,15 @@ def test_send_timer(sending_elasticapm_client, caplog):
 def test_client_doesnt_start_processor_thread_in_master_process(is_master_process, mock_start_event_processor):
     # when in the master process, the client should not start worker threads
     is_master_process.return_value = True
+    before = mock_start_event_processor.call_count
     client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_event_processor.call_count == 0
+    assert mock_start_event_processor.call_count == before
     client.close()
 
     is_master_process.return_value = False
+    before = mock_start_event_processor.call_count
     client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_event_processor.call_count == 1
+    assert mock_start_event_processor.call_count == before + 1
     client.close()
 
 

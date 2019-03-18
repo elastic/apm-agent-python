@@ -59,11 +59,13 @@ def test_metrics_multithreaded():
 def test_client_doesnt_start_collector_thread_in_master_process(is_master_process, mock_start_collect_timer):
     # when in the master process, the client should not start worker threads
     is_master_process.return_value = True
+    before = mock_start_collect_timer.call_count
     client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_collect_timer.call_count == 0
+    assert mock_start_collect_timer.call_count == before
     client.close()
 
+    before = mock_start_collect_timer.call_count
     is_master_process.return_value = False
     client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_collect_timer.call_count == 1
+    assert mock_start_collect_timer.call_count == before + 1
     client.close()
