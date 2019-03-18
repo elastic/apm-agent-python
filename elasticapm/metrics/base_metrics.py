@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 
-from elasticapm.utils import compat
+from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.module_import import import_string
 
 logger = logging.getLogger("elasticapm.metrics")
@@ -23,7 +23,12 @@ class MetricsRegistry(object):
         self._tags = tags or {}
         self._collect_timer = None
         if self._collect_interval:
-            self._start_collect_timer()
+            # we only start the thread if we are not in a uwsgi master process
+            if not is_master_process():
+                self._start_collect_timer()
+            else:
+                # If we _are_ in a uwsgi master process, we use the postfork hook to start the thread after the fork
+                compat.postfork(lambda: self._start_collect_timer())
 
     def register(self, class_path):
         """

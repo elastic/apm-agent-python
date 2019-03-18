@@ -248,6 +248,7 @@ class Command(BaseCommand):
         else:
             self.write("Please fix the above errors.", red)
         self.write("")
+        client.close()
         return passed
 
     def handle_command_not_found(self, message):
