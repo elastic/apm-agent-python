@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
