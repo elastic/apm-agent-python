@@ -152,7 +152,7 @@ def test_get_frame_info():
     assert frame_info["function"] == "get_me_a_test_frame"
     assert frame_info["filename"] == os.path.join("tests", "utils", "stacks", "__init__.py")
     assert frame_info["module"] == "tests.utils.stacks"
-    assert frame_info["lineno"] == 6
+    assert frame_info["lineno"] == 36
     assert frame_info["context_line"] == "    return inspect.currentframe()"
     assert frame_info["vars"] == {"a_local_var": 42}
 
