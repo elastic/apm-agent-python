@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import gzip
 import logging
+import random
 import threading
 import time
 import timeit
@@ -86,11 +87,13 @@ class Transport(object):
 
         buffer = init_buffer()
         buffer_written = False
+        # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
+        max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
 
         while True:
             since_last_flush = timeit.default_timer() - self._last_flush
             # take max flush time into account to calculate timeout
-            timeout = max(0, self._max_flush_time - since_last_flush) if self._max_flush_time else None
+            timeout = max(0, max_flush_time - since_last_flush) if max_flush_time else None
             timed_out = False
             try:
                 event_type, data, flush = self._event_queue.get(block=True, timeout=timeout)
@@ -120,7 +123,7 @@ class Transport(object):
                 logger.debug(
                     "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
                     since_last_flush,
-                    self._max_flush_time,
+                    max_flush_time,
                 )
                 flush = True
             elif self._max_buffer_size and queue_size > self._max_buffer_size:
@@ -134,6 +137,7 @@ class Transport(object):
                 self._last_flush = timeit.default_timer()
                 buffer = init_buffer()
                 buffer_written = False
+                max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
                 self._flushed.set()
 
     def _flush(self, buffer):
