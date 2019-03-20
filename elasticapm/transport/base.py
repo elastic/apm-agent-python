@@ -1,6 +1,38 @@
 # -*- coding: utf-8 -*-
+
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import gzip
 import logging
+import random
 import threading
 import time
 import timeit
@@ -86,11 +118,13 @@ class Transport(object):
 
         buffer = init_buffer()
         buffer_written = False
+        # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
+        max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
 
         while True:
             since_last_flush = timeit.default_timer() - self._last_flush
             # take max flush time into account to calculate timeout
-            timeout = max(0, self._max_flush_time - since_last_flush) if self._max_flush_time else None
+            timeout = max(0, max_flush_time - since_last_flush) if max_flush_time else None
             timed_out = False
             try:
                 event_type, data, flush = self._event_queue.get(block=True, timeout=timeout)
@@ -120,7 +154,7 @@ class Transport(object):
                 logger.debug(
                     "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
                     since_last_flush,
-                    self._max_flush_time,
+                    max_flush_time,
                 )
                 flush = True
             elif self._max_buffer_size and queue_size > self._max_buffer_size:
@@ -134,6 +168,7 @@ class Transport(object):
                 self._last_flush = timeit.default_timer()
                 buffer = init_buffer()
                 buffer_written = False
+                max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
                 self._flushed.set()
 
     def _flush(self, buffer):

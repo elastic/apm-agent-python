@@ -25,6 +25,8 @@ pipeline {
     ansiColor('xterm')
     disableResume()
     durabilityHint('PERFORMANCE_OPTIMIZED')
+    rateLimitBuilds(throttle: [count: 60, durationName: 'hour', userBoost: true])
+    quietPeriod(10)
   }
   triggers {
     issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
@@ -61,14 +63,15 @@ pipeline {
             deleteDir()
             unstash 'source'
             dir("${BASE_DIR}"){
-              sh """
+              sh script: """
               ./tests/scripts/docker/cleanup.sh
               ./tests/scripts/docker/isort.sh
-              """
-              sh """
+              """, label: "isort import sorting"
+              sh script: """
               ./tests/scripts/docker/cleanup.sh
               ./tests/scripts/docker/black.sh
-              """
+              """, label: "Black code formatting"
+              sh script: 'find . -iname "*.py" -not -path "./elasticapm/utils/wrapt/*" -not -path "./dist/*" -not -path "./build/*" -not -path "./tests/utils/stacks/linenos.py" -print0 | xargs -0 -n 1 grep --files-without-match "Copyright (c) [0-9]..., Elastic"', label: "Copyright notice"
             }
           }
         }
@@ -131,14 +134,8 @@ pipeline {
       steps {
         deleteDir()
         unstash 'source'
-        checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
         dir("${BASE_DIR}"){
-          sh './scripts/jenkins/docs.sh'
-        }
-      }
-      post{
-        success {
-          tar(file: "doc-files.tgz", archive: true, dir: "html", pathPrefix: "${BASE_DIR}/docs")
+          buildDocs(docsDir: "docs", archive: true)
         }
       }
     }

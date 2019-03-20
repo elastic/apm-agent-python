@@ -1,6 +1,40 @@
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+import os
+
 import mock
 import pytest
 import urllib3.poolmanager
+from pytest_localserver.https import DEFAULT_CERTIFICATE
 from urllib3.exceptions import MaxRetryError, TimeoutError
 from urllib3_mock import Responses
 
@@ -134,3 +168,35 @@ def test_ssl_verify_disable(waiting_httpsserver):
         assert url == "https://example.com/foo"
     finally:
         transport.close()
+
+
+def test_ssl_cert_pinning(waiting_httpsserver):
+    waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+    transport = Transport(waiting_httpsserver.url, server_cert=DEFAULT_CERTIFICATE, verify_server_cert=True)
+    try:
+        url = transport.send(compat.b("x"))
+        assert url == "https://example.com/foo"
+    finally:
+        transport.close()
+
+
+def test_ssl_cert_pinning_fails(waiting_httpsserver):
+    if compat.PY3:
+        waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+        url = waiting_httpsserver.url
+    else:
+        # if we use the local test server here, execution blocks somewhere deep in OpenSSL on Python 2.7, presumably
+        # due to a threading issue that has been fixed in later versions. To avoid that, we have to commit a minor
+        # cardinal sin here and do an outside request to https://example.com (which will also fail the fingerprint
+        # assertion).
+        #
+        # May the Testing Goat have mercy on our souls.
+        url = "https://example.com"
+    transport = Transport(
+        url, server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"), verify_server_cert=True
+    )
+    with pytest.raises(TransportException) as exc_info:
+        transport.send(compat.b("x"))
+    transport.close()
+
+    assert "Fingerprints did not match" in exc_info.value.args[0]
