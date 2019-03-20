@@ -9,6 +9,7 @@
  * Added some randomness to time between requests to APM Server (#426)
  * Fixed an issue with custom user models in Django using non-string usernames (#397, #398)
  * Fixed an issue with sending kubernetes metadata to the API (#401, #402)
+ * Fixed an issue with parsing /proc/stat in RHEL/centos 6 (#406, #407)
  * Added copyright header to all files, and a CI check (#429)
 
 ## v4.1.0 
