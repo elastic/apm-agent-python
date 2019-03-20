@@ -10,6 +10,7 @@ import pytest
 from elasticapm.transport.base import AsyncTransport, Transport, TransportException, TransportState
 from elasticapm.utils import compat
 from tests.fixtures import DummyTransport, TempStoreClient
+from tests.utils import assert_any_record_contains
 
 
 def test_transport_state_should_try_online():
@@ -140,7 +141,7 @@ def test_send_timer(sending_elasticapm_client, caplog):
 
         sending_elasticapm_client._transport.flush()
 
-    assert "Sent request" in caplog.records[1].message
+    assert_any_record_contains(caplog.records, "Sent request")
 
 
 @mock.patch("tests.fixtures.DummyTransport._start_event_processor")
