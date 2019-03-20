@@ -79,10 +79,6 @@ def test_get(flask_apm_client):
     assert "body" not in request
     assert "headers" in request
     headers = request["headers"]
-    assert "content-length" in headers, headers.keys()
-    assert headers["content-length"] == "0"
-    assert "content-type" in headers, headers.keys()
-    assert headers["content-type"] == ""
     assert "host" in headers, headers.keys()
     assert headers["host"] == "localhost"
     env = request["env"]
