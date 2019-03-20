@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...master)
 
  * Implemented a new transport queue, which should avoid certain deadlock scenarios (#411)
+ * Implemented server certificate pinning (#405)
  * Moved context.url to context.http.url for requests/urllib3 spans (#393, #394)
  * Added support for using route as transaction name in Django 2.2+ (#86, #396)
  * Added some randomness to time between requests to APM Server (#426)

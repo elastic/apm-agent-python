@@ -36,10 +36,19 @@ from elasticapm.utils import compat
 
 class HTTPTransportBase(Transport):
     def __init__(
-        self, url, verify_server_cert=True, compress_level=5, metadata=None, headers=None, timeout=None, **kwargs
+        self,
+        url,
+        verify_server_cert=True,
+        compress_level=5,
+        metadata=None,
+        headers=None,
+        timeout=None,
+        server_cert=None,
+        **kwargs
     ):
         self._url = url
         self._verify_server_cert = verify_server_cert
+        self._server_cert = server_cert
         self._timeout = timeout
         self._headers = {
             k.encode("ascii")

@@ -29,9 +29,12 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import os
+
 import mock
 import pytest
 import urllib3.poolmanager
+from pytest_localserver.https import DEFAULT_CERTIFICATE
 from urllib3.exceptions import MaxRetryError, TimeoutError
 from urllib3_mock import Responses
 
@@ -165,3 +168,35 @@ def test_ssl_verify_disable(waiting_httpsserver):
         assert url == "https://example.com/foo"
     finally:
         transport.close()
+
+
+def test_ssl_cert_pinning(waiting_httpsserver):
+    waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+    transport = Transport(waiting_httpsserver.url, server_cert=DEFAULT_CERTIFICATE, verify_server_cert=True)
+    try:
+        url = transport.send(compat.b("x"))
+        assert url == "https://example.com/foo"
+    finally:
+        transport.close()
+
+
+def test_ssl_cert_pinning_fails(waiting_httpsserver):
+    if compat.PY3:
+        waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+        url = waiting_httpsserver.url
+    else:
+        # if we use the local test server here, execution blocks somewhere deep in OpenSSL on Python 2.7, presumably
+        # due to a threading issue that has been fixed in later versions. To avoid that, we have to commit a minor
+        # cardinal sin here and do an outside request to https://example.com (which will also fail the fingerprint
+        # assertion).
+        #
+        # May the Testing Goat have mercy on our souls.
+        url = "https://example.com"
+    transport = Transport(
+        url, server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"), verify_server_cert=True
+    )
+    with pytest.raises(TransportException) as exc_info:
+        transport.send(compat.b("x"))
+    transport.close()
+
+    assert "Fingerprints did not match" in exc_info.value.args[0]
