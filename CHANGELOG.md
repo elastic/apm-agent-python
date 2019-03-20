@@ -9,6 +9,7 @@
  * Added some randomness to time between requests to APM Server (#426)
  * Fixed an issue with custom user models in Django using non-string usernames (#397, #398)
  * Fixed an issue with sending kubernetes metadata to the API (#401, #402)
+ * Added copyright header to all files, and a CI check (#429)
 
 ## v4.1.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
