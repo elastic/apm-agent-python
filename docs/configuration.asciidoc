@@ -465,6 +465,9 @@ A higher value also impacts the time until data is indexed and searchable in Ela
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
 It has to be provided in *<<config-format-duration, duration format>>*.
 
+NOTE: The actual time will vary between 90-110% of the given value,
+to avoid stampedes of instances that start at the same time.
+
 [float]
 [[config-processors]]
 ==== `processors`
