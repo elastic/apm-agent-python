@@ -89,6 +89,7 @@ class Transport(object):
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
         self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
+        self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
         self._event_process_thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
         self._event_process_thread.daemon = True
         self._last_flush = timeit.default_timer()
@@ -105,12 +106,9 @@ class Transport(object):
     def queue(self, event_type, data, flush=False):
         try:
             self._flushed.clear()
-            if isinstance(self._event_queue, ChilledQueue):
-                self._event_queue.put(
-                    (event_type, data, flush), block=False, chill=not (event_type == "close" or flush)
-                )
-            else:
-                self._event_queue.put((event_type, data, flush), block=False)
+            kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
+            self._event_queue.put((event_type, data, flush), block=False, **kwargs)
+
         except compat.queue.Full:
             logger.warning("Event of type %s dropped due to full event queue", event_type)
 

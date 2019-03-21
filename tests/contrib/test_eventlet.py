@@ -38,6 +38,8 @@ import elasticapm
 from elasticapm.conf import constants
 from eventlet.patcher import is_monkey_patched
 
+pytestmark = pytest.mark.eventlet
+
 
 def test_transaction_with_eventlet(sending_elasticapm_client):
     assert is_monkey_patched(os)
