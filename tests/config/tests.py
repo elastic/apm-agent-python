@@ -250,3 +250,10 @@ def test_file_is_readable_validator_not_readable(tmpdir):
     with pytest.raises(ConfigurationError) as e:
         validator(p.strpath, "path")
     assert "is not readable" in e.value.args[0]
+
+
+def test_file_is_readable_validator_all_good(tmpdir):
+    p = tmpdir.join("readable")
+    p.write("")
+    validator = FileIsReadableValidator()
+    assert validator(p.strpath, "path") == p.strpath
