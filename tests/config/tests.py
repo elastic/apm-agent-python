@@ -32,6 +32,7 @@ from __future__ import absolute_import
 
 import logging
 import os
+import stat
 
 import mock
 import pytest
@@ -227,17 +228,25 @@ def test_chained_validators():
     assert c.chained == "XX"
 
 
-@pytest.mark.skipif(not os.path.exists("/etc"), reason="test only works on posix system")
-@pytest.mark.parametrize(
-    "path,message",
-    [
-        ("/bla/foo/bar/baz/123/456/789.mp3", "does not exist"),
-        ("/etc", "is not a file"),
-        ("/etc/sudoers", "is not readable"),
-    ],
-)
-def test_file_is_readable_validator(path, message):
+def test_file_is_readable_validator_not_exists(tmpdir):
     validator = FileIsReadableValidator()
     with pytest.raises(ConfigurationError) as e:
-        validator(path, "path")
-    assert message in e.value.args[0]
+        validator(tmpdir.join("doesnotexist").strpath, "path")
+    assert "does not exist" in e.value.args[0]
+
+
+def test_file_is_readable_validator_not_a_file(tmpdir):
+    validator = FileIsReadableValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator(tmpdir.strpath, "path")
+    assert "is not a file" in e.value.args[0]
+
+
+def test_file_is_readable_validator_not_readable(tmpdir):
+    p = tmpdir.join("nonreadable")
+    p.write("")
+    os.chmod(p.strpath, stat.S_IWRITE)
+    validator = FileIsReadableValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator(p.strpath, "path")
+    assert "is not readable" in e.value.args[0]
