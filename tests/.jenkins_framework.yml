@@ -27,4 +27,5 @@ FRAMEWORK:
   - elasticsearch-6
   - cassandra-newest
   - psutil-newest
+  - eventlet-newest
 
