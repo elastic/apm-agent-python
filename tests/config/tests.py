@@ -31,11 +31,15 @@
 from __future__ import absolute_import
 
 import logging
+import os
 
 import mock
+import pytest
 
 from elasticapm.conf import (
     Config,
+    ConfigurationError,
+    FileIsReadableValidator,
     RegexValidator,
     _BoolConfigValue,
     _ConfigBase,
@@ -221,3 +225,19 @@ def test_chained_validators():
 
     c = MyConfig({"CHAIN": "x"})
     assert c.chained == "XX"
+
+
+@pytest.mark.skipif(not os.path.exists("/etc"), reason="test only works on posix system")
+@pytest.mark.parametrize(
+    "path,message",
+    [
+        ("/bla/foo/bar/baz/123/456/789.mp3", "does not exist"),
+        ("/etc", "is not a file"),
+        ("/etc/sudoers", "is not readable"),
+    ],
+)
+def test_file_is_readable_validator(path, message):
+    validator = FileIsReadableValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator(path, "path")
+    assert message in e.value.args[0]

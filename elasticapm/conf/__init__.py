@@ -172,8 +172,8 @@ class FileIsReadableValidator(object):
             raise ConfigurationError("{} does not exist".format(value), field_name)
         elif not os.path.isfile(value):
             raise ConfigurationError("{} is not a file".format(value), field_name)
-        elif not os.access(value):
-            raise ConfigurationError("{} is not accessible".format(value), field_name)
+        elif not os.access(value, mode=os.R_OK):
+            raise ConfigurationError("{} is not readable".format(value), field_name)
         return value
 
 
