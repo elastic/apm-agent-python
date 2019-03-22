@@ -88,7 +88,8 @@ class Transport(object):
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
-        self._event_queue = ChilledQueue(maxsize=10000, chill_until=queue_chill_count, max_chill_time=queue_chill_time)
+        self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
+        self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
         self._event_process_thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
         self._event_process_thread.daemon = True
         self._last_flush = timeit.default_timer()
@@ -105,18 +106,14 @@ class Transport(object):
     def queue(self, event_type, data, flush=False):
         try:
             self._flushed.clear()
-            self._event_queue.put((event_type, data, flush), block=False, chill=not (event_type == "close" or flush))
+            kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
+            self._event_queue.put((event_type, data, flush), block=False, **kwargs)
+
         except compat.queue.Full:
             logger.warning("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
-        def init_buffer():
-            buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
-            data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
-            buffer.write(data)
-            return buffer
-
-        buffer = init_buffer()
+        buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
         max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
@@ -166,10 +163,33 @@ class Transport(object):
                 if buffer_written:
                     self._flush(buffer)
                 self._last_flush = timeit.default_timer()
-                buffer = init_buffer()
+                buffer = self._init_buffer()
                 buffer_written = False
                 max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
                 self._flushed.set()
+
+    def _init_buffer(self):
+        buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
+        data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
+        buffer.write(data)
+        return buffer
+
+    def _init_event_queue(self, chill_until, max_chill_time):
+        # some libraries like eventlet monkeypatch queue.Queue and switch out the implementation.
+        # In those cases we can't rely on internals of queue.Queue to be there, so we simply use
+        # their queue and forgo the optimizations of ChilledQueue. In the case of eventlet, this
+        # isn't really a loss, because the main reason for ChilledQueue (avoiding context switches
+        # due to the event processor thread being woken up all the time) is not an issue.
+        if all(
+            (
+                hasattr(compat.queue.Queue, "not_full"),
+                hasattr(compat.queue.Queue, "not_empty"),
+                hasattr(compat.queue.Queue, "unfinished_tasks"),
+            )
+        ):
+            return ChilledQueue(maxsize=10000, chill_until=chill_until, max_chill_time=max_chill_time)
+        else:
+            return compat.queue.Queue(maxsize=10000)
 
     def _flush(self, buffer):
         """

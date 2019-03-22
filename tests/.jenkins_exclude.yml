@@ -121,3 +121,6 @@ exclude:
   # opentracing
   - PYTHON_VERSION: python-3.3
     FRAMEWORK: opentracing-newest
+  # eventlet
+  - PYTHON_VERSION: pypy-2  #currently fails on pypy2
+    FRAMEWORK: eventlet-newest
