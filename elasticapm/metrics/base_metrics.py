@@ -32,8 +32,8 @@ import logging
 import threading
 import time
 
-from elasticapm.utils import compat, is_master_process
 from elasticapm.conf import constants
+from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.module_import import import_string
 
 logger = logging.getLogger("elasticapm.metrics")
