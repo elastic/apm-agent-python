@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...master)
+## v4.2.1 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
+ * fixed an issue with the certificate pinning feature introduced in 4.2.0 (#433, #434)
+ * fixed incompatibility with eventlet introduced in 4.2.0 (#435, #436)
+    
+## v4.2.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...v4.2.0)
 
  * Implemented a new transport queue, which should avoid certain deadlock scenarios (#411)
  * Implemented server certificate pinning (#405)

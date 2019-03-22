@@ -28,5 +28,26 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = (4, 2, 1)
-VERSION = ".".join(map(str, __version__))
+import pytest  # isort:skip
+
+eventlet = pytest.importorskip("eventlet")  # isort:skip
+
+import os
+
+import elasticapm
+from elasticapm.conf import constants
+from eventlet.patcher import is_monkey_patched
+
+pytestmark = pytest.mark.eventlet
+
+
+def test_transaction_with_eventlet(sending_elasticapm_client):
+    assert is_monkey_patched(os)
+    transaction = sending_elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("bla"):
+        pass
+    sending_elasticapm_client.end_transaction("test", "OK")
+    sending_elasticapm_client.close()
+    assert len(sending_elasticapm_client.httpserver.requests) == 1
+    assert sending_elasticapm_client.httpserver.payloads[0][1][constants.SPAN]
+    assert sending_elasticapm_client.httpserver.payloads[0][2][constants.TRANSACTION]

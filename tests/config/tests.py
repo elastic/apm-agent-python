@@ -31,11 +31,17 @@
 from __future__ import absolute_import
 
 import logging
+import os
+import platform
+import stat
 
 import mock
+import pytest
 
 from elasticapm.conf import (
     Config,
+    ConfigurationError,
+    FileIsReadableValidator,
     RegexValidator,
     _BoolConfigValue,
     _ConfigBase,
@@ -221,3 +227,35 @@ def test_chained_validators():
 
     c = MyConfig({"CHAIN": "x"})
     assert c.chained == "XX"
+
+
+def test_file_is_readable_validator_not_exists(tmpdir):
+    validator = FileIsReadableValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator(tmpdir.join("doesnotexist").strpath, "path")
+    assert "does not exist" in e.value.args[0]
+
+
+def test_file_is_readable_validator_not_a_file(tmpdir):
+    validator = FileIsReadableValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator(tmpdir.strpath, "path")
+    assert "is not a file" in e.value.args[0]
+
+
+@pytest.mark.skipif(platform.system() == "Windows", reason="os.access() doesn't seem to work as we expect on Windows")
+def test_file_is_readable_validator_not_readable(tmpdir):
+    p = tmpdir.join("nonreadable")
+    p.write("")
+    os.chmod(p.strpath, stat.S_IWRITE)
+    validator = FileIsReadableValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator(p.strpath, "path")
+    assert "is not readable" in e.value.args[0]
+
+
+def test_file_is_readable_validator_all_good(tmpdir):
+    p = tmpdir.join("readable")
+    p.write("")
+    validator = FileIsReadableValidator()
+    assert validator(p.strpath, "path") == p.strpath

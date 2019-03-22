@@ -30,6 +30,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+try:
+    import eventlet
+
+    eventlet.monkey_patch()
+except ImportError:
+    pass
+
 import sys
 from os.path import abspath, dirname, join
 
