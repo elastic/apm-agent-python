@@ -222,7 +222,11 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.junit(allowEmptyResults: false,
               keepLongStdio: true,
               testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-              //steps.codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
+            steps.env.PYTHON_VERSION = "${x}"
+            steps.env.WEBFRAMEWORK = "${y}"
+            steps.codecov(repo: 'apm-agent-python',
+              basedir: "${steps.env.BASE_DIR}",
+              flags: "-e PYTHON_VERSION,WEBFRAMEWORK")
           }
         }
       }
