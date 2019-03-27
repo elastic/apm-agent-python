@@ -1,6 +1,12 @@
 ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 
+#workaround to https://github.com/docker-library/pypy/issues/24
+RUN (grep "Debian GNU/Linux 8" /etc/issue \
+    && echo "deb http://archive.debian.org/debian jessie main" > /etc/apt/sources.list \
+    && echo "deb http://security.debian.org/debian-security jessie/updates main" >> /etc/apt/sources.list) \
+    || true
+
 RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
                                                             ca-certificates \
                                                             curl \
