@@ -1,3 +1,33 @@
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 import time
 from collections import defaultdict
@@ -7,7 +37,7 @@ from mock import Mock
 
 import elasticapm
 from elasticapm.conf.constants import SPAN, TRANSACTION
-from elasticapm.traces import Tracer, capture_span, get_transaction
+from elasticapm.traces import Tracer, capture_span, execution_context
 
 
 @pytest.fixture()
@@ -174,29 +204,31 @@ def test_leaf_tracing(tracer):
 def test_get_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
-    assert t == get_transaction()
+    assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
     t = requests_store.begin_transaction("test")
-    assert t == get_transaction(clear=True)
-    assert get_transaction() is None
+    assert t == execution_context.get_transaction(clear=True)
+    assert execution_context.get_transaction() is None
 
 
 def test_tag_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
-    t = requests_store.begin_transaction("test")
+    transaction = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
+    transaction.tag(baz="bazzinga")
     requests_store.end_transaction(200, "test")
 
-    assert t.tags == {"foo": "bar"}
-    transaction_dict = t.to_dict()
-    assert transaction_dict["context"]["tags"] == {"foo": "bar"}
+    assert transaction.tags == {"foo": "bar", "baz": "bazzinga"}
+    transaction_dict = transaction.to_dict()
+    assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
 
 
 def test_tag_while_no_transaction(caplog):
-    elasticapm.tag(foo="bar")
+    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
+        elasticapm.tag(foo="bar")
     record = caplog.records[0]
     assert record.levelno == logging.WARNING
     assert "foo" in record.args
@@ -218,6 +250,30 @@ def test_tags_merge(elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["tags"] == {"foo": "1", "bar": "3", "boo": "biz"}
+
+
+def test_tags_dedot(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm.tag(**{"d.o.t": "dot"})
+    elasticapm.tag(**{"s*t*a*r": "star"})
+    elasticapm.tag(**{'q"u"o"t"e': "quote"})
+
+    elasticapm_client.end_transaction("test_name", 200)
+
+    transactions = elasticapm_client.events[TRANSACTION]
+
+    assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
+
+
+def test_dedot_is_not_run_when_unsampled(elasticapm_client):
+    for sampled in (True, False):
+        t = elasticapm_client.begin_transaction("test")
+        t.is_sampled = sampled
+        elasticapm.set_context(lambda: {"a.b": "b"})
+        elasticapm_client.end_transaction("x", "OK")
+    sampled_transaction, unsampled_transaction = transactions = elasticapm_client.events[TRANSACTION]
+    assert "a_b" in sampled_transaction["context"]["custom"]
+    assert "context" not in unsampled_transaction
 
 
 def test_set_transaction_name(elasticapm_client):
@@ -281,6 +337,14 @@ def test_set_user_context_merge(elasticapm_client):
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 
 
+def test_dedot_context_keys(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm.set_context({"d.o.t": "d_o_t", "s*t*a*r": "s_t_a_r", "q*u*o*t*e": "q_u_o_t_e"})
+    elasticapm_client.end_transaction("foo", 200)
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert transaction["context"]["custom"] == {"s_t_a_r": "s_t_a_r", "q_u_o_t_e": "q_u_o_t_e", "d_o_t": "d_o_t"}
+
+
 def test_transaction_name_none_is_converted_to_empty_string(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     transaction = elasticapm_client.end_transaction(None, 200)
@@ -291,3 +355,12 @@ def test_transaction_without_name_result(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     transaction = elasticapm_client.end_transaction()
     assert transaction.name == ""
+
+
+def test_span_tagging(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:
+        span.tag(lorem="ipsum")
+    elasticapm_client.end_transaction("test", "OK")
+    span = elasticapm_client.events[SPAN][0]
+    assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga", "lorem": "ipsum"}

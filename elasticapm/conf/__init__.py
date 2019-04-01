@@ -1,13 +1,33 @@
-"""
-elasticapm.conf
-~~~~~~~~~~
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
-:copyright: (c) 2011-2017 Elasticsearch
-
-Large portions are
-:copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
-:license: BSD, see LICENSE for more details.
-"""
 
 import logging
 import os
@@ -122,10 +142,39 @@ class UnitValidator(object):
         return val
 
 
-duration_validator = UnitValidator("^((?:-)?\d+)(ms|s|m)$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
+duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
 size_validator = UnitValidator(
-    "^(\d+)(b|kb|mb|gb)$", "\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
+    r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
+
+
+class ExcludeRangeValidator(object):
+    def __init__(self, range_start, range_end, range_desc):
+        self.range_start = range_start
+        self.range_end = range_end
+        self.range_desc = range_desc
+
+    def __call__(self, value, field_name):
+        if self.range_start <= value <= self.range_end:
+            raise ConfigurationError(
+                "{} cannot be in range: {}".format(
+                    value, self.range_desc.format(**{"range_start": self.range_start, "range_end": self.range_end})
+                ),
+                field_name,
+            )
+        return value
+
+
+class FileIsReadableValidator(object):
+    def __call__(self, value, field_name):
+        value = os.path.normpath(value)
+        if not os.path.exists(value):
+            raise ConfigurationError("{} does not exist".format(value), field_name)
+        elif not os.path.isfile(value):
+            raise ConfigurationError("{} is not a file".format(value), field_name)
+        elif not os.access(value, os.R_OK):
+            raise ConfigurationError("{} is not readable".format(value), field_name)
+        return value
 
 
 class _ConfigBase(object):
@@ -171,6 +220,7 @@ class Config(_ConfigBase):
     secret_token = _ConfigValue("SECRET_TOKEN")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
+    server_cert = _ConfigValue("SERVER_CERT", default=None, required=False, validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
@@ -178,7 +228,9 @@ class Config(_ConfigBase):
     server_timeout = _ConfigValue(
         "SERVER_TIMEOUT",
         type=float,
-        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})],
+        validators=[
+            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})
+        ],
         default=5,
     )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
@@ -196,6 +248,13 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
+    metrics_sets = _ListConfigValue("METRICS_SETS", default=["elasticapm.metrics.sets.cpu.CPUMetricSet"])
+    metrics_interval = _ConfigValue(
+        "METRICS_INTERVAL",
+        type=int,
+        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
+        default=30000,
+    )
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
@@ -203,7 +262,9 @@ class Config(_ConfigBase):
     span_frames_min_duration = _ConfigValue(
         "SPAN_FRAMES_MIN_DURATION",
         default=5,
-        validators=[UnitValidator("^((?:-)?\d+)(ms|s|m)?$", "\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})],
+        validators=[
+            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
+        ],
         type=int,
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
@@ -223,9 +284,11 @@ class Config(_ConfigBase):
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
+    capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
+    django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
 
 
-def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elasticapm.errors"]):
+def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
     """
     Configures logging to pipe to Elastic APM.
 
@@ -249,11 +312,5 @@ def setup_logging(handler, exclude=["elasticapm", "gunicorn", "south", "elastica
         return False
 
     logger.addHandler(handler)
-
-    # Add StreamHandler to sentry's default so you can catch missed exceptions
-    for logger_name in exclude:
-        logger = logging.getLogger(logger_name)
-        logger.propagate = False
-        logger.addHandler(logging.StreamHandler())
 
     return True

@@ -1,0 +1,27 @@
+[[metrics]]
+== Metrics
+
+With Elastic APM, you can capture system and process metrics.
+These metrics will be sent regularly to the APM Server and from there to Elasticsearch
+
+[[metric-sets]]
+=== Metric Sets
+
+[[cpu-memory-metricset]]
+==== CPU/Memory Metric Set
+
+`elasticapm.metrics.sets.cpu.CPUMetricSet`
+
+This metric set collects various system metrics and metrics of the current process.
+
+|============
+| Metric                    | Type | Format      | Description
+| `system.cpu.total.norm.pct`| scaled_float | percent| The percentage of CPU time in states other than Idle and IOWait, normalised by the number of cores.
+| `system.memory.total`| long | bytes | The total memory of the system in bytes
+| `system.memory.actual.free`| long | bytes | Actual free memory in bytes
+| `system.process.cpu.total.norm.pct`| scaled_float | percent | The percentage of CPU time spent by the process since the last event. This value is normalized by the number of CPU cores and it ranges from 0 to 100%.
+| `system.process.memory.size`| long | bytes | The total virtual memory the process has.
+| `system.process.memory.rss.bytes`| long | bytes | The Resident Set Size. The amount of memory the process occupied in main memory (RAM).
+|============
+
+NOTE: if you do *not* use Linux, you need to install https://pypi.org/project/psutil/[`psutil`] for this metric set.

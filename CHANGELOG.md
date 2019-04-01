@@ -1,5 +1,46 @@
 # Changelog
 
+## v4.2.1 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
+ * fixed an issue with the certificate pinning feature introduced in 4.2.0 (#433, #434)
+ * fixed incompatibility with eventlet introduced in 4.2.0 (#435, #436)
+    
+## v4.2.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...v4.2.0)
+
+ * Implemented a new transport queue, which should avoid certain deadlock scenarios (#411)
+ * Implemented server certificate pinning (#405)
+ * Moved context.url to context.http.url for requests/urllib3 spans (#393, #394)
+ * Added support for using route as transaction name in Django 2.2+ (#86, #396)
+ * Added some randomness to time between requests to APM Server (#426)
+ * Fixed an issue with custom user models in Django using non-string usernames (#397, #398)
+ * Fixed an issue with sending kubernetes metadata to the API (#401, #402)
+ * Fixed an issue with parsing /proc/stat in RHEL/centos 6 (#406, #407)
+ * Added copyright header to all files, and a CI check (#429)
+
+## v4.1.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
+
+ * Added support for collecting system and process metrics (#361)
+ * Added an OpenTracing bridge (#388)
+ * Added `transaction.sampled` to errors (#371)
+ * Added `transaction.type` to errors (#391)
+ * Added parsing of `/proc/self/cgroup` to capture container meta data (#352)
+ * Added option to configure logging for Flask using a log level (#344)
+ * Added `capture_headers` config option (#392)
+
+## v4.0.3
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.2...v4.0.3)
+
+ * implemented de-dotting of tag names and context keys (#353)
+ * wrote a quickfix for the boto3/botocore instrumentation (#367)
+ * fixed an issue with psycopg2 and encoded strings (#366)
+
+## v4.0.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.1...v4.0.2)
+
+ * fixed another issue in the new v2 transport (#351)
+
 ## v4.0.1
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.0...v4.0.1)
 

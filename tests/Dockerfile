@@ -1,7 +1,7 @@
 ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 
-RUN apt-get update && apt-get -y --no-install-recommends install \
+RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
                                                             ca-certificates \
                                                             curl \
                                                             netcat \
@@ -18,8 +18,8 @@ RUN for server in $(shuf -e ha.pool.sks-keyservers.net \
                             hkp://keyserver.ubuntu.com:80 \
                             pgp.mit.edu) ; do gpg --no-tty --keyserver "$server" --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && s=0 && break || s=$?; done; (exit $s)
 
-RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/1.10/gosu-$(dpkg --print-architecture)" \
-    && curl -o /usr/local/bin/gosu.asc -SL "https://github.com/tianon/gosu/releases/download/1.10/gosu-$(dpkg --print-architecture).asc" \
+RUN curl -o /usr/local/bin/gosu -sSL "https://github.com/tianon/gosu/releases/download/1.10/gosu-$(dpkg --print-architecture)" \
+    && curl -o /usr/local/bin/gosu.asc -sSL "https://github.com/tianon/gosu/releases/download/1.10/gosu-$(dpkg --print-architecture).asc" \
     && gpg --verify /usr/local/bin/gosu.asc \
     && rm /usr/local/bin/gosu.asc \
     && chmod +x /usr/local/bin/gosu
@@ -32,7 +32,7 @@ COPY requirements/requirements-base.txt /
 RUN if command -v pypy3; then ln -s $(command -v pypy3) /usr/local/bin/python; elif command -v pypy; then ln -s $(command -v pypy) /usr/local/bin/python; fi
 
 # pre-install base requirements
-RUN python -m pip install -U pip && pip install -r /requirements-base.txt
+RUN python -m pip install --progress-bar off -U pip && pip install --progress-bar off -r /requirements-base.txt
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

@@ -1,4 +1,37 @@
 # -*- coding: utf-8 -*-
+
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
+
 import os
 import platform
 import sys
@@ -14,7 +47,8 @@ from elasticapm.base import Client
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding
 from elasticapm.utils.disttracing import TraceParent
-from tests.fixtures import DummyTransport
+from tests.fixtures import DummyTransport, TempStoreClient
+from tests.utils import assert_any_record_contains
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"environment": "production"}], indirect=True)
@@ -39,18 +73,100 @@ def test_process_info(elasticapm_client):
 
 
 def test_system_info(elasticapm_client):
-    system_info = elasticapm_client.get_system_info()
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mocked:
+        mocked.return_value = {}
+        system_info = elasticapm_client.get_system_info()
     assert {"hostname", "architecture", "platform"} == set(system_info.keys())
 
 
+def test_docker_kubernetes_system_info(elasticapm_client):
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
+        "socket.gethostname"
+    ) as mock_gethostname:
+        mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
+        mock_gethostname.return_value = "foo"
+        system_info = elasticapm_client.get_system_info()
+    assert system_info["container"] == {"id": "123"}
+    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": "foo"}}
+
+
+@mock.patch.dict(
+    "os.environ",
+    {
+        "KUBERNETES_NODE_NAME": "node",
+        "KUBERNETES_NAMESPACE": "namespace",
+        "KUBERNETES_POD_NAME": "pod",
+        "KUBERNETES_POD_UID": "podid",
+    },
+)
+def test_docker_kubernetes_system_info_from_environ():
+    # initialize agent only after overriding environment
+    elasticapm_client = TempStoreClient(metrics_interval="0ms")
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata:
+        mock_metadata.return_value = {}
+        system_info = elasticapm_client.get_system_info()
+    assert "kubernetes" in system_info
+    assert system_info["kubernetes"] == {
+        "pod": {"uid": "podid", "name": "pod"},
+        "node": {"name": "node"},
+        "namespace": "namespace",
+    }
+
+
+@mock.patch.dict(
+    "os.environ",
+    {
+        "KUBERNETES_NODE_NAME": "node",
+        "KUBERNETES_NAMESPACE": "namespace",
+        "KUBERNETES_POD_NAME": "pod",
+        "KUBERNETES_POD_UID": "podid",
+    },
+)
+def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
+    # initialize agent only after overriding environment
+    elasticapm_client = TempStoreClient(metrics_interval="0ms")
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
+        "socket.gethostname"
+    ) as mock_gethostname:
+        mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
+        mock_gethostname.return_value = "foo"
+        system_info = elasticapm_client.get_system_info()
+    assert "kubernetes" in system_info
+    assert system_info["kubernetes"] == {
+        "pod": {"uid": "podid", "name": "pod"},
+        "node": {"name": "node"},
+        "namespace": "namespace",
+    }
+    assert system_info["container"] == {"id": "123"}
+
+
+@mock.patch.dict("os.environ", {"KUBERNETES_NAMESPACE": "namespace"})
+def test_docker_kubernetes_system_info_except_hostname_from_environ():
+    # initialize agent only after overriding environment
+    elasticapm_client = TempStoreClient(metrics_interval="0ms")
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
+        "socket.gethostname"
+    ) as mock_gethostname:
+        mock_metadata.return_value = {}
+        mock_gethostname.return_value = "foo"
+        system_info = elasticapm_client.get_system_info()
+    assert "kubernetes" in system_info
+    assert system_info["kubernetes"] == {"pod": {"name": "foo"}, "namespace": "namespace"}
+
+
 def test_config_by_environment():
-    with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "app", "ELASTIC_APM_SECRET_TOKEN": "token"}):
-        client = Client()
-        assert client.config.service_name == "app"
-        assert client.config.secret_token == "token"
+    with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "envapp", "ELASTIC_APM_SECRET_TOKEN": "envtoken"}):
+        client = TempStoreClient(metrics_interval="0ms")
+        assert client.config.service_name == "envapp"
+        assert client.config.secret_token == "envtoken"
         assert client.config.disable_send is False
     with mock.patch.dict("os.environ", {"ELASTIC_APM_DISABLE_SEND": "true"}):
-        client = Client()
+        client = TempStoreClient(metrics_interval="0ms")
         assert client.config.disable_send is True
     client.close()
 
@@ -71,7 +187,9 @@ def test_config_non_string_types():
         def __repr__(self):
             return repr(self.content)
 
-    client = Client(server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"))
+    client = TempStoreClient(
+        server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"), metrics_interval="0ms"
+    )
     assert isinstance(client.config.secret_token, compat.string_types)
     assert isinstance(client.config.service_name, compat.string_types)
     client.close()
@@ -102,13 +220,14 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     # test error
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
+    sending_elasticapm_client._transport.flush()
     assert sending_elasticapm_client._transport.state.did_fail()
-    record = caplog.records[0]
-    assert "go away" in record.message
+    assert_any_record_contains(caplog.records, "go away")
 
     # test recovery
     sending_elasticapm_client.httpserver.code = 202
     sending_elasticapm_client.capture_message("bar", handled=False)
+    sending_elasticapm_client.close()
     assert not sending_elasticapm_client._transport.state.did_fail()
 
 
@@ -122,11 +241,13 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
         service_name="app_name",
         secret_token="secret",
         transport_class="elasticapm.transport.http.Transport",
+        metrics_interval="0ms",
     )
     # test error
     http_send.side_effect = ValueError("oopsie")
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
+    client._transport.flush()
     record = caplog.records[0]
     assert client._transport.state.did_fail()
     assert "oopsie" in record.message
@@ -134,6 +255,7 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     # test recovery
     http_send.side_effect = None
     client.capture_message("foo", handled=False)
+    client.close()
     assert not client._transport.state.did_fail()
     client.close()
 
@@ -152,7 +274,8 @@ def test_send_remote_failover_async(should_try, sending_elasticapm_client, caplo
     # test error
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
-        sending_elasticapm_client.close()
+        sending_elasticapm_client._transport.flush()
+        time.sleep(0.1)  # give event processor thread some time to do its thing
     assert sending_elasticapm_client._transport.state.did_fail()
     assert "400" in caplog.records[0].message
 
@@ -179,7 +302,7 @@ def test_send(sending_elasticapm_client):
     for k, v in expected_headers.items():
         assert seen_headers[k] == v
 
-    assert 250 < request.content_length < 350
+    assert 250 < request.content_length < 400
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
@@ -341,18 +464,6 @@ def test_call_end_twice(elasticapm_client):
     elasticapm_client.end_transaction("test-transaction", 200)
 
 
-@mock.patch("elasticapm.transport.base.Transport.queue")
-@mock.patch("elasticapm.base.is_master_process")
-def test_client_doesnt_flush_when_in_master_process(is_master_process, mock_queue):
-    # when in the master process, the client should not flush the
-    # HTTP transport
-    is_master_process.return_value = True
-    client = Client(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    client.queue("x", {}, flush=True)
-    assert mock_queue.call_count == 1
-    assert mock_queue.call_args[0] == ("x", {}, False)
-
-
 @pytest.mark.parametrize("elasticapm_client", [{"verify_server_cert": False}], indirect=True)
 def test_client_disables_ssl_verification(elasticapm_client):
     assert not elasticapm_client.config.verify_server_cert
@@ -402,11 +513,12 @@ def test_invalid_service_name_disables_send(elasticapm_client):
 
 
 def test_empty_transport_disables_send():
-    client = Client(service_name="x", transport_class=None)
+    client = TempStoreClient(service_name="x", transport_class=None, metrics_interval="0ms")
     assert len(client.config.errors) == 1
     assert "TRANSPORT_CLASS" in client.config.errors
 
     assert client.config.disable_send
+    client.close()
 
 
 @pytest.mark.parametrize(
@@ -550,7 +662,7 @@ def test_collect_source_transactions(elasticapm_client):
         assert "post_context" not in in_app_frame, in_app_frame_context
 
 
-def test_transaction_id_is_attached(elasticapm_client):
+def test_transaction_data_is_attached_to_errors(elasticapm_client):
     elasticapm_client.capture_message("noid")
     elasticapm_client.begin_transaction("test")
     elasticapm_client.capture_message("id")
@@ -558,9 +670,11 @@ def test_transaction_id_is_attached(elasticapm_client):
     elasticapm_client.capture_message("noid")
 
     errors = elasticapm_client.events[ERROR]
-    assert "transaction" not in errors[0]
+    assert "transaction_id" not in errors[0]
     assert errors[1]["transaction_id"] == transaction.id
-    assert "transaction" not in errors[2]
+    assert errors[1]["transaction"]["sampled"]
+    assert errors[1]["transaction"]["type"] == "test"
+    assert "transaction_id" not in errors[2]
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_sample_rate": 0.4}], indirect=True)
@@ -730,6 +844,7 @@ def test_error_keyword_truncation(sending_elasticapm_client):
         raise WayTooLongException()
     except WayTooLongException:
         sending_elasticapm_client.capture_exception(handled=False)
+    sending_elasticapm_client.close()
     error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["exception"]["type"] == expected.upper()
@@ -742,7 +857,7 @@ def test_message_keyword_truncation(sending_elasticapm_client):
     sending_elasticapm_client.capture_message(
         param_message={"message": too_long, "params": []}, logger_name=too_long, handled=False
     )
-
+    sending_elasticapm_client.close()
     error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["log"]["param_message"] == expected
@@ -752,21 +867,21 @@ def test_message_keyword_truncation(sending_elasticapm_client):
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
-@mock.patch("elasticapm.transport.base.Transport.queue")
-def test_config_error_stops_error_send(mock_queue, sending_elasticapm_client):
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_config_error_stops_error_send(mock_send, sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send is True
     sending_elasticapm_client.capture_message("bla", handled=False)
-    assert mock_queue.call_count == 0
+    assert mock_send.call_count == 0
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
-@mock.patch("elasticapm.transport.base.Transport.queue")
-def test_config_error_stops_transaction_send(mock_queue, sending_elasticapm_client):
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_config_error_stops_transaction_send(mock_send, sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send is True
     sending_elasticapm_client.begin_transaction("test")
     sending_elasticapm_client.end_transaction("test", "OK")
     sending_elasticapm_client.close()
-    assert mock_queue.call_count == 0
+    assert mock_send.call_count == 0
 
 
 def test_trace_parent(elasticapm_client):
@@ -799,3 +914,21 @@ def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
     span_id = transaction.ensure_parent_id()
     span_id_2 = transaction.ensure_parent_id()
     assert span_id == span_id_2
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({"server_url": "http://localhost"}, "http://localhost/intake/v2/events"),
+        ({"server_url": "http://localhost/"}, "http://localhost/intake/v2/events"),
+        ({"server_url": "http://localhost:8200"}, "http://localhost:8200/intake/v2/events"),
+        ({"server_url": "http://localhost:8200/"}, "http://localhost:8200/intake/v2/events"),
+        ({"server_url": "http://localhost/a"}, "http://localhost/a/intake/v2/events"),
+        ({"server_url": "http://localhost/a/"}, "http://localhost/a/intake/v2/events"),
+        ({"server_url": "http://localhost:8200/a"}, "http://localhost:8200/a/intake/v2/events"),
+        ({"server_url": "http://localhost:8200/a/"}, "http://localhost:8200/a/intake/v2/events"),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_server_url_joining(elasticapm_client, expected):
+    assert elasticapm_client._api_endpoint_url == expected

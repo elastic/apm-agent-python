@@ -376,6 +376,24 @@ WARNING: request bodies often contain sensitive values like passwords, credit ca
 If your service handles data like this, we advise to only enable this feature with care.
 
 [float]
+[[config-capture-headers]]
+==== `capture_headers`
+
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_CAPTURE_HEADERS` | `CAPTURE_HEADERS` | `true`
+|============
+
+For transactions and errors that happen due to HTTP requests,
+the Python agent can optionally capture the request and response headers.
+
+Possible values: `true`, `false`
+
+WARNING: request headers often contain sensitive values like session IDs, cookies etc.
+See our documentation on <<sanitizing-data, sanitizing data>> for more information on how to
+filter such data.
+
+[float]
 [[config-transaction-max-spans]]
 ==== `transaction_max_spans`
 
@@ -427,7 +445,8 @@ A higher value also impacts the time until data is indexed and searchable in Ela
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
 It has to be provided in *<<config-format-size, size format>>*.
 
-NOTE: by default, the APM Server limits request payload size to 1 MByte.
+NOTE: Due to internal buffering of gzip, the actual request size can be a few kilobytes larger than the given limit.
+By default, the APM Server limits request payload size to 1 MByte.
 
 [float]
 [[config-api-request-time]]
@@ -445,6 +464,9 @@ A higher value also impacts the time until data is indexed and searchable in Ela
 
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
 It has to be provided in *<<config-format-duration, duration format>>*.
+
+NOTE: The actual time will vary between 90-110% of the given value,
+to avoid stampedes of instances that start at the same time.
 
 [float]
 [[config-processors]]
@@ -563,9 +585,42 @@ This disables most of the tracing functionality, but can be useful to debug poss
 
 By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM server.
 Verification can be disabled by changing this setting to `False`.
+This setting is ignored when <<config-server-cert,`server_cert`>> is set.
 
 NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python 3.4.3+.
 
+[float]
+[[config-server-cert]]
+=== `ELASTIC_APM_SERVER_CERT`
+
+[options="header"]
+|============
+| Environment                | Django/Flask  | Default
+| `ELASTIC_APM_SERVER_CERT`  | `SERVER_CERT` | `None`
+|============
+
+If you have configured your APM Server with a self signed TLS certificate, or you
+just wish to pin the server certificate, you can specify the path to the PEM-encoded
+certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
+
+[float]
+[[config-django-specific]]
+=== Django-specific configuration
+
+[float]
+[[config-django-transaction-name-from-route]]
+==== `django_transaction_name_from_route`
+|============
+| Environment                                       | Django                               | Default
+| `ELASTIC_APM_DJANGO_TRANSACTION_NAME_FROM_ROUTE`  | `DJANGO_TRANSACTION_NAME_FROM_ROUTE` | `False`
+|============
+
+
+By default, we use the function or class name of the view as the transaction name.
+Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
+If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
+
+NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
 [float]
 [[config-formats]]

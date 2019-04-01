@@ -1,12 +1,45 @@
 # -*- coding: utf-8 -*-
+
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import gzip
 import logging
+import random
 import threading
+import time
 import timeit
+from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import json_encoder
-from elasticapm.utils.compat import BytesIO
+from elasticapm.utils import compat, is_master_process, json_encoder
 
 logger = logging.getLogger("elasticapm.transport")
 
@@ -34,6 +67,8 @@ class Transport(object):
         json_serializer=json_encoder.dumps,
         max_flush_time=None,
         max_buffer_size=None,
+        queue_chill_count=500,
+        queue_chill_time=1.0,
         **kwargs
     ):
         """
@@ -48,88 +83,140 @@ class Transport(object):
         """
         self.state = TransportState()
         self._metadata = metadata if metadata is not None else {}
-        self._compress_level = compress_level
+        self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
         self._max_flush_time = max_flush_time
         self._max_buffer_size = max_buffer_size
         self._queued_data = None
-        self._queue_lock = threading.Lock()
+        self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
+        self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
+        self._event_process_thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
+        self._event_process_thread.daemon = True
         self._last_flush = timeit.default_timer()
-        self._flush_timer = None
+        self._counts = defaultdict(int)
+        self._flushed = threading.Event()
+        self._closed = False
+        # only start the event processing thread if we are not in a uwsgi master process
+        if not is_master_process():
+            self._start_event_processor()
+        else:
+            # if we _are_ in a uwsgi master process, use the postfork mixup to start the thread after the fork
+            compat.postfork(lambda: self._start_event_processor())
 
     def queue(self, event_type, data, flush=False):
-        with self._queue_lock:
-            self.queued_data.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
-        since_last_flush = timeit.default_timer() - self._last_flush
-        queue_size = self.queued_data_size
-        if flush:
-            logger.debug("forced flush")
-            self.flush()
-        elif self._max_flush_time and since_last_flush > self._max_flush_time:
-            logger.debug(
-                "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
-                since_last_flush,
-                self._max_flush_time,
+        try:
+            self._flushed.clear()
+            kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
+            self._event_queue.put((event_type, data, flush), block=False, **kwargs)
+
+        except compat.queue.Full:
+            logger.warning("Event of type %s dropped due to full event queue", event_type)
+
+    def _process_queue(self):
+        buffer = self._init_buffer()
+        buffer_written = False
+        # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
+        max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+
+        while True:
+            since_last_flush = timeit.default_timer() - self._last_flush
+            # take max flush time into account to calculate timeout
+            timeout = max(0, max_flush_time - since_last_flush) if max_flush_time else None
+            timed_out = False
+            try:
+                event_type, data, flush = self._event_queue.get(block=True, timeout=timeout)
+            except compat.queue.Empty:
+                event_type, data, flush = None, None, None
+                timed_out = True
+
+            if event_type == "close":
+                if buffer_written:
+                    self._flush(buffer)
+                self._flushed.set()
+                return  # time to go home!
+
+            if data is not None:
+                buffer.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
+                buffer_written = True
+                self._counts[event_type] += 1
+
+            queue_size = 0 if buffer.fileobj is None else buffer.fileobj.tell()
+
+            if flush:
+                logger.debug("forced flush")
+            elif timed_out or timeout == 0:
+                # update last flush time, as we might have waited for a non trivial amount of time in
+                # _event_queue.get()
+                since_last_flush = timeit.default_timer() - self._last_flush
+                logger.debug(
+                    "flushing due to time since last flush %.3fs > max_flush_time %.3fs",
+                    since_last_flush,
+                    max_flush_time,
+                )
+                flush = True
+            elif self._max_buffer_size and queue_size > self._max_buffer_size:
+                logger.debug(
+                    "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
+                )
+                flush = True
+            if flush:
+                if buffer_written:
+                    self._flush(buffer)
+                self._last_flush = timeit.default_timer()
+                buffer = self._init_buffer()
+                buffer_written = False
+                max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+                self._flushed.set()
+
+    def _init_buffer(self):
+        buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
+        data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
+        buffer.write(data)
+        return buffer
+
+    def _init_event_queue(self, chill_until, max_chill_time):
+        # some libraries like eventlet monkeypatch queue.Queue and switch out the implementation.
+        # In those cases we can't rely on internals of queue.Queue to be there, so we simply use
+        # their queue and forgo the optimizations of ChilledQueue. In the case of eventlet, this
+        # isn't really a loss, because the main reason for ChilledQueue (avoiding context switches
+        # due to the event processor thread being woken up all the time) is not an issue.
+        if all(
+            (
+                hasattr(compat.queue.Queue, "not_full"),
+                hasattr(compat.queue.Queue, "not_empty"),
+                hasattr(compat.queue.Queue, "unfinished_tasks"),
             )
-            self.flush()
-        elif self._max_buffer_size and queue_size > self._max_buffer_size:
-            logger.debug(
-                "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
-            )
-            self.flush()
-        elif not self._flush_timer:
-            with self._queue_lock:
-                self._start_flush_timer()
+        ):
+            return ChilledQueue(maxsize=10000, chill_until=chill_until, max_chill_time=max_chill_time)
+        else:
+            return compat.queue.Queue(maxsize=10000)
 
-    @property
-    def queued_data(self):
-        if self._queued_data is None:
-            if self._compress_level:
-                self._queued_data = gzip.GzipFile(fileobj=BytesIO(), mode="w", compresslevel=self._compress_level)
-            else:
-                self._queued_data = BytesIO()
-            self._queued_data.write((self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8"))
-        return self._queued_data
-
-    @property
-    def queued_data_size(self):
-        f = self._queued_data
-        if f:
-            # return size of the underlying BytesIO object if it is compressed
-            return f.fileobj.tell() if hasattr(f, "fileobj") else f.tell()
-        return 0
-
-    def flush(self, sync=False, start_flush_timer=True):
+    def _flush(self, buffer):
         """
-        Flush the queue
+        Flush the queue. This method should only be called from the event processing queue
         :param sync: if true, flushes the queue synchronously in the current thread
-        :param start_flush_timer: set to True if the flush timer thread should be restarted at the end of the flush
         :return: None
         """
-        with self._queue_lock:
-            self._stop_flush_timer()
-            queued_data, self._queued_data = self._queued_data, None
-            if queued_data and not self.state.should_try():
-                logger.error("dropping flushed data due to transport failure back-off")
-            elif queued_data:
-                if self._compress_level:
-                    fileobj = queued_data.fileobj  # get a reference to the fileobj before closing the gzip file
-                    queued_data.close()
-                else:
-                    fileobj = queued_data
-                # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
-                data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
-                if hasattr(self, "send_async") and not sync:
-                    self.send_async(data)
-                else:
-                    try:
-                        self.send(data)
-                        self.handle_transport_success()
-                    except Exception as e:
-                        self.handle_transport_fail(e)
-            self._last_flush = timeit.default_timer()
-            if start_flush_timer:
-                self._start_flush_timer()
+        if not self.state.should_try():
+            logger.error("dropping flushed data due to transport failure back-off")
+        else:
+            fileobj = buffer.fileobj  # get a reference to the fileobj before closing the gzip file
+            buffer.close()
+
+            # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
+            data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
+            try:
+                self.send(data)
+                self.handle_transport_success()
+            except Exception as e:
+                self.handle_transport_fail(e)
+
+    def _start_event_processor(self):
+        if not self._event_process_thread.is_alive() and not self._closed:
+            try:
+                self._event_process_thread.start()
+            except RuntimeError:
+                pass
 
     def send(self, data):
         """
@@ -143,7 +230,22 @@ class Transport(object):
         Cleans up resources and closes connection
         :return:
         """
-        self.flush(sync=True, start_flush_timer=False)
+        if self._closed:
+            return
+        self._closed = True
+        self.queue("close", None)
+        if not self._flushed.wait(timeout=self._max_flush_time):
+            raise ValueError("close timed out")
+
+    def flush(self):
+        """
+        Trigger a flush of the queue.
+        Note: this method will only return once the queue is empty. This means it can block indefinitely if more events
+        are produced in other threads than can be consumed.
+        """
+        self.queue(None, None, flush=True)
+        if not self._flushed.wait(timeout=self._max_flush_time):
+            raise ValueError("flush timed out")
 
     def handle_transport_success(self, **kwargs):
         """
@@ -158,19 +260,6 @@ class Transport(object):
         message = str(exception)
         logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
         self.state.set_fail()
-
-    def _start_flush_timer(self, timeout=None):
-        timeout = timeout or self._max_flush_time
-        self._flush_timer = threading.Timer(timeout, self.flush)
-        self._flush_timer.name = "elasticapm flush timer"
-        self._flush_timer.daemon = True
-        logger.debug("Starting flush timer")
-        self._flush_timer.start()
-
-    def _stop_flush_timer(self):
-        if self._flush_timer:
-            logger.debug("Cancelling flush timer")
-            self._flush_timer.cancel()
 
 
 class AsyncTransport(Transport):
@@ -232,3 +321,56 @@ class TransportState(object):
 
     def did_fail(self):
         return self.status == self.ERROR
+
+
+class ChilledQueue(compat.queue.Queue, object):
+    """
+    A queue subclass that is a bit more chill about how often it notifies the not empty event
+
+    Note: we inherit from object because queue.Queue is an old-style class in Python 2. This can
+    be removed once we stop support for Python 2
+    """
+
+    def __init__(self, maxsize=0, chill_until=100, max_chill_time=1.0):
+        self._chill_until = chill_until
+        self._max_chill_time = max_chill_time
+        self._last_unchill = time.time()
+        super(ChilledQueue, self).__init__(maxsize=maxsize)
+
+    def put(self, item, block=True, timeout=None, chill=True):
+        """Put an item into the queue.
+
+        If optional args 'block' is true and 'timeout' is None (the default),
+        block if necessary until a free slot is available. If 'timeout' is
+        a non-negative number, it blocks at most 'timeout' seconds and raises
+        the Full exception if no free slot was available within that time.
+        Otherwise ('block' is false), put an item on the queue if a free slot
+        is immediately available, else raise the Full exception ('timeout'
+        is ignored in that case).
+        """
+        with self.not_full:
+            if self.maxsize > 0:
+                if not block:
+                    if self._qsize() >= self.maxsize:
+                        raise compat.queue.Full
+                elif timeout is None:
+                    while self._qsize() >= self.maxsize:
+                        self.not_full.wait()
+                elif timeout < 0:
+                    raise ValueError("'timeout' must be a non-negative number")
+                else:
+                    endtime = time.time() + timeout
+                    while self._qsize() >= self.maxsize:
+                        remaining = endtime - time.time()
+                        if remaining <= 0.0:
+                            raise compat.queue.Full
+                        self.not_full.wait(remaining)
+            self._put(item)
+            self.unfinished_tasks += 1
+            if (
+                not chill
+                or self._qsize() > self._chill_until
+                or (time.time() - self._last_unchill) > self._max_chill_time
+            ):
+                self.not_empty.notify()
+                self._last_unchill = time.time()

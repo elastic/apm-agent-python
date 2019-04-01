@@ -1,13 +1,33 @@
-"""
-elasticapm.contrib.flask
-~~~~~~~~~~~~~~~~~~~
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
-:copyright: (c) 2011-2017 Elasticsearch
-
-Large portions are
-:copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
-:license: BSD, see LICENSE for more details.
-"""
 
 from __future__ import absolute_import
 
@@ -22,7 +42,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
-from elasticapm.traces import get_transaction
+from elasticapm.traces import execution_context
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 
@@ -93,7 +113,9 @@ class ElasticAPM(object):
             exc_info=kwargs.get("exc_info"),
             context={
                 "request": get_data_from_request(
-                    request, capture_body=self.client.config.capture_body in ("errors", "all")
+                    request,
+                    capture_body=self.client.config.capture_body in ("errors", "all"),
+                    capture_headers=self.client.config.capture_headers,
                 )
             },
             custom={"app": self.app},
@@ -105,8 +127,13 @@ class ElasticAPM(object):
         if not self.client:
             self.client = make_client(self.client_cls, app, **defaults)
 
-        if self.logging:
-            setup_logging(LoggingHandler(self.client))
+        # 0 is a valid log level (NOTSET), so we need to check explicitly for it
+        if self.logging or self.logging is 0:
+            if self.logging is not True:
+                kwargs = {"level": self.logging}
+            else:
+                kwargs = {}
+            setup_logging(LoggingHandler(self.client, **kwargs))
 
         signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 
@@ -137,7 +164,7 @@ class ElasticAPM(object):
             """
             Adds APM related IDs to the context used for correlating the backend transaction with the RUM transaction
             """
-            transaction = get_transaction()
+            transaction = execution_context.get_transaction()
             if transaction and transaction.trace_parent:
                 return {
                     "apm": {
@@ -163,11 +190,15 @@ class ElasticAPM(object):
             rule = build_name_with_http_method_prefix(rule, request)
             elasticapm.set_context(
                 lambda: get_data_from_request(
-                    request, capture_body=self.client.config.capture_body in ("transactions", "all")
+                    request,
+                    capture_body=self.client.config.capture_body in ("transactions", "all"),
+                    capture_headers=self.client.config.capture_headers,
                 ),
                 "request",
             )
-            elasticapm.set_context(lambda: get_data_from_response(response), "response")
+            elasticapm.set_context(
+                lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
+            )
             if response.status_code:
                 result = "HTTP {}xx".format(response.status_code // 100)
             else:
