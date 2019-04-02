@@ -1,5 +1,12 @@
 = APM Python Agent Reference (Beta)
 
+ifdef::env-github[]
+NOTE: For the best reading experience, please head over to this document at https://www.elastic.co/guide/en/apm/agent/python/current/index.html[elastic.co]
+endif::[]
+
+:branch: 6.4
+include::{asciidoc-dir}/../../shared/attributes.asciidoc[]
+
 [[getting-started]]
 == Getting started
 
@@ -13,10 +20,6 @@ The agent is only one of multiple components you need to get started with APM. P
 
  * {apm-server-ref-64}/index.html[APM Server]
  * {ref}/index.html[Elasticsearch]
-
-ifdef::env-github[]
-NOTE: For the best reading experience, please head over to this document at https://www.elastic.co/guide/en/apm/agent/python/current/index.html[elastic.co]
-endif::[]
 
 [[framework-support]]
 The Elastic APM Python Agent comes with support for the following frameworks:
