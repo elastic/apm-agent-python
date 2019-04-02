@@ -35,8 +35,6 @@ import pytest  # isort:skip
 django = pytest.importorskip("django")  # isort:skip
 celery = pytest.importorskip("celery")  # isort:skip
 
-import mock
-
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.celery import register_exception_tracking, register_instrumentation
 from tests.contrib.django.testapp.tasks import failing_task, successful_task

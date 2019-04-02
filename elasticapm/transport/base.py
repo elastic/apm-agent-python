@@ -90,8 +90,7 @@ class Transport(object):
         self._queued_data = None
         self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
         self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
-        self._event_process_thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
-        self._event_process_thread.daemon = True
+        self._event_process_thread = None
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._flushed = threading.Event()
@@ -212,8 +211,12 @@ class Transport(object):
                 self.handle_transport_fail(e)
 
     def _start_event_processor(self):
-        if not self._event_process_thread.is_alive() and not self._closed:
+        if (not self._event_process_thread or not self._event_process_thread.is_alive()) and not self._closed:
             try:
+                self._event_process_thread = threading.Thread(
+                    target=self._process_queue, name="eapm event processor thread"
+                )
+                self._event_process_thread.daemon = True
                 self._event_process_thread.start()
             except RuntimeError:
                 pass
