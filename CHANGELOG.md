@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...master)
+ * fixed an issue with Celery and the prefork worker pool (#444)
+
 ## v4.2.1 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
  * fixed an issue with the certificate pinning feature introduced in 4.2.0 (#433, #434)
