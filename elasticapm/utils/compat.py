@@ -170,7 +170,17 @@ def multidict_to_dict(d):
 
 
 try:
-    from uwsgidecorators import postfork
+    import uwsgi
+
+    # check if a master is running before importing postfork
+    if uwsgi.masterpid() != 0:
+        from uwsgidecorators import postfork
+    else:
+
+        def postfork(f):
+            return f
+
+
 except ImportError:
 
     def postfork(f):
