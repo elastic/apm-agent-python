@@ -365,17 +365,4 @@ Success! We tracked the error successfully! You should be able to see it in a fe
 [[supported-django-and-python-versions]]
 === Supported Django and Python versions
 
-The agent supports the following Django versions:
-
-* 1.8
-* 1.9
-* 1.10
-* 1.11
-* 2.0
-
-and the following Python versions:
-
-* 2.7
-* 3.4
-* 3.5
-* 3.6
+A list of supported <<supported-django,Django>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  
