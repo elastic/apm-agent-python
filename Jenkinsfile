@@ -17,6 +17,7 @@ pipeline {
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
+    CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -119,9 +120,6 @@ pipeline {
         beforeAgent true
         allOf {
           anyOf {
-            not {
-              changeRequest()
-            }
             branch 'master'
             branch "\\d+\\.\\d+"
             branch "v\\d?"
@@ -226,7 +224,8 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.env.WEBFRAMEWORK = "${y}"
             steps.codecov(repo: 'apm-agent-python',
               basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK")
+              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
+              secret: "${steps.env.CODECOV_SECRET}")
           }
         }
       }
