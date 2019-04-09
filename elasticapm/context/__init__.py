@@ -27,3 +27,40 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+def init_execution_context():
+    # If _threading_local has been monkeypatched (by gevent or eventlet), then
+    # we should assume it's use as this will be the most "green-thread safe"
+    if threading_local_monkey_patched():
+        from elasticapm.context.threadlocal import execution_context
+
+        return execution_context
+
+    try:
+        from elasticapm.context.contextvars import execution_context
+    except ImportError:
+        from elasticapm.context.threadlocal import execution_context
+    return execution_context
+
+
+def threading_local_monkey_patched():
+    # Returns True if thread locals have been patched by either gevent of
+    # eventlet
+    try:
+        from gevent.monkey import is_object_patched
+    except ImportError:
+        pass
+    else:
+        if is_object_patched("_threading", "local"):
+            return True
+
+    try:
+        from eventlet.patcher import is_monkey_patched
+    except ImportError:
+        pass
+    else:
+        if is_monkey_patched("thread"):
+            return True
+
+    return False
