@@ -34,6 +34,7 @@ import time
 
 from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.module_import import import_string
+from elasticapm.utils.threading import IntervalTimer
 
 logger = logging.getLogger("elasticapm.metrics")
 
@@ -74,15 +75,11 @@ class MetricsRegistry(object):
             except ImportError as e:
                 logger.warning("Could not register %s metricset: %s", class_path, compat.text_type(e))
 
-    def collect(self, start_timer=True):
+    def collect(self):
         """
         Collect metrics from all registered metric sets
-        :param start_timer: if True, restarts the collect timer after collection
         :return:
         """
-        if start_timer:
-            self._start_collect_timer()
-
         logger.debug("Collecting metrics")
 
         for name, metricset in compat.iteritems(self._metricsets):
@@ -92,9 +89,7 @@ class MetricsRegistry(object):
 
     def _start_collect_timer(self, timeout=None):
         timeout = timeout or self._collect_interval
-        self._collect_timer = threading.Timer(timeout, self.collect, kwargs={"start_timer": True})
-        self._collect_timer.name = "elasticapm metrics collect timer"
-        self._collect_timer.daemon = True
+        self._collect_timer = IntervalTimer(self.collect, timeout, name="eapm metrics collect timer", daemon=True)
         logger.debug("Starting metrics collect timer")
         self._collect_timer.start()
 
