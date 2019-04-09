@@ -42,7 +42,10 @@ class IntervalTimer(threading.Thread):
     """
 
     def __init__(self, function, interval, name=None, args=(), kwargs=None, daemon=None):
-        super(IntervalTimer, self).__init__(name=name, args=args, kwargs=kwargs, daemon=daemon)
+        super(IntervalTimer, self).__init__(name=name)
+        self.daemon = daemon
+        self._args = args
+        self._kwargs = kwargs if kwargs is not None else {}
         self._function = function
         self._interval = interval
         self._interval_done = threading.Event()
