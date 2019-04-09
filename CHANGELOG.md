@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...master)
  * fixed an issue with Celery and the prefork worker pool (#444)
  * fixed an issue when running uwsgi without a master process (#446)
+ * introduced `IntervalTimer` and use it instead of `threading.Timer` (#452)
 
 ## v4.2.1 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
