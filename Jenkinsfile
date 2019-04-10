@@ -137,6 +137,23 @@ pipeline {
         }
       }
     }
+    stage('Building packages') {
+      agent { label 'docker && linux && immutable' }
+      options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+      }
+      steps {
+        deleteDir()
+        unstash 'source'
+        dir("${BASE_DIR}"){
+          sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+          sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+          sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+        }
+      }
+    }
   }
   post {
     always{
