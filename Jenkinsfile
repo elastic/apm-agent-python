@@ -72,7 +72,7 @@ pipeline {
               ./tests/scripts/docker/cleanup.sh
               ./tests/scripts/docker/black.sh
               """, label: "Black code formatting"
-              sh script: 'find . -iname "*.py" -not -path "./elasticapm/utils/wrapt/*" -not -path "./dist/*" -not -path "./build/*" -not -path "./tests/utils/stacks/linenos.py" -print0 | xargs -0 -n 1 grep --files-without-match "Copyright (c) [0-9]..., Elastic"', label: "Copyright notice"
+              sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
             }
           }
         }
