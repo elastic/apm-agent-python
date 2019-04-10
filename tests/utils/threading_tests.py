@@ -26,41 +26,24 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import time
+
+import mock
+
+from elasticapm.utils.threading import IntervalTimer
 
 
-def init_execution_context():
-    # If _threading_local has been monkeypatched (by gevent or eventlet), then
-    # we should assume it's use as this will be the most "green-thread safe"
-    if threading_local_monkey_patched():
-        from elasticapm.context.threadlocal import execution_context
-
-        return execution_context
-
+def test_interval_timer():
+    func = mock.Mock()
+    timer = IntervalTimer(function=func, interval=0.1, args=(1,), kwargs={"a": "b"})
+    timer.start()
+    time.sleep(0.25)
     try:
-        from elasticapm.context.contextvars import execution_context
-    except ImportError:
-        from elasticapm.context.threadlocal import execution_context
-    return execution_context
-
-
-def threading_local_monkey_patched():
-    # Returns True if thread locals have been patched by either gevent of
-    # eventlet
-    try:
-        from gevent.monkey import is_object_patched
-    except ImportError:
-        pass
-    else:
-        if is_object_patched("_threading", "local"):
-            return True
-
-    try:
-        from eventlet.patcher import is_monkey_patched
-    except ImportError:
-        pass
-    else:
-        if is_monkey_patched("thread"):
-            return True
-
-    return False
+        assert func.call_count == 2
+        for call in func.call_args_list:
+            assert call == ((1,), {"a": "b"})
+    finally:
+        timer.cancel()
+    time.sleep(0.05)
+    assert not timer.is_alive()
