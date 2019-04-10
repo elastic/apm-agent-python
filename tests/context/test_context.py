@@ -29,38 +29,27 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def init_execution_context():
-    # If _threading_local has been monkeypatched (by gevent or eventlet), then
-    # we should assume it's use as this will be the most "green-thread safe"
-    if threading_local_monkey_patched():
-        from elasticapm.context.threadlocal import execution_context
+import sys
 
-        return execution_context
-
-    try:
-        from elasticapm.context.contextvars import execution_context
-    except ImportError:
-        from elasticapm.context.threadlocal import execution_context
-    return execution_context
+import elasticapm.context
+from elasticapm.context.threadlocal import ThreadLocalContext
 
 
-def threading_local_monkey_patched():
-    # Returns True if thread locals have been patched by either gevent of
-    # eventlet
-    try:
-        from gevent.monkey import is_object_patched
-    except ImportError:
-        pass
+def test_execution_context_backing():
+    execution_context = elasticapm.context.init_execution_context()
+
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 7:
+        from elasticapm.context.contextvars import ContextVarsContext
+
+        assert isinstance(execution_context, ContextVarsContext)
     else:
-        if is_object_patched("_threading", "local"):
-            return True
+        assert isinstance(execution_context, ThreadLocalContext)
 
-    try:
-        from eventlet.patcher import is_monkey_patched
-    except ImportError:
-        pass
-    else:
-        if is_monkey_patched("thread"):
-            return True
 
-    return False
+def test_execution_context_monkeypatched(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(elasticapm.context, "threading_local_monkey_patched", lambda: True)
+        execution_context = elasticapm.context.init_execution_context()
+
+    # Should always use ThreadLocalContext when thread local is monkey patched
+    assert isinstance(execution_context, ThreadLocalContext)

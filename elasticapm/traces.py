@@ -37,6 +37,7 @@ import timeit
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
+from elasticapm.context import init_execution_context
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
@@ -51,10 +52,7 @@ _time_func = timeit.default_timer
 TAG_RE = re.compile('[.*"]')
 
 
-try:
-    from elasticapm.context.contextvars import execution_context
-except ImportError:
-    from elasticapm.context.threadlocal import execution_context
+execution_context = init_execution_context()
 
 
 class Transaction(object):
