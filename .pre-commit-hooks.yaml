@@ -1,7 +1,0 @@
--   id: license-header-check
-    name: License header check
-    description: Checks the existance of license headers in all Python files
-    entry: ./tests/scripts/license_headers_check.sh
-    exclude: "(elasticapm\/utils\/wrapt\/.*|tests\/utils\/stacks\/linenos.py)"
-    language: script
-    types: [python]

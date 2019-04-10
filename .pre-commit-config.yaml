@@ -18,7 +18,12 @@ repos:
     hooks:
     -   id: flake8
         exclude: elasticapm\/utils\/wrapt|build|src|tests|dist|conftest.py|setup.py
--   repo: https://github.com/elastic/apm-agent-python
-    rev: 86fca8c04e6d638ed 
+-   repo: local
     hooks:
-    - id: license-header-check
+    -   id: license-header-check
+        name: License header check
+        description: Checks the existance of license headers in all Python files
+        entry: ./tests/scripts/license_headers_check.sh
+        exclude: "(elasticapm\/utils\/wrapt\/.*|tests\/utils\/stacks\/linenos.py)"
+        language: script
+        types: [python]
