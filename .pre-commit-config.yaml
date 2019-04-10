@@ -18,3 +18,7 @@ repos:
     hooks:
     -   id: flake8
         exclude: elasticapm\/utils\/wrapt|build|src|tests|dist|conftest.py|setup.py
+-   repo: /home/beni/elastic/apm-agent-python
+    rev: 5cd27336a7950
+    hooks:
+    - id: license-header-check
