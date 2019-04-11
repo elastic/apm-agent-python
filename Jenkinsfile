@@ -183,28 +183,12 @@ pipeline {
                ],
                description: 'PyPi repository URL',
                name: 'REPO_URL')
-             ])
+          ])
         deleteDir()
         unstash 'source'
         unstash('packages')
         dir("${BASE_DIR}"){
-        def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
-        wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
-          [var: 'TWINE_USER', password: jsonValue.data.user],
-          [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
-        ]]) {
-          withEnv([
-            "TWINE_USER=${jsonValue.data.user}",
-            "TWINE_PASSWORD=${jsonValue.data.password}"]) {
-              sh(label: "Release packages", script: """
-              set +x
-              python -m pip install --user twine
-              python setup.py sdist
-              python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
-              python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
-              """)
-            }
-          }
+          releasePackages()
         }
       }
     }
@@ -319,6 +303,26 @@ def runScript(Map params = [:]){
     retry(2){
       sleep randomNumber(min:10, max: 30)
       sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+    }
+  }
+}
+
+def releasePackages(){
+  def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
+  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
+    [var: 'TWINE_USER', password: jsonValue.data.user],
+    [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
+  ]]) {
+    withEnv([
+      "TWINE_USER=${jsonValue.data.user}",
+      "TWINE_PASSWORD=${jsonValue.data.password}"]) {
+      sh(label: "Release packages", script: """
+      set +x
+      python -m pip install --user twine
+      python setup.py sdist
+      python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+      python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+      """)
     }
   }
 }
