@@ -153,8 +153,8 @@ pipeline {
           sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
           sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
           sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
-          stash allowEmpty: true, name: 'packages', includes: "wheelhouse/*.whl,dist/*.tar.gz", useDefaultExcludes: false
         }
+        stash allowEmpty: true, name: 'packages', includes: "wheelhouse/*.whl,dist/*.tar.gz", useDefaultExcludes: false
       }
     }
     stage('Release') {
