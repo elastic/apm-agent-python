@@ -155,59 +155,60 @@ pipeline {
         }
       }
     }
-      stage('Release') {
-        agent { label 'linux && immutable' }
-        options { skipDefaultCheckout() }
-        environment {
-          HOME = "${env.WORKSPACE}"
-          PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+    stage('Release') {
+      agent { label 'linux && immutable' }
+      options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+      }
+      /**
+      when {
+        beforeAgent true
+        anyOf {
+          tag "v\\d+\\.\\d+\\.\\d+*"
+          expression { return params.Run_As_Master_Branch }
         }
-        when {
-          beforeAgent true
-          anyOf {
-            tag "v\\d+\\.\\d+\\.\\d+*"
-            expression { return params.Run_As_Master_Branch }
-          }
-        }
-        steps {
-          input(message: 'Should we release a new version?', ok: 'Yes, we should.')
-          input(
-            message: 'Should we release a new version?', 
-            ok: 'Yes, we should.', 
-            parameters: [
-              choice(
-                choices: [
-                  'https://test.pypi.org/legacy/', 
-                  'https://upload.pypi.org/legacy/'
-                 ],
-                 description: 'PyPi repository URL', 
-                 name: 'REPO_URL')
-               ])
-          deleteDir()
-          unstash 'source'
-          unstash('packages')
-          dir("${BASE_DIR}"){
-  def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
-  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
-    [var: 'TWINE_USER', password: jsonValue.data.user],
-    [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
-    ]]) {
-    withEnv([
-      "TWINE_USER=${jsonValue.data.user}",
-      "TWINE_PASSWORD=${jsonValue.data.password}"]) {
-        sh(label: "Release packages", script: """
-        set +x
-        python -m pip install --user twine 
-        python setup.py sdist 
-        python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz 
-        python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
-        """)
-    }
-  }            
+      }
+      */
+      steps {
+        input(
+          message: 'Should we release a new version?',
+          ok: 'Yes, we should.',
+          parameters: [
+            choice(
+              choices: [
+                'https://test.pypi.org/legacy/',
+                'https://upload.pypi.org/legacy/'
+               ],
+               description: 'PyPi repository URL',
+               name: 'REPO_URL')
+             ])
+        deleteDir()
+        unstash 'source'
+        unstash('packages')
+        dir("${BASE_DIR}"){
+        def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
+        wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
+          [var: 'TWINE_USER', password: jsonValue.data.user],
+          [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
+        ]]) {
+          withEnv([
+            "TWINE_USER=${jsonValue.data.user}",
+            "TWINE_PASSWORD=${jsonValue.data.password}"]) {
+              sh(label: "Release packages", script: """
+              set +x
+              python -m pip install --user twine
+              python setup.py sdist
+              python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+              python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+              """)
+            }
           }
         }
       }
     }
+  }
   post {
     always{
       script{
