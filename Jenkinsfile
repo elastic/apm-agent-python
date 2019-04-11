@@ -81,6 +81,7 @@ pipeline {
     /**
     Execute unit tests.
     */
+    /**
     stage('Test') {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
@@ -105,6 +106,7 @@ pipeline {
         }
       }
     }
+    */
     /**
     Build the documentation.
     */
@@ -178,10 +180,10 @@ pipeline {
           parameters: [
             choice(
               choices: [
-                'https://test.pypi.org/legacy/',
                 'https://upload.pypi.org/legacy/'
+                'https://test.pypi.org/legacy/',
                ],
-               description: 'PyPi repository URL',
+               description: 'PyPI repository URL',
                name: 'REPO_URL')
           ])
         deleteDir()
@@ -320,8 +322,9 @@ def releasePackages(){
       set +x
       python -m pip install --user twine
       python setup.py sdist
-      python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
-      python -m twine upload -u \${TWINE_USER} -p \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+      echo "Uploading to \${REPO_URL} with user \${TWINE_USER}"
+      python -m twine upload --username \${TWINE_USER} --password \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+      python -m twine upload --username \${TWINE_USER} --password \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
       """)
     }
   }
