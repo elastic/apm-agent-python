@@ -180,8 +180,8 @@ pipeline {
           parameters: [
             choice(
               choices: [
-                'https://upload.pypi.org/legacy/'
-                'https://test.pypi.org/legacy/',
+                'https://upload.pypi.org/legacy/',
+                'https://test.pypi.org/legacy/'
                ],
                description: 'PyPI repository URL',
                name: 'REPO_URL')
@@ -323,8 +323,8 @@ def releasePackages(){
       python -m pip install --user twine
       python setup.py sdist
       echo "Uploading to \${REPO_URL} with user \${TWINE_USER}"
-      python -m twine upload --username \${TWINE_USER} --password \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
-      python -m twine upload --username \${TWINE_USER} --password \${TWINE_PASSWORD} --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
       """)
     }
   }
