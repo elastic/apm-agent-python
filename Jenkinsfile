@@ -151,6 +151,7 @@ pipeline {
           sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
           sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
           sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+          stash allowEmpty: true, name: 'packages', includes: "path_to_packages/**", useDefaultExcludes: false
         }
       }
     }
