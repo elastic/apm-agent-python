@@ -171,6 +171,18 @@ pipeline {
         }
         steps {
           input(message: 'Should we release a new version?', ok: 'Yes, we should.')
+          input(
+            message: 'Should we release a new version?', 
+            ok: 'Yes, we should.', 
+            parameters: [
+              choice(
+                choices: [
+                  'https://test.pypi.org/legacy/', 
+                  'https://upload.pypi.org/legacy/'
+                 ],
+                 description: 'PyPi repository URL', 
+                 name: 'REPO_URL')
+               ])
           deleteDir()
           unstash 'source'
           unstash('packages')
