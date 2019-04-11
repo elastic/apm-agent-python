@@ -154,7 +154,31 @@ pipeline {
         }
       }
     }
-  }
+      stage('Release') {
+        agent { label 'linux && immutable' }
+        options { skipDefaultCheckout() }
+        environment {
+          HOME = "${env.WORKSPACE}"
+          PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+        }
+        when {
+          beforeAgent true
+          anyOf {
+            tag "v\\d+\\.\\d+\\.\\d+*"
+            expression { return params.Run_As_Master_Branch }
+          }
+        }
+        steps {
+          input(message: 'Should we release a new version?', ok: 'Yes, we should.')
+          deleteDir()
+          unstash 'source'
+          unstash('packages')
+          dir("${BASE_DIR}"){
+            /** TODO code to release */
+          }
+        }
+      }
+    }
   post {
     always{
       script{
