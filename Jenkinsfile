@@ -177,6 +177,7 @@ pipeline {
       }
       when {
         beforeAgent true
+        beforeInput true
         anyOf {
           tag "v\\d+\\.\\d+\\.\\d+*"
           expression { return params.Run_As_Master_Branch }
