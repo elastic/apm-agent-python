@@ -81,7 +81,6 @@ pipeline {
     /**
     Execute unit tests.
     */
-    /**
     stage('Test') {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
@@ -106,7 +105,6 @@ pipeline {
         }
       }
     }
-    */
     /**
     Build the documentation.
     */
@@ -177,7 +175,6 @@ pipeline {
              name: 'REPO_URL')
         }
       }
-      /**
       when {
         beforeAgent true
         anyOf {
@@ -185,7 +182,6 @@ pipeline {
           expression { return params.Run_As_Master_Branch }
         }
       }
-      */
       steps {
         deleteDir()
         unstash 'source'
