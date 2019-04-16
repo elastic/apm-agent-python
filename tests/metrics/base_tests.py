@@ -64,7 +64,7 @@ def test_metrics_registry():
     indirect=True,
 )
 def test_disable_metrics(elasticapm_client):
-    elasticapm_client._metrics.collect(False)
+    elasticapm_client._metrics.collect()
     metrics = elasticapm_client.events[constants.METRICSET][0]
     assert "a" in metrics["samples"]
     assert "b" in metrics["samples"]
