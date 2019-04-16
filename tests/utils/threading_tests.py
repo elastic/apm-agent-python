@@ -26,7 +26,24 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = (4, 2, 2)
-VERSION = ".".join(map(str, __version__))
+import time
+
+import mock
+
+from elasticapm.utils.threading import IntervalTimer
+
+
+def test_interval_timer():
+    func = mock.Mock()
+    timer = IntervalTimer(function=func, interval=0.1, args=(1,), kwargs={"a": "b"})
+    timer.start()
+    time.sleep(0.25)
+    try:
+        assert func.call_count == 2
+        for call in func.call_args_list:
+            assert call == ((1,), {"a": "b"})
+    finally:
+        timer.cancel()
+    time.sleep(0.05)
+    assert not timer.is_alive()

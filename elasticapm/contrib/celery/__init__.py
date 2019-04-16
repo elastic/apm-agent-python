@@ -52,6 +52,7 @@ def register_exception_tracking(client):
 
     signals.task_failure.disconnect(process_failure_signal, dispatch_uid=dispatch_uid)
     signals.task_failure.connect(process_failure_signal, weak=False, dispatch_uid=dispatch_uid)
+    _register_worker_signals(client)
 
 
 def register_instrumentation(client):
@@ -71,3 +72,20 @@ def register_instrumentation(client):
     # register for this client
     signals.task_prerun.connect(begin_transaction, dispatch_uid=dispatch_uid % "prerun", weak=False)
     signals.task_postrun.connect(end_transaction, weak=False, dispatch_uid=dispatch_uid % "postrun")
+    _register_worker_signals(client)
+
+
+def _register_worker_signals(client):
+    def worker_startup(*args, **kwargs):
+        client._transport._start_event_processor()
+
+    def worker_shutdown(*args, **kwargs):
+        client.close()
+
+    def connect_worker_process_init(*args, **kwargs):
+        signals.worker_process_init.connect(worker_startup, dispatch_uid="elasticapm-start-worker", weak=False)
+        signals.worker_process_shutdown.connect(worker_shutdown, dispatch_uid="elasticapm-shutdown-worker", weak=False)
+
+    signals.worker_init.connect(
+        connect_worker_process_init, dispatch_uid="elasticapm-connect-start-threads", weak=False
+    )

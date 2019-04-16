@@ -273,3 +273,9 @@ elasticApm.init({
 ----
 
 See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
+
+[float]
+[[supported-flask-and-python-versions]]
+=== Supported Flask and Python versions
+
+A list of supported <<supported-flask,Flask>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  

@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.2.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...v4.2.2)
+ * fixed an issue with Celery and the prefork worker pool (#444)
+ * fixed an issue when running uwsgi without a master process (#446)
+ * fixed an issue with gevent/eventlet on Python 3.7 (#451, #454)
+ * introduced `IntervalTimer` and use it instead of `threading.Timer` (#452)
+ * added license header check as pre-commit hook (#456)
+
 ## v4.2.1 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
  * fixed an issue with the certificate pinning feature introduced in 4.2.0 (#433, #434)

@@ -3,8 +3,8 @@ dist: xenial
 language: python
 python:
 - nightly
-- "3.5"
 - "3.6"
+- "3.7"
 
 env:
   global:
@@ -22,34 +22,9 @@ matrix:
   - env: WEBFRAMEWORK=django-master
   - env: WEBFRAMEWORK=flask-master
   - python: nightly
-  include:
-  - stage: build
-    if: tag =~ ^v\d # only build if this is a version-tag
-    dist: trusty
-    python: "3.6"
-    sudo: required
-    services:
-      - docker
-    script:
-      - pip install cibuildwheel==0.8.0
-      - cibuildwheel --output-dir wheelhouse/
-      - python -m pip install twine
-      - python setup.py sdist
-      - python -m twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ dist/*.tar.gz
-      - python -m twine upload --skip-existing --repository-url https://upload.pypi.org/legacy/ wheelhouse/*.whl
-    env:
-      - CIBW_ENVIRONMENT="PIP_CACHE=/host/.pip"
-      - CIBW_BEFORE_BUILD="rm -rf build elastic_apm.egg-info tests"
-      - CIBW_SKIP=cp33
-#      - CIBW_TEST_REQUIRES="pytest pytest-django mock pytest-catchlog"
-#      - CIBW_BEFORE_BUILD="yum -y install zeromq-devel libevent-devel && {pip} install -r tests/requirements/requirements-base.txt --cache-dir /host/.pip"
-#      - CIBW_TEST_COMMAND="cd {project} && py.test -m 'not integrationtest' {project}/tests --ignore={project}/tests/asyncio"
-    after_script:
 
 stages:
-  - linters
   - test
-  - build
 
 before_script:
 - psql -c 'create database elasticapm_test;' -U postgres
