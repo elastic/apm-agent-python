@@ -3,8 +3,8 @@ dist: xenial
 language: python
 python:
 - nightly
-- "3.5"
 - "3.6"
+- "3.7"
 
 env:
   global:
