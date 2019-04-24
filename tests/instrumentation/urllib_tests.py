@@ -38,8 +38,10 @@ from elasticapm.utils.disttracing import TraceParent
 
 try:
     from urllib.request import urlopen
+    from urllib.error import URLError
 except ImportError:
     from urllib2 import urlopen
+    from urllib2 import URLError
 
 
 def test_urllib(instrument, elasticapm_client, waiting_httpserver):
@@ -125,3 +127,18 @@ def test_span_only_dropped(instrument, elasticapm_client, waiting_httpserver):
     assert trace_parent_1.span_id != transaction_object.id
     # second request should use transaction id as span id because there is no span
     assert trace_parent_2.span_id == transaction_object.id
+
+
+def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    url = url.replace("http://", "http://user:pass@")
+    transaction_object = elasticapm_client.begin_transaction("transaction")
+    with pytest.raises(URLError):
+        urlopen(url)
+    elasticapm_client.end_transaction("MyView")
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+
+    assert "pass" not in span["context"]["http"]["url"]
+    assert constants.MASK in span["context"]["http"]["url"]

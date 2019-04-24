@@ -132,3 +132,17 @@ def test_requests_instrumentation_malformed_path(instrument, elasticapm_client):
     with capture_span("test_request", "test"):
         with pytest.raises(InvalidURL):
             requests.get("http://")
+
+
+def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    url = url.replace("http://", "http://user:pass@")
+    transaction_object = elasticapm_client.begin_transaction("transaction")
+    requests.get(url)
+    elasticapm_client.end_transaction("MyView")
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+
+    assert "pass" not in span["context"]["http"]["url"]
+    assert constants.MASK in span["context"]["http"]["url"]

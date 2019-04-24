@@ -32,7 +32,7 @@
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import compat, default_ports
+from elasticapm.utils import compat, default_ports, sanitize_url
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -45,17 +45,17 @@ def request_host(request):
 
     """
     url = request.get_full_url()
-    scheme, host = compat.urlparse.urlparse(url)[:2]
+    parse_result = compat.urlparse.urlparse(url)
+    scheme, host, port = parse_result.scheme, parse_result.hostname, parse_result.port
+    try:
+        port = int(port)
+    except ValueError:
+        pass
     if host == "":
         host = request.get_header("Host", "")
-    if ":" in host:
-        bare_host, port = host.split(":")
-        try:
-            port = int(port)
-        except ValueError:
-            pass
-        if port == default_ports.get(scheme):
-            return bare_host
+
+    if port != default_ports.get(scheme):
+        host = "%s:%s" % (host, port)
     return host
 
 
@@ -73,7 +73,7 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
         method = request_object.get_method()
         host = request_host(request_object)
 
-        url = request_object.get_full_url()
+        url = sanitize_url(request_object.get_full_url())
         signature = method.upper() + " " + host
 
         transaction = execution_context.get_transaction()

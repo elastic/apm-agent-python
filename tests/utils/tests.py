@@ -32,7 +32,8 @@ from functools import partial
 
 import pytest
 
-from elasticapm.utils import get_name_from_func, get_url_dict
+from elasticapm.conf import constants
+from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url
 from elasticapm.utils.deprecation import deprecated
 
 try:
@@ -141,3 +142,8 @@ def test_get_name_from_func_partialmethod_bound():
 
 def test_get_name_from_func_lambda():
     assert "tests.utils.tests.<lambda>" == get_name_from_func(lambda x: "x")
+
+
+def test_url_sanitization():
+    sanitized = sanitize_url("http://user:pass@localhost:123/foo?bar=baz#bazzinga")
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK

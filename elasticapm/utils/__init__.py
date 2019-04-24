@@ -32,6 +32,7 @@ import base64
 import os
 from functools import partial
 
+from elasticapm.conf import constants
 from elasticapm.utils import compat, encoding
 
 try:
@@ -116,6 +117,13 @@ def get_url_dict(url):
     if query:
         url_dict["search"] = encoding.keyword_field("?" + query)
     return url_dict
+
+
+def sanitize_url(url):
+    if "@" not in url:
+        return url
+    parts = compat.urlparse.urlparse(url)
+    return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
 def read_pem_file(file_obj):

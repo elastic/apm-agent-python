@@ -70,6 +70,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         signature = method.upper() + " " + host
 
+        # TODO: reconstruct URL more faithfully, e.g. include port
         url = instance.scheme + "://" + host + url
         transaction = execution_context.get_transaction()
 
