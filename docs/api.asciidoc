@@ -200,7 +200,12 @@ elasticapm.set_transaction_result('SUCCESS')
 
 Attach custom contextual data to the current transaction and errors.
 Supported frameworks will automatically attach information about the HTTP request and the logged in user.
-You can attach further data using this function. Example:
+You can attach further data using this function.
+
+TIP: Before using custom context, ensure you understand the different types of
+{apm-overview-ref-v}/metadata.html[metadata] that are available.
+
+Example:
 
 [source,python]
 ----
@@ -279,6 +284,10 @@ def coffee_maker(strength):
 ==== `elasticapm.tag()`
 
 Attach tags to the the current transaction and errors.
+
+TIP: Before using custom tags, ensure you understand the different types of
+{apm-overview-ref-v}/metadata.html[metadata] that are available.
+
 Example:
 
 [source,python]
@@ -293,5 +302,8 @@ You can call this function multiple times, new tags will be merged with existing
 following the `update()` semantics of Python dictionaries.
 
 The value is converted to a string.
+`.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.
 
-NOTE: `.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.
+WARNING: Avoid defining too many user-specified tags.
+Defining too many unique fields in an index is a condition that can lead to a
+{ref}/mapping.html#mapping-limit-settings[mapping explosion].
