@@ -1,4 +1,35 @@
 # -*- coding: utf-8 -*-
+
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import pytest  # isort:skip
 
 django = pytest.importorskip("django")  # isort:skip
@@ -478,8 +509,13 @@ def test_response_error_id_middleware(django_elasticapm_client, client):
 
 def test_get_client(django_elasticapm_client):
     with mock.patch.dict("os.environ", {"ELASTIC_APM_METRICS_INTERVAL": "0ms"}):
-        assert get_client() is get_client()
-        assert get_client("elasticapm.base.Client").__class__ == Client
+        client2 = get_client("elasticapm.base.Client")
+        try:
+            assert get_client() is get_client()
+            assert client2.__class__ == Client
+        finally:
+            get_client().close()
+            client2.close()
 
 
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)
@@ -878,7 +914,7 @@ def test_filter_no_match(django_sending_elasticapm_client):
         raise ValueError("foo")
     except ValueError:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
@@ -892,7 +928,7 @@ def test_filter_matches_type(django_sending_elasticapm_client):
         raise KeyError("foo")
     except KeyError:
         django_sending_elasticapm_client.capture("Exception")
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
 
@@ -908,7 +944,7 @@ def test_filter_matches_type_but_not_module(django_sending_elasticapm_client):
         raise FakeException("foo")
     except FakeException:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
@@ -924,7 +960,7 @@ def test_filter_matches_type_and_module(django_sending_elasticapm_client):
         raise FakeException("foo")
     except FakeException:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
+    django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 0
 
 
@@ -940,8 +976,8 @@ def test_filter_matches_module_only(django_sending_elasticapm_client):
         raise OtherFakeException("foo")
     except OtherFakeException:
         django_sending_elasticapm_client.capture("Exception", handled=False)
-
-        assert len(django_sending_elasticapm_client.httpserver.requests) == 1
+    django_sending_elasticapm_client.close()
+    assert len(django_sending_elasticapm_client.httpserver.requests) == 1
 
 
 def test_django_logging_request_kwarg(django_elasticapm_client):
@@ -1343,6 +1379,7 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
         client.post(
             reverse("elasticapm-raise-exc"), json.dumps({"a": "b"}), content_type="application/json; charset=utf8"
         )
+    django_sending_elasticapm_client.close()
     error = django_sending_elasticapm_client.httpserver.payloads[0][1]["error"]
     if django_sending_elasticapm_client.config.capture_body in ("errors", "all"):
         assert error["context"]["request"]["body"] == '{"a": "b"}'

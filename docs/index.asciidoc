@@ -30,3 +30,5 @@ include::./api.asciidoc[API documentation]
 include::./upgrading.asciidoc[Upgrading from previous versions]
 
 include::./tuning.asciidoc[Tuning and Overhead considerations]
+
+include::./release-notes.asciidoc[Release notes]

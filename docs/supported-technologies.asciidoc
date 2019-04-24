@@ -25,6 +25,7 @@ We support these Django versions:
  * 1.11
  * 2.0
  * 2.1
+ * 2.2
  
 For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
 

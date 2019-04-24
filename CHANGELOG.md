@@ -1,12 +1,30 @@
 # Changelog
 
-## Unreleaded
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...master)
+## v4.2.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...v4.2.2)
+ * fixed an issue with Celery and the prefork worker pool (#444)
+ * fixed an issue when running uwsgi without a master process (#446)
+ * fixed an issue with gevent/eventlet on Python 3.7 (#451, #454)
+ * introduced `IntervalTimer` and use it instead of `threading.Timer` (#452)
+ * added license header check as pre-commit hook (#456)
 
+## v4.2.1 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
+ * fixed an issue with the certificate pinning feature introduced in 4.2.0 (#433, #434)
+ * fixed incompatibility with eventlet introduced in 4.2.0 (#435, #436)
+    
+## v4.2.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...v4.2.0)
+
+ * Implemented a new transport queue, which should avoid certain deadlock scenarios (#411)
+ * Implemented server certificate pinning (#405)
  * Moved context.url to context.http.url for requests/urllib3 spans (#393, #394)
  * Added support for using route as transaction name in Django 2.2+ (#86, #396)
+ * Added some randomness to time between requests to APM Server (#426)
  * Fixed an issue with custom user models in Django using non-string usernames (#397, #398)
  * Fixed an issue with sending kubernetes metadata to the API (#401, #402)
+ * Fixed an issue with parsing /proc/stat in RHEL/centos 6 (#406, #407)
+ * Added copyright header to all files, and a CI check (#429)
 
 ## v4.1.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)

@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@v1.0.6') _
+@Library('apm@current') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
@@ -17,6 +17,7 @@ pipeline {
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
+    CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -25,6 +26,8 @@ pipeline {
     ansiColor('xterm')
     disableResume()
     durabilityHint('PERFORMANCE_OPTIMIZED')
+    rateLimitBuilds(throttle: [count: 60, durationName: 'hour', userBoost: true])
+    quietPeriod(10)
   }
   triggers {
     issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
@@ -61,14 +64,15 @@ pipeline {
             deleteDir()
             unstash 'source'
             dir("${BASE_DIR}"){
-              sh """
+              sh script: """
               ./tests/scripts/docker/cleanup.sh
               ./tests/scripts/docker/isort.sh
-              """
-              sh """
+              """, label: "isort import sorting"
+              sh script: """
               ./tests/scripts/docker/cleanup.sh
               ./tests/scripts/docker/black.sh
-              """
+              """, label: "Black code formatting"
+              sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
             }
           }
         }
@@ -116,9 +120,6 @@ pipeline {
         beforeAgent true
         allOf {
           anyOf {
-            not {
-              changeRequest()
-            }
             branch 'master'
             branch "\\d+\\.\\d+"
             branch "v\\d?"
@@ -131,14 +132,63 @@ pipeline {
       steps {
         deleteDir()
         unstash 'source'
-        checkoutElasticDocsTools(basedir: "${ELASTIC_DOCS}")
         dir("${BASE_DIR}"){
-          sh './scripts/jenkins/docs.sh'
+          buildDocs(docsDir: "docs", archive: true)
         }
       }
-      post{
-        success {
-          tar(file: "doc-files.tgz", archive: true, dir: "html", pathPrefix: "${BASE_DIR}/docs")
+    }
+    stage('Building packages') {
+      agent { label 'docker && linux && immutable' }
+      options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+      }
+      steps {
+        deleteDir()
+        unstash 'source'
+        dir("${BASE_DIR}"){
+          sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+          sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+          sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+        }
+        stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
+      }
+    }
+    stage('Release') {
+      agent { label 'linux && immutable' }
+      options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+      }
+      input {
+        message 'Should we release a new version?'
+        ok 'Yes, we should.'
+        parameters {
+          choice(
+            choices: [
+              'https://upload.pypi.org/legacy/',
+              'https://test.pypi.org/legacy/'
+             ],
+             description: 'PyPI repository URL',
+             name: 'REPO_URL')
+        }
+      }
+      when {
+        beforeAgent true
+        beforeInput true
+        anyOf {
+          tag "v\\d+\\.\\d+\\.\\d+*"
+          expression { return params.Run_As_Master_Branch }
+        }
+      }
+      steps {
+        deleteDir()
+        unstash 'source'
+        unstash('packages')
+        dir("${BASE_DIR}"){
+          releasePackages()
         }
       }
     }
@@ -220,12 +270,17 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 1)
           } catch(e){
             saveResult(x, y, 0)
-            error("${label} tests failed : ${e}\n")
+            error("${label} tests failed : ${e.toString()}\n")
           } finally {
             steps.junit(allowEmptyResults: false,
               keepLongStdio: true,
               testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-              //steps.codecov(repo: 'apm-agent-python', basedir: "${BASE_DIR}", label: "${PYTHON_VERSION},${WEBFRAMEWORK}")
+            steps.env.PYTHON_VERSION = "${x}"
+            steps.env.WEBFRAMEWORK = "${y}"
+            steps.codecov(repo: 'apm-agent-python',
+              basedir: "${steps.env.BASE_DIR}",
+              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
+              secret: "${steps.env.CODECOV_SECRET}")
           }
         }
       }
@@ -248,6 +303,27 @@ def runScript(Map params = [:]){
     retry(2){
       sleep randomNumber(min:10, max: 30)
       sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+    }
+  }
+}
+
+def releasePackages(){
+  def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
+  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
+    [var: 'TWINE_USER', password: jsonValue.data.user],
+    [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
+  ]]) {
+    withEnv([
+      "TWINE_USER=${jsonValue.data.user}",
+      "TWINE_PASSWORD=${jsonValue.data.password}"]) {
+      sh(label: "Release packages", script: """
+      set +x
+      python -m pip install --user twine
+      python setup.py sdist
+      echo "Uploading to ${REPO_URL} with user \${TWINE_USER}"
+      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+      """)
     }
   }
 }
