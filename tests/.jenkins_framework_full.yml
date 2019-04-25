@@ -24,8 +24,6 @@ FRAMEWORK:
   - twisted-17
   - twisted-16
   - twisted-15
-  - requests-1.2
-  - requests-2.0
   - requests-newest
   - boto3-1.0
   - boto3-1.5

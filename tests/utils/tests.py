@@ -32,7 +32,8 @@ from functools import partial
 
 import pytest
 
-from elasticapm.utils import get_name_from_func, get_url_dict, starmatch_to_regex
+from elasticapm.conf import constants
+from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url, starmatch_to_regex
 from elasticapm.utils.deprecation import deprecated
 
 try:
@@ -156,3 +157,13 @@ def test_get_name_from_func_lambda():
 def test_starmatch_to_regex(pattern, input, match):
     re_pattern = starmatch_to_regex(pattern)
     assert bool(re_pattern.match(input)) is match, re_pattern.pattern
+
+
+def test_url_sanitization():
+    sanitized = sanitize_url("http://user:pass@localhost:123/foo?bar=baz#bazzinga")
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+
+
+def test_url_sanitization_urlencoded_password():
+    sanitized = sanitize_url("http://user:%F0%9F%9A%B4@localhost:123/foo?bar=baz#bazzinga")
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
