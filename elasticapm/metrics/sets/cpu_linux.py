@@ -49,7 +49,7 @@ if not os.path.exists(SYS_STATS):
 
 
 class CPUMetricSet(MetricsSet):
-    def __init__(self, sys_stats_file=SYS_STATS, process_stats_file=PROC_STATS, memory_stats_file=MEM_STATS):
+    def __init__(self, registry, sys_stats_file=SYS_STATS, process_stats_file=PROC_STATS, memory_stats_file=MEM_STATS):
         self.page_size = resource.getpagesize()
         self.previous = {}
         self._read_data_lock = threading.Lock()
@@ -60,7 +60,7 @@ class CPUMetricSet(MetricsSet):
         with self._read_data_lock:
             self.previous.update(self.read_process_stats())
             self.previous.update(self.read_system_stats())
-        super(CPUMetricSet, self).__init__()
+        super(CPUMetricSet, self).__init__(registry)
 
     def collect(self):
         new = self.read_process_stats()

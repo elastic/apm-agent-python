@@ -33,7 +33,7 @@ from functools import partial
 import pytest
 
 from elasticapm.conf import constants
-from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url
+from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url, starmatch_to_regex
 from elasticapm.utils.deprecation import deprecated
 
 try:
@@ -142,6 +142,21 @@ def test_get_name_from_func_partialmethod_bound():
 
 def test_get_name_from_func_lambda():
     assert "tests.utils.tests.<lambda>" == get_name_from_func(lambda x: "x")
+
+
+@pytest.mark.parametrize(
+    "pattern,input,match",
+    [
+        ("a*c", "abc", True),
+        ("a*c", "abcd", False),
+        ("a*c*", "abcd", True),
+        ("a.c", "abc", False),
+        ("a?c", "abc", False),
+    ],
+)
+def test_starmatch_to_regex(pattern, input, match):
+    re_pattern = starmatch_to_regex(pattern)
+    assert bool(re_pattern.match(input)) is match, re_pattern.pattern
 
 
 def test_url_sanitization():

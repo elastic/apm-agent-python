@@ -30,6 +30,7 @@
 
 import base64
 import os
+import re
 from functools import partial
 
 from elasticapm.conf import constants
@@ -135,3 +136,16 @@ def read_pem_file(file_obj):
         if not line.startswith(b"-----END CERTIFICATE-----"):
             cert += line.strip()
     return base64.b64decode(cert)
+
+
+def starmatch_to_regex(pattern):
+    i, n = 0, len(pattern)
+    res = []
+    while i < n:
+        c = pattern[i]
+        i = i + 1
+        if c == "*":
+            res.append(".*")
+        else:
+            res.append(re.escape(c))
+    return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)

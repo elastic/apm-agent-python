@@ -623,6 +623,40 @@ If you want to use the route instead of the view name as the transaction name, y
 NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
 [float]
+[[config-metrics_interval]]
+==== `metrics_interval`
+|============
+| Environment                     | Django/Flask       | Default
+| `ELASTIC_APM_METRICS_INTERVAL`  | `METRICS_INTERVAL` | `30s`
+|============
+
+
+The interval in which the agent collects metrics. A shorter interval increases the granularity of metrics,
+but also increases the overhead of the agent, as well as storage requirements.
+
+It has to be provided in *<<config-format-duration, duration format>>*.
+
+[float]
+[[config-disable_metrics]]
+==== `disable_metrics`
+|============
+| Environment                     | Django/Flask      | Default
+| `ELASTIC_APM_DISABLE_METRICS`   | `DISABLE_METRICS` | `None`
+|============
+
+
+A comma-separated list of dotted metrics names that should not be sent to the APM Server.
+You can use `*` to match multiple metrics. As an example, to disable all CPU-related metrics,
+as well as the "total system memory" metric, you would set `disable_metrics` to:
+
+[source]
+----
+"*.cpu.*,system.memory.total"
+----
+
+NOTE: this setting only disables the *sending* of the given metrics, not collection.
+
+[float]
 [[config-formats]]
 === Configuration formats
 
