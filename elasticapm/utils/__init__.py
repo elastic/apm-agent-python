@@ -32,6 +32,7 @@ import base64
 import os
 from functools import partial
 
+from elasticapm.conf import constants
 from elasticapm.utils import compat, encoding
 
 try:
@@ -43,7 +44,7 @@ except ImportError:
     partial_types = (partial,)
 
 
-default_ports = {"https": 433, "http": 80, "postgresql": 5432}
+default_ports = {"https": 443, "http": 80, "postgresql": 5432}
 
 
 def varmap(func, var, context=None, name=None):
@@ -116,6 +117,13 @@ def get_url_dict(url):
     if query:
         url_dict["search"] = encoding.keyword_field("?" + query)
     return url_dict
+
+
+def sanitize_url(url):
+    if "@" not in url:
+        return url
+    parts = compat.urlparse.urlparse(url)
+    return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
 def read_pem_file(file_obj):

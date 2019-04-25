@@ -28,77 +28,75 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import default_ports
+from elasticapm.utils import compat, default_ports, sanitize_url
 from elasticapm.utils.disttracing import TracingOptions
 
 
-class Urllib3Instrumentation(AbstractInstrumentedModule):
-    name = "urllib3"
+# copied and adapted from urllib.request
+def request_host(request):
+    """Return request-host, as defined by RFC 2965.
 
-    instrument_list = [
-        ("urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
-        # packages that vendor or vendored urllib3 in the past
-        ("requests.packages.urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
-        ("botocore.vendored.requests.packages.urllib3.connectionpool", "HTTPConnectionPool.urlopen"),
-    ]
+    Variation from RFC: returned value is lowercased, for convenient
+    comparison.
+
+    """
+    url = request.get_full_url()
+    parse_result = compat.urlparse.urlparse(url)
+    scheme, host, port = parse_result.scheme, parse_result.hostname, parse_result.port
+    try:
+        port = int(port)
+    except ValueError:
+        pass
+    if host == "":
+        host = request.get_header("Host", "")
+
+    if port != default_ports.get(scheme):
+        host = "%s:%s" % (host, port)
+    return host
+
+
+class UrllibInstrumentation(AbstractInstrumentedModule):
+    name = "urllib"
+
+    if compat.PY2:
+        instrument_list = [("urllib2", "AbstractHTTPHandler.do_open")]
+    else:
+        instrument_list = [("urllib.request", "AbstractHTTPHandler.do_open")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        if "method" in kwargs:
-            method = kwargs["method"]
-        else:
-            method = args[0]
+        request_object = args[1] if len(args) > 1 else kwargs["req"]
 
-        headers = None
-        if "headers" in kwargs:
-            headers = kwargs["headers"]
-            if headers is None:
-                headers = {}
-                kwargs["headers"] = headers
+        method = request_object.get_method()
+        host = request_host(request_object)
 
-        host = instance.host
-
-        if instance.port != default_ports.get(instance.scheme):
-            host += ":" + str(instance.port)
-
-        if "url" in kwargs:
-            url = kwargs["url"]
-        else:
-            url = args[1]
-
+        url = sanitize_url(request_object.get_full_url())
         signature = method.upper() + " " + host
 
-        # TODO: reconstruct URL more faithfully, e.g. include port
-        url = instance.scheme + "://" + host + url
         transaction = execution_context.get_transaction()
 
-        with capture_span(signature, "ext.http.urllib3", {"http": {"url": url}}, leaf=True) as span:
-            # if urllib3 has been called in a leaf span, this span might be a DroppedSpan.
+        with capture_span(signature, "ext.http.urllib", {"http": {"url": url}}, leaf=True) as span:
+            # if urllib has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span
             while isinstance(leaf_span, DroppedSpan):
                 leaf_span = leaf_span.parent
 
-            if headers is not None:
-                # It's possible that there are only dropped spans, e.g. if we started dropping spans.
-                # In this case, the transaction.id is used
-                parent_id = leaf_span.id if leaf_span else transaction.id
-                trace_parent = transaction.trace_parent.copy_from(
-                    span_id=parent_id, trace_options=TracingOptions(recorded=True)
-                )
-                headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+            parent_id = leaf_span.id if leaf_span else transaction.id
+            trace_parent = transaction.trace_parent.copy_from(
+                span_id=parent_id, trace_options=TracingOptions(recorded=True)
+            )
+            request_object.add_header(constants.TRACEPARENT_HEADER_NAME, trace_parent.to_string())
             return wrapped(*args, **kwargs)
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
+        request_object = args[1] if len(args) > 1 else kwargs["req"]
         # since we don't have a span, we set the span id to the transaction id
         trace_parent = transaction.trace_parent.copy_from(
             span_id=transaction.id, trace_options=TracingOptions(recorded=False)
         )
-        if "headers" in kwargs:
-            headers = kwargs["headers"]
-            if headers is None:
-                headers = {}
-                kwargs["headers"] = headers
-            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+
+        request_object.add_header(constants.TRACEPARENT_HEADER_NAME, trace_parent.to_string())
         return args, kwargs
