@@ -237,12 +237,21 @@ class Span(object):
             self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
     def to_dict(self):
+        # use either the explicitly set parent_span_id
+        # the id of the parent
+        # or finally the transaction id
+        if self.parent_span_id:
+            parent_id = self.parent_span_id
+        elif self.parent and hasattr(self.parent, "id"):
+            parent_id = self.parent.id
+        else:
+            parent_id = self.transaction_id
+
         result = {
             "id": self.id,
             "transaction_id": self.transaction.id,
             "trace_id": self.transaction.trace_parent.trace_id,
-            # use either the explicitly set parent_span_id, or the id of the parent, or finally the transaction id
-            "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
+            "parent_id": parent_id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
