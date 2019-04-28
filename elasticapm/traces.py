@@ -245,7 +245,7 @@ class Span(object):
         elif self.parent and hasattr(self.parent, "id"):
             parent_id = self.parent.id
         else:
-            parent_id = self.transaction_id
+            parent_id = self.transaction.id
 
         result = {
             "id": self.id,
