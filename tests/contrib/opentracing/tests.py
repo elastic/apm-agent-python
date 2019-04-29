@@ -45,6 +45,13 @@ from elasticapm.utils.disttracing import TraceParent
 pytestmark = pytest.mark.opentracing
 
 
+try:
+    from opentracing import logs as ot_logs
+    from opentracing import tags
+except ImportError:
+    ot_logs = None
+
+
 @pytest.fixture()
 def tracer(elasticapm_client):
     yield Tracer(client_instance=elasticapm_client)
@@ -167,6 +174,27 @@ def test_error_log(tracer):
             exc_type, exc_val, exc_tb = sys.exc_info()[:3]
             tx_scope.span.log_kv(
                 {"python.exception.type": exc_type, "python.exception.val": exc_val, "python.exception.tb": exc_tb}
+            )
+    client = tracer._agent
+    error = client.events[constants.ERROR][0]
+
+    assert error["exception"]["message"] == "ValueError: oops"
+
+
+@pytest.mark.skipif(ot_logs is None, reason="New key names in opentracing-python 2.1")
+def test_error_log_ot_21(tracer):
+    with tracer.start_active_span("transaction") as tx_scope:
+        try:
+            raise ValueError("oops")
+        except ValueError:
+            exc_type, exc_val, exc_tb = sys.exc_info()[:3]
+            tx_scope.span.log_kv(
+                {
+                    ot_logs.EVENT: tags.ERROR,
+                    ot_logs.ERROR_KIND: exc_type,
+                    ot_logs.ERROR_OBJECT: exc_val,
+                    ot_logs.STACK: exc_tb,
+                }
             )
     client = tracer._agent
     error = client.events[constants.ERROR][0]

@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...master)
  * Added instrumentation for `urllib2` (Python 2) / `urllib.request` (Python 3) (#464)
  * Added `disable_metrics` setting (#399)
+ * Fixed an issue with opentracing-python 2.1 (#471)
 
 ## v4.2.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...v4.2.2)
