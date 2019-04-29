@@ -591,7 +591,7 @@ NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python
 
 [float]
 [[config-server-cert]]
-=== `ELASTIC_APM_SERVER_CERT`
+==== `ELASTIC_APM_SERVER_CERT`
 
 [options="header"]
 |============
@@ -602,25 +602,6 @@ NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python
 If you have configured your APM Server with a self signed TLS certificate, or you
 just wish to pin the server certificate, you can specify the path to the PEM-encoded
 certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
-
-[float]
-[[config-django-specific]]
-=== Django-specific configuration
-
-[float]
-[[config-django-transaction-name-from-route]]
-==== `django_transaction_name_from_route`
-|============
-| Environment                                       | Django                               | Default
-| `ELASTIC_APM_DJANGO_TRANSACTION_NAME_FROM_ROUTE`  | `DJANGO_TRANSACTION_NAME_FROM_ROUTE` | `False`
-|============
-
-
-By default, we use the function or class name of the view as the transaction name.
-Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
-If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
-
-NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
 [float]
 [[config-metrics_interval]]
@@ -655,6 +636,26 @@ as well as the "total system memory" metric, you would set `disable_metrics` to:
 ----
 
 NOTE: this setting only disables the *sending* of the given metrics, not collection.
+
+
+[float]
+[[config-django-specific]]
+=== Django-specific configuration
+
+[float]
+[[config-django-transaction-name-from-route]]
+==== `django_transaction_name_from_route`
+|============
+| Environment                                       | Django                               | Default
+| `ELASTIC_APM_DJANGO_TRANSACTION_NAME_FROM_ROUTE`  | `DJANGO_TRANSACTION_NAME_FROM_ROUTE` | `False`
+|============
+
+
+By default, we use the function or class name of the view as the transaction name.
+Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
+If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
+
+NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
 [float]
 [[config-formats]]
