@@ -20,6 +20,7 @@ FRAMEWORK:
   - celery-4-django-1.11
   - celery-4-django-2.0
   - opentracing-newest
+  - opentracing-2.0
   - twisted-18
   - twisted-17
   - twisted-16

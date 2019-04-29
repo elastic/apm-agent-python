@@ -30,12 +30,22 @@
 
 import logging
 
-from opentracing.ext import tags
 from opentracing.span import Span as OTSpanBase
 from opentracing.span import SpanContext as OTSpanContextBase
 
 from elasticapm import traces
 from elasticapm.utils import compat, get_url_dict
+
+try:
+    # opentracing-python 2.1+
+    from opentracing import tags
+    from opentracing import logs as ot_logs
+except ImportError:
+    # opentracing-python <2.1
+    from opentracing.ext import tags
+
+    ot_logs = None
+
 
 logger = logging.getLogger("elasticapm.contrib.opentracing")
 
@@ -49,17 +59,20 @@ class OTSpan(OTSpanBase):
             context.span = self
 
     def log_kv(self, key_values, timestamp=None):
+        exc_type, exc_val, exc_tb = None, None, None
         if "python.exception.type" in key_values:
-            agent = self.tracer._agent
-            agent.capture_exception(
-                exc_info=(
-                    key_values["python.exception.type"],
-                    key_values.get("python.exception.val"),
-                    key_values.get("python.exception.tb"),
-                )
-            )
+            exc_type = key_values["python.exception.type"]
+            exc_val = key_values.get("python.exception.val")
+            exc_tb = key_values.get("python.exception.tb")
+        elif ot_logs and key_values.get(ot_logs.EVENT) == tags.ERROR:
+            exc_type = key_values[ot_logs.ERROR_KIND]
+            exc_val = key_values.get(ot_logs.ERROR_OBJECT)
+            exc_tb = key_values.get(ot_logs.STACK)
         else:
             logger.debug("Can't handle non-exception type opentracing logs")
+        if exc_type:
+            agent = self.tracer._agent
+            agent.capture_exception(exc_info=(exc_type, exc_val, exc_tb))
         return self
 
     def set_operation_name(self, operation_name):
