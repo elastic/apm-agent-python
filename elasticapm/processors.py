@@ -32,11 +32,9 @@
 import re
 import warnings
 
-from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
+from elasticapm.conf.constants import ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
-
-MASK = 8 * "*"
 
 SANITIZE_FIELD_NAMES = frozenset(
     ["authorization", "password", "secret", "passwd", "token", "api_key", "access_token", "sessionid"]

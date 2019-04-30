@@ -28,110 +28,105 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest  # isort:skip
-
-pytest.importorskip("requests")  # isort:skip
-
-import requests
-from requests.exceptions import InvalidURL, MissingSchema
+import pytest
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
+from elasticapm.utils.compat import urlparse
 from elasticapm.utils.disttracing import TraceParent
 
-pytestmark = pytest.mark.requests
+try:
+    from urllib.request import urlopen
+    from urllib.error import URLError
+except ImportError:
+    from urllib2 import urlopen
+    from urllib2 import URLError
 
 
-def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpserver):
+def test_urllib(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    elasticapm_client.begin_transaction("transaction.test")
-    with capture_span("test_request", "test"):
-        requests.get(url, allow_redirects=False)
+    parsed_url = urlparse.urlparse(url)
+    elasticapm_client.begin_transaction("transaction")
+    expected_sig = "GET {0}".format(parsed_url.netloc)
+    with capture_span("test_name", "test_type"):
+
+        url = "http://{0}/hello_world".format(parsed_url.netloc)
+        r = urlopen(url)
+
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
-    assert spans[0]["name"].startswith("GET 127.0.0.1:")
-    assert url == spans[0]["context"]["http"]["url"]
 
-    assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
-    assert trace_parent.trace_id == transactions[0]["trace_id"]
+    expected_signatures = {"test_name", expected_sig}
 
-    # this should be the span id of `requests`, not of urllib3
-    assert trace_parent.span_id == spans[0]["id"]
-    assert trace_parent.trace_options.recorded
+    assert {t["name"] for t in spans} == expected_signatures
+
+    assert len(spans) == 2
+
+    assert spans[0]["name"] == expected_sig
+    assert spans[0]["type"] == "ext.http.urllib"
+    assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["parent_id"] == spans[1]["id"]
+
+    assert spans[1]["name"] == "test_name"
+    assert spans[1]["type"] == "test_type"
+    assert spans[1]["parent_id"] == transactions[0]["id"]
 
 
-def test_requests_instrumentation_via_session(instrument, elasticapm_client, waiting_httpserver):
+def test_trace_parent_propagation_sampled(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    elasticapm_client.begin_transaction("transaction.test")
-    with capture_span("test_request", "test"):
-        s = requests.Session()
-        s.get(url, allow_redirects=False)
+    elasticapm_client.begin_transaction("transaction")
+    urlopen(url)
     elasticapm_client.end_transaction("MyView")
-
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
-    assert spans[0]["name"].startswith("GET 127.0.0.1:")
-    assert url == spans[0]["context"]["http"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
-
-    # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
 
 
-def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_client, waiting_httpserver):
+def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    elasticapm_client.begin_transaction("transaction.test")
-    with capture_span("test_request", "test"):
-        r = requests.Request("get", url)
-        pr = r.prepare()
-        s = requests.Session()
-        s.send(pr, allow_redirects=False)
+    transaction_object = elasticapm_client.begin_transaction("transaction")
+    transaction_object.is_sampled = False
+    urlopen(url)
     elasticapm_client.end_transaction("MyView")
-
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
-    assert spans[0]["name"].startswith("GET 127.0.0.1:")
-    assert url == spans[0]["context"]["http"]["url"]
+
+    assert not spans
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
-
-    # this should be the span id of `requests`, not of urllib3
-    assert trace_parent.span_id == spans[0]["id"]
-    assert trace_parent.trace_options.recorded
+    assert trace_parent.span_id == transaction_object.id
+    assert not trace_parent.trace_options.recorded
 
 
-def test_requests_instrumentation_malformed_none(instrument, elasticapm_client):
-    elasticapm_client.begin_transaction("transaction.test")
-    with capture_span("test_request", "test"):
-        with pytest.raises(MissingSchema):
-            requests.get(None)
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
+def test_span_only_dropped(instrument, elasticapm_client, waiting_httpserver):
+    """test that urllib instrumentation does not fail if no parent span can be found"""
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    transaction_object = elasticapm_client.begin_transaction("transaction")
+    for i in range(2):
+        with capture_span("test", "test"):
+            urlopen(url)
+    elasticapm_client.end_transaction("bla", "OK")
+    trace_parent_1 = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent_2 = TraceParent.from_string(waiting_httpserver.requests[1].headers[constants.TRACEPARENT_HEADER_NAME])
 
-
-def test_requests_instrumentation_malformed_schema(instrument, elasticapm_client):
-    elasticapm_client.begin_transaction("transaction.test")
-    with capture_span("test_request", "test"):
-        with pytest.raises(MissingSchema):
-            requests.get("")
-
-
-def test_requests_instrumentation_malformed_path(instrument, elasticapm_client):
-    elasticapm_client.begin_transaction("transaction.test")
-    with capture_span("test_request", "test"):
-        with pytest.raises(InvalidURL):
-            requests.get("http://")
+    assert trace_parent_1.span_id != transaction_object.id
+    # second request should use transaction id as span id because there is no span
+    assert trace_parent_2.span_id == transaction_object.id
 
 
 def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
@@ -139,7 +134,8 @@ def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
     url = waiting_httpserver.url + "/hello_world"
     url = url.replace("http://", "http://user:pass@")
     transaction_object = elasticapm_client.begin_transaction("transaction")
-    requests.get(url)
+    with pytest.raises(URLError):
+        urlopen(url)
     elasticapm_client.end_transaction("MyView")
     transactions = elasticapm_client.events[TRANSACTION]
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]

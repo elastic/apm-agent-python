@@ -34,7 +34,7 @@ import os
 import re
 import socket
 
-from elasticapm.utils import compat
+from elasticapm.utils import compat, starmatch_to_regex
 
 __all__ = ("setup_logging", "Config")
 
@@ -255,6 +255,7 @@ class Config(_ConfigBase):
         validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
         default=30000,
     )
+    disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)

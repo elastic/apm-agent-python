@@ -30,7 +30,7 @@
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import default_ports
+from elasticapm.utils import default_ports, sanitize_url
 from elasticapm.utils.compat import urlparse
 
 
@@ -57,6 +57,7 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
 
         signature = request.method.upper()
         signature += " " + get_host_from_url(request.url)
+        url = sanitize_url(request.url)
 
-        with capture_span(signature, "ext.http.requests", {"http": {"url": request.url}}, leaf=True):
+        with capture_span(signature, "ext.http.requests", {"http": {"url": url}}, leaf=True):
             return wrapped(*args, **kwargs)

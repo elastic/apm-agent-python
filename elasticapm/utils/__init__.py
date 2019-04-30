@@ -30,8 +30,10 @@
 
 import base64
 import os
+import re
 from functools import partial
 
+from elasticapm.conf import constants
 from elasticapm.utils import compat, encoding
 
 try:
@@ -43,7 +45,7 @@ except ImportError:
     partial_types = (partial,)
 
 
-default_ports = {"https": 433, "http": 80, "postgresql": 5432}
+default_ports = {"https": 443, "http": 80, "postgresql": 5432}
 
 
 def varmap(func, var, context=None, name=None):
@@ -118,6 +120,13 @@ def get_url_dict(url):
     return url_dict
 
 
+def sanitize_url(url):
+    if "@" not in url:
+        return url
+    parts = compat.urlparse.urlparse(url)
+    return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
+
+
 def read_pem_file(file_obj):
     cert = b""
     for line in file_obj:
@@ -127,3 +136,16 @@ def read_pem_file(file_obj):
         if not line.startswith(b"-----END CERTIFICATE-----"):
             cert += line.strip()
     return base64.b64decode(cert)
+
+
+def starmatch_to_regex(pattern):
+    i, n = 0, len(pattern)
+    res = []
+    while i < n:
+        c = pattern[i]
+        i = i + 1
+        if c == "*":
+            res.append(".*")
+        else:
+            res.append(re.escape(c))
+    return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)
