@@ -1,15 +1,6 @@
 #!/usr/bin/env groovy
 @Library('apm@current') _
 
-import co.elastic.matrix.*
-import groovy.transform.Field
-
-/**
-This is the parallel tasks generator,
-it is need as field to store the results of the tests.
-*/
-@Field def pythonTasksGen
-
 pipeline {
   agent any
   environment {
@@ -31,10 +22,6 @@ pipeline {
   }
   triggers {
     issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
-  }
-  parameters {
-    booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
-    booleanParam(name: 'doc_ci', defaultValue: true, description: 'Enable build docs.')
   }
   stages {
     stage('Initializing'){
@@ -89,18 +76,12 @@ pipeline {
         unstash "source"
         dir("${BASE_DIR}"){
           script {
-            pythonTasksGen = new PythonParallelTaskGenerator(
-              xKey: 'PYTHON_VERSION',
-              yKey: 'FRAMEWORK',
-              xFile: ".ci/.jenkins_python.yml",
-              yFile: ".ci/.jenkins_framework.yml",
-              exclusionFile: ".ci/.jenkins_exclude.yml",
-              tag: "Python",
-              name: "Python",
-              steps: this
-              )
-            def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-            parallel(mapPatallelTasks)
+            def node = readYaml(file: '.ci/.jenkins_python.yml')
+            def parallelTasks = [:]
+            node['PYTHON_VERSION'].each{ version ->
+              parallelTasks["${version}"] = generateStep(version)
+            }
+            parallel(parallelTasks)
           }
         }
       }
@@ -194,17 +175,6 @@ pipeline {
     }
   }
   post {
-    always{
-      script{
-        if(pythonTasksGen?.results){
-          writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
-          def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
-          def processor = new ResultsProcessor()
-          processor.processResults(mapResults)
-          archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-        }
-      }
-    }
     success {
       echoColor(text: '[SUCCESS]', colorfg: 'green', colorbg: 'default')
     }
@@ -221,109 +191,13 @@ pipeline {
   }
 }
 
-
-/**
-Parallel task generator for the integration tests.
-*/
-class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
-
-  public PythonParallelTaskGenerator(Map params){
-    super(params)
-  }
-
-  /**
-  build a map of closures to be used as parallel steps.
-  Make 5 groups per column so it will spin 5 Nodes,
-  this makes fewer Docker image Builds.
-  */
-  protected Map generateParallelSteps(column){
-    def parallelStep = [:]
-    def groups = [:]
-    def index = 1
-    column.each{ key, value ->
-      def keyGrp = "${this.tag}-${value.x}-${index % 5}"
-      if(groups[keyGrp] == null){
-        groups[keyGrp] = [:]
-        groups[keyGrp].key = value.x
-        groups[keyGrp].values = []
-      }
-      groups[keyGrp].values.add(value.y)
-      index++
-    }
-    groups.each{ key, value ->
-      parallelStep[key] = generateStep(value.key, value.values)
-    }
-    return parallelStep
-  }
-
-  /**
-  build a clousure that launch and agent and execute the corresponding test script,
-  then store the results.
-  */
-  public Closure generateStep(x, yList){
-    return {
-      steps.node('linux && immutable'){
-        yList.each{ y ->
-          def label = "${tag}-${x}-${y}"
-          try {
-            steps.runScript(label: label, python: x, framework: y)
-            saveResult(x, y, 1)
-          } catch(e){
-            saveResult(x, y, 0)
-            error("${label} tests failed : ${e.toString()}\n")
-          } finally {
-            steps.junit(allowEmptyResults: false,
-              keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-            steps.env.PYTHON_VERSION = "${x}"
-            steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: 'apm-agent-python',
-              basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}")
-          }
-        }
-      }
-    }
-  }
-}
-
-def runScript(Map params = [:]){
-  def label = params.label
-  def python = params.python
-  def framework = params.framework
-  log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
-  deleteDir()
-  sh "mkdir ${env.PIP_CACHE}"
-  unstash 'source'
-  dir("${BASE_DIR}"){
-    retry(2){
-      sleep randomNumber(min:10, max: 30)
-      sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
-    }
-  }
-}
-
-def releasePackages(){
-  def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
-  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
-    [var: 'TWINE_USER', password: jsonValue.data.user],
-    [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
-  ]]) {
-    withEnv([
-      "TWINE_USER=${jsonValue.data.user}",
-      "TWINE_PASSWORD=${jsonValue.data.password}"]) {
-      sh(label: "Release packages", script: """
-      set +x
-      python -m pip install --user twine
-      python setup.py sdist
-      echo "Uploading to ${REPO_URL} with user \${TWINE_USER}"
-      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
-      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
-      """)
-    }
-  }
+def generateStep(version){
+  return { build(job: 'apm-agent-python/downstream-python-tests-pipeline',
+    parameters: [
+    string(name: 'PYTHON_VERSION', value: version),
+    string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
+    string(name: 'CHANGE_TARGET', value: env.CHANGE_TARGET),
+    propagate: true,
+    quietPeriod: 10,
+    wait: true) }
 }
