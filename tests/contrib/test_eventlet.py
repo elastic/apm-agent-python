@@ -34,9 +34,10 @@ eventlet = pytest.importorskip("eventlet")  # isort:skip
 
 import os
 
+from eventlet.patcher import is_monkey_patched
+
 import elasticapm
 from elasticapm.conf import constants
-from eventlet.patcher import is_monkey_patched
 
 pytestmark = pytest.mark.eventlet
 

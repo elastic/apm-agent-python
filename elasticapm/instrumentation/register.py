@@ -55,6 +55,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.pyodbc.PyODBCInstrumentation",
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation",
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation",
+    "elasticapm.instrumentation.packages.urllib.UrllibInstrumentation",
 }
 
 

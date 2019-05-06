@@ -235,6 +235,21 @@ Collected trace data:
 === External HTTP requests
 
 [float]
+[[automatic-instrumentation-stdlib-urllib]]
+==== Standard library
+
+Library: `urllib2` (Python 2) / `urllib.request` (Python 3)
+
+Instrumented methods:
+
+ * `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open` 
+
+Collected trace data:
+
+ * HTTP method
+ * requested URL
+
+[float]
 [[automatic-instrumentation-urllib3]]
 ==== urllib3
 

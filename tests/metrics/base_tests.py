@@ -33,14 +33,20 @@ import time
 from multiprocessing.dummy import Pool
 
 import mock
+import pytest
 
+from elasticapm.conf import constants
 from elasticapm.metrics.base_metrics import MetricsRegistry, MetricsSet
 from tests.fixtures import TempStoreClient
 
 
-class DummyMetricSet(object):
+class DummyMetricSet(MetricsSet):
     def collect(self):
-        return {"samples": []}
+        self.gauge("a.b.c.d").val = 0
+        self.gauge("a").val = 0
+        self.gauge("b").val = 0
+        self.gauge("c").val = 0
+        return super(DummyMetricSet, self).collect()
 
 
 def test_metrics_registry():
@@ -52,8 +58,22 @@ def test_metrics_registry():
     registry._stop_collect_timer()
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"metrics_sets": "tests.metrics.base_tests.DummyMetricSet", "disable_metrics": "a.*,*c"}],
+    indirect=True,
+)
+def test_disable_metrics(elasticapm_client):
+    elasticapm_client._metrics.collect()
+    metrics = elasticapm_client.events[constants.METRICSET][0]
+    assert "a" in metrics["samples"]
+    assert "b" in metrics["samples"]
+    assert "a.b.c.d" not in metrics["samples"]
+    assert "c" not in metrics["samples"]
+
+
 def test_metrics_counter():
-    metricset = MetricsSet()
+    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
     metricset.counter("x").inc()
     data = metricset.collect()
     assert data["samples"]["x"]["value"] == 1
@@ -69,7 +89,7 @@ def test_metrics_counter():
 
 
 def test_metrics_multithreaded():
-    metricset = MetricsSet()
+    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
     pool = Pool(5)
 
     def target():

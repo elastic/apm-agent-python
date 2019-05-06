@@ -32,6 +32,8 @@ import os
 
 import pytest
 
+from elasticapm.metrics.base_metrics import MetricsRegistry
+
 try:
     from elasticapm.metrics.sets.cpu_linux import CPUMetricSet
 except ImportError:
@@ -89,7 +91,10 @@ def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
         with open(path, mode="w") as f:
             f.write(content)
     metricset = CPUMetricSet(
-        sys_stats_file=proc_stat, process_stats_file=proc_stat_self, memory_stats_file=proc_meminfo
+        MetricsRegistry(0, lambda x: None),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
     )
 
     for path, content in (

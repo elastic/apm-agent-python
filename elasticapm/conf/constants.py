@@ -39,6 +39,9 @@ KEYWORD_MAX_LENGTH = 1024
 
 HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
 
+MASK = 8 * "*"
+
 ERROR = "error"
 TRANSACTION = "transaction"
 SPAN = "span"
+METRICSET = "metricset"

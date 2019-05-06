@@ -591,7 +591,7 @@ NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python
 
 [float]
 [[config-server-cert]]
-=== `ELASTIC_APM_SERVER_CERT`
+==== `server_cert`
 
 [options="header"]
 |============
@@ -602,6 +602,40 @@ NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python
 If you have configured your APM Server with a self signed TLS certificate, or you
 just wish to pin the server certificate, you can specify the path to the PEM-encoded
 certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
+
+[float]
+[[config-metrics_interval]]
+==== `metrics_interval`
+|============
+| Environment                     | Django/Flask       | Default
+| `ELASTIC_APM_METRICS_INTERVAL`  | `METRICS_INTERVAL` | `30s`
+|============
+
+
+The interval in which the agent collects metrics. A shorter interval increases the granularity of metrics,
+but also increases the overhead of the agent, as well as storage requirements.
+
+It has to be provided in *<<config-format-duration, duration format>>*.
+
+[float]
+[[config-disable_metrics]]
+==== `disable_metrics`
+|============
+| Environment                     | Django/Flask      | Default
+| `ELASTIC_APM_DISABLE_METRICS`   | `DISABLE_METRICS` | `None`
+|============
+
+
+A comma-separated list of dotted metrics names that should not be sent to the APM Server.
+You can use `*` to match multiple metrics. As an example, to disable all CPU-related metrics,
+as well as the "total system memory" metric, you would set `disable_metrics` to:
+
+....
+"*.cpu.*,system.memory.total"
+....
+
+NOTE: this setting only disables the *sending* of the given metrics, not collection.
+
 
 [float]
 [[config-django-specific]]
