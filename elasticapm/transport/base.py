@@ -31,6 +31,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import os
 import random
 import threading
 import time
@@ -38,7 +39,7 @@ import timeit
 from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import compat, is_master_process, json_encoder
+from elasticapm.utils import compat, json_encoder
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.transport")
@@ -95,14 +96,16 @@ class Transport(object):
         self._counts = defaultdict(int)
         self._flushed = threading.Event()
         self._closed = False
-        # only start the event processing thread if we are not in a uwsgi master process
-        if not is_master_process():
-            self._start_event_processor()
-        else:
-            # if we _are_ in a uwsgi master process, use the postfork mixup to start the thread after the fork
-            compat.postfork(lambda: self._start_event_processor())
+        self._pid = None
+        self._thread_starter_lock = threading.Lock()
 
     def queue(self, event_type, data, flush=False):
+        with self._thread_starter_lock:
+            # check if self._pid is the same as os.getpid(). If they are not the same, it means that our
+            # process was forked at some point, so we need to start another processor thread
+            if self._pid != os.getpid():
+                self._start_event_processor()
+                self._pid = os.getpid()
         try:
             self._flushed.clear()
             kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
