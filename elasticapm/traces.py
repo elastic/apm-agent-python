@@ -80,10 +80,10 @@ class Transaction(object):
         parent_span = execution_context.get_span()
         tracer = self._tracer
         if parent_span and parent_span.leaf:
-            span = DroppedSpan(parent_span, leaf=True)
+            span = DroppedSpan(parent_span, leaf=True, reason=DroppedSpan.REASON_LEAF)
         elif tracer.max_spans and self._span_counter > tracer.max_spans - 1:
             self.dropped_spans += 1
-            span = DroppedSpan(parent_span)
+            span = DroppedSpan(parent_span, reason=DroppedSpan.REASON_MAX_SPANS)
             self._span_counter += 1
         else:
             span = Span(
@@ -237,12 +237,25 @@ class Span(object):
             self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
     def to_dict(self):
+        if isinstance(self.parent, DroppedSpan):
+            path = []
+            parent = self
+            while parent:
+                if isinstance(parent, DroppedSpan):
+                    path.append("dropped(%s)" % parent.reason)
+                else:
+                    path.append(parent.type)
+                parent = parent.parent
+            logger.info("Path for erroneous DroppedSpan parent: %s" % " > ".join(path))
+            parent_id = None
+        else:
+            parent_id = self.parent_span_id or (self.parent.id if self.parent else self.transaction.id)
         result = {
             "id": self.id,
             "transaction_id": self.transaction.id,
             "trace_id": self.transaction.trace_parent.trace_id,
             # use either the explicitly set parent_span_id, or the id of the parent, or finally the transaction id
-            "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
+            "parent_id": parent_id,
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
@@ -260,11 +273,14 @@ class Span(object):
 
 
 class DroppedSpan(object):
-    __slots__ = ("leaf", "parent")
+    REASON_LEAF = "leaf"
+    REASON_MAX_SPANS = "maxspans"
+    __slots__ = ("leaf", "parent", "reason")
 
-    def __init__(self, parent, leaf=False):
+    def __init__(self, parent, leaf=False, reason=None):
         self.parent = parent
         self.leaf = leaf
+        self.reason = reason
 
 
 class Tracer(object):

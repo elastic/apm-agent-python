@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+import logging
 import os
 import platform
 import sys
@@ -43,6 +44,7 @@ import pytest
 from pytest_localserver.http import ContentServer
 
 import elasticapm
+from elasticapm import traces
 from elasticapm.base import Client
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
 from elasticapm.utils import compat, encoding
@@ -718,6 +720,19 @@ def test_transaction_max_spans(elasticapm_client):
     for span in spans:
         assert span["name"] == "nodrop"
     assert transaction["span_count"] == {"dropped": 10, "started": 5}
+
+
+def test_child_spans_of_dropped_span_are_logged(elasticapm_client, caplog):
+    transaction = elasticapm_client.begin_transaction("test")
+    root = traces.Span(transaction, "test", "test")
+    dropped = traces.DroppedSpan(root, reason=traces.DroppedSpan.REASON_LEAF)
+    i_shouldnt_exist = traces.Span(transaction, "i_shouldnt_exist", "nonexistent")
+    i_shouldnt_exist.parent = dropped
+    i_shouldnt_exist.duration = 1
+    with caplog.at_level(logging.INFO) as logs:
+        data = i_shouldnt_exist.to_dict()
+    assert data["parent_id"] is None
+    assert caplog.messages[0] == "Path for erroneous DroppedSpan parent: nonexistent > dropped(leaf) > test"
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
