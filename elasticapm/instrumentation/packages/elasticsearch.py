@@ -151,7 +151,7 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
             self.version = None
 
     def instrument(self):
-        if self.version and not 2 <= self.version < 7:
+        if self.version and not 2 <= self.version < 8:
             logger.debug("Instrumenting version %s of Elasticsearch is not supported by Elastic APM", self.version)
             return
         super(ElasticsearchInstrumentation, self).instrument()
