@@ -46,8 +46,10 @@ pytestmark = pytest.mark.elasticsearch
 def elasticsearch(request):
     """Elasticsearch client fixture."""
     client = Elasticsearch(hosts=os.environ["ES_URL"])
-    yield client
-    client.indices.delete(index="*")
+    try:
+        yield client
+    finally:
+        client.indices.delete(index="*")
 
 
 @pytest.mark.integrationtest
@@ -83,11 +85,13 @@ def test_info(instrument, elasticapm_client, elasticsearch):
 def test_create(instrument, elasticapm_client, elasticsearch):
     elasticapm_client.begin_transaction("test")
     if ES_VERSION[0] < 5:
-        r1 = elasticsearch.create("tweets", "doc", {"user": "kimchy", "text": "hola"}, 1)
+        r1 = elasticsearch.create("tweets", "_doc", {"user": "kimchy", "text": "hola"}, 1)
+    elif ES_VERSION[0] < 7:
+        r1 = elasticsearch.create("tweets", "_doc", 1, body={"user": "kimchy", "text": "hola"})
     else:
-        r1 = elasticsearch.create("tweets", "doc", 1, body={"user": "kimchy", "text": "hola"})
+        r1 = elasticsearch.create("tweets", 1, body={"user": "kimchy", "text": "hola"})
     r2 = elasticsearch.create(
-        index="tweets", doc_type="doc", id=2, body={"user": "kimchy", "text": "hola"}, refresh=True
+        index="tweets", doc_type="_doc", id=2, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.end_transaction("test", "OK")
 
@@ -98,9 +102,9 @@ def test_create(instrument, elasticapm_client, elasticsearch):
 
     for i, span in enumerate(spans):
         if ES_VERSION[0] >= 5:
-            assert span["name"] == "ES PUT /tweets/doc/%d/_create" % (i + 1)
+            assert span["name"] == "ES PUT /tweets/_doc/%d/_create" % (i + 1)
         else:
-            assert span["name"] == "ES PUT /tweets/doc/%d" % (i + 1)
+            assert span["name"] == "ES PUT /tweets/_doc/%d" % (i + 1)
         assert span["type"] == "db.elasticsearch"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
@@ -109,8 +113,11 @@ def test_create(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.integrationtest
 def test_index(instrument, elasticapm_client, elasticsearch):
     elasticapm_client.begin_transaction("test")
-    r1 = elasticsearch.index("tweets", "doc", {"user": "kimchy", "text": "hola"})
-    r2 = elasticsearch.index(index="tweets", doc_type="doc", body={"user": "kimchy", "text": "hola"}, refresh=True)
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.index("tweets", "_doc", {"user": "kimchy", "text": "hola"})
+    else:
+        r1 = elasticsearch.index("tweets", {"user": "kimchy", "text": "hola"})
+    r2 = elasticsearch.index(index="tweets", doc_type="_doc", body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -119,7 +126,7 @@ def test_index(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 2
 
     for span in spans:
-        assert span["name"] == "ES POST /tweets/doc"
+        assert span["name"] == "ES POST /tweets/_doc"
         assert span["type"] == "db.elasticsearch"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
@@ -127,9 +134,9 @@ def test_index(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_exists(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    result = elasticsearch.exists(id=1, index="tweets", doc_type="doc")
+    result = elasticsearch.exists(id=1, index="tweets", doc_type="_doc")
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -137,7 +144,7 @@ def test_exists(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES HEAD /tweets/doc/1"
+    assert span["name"] == "ES HEAD /tweets/_doc/1"
     assert span["type"] == "db.elasticsearch"
     assert span["context"]["db"]["type"] == "elasticsearch"
 
@@ -145,10 +152,13 @@ def test_exists(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
 @pytest.mark.integrationtest
 def test_exists_source(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    assert elasticsearch.exists_source("tweets", "doc", 1) is True
-    assert elasticsearch.exists_source(index="tweets", doc_type="doc", id=1) is True
+    if ES_VERSION[0] < 7:
+        assert elasticsearch.exists_source("tweets", "_doc", 1) is True
+    else:
+        assert elasticsearch.exists_source("tweets", 1, "_doc") is True
+    assert elasticsearch.exists_source(index="tweets", doc_type="_doc", id=1) is True
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -157,7 +167,7 @@ def test_exists_source(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 2
 
     for span in spans:
-        assert span["name"] == "ES HEAD /tweets/doc/1/_source"
+        assert span["name"] == "ES HEAD /tweets/_doc/1/_source"
         assert span["type"] == "db.elasticsearch"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
@@ -165,13 +175,13 @@ def test_exists_source(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_get(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] >= 6:
-        r1 = elasticsearch.get("tweets", "doc", 1)
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.get("tweets", "_doc", 1)
     else:
-        r1 = elasticsearch.get("tweets", 1, "doc")
-    r2 = elasticsearch.get(index="tweets", doc_type="doc", id=1)
+        r1 = elasticsearch.get("tweets", 1, "_doc")
+    r2 = elasticsearch.get(index="tweets", doc_type="_doc", id=1)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -182,7 +192,7 @@ def test_get(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 2
 
     for span in spans:
-        assert span["name"] == "ES GET /tweets/doc/1"
+        assert span["name"] == "ES GET /tweets/_doc/1"
         assert span["type"] == "db.elasticsearch"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
@@ -190,10 +200,13 @@ def test_get(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_get_source(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    r1 = elasticsearch.get_source("tweets", "doc", 1)
-    r2 = elasticsearch.get_source(index="tweets", doc_type="doc", id=1)
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.get_source("tweets", "_doc", 1)
+    else:
+        r1 = elasticsearch.get_source("tweets", 1, "_doc")
+    r2 = elasticsearch.get_source(index="tweets", doc_type="_doc", id=1)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -205,7 +218,7 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 2
 
     for span in spans:
-        assert span["name"] == "ES GET /tweets/doc/1/_source"
+        assert span["name"] == "ES GET /tweets/_doc/1/_source"
         assert span["type"] == "db.elasticsearch"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
@@ -214,20 +227,23 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
 @pytest.mark.integrationtest
 def test_update_script(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    r1 = elasticsearch.update("tweets", "doc", 1, {"script": "ctx._source.text = 'adios'"}, refresh=True)
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.update("tweets", "_doc", 1, {"script": "ctx._source.text = 'adios'"}, refresh=True)
+    else:
+        r1 = elasticsearch.update("tweets", 1, "_doc", {"script": "ctx._source.text = 'adios'"}, refresh=True)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
-    r2 = elasticsearch.get(index="tweets", doc_type="doc", id=1)
+    r2 = elasticsearch.get(index="tweets", doc_type="_doc", id=1)
     assert r1["result"] == "updated"
     assert r2["_source"] == {"user": "kimchy", "text": "adios"}
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
 
     span = spans[0]
-    assert span["name"] == "ES POST /tweets/doc/1/_update"
+    assert span["name"] == "ES POST /tweets/_doc/1/_update"
     assert span["type"] == "db.elasticsearch"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"script": "ctx._source.text = \'adios\'"}'
@@ -235,19 +251,22 @@ def test_update_script(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_update_document(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    r1 = elasticsearch.update("tweets", "doc", 1, {"doc": {"text": "adios"}}, refresh=True)
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.update("tweets", "_doc", 1, {"doc": {"text": "adios"}}, refresh=True)
+    else:
+        r1 = elasticsearch.update("tweets", 1, "_doc", {"doc": {"text": "adios"}}, refresh=True)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
-    r2 = elasticsearch.get(index="tweets", doc_type="doc", id=1)
+    r2 = elasticsearch.get(index="tweets", doc_type="_doc", id=1)
     assert r2["_source"] == {"user": "kimchy", "text": "adios"}
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
 
     span = spans[0]
-    assert span["name"] == "ES POST /tweets/doc/1/_update"
+    assert span["name"] == "ES POST /tweets/_doc/1/_update"
     assert span["type"] == "db.elasticsearch"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert "statement" not in span["context"]["db"]
@@ -255,7 +274,7 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_search_body(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}}
     result = elasticsearch.search(body=search_query, params=None)
@@ -266,7 +285,10 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /_search"
+    if ES_VERSION[0] < 7:
+        assert span["name"] == "ES GET /_search"
+    else:
+        assert span["name"] == "ES GET /_all/_search"
     assert span["type"] == "db.elasticsearch"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
@@ -274,7 +296,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_search_querystring(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
     search_query = "user:kimchy"
     result = elasticsearch.search(q=search_query, index="tweets")
@@ -293,7 +315,7 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_search_both(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
     search_querystring = "text:hola"
     search_query = {"query": {"term": {"user": "kimchy"}}}
@@ -314,7 +336,7 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_count_body(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}}
     result = elasticsearch.count(body=search_query)
@@ -325,7 +347,10 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /_count"
+    if ES_VERSION[0] < 7:
+        assert span["name"] == "ES GET /_count"
+    else:
+        assert span["name"] == "ES GET /_all/_count"
     assert span["type"] == "db.elasticsearch"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
@@ -333,7 +358,7 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_count_querystring(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
     search_query = "user:kimchy"
     result = elasticsearch.count(q=search_query, index="tweets")
@@ -352,16 +377,16 @@ def test_count_querystring(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_delete(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
-    result = elasticsearch.delete(id=1, index="tweets", doc_type="doc")
+    result = elasticsearch.delete(id=1, index="tweets", doc_type="_doc")
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
 
     span = spans[0]
-    assert span["name"] == "ES DELETE /tweets/doc/1"
+    assert span["name"] == "ES DELETE /tweets/_doc/1"
     assert span["type"] == "db.elasticsearch"
     assert span["context"]["db"]["type"] == "elasticsearch"
 
@@ -369,7 +394,7 @@ def test_delete(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
 @pytest.mark.integrationtest
 def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", doc_type="_doc", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
     elasticapm_client.begin_transaction("test")
     result = elasticsearch.delete_by_query(index="tweets", body={"query": {"term": {"user": "kimchy"}}})
     elasticapm_client.end_transaction("test", "OK")
@@ -384,6 +409,24 @@ def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch):
     assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
 
 
+@pytest.mark.integrationtest
+def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
+    elasticsearch.create(index="tweets", doc_type="users", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="snaps", doc_type="posts", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticapm_client.begin_transaction("test")
+    result = elasticsearch.search(index=["tweets", "snaps"], q="user:kimchy")
+    elasticapm_client.end_transaction("test", "OK")
+
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "ES GET /tweets,snaps/_search"
+    assert span["type"] == "db.elasticsearch"
+    assert span["context"]["db"]["type"] == "elasticsearch"
+
+
+@pytest.mark.skipif(ES_VERSION[0] >= 7, reason="doc_type unsupported")
 @pytest.mark.integrationtest
 def test_multiple_indexes_doctypes(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(index="tweets", doc_type="users", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
