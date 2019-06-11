@@ -24,22 +24,12 @@ def check_paths_for_matches(pattern, git_commit, git_previous_commit):
     """
     # Handle case where GIT_PREVIOUS_COMMIT isn't set (e.g. the first build),
     if not git_previous_commit:
-        command = [
-            "git",
-            "diff-tree",
-            "-m",
-            "--no-commit-id",
-            "--name-only",
-            "-r",
-            git_commit,
-        ]
+        command = ["git", "diff-tree", "-m", "--no-commit-id", "--name-only", "-r", git_commit]
     else:
         command = ["git", "diff", "--name-only", git_previous_commit, git_commit]
 
     # Run the command and populate paths.
-    completed_process = subprocess.run(
-        command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
+    completed_process = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     paths = completed_process.stdout.decode().strip().split("\n")
 
     # Look for any matches of pattern -> path.
@@ -66,13 +56,9 @@ if __name__ == "__main__":
     # Define and parse arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("--pattern", help="A regular expression pattern.")
+    parser.add_argument("--git-commit", help="The contents of the GIT_COMMIT environmental variable.")
     parser.add_argument(
-        "--git-commit", help="The contents of the GIT_COMMIT environmental variable."
-    )
-    parser.add_argument(
-        "--git-previous-commit",
-        nargs="?",
-        help="The contents of the GIT_PREVIOUS_COMMIT environmental variable.",
+        "--git-previous-commit", nargs="?", help="The contents of the GIT_PREVIOUS_COMMIT environmental variable."
     )
     args = parser.parse_args()
 
