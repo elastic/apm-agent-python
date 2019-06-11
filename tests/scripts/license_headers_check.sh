@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 if [[ $# -eq 0 ]]
 then
-    FILES=$(find . -iname "*.py" -not -path "./elasticapm/utils/wrapt/*" -not -path "./dist/*" -not -path "./build/*" -not -path "./tests/utils/stacks/linenos.py")
+    FILES=$(find . -iname "*.py" -not -path "./elasticapm/utils/wrapt/*" -not -path "./dist/*" -not -path "./build/*" -not -path "./tests/utils/stacks/linenos.py" -not -path "./.ci/bin/check_paths_for_matches.py")
 else
     FILES=$@
 fi
