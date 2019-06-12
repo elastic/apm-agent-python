@@ -202,9 +202,10 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-          catchError(){
+          catchError(buildResult: 'SUCCESS') {
             def datafile = readFile(file: "results.json")
-            sendDataToElasticsearch(data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
         }
       }
