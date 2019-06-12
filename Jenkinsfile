@@ -147,7 +147,7 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-          catchError(){
+          catchError(buildResult: 'SUCCESS') {
             def datafile = readFile(file: "results.json")
             sendDataToElasticsearch(data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
