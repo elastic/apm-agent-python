@@ -50,7 +50,7 @@ tracer = Tracer();
 
   * `client_instance`: an already instantiated Elastic APM client
   * `config`: a configuration dictionary, which will be used to instantiate a new Elastic APM client, 
-     e.g. `{"SERVER_URL": "https://example.org"}. See <<configuration, configuration>> for more information.
+     e.g. `{"SERVER_URL": "https://example.org"}`. See <<configuration, configuration>> for more information.
   * `scope_manager`: a scope manager instance. Defaults to `ThreadLocalScopeManager` (see 
 
 

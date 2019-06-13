@@ -30,7 +30,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -202,21 +202,14 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          catchError(buildResult: 'SUCCESS') {
+            def datafile = readFile(file: "results.json")
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
+          }
         }
       }
-    }
-    success {
-      echoColor(text: '[SUCCESS]', colorfg: 'green', colorbg: 'default')
-    }
-    aborted {
-      echoColor(text: '[ABORTED]', colorfg: 'magenta', colorbg: 'default')
-    }
-    failure {
-      echoColor(text: '[FAILURE]', colorfg: 'red', colorbg: 'default')
-      step([$class: 'Mailer', notifyEveryUnstableBuild: true, recipients: "${NOTIFY_TO}", sendToIndividuals: false])
-    }
-    unstable {
-      echoColor(text: '[UNSTABLE]', colorfg: 'yellow', colorbg: 'default')
+      notifyBuildResult()
     }
   }
 }
@@ -308,22 +301,15 @@ def runScript(Map params = [:]){
 }
 
 def releasePackages(){
-  def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
-  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
-    [var: 'TWINE_USER', password: jsonValue.data.user],
-    [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
-  ]]) {
-    withEnv([
-      "TWINE_USER=${jsonValue.data.user}",
-      "TWINE_PASSWORD=${jsonValue.data.password}"]) {
-      sh(label: "Release packages", script: """
-      set +x
-      python -m pip install --user twine
-      python setup.py sdist
-      echo "Uploading to ${REPO_URL} with user \${TWINE_USER}"
-      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
-      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
-      """)
-    }
+  withSecretVault(secret: 'secret/apm-team/ci/apm-agent-python-twine',
+                  user_var_name: 'TWINE_USER', pass_var_name: 'TWINE_PASSWORD'){
+    sh(label: "Release packages", script: """
+    set +x
+    python -m pip install --user twine
+    python setup.py sdist
+    echo "Uploading to ${REPO_URL} with user \${TWINE_USER}"
+    python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+    python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+    """)
   }
 }

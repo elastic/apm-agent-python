@@ -31,13 +31,10 @@ pipeline {
     rateLimitBuilds(throttle: [count: 60, durationName: 'hour', userBoost: true])
     quietPeriod(10)
   }
-  triggers {
-    issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
-  }
   parameters {
     string(name: 'PYTHON_VERSION', defaultValue: "python-3.6", description: "Python version to test")
-    string(name: 'BRANCH_SPECIFIER', defaultValue: "master", description: "Git branch/tag to use")
-    string(name: 'CHANGE_TARGET', defaultValue: "master", description: "Git branch/tag to merge before building")
+    string(name: 'BRANCH_SPECIFIER', defaultValue: "", description: "Git branch/tag to use")
+    string(name: 'MERGE_TARGET', defaultValue: "", description: "Git branch/tag to merge before building")
   }
   stages {
     /**
@@ -47,12 +44,15 @@ pipeline {
       agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
+        if(params.CHANGE_TARGET == null || params.BRANCH_SPECIFIER == null){
+          error("Invalid job parameters")
+        }
         deleteDir()
         gitCheckout(basedir: "${BASE_DIR}",
           branch: "${params.BRANCH_SPECIFIER}",
           repo: "${REPO}",
           credentialsId: "${JOB_GIT_CREDENTIALS}",
-          mergeTarget: "${params.CHANGE_TARGET}"
+          mergeTarget: "${params.MERGE_TARGET}"
           reference: '/var/lib/jenkins/apm-agent-python.git')
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false
       }
@@ -93,21 +93,14 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          catchError(buildResult: 'SUCCESS') {
+            def datafile = readFile(file: "results.json")
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
+          }
         }
+        notifyBuildResult()
       }
-    }
-    success {
-      echoColor(text: '[SUCCESS]', colorfg: 'green', colorbg: 'default')
-    }
-    aborted {
-      echoColor(text: '[ABORTED]', colorfg: 'magenta', colorbg: 'default')
-    }
-    failure {
-      echoColor(text: '[FAILURE]', colorfg: 'red', colorbg: 'default')
-      step([$class: 'Mailer', notifyEveryUnstableBuild: true, recipients: "${NOTIFY_TO}", sendToIndividuals: false])
-    }
-    unstable {
-      echoColor(text: '[UNSTABLE]', colorfg: 'yellow', colorbg: 'default')
     }
   }
 }

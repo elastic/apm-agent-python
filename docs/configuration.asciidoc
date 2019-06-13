@@ -630,10 +630,9 @@ A comma-separated list of dotted metrics names that should not be sent to the AP
 You can use `*` to match multiple metrics. As an example, to disable all CPU-related metrics,
 as well as the "total system memory" metric, you would set `disable_metrics` to:
 
-[source]
-----
+....
 "*.cpu.*,system.memory.total"
-----
+....
 
 NOTE: this setting only disables the *sending* of the given metrics, not collection.
 
