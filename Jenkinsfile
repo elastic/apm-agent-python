@@ -30,7 +30,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -61,18 +61,20 @@ pipeline {
         */
         stage('Lint') {
           steps {
-            deleteDir()
-            unstash 'source'
-            dir("${BASE_DIR}"){
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/isort.sh
-              """, label: "isort import sorting"
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/black.sh
-              """, label: "Black code formatting"
-              sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+            withGithubNotify(context: 'Lint') {
+              deleteDir()
+              unstash 'source'
+              dir("${BASE_DIR}"){
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/isort.sh
+                """, label: "isort import sorting"
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/black.sh
+                """, label: "Black code formatting"
+                sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+              }
             }
           }
         }
@@ -85,22 +87,24 @@ pipeline {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
-        deleteDir()
-        unstash "source"
-        dir("${BASE_DIR}"){
-          script {
-            pythonTasksGen = new PythonParallelTaskGenerator(
-              xKey: 'PYTHON_VERSION',
-              yKey: 'FRAMEWORK',
-              xFile: "./tests/.jenkins_python.yml",
-              yFile: "./tests/.jenkins_framework.yml",
-              exclusionFile: "./tests/.jenkins_exclude.yml",
-              tag: "Python",
-              name: "Python",
-              steps: this
-              )
-            def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-            parallel(mapPatallelTasks)
+        withGithubNotify(context: 'Test', tab: 'tests') {
+          deleteDir()
+          unstash "source"
+          dir("${BASE_DIR}"){
+            script {
+              pythonTasksGen = new PythonParallelTaskGenerator(
+                xKey: 'PYTHON_VERSION',
+                yKey: 'FRAMEWORK',
+                xFile: "./tests/.jenkins_python.yml",
+                yFile: "./tests/.jenkins_framework.yml",
+                exclusionFile: "./tests/.jenkins_exclude.yml",
+                tag: "Python",
+                name: "Python",
+                steps: this
+                )
+              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              parallel(mapPatallelTasks)
+            }
           }
         }
       }
@@ -145,14 +149,16 @@ pipeline {
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        dir("${BASE_DIR}"){
-          sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-          sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-          sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+        withGithubNotify(context: 'Building packages') {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+            sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+            sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+          }
+          stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
         }
-        stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
       }
     }
     stage('Release') {
@@ -184,11 +190,13 @@ pipeline {
         }
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        unstash('packages')
-        dir("${BASE_DIR}"){
-          releasePackages()
+        withGithubNotify(context: 'Release') {
+          deleteDir()
+          unstash 'source'
+          unstash('packages')
+          dir("${BASE_DIR}"){
+            releasePackages()
+          }
         }
       }
     }
@@ -202,9 +210,10 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-          catchError(){
+          catchError(buildResult: 'SUCCESS') {
             def datafile = readFile(file: "results.json")
-            sendDataToElasticsearch(data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
         }
       }
