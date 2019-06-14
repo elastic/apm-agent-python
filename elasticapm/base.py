@@ -113,6 +113,7 @@ class Client(object):
             "metadata": self._build_metadata(),
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
+            "server_cert": self.config.server_cert,
             "timeout": self.config.server_timeout,
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
