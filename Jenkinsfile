@@ -134,12 +134,10 @@ pipeline {
         }
       }
       steps {
-        withGithubNotify(context: 'Documentation', tab: 'artifacts') {
-          deleteDir()
-          unstash 'source'
-          dir("${BASE_DIR}"){
-            buildDocs(docsDir: "docs", archive: true)
-          }
+        deleteDir()
+        unstash 'source'
+        dir("${BASE_DIR}"){
+          buildDocs(docsDir: "docs", archive: true)
         }
       }
     }
