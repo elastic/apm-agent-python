@@ -1,15 +1,13 @@
 ---
 - job:
-    name: apm-agent-python/apm-agent-python-mbp
-    display-name: APM Agent Python
-    description: APM Agent Python
+    name: apm-agent-python/apm-agent-python-downstream
+    display-name: APM Agent Python downstream
+    description: APM Agent Python downstream
     view: APM-CI
     project-type: multibranch
-    number-to-keep: '5'
-    days-to-keep: '1'
     concurrent: true
     node: linux
-    script-path: Jenkinsfile
+    script-path: .ci/downstreamTests.groovy
     scm:
     - github:
         branch-discovery: all

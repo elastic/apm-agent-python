@@ -85,7 +85,7 @@ pipeline {
     }
   }
   post {
-    always{
+    cleanup {
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -99,8 +99,8 @@ pipeline {
             sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
         }
-        notifyBuildResult()
       }
+      notifyBuildResult()
     }
   }
 }

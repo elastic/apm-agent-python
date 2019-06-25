@@ -5,8 +5,6 @@
     description: APM Agent Python
     view: APM-CI
     project-type: multibranch
-    number-to-keep: '5'
-    days-to-keep: '1'
     concurrent: true
     node: linux
     script-path: Jenkinsfile

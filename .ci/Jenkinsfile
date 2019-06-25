@@ -48,18 +48,20 @@ pipeline {
         */
         stage('Lint') {
           steps {
-            deleteDir()
-            unstash 'source'
-            dir("${BASE_DIR}"){
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/isort.sh
-              """, label: "isort import sorting"
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/black.sh
-              """, label: "Black code formatting"
-              sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+            withGithubNotify(context: 'Lint') {
+              deleteDir()
+              unstash 'source'
+              dir("${BASE_DIR}"){
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/isort.sh
+                """, label: "isort import sorting"
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/black.sh
+                """, label: "Black code formatting"
+                sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+              }
             }
           }
         }
@@ -72,6 +74,7 @@ pipeline {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
+        withGithubNotify(context: 'Test', tab: 'tests') {
         deleteDir()
         unstash "source"
         dir("${BASE_DIR}"){
@@ -82,6 +85,7 @@ pipeline {
               parallelTasks["${version}"] = generateStep(version)
             }
             parallel(parallelTasks)
+            }
           }
         }
       }
@@ -126,14 +130,16 @@ pipeline {
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        dir("${BASE_DIR}"){
-          sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-          sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-          sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+        withGithubNotify(context: 'Building packages') {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+            sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+            sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+          }
+          stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
         }
-        stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
       }
     }
     stage('Release') {
@@ -165,17 +171,33 @@ pipeline {
         }
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        unstash('packages')
-        dir("${BASE_DIR}"){
-          releasePackages()
+        withGithubNotify(context: 'Release') {
+          deleteDir()
+          unstash 'source'
+          unstash('packages')
+          dir("${BASE_DIR}"){
+            releasePackages()
+          }
         }
       }
     }
   }
   post {
-    always {
+    cleanup {
+      script{
+        if(pythonTasksGen?.results){
+          writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
+          def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
+          def processor = new ResultsProcessor()
+          processor.processResults(mapResults)
+          archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          catchError(buildResult: 'SUCCESS') {
+            def datafile = readFile(file: "results.json")
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
+          }
+        }
+      }
       notifyBuildResult()
     }
   }
@@ -186,14 +208,18 @@ def generateStep(version){
   if(env.CHANGE_ID){
     branch = env.CHANGE_TARGET
   }
-  return { build(job: "apm-agent-python/downstream-python-tests-mbp/${branch}",
-    parameters: [
-    string(name: 'PYTHON_VERSION', value: version),
-    string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
-    string(name: 'MERGE_TARGET', value: env.CHANGE_TARGET),
-    propagate: true,
-    quietPeriod: 10,
-    wait: true) }
+  return {
+    build(job: "apm-agent-python/downstream-python-tests-mbp/${branch}",
+      parameters: [
+        string(name: 'PYTHON_VERSION', value: version),
+        string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
+        string(name: 'MERGE_TARGET', value: env.CHANGE_TARGET),
+      ],
+      propagate: true,
+      quietPeriod: 10,
+      wait: true
+    )
+  }
 }
 
 def releasePackages(){

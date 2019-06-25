@@ -202,7 +202,7 @@ pipeline {
     }
   }
   post {
-    always{
+    cleanup {
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
