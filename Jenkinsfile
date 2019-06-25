@@ -61,18 +61,20 @@ pipeline {
         */
         stage('Lint') {
           steps {
-            deleteDir()
-            unstash 'source'
-            dir("${BASE_DIR}"){
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/isort.sh
-              """, label: "isort import sorting"
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/black.sh
-              """, label: "Black code formatting"
-              sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+            withGithubNotify(context: 'Lint') {
+              deleteDir()
+              unstash 'source'
+              dir("${BASE_DIR}"){
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/isort.sh
+                """, label: "isort import sorting"
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/black.sh
+                """, label: "Black code formatting"
+                sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+              }
             }
           }
         }
@@ -85,22 +87,24 @@ pipeline {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
-        deleteDir()
-        unstash "source"
-        dir("${BASE_DIR}"){
-          script {
-            pythonTasksGen = new PythonParallelTaskGenerator(
-              xKey: 'PYTHON_VERSION',
-              yKey: 'FRAMEWORK',
-              xFile: ".ci/.jenkins_python.yml",
-              yFile: ".ci/.jenkins_framework.yml",
-              exclusionFile: ".ci/.jenkins_exclude.yml",
-              tag: "Python",
-              name: "Python",
-              steps: this
-              )
-            def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-            parallel(mapPatallelTasks)
+        withGithubNotify(context: 'Test', tab: 'tests') {
+          deleteDir()
+          unstash "source"
+          dir("${BASE_DIR}"){
+            script {
+              pythonTasksGen = new PythonParallelTaskGenerator(
+                xKey: 'PYTHON_VERSION',
+                yKey: 'FRAMEWORK',
+                xFile: ".ci/.jenkins_python.yml",
+                yFile: ".ci/.jenkins_framework.yml",
+                exclusionFile: ".ci/.jenkins_exclude.yml",
+                tag: "Python",
+                name: "Python",
+                steps: this
+                )
+              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              parallel(mapPatallelTasks)
+            }
           }
         }
       }
@@ -145,14 +149,16 @@ pipeline {
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        dir("${BASE_DIR}"){
-          sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-          sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-          sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+        withGithubNotify(context: 'Building packages') {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+            sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+            sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+          }
+          stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
         }
-        stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
       }
     }
     stage('Release') {
@@ -184,11 +190,13 @@ pipeline {
         }
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        unstash('packages')
-        dir("${BASE_DIR}"){
-          releasePackages()
+        withGithubNotify(context: 'Release') {
+          deleteDir()
+          unstash 'source'
+          unstash('packages')
+          dir("${BASE_DIR}"){
+            releasePackages()
+          }
         }
       }
     }
