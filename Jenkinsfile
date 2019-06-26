@@ -13,11 +13,14 @@ it is need as field to store the results of the tests.
 pipeline {
   agent any
   environment {
-    BASE_DIR="src/github.com/elastic/apm-agent-python"
+    REPO = 'apm-agent-python'
+    BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
+    GITHUB_CHECK_ITS_NAME = 'Integration Tests'
+    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -161,6 +164,28 @@ pipeline {
         }
       }
     }
+    stage('Integration Tests') {
+      agent none
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
+            expression { return !params.Run_As_Master_Branch }
+          }
+        }
+      }
+      steps {
+        log(level: 'INFO', text: 'Launching Async ITs')
+        build(job: env.ITS_PIPELINE, propagate: false, wait: false,
+              parameters: [string(name: 'AGENT_INTEGRATION_TEST', value: 'Python'),
+                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK}/${env.REPO}.git@${env.GIT_BASE_COMMIT}"),
+                           string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
+                           string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
+                           string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
+        githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
+      }
+    }
     stage('Release') {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
@@ -278,7 +303,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
               testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
             steps.env.PYTHON_VERSION = "${x}"
             steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: 'apm-agent-python',
+            steps.codecov(repo: "${steps.env.REPO}",
               basedir: "${steps.env.BASE_DIR}",
               flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
               secret: "${steps.env.CODECOV_SECRET}")
