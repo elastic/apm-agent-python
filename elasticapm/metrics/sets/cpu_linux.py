@@ -70,7 +70,9 @@ class CPUMetricSet(MetricsSet):
             delta = {k: new[k] - prev[k] for k in new.keys()}
             cpu_usage_ratio = delta["cpu_usage"] / delta["cpu_total"]
             self.gauge("system.cpu.total.norm.pct").val = cpu_usage_ratio
-            self.gauge("system.memory.actual.free").val = new["mem_available"]
+            # mem_available not present in linux before kernel 3.14 - fallback to mem_free if not present - see #500
+            mem_free = new["mem_available"]  if "mem_available" in new else new["mem_free"]
+            self.gauge("system.memory.actual.free").val = mem_free
             self.gauge("system.memory.total").val = new["mem_total"]
 
             cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
@@ -109,6 +111,8 @@ class CPUMetricSet(MetricsSet):
                     stats["mem_total"] = int(whitespace_re.split(line)[1]) * 1024
                 elif line.startswith("MemAvailable:"):
                     stats["mem_available"] = int(whitespace_re.split(line)[1]) * 1024
+                elif line.startswith("MemFree:"):
+                    stats["mem_free"] = int(whitespace_re.split(line)[1]) * 1024
         return stats
 
     def read_process_stats(self):

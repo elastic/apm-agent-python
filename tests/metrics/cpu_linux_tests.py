@@ -76,6 +76,14 @@ Active:          7682276 kB
 Inactive:        5468500 kB
 """
 
+TEMPLATE_PROC_MEMINFO_NO_MEMAVAILABLE = """MemTotal:       16164884 kB
+MemFree:          359184 kB
+Buffers:          891296 kB
+Cached:          6416340 kB
+SwapCached:          148 kB
+Active:          7682276 kB
+Inactive:        5468500 kB
+"""
 
 @pytest.mark.parametrize("proc_stat_template", [TEMPLATE_PROC_STAT_DEBIAN, TEMPLATE_PROC_STAT_RHEL])
 def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
@@ -113,3 +121,35 @@ def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
 
     assert data["samples"]["system.process.memory.rss.bytes"]["value"] == 47738880
     assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
+
+
+def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO_NO_MEMAVAILABLE),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(0, lambda x: None),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+    )
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=400000, idle=600000)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=100000, stime=100000)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO_NOMEMAVAILABLE),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    data = metricset.collect()
+
+    assert data["samples"]["system.memory.actual.free"]["value"] == 359184 * 1057
+
