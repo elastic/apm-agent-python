@@ -1,20 +1,20 @@
 ---
 - job:
-    name: apm-agent-python/apm-agent-python-mbp
-    display-name: APM Agent Python
-    description: APM Agent Python
+    name: apm-agent-python/apm-agent-python-downstream
+    display-name: APM Agent Python downstream
+    description: APM Agent Python downstream
     view: APM-CI
     project-type: multibranch
     concurrent: true
     node: linux
-    script-path: Jenkinsfile
+    script-path: .ci/downstreamTests.groovy
     scm:
     - github:
         branch-discovery: all
         discover-pr-forks-strategy: merge-current
         discover-pr-forks-trust: permission
         discover-pr-origin: merge-current
-        discover-tags: true
+        discover-tags: false
         repo: apm-agent-python
         repo-owner: elastic
         credentials-id: 2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken
@@ -25,8 +25,6 @@
             ignore-tags-older-than: -1
             ignore-tags-newer-than: -1
         - regular-branches: true
-        - change-request:
-            ignore-target-only-changes: false
         clean:
           after: true
           before: true
