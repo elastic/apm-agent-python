@@ -16,17 +16,11 @@
     - inject:
         properties-content: |-
           HOME=$JENKINS_HOME
+          PIP_CACHE=.cache/pip
         name: branch_specifier
         default: refs/heads/master
         description: the Git branch specifier to build (&lt;branchName&gt;, &lt;tagName&gt;,
           &lt;commitId&gt;, etc.)
-    properties:
-    - github:
-        url: https://github.com/elastic/apm-agent-python/
-    - inject:
-        properties-content: |-
-          HOME=$JENKINS_HOME
-          PIP_CACHE=.cache/pip
     node: master
     scm:
     - git:

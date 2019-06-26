@@ -1,26 +1,14 @@
 #!/usr/bin/env groovy
 @Library('apm@current') _
 
-import co.elastic.matrix.*
-import groovy.transform.Field
-
-/**
-This is the parallel tasks generator,
-it is need as field to store the results of the tests.
-*/
-@Field def pythonTasksGen
-
 pipeline {
   agent any
   environment {
-    REPO = 'apm-agent-python'
-    BASE_DIR = "src/github.com/elastic/${env.REPO}"
+    BASE_DIR="src/github.com/elastic/apm-agent-python"
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
-    GITHUB_CHECK_ITS_NAME = 'Integration Tests'
-    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -34,10 +22,6 @@ pipeline {
   }
   triggers {
     issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
-  }
-  parameters {
-    booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
-    booleanParam(name: 'doc_ci', defaultValue: true, description: 'Enable build docs.')
   }
   stages {
     stage('Initializing'){
@@ -91,22 +75,16 @@ pipeline {
       options { skipDefaultCheckout() }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
-          deleteDir()
-          unstash "source"
-          dir("${BASE_DIR}"){
-            script {
-              pythonTasksGen = new PythonParallelTaskGenerator(
-                xKey: 'PYTHON_VERSION',
-                yKey: 'FRAMEWORK',
-                xFile: ".ci/.jenkins_python.yml",
-                yFile: ".ci/.jenkins_framework.yml",
-                exclusionFile: ".ci/.jenkins_exclude.yml",
-                tag: "Python",
-                name: "Python",
-                steps: this
-                )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-              parallel(mapPatallelTasks)
+        deleteDir()
+        unstash "source"
+        dir("${BASE_DIR}"){
+          script {
+            def node = readYaml(file: '.ci/.jenkins_python.yml')
+            def parallelTasks = [:]
+            node['PYTHON_VERSION'].each{ version ->
+              parallelTasks["${version}"] = generateStep(version)
+            }
+            parallel(parallelTasks)
             }
           }
         }
@@ -162,28 +140,6 @@ pipeline {
           }
           stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
         }
-      }
-    }
-    stage('Integration Tests') {
-      agent none
-      when {
-        beforeAgent true
-        allOf {
-          anyOf {
-            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
-            expression { return !params.Run_As_Master_Branch }
-          }
-        }
-      }
-      steps {
-        log(level: 'INFO', text: 'Launching Async ITs')
-        build(job: env.ITS_PIPELINE, propagate: false, wait: false,
-              parameters: [string(name: 'AGENT_INTEGRATION_TEST', value: 'Python'),
-                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK}/${env.REPO}.git@${env.GIT_BASE_COMMIT}"),
-                           string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
-                           string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
-                           string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
-        githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
     stage('Release') {
@@ -247,89 +203,22 @@ pipeline {
   }
 }
 
-
-/**
-Parallel task generator for the integration tests.
-*/
-class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
-
-  public PythonParallelTaskGenerator(Map params){
-    super(params)
+def generateStep(version){
+  def branch = env.BRANCH_NAME
+  if(env.CHANGE_ID){
+    branch = env.CHANGE_TARGET
   }
-
-  /**
-  build a map of closures to be used as parallel steps.
-  Make 5 groups per column so it will spin 5 Nodes,
-  this makes fewer Docker image Builds.
-  */
-  protected Map generateParallelSteps(column){
-    def parallelStep = [:]
-    def groups = [:]
-    def index = 1
-    column.each{ key, value ->
-      def keyGrp = "${this.tag}-${value.x}-${index % 5}"
-      if(groups[keyGrp] == null){
-        groups[keyGrp] = [:]
-        groups[keyGrp].key = value.x
-        groups[keyGrp].values = []
-      }
-      groups[keyGrp].values.add(value.y)
-      index++
-    }
-    groups.each{ key, value ->
-      parallelStep[key] = generateStep(value.key, value.values)
-    }
-    return parallelStep
-  }
-
-  /**
-  build a clousure that launch and agent and execute the corresponding test script,
-  then store the results.
-  */
-  public Closure generateStep(x, yList){
-    return {
-      steps.node('linux && immutable'){
-        yList.each{ y ->
-          def label = "${tag}-${x}-${y}"
-          try {
-            steps.runScript(label: label, python: x, framework: y)
-            saveResult(x, y, 1)
-          } catch(e){
-            saveResult(x, y, 0)
-            error("${label} tests failed : ${e.toString()}\n")
-          } finally {
-            steps.junit(allowEmptyResults: false,
-              keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-            steps.env.PYTHON_VERSION = "${x}"
-            steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: "${steps.env.REPO}",
-              basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}")
-          }
-        }
-      }
-    }
-  }
-}
-
-def runScript(Map params = [:]){
-  def label = params.label
-  def python = params.python
-  def framework = params.framework
-  log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
-  deleteDir()
-  sh "mkdir ${env.PIP_CACHE}"
-  unstash 'source'
-  dir("${BASE_DIR}"){
-    retry(2){
-      sleep randomNumber(min:10, max: 30)
-      sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
-    }
+  return {
+    build(job: "apm-agent-python/downstream-python-tests-mbp/${branch}",
+      parameters: [
+        string(name: 'PYTHON_VERSION', value: version),
+        string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
+        string(name: 'MERGE_TARGET', value: env.CHANGE_TARGET),
+      ],
+      propagate: true,
+      quietPeriod: 10,
+      wait: true
+    )
   }
 }
 
