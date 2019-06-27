@@ -44,15 +44,17 @@ pipeline {
       agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
-        if(params.CHANGE_TARGET == null || params.BRANCH_SPECIFIER == null){
-          error("Invalid job parameters")
+        script {
+          if(params.MERGE_TARGET == null || params.BRANCH_SPECIFIER == null){
+            error("Invalid job parameters")
+          }
         }
         deleteDir()
         gitCheckout(basedir: "${BASE_DIR}",
           branch: "${params.BRANCH_SPECIFIER}",
           repo: "${REPO}",
           credentialsId: "${JOB_GIT_CREDENTIALS}",
-          mergeTarget: "${params.MERGE_TARGET}"
+          mergeTarget: "${params.MERGE_TARGET}",
           reference: '/var/lib/jenkins/apm-agent-python.git')
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false
       }
