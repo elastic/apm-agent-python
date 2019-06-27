@@ -132,7 +132,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           saveResult(x, y, 0)
           error("${label} tests failed : ${e.toString()}\n")
         } finally {
-          wrappingUp()
+          steps.wrappingUp()
         }
       }
     }
