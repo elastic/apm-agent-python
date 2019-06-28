@@ -30,6 +30,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from elasticapm.conf import constants
 from elasticapm.transport.base import AsyncTransport, Transport
 from elasticapm.utils import compat
 
@@ -58,13 +59,31 @@ class HTTPTransportBase(Transport):
             else v
             for k, v in (headers if headers is not None else {}).items()
         }
+        base, sep, tail = self._url.rpartition(constants.EVENTS_API_PATH)
+        self._config_url = "".join((base, constants.AGENT_CONFIG_PATH, tail))
         super(HTTPTransportBase, self).__init__(metadata=metadata, compress_level=compress_level, **kwargs)
 
     def send(self, data):
         """
-        Sends a request to a remote webserver using HTTP POST.
+        Sends a request to a remote APM Server using HTTP POST.
 
         Returns the shortcut URL of the recorded error on Elastic APM
+        """
+        raise NotImplementedError()
+
+    def get_config(self, current_version=None, keys=None):
+        """
+        Gets configuration from a remote APM Server
+
+        :param keys: a JSON-serializable dict to identify this instance, e.g.
+                {
+                    "service": {
+                        "name": "foo",
+                        "environment": "bar"
+                    }
+                }
+        :param current_version: version of the current configuration
+        :return: dictionary or None
         """
         raise NotImplementedError()
 

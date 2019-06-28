@@ -42,13 +42,14 @@ import warnings
 from copy import deepcopy
 
 import elasticapm
-from elasticapm.conf import Config, constants
+from elasticapm.conf import Config, ConfigVersion, constants, update_config
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
+from elasticapm.utils.threading import IntervalTimer
 
 __all__ = ("Client",)
 
@@ -95,11 +96,12 @@ class Client(object):
         self.filter_exception_types_dict = {}
         self._service_info = None
 
-        self.config = Config(config, inline_dict=inline)
-        if self.config.errors:
-            for msg in self.config.errors.values():
+        config = Config(config, inline_dict=inline)
+        if config.errors:
+            for msg in config.errors.values():
                 self.error_logger.error(msg)
-            self.config.disable_send = True
+            config.disable_send = True
+        self.config = ConfigVersion(config, version=None)
 
         headers = {
             "Content-Type": "application/x-ndjson",
@@ -157,10 +159,7 @@ class Client(object):
                 ),
             ),
             queue_func=self.queue,
-            sample_rate=self.config.transaction_sample_rate,
-            max_spans=self.config.transaction_max_spans,
-            span_frames_min_duration=self.config.span_frames_min_duration,
-            ignore_patterns=self.config.transactions_ignore_patterns,
+            config=self.config,
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
@@ -170,6 +169,10 @@ class Client(object):
         for path in self.config.metrics_sets:
             self._metrics.register(path)
         compat.atexit_register(self.close)
+        self._config_updater = IntervalTimer(
+            update_config, 3, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
+        )
+        self._config_updater.start()
 
     def get_handler(self, name):
         return import_string(name)

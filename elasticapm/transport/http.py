@@ -33,6 +33,7 @@
 import hashlib
 import logging
 import os
+import re
 import ssl
 
 import certifi
@@ -41,7 +42,7 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http_base import AsyncHTTPTransportBase, HTTPTransportBase
-from elasticapm.utils import compat, read_pem_file
+from elasticapm.utils import compat, json_encoder, read_pem_file
 
 logger = logging.getLogger("elasticapm.transport.http")
 
@@ -102,6 +103,40 @@ class Transport(HTTPTransportBase):
         finally:
             if response:
                 response.close()
+
+    def get_config(self, current_version=None, keys=None):
+        url = self._config_url
+        logger.info("%s: %r", url, keys)
+        data = json_encoder.dumps(keys).encode("utf-8")
+        headers = self._headers.copy()
+        if current_version:
+            headers["If-None-Match"] = current_version
+        try:
+            response = self.http.urlopen(
+                "POST", url, body=data, headers=headers, timeout=self._timeout, preload_content=False
+            )
+        except Exception:
+            # TODO: error handling
+            raise
+            return (None, None)
+        body = response.read()
+        if "Cache-Control" in response.headers:
+            try:
+                max_age = int(next(re.finditer(r"max-age=(\d+)", response.headers["Cache-Control"])).groups()[0])
+            except StopIteration:
+                logger.debug("Could not parse Cache-Control header: %s", response["Cache-Control"])
+                max_age = 300
+        if response.status == 304:
+            # config is unchanged, return
+            logger.info(304)
+            return (None, None, max_age)
+        elif response.status >= 400:
+            # TODO: error handling
+            logger.info("%s, %r", response.status, response.headers)
+            return (None, None, max_age)
+
+        logger.info("%s: %s", response.status, body)
+        return response.headers.get("Etag"), json_encoder.loads(body), max_age
 
     @property
     def cert_fingerprint(self):

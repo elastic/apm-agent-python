@@ -36,6 +36,7 @@ import pytest
 from mock import Mock
 
 import elasticapm
+from elasticapm.conf import Config
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
 
@@ -173,7 +174,7 @@ def tracer():
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = Tracer(lambda: frames, lambda frames: frames, queue)
+    store = Tracer(lambda: frames, lambda frames: frames, queue, Config())
     store.events = events
     return store
 
@@ -202,20 +203,20 @@ def test_leaf_tracing(tracer):
 
 
 def test_get_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config())
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config())
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction(clear=True)
     assert execution_context.get_transaction() is None
 
 
 def test_tag_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config())
     transaction = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
     transaction.tag(baz="bazzinga")
@@ -235,7 +236,7 @@ def test_tag_while_no_transaction(caplog):
 
 
 def test_tag_with_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, config=Config())
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, "test")

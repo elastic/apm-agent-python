@@ -38,6 +38,8 @@ from elasticapm.utils import compat, starmatch_to_regex
 
 __all__ = ("setup_logging", "Config")
 
+logger = logging.getLogger("elasticapm.conf")
+
 
 class ConfigurationError(ValueError):
     def __init__(self, msg, field_name):
@@ -183,6 +185,9 @@ class _ConfigBase(object):
     def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
         self._values = {}
         self._errors = {}
+        self.update(config_dict, env_dict, inline_dict)
+
+    def update(self, config_dict=None, env_dict=None, inline_dict=None):
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
@@ -208,6 +213,14 @@ class _ConfigBase(object):
                     setattr(self, field, new_value)
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
+
+    @property
+    def values(self):
+        return self._values
+
+    @values.setter
+    def values(self, values):
+        self._values = values
 
     @property
     def errors(self):
@@ -287,6 +300,62 @@ class Config(_ConfigBase):
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
+
+
+class ConfigVersion(object):
+    """
+    A thin layer around Config that provides versioning
+    """
+
+    __slots__ = ("_config", "_version")
+
+    def __init__(self, config_object, version):
+        self._config = config_object
+        self._version = version
+
+    def update(self, version, **config):
+        new_config = Config()
+        new_config.values = self._config.values
+        new_config.update(inline_dict=config)
+        if not new_config.errors:
+            self._version = version
+            self._config = new_config
+        else:
+            return new_config.errors
+
+    def __getattr__(self, item):
+        return getattr(self._config, item)
+
+    def __setattr__(self, name, value):
+        if name not in self.__slots__:
+            setattr(self._config, name, value)
+        else:
+            super(ConfigVersion, self).__setattr__(name, value)
+
+    @property
+    def config_version(self):
+        return self._version
+
+
+def update_config(agent):
+    logger.info("Checking for new config")
+    transport = agent._transport
+    keys = {"service": {"name": agent.config.service_name}}
+    if agent.config.environment:
+        keys["service"]["environment"] = agent.config.environment
+    new_version, new_config, next_run = transport.get_config(agent.config.config_version, keys)
+    if new_version and new_config:
+        errors = agent.config.update(new_version, **new_config)
+        if errors:
+            logger.error("Error applying new configuration: %s", repr(errors))
+        else:
+            logger.info(
+                "Applied new configuration: %s",
+                "; ".join(
+                    "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
+                ),
+            )
+    return next_run
 
 
 def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):

@@ -81,7 +81,7 @@ class Transaction(object):
         tracer = self._tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
-        elif tracer.max_spans and self._span_counter > tracer.max_spans - 1:
+        elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span)
             self._span_counter += 1
@@ -268,27 +268,17 @@ class DroppedSpan(object):
 
 
 class Tracer(object):
-    def __init__(
-        self,
-        frames_collector_func,
-        frames_processing_func,
-        queue_func,
-        sample_rate=1.0,
-        max_spans=0,
-        span_frames_min_duration=None,
-        ignore_patterns=None,
-    ):
-        self.max_spans = max_spans
+    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config):
+        self.config = config
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
         self.frames_collector_func = frames_collector_func
-        self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
-        self._sample_rate = sample_rate
-        if span_frames_min_duration in (-1, None):
+        self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
+        if config.span_frames_min_duration in (-1, None):
             # both None and -1 mean "no minimum"
             self.span_frames_min_duration = None
         else:
-            self.span_frames_min_duration = span_frames_min_duration / 1000.0
+            self.span_frames_min_duration = config.span_frames_min_duration / 1000.0
 
     def begin_transaction(self, transaction_type, trace_parent=None):
         """
@@ -299,7 +289,9 @@ class Tracer(object):
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
         else:
-            is_sampled = self._sample_rate == 1.0 or self._sample_rate > random.random()
+            is_sampled = (
+                self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
+            )
         transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled)
         if trace_parent is None:
             transaction.trace_parent = TraceParent(

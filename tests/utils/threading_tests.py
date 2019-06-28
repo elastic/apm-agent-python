@@ -47,3 +47,31 @@ def test_interval_timer():
         timer.cancel()
     time.sleep(0.05)
     assert not timer.is_alive()
+
+
+def test_interval_timer_interval_override():
+    func = mock.Mock()
+    func.return_value = 0.05
+    timer = IntervalTimer(function=func, interval=0.1, evaluate_function_interval=True)
+    timer.start()
+    time.sleep(0.25)
+    try:
+        assert func.call_count in (3, 4)
+    finally:
+        timer.cancel()
+    time.sleep(0.05)
+    assert not timer.is_alive()
+
+
+def test_interval_timer_interval_override_non_number():
+    func = mock.Mock()
+    func.return_value = "foo"
+    timer = IntervalTimer(function=func, interval=0.1, evaluate_function_interval=True)
+    timer.start()
+    time.sleep(0.25)
+    try:
+        assert func.call_count == 2
+    finally:
+        timer.cancel()
+    time.sleep(0.05)
+    assert not timer.is_alive()
