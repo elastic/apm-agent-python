@@ -145,11 +145,11 @@ def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
     for path, content in (
         (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=400000, idle=600000)),
         (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=100000, stime=100000)),
-        (proc_meminfo, TEMPLATE_PROC_MEMINFO_NOMEMAVAILABLE),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO_NO_MEMAVAILABLE),
     ):
         with open(path, mode="w") as f:
             f.write(content)
     data = metricset.collect()
 
-    assert data["samples"]["system.memory.actual.free"]["value"] == 359184 * 1057
+    assert data["samples"]["system.memory.actual.free"]["value"] == 359184 * 1024
 

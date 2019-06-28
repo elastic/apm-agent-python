@@ -71,7 +71,7 @@ class CPUMetricSet(MetricsSet):
             cpu_usage_ratio = delta["cpu_usage"] / delta["cpu_total"]
             self.gauge("system.cpu.total.norm.pct").val = cpu_usage_ratio
             # mem_available not present in linux before kernel 3.14 - fallback to mem_free if not present - see #500
-            mem_free = new["mem_available"]  if "mem_available" in new else new["mem_free"]
+            mem_free = new["mem_available"] if "mem_available" in new else new["mem_free"]
             self.gauge("system.memory.actual.free").val = mem_free
             self.gauge("system.memory.total").val = new["mem_total"]
 
