@@ -55,7 +55,7 @@ pipeline {
         stage('Checkout') {
           steps {
             deleteDir()
-            gitCheckout(basedir: "${BASE_DIR}")
+            gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
           }
         }
