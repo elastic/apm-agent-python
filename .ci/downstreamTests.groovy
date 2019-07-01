@@ -132,7 +132,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           saveResult(x, y, 0)
           error("${label} tests failed : ${e.toString()}\n")
         } finally {
-          steps.wrappingUp()
+          steps.wrappingUp(x, y)
         }
       }
     }
@@ -158,7 +158,7 @@ def runScript(Map params = [:]){
 /**
   Collect test results and report to Codecov
 */
-def wrappingUp(){
+def wrappingUp(x, y){
   junit(allowEmptyResults: false, keepLongStdio: true,
       testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
   env.PYTHON_VERSION = "${x}"
