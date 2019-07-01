@@ -76,6 +76,7 @@ Active:          7682276 kB
 Inactive:        5468500 kB
 """
 
+
 TEMPLATE_PROC_MEMINFO_NO_MEMAVAILABLE = """MemTotal:       16164884 kB
 MemFree:          359184 kB
 Buffers:          891296 kB
@@ -84,6 +85,7 @@ SwapCached:          148 kB
 Active:          7682276 kB
 Inactive:        5468500 kB
 """
+
 
 @pytest.mark.parametrize("proc_stat_template", [TEMPLATE_PROC_STAT_DEBIAN, TEMPLATE_PROC_STAT_RHEL])
 def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
@@ -151,5 +153,5 @@ def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
             f.write(content)
     data = metricset.collect()
 
-    assert data["samples"]["system.memory.actual.free"]["value"] == 359184 * 1024
-
+    mem_free_expected = sum([359184, 891296, 6416340]) * 1024  # MemFree + Buffers + Cached, in bytes
+    assert data["samples"]["system.memory.actual.free"]["value"] == mem_free_expected
