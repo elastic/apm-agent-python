@@ -71,7 +71,8 @@ pipeline {
         dir("${BASE_DIR}"){
           script {
             pythonTasksGen = new PythonParallelTaskGenerator(
-              xVersions: [ "${PYTHON_VERSION}" ],
+              xVersions: [ "${params.PYTHON_VERSION}" ],
+              xKey: 'PYTHON_VERSION',
               yKey: 'FRAMEWORK',
               yFile: ".ci/.jenkins_framework.yml",
               exclusionFile: ".ci/.jenkins_exclude.yml",

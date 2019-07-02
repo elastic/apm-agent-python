@@ -211,7 +211,7 @@ def generateStep(version){
     branch = env.CHANGE_TARGET
   }
   return {
-    build(job: "apm-agent-python/downstream-python-tests-mbp/${branch}",
+    build(job: "apm-agent-python/apm-agent-python-downstream/${branch}",
       parameters: [
         string(name: 'PYTHON_VERSION', value: version),
         string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
