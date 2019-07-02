@@ -40,6 +40,7 @@ MEM_STATS = "/proc/meminfo"
 PROC_STATS = "/proc/self/stat"
 
 CPU_FIELDS = ("user", "nice", "system", "idle", "iowait", "irq", "softirq", "steal", "guest", "guest_nice")
+MEM_FIELDS = ("MemTotal", "MemAvailable", "MemFree", "Buffers", "Cached")
 
 whitespace_re = re.compile(r"\s+")
 
@@ -70,8 +71,14 @@ class CPUMetricSet(MetricsSet):
             delta = {k: new[k] - prev[k] for k in new.keys()}
             cpu_usage_ratio = delta["cpu_usage"] / delta["cpu_total"]
             self.gauge("system.cpu.total.norm.pct").val = cpu_usage_ratio
-            self.gauge("system.memory.actual.free").val = new["mem_available"]
-            self.gauge("system.memory.total").val = new["mem_total"]
+            # MemAvailable not present in linux before kernel 3.14
+            # fallback to MemFree + Buffers + Cache if not present - see #500
+            if "MemAvailable" in new:
+                mem_free = new["MemAvailable"]
+            else:
+                mem_free = sum(new.get(mem_field, 0) for mem_field in ("MemFree", "Buffers", "Cached"))
+            self.gauge("system.memory.actual.free").val = mem_free
+            self.gauge("system.memory.total").val = new["MemTotal"]
 
             cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
 
@@ -105,10 +112,10 @@ class CPUMetricSet(MetricsSet):
                     break
         with open(self.memory_stats_file, "r") as memfile:
             for line in memfile:
-                if line.startswith("MemTotal:"):
-                    stats["mem_total"] = int(whitespace_re.split(line)[1]) * 1024
-                elif line.startswith("MemAvailable:"):
-                    stats["mem_available"] = int(whitespace_re.split(line)[1]) * 1024
+                metric_name = line.split(":")[0]
+                if metric_name in MEM_FIELDS:
+                    value_in_bytes = int(whitespace_re.split(line)[1]) * 1024
+                    stats[metric_name] = value_in_bytes
         return stats
 
     def read_process_stats(self):
