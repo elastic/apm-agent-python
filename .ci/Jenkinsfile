@@ -153,8 +153,13 @@ pipeline {
       agent { label 'linux && immutable' }
       options {
         skipDefaultCheckout()
-        timeout(time: 12, unit: 'HOURS')
-        warnError('The Release was not make')
+        timeout(time: 10, unit: 'MINUTES')
+        catchError(
+          message: 'The Release was not make',
+          buildResult: 'SUCCESS',
+          stageResult: 'UNSTABLE',
+          catchInterruptions: false
+        )
       }
       environment {
         HOME = "${env.WORKSPACE}"
