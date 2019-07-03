@@ -13,7 +13,6 @@ pipeline {
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
   }
   options {
-    timeout(time: 1, unit: 'HOURS')
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
     timestamps()
     ansiColor('xterm')
@@ -74,7 +73,10 @@ pipeline {
     */
     stage('Test') {
       agent { label 'linux && immutable' }
-      options { skipDefaultCheckout() }
+      options {
+        timeout(time: 1, unit: 'HOURS')
+        skipDefaultCheckout()
+      }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
         deleteDir()
@@ -126,7 +128,10 @@ pipeline {
     }
     stage('Building packages') {
       agent { label 'docker && linux && immutable' }
-      options { skipDefaultCheckout() }
+      options {
+        timeout(time: 1, unit: 'HOURS')
+        skipDefaultCheckout()
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
@@ -146,7 +151,11 @@ pipeline {
     }
     stage('Release') {
       agent { label 'linux && immutable' }
-      options { skipDefaultCheckout() }
+      options {
+        skipDefaultCheckout()
+        timeout(time: 12, unit: 'HOURS')
+        warnError('The Release was not make')
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
@@ -215,7 +224,7 @@ def generateStep(version){
       parameters: [
         string(name: 'PYTHON_VERSION', value: version),
         string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
-        string(name: 'MERGE_TARGET', value: env.CHANGE_TARGET),
+        string(name: 'MERGE_TARGET', value: branch),
       ],
       propagate: true,
       quietPeriod: 10,
