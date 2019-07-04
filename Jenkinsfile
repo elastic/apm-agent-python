@@ -77,6 +77,13 @@ pipeline {
                 ./tests/scripts/docker/black.sh
                 """, label: "Black code formatting"
                 sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+                catchError(
+                    buildResult: 'SUCCESS',
+                    stageResult: 'UNSTABLE',
+                    message: 'Some files does not contain license'
+                    ) {
+                  checkLicenses(skip: true, junit: true, ext: '.py', licensor: 'Elasticsearch BV')
+                }
               }
             }
           }

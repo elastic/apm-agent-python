@@ -21,4 +21,11 @@ docs:
 update-json-schema:
 	bash ./tests/scripts/download_json_schema.sh
 
-.PHONY: isort flake8 test coverage docs update-json-schema
+check-licenses:
+	@go get -u github.com/elastic/go-licenser
+	@go-licenser -ext .py .
+
+docker-check-licenses:
+	docker run --rm -v "$$PWD":/usr/src -w /usr/src golang:1.12 make check-licenses
+
+.PHONY: isort flake8 test coverage docs update-json-schema check-licenses
