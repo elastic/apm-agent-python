@@ -154,7 +154,6 @@ pipeline {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
-        warnError('The Release was not make')
       }
       environment {
         HOME = "${env.WORKSPACE}"
