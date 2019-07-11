@@ -13,11 +13,14 @@ it is need as field to store the results of the tests.
 pipeline {
   agent any
   environment {
-    BASE_DIR="src/github.com/elastic/apm-agent-python"
+    REPO = 'apm-agent-python'
+    BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
+    GITHUB_CHECK_ITS_NAME = 'Integration Tests'
+    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -30,7 +33,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('.*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -52,7 +55,7 @@ pipeline {
         stage('Checkout') {
           steps {
             deleteDir()
-            gitCheckout(basedir: "${BASE_DIR}")
+            gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
           }
         }
@@ -61,18 +64,20 @@ pipeline {
         */
         stage('Lint') {
           steps {
-            deleteDir()
-            unstash 'source'
-            dir("${BASE_DIR}"){
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/isort.sh
-              """, label: "isort import sorting"
-              sh script: """
-              ./tests/scripts/docker/cleanup.sh
-              ./tests/scripts/docker/black.sh
-              """, label: "Black code formatting"
-              sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+            withGithubNotify(context: 'Lint') {
+              deleteDir()
+              unstash 'source'
+              dir("${BASE_DIR}"){
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/isort.sh
+                """, label: "isort import sorting"
+                sh script: """
+                ./tests/scripts/docker/cleanup.sh
+                ./tests/scripts/docker/black.sh
+                """, label: "Black code formatting"
+                sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+              }
             }
           }
         }
@@ -85,22 +90,24 @@ pipeline {
       agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
-        deleteDir()
-        unstash "source"
-        dir("${BASE_DIR}"){
-          script {
-            pythonTasksGen = new PythonParallelTaskGenerator(
-              xKey: 'PYTHON_VERSION',
-              yKey: 'FRAMEWORK',
-              xFile: "./tests/.jenkins_python.yml",
-              yFile: "./tests/.jenkins_framework.yml",
-              exclusionFile: "./tests/.jenkins_exclude.yml",
-              tag: "Python",
-              name: "Python",
-              steps: this
-              )
-            def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-            parallel(mapPatallelTasks)
+        withGithubNotify(context: 'Test', tab: 'tests') {
+          deleteDir()
+          unstash "source"
+          dir("${BASE_DIR}"){
+            script {
+              pythonTasksGen = new PythonParallelTaskGenerator(
+                xKey: 'PYTHON_VERSION',
+                yKey: 'FRAMEWORK',
+                xFile: ".ci/.jenkins_python.yml",
+                yFile: ".ci/.jenkins_framework.yml",
+                exclusionFile: ".ci/.jenkins_exclude.yml",
+                tag: "Python",
+                name: "Python",
+                steps: this
+                )
+              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              parallel(mapPatallelTasks)
+            }
           }
         }
       }
@@ -145,14 +152,38 @@ pipeline {
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        dir("${BASE_DIR}"){
-          sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-          sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-          sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+        withGithubNotify(context: 'Building packages') {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+            sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+            sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+          }
+          stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
         }
-        stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
+      }
+    }
+    stage('Integration Tests') {
+      agent none
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
+            expression { return !params.Run_As_Master_Branch }
+          }
+        }
+      }
+      steps {
+        log(level: 'INFO', text: 'Launching Async ITs')
+        build(job: env.ITS_PIPELINE, propagate: false, wait: false,
+              parameters: [string(name: 'AGENT_INTEGRATION_TEST', value: 'Python'),
+                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT}"),
+                           string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
+                           string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
+                           string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
+        githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
     stage('Release') {
@@ -184,17 +215,19 @@ pipeline {
         }
       }
       steps {
-        deleteDir()
-        unstash 'source'
-        unstash('packages')
-        dir("${BASE_DIR}"){
-          releasePackages()
+        withGithubNotify(context: 'Release') {
+          deleteDir()
+          unstash 'source'
+          unstash('packages')
+          dir("${BASE_DIR}"){
+            releasePackages()
+          }
         }
       }
     }
   }
   post {
-    always{
+    cleanup {
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -202,21 +235,14 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          catchError(buildResult: 'SUCCESS') {
+            def datafile = readFile(file: "results.json")
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
+          }
         }
       }
-    }
-    success {
-      echoColor(text: '[SUCCESS]', colorfg: 'green', colorbg: 'default')
-    }
-    aborted {
-      echoColor(text: '[ABORTED]', colorfg: 'magenta', colorbg: 'default')
-    }
-    failure {
-      echoColor(text: '[FAILURE]', colorfg: 'red', colorbg: 'default')
-      step([$class: 'Mailer', notifyEveryUnstableBuild: true, recipients: "${NOTIFY_TO}", sendToIndividuals: false])
-    }
-    unstable {
-      echoColor(text: '[UNSTABLE]', colorfg: 'yellow', colorbg: 'default')
+      notifyBuildResult()
     }
   }
 }
@@ -277,7 +303,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
               testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
             steps.env.PYTHON_VERSION = "${x}"
             steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: 'apm-agent-python',
+            steps.codecov(repo: "${steps.env.REPO}",
               basedir: "${steps.env.BASE_DIR}",
               flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
               secret: "${steps.env.CODECOV_SECRET}")
@@ -308,22 +334,15 @@ def runScript(Map params = [:]){
 }
 
 def releasePackages(){
-  def jsonValue = getVaultSecret(secret: 'secret/apm-team/ci/apm-agent-python-twine')
-  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [
-    [var: 'TWINE_USER', password: jsonValue.data.user],
-    [var: 'TWINE_PASSWORD', password: jsonValue.data.password],
-  ]]) {
-    withEnv([
-      "TWINE_USER=${jsonValue.data.user}",
-      "TWINE_PASSWORD=${jsonValue.data.password}"]) {
-      sh(label: "Release packages", script: """
-      set +x
-      python -m pip install --user twine
-      python setup.py sdist
-      echo "Uploading to ${REPO_URL} with user \${TWINE_USER}"
-      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
-      python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
-      """)
-    }
+  withSecretVault(secret: 'secret/apm-team/ci/apm-agent-python-twine',
+                  user_var_name: 'TWINE_USER', pass_var_name: 'TWINE_PASSWORD'){
+    sh(label: "Release packages", script: """
+    set +x
+    python -m pip install --user twine
+    python setup.py sdist
+    echo "Uploading to ${REPO_URL} with user \${TWINE_USER}"
+    python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
+    python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
+    """)
   }
 }

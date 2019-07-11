@@ -55,4 +55,7 @@ FRAMEWORK:
   - psutil-5.0
   - psutil-4.0
   - eventlet-newest
-
+  - elasticsearch-2
+  - elasticsearch-5
+  - elasticsearch-6
+  - elasticsearch-7

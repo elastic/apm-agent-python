@@ -41,6 +41,7 @@ from collections import defaultdict
 import mock
 import pytest
 from pytest_localserver.http import ContentServer
+from pytest_localserver.https import DEFAULT_CERTIFICATE
 
 import elasticapm
 from elasticapm.base import Client
@@ -468,6 +469,11 @@ def test_call_end_twice(elasticapm_client):
 def test_client_disables_ssl_verification(elasticapm_client):
     assert not elasticapm_client.config.verify_server_cert
     assert not elasticapm_client._transport._verify_server_cert
+
+
+@pytest.mark.parametrize("sending_elasticapm_client", [{"server_cert": DEFAULT_CERTIFICATE}], indirect=True)
+def test_server_cert_pinning(sending_elasticapm_client):
+    assert sending_elasticapm_client._transport._server_cert == DEFAULT_CERTIFICATE
 
 
 @pytest.mark.parametrize(
