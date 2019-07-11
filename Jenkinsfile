@@ -208,9 +208,9 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 1)
           } catch(e){
             saveResult(x, y, 0)
-            error("${label} tests failed : ${e.toString()}\n")
+            steps.error("${label} tests failed : ${e.toString()}\n")
           } finally {
-            steps.junit(allowEmptyResults: false,
+            steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
               testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
             steps.env.PYTHON_VERSION = "${x}"
