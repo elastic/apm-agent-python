@@ -40,6 +40,7 @@ from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
+from elasticapm.utils.threading import AtomicNumber
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -64,7 +65,7 @@ class Transaction(object):
         self.duration = None
         self.result = None
         self.transaction_type = transaction_type
-        self._tracer = tracer
+        self.tracer = tracer
 
         self.dropped_spans = 0
         self.context = {}
@@ -78,7 +79,7 @@ class Transaction(object):
 
     def _begin_span(self, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
         parent_span = execution_context.get_span()
-        tracer = self._tracer
+        tracer = self.tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
         elif tracer.max_spans and self._span_counter > tracer.max_spans - 1:
@@ -114,21 +115,16 @@ class Transaction(object):
         return self._begin_span(name, span_type, context=context, leaf=leaf, tags=tags, parent_span_id=None)
 
     def end_span(self, skip_frames=0):
+        """
+        End the currently active span
+        :param skip_frames: numbers of frames to skip in the stack trace
+        :return: the ended span
+        """
         span = execution_context.get_span()
         if span is None:
             raise LookupError()
-        if isinstance(span, DroppedSpan):
-            execution_context.set_span(span.parent)
-            return
 
-        span.duration = _time_func() - span.start_time
-
-        if not self._tracer.span_frames_min_duration or span.duration >= self._tracer.span_frames_min_duration:
-            span.frames = self._tracer.frames_processing_func(span.frames)[skip_frames:]
-        else:
-            span.frames = None
-        execution_context.set_span(span.parent)
-        self._tracer.queue_func(SPAN, span.to_dict())
+        span.end(skip_frames=skip_frames)
         return span
 
     def ensure_parent_id(self):
@@ -176,7 +172,18 @@ class Transaction(object):
         return result
 
 
-class Span(object):
+class BaseSpan(object):
+    def child_started(self, timestamp):
+        raise NotImplementedError()
+
+    def child_ended(self, timestamp):
+        raise NotImplementedError()
+
+    def end(self, skip_frames=0):
+        raise NotImplementedError()
+
+
+class Span(BaseSpan):
     __slots__ = (
         "id",
         "transaction",
@@ -191,6 +198,7 @@ class Span(object):
         "parent_span_id",
         "frames",
         "tags",
+        "_child_durations",
     )
 
     def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
@@ -222,8 +230,11 @@ class Span(object):
         self.parent_span_id = parent_span_id
         self.frames = None
         self.tags = {}
+        self._child_durations = ChildSpanTimer()
         if tags:
             self.tag(**tags)
+        if self.parent:
+            self.parent.child_started(self.start_time)
 
     def tag(self, **tags):
         """
@@ -258,13 +269,62 @@ class Span(object):
             result["stacktrace"] = self.frames
         return result
 
+    def end(self, skip_frames=0):
+        tracer = self.transaction.tracer
+        timestamp = _time_func()
+        self.duration = timestamp - self.start_time
+        if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration:
+            self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
+        else:
+            self.frames = None
+        execution_context.set_span(self.parent)
+        tracer.queue_func(SPAN, self.to_dict())
+        if self.parent:
+            self.parent.child_ended(timestamp)
 
-class DroppedSpan(object):
+    def child_started(self, timestamp):
+        self._child_durations.start(timestamp)
+
+    def child_ended(self, timestamp):
+        self._child_durations.stop(timestamp)
+
+
+class DroppedSpan(BaseSpan):
     __slots__ = ("leaf", "parent")
 
     def __init__(self, parent, leaf=False):
         self.parent = parent
         self.leaf = leaf
+
+    def end(self, skip_frames=0):
+        execution_context.set_span(self.parent)
+
+    def child_started(self, timestamp):
+        pass
+
+    def child_ended(self, timestamp):
+        pass
+
+
+class ChildSpanTimer(object):
+    __slots__ = ("_nesting_level", "_start", "_duration")
+
+    def __init__(self):
+        self._nesting_level = AtomicNumber()
+        self._start = AtomicNumber()
+        self._duration = AtomicNumber()
+
+    def start(self, timestamp):
+        if self._nesting_level.inc() == 1:
+            self._start = timestamp
+
+    def stop(self, timestamp):
+        if self._nesting_level.dec() == 0:
+            self._duration.inc(timestamp - self._start.value)
+
+    @property
+    def duration(self):
+        return self._duration.value
 
 
 class Tracer(object):
