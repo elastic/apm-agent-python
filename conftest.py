@@ -42,6 +42,7 @@ from os.path import abspath, dirname, join
 
 from tests.fixtures import (
     elasticapm_client,
+    httpsserver_custom,
     instrument,
     not_so_random,
     sending_elasticapm_client,
