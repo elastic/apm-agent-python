@@ -43,7 +43,7 @@ class CPUMetricSet(MetricsSet):
         self._process.cpu_percent(interval=None)
         super(CPUMetricSet, self).__init__(registry)
 
-    def collect(self):
+    def before_collect(self):
         self.gauge("system.cpu.total.norm.pct").val = psutil.cpu_percent(interval=None) / 100.0
         self.gauge("system.memory.actual.free").val = psutil.virtual_memory().available
         self.gauge("system.memory.total").val = psutil.virtual_memory().total
@@ -58,4 +58,3 @@ class CPUMetricSet(MetricsSet):
         self.gauge("system.process.cpu.total.norm.pct").val = cpu_percent / 100.0 / psutil.cpu_count()
         self.gauge("system.process.memory.size").val = memory_info.vms
         self.gauge("system.process.memory.rss.bytes").val = memory_info.rss
-        return super(CPUMetricSet, self).collect()

@@ -31,6 +31,7 @@
 import logging
 import threading
 import time
+from collections import defaultdict
 
 from elasticapm.conf import constants
 from elasticapm.utils import compat, is_master_process
@@ -79,14 +80,13 @@ class MetricsRegistry(object):
 
     def collect(self):
         """
-        Collect metrics from all registered metric sets
+        Collect metrics from all registered metric sets and queues them for sending
         :return:
         """
         logger.debug("Collecting metrics")
 
         for name, metricset in compat.iteritems(self._metricsets):
-            data = metricset.collect()
-            if data:
+            for data in metricset.collect():
                 self._queue_func(constants.METRICSET, data)
 
     def _start_collect_timer(self, timeout=None):
@@ -104,48 +104,53 @@ class MetricsRegistry(object):
 class MetricsSet(object):
     def __init__(self, registry):
         self._lock = threading.Lock()
-        self._counters = {}
-        self._gauges = {}
+        self._counters = defaultdict(dict)
+        self._gauges = defaultdict(dict)
         self._registry = registry
 
-    def counter(self, name):
+    def counter(self, name, **labels):
         """
         Returns an existing or creates and returns a new counter
         :param name: name of the counter
+        :param labels: a flat key/value map of labels
         :return: the counter object
         """
+        labels = self._labels_to_key(labels)
+        key = (name, labels)
         with self._lock:
-            if name not in self._counters:
+            if key not in self._counters:
                 if self._registry._ignore_patterns and any(
                     pattern.match(name) for pattern in self._registry._ignore_patterns
                 ):
                     counter = noop_metric
                 else:
                     counter = Counter(name)
-                self._counters[name] = counter
-            return self._counters[name]
+                self._counters[key] = counter
+            return self._counters[key]
 
-    def gauge(self, name):
+    def gauge(self, name, **labels):
         """
         Returns an existing or creates and returns a new gauge
         :param name: name of the gauge
         :return: the gauge object
         """
+        labels = self._labels_to_key(labels)
+        key = (name, labels)
         with self._lock:
-            if name not in self._gauges:
+            if key not in self._gauges:
                 if self._registry._ignore_patterns and any(
                     pattern.match(name) for pattern in self._registry._ignore_patterns
                 ):
                     gauge = noop_metric
                 else:
                     gauge = Gauge(name)
-                self._gauges[name] = gauge
-            return self._gauges[name]
+                self._gauges[key] = gauge
+            return self._gauges[key]
 
     def collect(self):
         """
-        Collects all metrics attached to this metricset, and returns it as a list, together with a timestamp
-        in microsecond precision.
+        Collects all metrics attached to this metricset, and returns it as a generator
+        with one or more elements. More than one element is returned if labels are used.
 
         The format of the return value should be
 
@@ -154,17 +159,33 @@ class MetricsSet(object):
                 "timestamp": unix epoch in microsecond precision
             }
         """
-        samples = {}
+        self.before_collect()
+        timestamp = int(time.time() * 1000000)
+        samples = defaultdict(dict)
         if self._counters:
-            samples.update(
-                {label: {"value": c.val} for label, c in compat.iteritems(self._counters) if c is not noop_metric}
-            )
+            for (name, labels), c in compat.iteritems(self._counters):
+                if c is not noop_metric:
+                    samples[labels].update({name: {"value": c.val}})
         if self._gauges:
-            samples.update(
-                {label: {"value": g.val} for label, g in compat.iteritems(self._gauges) if g is not noop_metric}
-            )
+            for (name, labels), g in compat.iteritems(self._gauges):
+                if g is not noop_metric:
+                    samples[labels].update({name: {"value": g.val}})
         if samples:
-            return {"samples": samples, "timestamp": int(time.time() * 1000000)}
+            for labels, sample in compat.iteritems(samples):
+                result = {"samples": sample, "timestamp": timestamp}
+                if labels:
+                    result["tags"] = {k: v for k, v in labels}
+                yield result
+
+    def before_collect(self):
+        """
+        A method that is called right before collection. Can be used to gather metrics.
+        :return:
+        """
+        pass
+
+    def _labels_to_key(self, labels):
+        return tuple((k, compat.text_type(v)) for k, v in sorted(compat.iteritems(labels)))
 
 
 class Counter(object):
@@ -184,24 +205,30 @@ class Counter(object):
         """
         Increments the counter. If no delta is provided, it is incremented by one
         :param delta: the amount to increment the counter by
+        :returns the counter itself
         """
         with self._lock:
             self._val += delta
+        return self
 
     def dec(self, delta=1):
         """
         Decrements the counter. If no delta is provided, it is decremented by one
         :param delta: the amount to decrement the counter by
+        :returns the counter itself
         """
         with self._lock:
             self._val -= delta
+        return self
 
     def reset(self):
         """
         Reset the counter to the initial value
+        :returns the counter itself
         """
         with self._lock:
             self._val = self._initial_value
+        return self
 
     @property
     def val(self):
