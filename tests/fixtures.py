@@ -163,10 +163,27 @@ def waiting_httpserver(httpserver):
     return httpserver
 
 
+@pytest.fixture
+def httpsserver_custom(request):
+    """The returned ``httpsserver`` (note the additional S!) provides a
+    threaded HTTP server instance similar to funcarg ``httpserver`` but with
+    SSL encryption.
+    """
+    from pytest_localserver import https
+
+    config = getattr(request, "param", {})
+    key = os.path.join(cur_dir, "ca", config.get("key", "server.pem"))
+
+    server = https.SecureContentServer(key=key, cert=key)
+    server.start()
+    request.addfinalizer(server.stop)
+    return server
+
+
 @pytest.fixture()
-def waiting_httpsserver(httpsserver):
-    wait_for_http_server(httpsserver)
-    return httpsserver
+def waiting_httpsserver(httpsserver_custom):
+    wait_for_http_server(httpsserver_custom)
+    return httpsserver_custom
 
 
 @pytest.fixture()
