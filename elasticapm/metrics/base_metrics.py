@@ -159,6 +159,7 @@ class MetricsSet(object):
                 "timestamp": unix epoch in microsecond precision
             }
         """
+        self.before_collect()
         timestamp = int(time.time() * 1000000)
         samples = defaultdict(dict)
         if self._counters:
@@ -166,7 +167,7 @@ class MetricsSet(object):
                 if c is not noop_metric:
                     samples[labels].update({name: {"value": c.val}})
         if self._gauges:
-            for (name, labels), g in compat.iteritems(self._counters):
+            for (name, labels), g in compat.iteritems(self._gauges):
                 if g is not noop_metric:
                     samples[labels].update({name: {"value": g.val}})
         if samples:
@@ -175,6 +176,13 @@ class MetricsSet(object):
                 if labels:
                     result["tags"] = {k: v for k, v in labels}
                 yield result
+
+    def before_collect(self):
+        """
+        A method that is called right before collection. Can be used to gather metrics.
+        :return:
+        """
+        pass
 
     def _labels_to_key(self, labels):
         return tuple((k, compat.text_type(v)) for k, v in sorted(compat.iteritems(labels)))

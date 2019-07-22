@@ -41,12 +41,11 @@ from tests.fixtures import TempStoreClient
 
 
 class DummyMetricSet(MetricsSet):
-    def collect(self):
+    def before_collect(self):
         self.gauge("a.b.c.d").val = 0
         self.gauge("a").val = 0
         self.gauge("b").val = 0
         self.gauge("c").val = 0
-        return super(DummyMetricSet, self).collect()
 
 
 def test_metrics_registry():
