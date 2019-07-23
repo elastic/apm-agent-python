@@ -104,8 +104,8 @@ class MetricsRegistry(object):
 class MetricsSet(object):
     def __init__(self, registry):
         self._lock = threading.Lock()
-        self._counters = defaultdict(dict)
-        self._gauges = defaultdict(dict)
+        self._counters = {}
+        self._gauges = {}
         self._registry = registry
 
     def counter(self, name, **labels):
