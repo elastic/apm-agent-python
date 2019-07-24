@@ -77,7 +77,17 @@ class Transaction(object):
     def end_transaction(self):
         self.duration = _time_func() - self.start_time
 
-    def _begin_span(self, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
+    def _begin_span(
+        self,
+        name,
+        span_type,
+        context=None,
+        leaf=False,
+        tags=None,
+        parent_span_id=None,
+        span_subtype=None,
+        span_action=None,
+    ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
         if parent_span and parent_span.leaf:
@@ -95,6 +105,8 @@ class Transaction(object):
                 leaf=leaf,
                 tags=tags,
                 parent_span_id=parent_span_id,
+                span_subtype=span_subtype,
+                span_action=span_action,
             )
             span.frames = tracer.frames_collector_func()
             span.parent = parent_span
@@ -102,7 +114,7 @@ class Transaction(object):
         execution_context.set_span(span)
         return span
 
-    def begin_span(self, name, span_type, context=None, leaf=False, tags=None):
+    def begin_span(self, name, span_type, context=None, leaf=False, tags=None, span_subtype=None, span_action=None):
         """
         Begin a new span
         :param name: name of the span
@@ -110,9 +122,20 @@ class Transaction(object):
         :param context: a context dict
         :param leaf: True if this is a leaf span
         :param tags: a flat string/string dict of tags
+        :param span_subtype: sub type of the span, e.g. "postgresql"
+        :param span_action: action of the span , e.g. "query"
         :return: the Span object
         """
-        return self._begin_span(name, span_type, context=context, leaf=leaf, tags=tags, parent_span_id=None)
+        return self._begin_span(
+            name,
+            span_type,
+            context=context,
+            leaf=leaf,
+            tags=tags,
+            parent_span_id=None,
+            span_subtype=span_subtype,
+            span_action=span_action,
+        )
 
     def end_span(self, skip_frames=0):
         """
@@ -189,6 +212,8 @@ class Span(BaseSpan):
         "transaction",
         "name",
         "type",
+        "subtype",
+        "action",
         "context",
         "leaf",
         "timestamp",
@@ -201,23 +226,35 @@ class Span(BaseSpan):
         "_child_durations",
     )
 
-    def __init__(self, transaction, name, span_type, context=None, leaf=False, tags=None, parent_span_id=None):
+    def __init__(
+        self,
+        transaction,
+        name,
+        span_type,
+        context=None,
+        leaf=False,
+        tags=None,
+        parent_span_id=None,
+        span_subtype=None,
+        span_action=None,
+    ):
         """
         Create a new Span
 
         :param transaction: transaction object that this span relates to
         :param name: Generic name of the span
-        :param span_type: type of the span
+        :param span_type: type of the span, e.g. db
         :param context: context dictionary
         :param leaf: is this span a leaf span?
         :param tags: a dict of tags
         :param parent_span_id: override of the span ID
+        :param span_subtype: sub type of the span, e.g. mysql
+        :param span_action: sub type of the span, e.g. query
         """
         self.start_time = _time_func()
         self.id = "%016x" % random.getrandbits(64)
         self.transaction = transaction
         self.name = name
-        self.type = span_type
         self.context = context
         self.leaf = leaf
         # timestamp is bit of a mix of monotonic and non-monotonic time sources.
@@ -233,6 +270,16 @@ class Span(BaseSpan):
         self._child_durations = ChildSpanTimer()
         if tags:
             self.tag(**tags)
+        if span_subtype is None and "." in span_type:
+            # old style dottet type, let's split it up
+            type_bits = span_type.split(".")
+            if len(type_bits) == 2:
+                span_type, span_subtype = type_bits[:2]
+            else:
+                span_type, span_subtype, span_action = type_bits[:3]
+        self.type = span_type
+        self.subtype = span_subtype
+        self.action = span_action
         if self.parent:
             self.parent.child_started(self.start_time)
 
@@ -256,6 +303,8 @@ class Span(BaseSpan):
             "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
             "name": encoding.keyword_field(self.name),
             "type": encoding.keyword_field(self.type),
+            "subtype": encoding.keyword_field(self.subtype),
+            "action": encoding.keyword_field(self.action),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
         }
@@ -392,9 +441,23 @@ class Tracer(object):
 
 
 class capture_span(object):
-    def __init__(self, name=None, span_type="code.custom", extra=None, skip_frames=0, leaf=False, tags=None):
+    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "tags")
+
+    def __init__(
+        self,
+        name=None,
+        span_type="code.custom",
+        extra=None,
+        skip_frames=0,
+        leaf=False,
+        tags=None,
+        span_subtype=None,
+        span_action=None,
+    ):
         self.name = name
         self.type = span_type
+        self.subtype = span_subtype
+        self.action = span_action
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
@@ -413,7 +476,15 @@ class capture_span(object):
     def __enter__(self):
         transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
-            return transaction.begin_span(self.name, self.type, context=self.extra, leaf=self.leaf, tags=self.tags)
+            return transaction.begin_span(
+                self.name,
+                self.type,
+                context=self.extra,
+                leaf=self.leaf,
+                tags=self.tags,
+                span_subtype=self.subtype,
+                span_action=self.action,
+            )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = execution_context.get_transaction()

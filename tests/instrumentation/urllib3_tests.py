@@ -62,7 +62,8 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     assert len(spans) == 2
 
     assert spans[0]["name"] == expected_sig
-    assert spans[0]["type"] == "ext.http.urllib3"
+    assert spans[0]["type"] == "external"
+    assert spans[0]["subtype"] == "http"
     assert spans[0]["context"]["http"]["url"] == url
     assert spans[0]["parent_id"] == spans[1]["id"]
 

@@ -43,9 +43,9 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
         name = self.get_wrapped_name(wrapped, instance, method)
         context = None
         if method == "Cluster.connect":
-            span_type = "db.cassandra.connect"
+            span_action = "connect"
         else:
-            span_type = "db.cassandra.query"
+            span_action = "query"
             query = args[0] if args else kwargs.get("query")
             if hasattr(query, "query_string"):
                 query_str = query.query_string
@@ -59,5 +59,5 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
                 name = extract_signature(query_str)
                 context = {"db": {"type": "sql", "statement": query_str}}
 
-        with capture_span(name, span_type, context):
+        with capture_span(name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context):
             return wrapped(*args, **kwargs)

@@ -76,7 +76,7 @@ class Transport(HTTPTransportBase):
                 response = self.http.urlopen(
                     "POST", url, body=data, headers=self._headers, timeout=self._timeout, preload_content=False
                 )
-                logger.info("Sent request, url=%s size=%.2fkb status=%s", url, len(data) / 1024.0, response.status)
+                logger.debug("Sent request, url=%s size=%.2fkb status=%s", url, len(data) / 1024.0, response.status)
             except Exception as e:
                 print_trace = True
                 if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):

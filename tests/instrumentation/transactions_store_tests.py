@@ -357,6 +357,37 @@ def test_transaction_without_name_result(elasticapm_client):
     assert transaction.name == ""
 
 
+def test_dotted_span_type_conversion(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with capture_span("foo", "type"):
+        with capture_span("bar", "type.subtype"):
+            with capture_span("baz", "type.subtype.action"):
+                with capture_span("bazzinga", "type.subtype.action.more"):
+                    pass
+    elasticapm_client.end_transaction("test", "OK")
+    spans = elasticapm_client.events[SPAN]
+
+    assert spans[0]["name"] == "bazzinga"
+    assert spans[0]["type"] == "type"
+    assert spans[0]["subtype"] == "subtype"
+    assert spans[0]["action"] == "action"
+
+    assert spans[1]["name"] == "baz"
+    assert spans[1]["type"] == "type"
+    assert spans[1]["subtype"] == "subtype"
+    assert spans[1]["action"] == "action"
+
+    assert spans[2]["name"] == "bar"
+    assert spans[2]["type"] == "type"
+    assert spans[2]["subtype"] == "subtype"
+    assert spans[2]["action"] is None
+
+    assert spans[3]["name"] == "foo"
+    assert spans[3]["type"] == "type"
+    assert spans[3]["subtype"] is None
+    assert spans[3]["action"] is None
+
+
 def test_span_tagging(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:

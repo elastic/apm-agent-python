@@ -65,7 +65,9 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES HEAD /"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
 
 
 @pytest.mark.integrationtest
@@ -80,7 +82,9 @@ def test_info(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
 
 
 @pytest.mark.integrationtest
@@ -107,7 +111,9 @@ def test_create(instrument, elasticapm_client, elasticsearch):
             assert span["name"] == "ES PUT /tweets/%s/%d/_create" % (document_type, i + 1)
         else:
             assert span["name"] == "ES PUT /tweets/%s/%d" % (document_type, i + 1)
-        assert span["type"] == "db.elasticsearch"
+        assert span["type"] == "db"
+        assert span["subtype"] == "elasticsearch"
+        assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
 
@@ -131,7 +137,9 @@ def test_index(instrument, elasticapm_client, elasticsearch):
 
     for span in spans:
         assert span["name"] == "ES POST /tweets/%s" % document_type
-        assert span["type"] == "db.elasticsearch"
+        assert span["type"] == "db"
+        assert span["subtype"] == "elasticsearch"
+        assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
 
@@ -151,7 +159,9 @@ def test_exists(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES HEAD /tweets/%s/1" % document_type
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
 
 
@@ -176,7 +186,9 @@ def test_exists_source(instrument, elasticapm_client, elasticsearch):
 
     for span in spans:
         assert span["name"] == "ES HEAD /tweets/%s/1/_source" % document_type
-        assert span["type"] == "db.elasticsearch"
+        assert span["type"] == "db"
+        assert span["subtype"] == "elasticsearch"
+        assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
 
@@ -205,7 +217,9 @@ def test_get(instrument, elasticapm_client, elasticsearch):
 
     for span in spans:
         assert span["name"] == "ES GET /tweets/%s/1" % document_type
-        assert span["type"] == "db.elasticsearch"
+        assert span["type"] == "db"
+        assert span["subtype"] == "elasticsearch"
+        assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
 
@@ -233,7 +247,9 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
 
     for span in spans:
         assert span["name"] == "ES GET /tweets/%s/1/_source" % document_type
-        assert span["type"] == "db.elasticsearch"
+        assert span["type"] == "db"
+        assert span["subtype"] == "elasticsearch"
+        assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
 
@@ -260,7 +276,9 @@ def test_update_script(instrument, elasticapm_client, elasticsearch):
 
     span = spans[0]
     assert span["name"] == "ES POST /tweets/%s/1/_update" % document_type
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"script": "ctx._source.text = \'adios\'"}'
 
@@ -285,7 +303,9 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
 
     span = spans[0]
     assert span["name"] == "ES POST /tweets/%s/1/_update" % document_type
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert "statement" not in span["context"]["db"]
 
@@ -309,7 +329,9 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
         assert span["name"] == "ES GET /_search"
     else:
         assert span["name"] == "ES GET /_all/_search"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
 
@@ -330,7 +352,9 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /tweets/_search"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == "q=user:kimchy"
 
@@ -353,7 +377,9 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /tweets/_search"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == 'q=text:hola\n\n{"term": {"user": "kimchy"}}'
 
@@ -377,7 +403,9 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
         assert span["name"] == "ES GET /_count"
     else:
         assert span["name"] == "ES GET /_all/_count"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
 
@@ -398,7 +426,9 @@ def test_count_querystring(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /tweets/_count"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == "q=user:kimchy"
 
@@ -417,7 +447,9 @@ def test_delete(instrument, elasticapm_client, elasticsearch):
 
     span = spans[0]
     assert span["name"] == "ES DELETE /tweets/%s/1" % document_type
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
 
 
@@ -436,7 +468,9 @@ def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch):
 
     span = spans[0]
     assert span["name"] == "ES POST /tweets/_delete_by_query"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
 
@@ -454,7 +488,9 @@ def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /tweets,snaps/_search"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
 
 
@@ -472,5 +508,7 @@ def test_multiple_indexes_doctypes(instrument, elasticapm_client, elasticsearch)
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /tweets,snaps/users,posts/_search"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"

@@ -2,11 +2,18 @@
 
 ## Unreleased
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...master)
+### Breaking changes
+
+ * implemented type/subtype/action hierachy for spans. Ensure that you run at least APM Server 6.6 (#377)
+
+## Other changes
+
  * Added instrumentation for `urllib2` (Python 2) / `urllib.request` (Python 3) (#464)
  * Added `disable_metrics` setting (#399)
  * Updated elasticsearch instrumentation for 7.x (#482, #483)
  * Fixed an issue with opentracing-python 2.1 (#471)
  * Fixed an issue with certificate pinning (#497)
+ * Lowered log level of transport success messages (#527, #531)
 
 ## v4.2.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...v4.2.2)
