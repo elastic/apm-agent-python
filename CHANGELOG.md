@@ -7,6 +7,7 @@
  * Updated elasticsearch instrumentation for 7.x (#482, #483)
  * Fixed an issue with opentracing-python 2.1 (#471)
  * Fixed an issue with certificate pinning (#497)
+ * Lowered log level of transport success messages (#527, #531)
 
 ## v4.2.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.1...v4.2.2)
