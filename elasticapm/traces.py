@@ -125,7 +125,16 @@ class Transaction(object):
         :param span_action: action of the span , e.g. "query"
         :return: the Span object
         """
-        return self._begin_span(name, span_type, context=context, leaf=leaf, tags=tags, parent_span_id=None)
+        return self._begin_span(
+            name,
+            span_type,
+            context=context,
+            leaf=leaf,
+            tags=tags,
+            parent_span_id=None,
+            span_subtype=span_subtype,
+            span_action=span_action,
+        )
 
     def end_span(self, skip_frames=0):
         span = execution_context.get_span()
