@@ -488,7 +488,9 @@ def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "ES GET /tweets,snaps/_search"
-    assert span["type"] == "db.elasticsearch"
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
 
 
