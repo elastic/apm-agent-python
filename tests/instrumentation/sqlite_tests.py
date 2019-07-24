@@ -43,7 +43,9 @@ def test_connect(instrument, elasticapm_client):
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     assert spans[0]["name"] == "sqlite3.connect :memory:"
-    assert spans[0]["type"] == "db.sqlite.connect"
+    assert spans[0]["type"] == "db"
+    assert spans[0]["subtype"] == "sqlite"
+    assert spans[0]["action"] == "connect"
 
 
 def test_cursor(instrument, elasticapm_client):
@@ -64,16 +66,24 @@ def test_cursor(instrument, elasticapm_client):
     assert {t["name"] for t in spans} == expected_signatures
 
     assert spans[0]["name"] == "CREATE TABLE"
-    assert spans[0]["type"] == "db.sqlite.sql"
+    assert spans[0]["type"] == "db"
+    assert spans[0]["subtype"] == "sqlite"
+    assert spans[0]["action"] == "query"
 
     assert spans[1]["name"] == "INSERT INTO testdb"
-    assert spans[1]["type"] == "db.sqlite.sql"
+    assert spans[1]["type"] == "db"
+    assert spans[1]["subtype"] == "sqlite"
+    assert spans[1]["action"] == "query"
 
     assert spans[2]["name"] == "INSERT INTO testdb"
-    assert spans[2]["type"] == "db.sqlite.sql"
+    assert spans[2]["type"] == "db"
+    assert spans[2]["subtype"] == "sqlite"
+    assert spans[2]["action"] == "query"
 
     assert spans[3]["name"] == "DROP TABLE"
-    assert spans[3]["type"] == "db.sqlite.sql"
+    assert spans[3]["type"] == "db"
+    assert spans[3]["subtype"] == "sqlite"
+    assert spans[3]["action"] == "query"
 
     assert len(spans) == 4
 
@@ -95,15 +105,23 @@ def test_nonstandard_connection_execute(instrument, elasticapm_client):
     assert {t["name"] for t in spans} == expected_signatures
 
     assert spans[0]["name"] == "CREATE TABLE"
-    assert spans[0]["type"] == "db.sqlite.sql"
+    assert spans[0]["type"] == "db"
+    assert spans[0]["subtype"] == "sqlite"
+    assert spans[0]["action"] == "query"
 
     assert spans[1]["name"] == "INSERT INTO testdb"
-    assert spans[1]["type"] == "db.sqlite.sql"
+    assert spans[1]["type"] == "db"
+    assert spans[1]["subtype"] == "sqlite"
+    assert spans[1]["action"] == "query"
 
     assert spans[2]["name"] == "INSERT INTO testdb"
-    assert spans[2]["type"] == "db.sqlite.sql"
+    assert spans[2]["type"] == "db"
+    assert spans[2]["subtype"] == "sqlite"
+    assert spans[2]["action"] == "query"
 
     assert spans[3]["name"] == "DROP TABLE"
-    assert spans[3]["type"] == "db.sqlite.sql"
+    assert spans[3]["type"] == "db"
+    assert spans[3]["subtype"] == "sqlite"
+    assert spans[3]["action"] == "query"
 
     assert len(spans) == 4

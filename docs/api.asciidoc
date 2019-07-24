@@ -274,10 +274,12 @@ def coffee_maker(strength):
 ----
 
  * `name`: The name of the span
- * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`
+ * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`. Alternatively, type, subtype and action can be provided as three separate arguments, see `span_subtype` and `span_action`.
  * `skip_frames`: The number of stack frames to skip when collecting stack traces. Defaults to `0`.
  * `leaf`: if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
  * `tags`: a dictionary of tags. Both keys and values must be strings. Defaults to `None`.
+ * `span_subtype`: subtype of the span, e.g. name of the database. Defaults to `None`.
+ * `span_action`: action of the span, e.g. `query`. Defaults to `None`
 
 [float]
 [[api-tag]]

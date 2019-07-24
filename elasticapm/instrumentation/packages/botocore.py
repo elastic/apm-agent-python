@@ -53,5 +53,5 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
 
         signature = "{}:{}".format(service, operation_name)
 
-        with capture_span(signature, "ext.http.aws", leaf=True):
+        with capture_span(signature, "aws", leaf=True, span_subtype=service, span_action=operation_name):
             return wrapped(*args, **kwargs)
