@@ -112,38 +112,6 @@ pipeline {
         }
       }
     }
-    /**
-    Build the documentation.
-    */
-    stage('Documentation') {
-      agent { label 'docker && linux && immutable' }
-      options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
-      when {
-        beforeAgent true
-        allOf {
-          anyOf {
-            branch 'master'
-            branch "\\d+\\.\\d+"
-            branch "v\\d?"
-            tag "v\\d+\\.\\d+\\.\\d+*"
-            expression { return params.Run_As_Master_Branch }
-          }
-          expression { return params.doc_ci }
-        }
-      }
-      steps {
-        deleteDir()
-        unstash 'source'
-        dir("${BASE_DIR}"){
-          buildDocs(docsDir: "docs", archive: true)
-        }
-      }
-    }
     stage('Building packages') {
       agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
