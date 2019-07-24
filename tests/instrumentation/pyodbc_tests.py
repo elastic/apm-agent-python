@@ -75,6 +75,9 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         spans = elasticapm_client.spans_for_transaction(transactions[0])
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
+        assert span["type"] == "db"
+        assert span["subtype"] == "pyodbc"
+        assert span["action"] == "query"
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query

@@ -54,6 +54,9 @@ def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_clie
     span = elasticapm_client.events[constants.SPAN][0]
 
     assert span["name"] == "ec2:DescribeInstances"
+    assert span["type"] == "aws"
+    assert span["subtype"] == "ec2"
+    assert span["action"] == "DescribeInstances"
 
 
 def test_botocore_http_instrumentation(instrument, elasticapm_client, waiting_httpserver):
@@ -92,6 +95,9 @@ def test_botocore_http_instrumentation(instrument, elasticapm_client, waiting_ht
     span = elasticapm_client.events[constants.SPAN][0]
 
     assert span["name"] == "localhost:ListBuckets"
+    assert span["type"] == "aws"
+    assert span["subtype"] == "localhost"
+    assert span["action"] == "ListBuckets"
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
 
