@@ -42,7 +42,7 @@ class DjangoTemplateInstrumentation(AbstractInstrumentedModule):
 
         if not name:
             name = "<template string>"
-        with capture_span(name, "template.django.render"):
+        with capture_span(name, span_type="template", span_subtype="django", span_action="render"):
             return wrapped(*args, **kwargs)
 
 

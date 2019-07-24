@@ -219,8 +219,14 @@ class CursorProxy(wrapt.ObjectProxy):
             signature = sql_string + "()"
         else:
             signature = self.extract_signature(sql_string)
-        kind = "db.{0}.{1}".format(self.provider_name, action)
-        with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql_string}}, skip_frames=1):
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype=self.provider_name,
+            span_action=action,
+            extra={"db": {"type": "sql", "statement": sql_string}},
+            skip_frames=1,
+        ):
             if params is None:
                 return method(sql)
             else:

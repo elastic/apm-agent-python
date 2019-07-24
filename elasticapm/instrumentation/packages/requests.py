@@ -59,5 +59,7 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         signature += " " + get_host_from_url(request.url)
         url = sanitize_url(request.url)
 
-        with capture_span(signature, "external.http", {"http": {"url": url}}, leaf=True):
+        with capture_span(
+            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
+        ):
             return wrapped(*args, **kwargs)

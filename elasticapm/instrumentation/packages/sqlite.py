@@ -52,8 +52,13 @@ class SQLiteConnectionProxy(ConnectionProxy):
 
     def _trace_sql(self, method, sql, params):
         signature = extract_signature(sql)
-        kind = "db.sqlite.query"
-        with capture_span(signature, kind, {"db": {"type": "sql", "statement": sql}}):
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype="sqlite",
+            span_action="query",
+            extra={"db": {"type": "sql", "statement": sql}},
+        ):
             if params is None:
                 return method(sql)
             else:
@@ -77,5 +82,5 @@ class SQLiteInstrumentation(DbApi2Instrumentation):
         if len(args) == 1:
             signature += " " + str(args[0])
 
-        with capture_span(signature, "db.sqlite.connect"):
+        with capture_span(signature, span_type="db", span_subtype="sqlite", span_action="connect"):
             return SQLiteConnectionProxy(wrapped(*args, **kwargs))
