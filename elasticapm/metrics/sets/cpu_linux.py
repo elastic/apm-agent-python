@@ -63,7 +63,7 @@ class CPUMetricSet(MetricsSet):
             self.previous.update(self.read_system_stats())
         super(CPUMetricSet, self).__init__(registry)
 
-    def collect(self):
+    def before_collect(self):
         new = self.read_process_stats()
         new.update(self.read_system_stats())
         with self._read_data_lock:
@@ -86,7 +86,6 @@ class CPUMetricSet(MetricsSet):
             self.gauge("system.process.memory.size").val = new["vsize"]
             self.gauge("system.process.memory.rss.bytes").val = new["rss"] * self.page_size
             self.previous = new
-        return super(CPUMetricSet, self).collect()
 
     def read_system_stats(self):
         stats = {}

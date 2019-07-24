@@ -44,7 +44,7 @@ def test_cpu_mem_from_psutil():
     # do something that generates some CPU load
     for i in compat.irange(10 ** 6):
         j = i * i
-    data = metricset.collect()
+    data = next(metricset.collect())
     # we can't really test any specific values here as it depends on the system state.
     # Mocking is also not really a viable choice, as we would then lose the "integration testing"
     # nature of this test with different versions of psutil
@@ -67,8 +67,8 @@ def test_compare_psutil_linux_metricsets():
     # do something that generates some CPU load
     for i in compat.irange(10 ** 6):
         j = i * i
-    psutil_data = psutil_metricset.collect()
-    linux_data = linux_metricset.collect()
+    psutil_data = next(psutil_metricset.collect())
+    linux_data = next(linux_metricset.collect())
 
     assert (
         abs(

@@ -114,7 +114,7 @@ def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
     ):
         with open(path, mode="w") as f:
             f.write(content)
-    data = metricset.collect()
+    data = next(metricset.collect())
     assert data["samples"]["system.cpu.total.norm.pct"]["value"] == 0.4
     assert data["samples"]["system.process.cpu.total.norm.pct"]["value"] == 0.2
 
@@ -151,7 +151,7 @@ def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
     ):
         with open(path, mode="w") as f:
             f.write(content)
-    data = metricset.collect()
+    data = next(metricset.collect())
 
     mem_free_expected = sum([359184, 891296, 6416340]) * 1024  # MemFree + Buffers + Cached, in bytes
     assert data["samples"]["system.memory.actual.free"]["value"] == mem_free_expected
