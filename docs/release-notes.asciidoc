@@ -1,0 +1,4 @@
+[[release-notes]]
+== Release notes
+
+Release notes are published in the https://github.com/elastic/apm-agent-python/blob/master/CHANGELOG.md[changelog].

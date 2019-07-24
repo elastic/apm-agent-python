@@ -1,13 +1,33 @@
-"""
-elasticapm.contrib.django.client
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
-:copyright: (c) 2011-2017 Elasticsearch
-
-Large portions are
-:copyright: (c) 2010 by the Sentry Team, see AUTHORS for more details.
-:license: BSD, see LICENSE for more details.
-"""
 
 from __future__ import absolute_import
 
@@ -83,12 +103,12 @@ class DjangoClient(Client):
             if hasattr(user, "id"):
                 user_info["id"] = encoding.keyword_field(user.id)
             if hasattr(user, "get_username"):
-                user_info["username"] = encoding.keyword_field(user.get_username())
+                user_info["username"] = encoding.keyword_field(encoding.force_text(user.get_username()))
             elif hasattr(user, "username"):
-                user_info["username"] = encoding.keyword_field(user.username)
+                user_info["username"] = encoding.keyword_field(encoding.force_text(user.username))
 
             if hasattr(user, "email"):
-                user_info["email"] = user.email
+                user_info["email"] = encoding.force_text(user.email)
         except DatabaseError:
             # If the connection is closed or similar, we'll just skip this
             return {}
@@ -98,11 +118,12 @@ class DjangoClient(Client):
     def get_data_from_request(self, request, capture_body=False):
         result = {
             "env": dict(get_environ(request.META)),
-            "headers": dict(get_headers(request.META)),
             "method": request.method,
             "socket": {"remote_address": request.META.get("REMOTE_ADDR"), "encrypted": request.is_secure()},
             "cookies": dict(request.COOKIES),
         }
+        if self.config.capture_headers:
+            result["headers"] = dict(get_headers(request.META))
 
         if request.method in constants.HTTP_WITH_BODY:
             content_type = request.META.get("CONTENT_TYPE")
@@ -115,7 +136,8 @@ class DjangoClient(Client):
             else:
                 try:
                     data = request.body
-                except Exception:
+                except Exception as e:
+                    self.logger.debug("Can't capture request body: %s", compat.text_type(e))
                     data = "<unavailable>"
 
             result["body"] = data if (capture_body or not data) else "[REDACTED]"
@@ -140,7 +162,7 @@ class DjangoClient(Client):
     def get_data_from_response(self, response):
         result = {"status_code": response.status_code}
 
-        if hasattr(response, "items"):
+        if self.config.capture_headers and hasattr(response, "items"):
             result["headers"] = dict(response.items())
         return result
 

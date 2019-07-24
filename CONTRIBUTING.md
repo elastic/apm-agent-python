@@ -40,9 +40,14 @@ Once your changes are ready to submit for review:
      * the automatic code formatter [black](https://black.readthedocs.io/en/stable/)
      * sorting of imports via [isort](https://isort.readthedocs.io/en/latest/)
      * [flake8](http://flake8.pycqa.org/en/latest/)
+     * License header check via custom script
      
     The easiest way to make sure your pull request adheres to the the code style
     is to install [pre-commit](https://pre-commit.com/).
+    
+        pip install pre-commit # or "brew install pre-commit" if you use Homebrew
+        
+        pre-commit install
 
 1. Test your changes
 

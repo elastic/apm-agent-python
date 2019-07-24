@@ -1,3 +1,33 @@
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import codecs
 import gzip
 import json
@@ -27,14 +57,14 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "v2_error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "v2_transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "v2_span.json")
+ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "span.json")
 METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
 
 assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
     TRANSACTIONS_SCHEMA
-), 'JSON Schema files not found. Run "make update-json-schema to download'
+), 'JSON Schema files not found. Run "make update-json-schema" to download'
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
@@ -133,10 +163,27 @@ def waiting_httpserver(httpserver):
     return httpserver
 
 
+@pytest.fixture
+def httpsserver_custom(request):
+    """The returned ``httpsserver`` (note the additional S!) provides a
+    threaded HTTP server instance similar to funcarg ``httpserver`` but with
+    SSL encryption.
+    """
+    from pytest_localserver import https
+
+    config = getattr(request, "param", {})
+    key = os.path.join(cur_dir, "ca", config.get("key", "server.pem"))
+
+    server = https.SecureContentServer(key=key, cert=key)
+    server.start()
+    request.addfinalizer(server.stop)
+    return server
+
+
 @pytest.fixture()
-def waiting_httpsserver(httpsserver):
-    wait_for_http_server(httpsserver)
-    return httpsserver
+def waiting_httpsserver(httpsserver_custom):
+    wait_for_http_server(httpsserver_custom)
+    return httpsserver_custom
 
 
 @pytest.fixture()
@@ -173,7 +220,12 @@ class DummyTransport(HTTPTransportBase):
         self.events = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
+        self._flushed.clear()
         self.events[event_type].append(data)
+        self._flushed.set()
+
+    def _start_event_processor(self):
+        pass
 
 
 class TempStoreClient(Client):

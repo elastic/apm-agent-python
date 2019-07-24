@@ -4,8 +4,10 @@ FRAMEWORK:
   - django-1.11
   - django-2.0
   - django-2.1
+  - django-2.2
   - flask-0.12
   - flask-1.0
+  - opentracing-newest
   - twisted-18
   - celery-3-flask-1.0
   - celery-3-django-2.0
@@ -21,8 +23,9 @@ FRAMEWORK:
   - memcached-newest
   - pylibmc-newest
   - elasticsearch-2
-  - elasticsearch-5
   - elasticsearch-6
+  - elasticsearch-7
   - cassandra-newest
   - psutil-newest
+  - eventlet-newest
 

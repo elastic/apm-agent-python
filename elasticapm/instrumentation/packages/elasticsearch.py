@@ -1,3 +1,33 @@
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from __future__ import absolute_import
 
 import json
@@ -5,6 +35,7 @@ import logging
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+from elasticapm.utils import compat
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +75,7 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
                 # we assume utf8, which is the default
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
             if isinstance(body, dict) and "query" in body:
-                query.append(json.dumps(body["query"]))
+                query.append(json.dumps(body["query"], default=compat.text_type))
             context["db"]["statement"] = "\n\n".join(query)
         elif api_method == "Elasticsearch.update":
             if isinstance(body, dict) and "script" in body:
@@ -68,6 +99,11 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
             "put_script": 2,
             "search_exists": 2,
             "suggest": 0,
+            "index": 2,
+            "search": 2,
+            "scroll": 1,
+            "search_template": 2,
+            "update_by_query": 2,
         },
         5: {
             "count_percolate": 3,
@@ -77,8 +113,30 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
             "percolate": 3,
             "put_script": 2,
             "suggest": 0,
+            "index": 2,
+            "search": 2,
+            "scroll": 1,
+            "search_template": 2,
+            "update_by_query": 2,
         },
-        6: {"create": 3, "put_script": 1},
+        6: {
+            "create": 3,
+            "put_script": 1,
+            "index": 2,
+            "search": 2,
+            "scroll": 1,
+            "search_template": 2,
+            "update_by_query": 2,
+        },
+        7: {
+            "create": 2,
+            "put_script": 1,
+            "index": 1,
+            "search": 1,
+            "scroll": 0,
+            "search_template": 1,
+            "update_by_query": 1,
+        },
         "all": {
             "bulk": 0,
             "clear_scroll": 1,
@@ -86,7 +144,6 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
             "delete_by_query": 1,
             "explain": 3,
             "field_caps": 1,
-            "index": 2,
             "mget": 0,
             "msearch": 0,
             "msearch_template": 0,
@@ -94,12 +151,8 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
             "put_template": 1,
             "reindex": 0,
             "render_search_template": 1,
-            "scroll": 1,
-            "search": 2,
-            "search_template": 2,
             "termvectors": 3,
             "update": 3,
-            "update_by_query": 2,
         },
     }
 
@@ -120,7 +173,7 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
             self.version = None
 
     def instrument(self):
-        if self.version and not 2 <= self.version < 7:
+        if self.version and not 2 <= self.version < 8:
             logger.debug("Instrumenting version %s of Elasticsearch is not supported by Elastic APM", self.version)
             return
         super(ElasticsearchInstrumentation, self).instrument()

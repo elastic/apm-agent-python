@@ -1,15 +1,47 @@
+#  BSD 3-Clause License
+#
+#  Copyright (c) 2019, Elasticsearch BV
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+#  * Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 import threading
 import time
 
-from elasticapm.utils import compat
+from elasticapm.conf import constants
+from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.module_import import import_string
+from elasticapm.utils.threading import IntervalTimer
 
 logger = logging.getLogger("elasticapm.metrics")
 
 
 class MetricsRegistry(object):
-    def __init__(self, collect_interval, queue_func, tags=None):
+    def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
         """
         Creates a new metric registry
 
@@ -22,8 +54,14 @@ class MetricsRegistry(object):
         self._metricsets = {}
         self._tags = tags or {}
         self._collect_timer = None
+        self._ignore_patterns = ignore_patterns or ()
         if self._collect_interval:
-            self._start_collect_timer()
+            # we only start the thread if we are not in a uwsgi master process
+            if not is_master_process():
+                self._start_collect_timer()
+            else:
+                # If we _are_ in a uwsgi master process, we use the postfork hook to start the thread after the fork
+                compat.postfork(lambda: self._start_collect_timer())
 
     def register(self, class_path):
         """
@@ -35,31 +73,25 @@ class MetricsRegistry(object):
         else:
             try:
                 class_obj = import_string(class_path)
-                self._metricsets[class_path] = class_obj()
+                self._metricsets[class_path] = class_obj(self)
             except ImportError as e:
                 logger.warning("Could not register %s metricset: %s", class_path, compat.text_type(e))
 
-    def collect(self, start_timer=True):
+    def collect(self):
         """
         Collect metrics from all registered metric sets
-        :param start_timer: if True, restarts the collect timer after collection
         :return:
         """
-        if start_timer:
-            self._start_collect_timer()
-
         logger.debug("Collecting metrics")
 
         for name, metricset in compat.iteritems(self._metricsets):
             data = metricset.collect()
             if data:
-                self._queue_func("metricset", data)
+                self._queue_func(constants.METRICSET, data)
 
     def _start_collect_timer(self, timeout=None):
         timeout = timeout or self._collect_interval
-        self._collect_timer = threading.Timer(timeout, self.collect, kwargs={"start_timer": True})
-        self._collect_timer.name = "elasticapm metrics collect timer"
-        self._collect_timer.daemon = True
+        self._collect_timer = IntervalTimer(self.collect, timeout, name="eapm metrics collect timer", daemon=True)
         logger.debug("Starting metrics collect timer")
         self._collect_timer.start()
 
@@ -70,10 +102,11 @@ class MetricsRegistry(object):
 
 
 class MetricsSet(object):
-    def __init__(self):
+    def __init__(self, registry):
         self._lock = threading.Lock()
         self._counters = {}
         self._gauges = {}
+        self._registry = registry
 
     def counter(self, name):
         """
@@ -83,7 +116,13 @@ class MetricsSet(object):
         """
         with self._lock:
             if name not in self._counters:
-                self._counters[name] = Counter(name)
+                if self._registry._ignore_patterns and any(
+                    pattern.match(name) for pattern in self._registry._ignore_patterns
+                ):
+                    counter = noop_metric
+                else:
+                    counter = Counter(name)
+                self._counters[name] = counter
             return self._counters[name]
 
     def gauge(self, name):
@@ -94,7 +133,13 @@ class MetricsSet(object):
         """
         with self._lock:
             if name not in self._gauges:
-                self._gauges[name] = Gauge(name)
+                if self._registry._ignore_patterns and any(
+                    pattern.match(name) for pattern in self._registry._ignore_patterns
+                ):
+                    gauge = noop_metric
+                else:
+                    gauge = Gauge(name)
+                self._gauges[name] = gauge
             return self._gauges[name]
 
     def collect(self):
@@ -111,9 +156,13 @@ class MetricsSet(object):
         """
         samples = {}
         if self._counters:
-            samples.update({label: {"value": c.val} for label, c in compat.iteritems(self._counters)})
+            samples.update(
+                {label: {"value": c.val} for label, c in compat.iteritems(self._counters) if c is not noop_metric}
+            )
         if self._gauges:
-            samples.update({label: {"value": g.val} for label, g in compat.iteritems(self._gauges)})
+            samples.update(
+                {label: {"value": g.val} for label, g in compat.iteritems(self._gauges) if g is not noop_metric}
+            )
         if samples:
             return {"samples": samples, "timestamp": int(time.time() * 1000000)}
 
@@ -178,3 +227,34 @@ class Gauge(object):
     @val.setter
     def val(self, value):
         self._val = value
+
+
+class NoopMetric(object):
+    """
+    A no-op metric that implements the "interface" of both Counter and Gauge.
+
+    Note that even when using a no-op metric, the value itself will still be calculated.
+    """
+
+    def __init__(self, label, initial_value=0):
+        return
+
+    @property
+    def val(self):
+        return None
+
+    @val.setter
+    def val(self, value):
+        return
+
+    def inc(self, delta=1):
+        return
+
+    def dec(self, delta=-1):
+        return
+
+    def reset(self):
+        return
+
+
+noop_metric = NoopMetric("noop")

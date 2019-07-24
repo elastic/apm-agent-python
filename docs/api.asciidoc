@@ -200,7 +200,12 @@ elasticapm.set_transaction_result('SUCCESS')
 
 Attach custom contextual data to the current transaction and errors.
 Supported frameworks will automatically attach information about the HTTP request and the logged in user.
-You can attach further data using this function. Example:
+You can attach further data using this function.
+
+TIP: Before using custom context, ensure you understand the different types of
+{apm-overview-ref-v}/metadata.html[metadata] that are available.
+
+Example:
 
 [source,python]
 ----
@@ -229,12 +234,12 @@ Example:
 ----
 import elasticapm
 
-elasticapm.set_user_context(username=user.username, email=user.email, id=user.id)
+elasticapm.set_user_context(username=user.username, email=user.email, user_id=user.id)
 ----
 
  * `username`: The username of the logged in user
  * `email`: The email of the logged in user
- * `id`: The unique identifier of the logged in user, e.g. the primary key value
+ * `user_id`: The unique identifier of the logged in user, e.g. the primary key value
 
 Errors that happen after this call will also have the user context attached to them.
 You can call this function multiple times, new user data will be merged with existing data,
@@ -242,10 +247,47 @@ following the `update()` semantics of Python dictionaries.
 
 
 [float]
+[[api-capture-span]]
+==== `elasticapm.capture_span`
+
+Capture a custom span.
+This can be used either as a function decorator or as a context manager (in a `with` statement).
+When used as a decorator, the name of the span will be set to the name of the function.
+When used as a context manager, a name has to be provided.
+
+[source,python]
+----
+import elasticapm
+
+@elasticapm.capture_span()
+def coffee_maker(strength):
+    fetch_water()
+
+    with elasticapm.capture_span('near-to-machine', tags={"type": "arabica"}):
+        insert_filter()
+        for i in range(strengh):
+            pour_coffee()
+
+        start_drip()
+
+    fresh_pots()
+----
+
+ * `name`: The name of the span
+ * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`
+ * `skip_frames`: The number of stack frames to skip when collecting stack traces. Defaults to `0`.
+ * `leaf`: if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
+ * `tags`: a dictionary of tags. Both keys and values must be strings. Defaults to `None`.
+
+[float]
 [[api-tag]]
 ==== `elasticapm.tag()`
 
 Attach tags to the the current transaction and errors.
+
+TIP: Before using custom tags, ensure you understand the different types of
+{apm-overview-ref-v}/metadata.html[metadata] that are available.
+
 Example:
 
 [source,python]
@@ -260,5 +302,8 @@ You can call this function multiple times, new tags will be merged with existing
 following the `update()` semantics of Python dictionaries.
 
 The value is converted to a string.
+`.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.
 
-NOTE: `.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.
+WARNING: Avoid defining too many user-specified tags.
+Defining too many unique fields in an index is a condition that can lead to a
+{ref}/mapping.html#mapping-limit-settings[mapping explosion].

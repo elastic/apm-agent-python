@@ -1,0 +1,340 @@
+[[supported-technologies]]
+== Supported Technologies
+
+[float]
+[[supported-python]]
+=== Python
+
+The following Python versions are supported:
+
+ * 2.7
+ * 3.4
+ * 3.5
+ * 3.6
+ * 3.7
+ 
+WARNING: Python 2.7 will reach End of Life on January 1, 2020.
+The Elastic APM agent will stop supporting Python 2.7 in the first major version after that date.
+
+[float]
+[[supported-django]]
+=== Django
+
+We support these Django versions:
+
+ * 1.11
+ * 2.0
+ * 2.1
+ * 2.2
+ 
+For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
+
+[float]
+[[supported-flask]]
+=== Flask
+
+We support these Flask versions:
+
+ * 0.10
+ * 0.11
+ * 0.12
+ * 1.0
+
+
+[float]
+[[automatic-instrumentation]]
+== Automatic Instrumentation
+
+The Python APM agent comes with automatic instrumentation of various 3rd party modules and standard library modules.
+
+[float]
+[[automatic-instrumentation-db]]
+=== Databases
+
+[float]
+[[automatic-instrumentation-db-elasticsearch]]
+==== Elasticsearch
+
+Instrumented methods:
+
+ * `elasticsearch.connection.http_urllib3.Urllib3HttpConnection.perform_request`
+ * `elasticsearch.connection.http_requests.RequestsHttpConnection.perform_request`
+ 
+Additionally, the instrumentation wraps the following methods of the `Elasticsearch` client class:
+
+ * `elasticsearch.client.Elasticsearch.delete_by_query`
+ * `elasticsearch.client.Elasticsearch.search`
+ * `elasticsearch.client.Elasticsearch.count`
+ * `elasticsearch.client.Elasticsearch.update`
+
+Collected trace data:
+
+ * the query string (if available)
+ * the `query` element from the request body (if available)
+
+[float]
+[[automatic-instrumentation-db-sqlite]]
+==== SQLite
+
+Instrumented methods:
+
+ * `sqlite3.connect`
+ * `sqlite3.dbapi2.connect`
+ * `pysqlite2.dbapi2.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+
+[float]
+[[automatic-instrumentation-db-mysql]]
+==== MySQL
+
+Library: `MySQLdb`
+
+Instrumented methods:
+
+ * `MySQLdb.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-postgres]]
+==== PostgreSQL
+
+Library: `psycopg2`, `psycopg2-binary` (`>=2.5,<2.8`)
+
+Instrumented methods:
+
+ * `psycopg2.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-pyodbc]]
+==== PyODBC
+
+Library: `pyodbc`, (`>=4.0`)
+
+Instrumented methods:
+
+ * `pyodbc.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-mssql]]
+==== MS-SQL
+
+Library: `pymssql`, (`>=2.1.0`)
+
+Instrumented methods:
+
+ * `pymssql.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-mongodb]]
+==== MongoDB
+
+Library: `pymongo`, `>=2.9,<3.8`
+
+Instrumented methods:
+
+ * `pymongo.collection.Collection.aggregate`
+ * `pymongo.collection.Collection.bulk_write`
+ * `pymongo.collection.Collection.count`
+ * `pymongo.collection.Collection.create_index`
+ * `pymongo.collection.Collection.create_indexes`
+ * `pymongo.collection.Collection.delete_many`
+ * `pymongo.collection.Collection.delete_one`
+ * `pymongo.collection.Collection.distinct`
+ * `pymongo.collection.Collection.drop`
+ * `pymongo.collection.Collection.drop_index`
+ * `pymongo.collection.Collection.drop_indexes`
+ * `pymongo.collection.Collection.ensure_index`
+ * `pymongo.collection.Collection.find_and_modify`
+ * `pymongo.collection.Collection.find_one`
+ * `pymongo.collection.Collection.find_one_and_delete`
+ * `pymongo.collection.Collection.find_one_and_replace`
+ * `pymongo.collection.Collection.find_one_and_update`
+ * `pymongo.collection.Collection.group`
+ * `pymongo.collection.Collection.inline_map_reduce`
+ * `pymongo.collection.Collection.insert`
+ * `pymongo.collection.Collection.insert_many`
+ * `pymongo.collection.Collection.insert_one`
+ * `pymongo.collection.Collection.map_reduce`
+ * `pymongo.collection.Collection.reindex`
+ * `pymongo.collection.Collection.remove`
+ * `pymongo.collection.Collection.rename`
+ * `pymongo.collection.Collection.replace_one`
+ * `pymongo.collection.Collection.save`
+ * `pymongo.collection.Collection.update`
+ * `pymongo.collection.Collection.update_many`
+ * `pymongo.collection.Collection.update_one`
+
+Collected trace data:
+
+ * database name
+ * method name
+
+
+[float]
+[[automatic-instrumentation-db-redis]]
+==== Redis
+
+Library: `redis` (`>=2.8,<3.2.0`)
+
+Instrumented methods:
+
+ * `redis.client.Redis.execute_command`
+ * `redis.client.Pipeline.execute`
+
+Collected trace data:
+
+    * Redis command name
+    
+
+[float]
+[[automatic-instrumentation-db-cassandra]]
+==== Cassandra
+
+Library: `cassandra-driver` (`>=3.4,<4.0`)
+
+Instrumented methods:
+
+ *  `cassandra.cluster.Session.execute`
+ *  `cassandra.cluster.Cluster.connect`
+
+Collected trace data:
+
+    * CQL query
+
+[float]
+[[automatic-instrumentation-http]]
+=== External HTTP requests
+
+[float]
+[[automatic-instrumentation-stdlib-urllib]]
+==== Standard library
+
+Library: `urllib2` (Python 2) / `urllib.request` (Python 3)
+
+Instrumented methods:
+
+ * `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open` 
+
+Collected trace data:
+
+ * HTTP method
+ * requested URL
+
+[float]
+[[automatic-instrumentation-urllib3]]
+==== urllib3
+
+Library: `urllib3`
+
+Instrumented methods:
+
+ * `urllib3.connectionpool.HTTPConnectionPool.urlopen`
+
+Additionally, we instrumented vendored instances of urllib3 in the following libraries:
+
+ * `requests`
+ * `botocore`
+ 
+Both libraries have "unvendored" urllib3 in more recent versions, we recommend to use the newest versions. 
+
+Collected trace data:
+
+ * HTTP method
+ * requested URL
+
+[float]
+[[automatic-instrumentation-requests]]
+==== requests
+
+Instrumented methods:
+
+ * `requests.sessions.Session.send`
+ 
+Collected trace data:
+
+ * HTTP method
+ * requested URL
+
+
+[float]
+[[automatic-instrumentation-services]]
+=== Services
+
+[float]
+[[automatic-instrumentation-boto3]]
+==== AWS Boto3 / Botocore
+
+Library: `boto3` (`>=1.0`)
+
+Instrumented methods:
+
+ * `botocore.client.BaseClient._make_api_call`
+ 
+Collected trace data:
+
+ * AWS region (e.g. `eu-central-1`)
+ * AWS service name (e.g. `s3`)
+ * operation name (e.g. `ListBuckets`)
+ 
+
+
+[float]
+[[automatic-instrumentation-template-engines]]
+=== Template Engines
+
+[float]
+[[automatic-instrumentation-dtl]]
+==== Django Template Language
+
+Library: `Django` (see <<supported-django,Django>> for supported versions)
+
+Instrumented methods:
+
+ * `django.template.Template.render`
+
+Collected trace data:
+
+ * template name
+ 
+[float]
+[[automatic-instrumentation-jinja2]]
+==== Jinja2
+
+Library: `jinja2`
+
+Instrumented methods:
+
+ * `jinja2.Template.render`
+
+Collected trace data:
+
+ * template name
