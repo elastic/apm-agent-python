@@ -53,7 +53,6 @@ pipeline {
                 docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
                   dir("${BASE_DIR}"){
                     sh script: '''
-                      env | sort
                       curl https://pre-commit.com/install-local.py | python -
                       git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files
                     ''', label: 'pre-commit run'
