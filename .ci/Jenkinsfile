@@ -44,24 +44,16 @@ pipeline {
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
           }
         }
-        /**
-        Build the project from code..
-        */
-        stage('Lint') {
+        stage('Check pre-commit') {
           steps {
-            withGithubNotify(context: 'Lint') {
+            withGithubNotify(context: 'Check pre-commit') {
               deleteDir()
               unstash 'source'
               dir("${BASE_DIR}"){
-                sh script: """
-                ./tests/scripts/docker/cleanup.sh
-                ./tests/scripts/docker/isort.sh
-                """, label: "isort import sorting"
-                sh script: """
-                ./tests/scripts/docker/cleanup.sh
-                ./tests/scripts/docker/black.sh
-                """, label: "Black code formatting"
-                sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+                sh script: '''
+                  curl https://pre-commit.com/install-local.py | python -
+                  git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files
+                ''', label: 'pre-commit run'
               }
             }
           }
