@@ -11,8 +11,8 @@ repos:
 -   repo: https://github.com/ambv/black
     rev: stable
     hooks:
-    - id: black
-      language_version: python3
+    -   id: black
+        language_version: python3
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v1.3.0
     hooks:
@@ -24,6 +24,6 @@ repos:
         name: License header check
         description: Checks the existance of license headers in all Python files
         entry: ./tests/scripts/license_headers_check.sh
-        exclude: "(elasticapm\/utils\/wrapt\/.*|tests\/utils\/stacks\/linenos.py)"
+        exclude: "(elasticapm/utils/wrapt/.*|tests/utils/stacks/linenos.py)"
         language: script
         types: [python]
