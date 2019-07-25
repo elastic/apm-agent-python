@@ -58,9 +58,9 @@ pipeline {
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
           }
         }
-        stage('Check pre-commit') {
+        stage('Sanity checks') {
           steps {
-            withGithubNotify(context: 'Check pre-commit') {
+            withGithubNotify(context: 'Sanity checks') {
               deleteDir()
               unstash 'source'
               script {
@@ -68,7 +68,7 @@ pipeline {
                   dir("${BASE_DIR}"){
                     sh script: '''
                       curl https://pre-commit.com/install-local.py | python -
-                      git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files
+                      git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files | tee pre-commit.out
                     ''', label: 'pre-commit run'
                   }
                 }
