@@ -75,6 +75,12 @@ pipeline {
               }
             }
           }
+          post {
+            always {
+              archiveArtifacts artifacts: "${BASE_DIR}/pre-commit.out", allowEmptyArchive: true, defaultExcludes: false
+              junit testResults: "${BASE_DIR}/pre-commit-junit.xml", allowEmptyResults: true, keepLongStdio: true
+            }
+          }
         }
       }
     }
