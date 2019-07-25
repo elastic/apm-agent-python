@@ -63,11 +63,15 @@ pipeline {
             withGithubNotify(context: 'Check pre-commit') {
               deleteDir()
               unstash 'source'
-              dir("${BASE_DIR}"){
-                sh script: '''
-                  curl https://pre-commit.com/install-local.py | python -
-                  git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files
-                ''', label: 'pre-commit run'
+              script {
+                docker.image('python:3.7-stretch').inside("-e HOME=/app -v ${WORKSPACE}/${BASE_DIR}:/app"){
+                  sh script: '''
+                    env | sort
+                    pwd
+                    curl https://pre-commit.com/install-local.py | python -
+                    git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files
+                  ''', label: 'pre-commit run'
+                }
               }
             }
           }
