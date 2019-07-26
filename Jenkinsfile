@@ -60,7 +60,7 @@ pipeline {
         }
         stage('Sanity checks') {
           steps {
-            withGithubNotify(context: 'Sanity checks') {
+            withGithubNotify(context: 'Sanity checks', tab: 'tests') {
               deleteDir()
               unstash 'source'
               script {
