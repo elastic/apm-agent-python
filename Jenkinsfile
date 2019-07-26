@@ -77,6 +77,7 @@ pipeline {
           }
           post {
             always {
+              preCommitToJunit(input: "${BASE_DIR}/pre-commit.out", output: "${BASE_DIR}/pre-commit-junit.xml")
               archiveArtifacts artifacts: "${BASE_DIR}/pre-commit.out", allowEmptyArchive: true, defaultExcludes: false
               junit testResults: "${BASE_DIR}/pre-commit-junit.xml", allowEmptyResults: true, keepLongStdio: true
             }
