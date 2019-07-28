@@ -36,7 +36,7 @@ from collections import defaultdict
 from elasticapm.conf import constants
 from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
+from elasticapm.utils.threading import AtomicNumber, IntervalTimer
 
 logger = logging.getLogger("elasticapm.metrics")
 
@@ -78,6 +78,12 @@ class MetricsRegistry(object):
             except ImportError as e:
                 logger.warning("Could not register %s metricset: %s", class_path, compat.text_type(e))
 
+    def get_metricset(self, class_path):
+        try:
+            return self._metricsets[class_path]
+        except KeyError:
+            raise MetricSetNotFound(class_path)
+
     def collect(self):
         """
         Collect metrics from all registered metric sets and queues them for sending
@@ -106,6 +112,7 @@ class MetricsSet(object):
         self._lock = threading.Lock()
         self._counters = defaultdict(dict)
         self._gauges = defaultdict(dict)
+        self._timers = defaultdict(dict)
         self._registry = registry
 
     def counter(self, name, **labels):
@@ -115,37 +122,48 @@ class MetricsSet(object):
         :param labels: a flat key/value map of labels
         :return: the counter object
         """
-        labels = self._labels_to_key(labels)
-        key = (name, labels)
-        with self._lock:
-            if key not in self._counters:
-                if self._registry._ignore_patterns and any(
-                    pattern.match(name) for pattern in self._registry._ignore_patterns
-                ):
-                    counter = noop_metric
-                else:
-                    counter = Counter(name)
-                self._counters[key] = counter
-            return self._counters[key]
+        return self._metric(self._counters, Counter, name, labels)
 
     def gauge(self, name, **labels):
         """
         Returns an existing or creates and returns a new gauge
         :param name: name of the gauge
+        :param labels: a flat key/value map of labels
         :return: the gauge object
         """
+        return self._metric(self._gauges, Gauge, name, labels)
+
+    def timer(self, name, **labels):
+        """
+        Returns an existing or creates and returns a new timer
+        :param name: name of the timer
+        :param labels: a flat key/value map of labels
+        :return: the timer object
+        """
+        return self._metric(self._timers, Timer, name, labels)
+
+    def _metric(self, container, metric_class, name, labels):
+        """
+        Returns an existing or creates and returns a metric
+        :param container: the container for the metric
+        :param metric_class: the class of the metric
+        :param name: name of the timer
+        :param labels: a flat key/value map of labels
+        :return: the timer object
+        """
+
         labels = self._labels_to_key(labels)
         key = (name, labels)
         with self._lock:
-            if key not in self._gauges:
+            if key not in container:
                 if self._registry._ignore_patterns and any(
                     pattern.match(name) for pattern in self._registry._ignore_patterns
                 ):
-                    gauge = noop_metric
+                    metric = noop_metric
                 else:
-                    gauge = Gauge(name)
-                self._gauges[key] = gauge
-            return self._gauges[key]
+                    metric = metric_class(name)
+                container[key] = metric
+            return container[key]
 
     def collect(self):
         """
@@ -170,12 +188,18 @@ class MetricsSet(object):
             for (name, labels), g in compat.iteritems(self._gauges):
                 if g is not noop_metric:
                     samples[labels].update({name: {"value": g.val}})
+        if self._timers:
+            for (name, labels), t in compat.iteritems(self._timers):
+                if t is not noop_metric:
+                    val, count = t.val
+                    samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
+                    samples[labels].update({name + ".count": {"value": count}})
         if samples:
             for labels, sample in compat.iteritems(samples):
                 result = {"samples": sample, "timestamp": timestamp}
                 if labels:
                     result["tags"] = {k: v for k, v in labels}
-                yield result
+                yield self.before_yield(result)
 
     def before_collect(self):
         """
@@ -184,20 +208,23 @@ class MetricsSet(object):
         """
         pass
 
+    def before_yield(self, data):
+        return data
+
     def _labels_to_key(self, labels):
         return tuple((k, compat.text_type(v)) for k, v in sorted(compat.iteritems(labels)))
 
 
 class Counter(object):
-    __slots__ = ("label", "_lock", "_initial_value", "_val")
+    __slots__ = ("name", "_lock", "_initial_value", "_val")
 
-    def __init__(self, label, initial_value=0):
+    def __init__(self, name, initial_value=0):
         """
         Creates a new counter
-        :param label: label of the counter
+        :param name: name of the counter
         :param initial_value: initial value of the counter, defaults to 0
         """
-        self.label = label
+        self.name = name
         self._lock = threading.Lock()
         self._val = self._initial_value = initial_value
 
@@ -237,14 +264,14 @@ class Counter(object):
 
 
 class Gauge(object):
-    __slots__ = ("label", "_val")
+    __slots__ = ("name", "_val")
 
-    def __init__(self, label):
+    def __init__(self, name):
         """
         Creates a new gauge
-        :param label: label of the gauge
+        :param name: label of the gauge
         """
-        self.label = label
+        self.name = name
         self._val = None
 
     @property
@@ -254,6 +281,36 @@ class Gauge(object):
     @val.setter
     def val(self, value):
         self._val = value
+
+
+class Timer(object):
+    __slots__ = ("name", "_val", "_count", "_lock")
+
+    def __init__(self, name=None):
+        self.name = name
+        self._val = AtomicNumber()
+        self._count = AtomicNumber()
+        self._lock = threading.Lock()
+
+    def update(self, duration, count=1):
+        with self._lock:
+            self._val.inc(duration)
+            self._count.inc(count)
+
+    def reset(self):
+        with self._lock:
+            self._val.value = 0
+            self._count.value = 0
+
+    @property
+    def val(self):
+        with self._lock:
+            return self._val.value, self._count.value
+
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val.value, self._count.value = value
 
 
 class NoopMetric(object):
@@ -285,3 +342,8 @@ class NoopMetric(object):
 
 
 noop_metric = NoopMetric("noop")
+
+
+class MetricSetNotFound(LookupError):
+    def __init__(self, class_path):
+        super(MetricSetNotFound, self).__init__("%s metric set not found" % class_path)

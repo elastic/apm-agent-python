@@ -32,12 +32,15 @@ import functools
 import logging
 import random
 import re
+import threading
 import time
 import timeit
+from collections import defaultdict
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
+from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.threading import AtomicNumber
@@ -56,7 +59,59 @@ TAG_RE = re.compile('[.*"]')
 execution_context = init_execution_context()
 
 
-class Transaction(object):
+class ChildDuration(object):
+    __slots__ = ("obj", "_nesting_level", "_start", "_duration")
+
+    def __init__(self, obj):
+        self.obj = obj
+        self._nesting_level = AtomicNumber(0)
+        self._start = AtomicNumber(0.0)
+        self._duration = AtomicNumber(0.0)
+
+    def start(self, timestamp):
+        print("%s: start %i" % (str(self.obj), self._nesting_level.value))
+        if self._nesting_level.inc() == 1:
+            self._start.value = timestamp
+
+    def stop(self, timestamp):
+        print("%s: stop %i" % (str(self.obj), self._nesting_level.value))
+        if self._nesting_level.dec() == 0:
+            self._duration.inc(timestamp - self._start.value)
+
+    @property
+    def duration(self):
+        return self._duration.value
+
+
+class BaseSpan(object):
+    def __init__(self, tags=None):
+        self._child_durations = ChildDuration(self)
+        self.tags = {}
+        if tags:
+            self.tag(**tags)
+
+    def child_started(self, timestamp):
+        self._child_durations.start(timestamp)
+
+    def child_ended(self, timestamp):
+        self._child_durations.stop(timestamp)
+
+    def end(self, skip_frames=0):
+        raise NotImplementedError()
+
+    def tag(self, **tags):
+        """
+        Tag this span with one or multiple key/value tags. Both the values should be strings
+
+            span_obj.tag(key1="value1", key2="value2")
+
+        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
+        """
+        for key in tags.keys():
+            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
+
+
+class Transaction(BaseSpan):
     def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
@@ -69,13 +124,34 @@ class Transaction(object):
 
         self.dropped_spans = 0
         self.context = {}
-        self.tags = {}
 
         self.is_sampled = is_sampled
         self._span_counter = 0
+        self._span_timers = defaultdict(Timer)
+        self._duration_lock = threading.Lock()
+        try:
+            self._breakdown = self.tracer._agent._metrics.get_metricset(
+                "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
+            )
+        except LookupError:
+            self._breakdown = None
+        super(Transaction, self).__init__()
 
-    def end_transaction(self):
+    def end(self, skip_frames=0):
         self.duration = _time_func() - self.start_time
+        if self._breakdown:
+            for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
+                labels = {
+                    "span.type": span_type,
+                    "span.subtype": span_subtype,
+                    "transaction.name": self.name,
+                    "transaction.type": self.transaction_type,
+                }
+                self._breakdown.timer("span.self_time", **labels).val = timer.val
+            labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
+            self._breakdown.counter("transaction.breakdown.count", **labels).inc()
+            self._breakdown.timer("transaction.duration", **labels).val = (self.duration, 1)
+            self._breakdown.timer("app").val = self.duration - self._child_durations.duration, 1
 
     def _begin_span(
         self,
@@ -104,12 +180,12 @@ class Transaction(object):
                 context=context,
                 leaf=leaf,
                 tags=tags,
+                parent=parent_span,
                 parent_span_id=parent_span_id,
                 span_subtype=span_subtype,
                 span_action=span_action,
             )
             span.frames = tracer.frames_collector_func()
-            span.parent = parent_span
             self._span_counter += 1
         execution_context.set_span(span)
         return span
@@ -161,17 +237,6 @@ class Transaction(object):
             logger.debug("Set parent id to generated %s", self.trace_parent.span_id)
         return self.trace_parent.span_id
 
-    def tag(self, **tags):
-        """
-        Tag this transaction with one or multiple key/value tags. Both the values should be strings
-
-            transaction_obj.tag(key1="value1", key2="value2")
-
-        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
-        """
-        for key in tags.keys():
-            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
-
     def to_dict(self):
         self.context["tags"] = self.tags
         result = {
@@ -194,16 +259,9 @@ class Transaction(object):
             result["context"] = self.context
         return result
 
-
-class BaseSpan(object):
-    def child_started(self, timestamp):
-        raise NotImplementedError()
-
-    def child_ended(self, timestamp):
-        raise NotImplementedError()
-
-    def end(self, skip_frames=0):
-        raise NotImplementedError()
+    def track_span_duration(self, span_type, span_subtype, self_duration):
+        with self._duration_lock:
+            self._span_timers[(span_type, span_subtype)].update(self_duration)
 
 
 class Span(BaseSpan):
@@ -234,6 +292,7 @@ class Span(BaseSpan):
         context=None,
         leaf=False,
         tags=None,
+        parent=None,
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
@@ -263,13 +322,9 @@ class Span(BaseSpan):
         # monotonically with respect to the transaction timestamp
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         self.duration = None
-        self.parent = None
+        self.parent = parent
         self.parent_span_id = parent_span_id
         self.frames = None
-        self.tags = {}
-        self._child_durations = ChildSpanTimer()
-        if tags:
-            self.tag(**tags)
         if span_subtype is None and "." in span_type:
             # old style dottet type, let's split it up
             type_bits = span_type.split(".")
@@ -280,19 +335,10 @@ class Span(BaseSpan):
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
-        if self.parent:
-            self.parent.child_started(self.start_time)
-
-    def tag(self, **tags):
-        """
-        Tag this span with one or multiple key/value tags. Both the values should be strings
-
-            span_obj.tag(key1="value1", key2="value2")
-
-        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
-        """
-        for key in tags.keys():
-            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
+        if self.transaction._breakdown:
+            p = self.parent if self.parent else self.transaction
+            p.child_started(self.start_time)
+        super(Span, self).__init__(tags=tags)
 
     def to_dict(self):
         result = {
@@ -328,14 +374,15 @@ class Span(BaseSpan):
             self.frames = None
         execution_context.set_span(self.parent)
         tracer.queue_func(SPAN, self.to_dict())
-        if self.parent:
-            self.parent.child_ended(timestamp)
+        if self.transaction._breakdown:
+            p = self.parent if self.parent else self.transaction
+            p.child_ended(timestamp)
+            self.transaction.track_span_duration(
+                self.type, self.subtype, self.duration - self._child_durations.duration
+            )
 
-    def child_started(self, timestamp):
-        self._child_durations.start(timestamp)
-
-    def child_ended(self, timestamp):
-        self._child_durations.stop(timestamp)
+    def __str__(self):
+        return u"{}/{}/{}".format(self.name, self.type, self.subtype)
 
 
 class DroppedSpan(BaseSpan):
@@ -344,6 +391,7 @@ class DroppedSpan(BaseSpan):
     def __init__(self, parent, leaf=False):
         self.parent = parent
         self.leaf = leaf
+        super(DroppedSpan, self).__init__()
 
     def end(self, skip_frames=0):
         execution_context.set_span(self.parent)
@@ -353,27 +401,6 @@ class DroppedSpan(BaseSpan):
 
     def child_ended(self, timestamp):
         pass
-
-
-class ChildSpanTimer(object):
-    __slots__ = ("_nesting_level", "_start", "_duration")
-
-    def __init__(self):
-        self._nesting_level = AtomicNumber()
-        self._start = AtomicNumber()
-        self._duration = AtomicNumber()
-
-    def start(self, timestamp):
-        if self._nesting_level.inc() == 1:
-            self._start = timestamp
-
-    def stop(self, timestamp):
-        if self._nesting_level.dec() == 0:
-            self._duration.inc(timestamp - self._start.value)
-
-    @property
-    def duration(self):
-        return self._duration.value
 
 
 class Tracer(object):
@@ -386,6 +413,7 @@ class Tracer(object):
         max_spans=0,
         span_frames_min_duration=None,
         ignore_patterns=None,
+        agent=None,
     ):
         self.max_spans = max_spans
         self.queue_func = queue_func
@@ -393,6 +421,7 @@ class Tracer(object):
         self.frames_collector_func = frames_collector_func
         self._ignore_patterns = [re.compile(p) for p in ignore_patterns or []]
         self._sample_rate = sample_rate
+        self._agent = agent
         if span_frames_min_duration in (-1, None):
             # both None and -1 mean "no minimum"
             self.span_frames_min_duration = None
@@ -429,9 +458,9 @@ class Tracer(object):
     def end_transaction(self, result=None, transaction_name=None):
         transaction = execution_context.get_transaction(clear=True)
         if transaction:
-            transaction.end_transaction()
             if transaction.name is None:
                 transaction.name = transaction_name if transaction_name is not None else ""
+            transaction.end()
             if self._should_ignore(transaction.name):
                 return
             if transaction.result is None:
