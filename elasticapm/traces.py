@@ -131,7 +131,7 @@ class Transaction(BaseSpan):
             self._breakdown = self.tracer._agent._metrics.get_metricset(
                 "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
             )
-        except LookupError:
+        except (LookupError, AttributeError):
             self._breakdown = None
         super(Transaction, self).__init__()
 
