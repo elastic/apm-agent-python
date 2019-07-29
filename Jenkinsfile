@@ -66,20 +66,10 @@ pipeline {
               script {
                 docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
                   dir("${BASE_DIR}"){
-                    sh script: '''
-                      curl https://pre-commit.com/install-local.py | python -
-                      git diff-tree --no-commit-id --name-only -r ${GIT_BASE_COMMIT} | xargs pre-commit run --files | tee pre-commit.out
-                    ''', label: 'pre-commit run'
+                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
                   }
                 }
               }
-            }
-          }
-          post {
-            always {
-              preCommitToJunit(input: "${BASE_DIR}/pre-commit.out", output: "${BASE_DIR}/pre-commit-junit.xml")
-              archiveArtifacts artifacts: "${BASE_DIR}/pre-commit.out", allowEmptyArchive: true, defaultExcludes: false
-              junit testResults: "${BASE_DIR}/pre-commit-junit.xml", allowEmptyResults: true, keepLongStdio: true
             }
           }
         }
