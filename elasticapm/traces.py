@@ -43,7 +43,6 @@ from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
-from elasticapm.utils.threading import AtomicNumber
 
 __all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -60,25 +59,30 @@ execution_context = init_execution_context()
 
 
 class ChildDuration(object):
-    __slots__ = ("obj", "_nesting_level", "_start", "_duration")
+    __slots__ = ("obj", "_nesting_level", "_start", "_duration", "_lock")
 
     def __init__(self, obj):
         self.obj = obj
-        self._nesting_level = AtomicNumber(0)
-        self._start = AtomicNumber(0.0)
-        self._duration = AtomicNumber(0.0)
+        self._nesting_level = 0
+        self._start = None
+        self._duration = 0
+        self._lock = threading.Lock()
 
     def start(self, timestamp):
-        if self._nesting_level.inc() == 1:
-            self._start.value = timestamp
+        with self._lock:
+            self._nesting_level += 1
+            if self._nesting_level == 1:
+                self._start = timestamp
 
     def stop(self, timestamp):
-        if self._nesting_level.dec() == 0:
-            self._duration.inc(timestamp - self._start.value)
+        with self._lock:
+            self._nesting_level -= 1
+            if self._nesting_level == 0:
+                self._duration += timestamp - self._start
 
     @property
     def duration(self):
-        return self._duration.value
+        return self._duration
 
 
 class BaseSpan(object):
@@ -126,7 +130,7 @@ class Transaction(BaseSpan):
         self.is_sampled = is_sampled
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
-        self._duration_lock = threading.Lock()
+        self._span_timers_lock = threading.Lock()
         try:
             self._breakdown = self.tracer._agent._metrics.get_metricset(
                 "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
@@ -145,15 +149,16 @@ class Transaction(BaseSpan):
                     "transaction.name": self.name,
                     "transaction.type": self.transaction_type,
                 }
-                self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).val = timer.val
+                self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).update(*timer.val)
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
-            self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
-            self._breakdown.timer("transaction.duration", reset_on_collect=True, **labels).val = (self.duration, 1)
-            self._breakdown.timer(
-                "span.self_time",
-                reset_on_collect=True,
-                **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
-            ).val = (self.duration - self._child_durations.duration, 1)
+            self._breakdown.timer("transaction.duration", reset_on_collect=True, **labels).update(self.duration)
+            if self.is_sampled:
+                self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
+                self._breakdown.timer(
+                    "span.self_time",
+                    reset_on_collect=True,
+                    **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
+                ).update(self.duration - self._child_durations.duration)
 
     def _begin_span(
         self,
@@ -262,7 +267,9 @@ class Transaction(BaseSpan):
         return result
 
     def track_span_duration(self, span_type, span_subtype, self_duration):
-        with self._duration_lock:
+        # TODO: once asynchronous spans are supported, we should check if the transaction is already finished
+        # TODO: and, if it has, exit without tracking.
+        with self._span_timers_lock:
             self._span_timers[(span_type, span_subtype)].update(self_duration)
 
 

@@ -165,3 +165,34 @@ def test_metrics_reset_after_collect(elasticapm_client):
         assert c.val == 0
     for labels, t in compat.iteritems(breakdown._timers):
         assert t.val == (0, 0)
+
+
+def test_multiple_transactions(elasticapm_client):
+    for i in (1, 2):
+        elasticapm_client.begin_transaction("request")
+        time.sleep(0.005)
+        with elasticapm.capture_span("test"):
+            time.sleep(0.005)
+        elasticapm_client.end_transaction("test", "OK")
+
+    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    data = list(breakdown.collect())
+    asserts = 0
+    for elem in data:
+        if "transaction.breakdown.count" in elem["samples"]:
+            assert elem["samples"]["transaction.breakdown.count"]["value"] == 2
+            assert 20000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 30000
+            assert elem["transaction"] == {"name": "test", "type": "request"}
+            asserts += 1
+        elif "span.self_time.sum.us" in elem["samples"]:
+            if elem["span"] == {"type": "app", "subtype": ""}:
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert elem["samples"]["span.self_time.count"]["value"] == 2
+                asserts += 1
+            elif elem["span"] == {"type": "code", "subtype": "custom"}:
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert elem["samples"]["span.self_time.count"]["value"] == 2
+                asserts += 1
+    assert asserts == 3

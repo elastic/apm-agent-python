@@ -36,7 +36,7 @@ from collections import defaultdict
 from elasticapm.conf import constants
 from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import AtomicNumber, IntervalTimer
+from elasticapm.utils.threading import IntervalTimer
 
 logger = logging.getLogger("elasticapm.metrics")
 
@@ -303,30 +303,25 @@ class Timer(object):
 
     def __init__(self, name=None, reset_on_collect=False):
         self.name = name
-        self._val = AtomicNumber()
-        self._count = AtomicNumber()
+        self._val = 0
+        self._count = 0
         self._lock = threading.Lock()
         self.reset_on_collect = reset_on_collect
 
     def update(self, duration, count=1):
         with self._lock:
-            self._val.inc(duration)
-            self._count.inc(count)
+            self._val += duration
+            self._count += count
 
     def reset(self):
         with self._lock:
-            self._val.value = 0
-            self._count.value = 0
+            self._val = 0
+            self._count = 0
 
     @property
     def val(self):
         with self._lock:
-            return self._val.value, self._count.value
-
-    @val.setter
-    def val(self, value):
-        with self._lock:
-            self._val.value, self._count.value = value
+            return self._val, self._count
 
 
 class NoopMetric(object):
