@@ -29,23 +29,139 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import time
 
+import mock
+import pytest
+
 import elasticapm
+from elasticapm.utils import compat
 
 
-def test_nested_spans(elasticapm_client):
-    transaction = elasticapm_client.begin_transaction("test")
+def test_bare_transaction(elasticapm_client):
+    elasticapm_client.begin_transaction("request")
     time.sleep(0.005)
-    with elasticapm.capture_span("test", span_type="a", span_subtype="1"):
-        time.sleep(0.005)
-        with elasticapm.capture_span("test", span_type="b", span_subtype="1"):
-            time.sleep(0.005)
-        with elasticapm.capture_span("test", span_type="b", span_subtype="1"):
-            time.sleep(0.005)
-        with elasticapm.capture_span("test", span_type="b", span_subtype="2"):
-            time.sleep(0.005)
-            with elasticapm.capture_span("test", span_type="c", span_subtype="1"):
-                time.sleep(0.005)
     elasticapm_client.end_transaction("test", "OK")
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
-    pass
+    assert len(data) == 2
+    asserts = 0
+    for elem in data:
+        if "transaction.breakdown.count" in elem["samples"]:
+            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
+            assert 5000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 10000
+            assert elem["transaction"] == {"name": "test", "type": "request"}
+            asserts += 1
+        elif "span.self_time.sum.us" in elem["samples"]:
+            assert elem["samples"]["span.self_time.count"]["value"] == 1
+            assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"] < 10000
+            assert elem["transaction"] == {"name": "test", "type": "request"}
+            assert elem["span"] == {"subtype": "", "type": "app"}
+            asserts += 1
+    assert asserts == 2
+
+
+def test_single_span(elasticapm_client):
+    elasticapm_client.begin_transaction("request")
+    time.sleep(0.005)
+    with elasticapm.capture_span("test", span_type="db", span_subtype="mysql"):
+        time.sleep(0.005)
+    time.sleep(0.005)
+    elasticapm_client.end_transaction("test", "OK")
+    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    data = list(breakdown.collect())
+    assert len(data) == 3
+    asserts = 0
+    for elem in data:
+        if "transaction.breakdown.count" in elem["samples"]:
+            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
+            assert 15000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 20000
+            assert elem["transaction"] == {"name": "test", "type": "request"}
+            asserts += 1
+        elif "span.self_time.sum.us" in elem["samples"]:
+            if elem["span"] == {"type": "app", "subtype": ""}:
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert elem["samples"]["span.self_time.count"]["value"] == 1
+                asserts += 1
+            elif elem["span"] == {"type": "db", "subtype": "mysql"}:
+                assert elem["samples"]["span.self_time.count"]["value"] == 1
+                assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"] < 10000
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                asserts += 1
+    assert asserts == 3
+
+
+def test_nested_spans(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("request")
+    time.sleep(0.005)
+    with elasticapm.capture_span("test", span_type="template", span_subtype="django"):
+        time.sleep(0.005)
+        with elasticapm.capture_span("test", span_type="db", span_subtype="mysql"):
+            time.sleep(0.005)
+        with elasticapm.capture_span("test", span_type="db", span_subtype="mysql"):
+            time.sleep(0.005)
+    time.sleep(0.005)
+    elasticapm_client.end_transaction("test", "OK")
+    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    data = list(breakdown.collect())
+    assert len(data) == 4
+    asserts = 0
+    for elem in data:
+        if "transaction.breakdown.count" in elem["samples"]:
+            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
+            assert 25000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 32000
+            assert elem["transaction"] == {"name": "test", "type": "request"}
+            asserts += 1
+        elif "span.self_time.sum.us" in elem["samples"]:
+            if elem["span"] == {"type": "app", "subtype": ""}:
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert elem["samples"]["span.self_time.count"]["value"] == 1
+                asserts += 1
+            elif elem["span"] == {"type": "db", "subtype": "mysql"}:
+                assert elem["samples"]["span.self_time.count"]["value"] == 2
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                asserts += 1
+            elif elem["span"] == {"type": "template", "subtype": "django"}:
+                assert elem["samples"]["span.self_time.count"]["value"] == 1
+                assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"] < 10000
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                asserts += 1
+    assert asserts == 4
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"breakdown_metrics": False}], indirect=True)
+def test_disable_breakdowns(elasticapm_client):
+    with pytest.raises(LookupError):
+        elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+
+    with mock.patch("elasticapm.traces.BaseSpan.child_started") as mock_child_started, mock.patch(
+        "elasticapm.traces.BaseSpan.child_ended"
+    ) as mock_child_ended, mock.patch("elasticapm.traces.Transaction.track_span_duration") as mock_track_span_duration:
+        transaction = elasticapm_client.begin_transaction("test")
+        assert transaction._breakdown is None
+        with elasticapm.capture_span("test", span_type="template", span_subtype="django"):
+            time.sleep(0.005)
+        elasticapm_client.end_transaction("test", "OK")
+        assert mock_child_started.call_count == 0
+        assert mock_child_ended.call_count == 0
+        assert mock_track_span_duration.call_count == 0
+
+
+def test_metrics_reset_after_collect(elasticapm_client):
+    elasticapm_client.begin_transaction("request")
+    time.sleep(0.005)
+    with elasticapm.capture_span("test", span_type="db", span_subtype="mysql"):
+        time.sleep(0.005)
+    time.sleep(0.005)
+    elasticapm_client.end_transaction("test", "OK")
+    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    for labels, c in compat.iteritems(breakdown._counters):
+        assert c.val != 0
+    for labels, t in compat.iteritems(breakdown._timers):
+        assert t.val != (0, 0)
+    list(breakdown.collect())
+    for labels, c in compat.iteritems(breakdown._counters):
+        assert c.val == 0
+    for labels, t in compat.iteritems(breakdown._timers):
+        assert t.val == (0, 0)

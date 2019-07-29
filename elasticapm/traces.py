@@ -69,12 +69,10 @@ class ChildDuration(object):
         self._duration = AtomicNumber(0.0)
 
     def start(self, timestamp):
-        print("%s: start %i" % (str(self.obj), self._nesting_level.value))
         if self._nesting_level.inc() == 1:
             self._start.value = timestamp
 
     def stop(self, timestamp):
-        print("%s: stop %i" % (str(self.obj), self._nesting_level.value))
         if self._nesting_level.dec() == 0:
             self._duration.inc(timestamp - self._start.value)
 
@@ -147,11 +145,15 @@ class Transaction(BaseSpan):
                     "transaction.name": self.name,
                     "transaction.type": self.transaction_type,
                 }
-                self._breakdown.timer("span.self_time", **labels).val = timer.val
+                self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).val = timer.val
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
-            self._breakdown.counter("transaction.breakdown.count", **labels).inc()
-            self._breakdown.timer("transaction.duration", **labels).val = (self.duration, 1)
-            self._breakdown.timer("app").val = self.duration - self._child_durations.duration, 1
+            self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
+            self._breakdown.timer("transaction.duration", reset_on_collect=True, **labels).val = (self.duration, 1)
+            self._breakdown.timer(
+                "span.self_time",
+                reset_on_collect=True,
+                **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
+            ).val = (self.duration - self._child_durations.duration, 1)
 
     def _begin_span(
         self,

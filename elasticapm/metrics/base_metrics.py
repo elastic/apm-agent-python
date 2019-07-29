@@ -115,39 +115,43 @@ class MetricsSet(object):
         self._timers = defaultdict(dict)
         self._registry = registry
 
-    def counter(self, name, **labels):
+    def counter(self, name, reset_on_collect=False, **labels):
         """
         Returns an existing or creates and returns a new counter
         :param name: name of the counter
+        :param reset_on_collect: indicate if the counter should be reset to 0 when collecting
         :param labels: a flat key/value map of labels
         :return: the counter object
         """
-        return self._metric(self._counters, Counter, name, labels)
+        return self._metric(self._counters, Counter, name, reset_on_collect, labels)
 
-    def gauge(self, name, **labels):
+    def gauge(self, name, reset_on_collect=False, **labels):
         """
         Returns an existing or creates and returns a new gauge
         :param name: name of the gauge
+        :param reset_on_collect: indicate if the gouge should be reset to 0 when collecting
         :param labels: a flat key/value map of labels
         :return: the gauge object
         """
-        return self._metric(self._gauges, Gauge, name, labels)
+        return self._metric(self._gauges, Gauge, name, reset_on_collect, labels)
 
-    def timer(self, name, **labels):
+    def timer(self, name, reset_on_collect=False, **labels):
         """
         Returns an existing or creates and returns a new timer
         :param name: name of the timer
+        :param reset_on_collect: indicate if the timer should be reset to 0 when collecting
         :param labels: a flat key/value map of labels
         :return: the timer object
         """
-        return self._metric(self._timers, Timer, name, labels)
+        return self._metric(self._timers, Timer, name, reset_on_collect, labels)
 
-    def _metric(self, container, metric_class, name, labels):
+    def _metric(self, container, metric_class, name, reset_on_collect, labels):
         """
         Returns an existing or creates and returns a metric
         :param container: the container for the metric
         :param metric_class: the class of the metric
         :param name: name of the timer
+        :param reset_on_collect: indicate if the metric should be reset to 0 when collecting
         :param labels: a flat key/value map of labels
         :return: the timer object
         """
@@ -161,7 +165,7 @@ class MetricsSet(object):
                 ):
                     metric = noop_metric
                 else:
-                    metric = metric_class(name)
+                    metric = metric_class(name, reset_on_collect=reset_on_collect)
                 container[key] = metric
             return container[key]
 
@@ -184,16 +188,22 @@ class MetricsSet(object):
             for (name, labels), c in compat.iteritems(self._counters):
                 if c is not noop_metric:
                     samples[labels].update({name: {"value": c.val}})
+                    if c.reset_on_collect:
+                        c.reset()
         if self._gauges:
             for (name, labels), g in compat.iteritems(self._gauges):
                 if g is not noop_metric:
                     samples[labels].update({name: {"value": g.val}})
+                    if g.reset_on_collect:
+                        g.reset()
         if self._timers:
             for (name, labels), t in compat.iteritems(self._timers):
                 if t is not noop_metric:
                     val, count = t.val
                     samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
                     samples[labels].update({name + ".count": {"value": count}})
+                    if t.reset_on_collect:
+                        t.reset()
         if samples:
             for labels, sample in compat.iteritems(samples):
                 result = {"samples": sample, "timestamp": timestamp}
@@ -216,9 +226,9 @@ class MetricsSet(object):
 
 
 class Counter(object):
-    __slots__ = ("name", "_lock", "_initial_value", "_val")
+    __slots__ = ("name", "_lock", "_initial_value", "_val", "reset_on_collect")
 
-    def __init__(self, name, initial_value=0):
+    def __init__(self, name, initial_value=0, reset_on_collect=False):
         """
         Creates a new counter
         :param name: name of the counter
@@ -227,6 +237,7 @@ class Counter(object):
         self.name = name
         self._lock = threading.Lock()
         self._val = self._initial_value = initial_value
+        self.reset_on_collect = reset_on_collect
 
     def inc(self, delta=1):
         """
@@ -264,15 +275,16 @@ class Counter(object):
 
 
 class Gauge(object):
-    __slots__ = ("name", "_val")
+    __slots__ = ("name", "_val", "reset_on_collect")
 
-    def __init__(self, name):
+    def __init__(self, name, reset_on_collect=False):
         """
         Creates a new gauge
         :param name: label of the gauge
         """
         self.name = name
         self._val = None
+        self.reset_on_collect = reset_on_collect
 
     @property
     def val(self):
@@ -282,15 +294,19 @@ class Gauge(object):
     def val(self, value):
         self._val = value
 
+    def reset(self):
+        self._val = 0
+
 
 class Timer(object):
-    __slots__ = ("name", "_val", "_count", "_lock")
+    __slots__ = ("name", "_val", "_count", "_lock", "reset_on_collect")
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, reset_on_collect=False):
         self.name = name
         self._val = AtomicNumber()
         self._count = AtomicNumber()
         self._lock = threading.Lock()
+        self.reset_on_collect = reset_on_collect
 
     def update(self, duration, count=1):
         with self._lock:
