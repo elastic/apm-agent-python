@@ -225,6 +225,19 @@ class MetricsSet(object):
         return tuple((k, compat.text_type(v)) for k, v in sorted(compat.iteritems(labels)))
 
 
+class SpanBoundMetricSet(MetricsSet):
+    def before_yield(self, data):
+        tags = data.get("tags", None)
+        if tags:
+            span_type, span_subtype = tags.pop("span.type", None), tags.pop("span.subtype", "")
+            if span_type or span_subtype:
+                data["span"] = {"type": span_type, "subtype": span_subtype}
+            transaction_name, transaction_type = tags.pop("transaction.name", None), tags.pop("transaction.type", None)
+            if transaction_name or transaction_type:
+                data["transaction"] = {"name": transaction_name, "type": transaction_type}
+        return data
+
+
 class Counter(object):
     __slots__ = ("name", "_lock", "_initial_value", "_val", "reset_on_collect")
 

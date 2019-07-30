@@ -33,5 +33,5 @@ from __future__ import absolute_import
 from elasticapm.metrics.base_metrics import SpanBoundMetricSet
 
 
-class BreakdownMetricSet(SpanBoundMetricSet):
+class TransactionsMetricSet(SpanBoundMetricSet):
     pass

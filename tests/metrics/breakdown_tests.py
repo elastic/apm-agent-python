@@ -47,7 +47,6 @@ def test_bare_transaction(elasticapm_client):
     for elem in data:
         if "transaction.breakdown.count" in elem["samples"]:
             assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert 5000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 10000
             assert elem["transaction"] == {"name": "test", "type": "request"}
             asserts += 1
         elif "span.self_time.sum.us" in elem["samples"]:
@@ -57,6 +56,13 @@ def test_bare_transaction(elasticapm_client):
             assert elem["span"] == {"subtype": "", "type": "app"}
             asserts += 1
     assert asserts == 2
+
+    transaction_metrics = elasticapm_client._metrics.get_metricset(
+        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
+    )
+    transaction_data = list(transaction_metrics.collect())
+    assert len(transaction_data) == 1
+    assert 5000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
 
 
 def test_single_span(elasticapm_client):
@@ -73,7 +79,6 @@ def test_single_span(elasticapm_client):
     for elem in data:
         if "transaction.breakdown.count" in elem["samples"]:
             assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert 15000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 20000
             assert elem["transaction"] == {"name": "test", "type": "request"}
             asserts += 1
         elif "span.self_time.sum.us" in elem["samples"]:
@@ -88,6 +93,13 @@ def test_single_span(elasticapm_client):
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 asserts += 1
     assert asserts == 3
+
+    transaction_metrics = elasticapm_client._metrics.get_metricset(
+        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
+    )
+    transaction_data = list(transaction_metrics.collect())
+    assert len(transaction_data) == 1
+    assert 15000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
 
 
 def test_nested_spans(elasticapm_client):
@@ -108,7 +120,6 @@ def test_nested_spans(elasticapm_client):
     for elem in data:
         if "transaction.breakdown.count" in elem["samples"]:
             assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert 25000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 32000
             assert elem["transaction"] == {"name": "test", "type": "request"}
             asserts += 1
         elif "span.self_time.sum.us" in elem["samples"]:
@@ -129,12 +140,21 @@ def test_nested_spans(elasticapm_client):
                 asserts += 1
     assert asserts == 4
 
+    transaction_metrics = elasticapm_client._metrics.get_metricset(
+        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
+    )
+    transaction_data = list(transaction_metrics.collect())
+    assert len(transaction_data) == 1
+    assert 25000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
+
 
 @pytest.mark.parametrize("elasticapm_client", [{"breakdown_metrics": False}], indirect=True)
 def test_disable_breakdowns(elasticapm_client):
     with pytest.raises(LookupError):
         elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
-
+    transaction_metrics = elasticapm_client._metrics.get_metricset(
+        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
+    )
     with mock.patch("elasticapm.traces.BaseSpan.child_started") as mock_child_started, mock.patch(
         "elasticapm.traces.BaseSpan.child_ended"
     ) as mock_child_ended, mock.patch("elasticapm.traces.Transaction.track_span_duration") as mock_track_span_duration:
@@ -146,6 +166,10 @@ def test_disable_breakdowns(elasticapm_client):
         assert mock_child_started.call_count == 0
         assert mock_child_ended.call_count == 0
         assert mock_track_span_duration.call_count == 0
+    # transaction duration should still be captured
+    data = list(transaction_metrics.collect())
+    assert len(data) == 1
+    assert 5000 < data[0]["samples"]["transaction.duration.sum.us"]["value"] < 10000
 
 
 def test_metrics_reset_after_collect(elasticapm_client):
@@ -156,15 +180,19 @@ def test_metrics_reset_after_collect(elasticapm_client):
     time.sleep(0.005)
     elasticapm_client.end_transaction("test", "OK")
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
-    for labels, c in compat.iteritems(breakdown._counters):
-        assert c.val != 0
-    for labels, t in compat.iteritems(breakdown._timers):
-        assert t.val != (0, 0)
-    list(breakdown.collect())
-    for labels, c in compat.iteritems(breakdown._counters):
-        assert c.val == 0
-    for labels, t in compat.iteritems(breakdown._timers):
-        assert t.val == (0, 0)
+    transaction_metrics = elasticapm_client._metrics.get_metricset(
+        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
+    )
+    for metricset in (breakdown, transaction_metrics):
+        for labels, c in compat.iteritems(metricset._counters):
+            assert c.val != 0
+        for labels, t in compat.iteritems(metricset._timers):
+            assert t.val != (0, 0)
+        list(metricset.collect())
+        for labels, c in compat.iteritems(metricset._counters):
+            assert c.val == 0
+        for labels, t in compat.iteritems(metricset._timers):
+            assert t.val == (0, 0)
 
 
 def test_multiple_transactions(elasticapm_client):
@@ -181,7 +209,6 @@ def test_multiple_transactions(elasticapm_client):
     for elem in data:
         if "transaction.breakdown.count" in elem["samples"]:
             assert elem["samples"]["transaction.breakdown.count"]["value"] == 2
-            assert 20000 < elem["samples"]["transaction.duration.sum.us"]["value"] < 30000
             assert elem["transaction"] == {"name": "test", "type": "request"}
             asserts += 1
         elif "span.self_time.sum.us" in elem["samples"]:
@@ -196,3 +223,11 @@ def test_multiple_transactions(elasticapm_client):
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
     assert asserts == 3
+
+    transaction_metrics = elasticapm_client._metrics.get_metricset(
+        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
+    )
+    transaction_data = list(transaction_metrics.collect())
+    assert len(transaction_data) == 1
+    assert 20000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
+    assert transaction_data[0]["samples"]["transaction.duration.count"]["value"] == 2
