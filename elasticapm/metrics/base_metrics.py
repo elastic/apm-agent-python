@@ -150,10 +150,10 @@ class MetricsSet(object):
         Returns an existing or creates and returns a metric
         :param container: the container for the metric
         :param metric_class: the class of the metric
-        :param name: name of the timer
+        :param name: name of the metric
         :param reset_on_collect: indicate if the metric should be reset to 0 when collecting
         :param labels: a flat key/value map of labels
-        :return: the timer object
+        :return: the metric object
         """
 
         labels = self._labels_to_key(labels)
