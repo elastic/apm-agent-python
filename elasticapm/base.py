@@ -161,6 +161,7 @@ class Client(object):
             max_spans=self.config.transaction_max_spans,
             span_frames_min_duration=self.config.span_frames_min_duration,
             ignore_patterns=self.config.transactions_ignore_patterns,
+            agent=self,
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
@@ -169,6 +170,8 @@ class Client(object):
         )
         for path in self.config.metrics_sets:
             self._metrics.register(path)
+        if self.config.breakdown_metrics:
+            self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         compat.atexit_register(self.close)
 
     def get_handler(self, name):

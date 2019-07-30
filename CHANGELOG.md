@@ -8,6 +8,7 @@
 
 ## Other changes
 
+ * Added support for recording breakdown metrics (#535)
  * Added instrumentation for `urllib2` (Python 2) / `urllib.request` (Python 3) (#464)
  * Added `disable_metrics` setting (#399)
  * Updated elasticsearch instrumentation for 7.x (#482, #483)

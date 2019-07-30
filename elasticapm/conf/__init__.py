@@ -248,13 +248,20 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
-    metrics_sets = _ListConfigValue("METRICS_SETS", default=["elasticapm.metrics.sets.cpu.CPUMetricSet"])
+    metrics_sets = _ListConfigValue(
+        "METRICS_SETS",
+        default=[
+            "elasticapm.metrics.sets.cpu.CPUMetricSet",
+            "elasticapm.metrics.sets.transactions.TransactionsMetricSet",
+        ],
+    )
     metrics_interval = _ConfigValue(
         "METRICS_INTERVAL",
         type=int,
         validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
         default=30000,
     )
+    breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
