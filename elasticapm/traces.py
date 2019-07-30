@@ -120,7 +120,7 @@ class BaseSpan(object):
                 value = encoding.keyword_field(compat.text_type(value))
             self.labels[TAG_RE.sub("_", compat.text_type(key))] = value
 
-    @deprecated(label)
+    @deprecated("transaction/span.label()")
     def tag(self, **tags):
         """
         This method is deprecated, please use "label()" instead.
