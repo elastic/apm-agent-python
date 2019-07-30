@@ -51,7 +51,7 @@ def test_bare_transaction(elasticapm_client):
             asserts += 1
         elif "span.self_time.sum.us" in elem["samples"]:
             assert elem["samples"]["span.self_time.count"]["value"] == 1
-            assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"] < 10000
+            assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"]
             assert elem["transaction"] == {"name": "test", "type": "request"}
             assert elem["span"] == {"subtype": "", "type": "app"}
             asserts += 1
@@ -62,7 +62,7 @@ def test_bare_transaction(elasticapm_client):
     )
     transaction_data = list(transaction_metrics.collect())
     assert len(transaction_data) == 1
-    assert 5000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
+    assert 5000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"]
 
 
 def test_single_span(elasticapm_client):
@@ -84,12 +84,12 @@ def test_single_span(elasticapm_client):
         elif "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
-                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["samples"]["span.self_time.count"]["value"] == 1
                 asserts += 1
             elif elem["span"] == {"type": "db", "subtype": "mysql"}:
                 assert elem["samples"]["span.self_time.count"]["value"] == 1
-                assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"] < 10000
+                assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 asserts += 1
     assert asserts == 3
@@ -99,7 +99,7 @@ def test_single_span(elasticapm_client):
     )
     transaction_data = list(transaction_metrics.collect())
     assert len(transaction_data) == 1
-    assert 15000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
+    assert 15000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"]
 
 
 def test_nested_spans(elasticapm_client):
@@ -125,17 +125,17 @@ def test_nested_spans(elasticapm_client):
         elif "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
-                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["samples"]["span.self_time.count"]["value"] == 1
                 asserts += 1
             elif elem["span"] == {"type": "db", "subtype": "mysql"}:
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
-                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 asserts += 1
             elif elem["span"] == {"type": "template", "subtype": "django"}:
                 assert elem["samples"]["span.self_time.count"]["value"] == 1
-                assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"] < 10000
+                assert 5000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 asserts += 1
     assert asserts == 4
@@ -145,7 +145,7 @@ def test_nested_spans(elasticapm_client):
     )
     transaction_data = list(transaction_metrics.collect())
     assert len(transaction_data) == 1
-    assert 25000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
+    assert 25000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"]
 
 
 def test_explicit_app_span(elasticapm_client):
@@ -191,7 +191,7 @@ def test_disable_breakdowns(elasticapm_client):
     # transaction duration should still be captured
     data = list(transaction_metrics.collect())
     assert len(data) == 1
-    assert 5000 < data[0]["samples"]["transaction.duration.sum.us"]["value"] < 10000
+    assert 5000 < data[0]["samples"]["transaction.duration.sum.us"]["value"]
 
 
 def test_metrics_reset_after_collect(elasticapm_client):
@@ -236,12 +236,12 @@ def test_multiple_transactions(elasticapm_client):
         elif "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
-                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
             elif elem["span"] == {"type": "code", "subtype": "custom"}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
-                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"] < 15000
+                assert 10000 < elem["samples"]["span.self_time.sum.us"]["value"]
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
     assert asserts == 3
@@ -251,5 +251,5 @@ def test_multiple_transactions(elasticapm_client):
     )
     transaction_data = list(transaction_metrics.collect())
     assert len(transaction_data) == 1
-    assert 20000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
+    assert 20000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"]
     assert transaction_data[0]["samples"]["transaction.duration.count"]["value"] == 2
