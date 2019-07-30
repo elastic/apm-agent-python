@@ -148,6 +148,28 @@ def test_nested_spans(elasticapm_client):
     assert 25000 < transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] < 32000
 
 
+def test_explicit_app_span(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("request")
+    with elasticapm.capture_span("test", span_type="app"):
+        pass
+    elasticapm_client.end_transaction("test", "OK")
+    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    data = list(breakdown.collect())
+    assert len(data) == 2
+    asserts = 0
+    for elem in data:
+        if "transaction.breakdown.count" in elem["samples"]:
+            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
+            assert elem["transaction"] == {"name": "test", "type": "request"}
+            asserts += 1
+        elif "span.self_time.sum.us" in elem["samples"]:
+            if elem["span"] == {"type": "app", "subtype": ""}:
+                assert elem["transaction"] == {"name": "test", "type": "request"}
+                assert elem["samples"]["span.self_time.count"]["value"] == 2
+                asserts += 1
+    assert asserts == 2
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"breakdown_metrics": False}], indirect=True)
 def test_disable_breakdowns(elasticapm_client):
     with pytest.raises(LookupError):

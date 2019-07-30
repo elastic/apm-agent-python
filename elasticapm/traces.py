@@ -157,10 +157,11 @@ class Transaction(BaseSpan):
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
                     "span.type": span_type,
-                    "span.subtype": span_subtype,
                     "transaction.name": self.name,
                     "transaction.type": self.transaction_type,
                 }
+                if span_subtype:
+                    labels["span.subtype"] = span_subtype
                 self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).update(*timer.val)
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
