@@ -341,8 +341,8 @@ class Client(object):
         else:
             context = transaction_context
         event_data["context"] = context
-        if transaction and transaction.tags:
-            context["tags"] = deepcopy(transaction.tags)
+        if transaction and transaction.labels:
+            context["tags"] = deepcopy(transaction.labels)
 
         # if '.' not in event_type:
         # Assume it's a builtin

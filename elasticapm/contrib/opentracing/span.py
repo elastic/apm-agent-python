@@ -101,7 +101,7 @@ class OTSpan(OTSpanBase):
             elif key == tags.COMPONENT:
                 traces.set_context({"framework": {"name": value}}, "service")
             else:
-                self.elastic_apm_ref.tag(**{key: value})
+                self.elastic_apm_ref.label(**{key: value})
         else:
             if key.startswith("db."):
                 span_context = self.elastic_apm_ref.context or {}
@@ -115,12 +115,12 @@ class OTSpan(OTSpanBase):
                     span_context["db"]["type"] = value
                     self.elastic_apm_ref.type = "db." + value
                 else:
-                    self.elastic_apm_ref.tag(**{key: value})
+                    self.elastic_apm_ref.label(**{key: value})
                 self.elastic_apm_ref.context = span_context
             elif key == tags.SPAN_KIND:
                 self.elastic_apm_ref.type = value
             else:
-                self.elastic_apm_ref.tag(**{key: value})
+                self.elastic_apm_ref.label(**{key: value})
         return self
 
     def finish(self, finish_time=None):

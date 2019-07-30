@@ -263,7 +263,7 @@ import elasticapm
 def coffee_maker(strength):
     fetch_water()
 
-    with elasticapm.capture_span('near-to-machine', tags={"type": "arabica"}):
+    with elasticapm.capture_span('near-to-machine', labels={"type": "arabica"}):
         insert_filter()
         for i in range(strengh):
             pour_coffee()
@@ -277,17 +277,17 @@ def coffee_maker(strength):
  * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`. Alternatively, type, subtype and action can be provided as three separate arguments, see `span_subtype` and `span_action`.
  * `skip_frames`: The number of stack frames to skip when collecting stack traces. Defaults to `0`.
  * `leaf`: if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
- * `tags`: a dictionary of tags. Both keys and values must be strings. Defaults to `None`.
+ * `labels`: a dictionary of labels. Keys must be strings, values can be strings, booleans, or numerical (`int`, `float`, `decimal.Decimal`). Defaults to `None`.
  * `span_subtype`: subtype of the span, e.g. name of the database. Defaults to `None`.
  * `span_action`: action of the span, e.g. `query`. Defaults to `None`
 
 [float]
-[[api-tag]]
-==== `elasticapm.tag()`
+[[api-label]]
+==== `elasticapm.label()`
 
-Attach tags to the the current transaction and errors.
+Attach labels to the the current transaction and errors.
 
-TIP: Before using custom tags, ensure you understand the different types of
+TIP: Before using custom labels, ensure you understand the different types of
 {apm-overview-ref-v}/metadata.html[metadata] that are available.
 
 Example:
@@ -296,16 +296,16 @@ Example:
 ----
 import elasticapm
 
-elasticapm.tag(ecommerce=True, dollar_value=47.12)
+elasticapm.label(ecommerce=True, dollar_value=47.12)
 ----
 
-Errors that happen after this call will also have the tags attached to them.
-You can call this function multiple times, new tags will be merged with existing tags,
+Errors that happen after this call will also have the labels attached to them.
+You can call this function multiple times, new labels will be merged with existing labels,
 following the `update()` semantics of Python dictionaries.
 
-The value is converted to a string.
-`.`, `*`, and `"` are invalid characters for tag names and will be replaced with `_`.
+Keys must be strings, values can be strings, booleans, or numerical (`int`, `float`, `decimal.Decimal`)
+`.`, `*`, and `"` are invalid characters for label names and will be replaced with `_`.
 
-WARNING: Avoid defining too many user-specified tags.
+WARNING: Avoid defining too many user-specified labels.
 Defining too many unique fields in an index is a condition that can lead to a
 {ref}/mapping.html#mapping-limit-settings[mapping explosion].
