@@ -85,3 +85,8 @@ def test_no_reset_if_version_matches(mock_get_config, elasticapm_client):
     update_config(elasticapm_client)
     assert elasticapm_client.config.changed
     assert elasticapm_client.config.config_version == 2
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"central_config": False}], indirect=True)
+def test_disable_central_config(elasticapm_client):
+    assert elasticapm_client._config_updater is None

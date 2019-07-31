@@ -172,10 +172,13 @@ class Client(object):
         if self.config.breakdown_metrics:
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         compat.atexit_register(self.close)
-        self._config_updater = IntervalTimer(
-            update_config, 3, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
-        )
-        self._config_updater.start()
+        if self.config.central_config:
+            self._config_updater = IntervalTimer(
+                update_config, 1, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
+            )
+            self._config_updater.start()
+        else:
+            self._config_updater = None
 
     def get_handler(self, name):
         return import_string(name)

@@ -277,6 +277,7 @@ class Config(_ConfigBase):
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
+    central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
