@@ -7,6 +7,23 @@ Upgrades that involve a major version bump often come with some backwards incomp
 We highly recommend to always pin the version of `elastic-apm` in your `requirements.txt` or `Pipfile`.
 This avoids automatic upgrades to potentially incompatible versions.
 
+[[upgrading-5.x]]
+=== Upgrading to version 5 of the agent
+
+==== APM Server 7.3 required for some features
+
+APM Server and Kibana 7.3 introduced support for collecting breakdown metrics, and central configuration of APM agents.
+To use these features, please update the Python agent to 5.0+ and APM Server / Kibana to 7.3+
+
+==== Tags renamed to Labels
+
+To better align with other parts of the Elastic Stack and the {ecs-ref}/index.html[Elastic Common Schema],
+we renamed "tags" to "labels", and introduced limited support for typed labels.
+While tag values were only allowed to be strings, label values can be strings, booleans, or numerical.
+
+To benefit from this change, ensure that you run at least *APM Server 6.7*, and use `elasticapm.label()` instead of `elasticapm.tag()`.
+The `tag()` API will continue to work as before, but emit a `DeprecationWarning`. It will be removed in 6.0 of the agent. 
+
 [[upgrading-4.x]]
 === Upgrading to version 4 of the agent
 

@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...master)
+## v5.0.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...v5.0.0)
 ### Breaking changes
 
  * implemented type/subtype/action hierachy for spans. Ensure that you run at least APM Server 6.6 (#377)
