@@ -31,6 +31,7 @@
 import decimal
 
 EVENTS_API_PATH = "intake/v2/events"
+AGENT_CONFIG_PATH = "config/v1/agents"
 
 TRACE_CONTEXT_VERSION = 0
 TRACEPARENT_HEADER_NAME = "elastic-apm-traceparent"

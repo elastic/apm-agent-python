@@ -259,3 +259,11 @@ def test_file_is_readable_validator_all_good(tmpdir):
     p.write("")
     validator = FileIsReadableValidator()
     assert validator(p.strpath, "path") == p.strpath
+
+
+def test_validate_catches_type_errors():
+    class MyConfig(_ConfigBase):
+        an_int = _ConfigValue("anint", type=int)
+
+    c = MyConfig({"anint": "x"})
+    assert "invalid literal" in c.errors["anint"]

@@ -649,6 +649,22 @@ NOTE: this setting only disables the *sending* of the given metrics, not collect
 Enable/disable the tracking and collection of breakdown metrics.
 By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent. 
 
+NOTE: This feature requires APM Server and Kibana >= 7.3.
+
+[float]
+[[config-central_config]]
+==== `central_config`
+|============
+| Environment                       | Django/Flask        | Default
+| `ELASTIC_APM_CENTRAL_CONFIG`      | `CENTRAL_CONFIG` | `True`
+|============
+
+When enabled, the agent will make periodic requests to the APM Server to fetch updated configuration.
+
+See {kibana-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
+
+NOTE: This feature requires APM Server and Kibana >= 7.3.
+
 [float]
 [[config-django-specific]]
 === Django-specific configuration

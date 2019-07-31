@@ -33,10 +33,13 @@ import logging
 import os
 import re
 import socket
+import threading
 
 from elasticapm.utils import compat, starmatch_to_regex
 
 __all__ = ("setup_logging", "Config")
+
+logger = logging.getLogger("elasticapm.conf")
 
 
 class ConfigurationError(ValueError):
@@ -64,8 +67,6 @@ class _ConfigValue(object):
 
     def __set__(self, instance, value):
         value = self._validate(instance, value)
-        if value is not None:
-            value = self.type(value)
         instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
@@ -76,6 +77,11 @@ class _ConfigValue(object):
         if self.validators and value is not None:
             for validator in self.validators:
                 value = validator(value, self.dict_key)
+        if self.type and value is not None:
+            try:
+                value = self.type(value)
+            except ValueError as e:
+                raise ConfigurationError("{}: {}".format(self.dict_key, compat.text_type(e)), self.dict_key)
         instance._errors.pop(self.dict_key, None)
         return value
 
@@ -183,6 +189,9 @@ class _ConfigBase(object):
     def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
         self._values = {}
         self._errors = {}
+        self.update(config_dict, env_dict, inline_dict)
+
+    def update(self, config_dict=None, env_dict=None, inline_dict=None):
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
@@ -208,6 +217,14 @@ class _ConfigBase(object):
                     setattr(self, field, new_value)
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
+
+    @property
+    def values(self):
+        return self._values
+
+    @values.setter
+    def values(self, values):
+        self._values = values
 
     @property
     def errors(self):
@@ -263,6 +280,7 @@ class Config(_ConfigBase):
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
+    central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
@@ -294,6 +312,95 @@ class Config(_ConfigBase):
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
+
+
+class VersionedConfig(object):
+    """
+    A thin layer around Config that provides versioning
+    """
+
+    __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock")
+
+    def __init__(self, config_object, version):
+        """
+        Create a new VersionedConfig with an initial Config object
+        :param config_object: the initial Config object
+        :param version: a version identifier for the configuration
+        """
+        self._config = self._first_config = config_object
+        self._version = self._first_version = version
+        self._lock = threading.Lock()
+
+    def update(self, version, **config):
+        """
+        Update the configuration version
+        :param version: version identifier for the new configuration
+        :param config: a key/value map of new configuration
+        :return: configuration errors, if any
+        """
+        new_config = Config()
+        new_config.values = self._config.values.copy()
+
+        # pass an empty env dict to ensure the environment doesn't get precedence
+        new_config.update(inline_dict=config, env_dict={})
+        if not new_config.errors:
+            with self._lock:
+                self._version = version
+                self._config = new_config
+        else:
+            return new_config.errors
+
+    def reset(self):
+        """
+        Reset state to the original configuration
+        """
+        with self._lock:
+            self._version = self._first_version
+            self._config = self._first_config
+
+    @property
+    def changed(self):
+        return self._config != self._first_config
+
+    def __getattr__(self, item):
+        return getattr(self._config, item)
+
+    def __setattr__(self, name, value):
+        if name not in self.__slots__:
+            setattr(self._config, name, value)
+        else:
+            super(VersionedConfig, self).__setattr__(name, value)
+
+    @property
+    def config_version(self):
+        return self._version
+
+
+def update_config(agent):
+    logger.debug("Checking for new config...")
+    transport = agent._transport
+    keys = {"service": {"name": agent.config.service_name}}
+    if agent.config.environment:
+        keys["service"]["environment"] = agent.config.environment
+    new_version, new_config, next_run = transport.get_config(agent.config.config_version, keys)
+    if new_version and new_config:
+        errors = agent.config.update(new_version, **new_config)
+        if errors:
+            logger.error("Error applying new configuration: %s", repr(errors))
+        else:
+            logger.info(
+                "Applied new configuration: %s",
+                "; ".join(
+                    "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
+                ),
+            )
+    elif new_version == agent.config.config_version:
+        logger.debug("Remote config unchanged")
+    elif not new_config and agent.config.changed:
+        logger.debug("Remote config disappeared, resetting to original")
+        agent.config.reset()
+
+    return next_run
 
 
 def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):

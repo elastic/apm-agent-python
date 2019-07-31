@@ -33,6 +33,7 @@
 import hashlib
 import logging
 import os
+import re
 import ssl
 
 import certifi
@@ -41,7 +42,7 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http_base import AsyncHTTPTransportBase, HTTPTransportBase
-from elasticapm.utils import compat, read_pem_file
+from elasticapm.utils import compat, json_encoder, read_pem_file
 
 logger = logging.getLogger("elasticapm.transport.http")
 
@@ -102,6 +103,35 @@ class Transport(HTTPTransportBase):
         finally:
             if response:
                 response.close()
+
+    def get_config(self, current_version=None, keys=None):
+        url = self._config_url
+        data = json_encoder.dumps(keys).encode("utf-8")
+        headers = self._headers.copy()
+        max_age = 300
+        if current_version:
+            headers["If-None-Match"] = current_version
+        try:
+            response = self.http.urlopen(
+                "POST", url, body=data, headers=headers, timeout=self._timeout, preload_content=False
+            )
+        except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
+            logger.debug("HTTP error while fetching remote config: %s", compat.text_type(e))
+            return current_version, None, max_age
+        body = response.read()
+        if "Cache-Control" in response.headers:
+            try:
+                max_age = int(next(re.finditer(r"max-age=(\d+)", response.headers["Cache-Control"])).groups()[0])
+            except StopIteration:
+                logger.debug("Could not parse Cache-Control header: %s", response["Cache-Control"])
+        if response.status == 304:
+            # config is unchanged, return
+            logger.debug("Configuration unchanged")
+            return current_version, None, max_age
+        elif response.status >= 400:
+            return None, None, max_age
+
+        return response.headers.get("Etag"), json_encoder.loads(body.decode("utf-8")), max_age
 
     @property
     def cert_fingerprint(self):

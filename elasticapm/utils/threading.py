@@ -41,7 +41,20 @@ class IntervalTimer(threading.Thread):
     When run, it will wait `interval` seconds until the first execution.
     """
 
-    def __init__(self, function, interval, name=None, args=(), kwargs=None, daemon=None):
+    def __init__(
+        self, function, interval, name=None, args=(), kwargs=None, daemon=None, evaluate_function_interval=False
+    ):
+        """
+
+        :param function: the function to run
+        :param interval: the interval in-between invocations of the function
+        :param name: name of the thread
+        :param args: arguments to call the function with
+        :param kwargs: keyword arguments to call the function with
+        :param daemon: should the thread run as a daemon
+        :param evaluate_function_interval: if set to True, and the function returns a number,
+               it will be used as the next interval
+        """
         super(IntervalTimer, self).__init__(name=name)
         self.daemon = daemon
         self._args = args
@@ -49,11 +62,13 @@ class IntervalTimer(threading.Thread):
         self._function = function
         self._interval = interval
         self._interval_done = threading.Event()
+        self._evaluate_function_interval = evaluate_function_interval
 
     def run(self):
         execution_time = 0
+        interval_override = None
         while True:
-            real_interval = self._interval - execution_time
+            real_interval = (interval_override if interval_override is not None else self._interval) - execution_time
             interval_completed = True
             if real_interval:
                 interval_completed = not self._interval_done.wait(real_interval)
@@ -61,7 +76,11 @@ class IntervalTimer(threading.Thread):
                 # we've been cancelled, time to go home
                 return
             start = default_timer()
-            self._function(*self._args, **self._kwargs)
+            rval = self._function(*self._args, **self._kwargs)
+            if self._evaluate_function_interval and isinstance(rval, (int, float)):
+                interval_override = rval
+            else:
+                interval_override = None
             execution_time = default_timer() - start
 
     def cancel(self):

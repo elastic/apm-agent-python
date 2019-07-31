@@ -208,6 +208,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("metrics_interval", "0ms")
+    client_config.setdefault("central_config", "false")
     client = Client(**client_config)
     client.httpserver = validating_httpserver
     yield client
@@ -226,6 +227,9 @@ class DummyTransport(HTTPTransportBase):
 
     def _start_event_processor(self):
         pass
+
+    def get_config(self, current_version=None, keys=None):
+        return False, None, 30
 
 
 class TempStoreClient(Client):
