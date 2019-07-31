@@ -638,6 +638,16 @@ as well as the "total system memory" metric, you would set `disable_metrics` to:
 
 NOTE: this setting only disables the *sending* of the given metrics, not collection.
 
+[float]
+[[config-breakdown_metrics]]
+==== `breakdown_metrics`
+|============
+| Environment                       | Django/Flask        | Default
+| `ELASTIC_APM_BREAKDOWN_METRICS`   | `BREAKDOWN_METRICS` | `True`
+|============
+
+Enable/disable the tracking and collection of breakdown metrics.
+By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent. 
 
 [float]
 [[config-django-specific]]
