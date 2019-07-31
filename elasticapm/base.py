@@ -42,7 +42,7 @@ import warnings
 from copy import deepcopy
 
 import elasticapm
-from elasticapm.conf import Config, ConfigVersion, constants, update_config
+from elasticapm.conf import Config, VersionedConfig, constants, update_config
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
@@ -101,7 +101,7 @@ class Client(object):
             for msg in config.errors.values():
                 self.error_logger.error(msg)
             config.disable_send = True
-        self.config = ConfigVersion(config, version=None)
+        self.config = VersionedConfig(config, version=None)
 
         headers = {
             "Content-Type": "application/x-ndjson",

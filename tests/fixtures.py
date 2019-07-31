@@ -227,6 +227,9 @@ class DummyTransport(HTTPTransportBase):
     def _start_event_processor(self):
         pass
 
+    def get_config(self, current_version=None, keys=None):
+        return False, None, 30
+
 
 class TempStoreClient(Client):
     def __init__(self, **inline):

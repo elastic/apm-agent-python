@@ -116,9 +116,9 @@ class Transport(HTTPTransportBase):
             response = self.http.urlopen(
                 "POST", url, body=data, headers=headers, timeout=self._timeout, preload_content=False
             )
-        except Exception:
-            # TODO: error handling
-            return (None, None, max_age)
+        except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
+            logger.debug("HTTP error while fetching remote config: %s", compat.text_type(e))
+            return current_version, None, max_age
         body = response.read()
         if "Cache-Control" in response.headers:
             try:
@@ -127,10 +127,10 @@ class Transport(HTTPTransportBase):
                 logger.debug("Could not parse Cache-Control header: %s", response["Cache-Control"])
         if response.status == 304:
             # config is unchanged, return
-            logger.info(304)
-            return (None, None, max_age)
+            logger.debug("Configuration unchanged")
+            return current_version, None, max_age
         elif response.status >= 400:
-            return (None, None, max_age)
+            return None, None, max_age
 
         return response.headers.get("Etag"), json_encoder.loads(body), max_age
 

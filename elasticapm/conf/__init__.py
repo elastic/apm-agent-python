@@ -33,6 +33,7 @@ import logging
 import os
 import re
 import socket
+import threading
 
 from elasticapm.utils import compat, starmatch_to_regex
 
@@ -309,35 +310,67 @@ class Config(_ConfigBase):
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
 
 
-class ConfigVersion(object):
+class VersionedConfig(object):
     """
     A thin layer around Config that provides versioning
     """
 
-    __slots__ = ("_config", "_version")
+    __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock")
 
     def __init__(self, config_object, version):
-        self._config = config_object
-        self._version = version
+        """
+        Create a new VersionedConfig with an initial Config object
+        :param config_object: the initial Config object
+        :param version: a version identifier for the configuration
+        """
+        self._config = self._first_config = config_object
+        self._version = self._first_version = version
+        self._lock = threading.Lock()
 
     def update(self, version, **config):
+        """
+        Update the configuration version
+        :param version: version identifier for the new configuration
+        :param config: a key/value map of new configuration
+        :return: configuration errors, if any
+        """
         new_config = Config()
-        new_config.values = self._config.values
-        new_config.update(inline_dict=config)
+        new_config.values = self._config.values.copy()
+        logger.debug("New config: " + ", ".join("%s->%s" % (k, v) for k, v in config.items()))
+
+        # pass an empty env dict to ensure the environment doesn't get precedence
+        new_config.update(inline_dict=config, env_dict={})
+        logger.debug("New values: " + ", ".join("%s->%s" % (k, v) for k, v in new_config._values.items()))
         if not new_config.errors:
-            self._version = version
-            self._config = new_config
+            with self._lock:
+                self._version = version
+                self._config = new_config
         else:
             return new_config.errors
 
+    def reset(self):
+        """
+        Reset state to the original configuration
+        """
+        with self._lock:
+            self._version = self._first_version
+            self._config = self._first_config
+
+    @property
+    def changed(self):
+        return self._config != self._first_config
+
     def __getattr__(self, item):
-        return getattr(self._config, item)
+        d = getattr(self._config, item)
+        if item == "transaction_sample_rate":
+            logger.info("Accessing %s of version %s (id: %s), value %s", item, self._version, id(self._config), d)
+        return d
 
     def __setattr__(self, name, value):
         if name not in self.__slots__:
             setattr(self._config, name, value)
         else:
-            super(ConfigVersion, self).__setattr__(name, value)
+            super(VersionedConfig, self).__setattr__(name, value)
 
     @property
     def config_version(self):
@@ -345,7 +378,7 @@ class ConfigVersion(object):
 
 
 def update_config(agent):
-    logger.info("Checking for new config")
+    logger.debug("Checking for new config...")
     transport = agent._transport
     keys = {"service": {"name": agent.config.service_name}}
     if agent.config.environment:
@@ -362,6 +395,12 @@ def update_config(agent):
                     "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
                 ),
             )
+    elif new_version == agent.config.config_version:
+        logger.debug("Remote config unchanged")
+    elif not new_config and agent.config.changed:
+        logger.debug("Remote config disappeared, resetting to original")
+        agent.config.reset()
+
     return next_run
 
 
