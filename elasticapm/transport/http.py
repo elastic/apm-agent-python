@@ -106,7 +106,6 @@ class Transport(HTTPTransportBase):
 
     def get_config(self, current_version=None, keys=None):
         url = self._config_url
-        logger.info("%s: %r", url, keys)
         data = json_encoder.dumps(keys).encode("utf-8")
         headers = self._headers.copy()
         max_age = 300
@@ -132,7 +131,7 @@ class Transport(HTTPTransportBase):
         elif response.status >= 400:
             return None, None, max_age
 
-        return response.headers.get("Etag"), json_encoder.loads(body), max_age
+        return response.headers.get("Etag"), json_encoder.loads(body.decode("utf-8")), max_age
 
     @property
     def cert_fingerprint(self):
