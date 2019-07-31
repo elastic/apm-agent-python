@@ -30,6 +30,7 @@
 
 
 import datetime
+import decimal
 import uuid
 
 try:
@@ -45,6 +46,7 @@ class BetterJSONEncoder(json.JSONEncoder):
         datetime.datetime: lambda obj: obj.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         uuid.UUID: lambda obj: obj.hex,
         bytes: lambda obj: obj.decode("utf-8", errors="replace"),
+        decimal.Decimal: lambda obj: float(obj),
     }
 
     def default(self, obj):

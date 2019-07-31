@@ -35,6 +35,7 @@ import re
 import threading
 import time
 import timeit
+import warnings
 from collections import defaultdict
 
 from elasticapm.conf import constants
@@ -42,9 +43,10 @@ from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
-__all__ = ("capture_span", "tag", "set_transaction_name", "set_custom_context", "set_user_context")
+__all__ = ("capture_span", "tag", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
 error_logger = logging.getLogger("elasticapm.errors")
 logger = logging.getLogger("elasticapm.traces")
@@ -86,11 +88,11 @@ class ChildDuration(object):
 
 
 class BaseSpan(object):
-    def __init__(self, tags=None):
+    def __init__(self, labels=None):
         self._child_durations = ChildDuration(self)
-        self.tags = {}
-        if tags:
-            self.tag(**tags)
+        self.labels = {}
+        if labels:
+            self.label(**labels)
 
     def child_started(self, timestamp):
         self._child_durations.start(timestamp)
@@ -101,16 +103,39 @@ class BaseSpan(object):
     def end(self, skip_frames=0):
         raise NotImplementedError()
 
+    def label(self, **labels):
+        """
+        Label this span with one or multiple key/value labels. Keys should be strings, values can be strings, booleans,
+        or numerical values (int, float, Decimal)
+
+            span_obj.label(key1="value1", key2=True, key3=42)
+
+        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
+
+        :param labels: key/value pairs of labels
+        :return: None
+        """
+        for key, value in compat.iteritems(labels):
+            if not isinstance(value, constants.TAG_TYPES):
+                value = encoding.keyword_field(compat.text_type(value))
+            self.labels[TAG_RE.sub("_", compat.text_type(key))] = value
+
+    @deprecated("transaction/span.label()")
     def tag(self, **tags):
         """
+        This method is deprecated, please use "label()" instead.
+
         Tag this span with one or multiple key/value tags. Both the values should be strings
 
             span_obj.tag(key1="value1", key2="value2")
 
         Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
+
+        :param tags: key/value pairs of tags
+        :return: None
         """
         for key in tags.keys():
-            self.tags[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
+            self.labels[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
 
 class Transaction(BaseSpan):
@@ -178,7 +203,7 @@ class Transaction(BaseSpan):
         span_type,
         context=None,
         leaf=False,
-        tags=None,
+        labels=None,
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
@@ -198,7 +223,7 @@ class Transaction(BaseSpan):
                 span_type=span_type or "code.custom",
                 context=context,
                 leaf=leaf,
-                tags=tags,
+                labels=labels,
                 parent=parent_span,
                 parent_span_id=parent_span_id,
                 span_subtype=span_subtype,
@@ -209,14 +234,14 @@ class Transaction(BaseSpan):
         execution_context.set_span(span)
         return span
 
-    def begin_span(self, name, span_type, context=None, leaf=False, tags=None, span_subtype=None, span_action=None):
+    def begin_span(self, name, span_type, context=None, leaf=False, labels=None, span_subtype=None, span_action=None):
         """
         Begin a new span
         :param name: name of the span
         :param span_type: type of the span
         :param context: a context dict
         :param leaf: True if this is a leaf span
-        :param tags: a flat string/string dict of tags
+        :param labels: a flat string/string dict of labels
         :param span_subtype: sub type of the span, e.g. "postgresql"
         :param span_action: action of the span , e.g. "query"
         :return: the Span object
@@ -226,7 +251,7 @@ class Transaction(BaseSpan):
             span_type,
             context=context,
             leaf=leaf,
-            tags=tags,
+            labels=labels,
             parent_span_id=None,
             span_subtype=span_subtype,
             span_action=span_action,
@@ -257,7 +282,7 @@ class Transaction(BaseSpan):
         return self.trace_parent.span_id
 
     def to_dict(self):
-        self.context["tags"] = self.tags
+        self.context["tags"] = self.labels
         result = {
             "id": self.id,
             "trace_id": self.trace_parent.trace_id,
@@ -301,7 +326,7 @@ class Span(BaseSpan):
         "parent",
         "parent_span_id",
         "frames",
-        "tags",
+        "labels",
         "_child_durations",
     )
 
@@ -312,7 +337,7 @@ class Span(BaseSpan):
         span_type,
         context=None,
         leaf=False,
-        tags=None,
+        labels=None,
         parent=None,
         parent_span_id=None,
         span_subtype=None,
@@ -326,7 +351,7 @@ class Span(BaseSpan):
         :param span_type: type of the span, e.g. db
         :param context: context dictionary
         :param leaf: is this span a leaf span?
-        :param tags: a dict of tags
+        :param labels: a dict of labels
         :param parent_span_id: override of the span ID
         :param span_subtype: sub type of the span, e.g. mysql
         :param span_action: sub type of the span, e.g. query
@@ -359,7 +384,7 @@ class Span(BaseSpan):
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
             p.child_started(self.start_time)
-        super(Span, self).__init__(tags=tags)
+        super(Span, self).__init__(labels=labels)
 
     def to_dict(self):
         result = {
@@ -375,10 +400,10 @@ class Span(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
         }
-        if self.tags:
+        if self.labels:
             if self.context is None:
                 self.context = {}
-            self.context["tags"] = self.tags
+            self.context["tags"] = self.labels
         if self.context:
             result["context"] = self.context
         if self.frames:
@@ -491,7 +516,7 @@ class Tracer(object):
 
 
 class capture_span(object):
-    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "tags")
+    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "labels")
 
     def __init__(
         self,
@@ -501,6 +526,7 @@ class capture_span(object):
         skip_frames=0,
         leaf=False,
         tags=None,
+        labels=None,
         span_subtype=None,
         span_action=None,
     ):
@@ -511,7 +537,15 @@ class capture_span(object):
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
-        self.tags = tags
+        if tags and not labels:
+            warnings.warn(
+                'The tags argument to capture_span is deprecated, use "labels" instead',
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            labels = tags
+
+        self.labels = labels
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -531,7 +565,7 @@ class capture_span(object):
                 self.type,
                 context=self.extra,
                 leaf=self.leaf,
-                tags=self.tags,
+                labels=self.labels,
                 span_subtype=self.subtype,
                 span_action=self.action,
             )
@@ -545,9 +579,24 @@ class capture_span(object):
                 logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
 
+def label(**labels):
+    """
+    Labels current transaction. Keys should be strings, values can be strings, booleans,
+    or numerical values (int, float, Decimal)
+
+    :param labels: key/value map of labels
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        error_logger.warning("Ignored labels %s. No transaction currently active.", ", ".join(labels.keys()))
+    else:
+        transaction.label(**labels)
+
+
+@deprecated("elasticapm.label")
 def tag(**tags):
     """
-    Tags current transaction. Both key and value of the tag should be strings.
+    Tags current transaction. Both key and value of the label should be strings.
     """
     transaction = execution_context.get_transaction()
     if not transaction:

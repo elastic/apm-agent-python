@@ -5,6 +5,7 @@
 ### Breaking changes
 
  * implemented type/subtype/action hierachy for spans. Ensure that you run at least APM Server 6.6 (#377)
+ * renamed tags to labels and changed API. The old API remains for backwards compatibility until 6.0 of the agent (#538)
 
 ## Other changes
 

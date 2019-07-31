@@ -28,6 +28,8 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import decimal
+
 EVENTS_API_PATH = "intake/v2/events"
 
 TRACE_CONTEXT_VERSION = 0
@@ -45,3 +47,11 @@ ERROR = "error"
 TRANSACTION = "transaction"
 SPAN = "span"
 METRICSET = "metricset"
+
+
+try:
+    # Python 2
+    TAG_TYPES = (bool, int, long, float, decimal.Decimal)
+except NameError:
+    # Python 3
+    TAG_TYPES = (bool, int, float, decimal.Decimal)
