@@ -719,7 +719,6 @@ def test_transaction_max_spans(elasticapm_client):
     spans = elasticapm_client.events[SPAN]
     assert all(span["transaction_id"] == transaction["id"] for span in spans)
 
-    assert transaction_obj.tracer.max_spans == 5
     assert transaction_obj.dropped_spans == 10
     assert len(spans) == 5
     for span in spans:

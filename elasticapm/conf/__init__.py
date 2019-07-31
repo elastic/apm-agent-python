@@ -67,8 +67,6 @@ class _ConfigValue(object):
 
     def __set__(self, instance, value):
         value = self._validate(instance, value)
-        if value is not None:
-            value = self.type(value)
         instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
@@ -79,6 +77,11 @@ class _ConfigValue(object):
         if self.validators and value is not None:
             for validator in self.validators:
                 value = validator(value, self.dict_key)
+        if self.type and value is not None:
+            try:
+                value = self.type(value)
+            except ValueError as e:
+                raise ConfigurationError("{}: {}".format(self.dict_key, compat.text_type(e)), self.dict_key)
         instance._errors.pop(self.dict_key, None)
         return value
 
@@ -337,11 +340,9 @@ class VersionedConfig(object):
         """
         new_config = Config()
         new_config.values = self._config.values.copy()
-        logger.debug("New config: " + ", ".join("%s->%s" % (k, v) for k, v in config.items()))
 
         # pass an empty env dict to ensure the environment doesn't get precedence
         new_config.update(inline_dict=config, env_dict={})
-        logger.debug("New values: " + ", ".join("%s->%s" % (k, v) for k, v in new_config._values.items()))
         if not new_config.errors:
             with self._lock:
                 self._version = version
@@ -362,10 +363,7 @@ class VersionedConfig(object):
         return self._config != self._first_config
 
     def __getattr__(self, item):
-        d = getattr(self._config, item)
-        if item == "transaction_sample_rate":
-            logger.info("Accessing %s of version %s (id: %s), value %s", item, self._version, id(self._config), d)
-        return d
+        return getattr(self._config, item)
 
     def __setattr__(self, name, value):
         if name not in self.__slots__:

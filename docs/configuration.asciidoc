@@ -661,7 +661,7 @@ NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 When enabled, the agent will make periodic requests to the APM Server to fetch updated configuration.
 
-See {kibana-ref}/agent-configuration.html#apm-agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
+See {kibana-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 

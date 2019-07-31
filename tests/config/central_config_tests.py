@@ -90,3 +90,13 @@ def test_no_reset_if_version_matches(mock_get_config, elasticapm_client):
 @pytest.mark.parametrize("elasticapm_client", [{"central_config": False}], indirect=True)
 def test_disable_central_config(elasticapm_client):
     assert elasticapm_client._config_updater is None
+
+
+@mock.patch("tests.fixtures.DummyTransport.get_config")
+def test_erroneous_config_is_ignored(mock_get_config, elasticapm_client):
+    assert elasticapm_client.config.transaction_sample_rate == 1.0
+    assert elasticapm_client.config.config_version is None
+    mock_get_config.return_value = 2, {"transaction_sample_rate": "x"}, 30
+    update_config(elasticapm_client)
+    assert elasticapm_client.config.transaction_sample_rate == 1.0
+    assert elasticapm_client.config.config_version == None
