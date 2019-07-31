@@ -41,12 +41,11 @@ from tests.fixtures import TempStoreClient
 
 
 class DummyMetricSet(MetricsSet):
-    def collect(self):
+    def before_collect(self):
         self.gauge("a.b.c.d").val = 0
         self.gauge("a").val = 0
         self.gauge("b").val = 0
         self.gauge("c").val = 0
-        return super(DummyMetricSet, self).collect()
 
 
 def test_metrics_registry():
@@ -75,17 +74,40 @@ def test_disable_metrics(elasticapm_client):
 def test_metrics_counter():
     metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
     metricset.counter("x").inc()
-    data = metricset.collect()
+    data = next(metricset.collect())
     assert data["samples"]["x"]["value"] == 1
     metricset.counter("x").inc(10)
-    data = metricset.collect()
+    data = next(metricset.collect())
     assert data["samples"]["x"]["value"] == 11
     metricset.counter("x").dec(10)
-    data = metricset.collect()
+    data = next(metricset.collect())
     assert data["samples"]["x"]["value"] == 1
     metricset.counter("x").dec()
-    data = metricset.collect()
+    data = next(metricset.collect())
     assert data["samples"]["x"]["value"] == 0
+
+
+def test_metrics_labels():
+    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
+    metricset.counter("x", mylabel="a").inc()
+    metricset.counter("y", mylabel="a").inc()
+    metricset.counter("x", mylabel="b").inc().inc()
+    metricset.counter("x", mylabel="b", myotherlabel="c").inc()
+    metricset.counter("x", mylabel="a").dec()
+    data = list(metricset.collect())
+    asserts = 0
+    for d in data:
+        if d["tags"] == {"mylabel": "a"}:
+            assert d["samples"]["x"]["value"] == 0
+            assert d["samples"]["y"]["value"] == 1
+            asserts += 1
+        elif d["tags"] == {"mylabel": "b"}:
+            assert d["samples"]["x"]["value"] == 2
+            asserts += 1
+        elif d["tags"] == {"mylabel": "b", "myotherlabel": "c"}:
+            assert d["samples"]["x"]["value"] == 1
+            asserts += 1
+    assert asserts == 3
 
 
 def test_metrics_multithreaded():

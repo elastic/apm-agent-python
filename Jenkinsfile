@@ -13,11 +13,14 @@ it is need as field to store the results of the tests.
 pipeline {
   agent any
   environment {
-    BASE_DIR="src/github.com/elastic/apm-agent-python"
+    REPO = 'apm-agent-python'
+    BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
+    GITHUB_CHECK_ITS_NAME = 'Integration Tests'
+    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -34,7 +37,6 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
-    booleanParam(name: 'doc_ci', defaultValue: true, description: 'Enable build docs.')
   }
   stages {
     stage('Initializing'){
@@ -52,28 +54,21 @@ pipeline {
         stage('Checkout') {
           steps {
             deleteDir()
-            gitCheckout(basedir: "${BASE_DIR}")
+            gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
           }
         }
-        /**
-        Build the project from code..
-        */
-        stage('Lint') {
+        stage('Sanity checks') {
           steps {
-            withGithubNotify(context: 'Lint') {
+            withGithubNotify(context: 'Sanity checks', tab: 'tests') {
               deleteDir()
               unstash 'source'
-              dir("${BASE_DIR}"){
-                sh script: """
-                ./tests/scripts/docker/cleanup.sh
-                ./tests/scripts/docker/isort.sh
-                """, label: "isort import sorting"
-                sh script: """
-                ./tests/scripts/docker/cleanup.sh
-                ./tests/scripts/docker/black.sh
-                """, label: "Black code formatting"
-                sh script: './tests/scripts/license_headers_check.sh', label: "Copyright notice"
+              script {
+                docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+                  dir("${BASE_DIR}"){
+                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
+                  }
+                }
               }
             }
           }
@@ -95,9 +90,9 @@ pipeline {
               pythonTasksGen = new PythonParallelTaskGenerator(
                 xKey: 'PYTHON_VERSION',
                 yKey: 'FRAMEWORK',
-                xFile: "./tests/.jenkins_python.yml",
-                yFile: "./tests/.jenkins_framework.yml",
-                exclusionFile: "./tests/.jenkins_exclude.yml",
+                xFile: ".ci/.jenkins_python.yml",
+                yFile: ".ci/.jenkins_framework.yml",
+                exclusionFile: ".ci/.jenkins_exclude.yml",
                 tag: "Python",
                 name: "Python",
                 steps: this
@@ -106,38 +101,6 @@ pipeline {
               parallel(mapPatallelTasks)
             }
           }
-        }
-      }
-    }
-    /**
-    Build the documentation.
-    */
-    stage('Documentation') {
-      agent { label 'docker && linux && immutable' }
-      options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
-      when {
-        beforeAgent true
-        allOf {
-          anyOf {
-            branch 'master'
-            branch "\\d+\\.\\d+"
-            branch "v\\d?"
-            tag "v\\d+\\.\\d+\\.\\d+*"
-            expression { return params.Run_As_Master_Branch }
-          }
-          expression { return params.doc_ci }
-        }
-      }
-      steps {
-        deleteDir()
-        unstash 'source'
-        dir("${BASE_DIR}"){
-          buildDocs(docsDir: "docs", archive: true)
         }
       }
     }
@@ -159,6 +122,28 @@ pipeline {
           }
           stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
         }
+      }
+    }
+    stage('Integration Tests') {
+      agent none
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
+            expression { return !params.Run_As_Master_Branch }
+          }
+        }
+      }
+      steps {
+        log(level: 'INFO', text: 'Launching Async ITs')
+        build(job: env.ITS_PIPELINE, propagate: false, wait: false,
+              parameters: [string(name: 'AGENT_INTEGRATION_TEST', value: 'Python'),
+                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT}"),
+                           string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
+                           string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
+                           string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
+        githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
     stage('Release') {
@@ -202,7 +187,7 @@ pipeline {
     }
   }
   post {
-    always{
+    cleanup {
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -271,14 +256,14 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 1)
           } catch(e){
             saveResult(x, y, 0)
-            error("${label} tests failed : ${e.toString()}\n")
+            steps.error("${label} tests failed : ${e.toString()}\n")
           } finally {
-            steps.junit(allowEmptyResults: false,
+            steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
               testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
             steps.env.PYTHON_VERSION = "${x}"
             steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: 'apm-agent-python',
+            steps.codecov(repo: "${steps.env.REPO}",
               basedir: "${steps.env.BASE_DIR}",
               flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
               secret: "${steps.env.CODECOV_SECRET}")

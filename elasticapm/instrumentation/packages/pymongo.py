@@ -72,7 +72,7 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         cls_name, method_name = method.split(".", 1)
         signature = ".".join([instance.full_name, method_name])
-        with capture_span(signature, "db.mongodb.query", leaf=True):
+        with capture_span(signature, span_type="db", span_subtype="mongodb", span_action="query", leaf=True):
             return wrapped(*args, **kwargs)
 
 
@@ -84,7 +84,7 @@ class PyMongoBulkInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance._BulkOperationBuilder__bulk.collection
         signature = ".".join([collection.full_name, "bulk.execute"])
-        with capture_span(signature, "db.mongodb.query"):
+        with capture_span(signature, span_type="db", span_subtype="mongodb", span_action="query"):
             return wrapped(*args, **kwargs)
 
 
@@ -96,5 +96,5 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance.collection
         signature = ".".join([collection.full_name, "cursor.refresh"])
-        with capture_span(signature, "db.mongodb.query"):
+        with capture_span(signature, span_type="db", span_subtype="mongodb", span_action="query"):
             return wrapped(*args, **kwargs)

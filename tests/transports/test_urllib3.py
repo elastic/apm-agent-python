@@ -34,7 +34,6 @@ import os
 import mock
 import pytest
 import urllib3.poolmanager
-from pytest_localserver.https import DEFAULT_CERTIFICATE
 from urllib3.exceptions import MaxRetryError, TimeoutError
 from urllib3_mock import Responses
 
@@ -172,7 +171,10 @@ def test_ssl_verify_disable(waiting_httpsserver):
 
 def test_ssl_cert_pinning(waiting_httpsserver):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
-    transport = Transport(waiting_httpsserver.url, server_cert=DEFAULT_CERTIFICATE, verify_server_cert=True)
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    transport = Transport(
+        waiting_httpsserver.url, server_cert=os.path.join(cur_dir, "..", "ca/server.pem"), verify_server_cert=True
+    )
     try:
         url = transport.send(compat.b("x"))
         assert url == "https://example.com/foo"

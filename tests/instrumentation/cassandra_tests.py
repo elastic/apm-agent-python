@@ -73,7 +73,9 @@ def test_cassandra_connect(instrument, elasticapm_client, cassandra_cluster):
     transactions = elasticapm_client.events[TRANSACTION]
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
 
-    assert span["type"] == "db.cassandra.connect"
+    assert span["type"] == "db"
+    assert span["subtype"] == "cassandra"
+    assert span["action"] == "connect"
     assert span["duration"] > 0
     assert span["name"] == "Cluster.connect"
 
@@ -84,7 +86,9 @@ def test_select_query_string(instrument, cassandra_session, elasticapm_client):
     elasticapm_client.end_transaction("test")
     transaction = elasticapm_client.events[TRANSACTION][0]
     span = elasticapm_client.spans_for_transaction(transaction)[0]
-    assert span["type"] == "db.cassandra.query"
+    assert span["type"] == "db"
+    assert span["subtype"] == "cassandra"
+    assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
     assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
 
@@ -96,7 +100,9 @@ def test_select_simple_statement(instrument, cassandra_session, elasticapm_clien
     elasticapm_client.end_transaction("test")
     transaction = elasticapm_client.events[TRANSACTION][0]
     span = elasticapm_client.spans_for_transaction(transaction)[0]
-    assert span["type"] == "db.cassandra.query"
+    assert span["type"] == "db"
+    assert span["subtype"] == "cassandra"
+    assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
     assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
 
@@ -108,7 +114,9 @@ def test_select_prepared_statement(instrument, cassandra_session, elasticapm_cli
     elasticapm_client.end_transaction("test")
     transaction = elasticapm_client.events[TRANSACTION][0]
     span = elasticapm_client.spans_for_transaction(transaction)[0]
-    assert span["type"] == "db.cassandra.query"
+    assert span["type"] == "db"
+    assert span["subtype"] == "cassandra"
+    assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
     assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
 

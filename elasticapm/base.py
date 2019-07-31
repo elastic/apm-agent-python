@@ -160,6 +160,7 @@ class Client(object):
             ),
             queue_func=self.queue,
             config=self.config,
+            agent=self,
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
@@ -168,6 +169,8 @@ class Client(object):
         )
         for path in self.config.metrics_sets:
             self._metrics.register(path)
+        if self.config.breakdown_metrics:
+            self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         compat.atexit_register(self.close)
         self._config_updater = IntervalTimer(
             update_config, 3, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
@@ -341,8 +344,8 @@ class Client(object):
         else:
             context = transaction_context
         event_data["context"] = context
-        if transaction and transaction.tags:
-            context["tags"] = deepcopy(transaction.tags)
+        if transaction and transaction.labels:
+            context["tags"] = deepcopy(transaction.labels)
 
         # if '.' not in event_type:
         # Assume it's a builtin

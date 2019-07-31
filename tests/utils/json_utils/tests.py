@@ -33,6 +33,7 @@
 from __future__ import absolute_import
 
 import datetime
+import decimal
 import uuid
 
 from elasticapm.utils import compat
@@ -65,3 +66,8 @@ def test_bytes():
     else:
         res = bytes("foobar", encoding="ascii")
     assert json.dumps(res) == '"foobar"'
+
+
+def test_decimal():
+    res = decimal.Decimal("1.0")
+    assert json.dumps(res) == "1.0"

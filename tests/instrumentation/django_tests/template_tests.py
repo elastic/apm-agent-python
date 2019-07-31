@@ -72,14 +72,16 @@ def test_template_rendering(instrument, django_elasticapm_client, client):
     spans = django_elasticapm_client.spans_for_transaction(transactions[0])
     assert len(spans) == 2, [t["name"] for t in spans]
 
-    kinds = ["code", "template.django"]
+    kinds = ["code", "template"]
     assert set([t["type"] for t in spans]) == set(kinds)
 
     assert spans[0]["type"] == "code"
     assert spans[0]["name"] == "something_expensive"
     assert spans[0]["parent_id"] == spans[1]["id"]
 
-    assert spans[1]["type"] == "template.django"
+    assert spans[1]["type"] == "template"
+    assert spans[1]["subtype"] == "django"
+    assert spans[1]["action"] == "render"
     assert spans[1]["name"] == "list_users.html"
     assert spans[1]["parent_id"] == transactions[0]["id"]
 
@@ -100,9 +102,11 @@ def test_template_rendering_django18_jinja2(instrument, django_elasticapm_client
     spans = django_elasticapm_client.spans_for_transaction(transactions[0])
     assert len(spans) == 1, [t["name"] for t in spans]
 
-    kinds = ["template.jinja2"]
+    kinds = ["template"]
     assert set([t["type"] for t in spans]) == set(kinds)
 
-    assert spans[0]["type"] == "template.jinja2"
+    assert spans[0]["type"] == "template"
+    assert spans[0]["subtype"] == "jinja2"
+    assert spans[0]["action"] == "render"
     assert spans[0]["name"] == "jinja2_template.html"
     assert spans[0]["parent_id"] == transactions[0]["id"]

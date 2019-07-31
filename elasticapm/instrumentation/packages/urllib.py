@@ -78,7 +78,9 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
 
         transaction = execution_context.get_transaction()
 
-        with capture_span(signature, "ext.http.urllib", {"http": {"url": url}}, leaf=True) as span:
+        with capture_span(
+            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
+        ) as span:
             # if urllib has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span
             while isinstance(leaf_span, DroppedSpan):

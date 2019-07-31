@@ -28,31 +28,10 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import decimal
+from __future__ import absolute_import
 
-EVENTS_API_PATH = "intake/v2/events"
-AGENT_CONFIG_PATH = "config/v1/agents"
-
-TRACE_CONTEXT_VERSION = 0
-TRACEPARENT_HEADER_NAME = "elastic-apm-traceparent"
-
-TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
-
-KEYWORD_MAX_LENGTH = 1024
-
-HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
-
-MASK = 8 * "*"
-
-ERROR = "error"
-TRANSACTION = "transaction"
-SPAN = "span"
-METRICSET = "metricset"
+from elasticapm.metrics.base_metrics import SpanBoundMetricSet
 
 
-try:
-    # Python 2
-    TAG_TYPES = (bool, int, long, float, decimal.Decimal)
-except NameError:
-    # Python 3
-    TAG_TYPES = (bool, int, float, decimal.Decimal)
+class BreakdownMetricSet(SpanBoundMetricSet):
+    pass

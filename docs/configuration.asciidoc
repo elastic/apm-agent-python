@@ -134,10 +134,12 @@ Note however that this can have adverse effects on performance.
 The name of the environment this service is deployed in,
 e.g. "production" or "staging".
 
-NOTE: `environment` is currently not supported in the Kibana APM UI.
-This means that data from different environments that share the same
-`<<config-service-name,service name>>` will be shown together in the APM UI.
-For the time being, we recommend to also append the environment name to the service name.
+Environments allow you to easily filter data on a global level in the APM UI.
+It's important to be consistent when naming environments across agents.
+See {kibana-ref}/filters.html#environment-selector[environment selector] in the Kibana UI for more information.
+
+NOTE: This feature is fully supported in the APM UI in Kibana versions >= 7.2.
+You must use the query bar to filter for a specific environment in versions prior to 7.2.
 
 [float]
 [[config-secret-token]]
@@ -499,7 +501,7 @@ WARNING: We recommend to always include the default set of validators if you cus
 
 By default, the agent will sample every transaction (e.g. request to your service).
 To reduce overhead and storage requirements, you can set the sample rate to a value between `0.0` and `1.0`.
-We still record overall time and the result for unsampled transactions, but no context information, tags, or spans.
+We still record overall time and the result for unsampled transactions, but no context information, labels, or spans.
 
 [float]
 [[config-include-paths]]
@@ -636,6 +638,16 @@ as well as the "total system memory" metric, you would set `disable_metrics` to:
 
 NOTE: this setting only disables the *sending* of the given metrics, not collection.
 
+[float]
+[[config-breakdown_metrics]]
+==== `breakdown_metrics`
+|============
+| Environment                       | Django/Flask        | Default
+| `ELASTIC_APM_BREAKDOWN_METRICS`   | `BREAKDOWN_METRICS` | `True`
+|============
+
+Enable/disable the tracking and collection of breakdown metrics.
+By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent. 
 
 [float]
 [[config-django-specific]]

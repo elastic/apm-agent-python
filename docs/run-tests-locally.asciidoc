@@ -1,10 +1,16 @@
 [[run-tests-locally]]
 === Run Tests Locally
 
-To run tests locally you can make use of the docker images also used when running the whole test suite with Jenkins. 
+To run tests locally you can make use of the docker images also used when running the whole test suite with Jenkins.
 Running the full test suite first does some linting and then runs the actual tests with different versions of Python and different web frameworks.
 For a full overview of the test matrix and supported versions have a look at
 https://github.com/elastic/apm-agent-python/blob/master/Jenkinsfile[Jenkins Configuration].
+
+[float]
+[[pre-commit]]
+==== Pre Commit
+We run our git hooks on every commit to automatically point out issues in code. Those issues are also detected within the Jenkins pipeline.
+Please follow the installation steps stated in https://pre-commit.com/#install.
 
 [float]
 [[coder-linter]]
@@ -22,12 +28,22 @@ $ ./tests/scripts/docker/flake8.sh <pip-cache-dir>
 ----
 
 [float]
-[[test-documentation]]
-==== Test Documentation
-We test that the documentation can be generated without errors. You can trigger this check by running: 
+[[coder-formatter]]
+==== Code Formatter
+We test that the code is formatted using `black`. You can trigger this check by running:
+
 [source,bash]
 ----
-$ ./tests/scripts/docker/docs.sh 
+$ ./tests/scripts/docker/black.sh <pip-cache-dir>
+----
+
+[float]
+[[test-documentation]]
+==== Test Documentation
+We test that the documentation can be generated without errors. You can trigger this check by running:
+[source,bash]
+----
+$ ./tests/scripts/docker/docs.sh
 ----
 
 [float]
@@ -41,4 +57,3 @@ $ ./tests/scripts/docker/run_tests.sh python-version framework-version <pip-cach
 ----
 NOTE: The `python-version` must be of format `python:version`, e.g. `python:3.6` or `pypy:2`.
 The `framework` must be of format `framework-version`, e.g. `django-1.10` or `flask-0.12`.
-

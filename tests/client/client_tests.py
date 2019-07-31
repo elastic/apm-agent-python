@@ -137,6 +137,7 @@ def test_docker_kubernetes_system_info_from_environ_overrides_cgroups():
         mock_gethostname.return_value = "foo"
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
+
     assert system_info["kubernetes"] == {
         "pod": {"uid": "podid", "name": "pod"},
         "node": {"name": "node"},
@@ -718,6 +719,7 @@ def test_transaction_max_spans(elasticapm_client):
     spans = elasticapm_client.events[SPAN]
     assert all(span["transaction_id"] == transaction["id"] for span in spans)
 
+    assert transaction_obj.tracer.max_spans == 5
     assert transaction_obj.dropped_spans == 10
     assert len(spans) == 5
     for span in spans:

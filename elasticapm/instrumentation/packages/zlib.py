@@ -38,5 +38,5 @@ class ZLibInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = module + "." + method
-        with capture_span(wrapped_name, "compression.zlib"):
+        with capture_span(wrapped_name, span_type="compression", span_subtype="zlib"):
             return wrapped(*args, **kwargs)
