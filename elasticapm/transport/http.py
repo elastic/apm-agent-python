@@ -109,6 +109,7 @@ class Transport(HTTPTransportBase):
         logger.info("%s: %r", url, keys)
         data = json_encoder.dumps(keys).encode("utf-8")
         headers = self._headers.copy()
+        max_age = 300
         if current_version:
             headers["If-None-Match"] = current_version
         try:
@@ -117,25 +118,20 @@ class Transport(HTTPTransportBase):
             )
         except Exception:
             # TODO: error handling
-            raise
-            return (None, None)
+            return (None, None, max_age)
         body = response.read()
         if "Cache-Control" in response.headers:
             try:
                 max_age = int(next(re.finditer(r"max-age=(\d+)", response.headers["Cache-Control"])).groups()[0])
             except StopIteration:
                 logger.debug("Could not parse Cache-Control header: %s", response["Cache-Control"])
-                max_age = 300
         if response.status == 304:
             # config is unchanged, return
             logger.info(304)
             return (None, None, max_age)
         elif response.status >= 400:
-            # TODO: error handling
-            logger.info("%s, %r", response.status, response.headers)
             return (None, None, max_age)
 
-        logger.info("%s: %s", response.status, body)
         return response.headers.get("Etag"), json_encoder.loads(body), max_age
 
     @property
