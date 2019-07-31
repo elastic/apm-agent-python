@@ -175,7 +175,7 @@ def tracer():
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = Tracer(lambda: frames, lambda frames: frames, queue, Config())
+    store = Tracer(lambda: frames, lambda frames: frames, queue, Config(), None)
     store.events = events
     return store
 
@@ -204,20 +204,20 @@ def test_leaf_tracing(tracer):
 
 
 def test_get_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config())
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config())
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction(clear=True)
     assert execution_context.get_transaction() is None
 
 
 def test_label_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     transaction = requests_store.begin_transaction("test")
     elasticapm.label(foo="bar")
     transaction.label(baz="bazzinga")
@@ -237,7 +237,7 @@ def test_label_while_no_transaction(caplog):
 
 
 def test_label_with_allowed_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     t = requests_store.begin_transaction("test")
     elasticapm.label(foo=1, bar=True, baz=1.1, bazzinga=decimal.Decimal("1.1"))
     requests_store.end_transaction(200, "test")
@@ -252,7 +252,7 @@ def test_label_with_not_allowed_non_string_value():
         def __unicode__(self):
             return u"ok"
 
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     t = requests_store.begin_transaction("test")
     elasticapm.label(foo=SomeType())
     requests_store.end_transaction(200, "test")
@@ -296,7 +296,7 @@ def test_tagging_is_deprecated(elasticapm_client):
 
 
 def test_tag_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config())
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     transaction = requests_store.begin_transaction("test")
     elasticapm.tag(foo="bar")
     transaction.tag(baz="bazzinga")
@@ -316,7 +316,7 @@ def test_tag_while_no_transaction(caplog):
 
 
 def test_tag_with_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, config=Config())
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, config=Config(), agent=None)
     t = requests_store.begin_transaction("test")
     elasticapm.tag(foo=1)
     requests_store.end_transaction(200, "test")
