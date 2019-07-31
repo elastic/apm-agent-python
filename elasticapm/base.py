@@ -247,6 +247,8 @@ class Client(object):
     def close(self):
         if self._metrics:
             self._metrics._stop_collect_timer()
+        if self._config_updater:
+            self._config_updater.cancel()
         self._transport.close()
 
     def get_service_info(self):
