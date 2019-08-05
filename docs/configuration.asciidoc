@@ -28,6 +28,7 @@ ELASTIC_APM = {
 
 The precedence is as follows:
 
+ * <<config-central_config, central configuration>>
  * environment variables
  * inline configuration
  * framework specific configuration
