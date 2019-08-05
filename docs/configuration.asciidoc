@@ -657,7 +657,7 @@ NOTE: This feature requires APM Server and Kibana >= 7.3.
 ==== `central_config`
 |============
 | Environment                       | Django/Flask        | Default
-| `ELASTIC_APM_CENTRAL_CONFIG`      | `CENTRAL_CONFIG` | `True`
+| `ELASTIC_APM_CENTRAL_CONFIG`      | `CENTRAL_CONFIG`    | `True`
 |============
 
 When enabled, the agent will make periodic requests to the APM Server to fetch updated configuration.
@@ -665,6 +665,19 @@ When enabled, the agent will make periodic requests to the APM Server to fetch u
 See {kibana-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
+
+[float]
+[[config-global_labels]]
+==== `global_labels`
+|============
+| Environment                       | Django/Flask        | Default
+| `ELASTIC_APM_GLOBAL_LABELS`       | `GLOBAL_LABELS`     | `None`
+|============
+
+Labels added to all events, with the format `key=value[,key=value[,...]]`.
+Any labels set by application via the API will override global labels with the same keys.
+
+NOTE: This feature requires APM Server >= 7.2.
 
 [float]
 [[config-django-specific]]

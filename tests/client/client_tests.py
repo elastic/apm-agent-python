@@ -81,6 +81,12 @@ def test_system_info(elasticapm_client):
     assert {"hostname", "architecture", "platform"} == set(system_info.keys())
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,rack=8"}], indirect=True)
+def test_global_labels(elasticapm_client):
+    data = elasticapm_client._build_metadata()
+    assert data["labels"] == {"az": "us-east-1", "rack": "8"}
+
+
 def test_docker_kubernetes_system_info(elasticapm_client):
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(

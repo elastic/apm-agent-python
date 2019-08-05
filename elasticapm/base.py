@@ -316,11 +316,14 @@ class Client(object):
         return system_data
 
     def _build_metadata(self):
-        return {
+        data = {
             "service": self.get_service_info(),
             "process": self.get_process_info(),
             "system": self.get_system_info(),
         }
+        if self.config.global_labels:
+            data["labels"] = self.config.global_labels
+        return data
 
     def _build_msg_for_logging(
         self, event_type, date=None, context=None, custom=None, stack=None, handled=True, **kwargs

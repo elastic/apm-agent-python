@@ -101,6 +101,22 @@ class _ListConfigValue(_ConfigValue):
         instance._values[self.dict_key] = value
 
 
+class _DictConfigValue(_ConfigValue):
+    def __init__(self, dict_key, item_separator=",", keyval_separator="=", **kwargs):
+        self.item_separator = item_separator
+        self.keyval_separator = keyval_separator
+        super(_DictConfigValue, self).__init__(dict_key, **kwargs)
+
+    def __set__(self, instance, value):
+        if isinstance(value, compat.string_types):
+            items = (item.split(self.keyval_separator) for item in value.split(self.item_separator))
+            value = {key: self.type(val) for key, val in items}
+        elif not isinstance(value, dict):
+            # TODO: better error handling
+            value = None
+        instance._values[self.dict_key] = value
+
+
 class _BoolConfigValue(_ConfigValue):
     def __init__(self, dict_key, true_string="true", false_string="false", **kwargs):
         self.true_string = true_string
@@ -307,6 +323,7 @@ class Config(_ConfigBase):
     service_version = _ConfigValue("SERVICE_VERSION")
     framework_name = _ConfigValue("FRAMEWORK_NAME", default=None)
     framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
+    global_labels = _DictConfigValue("GLOBAL_LABELS", default=None)
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     instrument = _BoolConfigValue("INSTRUMENT", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
