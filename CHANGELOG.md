@@ -5,6 +5,7 @@
 
  * fixed an issue with using callables in set_context with unsampled transactions (#541, #542)
  * limited the length of error.culprit to 1024 characters (#491, #543)
+ * fixed an issue with the `instrument` config option (#546, #547)
 
 ## v5.0.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...v5.0.0)
