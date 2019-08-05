@@ -308,7 +308,7 @@ class Config(_ConfigBase):
     framework_name = _ConfigValue("FRAMEWORK_NAME", default=None)
     framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
-    instrument = _BoolConfigValue("DISABLE_INSTRUMENTATION", default=True)
+    instrument = _BoolConfigValue("INSTRUMENT", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
