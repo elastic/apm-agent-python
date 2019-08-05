@@ -137,7 +137,7 @@ pipeline {
         beforeAgent true
         beforeInput true
         anyOf {
-          tag "v\\d+\\.\\d+\\.\\d+*"
+          tag pattern: 'v\\d+.*', comparator: 'REGEXP'
           expression { return params.Run_As_Master_Branch }
         }
       }
