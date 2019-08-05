@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...master)
+
+ * fixed an issue with using callables in set_context with unsampled transactions (#541, #542)
+
 ## v5.0.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...v5.0.0)
 ### Breaking changes
@@ -7,7 +12,7 @@
  * implemented type/subtype/action hierachy for spans. Ensure that you run at least APM Server 6.6 (#377)
  * renamed tags to labels and changed API. The old API remains for backwards compatibility until 6.0 of the agent (#538)
 
-## Other changes
+### Other changes
 
  * Added support for recording breakdown metrics (#535)
  * Added support for central config management (#511)

@@ -613,17 +613,24 @@ def set_transaction_result(result, override=True):
 
 
 def set_context(data, key="custom"):
+    """
+    Attach contextual data to the current transaction and errors that happen during the current transaction.
+
+    If the transaction is not sampled, this function becomes a no-op.
+
+    :param data: a dictionary, or a callable that returns a dictionary
+    :param key: the namespace for this data
+    """
     transaction = execution_context.get_transaction()
-    if not transaction:
+    if not (transaction and transaction.is_sampled):
         return
-    if callable(data) and transaction.is_sampled:
+    if callable(data):
         data = data()
 
     # remove invalid characters from key names
-    if not callable(data):  # if transaction wasn't sampled, data is still a callable here and can be ignored
-        for k in list(data.keys()):
-            if TAG_RE.search(k):
-                data[TAG_RE.sub("_", k)] = data.pop(k)
+    for k in list(data.keys()):
+        if TAG_RE.search(k):
+            data[TAG_RE.sub("_", k)] = data.pop(k)
 
     if key in transaction.context:
         transaction.context[key].update(data)
