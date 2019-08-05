@@ -33,8 +33,8 @@ import logging
 import time
 from collections import defaultdict
 
+import mock
 import pytest
-from mock import Mock
 
 import elasticapm
 from elasticapm.conf import Config
@@ -346,7 +346,7 @@ def test_tags_dedot(elasticapm_client):
     assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
 
 
-### TESTING DEPRECATED TAGGING START ###
+### TESTING DEPRECATED TAGGING END ###
 
 
 def test_dedot_is_not_run_when_unsampled(elasticapm_client):
@@ -355,7 +355,7 @@ def test_dedot_is_not_run_when_unsampled(elasticapm_client):
         t.is_sampled = sampled
         elasticapm.set_context(lambda: {"a.b": "b"})
         elasticapm_client.end_transaction("x", "OK")
-    sampled_transaction, unsampled_transaction = transactions = elasticapm_client.events[TRANSACTION]
+    sampled_transaction, unsampled_transaction = elasticapm_client.events[TRANSACTION]
     assert "a_b" in sampled_transaction["context"]["custom"]
     assert "context" not in unsampled_transaction
 
@@ -419,6 +419,19 @@ def test_set_user_context_merge(elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
+
+
+def test_callable_context_ignored_when_not_sampled(elasticapm_client):
+    callable_data = mock.Mock()
+    callable_data.return_value = {"a": "b"}
+    transaction = elasticapm_client.begin_transaction("test")
+    transaction.is_sampled = False
+    elasticapm.set_context({"c": "d"})
+    elasticapm.set_context(callable_data)
+    elasticapm_client.end_transaction("test", "OK")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert callable_data.call_count == 0
+    assert "context" not in transaction
 
 
 def test_dedot_context_keys(elasticapm_client):
