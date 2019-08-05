@@ -849,12 +849,15 @@ def test_error_keyword_truncation(sending_elasticapm_client):
     try:
         raise WayTooLongException()
     except WayTooLongException:
-        sending_elasticapm_client.capture_exception(handled=False)
+        with mock.patch("elasticapm.events.get_culprit") as mock_get_culprit:
+            mock_get_culprit.return_value = too_long
+            sending_elasticapm_client.capture_exception(handled=False)
     sending_elasticapm_client.close()
     error = sending_elasticapm_client.httpserver.payloads[0][1]["error"]
 
     assert error["exception"]["type"] == expected.upper()
     assert error["exception"]["module"] == expected
+    assert error["culprit"] == expected
 
 
 def test_message_keyword_truncation(sending_elasticapm_client):
