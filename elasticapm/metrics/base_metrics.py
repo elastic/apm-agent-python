@@ -112,9 +112,9 @@ class MetricsRegistry(object):
 class MetricsSet(object):
     def __init__(self, registry):
         self._lock = threading.Lock()
-        self._counters = defaultdict(dict)
-        self._gauges = defaultdict(dict)
-        self._timers = defaultdict(dict)
+        self._counters = {}
+        self._gauges = {}
+        self._timers = {}
         self._registry = registry
         self._label_limit_logged = False
 
@@ -167,12 +167,11 @@ class MetricsSet(object):
                     pattern.match(name) for pattern in self._registry._ignore_patterns
                 ):
                     metric = noop_metric
-                elif len(container) >= DISTINCT_LABEL_LIMIT:
+                elif len(self._gauges) + len(self._counters) + len(self._timers) >= DISTINCT_LABEL_LIMIT:
                     if not self._label_limit_logged:
                         self._label_limit_logged = True
                         logger.warning(
-                            "The limit of %d metricsets has been reached, no new metricsets will be created. "
-                            "Try to name your transactions so that there are less distinct transaction names."
+                            "The limit of %d metricsets has been reached, no new metricsets will be created."
                             % DISTINCT_LABEL_LIMIT
                         )
                     metric = noop_metric
