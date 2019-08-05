@@ -40,6 +40,8 @@ from elasticapm.utils.threading import IntervalTimer
 
 logger = logging.getLogger("elasticapm.metrics")
 
+DISTINCT_LABEL_LIMIT = 1000
+
 
 class MetricsRegistry(object):
     def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
@@ -114,6 +116,7 @@ class MetricsSet(object):
         self._gauges = defaultdict(dict)
         self._timers = defaultdict(dict)
         self._registry = registry
+        self._label_limit_logged = False
 
     def counter(self, name, reset_on_collect=False, **labels):
         """
@@ -163,6 +166,15 @@ class MetricsSet(object):
                 if self._registry._ignore_patterns and any(
                     pattern.match(name) for pattern in self._registry._ignore_patterns
                 ):
+                    metric = noop_metric
+                elif len(container) >= DISTINCT_LABEL_LIMIT:
+                    if not self._label_limit_logged:
+                        self._label_limit_logged = True
+                        logger.warning(
+                            "The limit of %d metricsets has been reached, no new metricsets will be created. "
+                            "Try to name your transactions so that there are less distinct transaction names."
+                            % DISTINCT_LABEL_LIMIT
+                        )
                     metric = noop_metric
                 else:
                     metric = metric_class(name, reset_on_collect=reset_on_collect)
@@ -359,6 +371,9 @@ class NoopMetric(object):
         return
 
     def dec(self, delta=-1):
+        return
+
+    def update(self, duration, count=1):
         return
 
     def reset(self):
