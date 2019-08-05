@@ -131,7 +131,7 @@ class Exception(BaseEvent):
 
         return {
             "id": "%032x" % random.getrandbits(128),
-            "culprit": culprit,
+            "culprit": keyword_field(culprit),
             "exception": {
                 "message": message,
                 "type": keyword_field(str(exc_type)),
