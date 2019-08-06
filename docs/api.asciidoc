@@ -73,7 +73,7 @@ client.capture_message('Billing process succeeded.')
  * `message`: The message as a string.
  * `param_message`: Alternatively, a parameterized message as a dictionary.
     The dictionary contains two values: `message`, and `params`.
-    This allows the APM server to group messages together that share the same
+    This allows the APM Server to group messages together that share the same
     parameterized message. Example:
 +
 [source,python]

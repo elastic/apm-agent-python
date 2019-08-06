@@ -71,7 +71,7 @@ apm = ElasticAPM(app, service_name='<APP-ID>', secret_token='<SECRET-TOKEN>')
 [[flask-debug-mode]]
 ==== Debug Mode
 
-Please note that errors and transactions will only be sent to the apm server if your app is *not* in
+Please note that errors and transactions will only be sent to the APM Server if your app is *not* in
 http://flask.pocoo.org/docs/0.12/quickstart/#debug-mode[debug mode].
 
 To force the agent to send data while the app is in debug mode,
@@ -192,7 +192,7 @@ def bar():
         app.logger.error( 'I cannot math', exc_info=True)
 ----
 
-NOTE: `exc_info=True` adds the exception info to the data that gets sent to the APM server.
+NOTE: `exc_info=True` adds the exception info to the data that gets sent to the APM Server.
 Without it, only the message is sent.
 
 [float]
@@ -221,7 +221,7 @@ def bar():
 [[flask-celery-tasks]]
 ==== Celery tasks
 
-The Elastic APM agent will automatically send errors and performance data from your Celery tasks to the APM server.
+The Elastic APM agent will automatically send errors and performance data from your Celery tasks to the APM Server.
 
 [float]
 [[flask-performance-metrics]]
