@@ -170,8 +170,8 @@ class Transaction(BaseSpan):
             self._transaction_metrics = None
         super(Transaction, self).__init__()
 
-    def end(self, skip_frames=0):
-        self.duration = _time_func() - self.start_time
+    def end(self, skip_frames=0, duration=None):
+        self.duration = duration if duration is not None else (_time_func() - self.start_time)
         if self._transaction_metrics:
             self._transaction_metrics.timer(
                 "transaction.duration",
@@ -257,17 +257,18 @@ class Transaction(BaseSpan):
             span_action=span_action,
         )
 
-    def end_span(self, skip_frames=0):
+    def end_span(self, skip_frames=0, duration=None):
         """
         End the currently active span
         :param skip_frames: numbers of frames to skip in the stack trace
+        :param duration: override duration, mostly useful for testing
         :return: the ended span
         """
         span = execution_context.get_span()
         if span is None:
             raise LookupError()
 
-        span.end(skip_frames=skip_frames)
+        span.end(skip_frames=skip_frames, duration=duration)
         return span
 
     def ensure_parent_id(self):
@@ -410,10 +411,17 @@ class Span(BaseSpan):
             result["stacktrace"] = self.frames
         return result
 
-    def end(self, skip_frames=0):
+    def end(self, skip_frames=0, duration=None):
+        """
+        End this span and queue it for sending.
+
+        :param skip_frames: amount of frames to skip from the beginning of the stack trace
+        :param duration: override duration, mostly useful for testing
+        :return: None
+        """
         tracer = self.transaction.tracer
         timestamp = _time_func()
-        self.duration = timestamp - self.start_time
+        self.duration = duration if duration is not None else (timestamp - self.start_time)
         if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration:
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
@@ -422,7 +430,7 @@ class Span(BaseSpan):
         tracer.queue_func(SPAN, self.to_dict())
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
-            p.child_ended(timestamp)
+            p.child_ended((self.start_time + duration) if duration is not None else timestamp)
             self.transaction.track_span_duration(
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
@@ -492,12 +500,19 @@ class Tracer(object):
                 return True
         return False
 
-    def end_transaction(self, result=None, transaction_name=None):
+    def end_transaction(self, result=None, transaction_name=None, duration=None):
+        """
+        End the current transaction and queue it for sending
+        :param result: result of the transaction, e.g. "OK" or 200
+        :param transaction_name: name of the transaction
+        :param duration: override duration, mostly useful for testing
+        :return:
+        """
         transaction = execution_context.get_transaction(clear=True)
         if transaction:
             if transaction.name is None:
                 transaction.name = transaction_name if transaction_name is not None else ""
-            transaction.end()
+            transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
                 return
             if transaction.result is None:
@@ -507,7 +522,7 @@ class Tracer(object):
 
 
 class capture_span(object):
-    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "labels")
+    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "labels", "duration")
 
     def __init__(
         self,
@@ -520,6 +535,7 @@ class capture_span(object):
         labels=None,
         span_subtype=None,
         span_action=None,
+        duration=None,
     ):
         self.name = name
         self.type = span_type
@@ -537,6 +553,7 @@ class capture_span(object):
             labels = tags
 
         self.labels = labels
+        self.duration = duration
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -565,7 +582,7 @@ class capture_span(object):
         transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             try:
-                transaction.end_span(self.skip_frames)
+                transaction.end_span(self.skip_frames, duration=self.duration)
             except LookupError:
                 logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
