@@ -47,7 +47,7 @@ from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
-from elasticapm.utils.encoding import keyword_field, shorten, transform
+from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.threading import IntervalTimer
 
@@ -316,11 +316,14 @@ class Client(object):
         return system_data
 
     def _build_metadata(self):
-        return {
+        data = {
             "service": self.get_service_info(),
             "process": self.get_process_info(),
             "system": self.get_system_info(),
         }
+        if self.config.global_labels:
+            data["labels"] = enforce_label_format(self.config.global_labels)
+        return data
 
     def _build_msg_for_logging(
         self, event_type, date=None, context=None, custom=None, stack=None, handled=True, **kwargs

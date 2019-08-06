@@ -3,6 +3,12 @@
 ## Unreleased
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...master)
 
+### New Features
+
+ * added support for global labels which will be applied to every transaction/error/metric (#549)
+
+### Bugfixes
+
  * fixed an issue with using callables in set_context with unsampled transactions (#541, #542)
  * limited the length of error.culprit to 1024 characters (#491, #543)
  * fixed an issue with the `instrument` config option (#546, #547)
