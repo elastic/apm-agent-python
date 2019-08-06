@@ -35,7 +35,7 @@ import datetime
 import uuid
 from decimal import Decimal
 
-from elasticapm.conf.constants import KEYWORD_MAX_LENGTH
+from elasticapm.conf.constants import KEYWORD_MAX_LENGTH, LABEL_RE, LABEL_TYPES
 from elasticapm.utils import compat
 
 PROTECTED_TYPES = compat.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
@@ -194,3 +194,21 @@ def keyword_field(string):
     if not isinstance(string, compat.string_types) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
     return string[: KEYWORD_MAX_LENGTH - 1] + u"…"
+
+
+def enforce_label_format(labels):
+    """
+    Enforces label format:
+      * dots, double quotes or stars in keys are replaced by underscores
+      * string values are limited to a length of 1024 characters
+      * values can only be of a limited set of types
+
+    :param labels: a dictionary of labels
+    :return: a new dictionary with sanitized keys/values
+    """
+    new = {}
+    for key, value in compat.iteritems(labels):
+        if not isinstance(value, LABEL_TYPES):
+            value = keyword_field(compat.text_type(value))
+        new[LABEL_RE.sub("_", compat.text_type(key))] = value
+    return new

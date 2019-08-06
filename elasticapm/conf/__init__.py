@@ -110,7 +110,7 @@ class _DictConfigValue(_ConfigValue):
     def __set__(self, instance, value):
         if isinstance(value, compat.string_types):
             items = (item.split(self.keyval_separator) for item in value.split(self.item_separator))
-            value = {key: self.type(val) for key, val in items}
+            value = {key.strip(): self.type(val.strip()) for key, val in items}
         elif not isinstance(value, dict):
             # TODO: better error handling
             value = None

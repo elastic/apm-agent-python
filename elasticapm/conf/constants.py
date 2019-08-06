@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import decimal
+import re
 
 EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
@@ -49,10 +50,11 @@ TRANSACTION = "transaction"
 SPAN = "span"
 METRICSET = "metricset"
 
+LABEL_RE = re.compile('[.*"]')
 
 try:
     # Python 2
-    TAG_TYPES = (bool, int, long, float, decimal.Decimal)
+    LABEL_TYPES = (bool, int, long, float, decimal.Decimal)
 except NameError:
     # Python 3
-    TAG_TYPES = (bool, int, float, decimal.Decimal)
+    LABEL_TYPES = (bool, int, float, decimal.Decimal)

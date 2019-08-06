@@ -81,10 +81,10 @@ def test_system_info(elasticapm_client):
     assert {"hostname", "architecture", "platform"} == set(system_info.keys())
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,rack=8"}], indirect=True)
+@pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,az.rack=8"}], indirect=True)
 def test_global_labels(elasticapm_client):
     data = elasticapm_client._build_metadata()
-    assert data["labels"] == {"az": "us-east-1", "rack": "8"}
+    assert data["labels"] == {"az": "us-east-1", "az_rack": "8"}
 
 
 def test_docker_kubernetes_system_info(elasticapm_client):

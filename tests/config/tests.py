@@ -164,7 +164,7 @@ def test_dict_config_value():
         my_native_dict = _DictConfigValue("MY_NATIVE_DICT")
 
     config = MyConfig(
-        {"MY_DICT": "a=b,c=d,e=f", "MY_TYPED_DICT": "a=1,b=2"}, inline_dict={"my_native_dict": {"x": "y"}}
+        {"MY_DICT": "a=b, c = d ,e=f", "MY_TYPED_DICT": "a=1,b=2"}, inline_dict={"my_native_dict": {"x": "y"}}
     )
     assert config.my_dict == {"a": "b", "c": "d", "e": "f"}
     assert config.my_typed_dict == {"a": 1, "b": 2}
