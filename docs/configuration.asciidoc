@@ -711,7 +711,7 @@ Some environment variables that are not specific to the APM agent can be used to
 Using `HTTP_PROXY` and `HTTPS_PROXY`, the agent can be instructed to use a proxy to connect to the APM Server.
 If both are set, `HTTPS_PROXY` takes precedence.
 
-NOTE: the environment variables are case-insensitive.
+NOTE: The environment variables are case-insensitive.
 
 [float]
 [[config-generic-no-proxy]]
