@@ -59,6 +59,12 @@ pipeline {
           }
         }
         stage('Sanity checks') {
+          when {
+            beforeAgent true
+            not {
+              changeRequest()
+            }
+          }
           steps {
             withGithubNotify(context: 'Sanity checks', tab: 'tests') {
               deleteDir()
