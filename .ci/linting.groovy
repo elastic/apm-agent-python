@@ -24,8 +24,9 @@ pipeline {
       }
       steps {
         script {
+          def sha = getGitCommitSha()
           docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
-            preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
+            preCommit(commit: "${sha}", junit: true)
           }
         }
       }
