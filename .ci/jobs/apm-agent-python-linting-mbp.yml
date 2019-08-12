@@ -16,16 +16,13 @@
         discover-pr-origin: merge-current
         discover-tags: false
         notification-context: 'apm-ci/linting'
+        head-filter-regex: '^PR-.*$'
         repo: apm-agent-python
         repo-owner: elastic
         credentials-id: 2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken
         ssh-checkout:
           credentials: f6c7695a-671e-4f4f-a331-acdce44ff9ba
         build-strategies:
-        - tags:
-            ignore-tags-older-than: -1
-            ignore-tags-newer-than: -1
-        - regular-branches: true
         - change-request:
             ignore-target-only-changes: false
         clean:
