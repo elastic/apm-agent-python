@@ -56,11 +56,8 @@ pipeline {
               deleteDir()
               unstash 'source'
               script {
-                docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
-                  dir("${BASE_DIR}"){
-                    // Let's disable the docker login within the docker.image closure.
-                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
-                  }
+                dir(BASE_DIR){
+                  preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, dockerImage: 'python:3.7-stretch')
                 }
               }
             }
