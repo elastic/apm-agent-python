@@ -25,7 +25,7 @@ pipeline {
       steps {
         script {
           def sha = getGitCommitSha()
-          docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+          docker.image('python:3.7-stretch').inside {
             // Let's disable the docker login within the docker.image closure.
             preCommit(commit: "${sha}", junit: true, registry: '')
           }
