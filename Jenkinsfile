@@ -61,8 +61,9 @@ pipeline {
         stage('Sanity checks') {
           when {
             beforeAgent true
-            not {
-              changeRequest()
+            anyOf {
+              not { changeRequest() }
+              expression { return params.Run_As_Master_Branch }
             }
           }
           steps {
@@ -70,8 +71,11 @@ pipeline {
               deleteDir()
               unstash 'source'
               script {
-                dir(BASE_DIR){
-                  preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, dockerImage: 'python:3.7-stretch')
+                docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+                  dir("${BASE_DIR}"){
+                    // registry: '' will help to disable the docker login
+                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
+                  }
                 }
               }
             }
