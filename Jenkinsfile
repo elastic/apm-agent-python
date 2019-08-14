@@ -61,8 +61,9 @@ pipeline {
         stage('Sanity checks') {
           when {
             beforeAgent true
-            not {
-              changeRequest()
+            anyOf {
+              not { changeRequest() }
+              expression { return params.Run_As_Master_Branch }
             }
           }
           steps {
