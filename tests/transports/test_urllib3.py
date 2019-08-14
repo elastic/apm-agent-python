@@ -116,11 +116,29 @@ def test_https_proxy_environment_variable():
 
 
 def test_https_proxy_environment_variable_is_preferred():
-    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "HTTP_PROXY": "http://example.com"}):
+    with mock.patch.dict("os.environ", {"https_proxy": "https://example.com", "HTTP_PROXY": "http://example.com"}):
         transport = Transport("http://localhost:9999")
         try:
             assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
             assert transport.http.proxy.scheme == "https"
+        finally:
+            transport.close()
+
+
+def test_no_proxy_star():
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
+        transport = Transport("http://localhost:9999")
+        try:
+            assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
+        finally:
+            transport.close()
+
+
+def test_no_proxy_host():
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "localhost"}):
+        transport = Transport("http://localhost:9999")
+        try:
+            assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
         finally:
             transport.close()
 

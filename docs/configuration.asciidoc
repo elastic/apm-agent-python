@@ -111,7 +111,7 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 |============
 
 
-The transport class to use when sending events to the APM server.
+The transport class to use when sending events to the APM Server.
 The default `AsyncTransport` uses a background thread to send data.
 If your environment doesn't allow background threads, you can use
 `elasticapm.transport.http.Transport` instead.
@@ -152,8 +152,8 @@ You must use the query bar to filter for a specific environment in versions prio
 | `ELASTIC_APM_SECRET_TOKEN` | `SECRET_TOKEN`  | `None`     | A random string
 |============
 
-This string is used to ensure that only your agents can send data to your APM server.
-Both the agents and the APM server have to be configured with the same secret token.
+This string is used to ensure that only your agents can send data to your APM Server.
+Both the agents and the APM Server have to be configured with the same secret token.
 One example to generate a secure secret token is:
 
 [source,bash]
@@ -161,7 +161,7 @@ One example to generate a secure secret token is:
 python -c "import uuid; print(str(uuid.uuid4()))"
 ----
 
-WARNING: secret tokens only provide any security if your APM server use TLS.
+WARNING: secret tokens only provide any security if your APM Server use TLS.
 
 [float]
 [[config-service-version]]
@@ -214,7 +214,7 @@ otherwise, the default is `None`.
 |============
 
 A list of exception types to be filtered.
-Exceptions of these types will not be sent to the APM server.
+Exceptions of these types will not be sent to the APM Server.
 
 
 [float]
@@ -228,7 +228,7 @@ Exceptions of these types will not be sent to the APM server.
 |============
 
 A list of regular expressions.
-Transactions that match any of the of the configured patterns will be ignored and not sent to the APM server.
+Transactions that match any of the of the configured patterns will be ignored and not sent to the APM Server.
 
 
 [float]
@@ -243,12 +243,12 @@ Transactions that match any of the of the configured patterns will be ignored an
 
 A timeout for requests to the APM Server.
 The setting has to be provided in *<<config-format-duration, duration format>>*.
-If a request to the APM server takes longer than the configured timeout,
+If a request to the APM Server takes longer than the configured timeout,
 the request is cancelled and the event (exception or transaction) is discarded.
 Set to `None` to disable timeouts.
 
 WARNING: If timeouts are disabled or set to a high value,
-your app could experience memory issues if the APM server times out.
+your app could experience memory issues if the APM Server times out.
 
 
 [float]
@@ -261,7 +261,7 @@ your app could experience memory issues if the APM server times out.
 | `ELASTIC_APM_HOSTNAME`     | `HOSTNAME`    | `socket.gethostname()` | `app-server01.example.com`
 |============
 
-The host name to use when sending error and transaction data to the APM server.
+The host name to use when sending error and transaction data to the APM Server.
 
 [float]
 [[config-auto-log-stacks]]
@@ -407,7 +407,7 @@ filter such data.
 
 Limits the amount of spans that are recorded per transaction.
 This is helpful in cases where a transaction creates a very high amount of spans (e.g. thousands of SQL queries).
-Setting an upper limit will prevent overloading the agent and the APM server with too much work for such edge cases.
+Setting an upper limit will prevent overloading the agent and the APM Server with too much work for such edge cases.
 
 [float]
 [[config-span-frames-min-duration]]
@@ -440,8 +440,8 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 | `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"724kb"`
 |============
 
-Maximum queue length of the request buffer before sending the request to the APM server.
-A lower value will increase the load on your APM server,
+Maximum queue length of the request buffer before sending the request to the APM Server.
+A lower value will increase the load on your APM Server,
 while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until data is indexed and searchable in Elasticsearch.
 
@@ -460,8 +460,8 @@ By default, the APM Server limits request payload size to 1 MByte.
 | `ELASTIC_APM_API_REQUEST_TIME` | `API_REQUEST_TIME` | `"10s"`
 |============
 
-Maximum queue time of the request buffer before sending the request to the APM server.
-A lower value will increase the load on your APM server,
+Maximum queue time of the request buffer before sending the request to the APM Server.
+A lower value will increase the load on your APM Server,
 while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until data is indexed and searchable in Elasticsearch.
 
@@ -552,7 +552,7 @@ The default value varies based on your Python version and implementation, e.g.:
 |============
 
 If your app is in debug mode (e.g. in Django with `settings.DEBUG = True` or in Flask with `app.debug = True`),
-the agent won't send any data to the APM server. You can override it by changing this setting to `True`.
+the agent won't send any data to the APM Server. You can override it by changing this setting to `True`.
 
 
 [float]
@@ -563,7 +563,7 @@ the agent won't send any data to the APM server. You can override it by changing
 | `ELASTIC_APM_DISABLE_SEND`  | `DISABLE_SEND` | `False`
 |============
 
-If set to `True`, the agent won't send any events to the APM server, independent of any debug state.
+If set to `True`, the agent won't send any events to the APM Server, independent of any debug state.
 
 
 [float]
@@ -586,7 +586,7 @@ This disables most of the tracing functionality, but can be useful to debug poss
 | `ELASTIC_APM_VERIFY_SERVER_CERT`  | `VERIFY_SERVER_CERT` | `True`
 |============
 
-By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM server.
+By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM Server.
 Verification can be disabled by changing this setting to `False`.
 This setting is ignored when <<config-server-cert,`server_cert`>> is set.
 
@@ -697,6 +697,32 @@ Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) a
 If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
 
 NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
+
+[float]
+[[config-generic-environment]]
+=== Generic Environment variables
+
+Some environment variables that are not specific to the APM agent can be used to configure the agent.
+
+[float]
+[[config-generic-http-proxy]]
+==== `HTTP_PROXY` and `HTTPS_PROXY`
+
+Using `HTTP_PROXY` and `HTTPS_PROXY`, the agent can be instructed to use a proxy to connect to the APM Server.
+If both are set, `HTTPS_PROXY` takes precedence.
+
+NOTE: The environment variables are case-insensitive.
+
+[float]
+[[config-generic-no-proxy]]
+==== `NO_PROXY`
+
+To instruct the agent to *not* use a proxy, you can use the `NO_PROXY` environment variable.
+You can either set it to a comma-separated list of hosts for which no proxy should be used (e.g. `localhost,example.com`)
+or use `*` to match any host.
+
+This is useful if `HTTP_PROXY` / `HTTPS_PROXY` is set for other reasons than agent / APM Server communication.
+
 
 [float]
 [[config-formats]]

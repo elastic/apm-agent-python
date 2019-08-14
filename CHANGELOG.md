@@ -3,9 +3,14 @@
 ## Unreleased
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...master)
 
+### Security issues
+
+ * This release fixes CVE-2019-7617
+
 ### New Features
 
  * added support for global labels which will be applied to every transaction/error/metric (#549)
+ * added support for `NO_PROXY` environment variable (#458, #551)
 
 ### Bugfixes
 
