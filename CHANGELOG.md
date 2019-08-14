@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...master)
+## v5.1.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...v5.1.0)
 
 ### Security issues
 
