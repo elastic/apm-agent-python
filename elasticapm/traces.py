@@ -97,7 +97,7 @@ class BaseSpan(object):
     def child_ended(self, timestamp):
         self._child_durations.stop(timestamp)
 
-    def end(self, skip_frames=0):
+    def end(self, skip_frames=0, duration=None):
         raise NotImplementedError()
 
     def label(self, **labels):
@@ -442,7 +442,7 @@ class DroppedSpan(BaseSpan):
         self.leaf = leaf
         super(DroppedSpan, self).__init__()
 
-    def end(self, skip_frames=0):
+    def end(self, skip_frames=0, duration=None):
         execution_context.set_span(self.parent)
 
     def child_started(self, timestamp):
