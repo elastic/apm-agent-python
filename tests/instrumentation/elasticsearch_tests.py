@@ -39,7 +39,10 @@ from elasticsearch import Elasticsearch
 
 from elasticapm.conf.constants import TRANSACTION
 
-pytestmark = pytest.mark.elasticsearch
+if "ES_URL" not in os.environ:
+    pytestmark = pytest.mark.skip("Skipping elasticsearch test, no ES_URL environment variable")
+else:
+    pytestmark = pytest.mark.elasticsearch
 
 document_type = "_doc" if ES_VERSION[0] >= 6 else "doc"
 
