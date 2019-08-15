@@ -41,12 +41,15 @@ from redis.client import StrictRedis
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
-pytestmark = pytest.mark.redis
+if "REDIS_HOST" not in os.environ:
+    pytestmark = pytest.mark.skip("Skipping redis tests, no REDIS_HOST environment variable set")
+else:
+    pytestmark = pytest.mark.redis
 
 
 @pytest.fixture()
 def redis_conn():
-    conn = redis.StrictRedis(host=os.environ.get("REDIS_HOST", "localhost"), port=os.environ.get("REDIS_PORT", 6379))
+    conn = redis.StrictRedis(host=os.environ["REDIS_HOST"], port=os.environ.get("REDIS_PORT", 6379))
     yield conn
     del conn
 
