@@ -1,10 +1,10 @@
 elastic-apm -- Elastic APM agent for Python
 ===========================================
 
-.. image:: https://api.travis-ci.org/elastic/apm-agent-python.svg?branch=master
-    :target: https://travis-ci.org/elastic/apm-agent-python
+.. image:: https://apm-ci.elastic.co/buildStatus/icon?job=apm-agent-python%2Fapm-agent-python-mbp%2Fmaster
+    :target: https://apm-ci.elastic.co/job/apm-agent-python/job/apm-agent-python-mbp/
     :alt: Build Status
-    
+
 .. image:: https://img.shields.io/pypi/v/elastic-apm.svg?style=flat
     :target: https://pypi.python.org/pypi/elastic-apm/
     :alt: Latest Version
