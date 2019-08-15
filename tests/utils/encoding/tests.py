@@ -32,10 +32,11 @@
 
 from __future__ import absolute_import
 
+import decimal
 import uuid
 
 from elasticapm.utils import compat
-from elasticapm.utils.encoding import shorten, transform
+from elasticapm.utils.encoding import enforce_label_format, shorten, transform
 
 
 def test_transform_incorrect_unicode():
@@ -224,3 +225,17 @@ def test_shorten_tuple():
     #     assert len(result) == 52
     #     assert result[-2] == '...'
     #     assert result[-1] == '(450 more elements)'
+
+
+def test_enforce_label_format():
+    class MyObj(object):
+        def __str__(self):
+            return "OK"
+
+        def __unicode__(self):
+            return u"OK"
+
+    labels = enforce_label_format(
+        {'a.b*c"d': MyObj(), "x": "x" * 1025, "int": 1, "float": 1.1, "decimal": decimal.Decimal("1")}
+    )
+    assert labels == {"a_b_c_d": "OK", "x": "x" * 1023 + u"…", "int": 1, "float": 1.1, "decimal": decimal.Decimal("1")}

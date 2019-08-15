@@ -46,6 +46,7 @@ from elasticapm.conf import (
     _BoolConfigValue,
     _ConfigBase,
     _ConfigValue,
+    _DictConfigValue,
     _ListConfigValue,
     duration_validator,
     setup_logging,
@@ -154,6 +155,20 @@ def test_list_config_value():
 
     config = MyConfig({"MY_LIST": "1|2|3"})
     assert config.my_list == [1, 2, 3]
+
+
+def test_dict_config_value():
+    class MyConfig(_ConfigBase):
+        my_dict = _DictConfigValue("MY_DICT")
+        my_typed_dict = _DictConfigValue("MY_TYPED_DICT", type=int)
+        my_native_dict = _DictConfigValue("MY_NATIVE_DICT")
+
+    config = MyConfig(
+        {"MY_DICT": "a=b, c = d ,e=f", "MY_TYPED_DICT": "a=1,b=2"}, inline_dict={"my_native_dict": {"x": "y"}}
+    )
+    assert config.my_dict == {"a": "b", "c": "d", "e": "f"}
+    assert config.my_typed_dict == {"a": 1, "b": 2}
+    assert config.my_native_dict == {"x": "y"}
 
 
 def test_bool_config_value():

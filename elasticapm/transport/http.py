@@ -32,7 +32,6 @@
 
 import hashlib
 import logging
-import os
 import re
 import ssl
 
@@ -50,6 +49,7 @@ logger = logging.getLogger("elasticapm.transport.http")
 class Transport(HTTPTransportBase):
     def __init__(self, url, **kwargs):
         super(Transport, self).__init__(url, **kwargs)
+        url_parts = compat.urlparse.urlparse(url)
         pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": certifi.where(), "block": True}
         if self._server_cert:
             pool_kwargs.update(
@@ -59,8 +59,9 @@ class Transport(HTTPTransportBase):
         elif not self._verify_server_cert:
             pool_kwargs["cert_reqs"] = ssl.CERT_NONE
             pool_kwargs["assert_hostname"] = False
-        proxy_url = os.environ.get("HTTPS_PROXY", os.environ.get("HTTP_PROXY"))
-        if proxy_url:
+        proxies = compat.getproxies_environment()
+        proxy_url = proxies.get("https", proxies.get("http", None))
+        if proxy_url and not compat.proxy_bypass_environment(url_parts.netloc):
             self.http = urllib3.ProxyManager(proxy_url, **pool_kwargs)
         else:
             self.http = urllib3.PoolManager(**pool_kwargs)

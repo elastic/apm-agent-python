@@ -39,7 +39,7 @@ import warnings
 from collections import defaultdict
 
 from elasticapm.conf import constants
-from elasticapm.conf.constants import SPAN, TRANSACTION
+from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
@@ -52,9 +52,6 @@ error_logger = logging.getLogger("elasticapm.errors")
 logger = logging.getLogger("elasticapm.traces")
 
 _time_func = timeit.default_timer
-
-
-TAG_RE = re.compile('[.*"]')
 
 
 execution_context = init_execution_context()
@@ -115,10 +112,8 @@ class BaseSpan(object):
         :param labels: key/value pairs of labels
         :return: None
         """
-        for key, value in compat.iteritems(labels):
-            if not isinstance(value, constants.TAG_TYPES):
-                value = encoding.keyword_field(compat.text_type(value))
-            self.labels[TAG_RE.sub("_", compat.text_type(key))] = value
+        labels = encoding.enforce_label_format(labels)
+        self.labels.update(labels)
 
     @deprecated("transaction/span.label()")
     def tag(self, **tags):
@@ -135,7 +130,7 @@ class BaseSpan(object):
         :return: None
         """
         for key in tags.keys():
-            self.labels[TAG_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
+            self.labels[LABEL_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
 
 class Transaction(BaseSpan):
@@ -646,8 +641,8 @@ def set_context(data, key="custom"):
 
     # remove invalid characters from key names
     for k in list(data.keys()):
-        if TAG_RE.search(k):
-            data[TAG_RE.sub("_", k)] = data.pop(k)
+        if LABEL_RE.search(k):
+            data[LABEL_RE.sub("_", k)] = data.pop(k)
 
     if key in transaction.context:
         transaction.context[key].update(data)

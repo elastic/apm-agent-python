@@ -28,7 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import threading
+import logging
 import time
 from multiprocessing.dummy import Pool
 
@@ -36,7 +36,7 @@ import mock
 import pytest
 
 from elasticapm.conf import constants
-from elasticapm.metrics.base_metrics import MetricsRegistry, MetricsSet
+from elasticapm.metrics.base_metrics import Counter, Gauge, MetricsRegistry, MetricsSet, NoopMetric, Timer
 from tests.fixtures import TempStoreClient
 
 
@@ -141,3 +141,25 @@ def test_client_doesnt_start_collector_thread_in_master_process(is_master_proces
     client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
     assert mock_start_collect_timer.call_count == before + 1
     client.close()
+
+
+@mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)
+def test_metric_limit(caplog):
+    m = MetricsSet(MetricsRegistry(0, lambda x: None))
+    with caplog.at_level(logging.WARNING, logger="elasticapm.metrics"):
+        for i in range(2):
+            counter = m.counter("counter", some_label=i)
+            gauge = m.gauge("gauge", some_label=i)
+            timer = m.timer("timer", some_label=i)
+            if i == 0:
+                assert isinstance(timer, Timer)
+                assert isinstance(gauge, Gauge)
+                assert isinstance(counter, Counter)
+            else:
+                assert isinstance(timer, NoopMetric)
+                assert isinstance(gauge, NoopMetric)
+                assert isinstance(counter, NoopMetric)
+
+    assert len(caplog.records) == 1
+    record = caplog.records[0]
+    assert "The limit of 3 metricsets has been reached" in record.message

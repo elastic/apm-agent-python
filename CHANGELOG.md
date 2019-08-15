@@ -1,11 +1,23 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...master)
+## v5.1.0 
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...v5.1.0)
+
+### Security issues
+
+ * This release fixes CVE-2019-7617
+
+### New Features
+
+ * added support for global labels which will be applied to every transaction/error/metric (#549)
+ * added support for `NO_PROXY` environment variable (#458, #551)
+
+### Bugfixes
 
  * fixed an issue with using callables in set_context with unsampled transactions (#541, #542)
  * limited the length of error.culprit to 1024 characters (#491, #543)
  * fixed an issue with the `instrument` config option (#546, #547)
+ * limited the amount of distinct metrics to 1000 (#540, #544)
 
 ## v5.0.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...v5.0.0)
