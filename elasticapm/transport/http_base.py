@@ -75,6 +75,7 @@ class HTTPTransportBase(Transport):
         """
         Gets configuration from a remote APM Server
 
+        :param current_version: version of the current configuration
         :param keys: a JSON-serializable dict to identify this instance, e.g.
                 {
                     "service": {
@@ -82,8 +83,8 @@ class HTTPTransportBase(Transport):
                         "environment": "bar"
                     }
                 }
-        :param current_version: version of the current configuration
-        :return: dictionary or None
+        :return: a three-tuple of new version, config dictionary and validity in seconds.
+                 Any element of the tuple can be None.
         """
         raise NotImplementedError()
 

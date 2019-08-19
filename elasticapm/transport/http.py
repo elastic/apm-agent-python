@@ -106,6 +106,20 @@ class Transport(HTTPTransportBase):
                 response.close()
 
     def get_config(self, current_version=None, keys=None):
+        """
+        Gets configuration from a remote APM Server
+
+        :param current_version: version of the current configuration
+        :param keys: a JSON-serializable dict to identify this instance, e.g.
+                {
+                    "service": {
+                        "name": "foo",
+                        "environment": "bar"
+                    }
+                }
+        :return: a three-tuple of new version, config dictionary and validity in seconds.
+                 Any element of the tuple can be None.
+        """
         url = self._config_url
         data = json_encoder.dumps(keys).encode("utf-8")
         headers = self._headers.copy()
@@ -124,13 +138,17 @@ class Transport(HTTPTransportBase):
             try:
                 max_age = int(next(re.finditer(r"max-age=(\d+)", response.headers["Cache-Control"])).groups()[0])
             except StopIteration:
-                logger.debug("Could not parse Cache-Control header: %s", response["Cache-Control"])
+                logger.debug("Could not parse Cache-Control header: %s", response.headers["Cache-Control"])
         if response.status == 304:
             # config is unchanged, return
             logger.debug("Configuration unchanged")
             return current_version, None, max_age
         elif response.status >= 400:
             return None, None, max_age
+
+        if not body:
+            logger.debug("APM Server answered with empty body and status code %s", response.status)
+            return current_version, None, max_age
 
         return response.headers.get("Etag"), json_encoder.loads(body.decode("utf-8")), max_age
 
