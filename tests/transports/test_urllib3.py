@@ -225,6 +225,14 @@ def test_ssl_cert_pinning_fails(waiting_httpsserver):
     assert "Fingerprints did not match" in exc_info.value.args[0]
 
 
+def test_config_url():
+    transport = Transport("http://example.com/" + constants.EVENTS_API_PATH)
+    try:
+        assert transport._config_url == "http://example.com/" + constants.AGENT_CONFIG_PATH
+    finally:
+        transport.close()
+
+
 def test_get_config(waiting_httpserver):
     waiting_httpserver.serve_content(
         code=200, content=b'{"x": "y"}', headers={"Cache-Control": "max-age=5", "Etag": "2"}

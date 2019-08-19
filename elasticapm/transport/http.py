@@ -117,7 +117,8 @@ class Transport(HTTPTransportBase):
                         "environment": "bar"
                     }
                 }
-        :return: a three-tuple of new version, config dictionary and validity in seconds, or None
+        :return: a three-tuple of new version, config dictionary and validity in seconds.
+                 Any element of the tuple can be None.
         """
         url = self._config_url
         data = json_encoder.dumps(keys).encode("utf-8")

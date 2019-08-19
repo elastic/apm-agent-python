@@ -83,7 +83,8 @@ class HTTPTransportBase(Transport):
                         "environment": "bar"
                     }
                 }
-        :return: a three-tuple of new version, config dictionary and validity in seconds, or None
+        :return: a three-tuple of new version, config dictionary and validity in seconds.
+                 Any element of the tuple can be None.
         """
         raise NotImplementedError()
 
