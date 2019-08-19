@@ -37,6 +37,7 @@ import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError
 from urllib3_mock import Responses
 
+from elasticapm.conf import constants
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http import Transport
 from elasticapm.utils import compat
@@ -215,8 +216,91 @@ def test_ssl_cert_pinning_fails(waiting_httpsserver):
     transport = Transport(
         url, server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"), verify_server_cert=True
     )
-    with pytest.raises(TransportException) as exc_info:
-        transport.send(compat.b("x"))
-    transport.close()
+    try:
+        with pytest.raises(TransportException) as exc_info:
+            transport.send(compat.b("x"))
+    finally:
+        transport.close()
 
     assert "Fingerprints did not match" in exc_info.value.args[0]
+
+
+def test_get_config(waiting_httpserver):
+    waiting_httpserver.serve_content(
+        code=200, content=b'{"x": "y"}', headers={"Cache-Control": "max-age=5", "Etag": "2"}
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH)
+    try:
+        version, data, max_age = transport.get_config("1", {})
+        assert version == "2"
+        assert data == {"x": "y"}
+        assert max_age == 5
+    finally:
+        transport.close()
+
+
+@mock.patch("urllib3.poolmanager.PoolManager.urlopen")
+def test_get_config_handle_exception(mock_urlopen, caplog):
+    transport = Transport("http://example.com/" + constants.EVENTS_API_PATH)
+    mock_urlopen.side_effect = urllib3.exceptions.RequestError(transport.http, "http://example.com/", "boom")
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+            version, data, max_age = transport.get_config("1", {})
+        assert version == "1"
+        assert max_age == 300
+        record = caplog.records[-1]
+        assert "HTTP error" in record.msg
+    finally:
+        transport.close()
+
+
+def test_get_config_cache_headers_304(waiting_httpserver, caplog):
+    waiting_httpserver.serve_content(code=304, content=b"", headers={"Cache-Control": "max-age=5"})
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH)
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+            version, data, max_age = transport.get_config("1", {})
+        assert waiting_httpserver.requests[0].headers["If-None-Match"] == "1"
+        assert version == "1"
+        assert data is None
+        assert max_age == 5
+        record = caplog.records[-1]
+        assert "Configuration unchanged" in record.msg
+    finally:
+        transport.close()
+
+
+def test_get_config_bad_cache_control_header(waiting_httpserver, caplog):
+    waiting_httpserver.serve_content(
+        code=200, content=b'{"x": "y"}', headers={"Cache-Control": "max-age=fifty", "Etag": "2"}
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH)
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+            version, data, max_age = transport.get_config("1", {})
+        assert version == "2"
+        assert data == {"x": "y"}
+        assert max_age == 300
+        record = caplog.records[-1]
+        assert record.message == "Could not parse Cache-Control header: max-age=fifty"
+    finally:
+        transport.close()
+
+
+def test_get_config_empty_response(waiting_httpserver, caplog):
+    waiting_httpserver.serve_content(code=200, content=b"", headers={"Cache-Control": "max-age=5"})
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH)
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+            version, data, max_age = transport.get_config("1", {})
+        assert version == "1"
+        assert data is None
+        assert max_age == 5
+        record = caplog.records[-1]
+        assert record.message == "APM Server answered with empty body and status code 200"
+    finally:
+        transport.close()
