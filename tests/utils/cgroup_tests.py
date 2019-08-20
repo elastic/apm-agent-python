@@ -59,6 +59,10 @@ from elasticapm.utils import cgroup, compat
                 "kubernetes": {"pod": {"uid": "90d81341_92de_11e7_8cf2_507b9d4141fa"}},
             },
         ),
+        (
+            "1:name=systemd:/system.slice/garden.service/garden/70eb4ce5-a065-4401-6990-88ed",
+            {"container": {"id": "70eb4ce5-a065-4401-6990-88ed"}},
+        ),
     ],
 )
 def test_cgroup_parsing(test_input, expected):
