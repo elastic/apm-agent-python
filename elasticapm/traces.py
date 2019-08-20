@@ -134,10 +134,13 @@ class BaseSpan(object):
 
 
 class Transaction(BaseSpan):
-    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True):
+    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
-        self.timestamp, self.start_time = time.time(), _time_func()
+        if start:
+            self.timestamp = self.start_time = start
+        else:
+            self.timestamp, self.start_time = time.time(), _time_func()
         self.name = None
         self.duration = None
         self.result = None
@@ -202,6 +205,7 @@ class Transaction(BaseSpan):
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
+        start=None,
     ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
@@ -223,13 +227,16 @@ class Transaction(BaseSpan):
                 parent_span_id=parent_span_id,
                 span_subtype=span_subtype,
                 span_action=span_action,
+                start=start,
             )
             span.frames = tracer.frames_collector_func()
             self._span_counter += 1
         execution_context.set_span(span)
         return span
 
-    def begin_span(self, name, span_type, context=None, leaf=False, labels=None, span_subtype=None, span_action=None):
+    def begin_span(
+        self, name, span_type, context=None, leaf=False, labels=None, span_subtype=None, span_action=None, start=None
+    ):
         """
         Begin a new span
         :param name: name of the span
@@ -239,6 +246,7 @@ class Transaction(BaseSpan):
         :param labels: a flat string/string dict of labels
         :param span_subtype: sub type of the span, e.g. "postgresql"
         :param span_action: action of the span , e.g. "query"
+        :param start: timestamp, mostly useful for testing
         :return: the Span object
         """
         return self._begin_span(
@@ -250,6 +258,7 @@ class Transaction(BaseSpan):
             parent_span_id=None,
             span_subtype=span_subtype,
             span_action=span_action,
+            start=start,
         )
 
     def end_span(self, skip_frames=0, duration=None):
@@ -338,6 +347,7 @@ class Span(BaseSpan):
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
+        start=None,
     ):
         """
         Create a new Span
@@ -351,8 +361,9 @@ class Span(BaseSpan):
         :param parent_span_id: override of the span ID
         :param span_subtype: sub type of the span, e.g. mysql
         :param span_action: sub type of the span, e.g. query
+        :param start: timestamp, mostly useful for testing
         """
-        self.start_time = _time_func()
+        self.start_time = start or _time_func()
         self.id = "%016x" % random.getrandbits(64)
         self.transaction = transaction
         self.name = name
@@ -466,9 +477,13 @@ class Tracer(object):
         else:
             self.span_frames_min_duration = config.span_frames_min_duration / 1000.0
 
-    def begin_transaction(self, transaction_type, trace_parent=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
         """
         Start a new transactions and bind it in a thread-local variable
+
+        :param transaction_type: type of the transaction, e.g. "request"
+        :param trace_parent: an optional TraceParent object
+        :param start: override the start timestamp, mostly useful for testing
 
         :returns the Transaction object
         """
@@ -478,7 +493,7 @@ class Tracer(object):
             is_sampled = (
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
             )
-        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled)
+        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start)
         if trace_parent is None:
             transaction.trace_parent = TraceParent(
                 constants.TRACE_CONTEXT_VERSION,
@@ -517,7 +532,7 @@ class Tracer(object):
 
 
 class capture_span(object):
-    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "labels", "duration")
+    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "labels", "duration", "start")
 
     def __init__(
         self,
@@ -530,6 +545,7 @@ class capture_span(object):
         labels=None,
         span_subtype=None,
         span_action=None,
+        start=None,
         duration=None,
     ):
         self.name = name
@@ -548,6 +564,7 @@ class capture_span(object):
             labels = tags
 
         self.labels = labels
+        self.start = start
         self.duration = duration
 
     def __call__(self, func):
@@ -571,6 +588,7 @@ class capture_span(object):
                 labels=self.labels,
                 span_subtype=self.subtype,
                 span_action=self.action,
+                start=self.start,
             )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
