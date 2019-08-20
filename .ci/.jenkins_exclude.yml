@@ -45,6 +45,12 @@ exclude:
     FRAMEWORK: celery-4-django-1.11
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: celery-4-flask-1.0
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: celery-4-django-2.0
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: celery-4-django-1.11
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: celery-4-flask-1.0
   # requests
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: requests-1.2
@@ -53,6 +59,8 @@ exclude:
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
@@ -63,21 +71,31 @@ exclude:
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.0
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: pymongo-3.1
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: pymongo-3.2
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: pymongo-3.3
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: pymongo-3.4
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
@@ -85,6 +103,10 @@ exclude:
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: psycopg2-2.5
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: psycopg2-2.6
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: psycopg2-2.5
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: psycopg2-2.6
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: psycopg2-2.5
@@ -99,6 +121,8 @@ exclude:
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
   # pymssql
@@ -107,6 +131,8 @@ exclude:
   - PYTHON_VERSION: python-3.6 # currently fails with error on python 3.6 due to cython issues
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.7 # currently fails with error on python 3.7 due to cython issues
+    FRAMEWORK: pymssql-newest
+  - PYTHON_VERSION: python-3.8-rc # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
   # pyodbc
   - PYTHON_VERSION: pypy-2
@@ -117,6 +143,8 @@ exclude:
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: python-3.7
+    FRAMEWORK: boto3-1.0
+  - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: boto3-1.0
