@@ -235,13 +235,27 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type, trace_parent=None):
-        """Register the start of a transaction on the client
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
         """
-        return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent)
+        Register the start of a transaction on the client
 
-    def end_transaction(self, name=None, result=""):
-        transaction = self.tracer.end_transaction(result, name)
+        :param transaction_type: type of the transaction, e.g. "request"
+        :param trace_parent: an optional TraceParent object for distributed tracing
+        :param start: override the start timestamp, mostly useful for testing
+        :return: the started transaction object
+        """
+        return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
+
+    def end_transaction(self, name=None, result="", duration=None):
+        """
+        End the current transaction.
+
+        :param name: optional name of the transaction
+        :param result: result of the transaction, e.g. "OK" or "HTTP 2xx"
+        :param duration: override duration, mostly useful for testing
+        :return: the ended transaction object
+        """
+        transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 
     def close(self):
