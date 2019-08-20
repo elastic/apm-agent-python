@@ -39,7 +39,9 @@ kubepods_regexp = re.compile(
     r"(?:^/kubepods/[^/]+/pod([^/]+)$)|(?:^/kubepods\.slice/kubepods-[^/]+\.slice/kubepods-[^/]+-pod([^/]+)\.slice$)"
 )
 
-container_id_regexp = re.compile("^[0-9A-Fa-f]{64}$")
+container_id_regexp = re.compile(
+    "^(?:[0-9a-f]{64}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4,})$", re.IGNORECASE
+)
 
 
 def get_cgroup_container_metadata():
@@ -85,10 +87,8 @@ def parse_cgroups(filehandle):
         #
         # In a Kubernetes pod, the cgroup path will look like:
         #
-        #   systemd:
-        #      /kubepods.slice/kubepods-<QoS-class>.slice/kubepods-<QoS-class>-pod<pod-UID>.slice/<container-iD>.scope
-        #   cgroupfs:
-        #      /kubepods/<QoS-class>/pod<pod-UID>/<container-iD>
+        #   systemd:/kubepods.slice/kubepods-<QoS-class>.slice/kubepods-<QoS-class>-pod<pod-UID>.slice/<container-iD>.scope
+        #   cgroupfs:/kubepods/<QoS-class>/pod<pod-UID>/<container-iD>
 
         directory, container_id = os.path.split(cgroup_path)
         if container_id.endswith(SYSTEMD_SCOPE_SUFFIX):
