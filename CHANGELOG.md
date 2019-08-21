@@ -8,6 +8,9 @@
  * fixed Windows tests by avoiding time.sleep in breakdown metrics tests (#537, #550)
  * fixed container ID matching to match CloudFoundry Garden container IDs (#523, #564)
 
+### Other
+ * Added Python 3.8 RC to the test matrix (#565)
+
 ## v5.1.0 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...v5.1.0)
 
