@@ -104,8 +104,8 @@ pipeline {
             }
           }
         }
-        notifyBuildResult()
       }
+      notifyBuildResult()
     }
   }
 }
