@@ -4,7 +4,7 @@
 import co.elastic.matrix.*
 
 pipeline {
-  agent any
+  agent none
   environment {
     BASE_DIR="src/github.com/elastic/apm-agent-python"
     PIPELINE_LOG_LEVEL='INFO'
@@ -163,7 +163,9 @@ pipeline {
   }
   post {
     cleanup {
-      notifyBuildResult()
+      node('linux && immutable') {
+        notifyBuildResult()
+      }
     }
   }
 }
