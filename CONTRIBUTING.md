@@ -102,9 +102,13 @@ If you have commit access, the process is as follows:
 
 1. Update the version in `elasticapm/version.py` according to the scale of the change. (major, minor or patch)
 1. Update `CHANGELOG.md`
-1. Commit changes with message `update CHANGELOG and bump version to x.y.z` where `x.y.z` is the version in `elasticapm/version.py`
-1. Tag the commit with `git tag vx.y.x`, for example `git tag v1.2.3`
+1. Commit changes with message `update CHANGELOG and bump version to X.Y.Z` where `X.Y.Z` is the version in `elasticapm/version.py`
+1. Tag the commit with `git tag -a vX.Y.Z`, for example `git tag -a v1.2.3`.
+   Copy the changelog for the release to the tag message, removing any leading `#`.
 1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current master, e.g. `git branch -f 1.x master`
 1. Push commits and tags upstream with `git push upstream master && git push upstream --tags` (and optionally to your own fork as well)
 1. Update major branch, e.g. `1.x` on upstream with `git push upstream 1.x`
-1. After tests pass, TravisCI will automatically push a source package, as well as binary wheels, to PyPI.
+1. After tests pass, Jenkins will automatically build a source package, as well as binary wheels.
+   To upload them to PyPI, go to [Jenkins](https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/activity)
+   and look for the build with the correct tag name (`vX.Y.Z`). Once the build is done, a dialog will be shown.
+   Note that you need to be logged in to trigger an upload.
