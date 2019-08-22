@@ -303,7 +303,7 @@ def runScript(Map params = [:]){
 
 def releasePackages(){
   def vault_secret = 'secret/apm-team/ci/apm-agent-python-pypi-test'
-  if (env.REPO_URL == 'https://upload.pypi.org/legacy/'){
+  vault_secret = (env.REPO_URL == 'https://upload.pypi.org/legacy/') ? 'secret/apm-team/ci/apm-agent-python-pypi-prod' : 'secret/apm-team/ci/apm-agent-python-pypi-test'
     vault_secret = 'secret/apm-team/ci/apm-agent-python-pypi-prod'
   }
   withSecretVault(secret: vault_secret,
