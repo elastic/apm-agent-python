@@ -188,7 +188,7 @@ def generateStep(version){
 }
 
 def releasePackages(){
-  def vault_secret = 'secret/apm-team/ci/apm-agent-python-pypi-test'
+  def vault_secret = (env.REPO_URL == 'https://upload.pypi.org/legacy/') ? 'secret/apm-team/ci/apm-agent-python-pypi-prod' : 'secret/apm-team/ci/apm-agent-python-pypi-test'
   if (env.REPO_URL == 'https://upload.pypi.org/legacy/'){
     vault_secret = 'secret/apm-team/ci/apm-agent-python-pypi-prod'
   }
