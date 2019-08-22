@@ -2,7 +2,7 @@
 @Library('apm@current') _
 
 pipeline {
-  agent any
+  agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
     timestamps()

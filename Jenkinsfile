@@ -211,8 +211,8 @@ pipeline {
             }
           }
         }
-        notifyBuildResult()
       }
+      notifyBuildResult()
     }
   }
 }
