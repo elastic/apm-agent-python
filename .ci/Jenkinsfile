@@ -67,34 +67,34 @@ pipeline {
             }
           }
         }
-      }
-    }
-    /**
-    Execute unit tests.
-    */
-    stage('Test') {
-      agent { label 'linux && immutable' }
-      options {
-        timeout(time: 1, unit: 'HOURS')
-        skipDefaultCheckout()
-      }
-      steps {
-        withGithubNotify(context: 'Test', tab: 'tests') {
-        deleteDir()
-        unstash "source"
-        dir("${BASE_DIR}"){
-          script {
-            def node = readYaml(file: '.ci/.jenkins_python.yml')
-            def parallelTasks = [:]
-            node['PYTHON_VERSION'].each{ version ->
-              parallelTasks["${version}"] = generateStep(version)
-            }
-            parallel(parallelTasks)
+        /**
+        Execute unit tests.
+        */
+        stage('Test') {
+          options {
+            timeout(time: 1, unit: 'HOURS')
+            skipDefaultCheckout()
+          }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}"){
+                script {
+                  def node = readYaml(file: '.ci/.jenkins_python.yml')
+                  def parallelTasks = [:]
+                  node['PYTHON_VERSION'].each{ version ->
+                    parallelTasks["${version}"] = generateStep(version)
+                  }
+                  parallel(parallelTasks)
+                }
+              }
             }
           }
         }
       }
     }
+
     stage('Building packages') {
       agent { label 'docker && linux && immutable' }
       options {
