@@ -2,13 +2,6 @@
 @Library('apm@current') _
 
 import co.elastic.matrix.*
-import groovy.transform.Field
-
-/**
-This is the git commit sha which it's required to be used in different stages.
-It does store the env GIT_SHA
-*/
-@Field def gitCommit
 
 pipeline {
   agent none
@@ -49,9 +42,6 @@ pipeline {
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}")
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
-            script {
-              gitCommit = env.GIT_SHA
-            }
           }
         }
         stage('Sanity checks') {
@@ -70,35 +60,36 @@ pipeline {
                 docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
                   dir("${BASE_DIR}"){
                     // registry: '' will help to disable the docker login
-                    preCommit(commit: "${gitCommit}", junit: true, registry: '')
+                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
                   }
                 }
               }
             }
           }
         }
-        /**
-        Execute unit tests.
-        */
-        stage('Test') {
-          options {
-            timeout(time: 1, unit: 'HOURS')
-            skipDefaultCheckout()
-          }
-          steps {
-            withGithubNotify(context: 'Test', tab: 'tests') {
-              deleteDir()
-              unstash "source"
-              dir("${BASE_DIR}"){
-                script {
-                  def node = readYaml(file: '.ci/.jenkins_python.yml')
-                  def parallelTasks = [:]
-                  node['PYTHON_VERSION'].each{ version ->
-                    parallelTasks["${version}"] = generateStep(version)
-                  }
-                  parallel(parallelTasks)
-                }
-              }
+      }
+    }
+    /**
+    Execute unit tests.
+    */
+    stage('Test') {
+      agent { label 'linux && immutable' }
+      options {
+        timeout(time: 1, unit: 'HOURS')
+        skipDefaultCheckout()
+      }
+      steps {
+        withGithubNotify(context: 'Test', tab: 'tests') {
+        deleteDir()
+        unstash "source"
+        dir("${BASE_DIR}"){
+          script {
+            def node = readYaml(file: '.ci/.jenkins_python.yml')
+            def parallelTasks = [:]
+            node['PYTHON_VERSION'].each{ version ->
+              parallelTasks["${version}"] = generateStep(version)
+            }
+            parallel(parallelTasks)
             }
           }
         }
@@ -186,7 +177,7 @@ def generateStep(version){
     build(job: "apm-agent-python/apm-agent-python-downstream/${branch}",
       parameters: [
         string(name: 'PYTHON_VERSION', value: version),
-        string(name: 'BRANCH_SPECIFIER', value: gitCommit),
+        string(name: 'BRANCH_SPECIFIER', value: env.GIT_BASE_COMMIT),
         string(name: 'MERGE_TARGET', value: branch),
       ],
       propagate: true,
