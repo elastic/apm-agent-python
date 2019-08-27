@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent none
+  agent any
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -196,19 +196,17 @@ pipeline {
   }
   post {
     cleanup {
-      node('linux && immutable') {
-        script{
-          if(pythonTasksGen?.results){
-            writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
-            def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
-            def processor = new ResultsProcessor()
-            processor.processResults(mapResults)
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-            catchError(buildResult: 'SUCCESS') {
-              def datafile = readFile(file: "results.json")
-              def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
-              sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
-            }
+      script{
+        if(pythonTasksGen?.results){
+          writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
+          def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
+          def processor = new ResultsProcessor()
+          processor.processResults(mapResults)
+          archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          catchError(buildResult: 'SUCCESS') {
+            def datafile = readFile(file: "results.json")
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
         }
       }
