@@ -10,14 +10,8 @@ it is need as field to store the results of the tests.
 */
 @Field def pythonTasksGen
 
-/**
-This is the git commit sha which it's required to be used in different stages.
-It does store the env GIT_SHA
-*/
-@Field def gitCommit
-
 pipeline {
-  agent none
+  agent any
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -62,9 +56,6 @@ pipeline {
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
-            script {
-              gitCommit = env.GIT_SHA
-            }
           }
         }
         stage('Sanity checks') {
@@ -83,7 +74,7 @@ pipeline {
                 docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
                   dir("${BASE_DIR}"){
                     // registry: '' will help to disable the docker login
-                    preCommit(commit: "${gitCommit}", junit: true, registry: '')
+                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
                   }
                 }
               }
@@ -156,10 +147,10 @@ pipeline {
         log(level: 'INFO', text: 'Launching Async ITs')
         build(job: env.ITS_PIPELINE, propagate: false, wait: false,
               parameters: [string(name: 'AGENT_INTEGRATION_TEST', value: 'Python'),
-                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${gitCommit}"),
+                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT}"),
                            string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
                            string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
-                           string(name: 'GITHUB_CHECK_SHA1', value: gitCommit)])
+                           string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
         githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
@@ -205,19 +196,17 @@ pipeline {
   }
   post {
     cleanup {
-      node('linux && immutable') {
-        script{
-          if(pythonTasksGen?.results){
-            writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
-            def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
-            def processor = new ResultsProcessor()
-            processor.processResults(mapResults)
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-            catchError(buildResult: 'SUCCESS') {
-              def datafile = readFile(file: "results.json")
-              def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
-              sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
-            }
+      script{
+        if(pythonTasksGen?.results){
+          writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
+          def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
+          def processor = new ResultsProcessor()
+          processor.processResults(mapResults)
+          archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          catchError(buildResult: 'SUCCESS') {
+            def datafile = readFile(file: "results.json")
+            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
         }
       }
