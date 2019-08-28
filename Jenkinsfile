@@ -302,7 +302,8 @@ def runScript(Map params = [:]){
 }
 
 def releasePackages(){
-  withSecretVault(secret: 'secret/apm-team/ci/apm-agent-python-twine',
+  def vault_secret = (env.REPO_URL == 'https://upload.pypi.org/legacy/') ? 'secret/apm-team/ci/apm-agent-python-pypi-prod' : 'secret/apm-team/ci/apm-agent-python-pypi-test'
+  withSecretVault(secret: vault_secret,
                   user_var_name: 'TWINE_USER', pass_var_name: 'TWINE_PASSWORD'){
     sh(label: "Release packages", script: """
     set +x
