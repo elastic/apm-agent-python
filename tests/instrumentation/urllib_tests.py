@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import mock
 import pytest
 
 from elasticapm.conf import constants
@@ -39,9 +40,15 @@ from elasticapm.utils.disttracing import TraceParent
 try:
     from urllib.request import urlopen
     from urllib.error import URLError
+
+    request_method = "http.client.HTTPConnection.request"
+    getresponse_method = "http.client.HTTPConnection.getresponse"
 except ImportError:
     from urllib2 import urlopen
     from urllib2 import URLError
+
+    request_method = "httplib.HTTPConnection.request"
+    getresponse_method = "httplib.HTTPConnection.getresponse"
 
 
 def test_urllib(instrument, elasticapm_client, waiting_httpserver):
@@ -75,6 +82,30 @@ def test_urllib(instrument, elasticapm_client, waiting_httpserver):
     assert spans[1]["name"] == "test_name"
     assert spans[1]["type"] == "test_type"
     assert spans[1]["parent_id"] == transactions[0]["id"]
+
+
+@mock.patch(request_method)
+@mock.patch(getresponse_method)
+def test_urllib_standard_port(mock_getresponse, mock_request, instrument, elasticapm_client):
+    # "code" is needed for Python 3, "status" for Python 2
+    mock_getresponse.return_value = mock.Mock(code=200, status=200)
+
+    url = "http://example.com/"
+    parsed_url = urlparse.urlparse(url)
+    elasticapm_client.begin_transaction("transaction")
+    expected_sig = "GET {0}".format(parsed_url.netloc)
+    r = urlopen(url)
+
+    elasticapm_client.end_transaction("MyView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    assert spans[0]["name"] == expected_sig
+    assert spans[0]["type"] == "external"
+    assert spans[0]["subtype"] == "http"
+    assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["parent_id"] == transactions[0]["id"]
 
 
 def test_trace_parent_propagation_sampled(instrument, elasticapm_client, waiting_httpserver):

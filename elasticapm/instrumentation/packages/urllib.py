@@ -49,12 +49,12 @@ def request_host(request):
     scheme, host, port = parse_result.scheme, parse_result.hostname, parse_result.port
     try:
         port = int(port)
-    except ValueError:
+    except (ValueError, TypeError):
         pass
     if host == "":
         host = request.get_header("Host", "")
 
-    if port != default_ports.get(scheme):
+    if port and port != default_ports.get(scheme):
         host = "%s:%s" % (host, port)
     return host
 
