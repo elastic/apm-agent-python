@@ -188,6 +188,16 @@ def test_ssl_verify_disable(waiting_httpsserver):
         transport.close()
 
 
+def test_ssl_verify_disable_http(waiting_httpserver):
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(waiting_httpserver.url, verify_server_cert=False)
+    try:
+        url = transport.send(compat.b("x"))
+        assert url == "http://example.com/foo"
+    finally:
+        transport.close()
+
+
 def test_ssl_cert_pinning(waiting_httpsserver):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
     cur_dir = os.path.dirname(os.path.realpath(__file__))
