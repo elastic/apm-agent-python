@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.1...master)
+
+### Bugfixes
+ * fixed an issue with http server_url and `'VERIFY_SERVER_CERT': False` (#570, #578)
+
 ## v5.1.1 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.0...v5.1.1)
 
