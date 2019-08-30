@@ -54,14 +54,18 @@ pytestmark = pytest.mark.psycopg2
 has_postgres_configured = "POSTGRES_DB" in os.environ
 
 
+def connect_kwargs():
+    return {
+        "database": os.environ.get("POSTGRES_DB", "elasticapm_test"),
+        "user": os.environ.get("POSTGRES_USER", "postgres"),
+        "host": os.environ.get("POSTGRES_HOST", None),
+        "port": os.environ.get("POSTGRES_PORT", None),
+    }
+
+
 @pytest.yield_fixture(scope="function")
 def postgres_connection(request):
-    conn = psycopg2.connect(
-        database=os.environ.get("POSTGRES_DB", "elasticapm_test"),
-        user=os.environ.get("POSTGRES_USER", "postgres"),
-        host=os.environ.get("POSTGRES_HOST", None),
-        port=os.environ.get("POSTGRES_PORT", None),
-    )
+    conn = psycopg2.connect(**connect_kwargs())
     cursor = conn.cursor()
     cursor.execute(
         "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
@@ -376,3 +380,22 @@ def test_psycopg2_call_stored_procedure(instrument, postgres_connection, elastic
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
     assert span["name"] == "squareme()"
     assert span["action"] == "exec"
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_psycopg_context_manager(instrument, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with psycopg2.connect(**connect_kwargs()) as conn:
+        with conn.cursor() as curs:
+            curs.execute("SELECT 1;")
+            curs.fetchall()
+    elasticapm_client.end_transaction("test", "OK")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 2
+    assert spans[0]["subtype"] == "postgresql"
+    assert spans[0]["action"] == "connect"
+
+    assert spans[1]["subtype"] == "postgresql"
+    assert spans[1]["action"] == "query"
