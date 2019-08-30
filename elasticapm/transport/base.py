@@ -109,7 +109,7 @@ class Transport(object):
             self._event_queue.put((event_type, data, flush), block=False, **kwargs)
 
         except compat.queue.Full:
-            logger.warning("Event of type %s dropped due to full event queue", event_type)
+            logger.debug("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
         buffer = self._init_buffer()
