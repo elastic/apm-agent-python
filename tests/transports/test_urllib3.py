@@ -188,6 +188,38 @@ def test_ssl_verify_disable(waiting_httpsserver):
         transport.close()
 
 
+def test_ssl_verify_disable_http(waiting_httpserver):
+    """
+    Make sure that ``assert_hostname`` isn't passed in for http requests, even
+    with verify_server_cert=False
+    """
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(waiting_httpserver.url, verify_server_cert=False)
+    try:
+        url = transport.send(compat.b("x"))
+        assert url == "http://example.com/foo"
+    finally:
+        transport.close()
+
+
+def test_ssl_cert_pinning_http(waiting_httpserver):
+    """
+    Won't fail, as with the other cert pinning test, since certs aren't relevant
+    for http, only https.
+    """
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(
+        waiting_httpserver.url,
+        server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"),
+        verify_server_cert=True,
+    )
+    try:
+        url = transport.send(compat.b("x"))
+        assert url == "http://example.com/foo"
+    finally:
+        transport.close()
+
+
 def test_ssl_cert_pinning(waiting_httpsserver):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
     cur_dir = os.path.dirname(os.path.realpath(__file__))

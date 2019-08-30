@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.1...master)
 
 ### Bugfixes
+ * fixed an issue with http server_url and `'VERIFY_SERVER_CERT': False` (#570, #578)
  * fixed instrumenting of psycopg2 when using their context manager interface (#577, #580)
 
 ## v5.1.1 
