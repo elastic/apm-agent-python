@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.1...master)
+
+### Bugfixes
+ * fixed instrumenting of psycopg2 when using their context manager interface (#577, #580)
+
 ## v5.1.1 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.0...v5.1.1)
 
