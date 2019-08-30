@@ -51,12 +51,12 @@ class Transport(HTTPTransportBase):
         super(Transport, self).__init__(url, **kwargs)
         url_parts = compat.urlparse.urlparse(url)
         pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": certifi.where(), "block": True}
-        if self._server_cert and not url.startswith("http://"):
+        if self._server_cert and url_parts.scheme != "http":
             pool_kwargs.update(
                 {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
             )
             del pool_kwargs["ca_certs"]
-        elif not self._verify_server_cert and not url.startswith("http://"):
+        elif not self._verify_server_cert and url_parts.scheme != "http":
             pool_kwargs["cert_reqs"] = ssl.CERT_NONE
             pool_kwargs["assert_hostname"] = False
         proxies = compat.getproxies_environment()
