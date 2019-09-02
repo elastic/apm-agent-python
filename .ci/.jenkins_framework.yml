@@ -28,4 +28,4 @@ FRAMEWORK:
   - cassandra-newest
   - psutil-newest
   - eventlet-newest
-
+  - gevent-newest
