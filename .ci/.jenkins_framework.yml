@@ -28,4 +28,5 @@ FRAMEWORK:
   - cassandra-newest
   - psutil-newest
   - eventlet-newest
+  - zerorpc-0.4
 

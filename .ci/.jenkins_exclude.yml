@@ -154,3 +154,16 @@ exclude:
   # eventlet
   - PYTHON_VERSION: pypy-2  #currently fails on pypy2
     FRAMEWORK: eventlet-newest
+  # zerorpc - only run on py2
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: zerorpc-0.4
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: zerorpc-0.4
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: zerorpc-0.4
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: zerorpc-0.4
+  - PYTHON_VERSION: python-3.7
+    FRAMEWORK: zerorpc-0.4
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: zerorpc-0.4

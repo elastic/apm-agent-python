@@ -59,3 +59,4 @@ FRAMEWORK:
   - elasticsearch-5
   - elasticsearch-6
   - elasticsearch-7
+  - zerorpc-0.4
