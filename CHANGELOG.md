@@ -5,6 +5,7 @@
 
 ### Bugfixes
  * fixed an issue with http server_url and `'VERIFY_SERVER_CERT': False` (#570, #578)
+ * fixed instrumenting of psycopg2 when using their context manager interface (#577, #580)
  * fixed zerorpc tests (#581)
 
 ## v5.1.1 

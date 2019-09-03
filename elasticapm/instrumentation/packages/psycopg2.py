@@ -51,9 +51,15 @@ class PGCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    def __enter__(self):
+        return PGCursorProxy(self.__wrapped__.__enter__())
+
 
 class PGConnectionProxy(ConnectionProxy):
     cursor_proxy = PGCursorProxy
+
+    def __enter__(self):
+        return PGConnectionProxy(self.__wrapped__.__enter__())
 
 
 class Psycopg2Instrumentation(DbApi2Instrumentation):
