@@ -55,7 +55,8 @@ pipeline {
           repo: "${REPO}",
           credentialsId: "${JOB_GIT_CREDENTIALS}",
           mergeTarget: "${params.MERGE_TARGET}",
-          reference: '/var/lib/jenkins/apm-agent-python.git')
+          reference: '/var/lib/jenkins/apm-agent-python.git',
+          shallow: false)
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false
       }
     }

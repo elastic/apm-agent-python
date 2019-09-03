@@ -36,16 +36,18 @@ import tempfile
 
 import pytest
 
+from elasticapm.conf.constants import ERROR
 from elasticapm.contrib.zerorpc import Middleware
+
+pytestmark = [
+    pytest.mark.zerorpc,
+    pytest.mark.skipif(sys.version_info >= (3, 4), reason="zerorpc>=0.4.0,0.5 not python 3 compatible"),
+]
 
 zerorpc = pytest.importorskip("zerorpc")
 gevent = pytest.importorskip("gevent")
 
 
-has_unsupported_pypy = hasattr(sys, "pypy_version_info") and sys.pypy_version_info < (2, 6)
-
-
-@pytest.mark.skipif(has_unsupported_pypy, reason="Failure with pypy < 2.6")
 def test_zerorpc_middleware_with_reqrep(elasticapm_client):
     tmpdir = tempfile.mkdtemp()
     server_endpoint = "ipc://{0}".format(os.path.join(tmpdir, "random_zeroserver"))
@@ -68,9 +70,9 @@ def test_zerorpc_middleware_with_reqrep(elasticapm_client):
     ex = excinfo.value
     assert ex.name == "IndexError"
     assert len(elasticapm_client.events) == 1
-    exc = elasticapm_client.events[0]["errors"][0]["exception"]
+    exc = elasticapm_client.events[ERROR][0]["exception"]
     assert exc["type"] == "IndexError"
     frames = exc["stacktrace"]
     assert frames[0]["function"] == "choice"
     assert frames[0]["module"] == "random"
-    assert elasticapm_client.events[0]["errors"][0]["exception"]["handled"] is False
+    assert exc["handled"] is False
