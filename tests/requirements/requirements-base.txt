@@ -33,6 +33,7 @@ msgpack-python
 pep8
 urllib3-mock
 pytz
+psutil
 
 
 aiohttp ; python_version >= '3.5'
