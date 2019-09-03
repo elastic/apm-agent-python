@@ -128,7 +128,7 @@ tests_require = [
 ]
 
 if sys.version_info[0] == 2:
-    tests_require += ["unittest2", "gevent", "zerorpc>=0.4.0,<0.5", "python-memcached"]
+    tests_require += ["unittest2", "python-memcached"]
 else:
     tests_require += ["python3-memcached"]
 
@@ -136,8 +136,6 @@ else:
 try:
     import __pypy__
 except ImportError:
-    if sys.version_info[0] == 2 and "SKIP_ZERORPC" not in os.environ:
-        tests_require += ["zerorpc>=0.4.0,<0.5"]
     tests_require += ["psycopg2"]
 
 if sys.version_info >= (3, 5):
