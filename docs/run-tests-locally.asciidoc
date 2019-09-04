@@ -55,5 +55,18 @@ We run the test suite on different combinations of Python versions and web frame
 ----
 $ ./tests/scripts/docker/run_tests.sh python-version framework-version <pip-cache-dir>
 ----
-NOTE: The `python-version` must be of format `python:version`, e.g. `python:3.6` or `pypy:2`.
+NOTE: The `python-version` must be of format `python-version`, e.g. `python-3.6` or `pypy-2`.
 The `framework` must be of format `framework-version`, e.g. `django-1.10` or `flask-0.12`.
+
+==== Integration testing
+
+Check out https://github.com/elastic/apm-integration-testing for resources for
+setting up full end-to-end testing environments. For example, to spin up
+an environment with the https://github.com/basepi/opbeans-python[opbeans Django app],
+with version 7.3 of the elastic stack and the apm-python-agent from your local
+checkout, you might do something like this:
+
+[source,bash]
+----
+$ ./scripts/compose.py start 7.3 --with-agent-python-django --with-opbeans-python --opbeans-python-agent-local-repo=~/elastic/apm-agent-python 
+----
