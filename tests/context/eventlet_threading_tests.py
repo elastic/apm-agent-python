@@ -29,38 +29,24 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def init_execution_context():
-    # If _threading_local has been monkeypatched (by gevent or eventlet), then
-    # we should assume it's use as this will be the most "green-thread safe"
-    if threading_local_monkey_patched():
-        from elasticapm.context.threadlocal import execution_context
+import pytest  # isort:skip
 
-        return execution_context
+eventlet = pytest.importorskip("eventlet")  # isort:skip
 
-    try:
-        from elasticapm.context.contextvars import execution_context
-    except ImportError:
-        from elasticapm.context.threadlocal import execution_context
-    return execution_context
+from eventlet.patcher import is_monkey_patched
+
+import elasticapm.context
+from elasticapm.context.threadlocal import ThreadLocalContext
+
+pytestmark = pytest.mark.eventlet
 
 
-def threading_local_monkey_patched():
-    # Returns True if thread locals have been patched by either gevent of
-    # eventlet
-    try:
-        from gevent.monkey import is_object_patched
-    except ImportError:
-        pass
-    else:
-        if is_object_patched("threading", "local"):
-            return True
+def test_eventlet_thread_monkeypatched():
+    eventlet.monkey_patch(thread=True)
+    assert is_monkey_patched("thread")
 
-    try:
-        from eventlet.patcher import is_monkey_patched
-    except ImportError:
-        pass
-    else:
-        if is_monkey_patched("thread"):
-            return True
+    execution_context = elasticapm.context.init_execution_context()
 
-    return False
+    # Should always use ThreadLocalContext when eventlet has patched
+    # threading.local
+    assert isinstance(execution_context, ThreadLocalContext)

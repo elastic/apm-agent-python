@@ -59,4 +59,5 @@ FRAMEWORK:
   - elasticsearch-5
   - elasticsearch-6
   - elasticsearch-7
+  - gevent-newest
   - zerorpc-0.4
