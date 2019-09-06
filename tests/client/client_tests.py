@@ -250,6 +250,7 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
         secret_token="secret",
         transport_class="elasticapm.transport.http.Transport",
         metrics_interval="0ms",
+        metrics_sets=[],
     )
     # test error
     http_send.side_effect = ValueError("oopsie")
