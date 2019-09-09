@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased changes
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...master)
+
+### New Features
+ * added `logging` filter for adding transaction and trace_parent IDs (#520, #586)
+ * added `structlog` processor for adding transaction and trace_parent IDs (#520, #586)
+ * added new public API calls for getting transaction ID and trace_parent ID (#520, #586)
+
 ## v5.1.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.1...v5.1.2)
 
