@@ -1,0 +1,52 @@
+[[logging-integrations]]
+=== Logging Integrations
+
+`elasticapm` provides integrations with both the default python logging library,
+as well as http://www.structlog.org/en/stable/[`structlog`].
+
+[[logging]]
+==== `logging`
+
+We provide a https://docs.python.org/3/library/logging.html#filter-objects[filter]
+which will add two new attributes to any filtered `LogRecord`:
+
+* `elasticapm_transaction_id`
+* `elasticapm_transaction_trace_parent_id`
+
+Note that because https://docs.python.org/3/library/logging.html#filter-objects[filters
+are not propagated to descendent loggers], you should add the filter to each of
+your log handlers, as handlers are propagated, along with their attached filters.
+
+[source,python]
+----
+import logging
+from elasticapm.handlers.logging import LoggingFilter
+
+console = logging.StreamHandler()
+console.addFilter(LoggingFilter())
+# add the handler to the root logger
+logging.getLogger("").addHandler(console)
+----
+
+
+[[structlog]]
+==== `structlog`
+
+We provide a http://www.structlog.org/en/stable/processors.html[processor] for
+http://www.structlog.org/en/stable/[`structlog`] which will add two new keys
+to the event_dict of any processed event:
+
+* `"elasticapm_transaction_id"`
+* `"elasticapm_transaction_trace_parent_id"`
+
+[source,python]
+----
+from structlog import PrintLogger, wrap_logger
+from elasticapm.handlers.logging import structlog_processor
+
+wrapped_logger = PrintLogger()
+logger = wrap_logger(wrapped_logger, processors=[structlog_processor])
+log = logger.new()
+log.msg("some_event")
+----
+

@@ -642,6 +642,26 @@ def set_transaction_result(result, override=True):
         transaction.result = result
 
 
+def get_transaction_id():
+    """
+    Returns the current transaction ID
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        return
+    return transaction.id
+
+
+def get_transaction_trace_parent_id():
+    """
+    Returns the current transaction ID
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        return
+    return transaction.trace_parent.trace_id if transaction.trace_parent else None
+
+
 def set_context(data, key="custom"):
     """
     Attach contextual data to the current transaction and errors that happen during the current transaction.

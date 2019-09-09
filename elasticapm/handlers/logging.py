@@ -36,6 +36,7 @@ import sys
 import traceback
 
 from elasticapm.base import Client
+from elasticapm.traces import execution_context
 from elasticapm.utils import compat
 from elasticapm.utils.encoding import to_unicode
 from elasticapm.utils.stacks import iter_stack_frames
@@ -155,3 +156,51 @@ class LoggingHandler(logging.Handler):
             logger_name=record.name,
             **kwargs
         )
+
+
+class LoggingFilter(logging.Filter):
+    """
+    This filter doesn't actually do any "filtering" -- rather, it just adds
+    two new attributes to any "filtered" LogRecord objects:
+
+    * elasticapm_transaction_id
+    * elasticapm_transaction_trace_parent_id
+
+    These attributes can then be incorporated into your handlers and formatters,
+    so that you can tie log messages to transactions in elasticsearch.
+    """
+
+    def filter(self, record):
+        """
+        Add elasticapm attributes to `record`.
+        """
+        transaction = execution_context.get_transaction()
+        record.elasticapm_transaction_id = transaction.id
+        record.elasticapm_transaction_trace_parent_id = (
+            transaction.trace_parent.trace_id if transaction.trace_parent else None
+        )
+        return True
+
+
+def structlog_processor(_, __, event_dict):
+    """
+    Add two new entries to the event_dict for any processed events:
+
+    * elasticapm_transaction_id
+    * elasticapm_transaction_trace_parent_id
+
+    :param _:
+        Unused (logger instance in structlog)
+    :param __:
+        Unused (wrapped method_name)
+    :param event_dict:
+        Event dictionary for the event we're processing
+    :return:
+        `event_dict`, with two new entries.
+    """
+    transaction = execution_context.get_transaction()
+    event_dict["elasticapm_transaction_id"] = transaction.id
+    event_dict["elasticapm_transaction_trace_parent_id"] = (
+        transaction.trace_parent.trace_id if transaction.trace_parent else None
+    )
+    return event_dict

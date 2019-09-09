@@ -33,8 +33,10 @@ from logging import LogRecord
 
 import pytest
 
+from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
-from elasticapm.handlers.logging import LoggingHandler
+from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, structlog_processor
+from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
@@ -245,3 +247,22 @@ def test_arbitrary_object(logger):
     event = logger.client.events[ERROR][0]
     assert "param_message" in event["log"]
     assert event["log"]["param_message"] == "['a', 'list', 'of', 'strings']"
+
+
+def test_logging_filter():
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store.begin_transaction("test")
+    f = LoggingFilter()
+    record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+    f.filter(record)
+    assert record.elasticapm_transaction_id
+    assert record.elasticapm_transaction_trace_parent_id
+
+
+def test_structlog_processor():
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store.begin_transaction("test")
+    event_dict = {}
+    new_dict = structlog_processor(None, None, event_dict)
+    assert "elasticapm_transaction_id" in new_dict
+    assert "elasticapm_transaction_trace_parent_id" in new_dict
