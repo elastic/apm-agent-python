@@ -652,9 +652,9 @@ def get_transaction_id():
     return transaction.id
 
 
-def get_transaction_trace_parent_id():
+def get_trace_id():
     """
-    Returns the current transaction ID
+    Returns the current trace ID
     """
     transaction = execution_context.get_transaction()
     if not transaction:

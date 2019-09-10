@@ -256,7 +256,7 @@ def test_logging_filter():
     record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
     f.filter(record)
     assert record.elasticapm_transaction_id
-    assert record.elasticapm_transaction_trace_parent_id
+    assert record.elasticapm_trace_id
 
 
 def test_structlog_processor():
@@ -264,5 +264,5 @@ def test_structlog_processor():
     requests_store.begin_transaction("test")
     event_dict = {}
     new_dict = structlog_processor(None, None, event_dict)
-    assert "elasticapm_transaction_id" in new_dict
-    assert "elasticapm_transaction_trace_parent_id" in new_dict
+    assert "transaction.id" in new_dict
+    assert "trace.id" in new_dict

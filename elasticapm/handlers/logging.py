@@ -164,7 +164,7 @@ class LoggingFilter(logging.Filter):
     two new attributes to any "filtered" LogRecord objects:
 
     * elasticapm_transaction_id
-    * elasticapm_transaction_trace_parent_id
+    * elasticapm_trace_id
 
     These attributes can then be incorporated into your handlers and formatters,
     so that you can tie log messages to transactions in elasticsearch.
@@ -176,22 +176,20 @@ class LoggingFilter(logging.Filter):
         """
         transaction = execution_context.get_transaction()
         record.elasticapm_transaction_id = transaction.id
-        record.elasticapm_transaction_trace_parent_id = (
-            transaction.trace_parent.trace_id if transaction.trace_parent else None
-        )
+        record.elasticapm_trace_id = transaction.trace_parent.trace_id if transaction.trace_parent else None
         return True
 
 
-def structlog_processor(_, __, event_dict):
+def structlog_processor(logger, method_name, event_dict):
     """
     Add two new entries to the event_dict for any processed events:
 
-    * elasticapm_transaction_id
-    * elasticapm_transaction_trace_parent_id
+    * transaction.id
+    * trace.id
 
-    :param _:
+    :param logger:
         Unused (logger instance in structlog)
-    :param __:
+    :param method_name:
         Unused (wrapped method_name)
     :param event_dict:
         Event dictionary for the event we're processing
@@ -199,8 +197,6 @@ def structlog_processor(_, __, event_dict):
         `event_dict`, with two new entries.
     """
     transaction = execution_context.get_transaction()
-    event_dict["elasticapm_transaction_id"] = transaction.id
-    event_dict["elasticapm_transaction_trace_parent_id"] = (
-        transaction.trace_parent.trace_id if transaction.trace_parent else None
-    )
+    event_dict["transaction.id"] = transaction.id
+    event_dict["trace.id"] = transaction.trace_parent.trace_id if transaction.trace_parent else None
     return event_dict

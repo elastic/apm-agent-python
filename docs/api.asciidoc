@@ -209,8 +209,8 @@ transaction_id = elasticapm.get_transaction_id()
 
 
 [float]
-[[api-get-transaction-trace-parent-id]]
-==== `elasticapm.get_transaction_trace_parent_id()`
+[[api-get-trace-id]]
+==== `elasticapm.get_trace_id()`
 
 Get the parent_id of the current transaction's trace. Example:
 
@@ -218,7 +218,7 @@ Get the parent_id of the current transaction's trace. Example:
 ----
 import elasticapm
 
-trace_parent_id = elasticapm.get_transaction_trace_parent_id()
+trace_parent_id = elasticapm.get_trace_id()
 ----
 
 
