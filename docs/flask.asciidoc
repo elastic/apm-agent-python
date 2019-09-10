@@ -51,7 +51,7 @@ To configure the agent using `ELASTIC_APM` in your application's settings:
 ----
 from elasticapm.contrib.flask import ElasticAPM
 
-app.config['ELASTIC_APM'] ={
+app.config['ELASTIC_APM'] = {
     'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
 }
