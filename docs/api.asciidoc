@@ -223,6 +223,20 @@ trace_parent_id = elasticapm.get_trace_id()
 
 
 [float]
+[[api-get-span-id]]
+==== `elasticapm.get_span_id()`
+
+Get the id of the current span. Example:
+
+[source,python]
+----
+import elasticapm
+
+span_id = elasticapm.get_span_id()
+----
+
+
+[float]
 [[api-set-custom-context]]
 ==== `elasticapm.set_custom_context()`
 

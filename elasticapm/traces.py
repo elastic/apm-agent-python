@@ -662,6 +662,16 @@ def get_trace_id():
     return transaction.trace_parent.trace_id if transaction.trace_parent else None
 
 
+def get_span_id():
+    """
+    Returns the current span ID
+    """
+    span = execution_context.get_span()
+    if not span:
+        return
+    return span.id
+
+
 def set_context(data, key="custom"):
     """
     Attach contextual data to the current transaction and errors that happen during the current transaction.

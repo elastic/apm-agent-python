@@ -36,7 +36,7 @@ import pytest
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, structlog_processor
-from elasticapm.traces import Tracer, execution_context
+from elasticapm.traces import Tracer, capture_span, execution_context
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
@@ -249,7 +249,7 @@ def test_arbitrary_object(logger):
     assert event["log"]["param_message"] == "['a', 'list', 'of', 'strings']"
 
 
-def test_logging_filter():
+def test_logging_filter_no_span():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     requests_store.begin_transaction("test")
     f = LoggingFilter()
@@ -257,12 +257,37 @@ def test_logging_filter():
     f.filter(record)
     assert record.elasticapm_transaction_id
     assert record.elasticapm_trace_id
+    assert record.elasticapm_span_id is None
 
 
-def test_structlog_processor():
+def test_structlog_processor_no_span():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     requests_store.begin_transaction("test")
     event_dict = {}
     new_dict = structlog_processor(None, None, event_dict)
-    assert "transaction.id" in new_dict
-    assert "trace.id" in new_dict
+    assert new_dict["transaction.id"]
+    assert new_dict["trace.id"]
+    assert new_dict["span.id"] is None
+
+
+def test_logging_filter_span():
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store.begin_transaction("test")
+    with capture_span("test"):
+        f = LoggingFilter()
+        record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+        f.filter(record)
+        assert record.elasticapm_transaction_id
+        assert record.elasticapm_trace_id
+        assert record.elasticapm_span_id
+
+
+def test_structlog_processor_span():
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store.begin_transaction("test")
+    with capture_span("test"):
+        event_dict = {}
+        new_dict = structlog_processor(None, None, event_dict)
+        assert new_dict["transaction.id"]
+        assert new_dict["trace.id"]
+        assert new_dict["span.id"]

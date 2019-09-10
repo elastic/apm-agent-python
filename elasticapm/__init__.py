@@ -42,4 +42,4 @@ from elasticapm.instrumentation.control import instrument, uninstrument  # noqa:
 from elasticapm.traces import capture_span, set_context, set_custom_context  # noqa: F401
 from elasticapm.traces import set_transaction_name, set_user_context, tag, label  # noqa: F401
 from elasticapm.traces import set_transaction_result  # noqa: F401
-from elasticapm.traces import get_transaction_id, get_trace_id  # noqa: F401
+from elasticapm.traces import get_transaction_id, get_trace_id, get_span_id  # noqa: F401

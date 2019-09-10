@@ -165,6 +165,7 @@ class LoggingFilter(logging.Filter):
 
     * elasticapm_transaction_id
     * elasticapm_trace_id
+    * elasticapm_span_id
 
     These attributes can then be incorporated into your handlers and formatters,
     so that you can tie log messages to transactions in elasticsearch.
@@ -175,8 +176,12 @@ class LoggingFilter(logging.Filter):
         Add elasticapm attributes to `record`.
         """
         transaction = execution_context.get_transaction()
-        record.elasticapm_transaction_id = transaction.id
-        record.elasticapm_trace_id = transaction.trace_parent.trace_id if transaction.trace_parent else None
+        record.elasticapm_transaction_id = transaction.id if transaction else None
+        record.elasticapm_trace_id = (
+            transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
+        )
+        span = execution_context.get_span()
+        record.elasticapm_span_id = span.id if span else None
         return True
 
 
@@ -186,6 +191,7 @@ def structlog_processor(logger, method_name, event_dict):
 
     * transaction.id
     * trace.id
+    * span.id
 
     :param logger:
         Unused (logger instance in structlog)
@@ -197,6 +203,8 @@ def structlog_processor(logger, method_name, event_dict):
         `event_dict`, with two new entries.
     """
     transaction = execution_context.get_transaction()
-    event_dict["transaction.id"] = transaction.id
-    event_dict["trace.id"] = transaction.trace_parent.trace_id if transaction.trace_parent else None
+    event_dict["transaction.id"] = transaction.id if transaction else None
+    event_dict["trace.id"] = transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
+    span = execution_context.get_span()
+    event_dict["span.id"] = span.id if span else None
     return event_dict
