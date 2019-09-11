@@ -161,7 +161,7 @@ class LoggingHandler(logging.Handler):
 class LoggingFilter(logging.Filter):
     """
     This filter doesn't actually do any "filtering" -- rather, it just adds
-    two new attributes to any "filtered" LogRecord objects:
+    three new attributes to any "filtered" LogRecord objects:
 
     * elasticapm_transaction_id
     * elasticapm_trace_id
@@ -183,28 +183,3 @@ class LoggingFilter(logging.Filter):
         span = execution_context.get_span()
         record.elasticapm_span_id = span.id if span else None
         return True
-
-
-def structlog_processor(logger, method_name, event_dict):
-    """
-    Add two new entries to the event_dict for any processed events:
-
-    * transaction.id
-    * trace.id
-    * span.id
-
-    :param logger:
-        Unused (logger instance in structlog)
-    :param method_name:
-        Unused (wrapped method_name)
-    :param event_dict:
-        Event dictionary for the event we're processing
-    :return:
-        `event_dict`, with two new entries.
-    """
-    transaction = execution_context.get_transaction()
-    event_dict["transaction.id"] = transaction.id if transaction else None
-    event_dict["trace.id"] = transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
-    span = execution_context.get_span()
-    event_dict["span.id"] = span.id if span else None
-    return event_dict

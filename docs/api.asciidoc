@@ -218,7 +218,7 @@ Get the parent_id of the current transaction's trace. Example:
 ----
 import elasticapm
 
-trace_parent_id = elasticapm.get_trace_id()
+trace_id = elasticapm.get_trace_id()
 ----
 
 

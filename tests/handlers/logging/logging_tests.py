@@ -35,7 +35,8 @@ import pytest
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
-from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, structlog_processor
+from elasticapm.handlers.logging import LoggingFilter, LoggingHandler
+from elasticapm.handlers.structlog import structlog_processor
 from elasticapm.traces import Tracer, capture_span, execution_context
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
@@ -251,43 +252,43 @@ def test_arbitrary_object(logger):
 
 def test_logging_filter_no_span():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    requests_store.begin_transaction("test")
+    transaction = requests_store.begin_transaction("test")
     f = LoggingFilter()
     record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
     f.filter(record)
-    assert record.elasticapm_transaction_id
-    assert record.elasticapm_trace_id
+    assert record.elasticapm_transaction_id == transaction.id
+    assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
     assert record.elasticapm_span_id is None
 
 
 def test_structlog_processor_no_span():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    requests_store.begin_transaction("test")
+    transaction = requests_store.begin_transaction("test")
     event_dict = {}
     new_dict = structlog_processor(None, None, event_dict)
-    assert new_dict["transaction.id"]
-    assert new_dict["trace.id"]
+    assert new_dict["transaction.id"] == transaction.id
+    assert new_dict["trace.id"] == transaction.trace_parent.trace_id
     assert new_dict["span.id"] is None
 
 
 def test_logging_filter_span():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    requests_store.begin_transaction("test")
-    with capture_span("test"):
+    transaction = requests_store.begin_transaction("test")
+    with capture_span("test") as span:
         f = LoggingFilter()
         record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
         f.filter(record)
-        assert record.elasticapm_transaction_id
-        assert record.elasticapm_trace_id
-        assert record.elasticapm_span_id
+        assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
+        assert record.elasticapm_span_id == span.id
 
 
 def test_structlog_processor_span():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    requests_store.begin_transaction("test")
-    with capture_span("test"):
+    transaction = requests_store.begin_transaction("test")
+    with capture_span("test") as span:
         event_dict = {}
         new_dict = structlog_processor(None, None, event_dict)
-        assert new_dict["transaction.id"]
-        assert new_dict["trace.id"]
-        assert new_dict["span.id"]
+        assert new_dict["transaction.id"] == transaction.id
+        assert new_dict["trace.id"] == transaction.trace_parent.trace_id
+        assert new_dict["span.id"] == span.id
