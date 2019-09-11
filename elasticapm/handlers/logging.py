@@ -169,6 +169,14 @@ class LoggingFilter(logging.Filter):
 
     These attributes can then be incorporated into your handlers and formatters,
     so that you can tie log messages to transactions in elasticsearch.
+
+    This filter also adds these fields to a dictionary attribute,
+    `elasticapm_labels`, using the official tracing fields names as documented
+    here: https://www.elastic.co/guide/en/ecs/current/ecs-tracing.html
+
+    Note that if you're using Python 3.2+, by default we will add a
+    LogRecordFactory to your root logger which will add these attributes
+    automatically.
     """
 
     def filter(self, record):
@@ -176,10 +184,17 @@ class LoggingFilter(logging.Filter):
         Add elasticapm attributes to `record`.
         """
         transaction = execution_context.get_transaction()
-        record.elasticapm_transaction_id = transaction.id if transaction else None
-        record.elasticapm_trace_id = (
-            transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
-        )
+
+        transaction_id = transaction.id if transaction else None
+        record.elasticapm_transaction_id = transaction_id
+
+        trace_id = transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
+        record.elasticapm_trace_id = trace_id
+
         span = execution_context.get_span()
-        record.elasticapm_span_id = span.id if span else None
+        span_id = span.id if span else None
+        record.elasticapm_span_id = span_id
+
+        record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
+
         return True
