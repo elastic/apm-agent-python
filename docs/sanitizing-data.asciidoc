@@ -5,8 +5,10 @@ Sometimes it is necessary to sanitize the data sent to Elastic APM,
 e.g. remove sensitive data.
 
 To do this with the Elastic APM module, you create a processor.
-A processor is a function that takes a `client` instance as well as an event (an error or a transaction),
+A processor is a function that takes a `client` instance as well as an event (an error, a transaction, a span, or a metricset),
 and returns the modified event.
+
+To completely drop an event, your processor should return `False` (or any other "falsy" value) instead of the event.
 
 This is an example of a processor that removes the exception stacktrace from an error:
 
@@ -23,7 +25,8 @@ def my_processor(client, event):
 ----
 
 You can use the `@for_events` decorator to limit for which event type the processor should be called.
-Possible choices are `ERROR`, `TRANSACTION`, and `SPAN`, all of which are defined in `elasticapm.conf.constants`.
+Possible choices are `ERROR`, `TRANSACTION`, `SPAN` and `METRICSET`,
+all of which are defined in `elasticapm.conf.constants`.
 
 To use this processor, update your `ELASTIC_APM` settings like this:
 

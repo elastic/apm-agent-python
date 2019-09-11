@@ -230,6 +230,15 @@ class Client(object):
         for processor in self.processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
                 data = processor(self, data)
+                if not data:
+                    self.logger.debug(
+                        "Dropped event of type %s due to processor %s.%s",
+                        event_type,
+                        getattr(processor, "__module__"),
+                        getattr(processor, "__name__"),
+                    )
+                    data = None  # normalize all "falsy" values to None
+                    break
         if flush and is_master_process():
             # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
             flush = False

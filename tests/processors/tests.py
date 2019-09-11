@@ -32,6 +32,8 @@
 
 from __future__ import absolute_import
 
+import logging
+
 import mock
 import pytest
 
@@ -289,3 +291,20 @@ def test_for_events_decorator():
         return True
 
     assert foo.event_types == {"error", "transaction"}
+
+
+def test_drop_events_in_processor(sending_elasticapm_client, caplog):
+    def dropping_processor(client, event):
+        return None
+
+    shouldnt_be_called_processor = mock.Mock()
+
+    sending_elasticapm_client.processors = [dropping_processor, shouldnt_be_called_processor]
+    with caplog.at_level(logging.DEBUG):
+        sending_elasticapm_client.queue(SPAN, {"some": "data"})
+    sending_elasticapm_client.close()
+    assert shouldnt_be_called_processor.call_count == 0
+    assert len(sending_elasticapm_client.httpserver.requests) == 0
+    record = caplog.records[0]
+    assert record.message == "Dropped event of type span due to processor tests.processors.tests.dropping_processor"
+    assert record.levelname == "DEBUG"
