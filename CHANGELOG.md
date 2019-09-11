@@ -3,7 +3,7 @@
 ## Unreleased
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...master)
 
-## Bugfixes
+### Bugfixes
  * drop events immediately if a processor returns a falsy value (#585)
 
 ## v5.1.2
