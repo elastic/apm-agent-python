@@ -8,7 +8,7 @@ To do this with the Elastic APM module, you create a processor.
 A processor is a function that takes a `client` instance as well as an event (an error, a transaction, a span, or a metricset),
 and returns the modified event.
 
-To completely drop an event, your processor should return `None` instead of the event.
+To completely drop an event, your processor should return `False` (or any other "falsy" value) instead of the event.
 
 This is an example of a processor that removes the exception stacktrace from an error:
 
