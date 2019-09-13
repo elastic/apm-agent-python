@@ -39,8 +39,11 @@ from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, log_record_factory
 from elasticapm.handlers.structlog import structlog_processor
 from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
+
+original_factory = logging.getLogRecordFactory()
 
 
 @pytest.fixture()
@@ -260,6 +263,7 @@ def test_logging_filter_no_span():
     assert record.elasticapm_transaction_id == transaction.id
     assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
     assert record.elasticapm_span_id is None
+    assert record.elasticapm_labels
 
 
 def test_structlog_processor_no_span():
@@ -282,6 +286,7 @@ def test_logging_filter_span():
         assert record.elasticapm_transaction_id == transaction.id
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
+        assert record.elasticapm_labels
 
 
 def test_structlog_processor_span():
@@ -295,17 +300,34 @@ def test_structlog_processor_span():
         assert new_dict["span.id"] == span.id
 
 
-@pytest.mark.skipif(sys.version_info < (3, 2), reason="Log record factories are only 3.2+")
+@pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
 def test_log_record_factory():
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    transaction = requests_store.begin_transaction("test")
+    with capture_span("test") as span:
+        record = original_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+        with pytest.raises(AttributeError):
+            record.elasticapm_labels
+        new_factory = log_record_factory(original_factory)
+        record = new_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+        assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
+        assert record.elasticapm_span_id == span.id
+        assert record.elasticapm_labels
+
+
+@pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
+def test_automatic_log_record_factory_install(elasticapm_client):
+    """
+    Use the elasticapm_client fixture to load the client, which in turn installs
+    the log_record_factory. Check to make sure it happened.
+    """
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     transaction = requests_store.begin_transaction("test")
     with capture_span("test") as span:
         record_factory = logging.getLogRecordFactory()
         record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
-        with pytest.raises(AttributeError):
-            record.elasticapm_labels
-        new_factory = log_record_factory(record_factory)
-        record = new_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
         assert record.elasticapm_transaction_id == transaction.id
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
+        assert record.elasticapm_labels
