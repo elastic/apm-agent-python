@@ -1,7 +1,7 @@
 [[logging-integrations]]
 === Logging Integrations
 
-`elasticapm` provides integrations with both the default python logging library,
+The Elastic APM agent provides integrations with both the default Python logging library,
 as well as http://www.structlog.org/en/stable/[`structlog`].
 
 [[logging]]
