@@ -40,7 +40,7 @@ from elasticapm.traces import execution_context
 from elasticapm.utils import compat
 from elasticapm.utils.encoding import to_unicode
 from elasticapm.utils.stacks import iter_stack_frames
-from utils import wrapt
+from elasticapm.utils import wrapt
 
 
 class LoggingHandler(logging.Handler):
