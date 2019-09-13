@@ -1,5 +1,5 @@
 [[logging-integrations]]
-=== Logging Integrations
+=== Logging integrations
 
 The Elastic APM agent provides integrations with both the default Python logging library,
 as well as http://www.structlog.org/en/stable/[`structlog`].
@@ -22,10 +22,10 @@ You can disable this automatic behavior by setting `DISABLE_LOG_RECORD_FACTORY=T
 in the config.
 
 For Python versions <3.2, we also provide a
-https://docs.python.org/3/library/logging.html#filter-objects[filter]which will
+https://docs.python.org/3/library/logging.html#filter-objects[filter] which will
 add the same new attributes to any filtered `LogRecord`:
 
-Note that because https://docs.python.org/3/library/logging.html#filter-objects[filters
+Note: Because https://docs.python.org/3/library/logging.html#filter-objects[filters
 are not propagated to descendent loggers], you should add the filter to each of
 your log handlers, as handlers are propagated, along with their attached filters.
 
