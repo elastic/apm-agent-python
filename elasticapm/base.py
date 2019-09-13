@@ -105,9 +105,11 @@ class Client(object):
 
         # Insert the log_record_factory into the logging library
         # The LogRecordFactory functionality is only available on python 3.2+
-        if sys.version_info >= (3, 2) and self.config.disable_log_record_factory is False:
+        if compat.PY3 and not self.config.disable_log_record_factory:
             record_factory = logging.getLogRecordFactory()
-            if not isinstance(record_factory, elasticapm.utils.wrapt.FunctionWrapper):
+            # Only way to know if it's wrapped is to create a log record
+            throwaway_record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+            if not hasattr(throwaway_record, "elasticapm_labels"):
                 self.logger.debug("Inserting elasticapm log_record_factory into logging")
                 new_factory = elasticapm.handlers.logging.log_record_factory(record_factory)
                 logging.setLogRecordFactory(new_factory)
