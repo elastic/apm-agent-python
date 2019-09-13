@@ -49,9 +49,9 @@ We provide a http://www.structlog.org/en/stable/processors.html[processor] for
 http://www.structlog.org/en/stable/[`structlog`] which will add three new keys
 to the event_dict of any processed event:
 
-* `"transaction.id"`
-* `"trace.id"`
-* `"span.id"`
+* `transaction.id`
+* `trace.id`
+* `span.id`
 
 [source,python]
 ----
@@ -66,28 +66,28 @@ log.msg("some_event")
 
 
 [[log-correlation]]
-=== Log Correlation in Elasticsearch
+=== Log correlation in Elasticsearch
 
 In order to correlate logs from your app with transactions captured by the
 Elastic APM Python Agent, your logs must contain one or more of the following
 identifiers:
 
-* transaction.id
-* trace.id
-* span.id
+* `transaction.id`
+* `trace.id`
+* `span.id`
 
 If you're using structured logging, either https://docs.python.org/3/howto/logging-cookbook.html#implementing-structured-logging[with a custom solution]
-or with http://www.structlog.org/en/stable/[structlog (recommended)], then this
+or with http://www.structlog.org/en/stable/[structlog] (recommended), then this
 is fairly easy. Throw the http://www.structlog.org/en/stable/api.html#structlog.processors.JSONRenderer[JSONRenderer]
-in, and you can easily use https://www.elastic.co/blog/structured-logging-filebeat[Filebeat]
+in, and use {blog-ref}/structured-logging-filebeat[Filebeat]
 to pull these logs into Elasticsearch.
 
-However, without structured logging the task gets a little trickier. Here we
+Without structured logging the task gets a little trickier. Here we
 recommend first making sure your LogRecord objects have the elasticapm
 attributes (see <<logging>>), and then you'll want to combine some specific
 formatting with a Grok pattern, either in Elasticsearch using
-https://www.elastic.co/guide/en/elasticsearch/reference/current/grok-processor.html[the grok processor],
-or in https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html[logstash with a plugin].
+{ref}/grok-processor.html[the grok processor],
+or in {logstash-ref}/plugins-filters-grok.html[logstash with a plugin].
 
 Say you have a https://docs.python.org/3/library/logging.html#logging.Formatter[Formatter]
 that looks like this:
@@ -116,7 +116,7 @@ formatter = logging.Formatter(format_string)
 ----
 
 Then, you could use a grok pattern like this (for the
-https://www.elastic.co/guide/en/elasticsearch/reference/current/grok-processor.html[Elasticsearch Grok Processor]):
+{ref}/grok-processor.html[Elasticsearch Grok Processor]):
 
 
 [source, json]
