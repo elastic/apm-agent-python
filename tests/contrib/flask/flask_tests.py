@@ -279,6 +279,34 @@ def test_post_files(flask_apm_client):
         assert event["context"]["request"]["body"] == "[REDACTED]"
 
 
+def test_capture_body_config_is_dynamic_for_errors(flask_apm_client):
+    flask_apm_client.client.config.update(version="1", capture_body="all")
+    resp = flask_apm_client.app.test_client().post("/an-error/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[ERROR][0]
+    assert error["context"]["request"]["body"] == {"foo": "bar"}
+
+    flask_apm_client.client.config.update(version="2", capture_body="off")
+    resp = flask_apm_client.app.test_client().post("/an-error/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[ERROR][1]
+    assert error["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_capture_body_config_is_dynamic_for_transactions(flask_apm_client):
+    flask_apm_client.client.config.update(version="1", capture_body="all")
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[TRANSACTION][0]
+    assert error["context"]["request"]["body"] == {"foo": "bar"}
+
+    flask_apm_client.client.config.update(version="2", capture_body="off")
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[TRANSACTION][1]
+    assert error["context"]["request"]["body"] == "[REDACTED]"
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"capture_body": "transactions"}], indirect=True)
 def test_options_request(flask_apm_client):
     resp = flask_apm_client.app.test_client().options("/")

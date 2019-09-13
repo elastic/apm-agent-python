@@ -1349,6 +1349,38 @@ def test_capture_post_errors_dict(client, django_elasticapm_client):
         assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
+def test_capture_body_config_is_dynamic_for_errors(client, django_elasticapm_client):
+    django_elasticapm_client.config.update(version="1", capture_body="all")
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"), {"username": "john", "password": "smith"})
+    error = django_elasticapm_client.events[ERROR][0]
+    assert error["context"]["request"]["body"] == {"username": "john", "password": "smith"}
+
+    django_elasticapm_client.config.update(version="1", capture_body="off")
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"), {"username": "john", "password": "smith"})
+    error = django_elasticapm_client.events[ERROR][1]
+    assert error["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_capture_body_config_is_dynamic_for_transactions(client, django_elasticapm_client):
+    django_elasticapm_client.config.update(version="1", capture_body="all")
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-no-error"), {"username": "john", "password": "smith"})
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["body"] == {"username": "john", "password": "smith"}
+
+    django_elasticapm_client.config.update(version="1", capture_body="off")
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-no-error"), {"username": "john", "password": "smith"})
+    transaction = django_elasticapm_client.events[TRANSACTION][1]
+    assert transaction["context"]["request"]["body"] == "[REDACTED]"
+
+
 @pytest.mark.parametrize(
     "django_elasticapm_client",
     [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],
