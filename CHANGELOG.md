@@ -4,6 +4,7 @@
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...master)
 
 ### New Features
+ * added automatic tagging of LogRecord objects with transaction, trace, and span IDs via a LogRecordFactory (Python 3.2+) (#520, #586)
  * added `logging` filter and record factory for adding transaction, trace, and span IDs (#520, #586)
  * added `structlog` processor for adding transaction, trace, and span IDs (#520, #586)
  * added new public API calls for getting transaction, trace, and span IDs (#520, #586)
