@@ -29,13 +29,14 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import sys
 from logging import LogRecord
 
 import pytest
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
-from elasticapm.handlers.logging import LoggingFilter, LoggingHandler
+from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, log_record_factory
 from elasticapm.handlers.structlog import structlog_processor
 from elasticapm.traces import Tracer, capture_span, execution_context
 from elasticapm.utils.stacks import iter_stack_frames
@@ -292,3 +293,19 @@ def test_structlog_processor_span():
         assert new_dict["transaction.id"] == transaction.id
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert new_dict["span.id"] == span.id
+
+
+@pytest.mark.skipif(sys.version_info < (3, 2), reason="Log record factories are only 3.2+")
+def test_log_record_factory():
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    transaction = requests_store.begin_transaction("test")
+    with capture_span("test") as span:
+        record_factory = logging.getLogRecordFactory()
+        record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+        with pytest.raises(AttributeError):
+            record.elasticapm_labels
+        new_factory = log_record_factory(record_factory)
+        record = new_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+        assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
+        assert record.elasticapm_span_id == span.id

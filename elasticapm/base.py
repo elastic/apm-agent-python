@@ -103,6 +103,15 @@ class Client(object):
             config.disable_send = True
         self.config = VersionedConfig(config, version=None)
 
+        # Insert the log_record_factory into the logging library
+        # The LogRecordFactory functionality is only available on python 3.2+
+        if sys.version_info >= (3, 2) and self.config.disable_log_record_factory is False:
+            record_factory = logging.getLogRecordFactory()
+            if not isinstance(record_factory, elasticapm.utils.wrapt.FunctionWrapper):
+                self.logger.debug("Inserting elasticapm log_record_factory into logging")
+                new_factory = elasticapm.handlers.logging.log_record_factory(record_factory)
+                logging.setLogRecordFactory(new_factory)
+
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
