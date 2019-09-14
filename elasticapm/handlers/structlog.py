@@ -28,7 +28,7 @@
 
 from __future__ import absolute_import
 
-from traces import execution_context
+from elasticapm.traces import execution_context
 
 
 def structlog_processor(logger, method_name, event_dict):
