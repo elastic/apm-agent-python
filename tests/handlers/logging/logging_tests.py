@@ -43,10 +43,6 @@ from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
-original_factory = None
-if compat.PY3:
-    original_factory = logging.getLogRecordFactory()
-
 
 @pytest.fixture()
 def logger(elasticapm_client):
@@ -300,22 +296,6 @@ def test_structlog_processor_span():
         assert new_dict["transaction.id"] == transaction.id
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert new_dict["span.id"] == span.id
-
-
-@pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
-def test_log_record_factory():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
-    with capture_span("test") as span:
-        record = original_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
-        with pytest.raises(AttributeError):
-            record.elasticapm_labels
-        new_factory = log_record_factory(original_factory)
-        record = new_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
-        assert record.elasticapm_transaction_id == transaction.id
-        assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
-        assert record.elasticapm_span_id == span.id
-        assert record.elasticapm_labels
 
 
 @pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
