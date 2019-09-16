@@ -43,7 +43,9 @@ from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
-original_factory = logging.getLogRecordFactory()
+original_factory = None
+if compat.PY3:
+    original_factory = logging.getLogRecordFactory()
 
 
 @pytest.fixture()
