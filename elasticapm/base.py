@@ -111,7 +111,11 @@ class Client(object):
             throwaway_record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
             if not hasattr(throwaway_record, "elasticapm_labels"):
                 self.logger.debug("Inserting elasticapm log_record_factory into logging")
-                new_factory = elasticapm.handlers.logging.log_record_factory(record_factory)
+
+                # Late import due to circular imports
+                import elasticapm.handlers.logging as elastic_logging
+
+                new_factory = elastic_logging.log_record_factory(record_factory)
                 logging.setLogRecordFactory(new_factory)
 
         headers = {
