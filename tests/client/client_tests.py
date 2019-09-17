@@ -61,6 +61,18 @@ def test_service_info(elasticapm_client):
     assert service_info["agent"]["name"] == "python"
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"environment": "production", "service_node_name": "my_node"}], indirect=True
+)
+def test_service_info_node_name(elasticapm_client):
+    service_info = elasticapm_client.get_service_info()
+    assert service_info["name"] == elasticapm_client.config.service_name
+    assert service_info["environment"] == elasticapm_client.config.environment == "production"
+    assert service_info["language"] == {"name": "python", "version": platform.python_version()}
+    assert service_info["agent"]["name"] == "python"
+    assert service_info["node"]["configured_name"] == "my_node"
+
+
 def test_process_info(elasticapm_client):
     with mock.patch.object(sys, "argv", ["a", "b", "c"]):
         process_info = elasticapm_client.get_process_info()
