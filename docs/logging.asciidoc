@@ -18,9 +18,9 @@ each LogRecord object:
 This factory also adds these fields to a dictionary attribute,
 `elasticapm_labels`, using the official ECS https://www.elastic.co/guide/en/ecs/current/ecs-tracing.html[tracing fields].
 
-You can disable this automatic behavior by setting
-<<config-generic-disable-log-record-factory,`"DISABLE_LOG_RECORD_FACTORY": True`>>
-in the config.
+You can disable this automatic behavior by using the
+<<config-generic-disable-log-record-factory,`disable_log_record_factory`>> setting
+in your configuration
 
 For Python versions <3.2, we also provide a
 https://docs.python.org/3/library/logging.html#filter-objects[filter] which will
