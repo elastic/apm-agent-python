@@ -79,7 +79,7 @@ identifiers:
 If you're using structured logging, either https://docs.python.org/3/howto/logging-cookbook.html#implementing-structured-logging[with a custom solution]
 or with http://www.structlog.org/en/stable/[structlog] (recommended), then this
 is fairly easy. Throw the http://www.structlog.org/en/stable/api.html#structlog.processors.JSONRenderer[JSONRenderer]
-in, and use {blog-ref}/structured-logging-filebeat[Filebeat]
+in, and use {blog-ref}structured-logging-filebeat[Filebeat]
 to pull these logs into Elasticsearch.
 
 Without structured logging the task gets a little trickier. Here we
