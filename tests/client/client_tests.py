@@ -733,6 +733,29 @@ def test_transaction_max_spans(elasticapm_client):
     assert transaction["span_count"] == {"dropped": 10, "started": 5}
 
 
+def test_transaction_max_spans_dynamic(elasticapm_client):
+    elasticapm_client.config.update(version=1, transaction_max_spans=1)
+    elasticapm_client.begin_transaction("test_type")
+    for i in range(5):
+        with elasticapm.capture_span("span"):
+            pass
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+
+    elasticapm_client.config.update(version=2, transaction_max_spans=3)
+    elasticapm_client.begin_transaction("test_type")
+    for i in range(5):
+        with elasticapm.capture_span("span"):
+            pass
+
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][1]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 3
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
 def test_transaction_span_frames_min_duration(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
