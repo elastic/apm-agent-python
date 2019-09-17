@@ -174,7 +174,6 @@ elasticapm.set_transaction_name('myapp.billing_process')
  * `override`: if `True` (the default), overrides any previously set transaction name.
     If `False`, only sets the name if the transaction name hasn't already been set.
 
-
 [float]
 [[api-set-transaction-result]]
 ==== `elasticapm.set_transaction_result()`
@@ -193,6 +192,49 @@ elasticapm.set_transaction_result('SUCCESS')
  * `result`: (*required*) A string describing the result of the transaction, e.g. `HTTP 2xx` or `SUCCESS`
  * `override`: if `True` (the default), overrides any previously set result.
     If `False`, only sets the result if the result hasn't already been set.
+
+
+[float]
+[[api-get-transaction-id]]
+==== `elasticapm.get_transaction_id()`
+
+Get the id of the current transaction. Example:
+
+[source,python]
+----
+import elasticapm
+
+transaction_id = elasticapm.get_transaction_id()
+----
+
+
+[float]
+[[api-get-trace-id]]
+==== `elasticapm.get_trace_id()`
+
+Get the `trace_id` of the current transaction's trace. Example:
+
+[source,python]
+----
+import elasticapm
+
+trace_id = elasticapm.get_trace_id()
+----
+
+
+[float]
+[[api-get-span-id]]
+==== `elasticapm.get_span_id()`
+
+Get the id of the current span. Example:
+
+[source,python]
+----
+import elasticapm
+
+span_id = elasticapm.get_span_id()
+----
+
 
 [float]
 [[api-set-custom-context]]

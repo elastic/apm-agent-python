@@ -36,7 +36,8 @@ import sys
 import traceback
 
 from elasticapm.base import Client
-from elasticapm.utils import compat
+from elasticapm.traces import execution_context
+from elasticapm.utils import compat, wrapt
 from elasticapm.utils.encoding import to_unicode
 from elasticapm.utils.stacks import iter_stack_frames
 
@@ -155,3 +156,70 @@ class LoggingHandler(logging.Handler):
             logger_name=record.name,
             **kwargs
         )
+
+
+class LoggingFilter(logging.Filter):
+    """
+    This filter doesn't actually do any "filtering" -- rather, it just adds
+    three new attributes to any "filtered" LogRecord objects:
+
+    * elasticapm_transaction_id
+    * elasticapm_trace_id
+    * elasticapm_span_id
+
+    These attributes can then be incorporated into your handlers and formatters,
+    so that you can tie log messages to transactions in elasticsearch.
+
+    This filter also adds these fields to a dictionary attribute,
+    `elasticapm_labels`, using the official tracing fields names as documented
+    here: https://www.elastic.co/guide/en/ecs/current/ecs-tracing.html
+
+    Note that if you're using Python 3.2+, by default we will add a
+    LogRecordFactory to your root logger which will add these attributes
+    automatically.
+    """
+
+    def filter(self, record):
+        """
+        Add elasticapm attributes to `record`.
+        """
+        _add_attributes_to_log_record(record)
+        return True
+
+
+@wrapt.decorator
+def log_record_factory(wrapped, instance, args, kwargs):
+    """
+    Decorator, designed to wrap the python log record factory (fetched by
+    logging.getLogRecordFactory), adding the same custom attributes as in
+    the LoggingFilter provided above.
+
+    :return:
+        LogRecord object, with custom attributes for APM tracing fields
+    """
+    record = wrapped(*args, **kwargs)
+    return _add_attributes_to_log_record(record)
+
+
+def _add_attributes_to_log_record(record):
+    """
+    Add custom attributes for APM tracing fields to a LogRecord object
+
+    :param record: LogRecord object
+    :return: Updated LogRecord object with new APM tracing fields
+    """
+    transaction = execution_context.get_transaction()
+
+    transaction_id = transaction.id if transaction else None
+    record.elasticapm_transaction_id = transaction_id
+
+    trace_id = transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
+    record.elasticapm_trace_id = trace_id
+
+    span = execution_context.get_span()
+    span_id = span.id if span else None
+    record.elasticapm_span_id = span_id
+
+    record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
+
+    return record

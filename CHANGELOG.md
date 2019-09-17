@@ -3,6 +3,12 @@
 ## Unreleased
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...master)
 
+### New Features
+ * added automatic tagging of LogRecord objects with transaction, trace, and span IDs via a LogRecordFactory (Python 3.2+) (#520, #586)
+ * added `logging` filter and record factory for adding transaction, trace, and span IDs (#520, #586)
+ * added `structlog` processor for adding transaction, trace, and span IDs (#520, #586)
+ * added new public API calls for getting transaction, trace, and span IDs (#520, #586)
+
 ### Bugfixes
  * drop events immediately if a processor returns a falsy value (#585)
 
@@ -15,7 +21,7 @@
  * fixed zerorpc tests (#581)
  * fixed to correctly check if gevent has patched threading.local (#579)
 
-## v5.1.1 
+## v5.1.1
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.0...v5.1.1)
 
 ### Bugfixes
@@ -27,7 +33,7 @@
 ### Other
  * Added Python 3.8 RC to the test matrix (#565)
 
-## v5.1.0 
+## v5.1.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.0.0...v5.1.0)
 
 ### Security issues
@@ -46,7 +52,7 @@
  * fixed an issue with the `instrument` config option (#546, #547)
  * limited the amount of distinct metrics to 1000 (#540, #544)
 
-## v5.0.0 
+## v5.0.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.2...v5.0.0)
 ### Breaking changes
 
@@ -72,12 +78,12 @@
  * introduced `IntervalTimer` and use it instead of `threading.Timer` (#452)
  * added license header check as pre-commit hook (#456)
 
-## v4.2.1 
+## v4.2.1
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.2.0...v4.2.1)
  * fixed an issue with the certificate pinning feature introduced in 4.2.0 (#433, #434)
  * fixed incompatibility with eventlet introduced in 4.2.0 (#435, #436)
-    
-## v4.2.0 
+
+## v4.2.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.1.0...v4.2.0)
 
  * Implemented a new transport queue, which should avoid certain deadlock scenarios (#411)
@@ -90,7 +96,7 @@
  * Fixed an issue with parsing /proc/stat in RHEL/centos 6 (#406, #407)
  * Added copyright header to all files, and a CI check (#429)
 
-## v4.1.0 
+## v4.1.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v4.0.3...v4.1.0)
 
  * Added support for collecting system and process metrics (#361)
@@ -118,7 +124,7 @@
 
  * fixed an issue with instrumenting redis-py 3.0+
  * fixed a multithreading issue that occurs when using threaded workers (#335)
- 
+
 ## v4.0.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.2...v4.0.0)
 
@@ -143,14 +149,14 @@ Other changes:
 
  * fixed an issue with detecting names of wrapped functions that are partials (#294)
  * fixed a bug in Flask instrumentation that could appear together with FlaskAPI (#286)
- 
+
 ## v3.0.1
 
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v3.0.0...v3.0.1)
 
  * added sanitization for `Set-Cookie` response headers (#264)
  * added instrumentation for the non-standard `Connection.execute()` method for SQLite3 (#271)
- * added "authorization" to list of sensitive keywords, to ensure that "Authorization" 
+ * added "authorization" to list of sensitive keywords, to ensure that "Authorization"
    HTTP headers are properly sanitized (#275)
  * taught the Logbook handler how to handle the `stack=False` option (#278)
  * fixed a race condition with managing the timer-send thread (#279)
@@ -160,12 +166,12 @@ Other changes:
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v2.2.1...v3.0.0)
 
  - adapted "black" code formatter for this repository (#262)
- - **BREAKING**: dropped support for Python 3.3 (#242) 
+ - **BREAKING**: dropped support for Python 3.3 (#242)
  - **BREAKING**: changed order of precedence when evaluating configuration (#255, #261)
- - **BREAKING**: changed default value of `span_frames_min_duration` setting 
+ - **BREAKING**: changed default value of `span_frames_min_duration` setting
    from `-1` (always collect) to `5` (only collect for spans longer than 5 ms) (#243)
  - added instrumentation for pymssql (#241)
- - added instrumentation for pyodbc (#238) 
+ - added instrumentation for pyodbc (#238)
 
 ## v2.2.1
 

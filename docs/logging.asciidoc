@@ -1,0 +1,135 @@
+[[logging-integrations]]
+=== Logging integrations
+
+The Elastic APM agent provides integrations with both the default Python logging library,
+as well as http://www.structlog.org/en/stable/[`structlog`].
+
+[[logging]]
+==== `logging`
+
+For Python 3.2+, we use https://docs.python.org/3/library/logging.html#logging.setLogRecordFactory[`logging.setLogRecordFactory()`]
+to decorate the default LogRecordFactory to automatically add new attributes to
+each LogRecord object:
+
+* `elasticapm_transaction_id`
+* `elasticapm_trace_id`
+* `elasticapm_span_id`
+
+This factory also adds these fields to a dictionary attribute,
+`elasticapm_labels`, using the official ECS https://www.elastic.co/guide/en/ecs/current/ecs-tracing.html[tracing fields].
+
+You can disable this automatic behavior by using the
+<<config-generic-disable-log-record-factory,`disable_log_record_factory`>> setting
+in your configuration
+
+For Python versions <3.2, we also provide a
+https://docs.python.org/3/library/logging.html#filter-objects[filter] which will
+add the same new attributes to any filtered `LogRecord`:
+
+Note: Because https://docs.python.org/3/library/logging.html#filter-objects[filters
+are not propagated to descendent loggers], you should add the filter to each of
+your log handlers, as handlers are propagated, along with their attached filters.
+
+[source,python]
+----
+import logging
+from elasticapm.handlers.logging import LoggingFilter
+
+console = logging.StreamHandler()
+console.addFilter(LoggingFilter())
+# add the handler to the root logger
+logging.getLogger("").addHandler(console)
+----
+
+
+[[structlog]]
+==== `structlog`
+
+We provide a http://www.structlog.org/en/stable/processors.html[processor] for
+http://www.structlog.org/en/stable/[`structlog`] which will add three new keys
+to the event_dict of any processed event:
+
+* `transaction.id`
+* `trace.id`
+* `span.id`
+
+[source,python]
+----
+from structlog import PrintLogger, wrap_logger
+from elasticapm.handlers.structlog import structlog_processor
+
+wrapped_logger = PrintLogger()
+logger = wrap_logger(wrapped_logger, processors=[structlog_processor])
+log = logger.new()
+log.msg("some_event")
+----
+
+
+[[log-correlation]]
+=== Log correlation in Elasticsearch
+
+In order to correlate logs from your app with transactions captured by the
+Elastic APM Python Agent, your logs must contain one or more of the following
+identifiers:
+
+* `transaction.id`
+* `trace.id`
+* `span.id`
+
+If you're using structured logging, either https://docs.python.org/3/howto/logging-cookbook.html#implementing-structured-logging[with a custom solution]
+or with http://www.structlog.org/en/stable/[structlog] (recommended), then this
+is fairly easy. Throw the http://www.structlog.org/en/stable/api.html#structlog.processors.JSONRenderer[JSONRenderer]
+in, and use {blog-ref}structured-logging-filebeat[Filebeat]
+to pull these logs into Elasticsearch.
+
+Without structured logging the task gets a little trickier. Here we
+recommend first making sure your LogRecord objects have the elasticapm
+attributes (see <<logging>>), and then you'll want to combine some specific
+formatting with a Grok pattern, either in Elasticsearch using
+{ref}/grok-processor.html[the grok processor],
+or in {logstash-ref}/plugins-filters-grok.html[logstash with a plugin].
+
+Say you have a https://docs.python.org/3/library/logging.html#logging.Formatter[Formatter]
+that looks like this:
+
+[source,python]
+----
+import logging
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+----
+
+You can add the APM identifiers in an easy-to-parse manner:
+
+[source,python]
+----
+import logging
+
+format_string = (
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s "
+    "| elasticapm "
+    "transaction.id=%(elasticapm_transaction_id) "
+    "trace.id=%(elasticapm_trace_id) "
+    "span.id=%(elasticapm_span_id)"
+)
+formatter = logging.Formatter(format_string)
+----
+
+Then, you could use a grok pattern like this (for the
+{ref}/grok-processor.html[Elasticsearch Grok Processor]):
+
+
+[source, json]
+----
+{
+  "description" : "...",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": ["%{GREEDYDATA:msg} | elasticapm transaction.id=%{DATA:transaction.id} trace.id=%{DATA:trace.id} span.id=%{DATA:span.id}"]
+      }
+    }
+  ]
+}
+----

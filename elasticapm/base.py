@@ -103,6 +103,21 @@ class Client(object):
             config.disable_send = True
         self.config = VersionedConfig(config, version=None)
 
+        # Insert the log_record_factory into the logging library
+        # The LogRecordFactory functionality is only available on python 3.2+
+        if compat.PY3 and not self.config.disable_log_record_factory:
+            record_factory = logging.getLogRecordFactory()
+            # Only way to know if it's wrapped is to create a log record
+            throwaway_record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+            if not hasattr(throwaway_record, "elasticapm_labels"):
+                self.logger.debug("Inserting elasticapm log_record_factory into logging")
+
+                # Late import due to circular imports
+                import elasticapm.handlers.logging as elastic_logging
+
+                new_factory = elastic_logging.log_record_factory(record_factory)
+                logging.setLogRecordFactory(new_factory)
+
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",

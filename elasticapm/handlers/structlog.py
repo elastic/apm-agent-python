@@ -1,6 +1,3 @@
-#  BSD 3-Clause License
-#
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
 #  Copyright (c) 2019, Elasticsearch BV
 #  All rights reserved.
 #
@@ -29,17 +26,36 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-__all__ = ("VERSION", "Client")
+from __future__ import absolute_import
 
-try:
-    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
-except Exception:
-    VERSION = "unknown"
+from elasticapm.traces import execution_context
 
-from elasticapm.base import Client
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import capture_span, set_context, set_custom_context  # noqa: F401
-from elasticapm.traces import set_transaction_name, set_user_context, tag, label  # noqa: F401
-from elasticapm.traces import set_transaction_result  # noqa: F401
-from elasticapm.traces import get_transaction_id, get_trace_id, get_span_id  # noqa: F401
+
+def structlog_processor(logger, method_name, event_dict):
+    """
+    Add three new entries to the event_dict for any processed events:
+
+    * transaction.id
+    * trace.id
+    * span.id
+
+    Only adds non-None IDs.
+
+    :param logger:
+        Unused (logger instance in structlog)
+    :param method_name:
+        Unused (wrapped method_name)
+    :param event_dict:
+        Event dictionary for the event we're processing
+    :return:
+        `event_dict`, with three new entries.
+    """
+    transaction = execution_context.get_transaction()
+    if transaction:
+        event_dict["transaction.id"] = transaction.id
+    if transaction and transaction.trace_parent:
+        event_dict["trace.id"] = transaction.trace_parent.trace_id
+    span = execution_context.get_span()
+    if span:
+        event_dict["span.id"] = span.id
+    return event_dict

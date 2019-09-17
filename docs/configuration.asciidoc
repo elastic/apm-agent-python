@@ -680,6 +680,18 @@ Any labels set by application via the API will override global labels with the s
 NOTE: This feature requires APM Server >= 7.2.
 
 [float]
+[[config-generic-disable-log-record-factory]]
+==== `disable_log_record_factory`
+|============
+| Environment                              | Django/Flask                 | Default
+| `ELASTIC_APM_DISABLE_LOG_RECORD_FACTORY` | `DISABLE_LOG_RECORD_FACTORY` | `False`
+|============
+
+By default in python 3, the agent will install a <<logging,LogRecord factory>> that
+automatically adds tracing fields to your log records. You can disable this
+behavior by setting this to `True`.
+
+[float]
 [[config-django-specific]]
 === Django-specific configuration
 
