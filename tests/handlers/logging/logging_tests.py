@@ -271,7 +271,7 @@ def test_structlog_processor_no_span():
     new_dict = structlog_processor(None, None, event_dict)
     assert new_dict["transaction.id"] == transaction.id
     assert new_dict["trace.id"] == transaction.trace_parent.trace_id
-    assert new_dict["span.id"] is None
+    assert "span.id" not in new_dict
 
 
 def test_logging_filter_span():

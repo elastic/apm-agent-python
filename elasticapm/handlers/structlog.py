@@ -39,6 +39,8 @@ def structlog_processor(logger, method_name, event_dict):
     * trace.id
     * span.id
 
+    Only adds non-None IDs.
+
     :param logger:
         Unused (logger instance in structlog)
     :param method_name:
@@ -49,8 +51,11 @@ def structlog_processor(logger, method_name, event_dict):
         `event_dict`, with three new entries.
     """
     transaction = execution_context.get_transaction()
-    event_dict["transaction.id"] = transaction.id if transaction else None
-    event_dict["trace.id"] = transaction.trace_parent.trace_id if transaction and transaction.trace_parent else None
+    if transaction:
+        event_dict["transaction.id"] = transaction.id
+    if transaction and transaction.trace_parent:
+        event_dict["trace.id"] = transaction.trace_parent.trace_id
     span = execution_context.get_span()
-    event_dict["span.id"] = span.id if span else None
+    if span:
+        event_dict["span.id"] = span.id
     return event_dict
