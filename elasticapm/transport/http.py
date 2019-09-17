@@ -31,7 +31,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import hashlib
-import logging
 import re
 import ssl
 
@@ -42,8 +41,9 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 from elasticapm.transport.base import TransportException
 from elasticapm.transport.http_base import AsyncHTTPTransportBase, HTTPTransportBase
 from elasticapm.utils import compat, json_encoder, read_pem_file
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm.transport.http")
+logger = get_logger("elasticapm.transport.http")
 
 
 class Transport(HTTPTransportBase):

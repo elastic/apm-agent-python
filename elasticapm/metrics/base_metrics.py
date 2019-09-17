@@ -28,17 +28,17 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
 import threading
 import time
 from collections import defaultdict
 
 from elasticapm.conf import constants
 from elasticapm.utils import compat, is_master_process
+from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.threading import IntervalTimer
 
-logger = logging.getLogger("elasticapm.metrics")
+logger = get_logger("elasticapm.metrics")
 
 DISTINCT_LABEL_LIMIT = 1000
 

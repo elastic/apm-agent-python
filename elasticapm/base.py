@@ -48,6 +48,7 @@ from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
+from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.threading import IntervalTimer
 
@@ -83,13 +84,13 @@ class Client(object):
     >>>     print ("Exception caught; reference is %%s" %% ident)
     """
 
-    logger = logging.getLogger("elasticapm")
+    logger = get_logger("elasticapm")
 
     def __init__(self, config=None, **inline):
         # configure loggers first
         cls = self.__class__
-        self.logger = logging.getLogger("%s.%s" % (cls.__module__, cls.__name__))
-        self.error_logger = logging.getLogger("elasticapm.errors")
+        self.logger = get_logger("%s.%s" % (cls.__module__, cls.__name__))
+        self.error_logger = get_logger("elasticapm.errors")
 
         self.tracer = None
         self.processors = []

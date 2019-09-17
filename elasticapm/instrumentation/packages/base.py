@@ -29,13 +29,13 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import functools
-import logging
 import os
 
 from elasticapm.traces import execution_context
 from elasticapm.utils import wrapt
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm.instrument")
+logger = get_logger("elasticapm.instrument")
 
 
 class AbstractInstrumentedModule(object):

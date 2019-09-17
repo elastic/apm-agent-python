@@ -28,13 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
-
 from opentracing.span import Span as OTSpanBase
 from opentracing.span import SpanContext as OTSpanContextBase
 
 from elasticapm import traces
 from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils.logging import get_logger
 
 try:
     # opentracing-python 2.1+
@@ -47,7 +46,7 @@ except ImportError:
     ot_logs = None
 
 
-logger = logging.getLogger("elasticapm.contrib.opentracing")
+logger = get_logger("elasticapm.contrib.opentracing")
 
 
 class OTSpan(OTSpanBase):

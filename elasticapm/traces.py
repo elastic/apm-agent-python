@@ -29,7 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import functools
-import logging
 import random
 import re
 import threading
@@ -45,11 +44,12 @@ from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
+from elasticapm.utils.logging import get_logger
 
 __all__ = ("capture_span", "tag", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
-error_logger = logging.getLogger("elasticapm.errors")
-logger = logging.getLogger("elasticapm.traces")
+error_logger = get_logger("elasticapm.errors")
+logger = get_logger("elasticapm.traces")
 
 _time_func = timeit.default_timer
 

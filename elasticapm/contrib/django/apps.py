@@ -28,7 +28,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
 from functools import partial
 
 from django.apps import AppConfig
@@ -37,8 +36,9 @@ from django.conf import settings as django_settings
 from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm.traces")
+logger = get_logger("elasticapm.traces")
 
 ERROR_DISPATCH_UID = "elasticapm-exceptions"
 REQUEST_START_DISPATCH_UID = "elasticapm-request-start"

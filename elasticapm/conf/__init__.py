@@ -36,10 +36,11 @@ import socket
 import threading
 
 from elasticapm.utils import compat, starmatch_to_regex
+from elasticapm.utils.logging import get_logger
 
 __all__ = ("setup_logging", "Config")
 
-logger = logging.getLogger("elasticapm.conf")
+logger = get_logger("elasticapm.conf")
 
 
 class ConfigurationError(ValueError):

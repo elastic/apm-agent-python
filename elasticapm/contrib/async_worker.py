@@ -29,15 +29,15 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-import logging
 import os
 import sys
 import time
 from threading import Lock, Thread
 
 from elasticapm.utils.compat import queue
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm")
+logger = get_logger("elasticapm")
 
 ELASTIC_APM_WAIT_SECONDS = 10
 

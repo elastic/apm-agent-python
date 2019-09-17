@@ -31,13 +31,13 @@
 from __future__ import absolute_import
 
 import json
-import logging
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("elasticapm.instrument")
 
 
 API_METHOD_KEY_NAME = "__elastic_apm_api_method_name"
