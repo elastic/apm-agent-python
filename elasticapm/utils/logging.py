@@ -35,10 +35,13 @@ import os
 
 get_logger = logging.getLogger
 
-try:
-    import structlog
+if os.environ.get("ELASTIC_APM_USE_STRUCTLOG", "").lower() == "true":
 
-    if not os.environ.get("ELASTIC_APM_DISABLE_STRUCTLOG", "").lower() == "true":
+    try:
+        import structlog
+
         get_logger = structlog.get_logger
-except ImportError:
-    pass
+    except ImportError:
+        # use stdlib logger to log warning
+        logger = get_logger("elasticapm")
+        logger.warning("ELASTIC_APM_USE_STRUCTLOG is set, but structlog is not installed")
