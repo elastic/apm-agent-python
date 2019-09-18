@@ -233,7 +233,7 @@ class Formatter(logging.Formatter):
     LogRecordFactory):
 
         formatstring = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        formatstring = formatstring + "| elasticapm " \
+        formatstring = formatstring + " | elasticapm " \
                                       "transaction.id=%(elasticapm_transaction_id)s " \
                                       "trace.id=%(elasticapm_trace_id)s " \
                                       "span.id=%(elasticapm_span_id)s"
@@ -243,7 +243,7 @@ class Formatter(logging.Formatter):
         if fmt is None:
             fmt = "%(message)s"
         fmt = (
-            fmt + "| elasticapm "
+            fmt + " | elasticapm "
             "transaction.id=%(elasticapm_transaction_id)s "
             "trace.id=%(elasticapm_trace_id)s "
             "span.id=%(elasticapm_span_id)s"
