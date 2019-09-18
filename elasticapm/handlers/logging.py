@@ -223,3 +223,43 @@ def _add_attributes_to_log_record(record):
     record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
 
     return record
+
+
+class Formatter(logging.Formatter):
+    """
+    Custom formatter to automatically append the elasticapm format string,
+    as well as ensure that LogRecord objects actually have the required fields
+    (so as to avoid errors which could occur for logs before we override the
+    LogRecordFactory):
+
+        formatstring = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        formatstring = formatstring + "| elasticapm " \
+                                      "transaction.id=%(elasticapm_transaction_id)s " \
+                                      "trace.id=%(elasticapm_trace_id)s " \
+                                      "span.id=%(elasticapm_span_id)s"
+    """
+
+    def __init__(self, fmt=None, datefmt=None, style="%"):
+        if fmt is None:
+            fmt = "%(message)s"
+        fmt = (
+            fmt + "| elasticapm "
+            "transaction.id=%(elasticapm_transaction_id)s "
+            "trace.id=%(elasticapm_trace_id)s "
+            "span.id=%(elasticapm_span_id)s"
+        )
+        super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
+
+    def format(self, record):
+        if not hasattr(record, "elasticapm_transaction_id"):
+            record.elasticapm_transaction_id = None
+            record.elasticapm_trace_id = None
+            record.elasticapm_span_id = None
+        return super(Formatter, self).format(record=record)
+
+    def formatTime(self, record, datefmt=None):
+        if not hasattr(record, "elasticapm_transaction_id"):
+            record.elasticapm_transaction_id = None
+            record.elasticapm_trace_id = None
+            record.elasticapm_span_id = None
+        return super(Formatter, self).formatTime(record=record, datefmt=datefmt)
