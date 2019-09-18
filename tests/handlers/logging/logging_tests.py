@@ -36,9 +36,9 @@ import pytest
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
-from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler, log_record_factory
+from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler
 from elasticapm.handlers.structlog import structlog_processor
-from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.traces import Tracer, capture_span
 from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
