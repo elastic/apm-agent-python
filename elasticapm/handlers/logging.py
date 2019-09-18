@@ -248,7 +248,10 @@ class Formatter(logging.Formatter):
             "trace.id=%(elasticapm_trace_id)s "
             "span.id=%(elasticapm_span_id)s"
         )
-        super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
+        if compat.PY3:
+            super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
+        else:
+            super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt)
 
     def format(self, record):
         if not hasattr(record, "elasticapm_transaction_id"):
