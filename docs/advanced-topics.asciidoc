@@ -4,6 +4,8 @@
 * <<instrumenting-custom-code>>
 * <<sanitizing-data>>
 * <<run-tests-locally>>
+* <<logging-integrations>>
+* <<log-correlation>>
 
 include::./custom-instrumentation.asciidoc[Custom Instrumentation]
 include::./sanitizing-data.asciidoc[Sanitizing Data]
