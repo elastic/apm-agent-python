@@ -36,9 +36,9 @@ import pytest
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
-from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, log_record_factory
+from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler
 from elasticapm.handlers.structlog import structlog_processor
-from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.traces import Tracer, capture_span
 from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
@@ -313,3 +313,15 @@ def test_automatic_log_record_factory_install(elasticapm_client):
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
+
+
+def test_formatter():
+    record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+    formatter = Formatter()
+    formatted_record = formatter.format(record)
+    assert "| elasticapm" in formatted_record
+    assert hasattr(record, "elasticapm_transaction_id")
+    record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+    formatted_time = formatter.formatTime(record)
+    assert formatted_time
+    assert hasattr(record, "elasticapm_transaction_id")

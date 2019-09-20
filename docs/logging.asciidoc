@@ -96,23 +96,33 @@ that looks like this:
 ----
 import logging
 
+fh = logging.FileHandler('spam.log')
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
 ----
 
-You can add the APM identifiers in an easy-to-parse manner:
+You can add the APM identifiers by simply switching out the `Formatter` object
+for the one that we provide:
 
 [source,python]
 ----
 import logging
+from elasticapm.handlers.logging import Formatter
 
-format_string = (
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s "
-    "| elasticapm "
-    "transaction.id=%(elasticapm_transaction_id) "
-    "trace.id=%(elasticapm_trace_id) "
-    "span.id=%(elasticapm_span_id)"
-)
-formatter = logging.Formatter(format_string)
+fh = logging.FileHandler('spam.log')
+formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+----
+
+This will automatically append apm-specific fields to your format string:
+
+[source,python]
+----
+formatstring = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+formatstring = formatstring + " | elasticapm " \
+                              "transaction.id=%(elasticapm_transaction_id)s " \
+                              "trace.id=%(elasticapm_trace_id)s " \
+                              "span.id=%(elasticapm_span_id)s"
 ----
 
 Then, you could use a grok pattern like this (for the
