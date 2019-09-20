@@ -123,6 +123,23 @@ Note however that this can have adverse effects on performance.
 === Other options
 
 [float]
+[[config-service-node-name]]
+==== `service_node_name`
+
+[options="header"]
+|============
+| Environment                     | Django/Flask         | Default    | Example
+| `ELASTIC_APM_SERVICE_NODE_NAME` | `SERVICE_NODE_NAME`  | `None`     | `"redis1"`
+|============
+
+The name of the given service node. This is optional, and if omitted, the APM
+Server will fall back on `system.container.id` if available, and finally
+`host.name` if necessary.
+
+This option allows you to set the node name manually to ensure uniqueness and
+meaningfulness.
+
+[float]
 [[config-environment]]
 ==== `environment`
 
