@@ -46,6 +46,7 @@ from werkzeug.wrappers import Request, Response
 import elasticapm
 from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
+from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils import compat
 
@@ -155,6 +156,9 @@ def elasticapm_client(request):
     client = TempStoreClient(**client_config)
     yield client
     client.close()
+    # clear any execution context that might linger around
+    execution_context.set_transaction(None)
+    execution_context.set_span(None)
 
 
 @pytest.fixture()
@@ -213,6 +217,9 @@ def sending_elasticapm_client(request, validating_httpserver):
     client.httpserver = validating_httpserver
     yield client
     client.close()
+    # clear any execution context that might linger around
+    execution_context.set_transaction(None)
+    execution_context.set_span(None)
 
 
 class DummyTransport(HTTPTransportBase):
