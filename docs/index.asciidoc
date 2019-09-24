@@ -1,5 +1,7 @@
 :branch: current
 :server-branch: 6.5
+:ecs_version: current
+
 include::{asciidoc-dir}/../../shared/attributes.asciidoc[]
 
 ifdef::env-github[]
