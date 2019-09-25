@@ -10,7 +10,7 @@ flake8:
 test:
 	if [[ "$$PYTHON_VERSION" =~ ^(3.5|3.6|3.7|3.8|nightly|pypy3)$$ ]] ; then \
 	py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT); \
-	else py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore=tests/asyncio --ignore-glob=py3_*.py; fi
+	else py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore=tests/asyncio --ignore-glob='*/py3_*.py'; fi
 
 coverage: PYTEST_ARGS=--cov --cov-report xml:coverage.xml
 coverage: test
