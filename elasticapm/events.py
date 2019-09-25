@@ -164,7 +164,7 @@ class Exception(BaseEvent):
                     client, exc_info=chained_exc_info, culprit="None", _exc_chain_depth=depth + 1
                 )
                 if chained_cause:
-                    data["exception"]["cause"] = chained_cause["exception"]
+                    data["exception"]["cause"] = [chained_cause["exception"]]
         return data
 
 
