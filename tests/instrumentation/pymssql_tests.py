@@ -36,7 +36,11 @@ from elasticapm.conf.constants import TRANSACTION
 
 pymssql = pytest.importorskip("pymssql")
 
-pytestmark = pytest.mark.pymssql
+pytestmark = [pytest.mark.pymssql]
+
+
+if "MSSQL_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping MS-SQL tests, no MSSQL_HOST environment variable set"))
 
 
 @pytest.yield_fixture(scope="function")

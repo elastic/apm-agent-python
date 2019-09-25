@@ -37,7 +37,10 @@ from elasticapm.traces import capture_span
 
 pylibmc = pytest.importorskip("pylibmc")
 
-pytestmark = pytest.mark.pylibmc
+pytestmark = [pytest.mark.pylibmc]
+
+if "MEMCACHED_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping pylibmc tests, no MEMCACHED_HOST environment variable set"))
 
 
 @pytest.mark.integrationtest
