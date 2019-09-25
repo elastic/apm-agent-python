@@ -36,7 +36,11 @@ from elasticapm.conf.constants import TRANSACTION
 
 pyodbc = pytest.importorskip("pyodbc")
 
-pytestmark = pytest.mark.pyodbc
+pytestmark = [pytest.mark.pyodbc]
+
+
+if "POSTGRES_DB" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping pyodbc tests, no POSTGRES_DB environment variable set"))
 
 
 @pytest.yield_fixture(scope="function")
