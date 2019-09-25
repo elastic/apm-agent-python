@@ -40,7 +40,10 @@ from cassandra.query import SimpleStatement
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
-pytestmark = pytest.mark.cassandra
+pytestmark = [pytest.mark.cassandra]
+
+if "CASSANDRA_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping cassandra tests, no CASSANDRA_HOST environment variable set"))
 
 
 @pytest.fixture()
