@@ -87,8 +87,8 @@ class Exception(BaseEvent):
             new_exc_info = True
             exc_info = sys.exc_info()
 
-        if not exc_info:
-            raise ValueError("No exception found")
+        if exc_info == (None, None, None):
+            raise ValueError("No exception found: capture_exception requires an active exception.")
 
         try:
             exc_type, exc_value, exc_traceback = exc_info
