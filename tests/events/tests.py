@@ -32,9 +32,10 @@
 
 from __future__ import absolute_import
 
+import pytest
 from mock import Mock
 
-from elasticapm.events import Message
+from elasticapm.events import Exception, Message
 
 
 def test_event_to_string():
@@ -46,3 +47,8 @@ def test_event_to_string():
     data = {"log": {"message": unformatted_message % (1, 2), "param_message": unformatted_message}}
 
     assert message.to_string(client, data) == formatted_message
+
+
+def test_capture_exception_no_exception(elasticapm_client):
+    with pytest.raises(ValueError):
+        Exception.capture(elasticapm_client)
