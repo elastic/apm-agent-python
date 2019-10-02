@@ -29,9 +29,10 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ctypes
-import logging
 
-logger = logging.getLogger("elasticapm.utils")
+from elasticapm.utils.logging import get_logger
+
+logger = get_logger("elasticapm.utils")
 
 
 class TraceParent(object):

@@ -31,7 +31,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
-import logging
 import random
 import threading
 import time
@@ -40,8 +39,9 @@ from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import compat, is_master_process, json_encoder
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm.transport")
+logger = get_logger("elasticapm.transport")
 
 
 class TransportException(Exception):

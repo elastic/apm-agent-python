@@ -31,8 +31,6 @@
 
 from __future__ import absolute_import
 
-import logging
-
 import django
 from django.conf import settings as django_settings
 from django.core.exceptions import DisallowedHost
@@ -43,6 +41,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.django.utils import iterate_with_template_sources
 from elasticapm.utils import compat, encoding, get_url_dict
+from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
 
@@ -78,7 +77,7 @@ def get_client(client=None):
 
 
 class DjangoClient(Client):
-    logger = logging.getLogger("elasticapm.errors.client.django")
+    logger = get_logger("elasticapm.errors.client.django")
 
     def __init__(self, config=None, **inline):
         if config is None:

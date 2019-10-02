@@ -31,8 +31,6 @@
 
 from __future__ import absolute_import
 
-import logging
-
 import flask
 from flask import request, signals
 
@@ -45,8 +43,9 @@ from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.traces import execution_context
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm.errors.client")
+logger = get_logger("elasticapm.errors.client")
 
 
 def make_client(client_cls, app, **defaults):
@@ -128,7 +127,7 @@ class ElasticAPM(object):
             self.client = make_client(self.client_cls, app, **defaults)
 
         # 0 is a valid log level (NOTSET), so we need to check explicitly for it
-        if self.logging or self.logging is 0:
+        if self.logging or self.logging is 0:  # noqa F632
             if self.logging is not True:
                 kwargs = {"level": self.logging}
             else:

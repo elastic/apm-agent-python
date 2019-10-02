@@ -29,18 +29,18 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-import logging
 import random
 import sys
 
 from elasticapm.conf.constants import EXCEPTION_CHAIN_MAX_DEPTH
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
+from elasticapm.utils.logging import get_logger
 from elasticapm.utils.stacks import get_culprit, get_stack_info, iter_traceback_frames
 
 __all__ = ("BaseEvent", "Exception", "Message")
 
-logger = logging.getLogger("elasticapm.events")
+logger = get_logger("elasticapm.events")
 
 
 class BaseEvent(object):

@@ -64,6 +64,12 @@ log = logger.new()
 log.msg("some_event")
 ----
 
+===== Use structlog for agent-internal logging
+
+The Elastic APM Python agent uses logging to log internal events and issues.
+By default, it will use a `logging` logger.
+If your project uses structlog, you can tell the agent to use a structlog logger
+by setting the environment variable `ELASTIC_APM_USE_STRUCTLOG` to `true`.
 
 [[log-correlation]]
 === Log correlation in Elasticsearch
