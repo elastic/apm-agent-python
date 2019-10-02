@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...master)
+## v5.2.0
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...v5.2.0)
 
 ### New Features
  * added automatic tagging of LogRecord objects with transaction, trace, and span IDs via a LogRecordFactory (Python 3.2+) (#520, #586)
@@ -11,6 +11,7 @@
  * added support for chained exceptions in Python 3 (#596).
    Note that chained exceptions will be captured and stored in Elasticsearch, but not yet
    visualized in the APM UI. The UI component will be released in an upcoming Kibana release (7.5 or later).
+ * added support for using `structlog` for agent logging (#591)
 
 ### Bugfixes
  * drop events immediately if a processor returns a falsy value (#585)
