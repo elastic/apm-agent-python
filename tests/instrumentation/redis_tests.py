@@ -41,10 +41,10 @@ from redis.client import StrictRedis
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
+pytestmark = [pytest.mark.redis]
+
 if "REDIS_HOST" not in os.environ:
-    pytestmark = pytest.mark.skip("Skipping redis tests, no REDIS_HOST environment variable set")
-else:
-    pytestmark = pytest.mark.redis
+    pytestmark.append(pytest.mark.skip("Skipping redis tests, no REDIS_HOST environment variable set"))
 
 
 @pytest.fixture()

@@ -45,6 +45,8 @@ HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
 
 MASK = 8 * "*"
 
+EXCEPTION_CHAIN_MAX_DEPTH = 50
+
 ERROR = "error"
 TRANSACTION = "transaction"
 SPAN = "span"
