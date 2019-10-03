@@ -112,3 +112,5 @@ If you have commit access, the process is as follows:
    To upload them to PyPI, go to [Jenkins](https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/activity)
    and look for the build with the correct tag name (`vX.Y.Z`). Once the build is done, a dialog will be shown.
    Note that you need to be logged in to trigger an upload.
+1. Create a [Github release](https://github.com/elastic/apm-agent-python/releases)
+   targeting the new tag. Copy the changelog into the body of the release.
