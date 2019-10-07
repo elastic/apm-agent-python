@@ -451,6 +451,7 @@ class DroppedSpan(BaseSpan):
     def __init__(self, parent, leaf=False):
         self.parent = parent
         self.leaf = leaf
+        self.id = None
         super(DroppedSpan, self).__init__()
 
     def end(self, skip_frames=0, duration=None):
