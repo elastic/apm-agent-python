@@ -167,6 +167,9 @@ exclude:
     FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.8-rc
     FRAMEWORK: zerorpc-0.4
+  # mysql-connector-python is currently incompatible with Python 3.8
+  - PYTHON_VERSION: python-3.8-rc
+    FRAMEWORK: mysql_connector-newest
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
     FRAMEWORK: gevent-newest

@@ -47,7 +47,7 @@ class PyMySQLConnectionProxy(ConnectionProxy):
     cursor_proxy = PyMySQLCursorProxy
 
 
-class MySQLConnectorInstrumentation(DbApi2Instrumentation):
+class PyMySQLConnectorInstrumentation(DbApi2Instrumentation):
     name = "pymysql"
 
     instrument_list = [("pymysql", "connect")]
