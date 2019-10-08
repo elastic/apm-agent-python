@@ -446,7 +446,7 @@ class Span(BaseSpan):
 
 
 class DroppedSpan(BaseSpan):
-    __slots__ = ("leaf", "parent")
+    __slots__ = ("leaf", "parent", "id")
 
     def __init__(self, parent, leaf=False):
         self.parent = parent
