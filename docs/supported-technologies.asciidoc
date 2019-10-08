@@ -122,6 +122,22 @@ Collected trace data:
  * parametrized SQL query
 
 [float]
+[[automatic-instrumentation-db-pymysql]]
+==== pymysql
+
+Library: `pymysql`
+
+Instrumented methods:
+
+ * `pymysql.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
 [[automatic-instrumentation-db-postgres]]
 ==== PostgreSQL
 

@@ -28,7 +28,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 from elasticapm.instrumentation.packages.dbapi2 import (
     ConnectionProxy,
     CursorProxy,
@@ -37,21 +36,21 @@ from elasticapm.instrumentation.packages.dbapi2 import (
 )
 
 
-class MySQLCursorProxy(CursorProxy):
+class PyMySQLCursorProxy(CursorProxy):
     provider_name = "mysql"
 
     def extract_signature(self, sql):
         return extract_signature(sql)
 
 
-class MySQLConnectionProxy(ConnectionProxy):
-    cursor_proxy = MySQLCursorProxy
+class PyMySQLConnectionProxy(ConnectionProxy):
+    cursor_proxy = PyMySQLCursorProxy
 
 
 class MySQLConnectorInstrumentation(DbApi2Instrumentation):
-    name = "mysql_connector"
+    name = "pymysql"
 
-    instrument_list = [("mysql.connector", "connect")]
+    instrument_list = [("pymysql", "connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        return MySQLConnectionProxy(wrapped(*args, **kwargs))
+        return PyMySQLConnectionProxy(wrapped(*args, **kwargs))

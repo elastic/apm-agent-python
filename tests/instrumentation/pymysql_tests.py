@@ -28,25 +28,24 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import os
 
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
 
-connector = pytest.importorskip("mysql.connector")
+pymysql = pytest.importorskip("pymysql")
 
-pytestmark = [pytest.mark.mysql_connector]
+pytestmark = [pytest.mark.pymysql]
 
 
 if "MYSQL_HOST" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping mysql-connector tests, no MYSQL_HOST environment variable set"))
+    pytestmark.append(pytest.mark.skip("Skipping pymysql tests, no MYSQL_HOST environment variable set"))
 
 
 @pytest.yield_fixture(scope="function")
-def mysql_connector_connection(request):
-    conn = connector.connect(
+def pymysql_connection(request):
+    conn = pymysql.connect(
         host=os.environ.get("MYSQL_HOST", "localhost"),
         user=os.environ.get("MYSQL_USER", "eapm"),
         password=os.environ.get("MYSQL_PASSWORD", ""),
@@ -64,14 +63,14 @@ def mysql_connector_connection(request):
 
 
 @pytest.mark.integrationtest
-def test_mysql_connector_select(instrument, mysql_connector_connection, elasticapm_client):
-    cursor = mysql_connector_connection.cursor()
+def test_pymysql_select(instrument, pymysql_connection, elasticapm_client):
+    cursor = pymysql_connection.cursor()
     query = "SELECT * FROM test WHERE name LIKE 't%' ORDER BY id"
 
     try:
         elasticapm_client.begin_transaction("web.django")
         cursor.execute(query)
-        assert cursor.fetchall() == [(2, "two"), (3, "three")]
+        assert cursor.fetchall() == ((2, "two"), (3, "three"))
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         transactions = elasticapm_client.events[TRANSACTION]
