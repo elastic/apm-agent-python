@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.0...master)
+
+### Bugfixes
+ * fixed an issue with DroppedSpans and logging integration (#602)
+ * fixed an issue with processors not being applied to chained exceptions (#604)
+
 ## v5.2.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...v5.2.0)
 
