@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent any
+  agent { label 'linux && immutable' }
   environment {
     REPO="git@github.com:elastic/apm-agent-python.git"
     BASE_DIR="src/github.com/elastic/apm-agent-python"
@@ -41,7 +41,6 @@ pipeline {
     Checkout the code and stash it, to use it on other stages.
     */
     stage('Checkout') {
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
         script {
@@ -64,7 +63,6 @@ pipeline {
     Execute unit tests.
     */
     stage('Test') {
-      agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
         deleteDir()
