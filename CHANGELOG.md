@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.0...master)
+=======
+## v5.2.1
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.0...v5.2.1)
 
 ### Bugfixes
  * fixed an issue with DroppedSpans and logging integration (#602)
