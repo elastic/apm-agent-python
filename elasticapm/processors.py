@@ -283,6 +283,13 @@ def _process_stack_frames(event, func):
     if "exception" in event and "stacktrace" in event["exception"]:
         for frame in event["exception"]["stacktrace"]:
             func(frame)
+        # check for chained exceptions
+        cause = event["exception"].get("cause", None)
+        while cause:
+            if "stacktrace" in cause[0]:
+                for frame in cause[0]["stacktrace"]:
+                    func(frame)
+            cause = cause[0].get("cause", None)
     if "log" in event and "stacktrace" in event["log"]:
         for frame in event["log"]["stacktrace"]:
             func(frame)
