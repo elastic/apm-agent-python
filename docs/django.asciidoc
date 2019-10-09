@@ -198,7 +198,7 @@ we provide a `LoggingHandler` which you can use in your logging setup.
 The log messages will be enriched with a stack trace, data from the request, and more.
 
 NOTE: the intended use case for this handler is to send high priority log messages (e.g. log messages with level `ERROR`)
-      to Elasticsearch. For normal log shipping, we recommend using {filebeat-ref}[filebeat].
+to Elasticsearch. For normal log shipping, we recommend using {filebeat-ref}[filebeat].
 
 If you are new to how the `logging` module works together with Django, read more
 https://docs.djangoproject.com/en/2.1/topics/logging/[in the Django documentation].
