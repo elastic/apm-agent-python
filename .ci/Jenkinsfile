@@ -4,7 +4,7 @@
 import co.elastic.matrix.*
 
 pipeline {
-  agent any
+  agent { label 'linux && immutable' }
   environment {
     BASE_DIR="src/github.com/elastic/apm-agent-python"
     PIPELINE_LOG_LEVEL='INFO'
@@ -26,7 +26,6 @@ pipeline {
   }
   stages {
     stage('Initializing'){
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
@@ -73,7 +72,6 @@ pipeline {
     Execute unit tests.
     */
     stage('Test') {
-      agent { label 'linux && immutable' }
       options {
         timeout(time: 1, unit: 'HOURS')
         skipDefaultCheckout()
@@ -96,7 +94,6 @@ pipeline {
       }
     }
     stage('Building packages') {
-      agent { label 'docker && linux && immutable' }
       options {
         timeout(time: 1, unit: 'HOURS')
         skipDefaultCheckout()
@@ -119,7 +116,6 @@ pipeline {
       }
     }
     stage('Release') {
-      agent { label 'linux && immutable' }
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
