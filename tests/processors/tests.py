@@ -318,18 +318,16 @@ def test_for_events_decorator():
     assert foo.event_types == {"error", "transaction"}
 
 
-def test_drop_events_in_processor(sending_elasticapm_client, caplog):
-    def dropping_processor(client, event):
-        return None
+def test_drop_events_in_processor(elasticapm_client, caplog):
+    dropping_processor = mock.MagicMock(return_value=None, event_types=[SPAN], __name__="dropper")
+    shouldnt_be_called_processor = mock.Mock(event_types=[])
 
-    shouldnt_be_called_processor = mock.Mock()
-
-    sending_elasticapm_client.processors = [dropping_processor, shouldnt_be_called_processor]
-    with caplog.at_level(logging.DEBUG):
-        sending_elasticapm_client.queue(SPAN, {"some": "data"})
-    sending_elasticapm_client.close()
+    elasticapm_client._transport._processors = [dropping_processor, shouldnt_be_called_processor]
+    with caplog.at_level(logging.DEBUG, logger="elasticapm.transport"):
+        elasticapm_client.queue(SPAN, {"some": "data"})
+    assert dropping_processor.call_count == 1
     assert shouldnt_be_called_processor.call_count == 0
-    assert len(sending_elasticapm_client.httpserver.requests) == 0
+    assert elasticapm_client._transport.events[SPAN][0] is None
     record = caplog.records[0]
-    assert record.message == "Dropped event of type span due to processor tests.processors.tests.dropping_processor"
+    assert record.message == "Dropped event of type span due to processor mock.mock.dropper"
     assert record.levelname == "DEBUG"

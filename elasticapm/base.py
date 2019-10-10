@@ -119,6 +119,8 @@ class Client(object):
                 new_factory = elastic_logging.log_record_factory(record_factory)
                 logging.setLogRecordFactory(new_factory)
 
+        processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
+
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
@@ -135,6 +137,7 @@ class Client(object):
             "timeout": self.config.server_timeout,
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
+            "processors": processors,
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
@@ -146,8 +149,6 @@ class Client(object):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
             exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
             self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
-
-        self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         if platform.python_implementation() == "PyPy":
             # PyPy introduces a `_functools.partial.__call__` frame due to our use
@@ -242,19 +243,6 @@ class Client(object):
     def queue(self, event_type, data, flush=False):
         if self.config.disable_send:
             return
-        # Run the data through processors
-        for processor in self.processors:
-            if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
-                if not data:
-                    self.logger.debug(
-                        "Dropped event of type %s due to processor %s.%s",
-                        event_type,
-                        getattr(processor, "__module__"),
-                        getattr(processor, "__name__"),
-                    )
-                    data = None  # normalize all "falsy" values to None
-                    break
         if flush and is_master_process():
             # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
             flush = False

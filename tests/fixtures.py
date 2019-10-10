@@ -229,6 +229,7 @@ class DummyTransport(HTTPTransportBase):
 
     def queue(self, event_type, data, flush=False):
         self._flushed.clear()
+        data = self._process_event(event_type, data)
         self.events[event_type].append(data)
         self._flushed.set()
 
