@@ -158,6 +158,7 @@ apm = ElasticAPM(app, logging=True)
 
 NOTE: using `logging=True` can lead to high number of logs being sent to Elastic APM.
 We recommend to always limit logging with Elastic APM to a high level (`WARNING` or `ERROR`).
+For shipping of less urgent logs, we recommend to use {filebeat-ref}[filebeat].
 
 For fine-grained control, you can initialize a logging handler and add it,
 just as you would with any other handler.
