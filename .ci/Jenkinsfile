@@ -133,7 +133,7 @@ pipeline {
           steps {
               emailext subject: '[apm-agent-python] Release ready to be pushed',
                        to: 'observability-team@elastic.co',
-                       body: "Please go to ${env.BUILD_URL}/input to approve or reject within 12 hours."
+                       body: "Please go to ${env.BUILD_URL}input to approve or reject within 12 hours."
           }
         }
         stage('Release') {
