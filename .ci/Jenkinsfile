@@ -121,11 +121,18 @@ pipeline {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
+      when {
+        beforeInput true
+        anyOf {
+          tag pattern: 'v\\d+.*', comparator: 'REGEXP'
+          expression { return params.Run_As_Master_Branch }
+        }
+      }
       stages {
         stage('Notify') {
           steps {
               emailext subject: '[apm-agent-python] Release ready to be pushed',
-                       to: 'victor.martinez@elastic.co',
+                       to: 'observability-team@elastic.co',
                        body: "Please go to ${env.BUILD_URL}/input to approve or reject within 12 hours."
           }
         }
@@ -148,6 +155,9 @@ pipeline {
               deleteDir()
               unstash 'source'
               unstash('packages')
+              dir("${BASE_DIR}"){
+                releasePackages()
+              }
             }
           }
         }
