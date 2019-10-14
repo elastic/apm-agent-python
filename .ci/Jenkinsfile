@@ -116,7 +116,10 @@ pipeline {
       }
     }
     stage('Release') {
-      options { skipDefaultCheckout() }
+      options {
+        skipDefaultCheckout()
+        timeout(time: 12, unit: 'HOURS')
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
