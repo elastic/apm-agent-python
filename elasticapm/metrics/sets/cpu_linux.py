@@ -69,7 +69,10 @@ class CPUMetricSet(MetricsSet):
         with self._read_data_lock:
             prev = self.previous
             delta = {k: new[k] - prev[k] for k in new.keys()}
-            cpu_usage_ratio = delta["cpu_usage"] / delta["cpu_total"]
+            try:
+                cpu_usage_ratio = delta["cpu_usage"] / delta["cpu_total"]
+            except ZeroDivisionError:
+                cpu_usage_ratio = 0
             self.gauge("system.cpu.total.norm.pct").val = cpu_usage_ratio
             # MemAvailable not present in linux before kernel 3.14
             # fallback to MemFree + Buffers + Cache if not present - see #500
@@ -80,7 +83,10 @@ class CPUMetricSet(MetricsSet):
             self.gauge("system.memory.actual.free").val = mem_free
             self.gauge("system.memory.total").val = new["MemTotal"]
 
-            cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
+            try:
+                cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
+            except ZeroDivisionError:
+                cpu_process_percent = 0
 
             self.gauge("system.process.cpu.total.norm.pct").val = cpu_process_percent
             self.gauge("system.process.memory.size").val = new["vsize"]
