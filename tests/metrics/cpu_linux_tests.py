@@ -155,3 +155,27 @@ def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
 
     mem_free_expected = sum([359184, 891296, 6416340]) * 1024  # MemFree + Buffers + Cached, in bytes
     assert data["samples"]["system.memory.actual.free"]["value"] == mem_free_expected
+
+
+def test_cpu_usage_when_cpu_total_is_zero(tmpdir):
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO_NO_MEMAVAILABLE),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(0, lambda x: None),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+    )
+    data = next(metricset.collect())
+
+    cpu_total_expected = 0
+    assert data["samples"]["system.cpu.total.norm.pct"]["value"] == cpu_total_expected
