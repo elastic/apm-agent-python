@@ -7,13 +7,19 @@ exclude:
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-2.2
   - PYTHON_VERSION: python-2.7
+    FRAMEWORK: django-3.0
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-2.1
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-2.2
   - PYTHON_VERSION: python-3.4
+    FRAMEWORK: django-3.0
+  - PYTHON_VERSION: python-3.4
     FRAMEWORK: django-master
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: django-3.0
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: django-1.11 # see https://code.djangoproject.com/ticket/28814
   - PYTHON_VERSION: pypy-2
@@ -22,6 +28,8 @@ exclude:
     FRAMEWORK: django-2.1
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-2.2
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: django-3.0
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: django-master
   # Flask
@@ -45,11 +53,11 @@ exclude:
     FRAMEWORK: celery-4-django-1.11
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: celery-4-flask-1.0
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: celery-4-flask-1.0
   # requests
   - PYTHON_VERSION: python-3.4
@@ -60,7 +68,7 @@ exclude:
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
@@ -71,31 +79,31 @@ exclude:
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
@@ -104,9 +112,9 @@ exclude:
     FRAMEWORK: psycopg2-2.5
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: psycopg2-2.6
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: psycopg2-2.5
@@ -121,7 +129,7 @@ exclude:
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
@@ -132,7 +140,7 @@ exclude:
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.7 # currently fails with error on python 3.7 due to cython issues
     FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.8-rc # currently fails with error on python 3.8 due to cython issues
+  - PYTHON_VERSION: python-3.8 # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
   # pyodbc
   - PYTHON_VERSION: pypy-2
@@ -144,7 +152,7 @@ exclude:
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: boto3-1.0
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: boto3-1.0
@@ -165,7 +173,7 @@ exclude:
     FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.8-rc
+  - PYTHON_VERSION: python-3.8
     FRAMEWORK: zerorpc-0.4
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
