@@ -1,6 +1,11 @@
 # Changelog
 
-=======
+## v5.2.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.1...v5.2.2)
+
+### Bugfixes
+ * fixed an issue where a `cpu_total` of `0` could cause an exception (#610, #611)
+
 ## v5.2.1
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.0...v5.2.1)
 
