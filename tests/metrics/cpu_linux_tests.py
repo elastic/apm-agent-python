@@ -179,3 +179,4 @@ def test_cpu_usage_when_cpu_total_is_zero(tmpdir):
 
     cpu_total_expected = 0
     assert data["samples"]["system.cpu.total.norm.pct"]["value"] == cpu_total_expected
+    assert data["samples"]["system.process.cpu.total.norm.pct"]["value"] == cpu_total_expected
