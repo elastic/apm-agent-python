@@ -85,3 +85,4 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["db"]["rows_affected"] == 0

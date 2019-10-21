@@ -226,11 +226,14 @@ class CursorProxy(wrapt.ObjectProxy):
             span_action=action,
             extra={"db": {"type": "sql", "statement": sql_string}},
             skip_frames=1,
-        ):
+        ) as span:
             if params is None:
-                return method(sql)
+                result = method(sql)
             else:
-                return method(sql, params)
+                result = method(sql, params)
+            if hasattr(span, "context") and self.rowcount not in (-1, None):
+                span.context["db"]["rows_affected"] = self.rowcount
+            return result
 
     def extract_signature(self, sql):
         raise NotImplementedError()

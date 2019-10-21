@@ -84,3 +84,4 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["db"]["rows_affected"] == 2
