@@ -120,6 +120,7 @@ class Client(object):
                 logging.setLogRecordFactory(new_factory)
 
         processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
+        processors.extend(import_string(p) for p in constants.HARDCODED_PROCESSORS)
 
         headers = {
             "Content-Type": "application/x-ndjson",

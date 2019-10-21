@@ -33,6 +33,7 @@
 from __future__ import absolute_import
 
 import logging
+import os
 
 import mock
 import pytest
@@ -331,3 +332,26 @@ def test_drop_events_in_processor(elasticapm_client, caplog):
     record = caplog.records[0]
     assert record.message == "Dropped event of type span due to processor mock.mock.dropper"
     assert record.levelname == "DEBUG"
+
+
+def test_context_lines_processor(elasticapm_client):
+    abs_path = os.path.join(os.path.dirname(__file__), "..", "utils", "stacks")
+    fname1 = os.path.join(abs_path, "linenos.py")
+    fname2 = os.path.join(abs_path, "linenos2.py")
+    data = {
+        "exception": {
+            "stacktrace": [
+                {"context": (fname1, 3, 2)},
+                {"context": (fname2, 5, 2)},
+                {"context": (fname1, 17, 2)},
+                {"no": "context"},
+            ]
+        }
+    }
+    processed = processors.add_context_lines_to_frames(elasticapm_client, data)
+    assert processed["exception"]["stacktrace"] == [
+        {"pre_context": ["1", "2"], "context_line": "3", "post_context": ["4", "5"]},
+        {"pre_context": ["c", "d"], "context_line": "e", "post_context": ["f", "g"]},
+        {"pre_context": ["15", "16"], "context_line": "17", "post_context": ["18", "19"]},
+        {"no": "context"},
+    ]

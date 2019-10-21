@@ -264,15 +264,7 @@ def get_frame_info(
 
     context_lines = library_frame_context_lines if frame_result["library_frame"] else in_app_frame_context_lines
     if context_lines and lineno is not None and abs_path:
-        pre_context, context_line, post_context = get_lines_from_file(
-            abs_path, lineno, int(context_lines / 2), loader, module_name
-        )
-    else:
-        pre_context, context_line, post_context = [], None, []
-    if context_line:
-        frame_result["pre_context"] = pre_context
-        frame_result["context_line"] = context_line
-        frame_result["post_context"] = post_context
+        frame_result["context"] = (abs_path, lineno, int(context_lines / 2), loader, module_name)
     if with_locals:
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of
