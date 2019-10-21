@@ -192,6 +192,7 @@ def extract_signature(sql):
 
 QUERY_ACTION = "query"
 EXEC_ACTION = "exec"
+DML_QUERIES = {"INSERT", "DELETE", "UPDATE"}
 
 
 class CursorProxy(wrapt.ObjectProxy):
@@ -231,8 +232,9 @@ class CursorProxy(wrapt.ObjectProxy):
                 result = method(sql)
             else:
                 result = method(sql, params)
-            if hasattr(span, "context") and self.rowcount not in (-1, None):
-                span.context["db"]["rows_affected"] = self.rowcount
+            # store "rows affected", but only for insert/update/delete
+            if span and self.rowcount not in (-1, None) and signature[:6] in DML_QUERIES:
+                span.update_context("db", {"rows_affected": self.rowcount})
             return result
 
     def extract_signature(self, sql):

@@ -441,6 +441,17 @@ class Span(BaseSpan):
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
 
+    def update_context(self, key, data):
+        """
+        Update the context data for given key
+        :param key: the key, e.g. "db"
+        :param data: a dictionary
+        :return: None
+        """
+        current = self.context.get(key, {})
+        current.update(data)
+        self.context[key] = current
+
     def __str__(self):
         return u"{}/{}/{}".format(self.name, self.type, self.subtype)
 
@@ -461,6 +472,9 @@ class DroppedSpan(BaseSpan):
         pass
 
     def child_ended(self, timestamp):
+        pass
+
+    def update_context(self, key, data):
         pass
 
 

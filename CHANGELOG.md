@@ -3,6 +3,10 @@
 ## Unreleased
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.2...master)
 
+### New Features
+
+ * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries (#614)
+
 ### Bugfixes
 
  * ensure that metrics with value 0 are not collected if they have the `reset_on_collect` flag set (#615)
