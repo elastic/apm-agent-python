@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.2...master)
+
+### Bugfixes
+
+ * ensure that metrics with value 0 are not collected if they have the `reset_on_collect` flag set (#615)
+
 ## v5.2.2
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.1...v5.2.2)
 
