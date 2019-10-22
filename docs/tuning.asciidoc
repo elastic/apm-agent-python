@@ -1,5 +1,5 @@
 [[tuning-and-overhead]]
-== Tuning and Overhead considerations
+== Performance tuning
 
 Using an APM solution comes with certain trade-offs, and the Python agent for Elastic APM is no different.
 Instrumenting your code, measuring timings, recording context data, etc., all need resources: 

@@ -1,12 +1,12 @@
 [[flask-support]]
-== Flask support
+=== Flask support
 
 Getting Elastic APM set up for your Flask project is easy,
 and there are various ways you can tweak it to fit to your needs.
 
 [float]
 [[flask-installation]]
-=== Installation
+==== Installation
 
 Install the Elastic APM agent using pip:
 
@@ -25,7 +25,7 @@ threads].
 
 [float]
 [[flask-setup]]
-=== Setup
+==== Setup
 
 To set up the agent, you need to initialize it with appropriate settings.
 
@@ -69,7 +69,7 @@ apm = ElasticAPM(app, service_name='<APP-ID>', secret_token='<SECRET-TOKEN>')
 
 [float]
 [[flask-debug-mode]]
-==== Debug Mode
+===== Debug mode
 
 Please note that errors and transactions will only be sent to the APM Server if your app is *not* in
 http://flask.pocoo.org/docs/0.12/quickstart/#debug-mode[debug mode].
@@ -88,7 +88,7 @@ app.config['ELASTIC_APM'] = {
 
 [float]
 [[flask-building-applications-on-the-fly]]
-==== Building applications on the fly?
+===== Building applications on the fly?
 
 You can use the agent's `init_app` hook for adding the application on the fly:
 
@@ -105,7 +105,7 @@ def create_app():
 
 [float]
 [[flask-usage]]
-=== Usage
+==== Usage
 
 Once you have configured the agent,
 it will automatically track transactions and capture uncaught exceptions within Flask.
@@ -132,7 +132,7 @@ apm.capture_message('hello, world!')
 
 [float]
 [[flask-logging]]
-=== Logging
+==== Logging
 
 Passing `logging=LEVEL` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module,
 with the given level or higher.
@@ -174,7 +174,7 @@ app = Flask(__name__)
 
 apm = ElasticAPM(app)
 
-if __name__ == '__main__':
+if __name__ === '__main__':
     # Create a logging handler and attach it.
     handler = LoggingHandler(client=apm.client)
     handler.setLevel(logging.WARN)
@@ -198,7 +198,7 @@ Without it, only the message is sent.
 
 [float]
 [[flask-extra-data]]
-==== Extra data
+===== Extra data
 
 In addition to what the agents log by default, you can send extra information:
 
@@ -220,20 +220,20 @@ def bar():
 
 [float]
 [[flask-celery-tasks]]
-==== Celery tasks
+===== Celery tasks
 
 The Elastic APM agent will automatically send errors and performance data from your Celery tasks to the APM Server.
 
 [float]
 [[flask-performance-metrics]]
-=== Performance Metrics
+==== Performance metrics
 
 If you've followed the instructions above, the agent has already hooked
 into the right signals and should be reporting performance metrics.
 
 [float]
 [[flask-ignoring-specific-views]]
-==== Ignoring specific routes
+===== Ignoring specific routes
 
 You can use the `TRANSACTIONS_IGNORE_PATTERNS` configuration option to ignore specific routes.
 The list given should be a list of regular expressions which are matched against the transaction name:
@@ -253,7 +253,7 @@ and any requests containing `/api/`.
 
 [float]
 [[flask-integrating-with-the-rum-agent]]
-==== Integrating with the RUM agent
+===== Integrating with the RUM Agent
 
 To correlate performance measurement in the browser with measurements in your Flask app,
 you can help the RUM (Real User Monitoring) agent by configuring it with the Trace ID and Span ID of the backend request.
@@ -277,6 +277,6 @@ See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
 
 [float]
 [[supported-flask-and-python-versions]]
-=== Supported Flask and Python versions
+==== Supported Flask and Python versions
 
 A list of supported <<supported-flask,Flask>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  

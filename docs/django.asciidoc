@@ -1,11 +1,11 @@
 [[django-support]]
-== Django Support
+=== Django support
 
 Getting Elastic APM set up for your Django project is easy, and there are various ways you can tweak it to fit to your needs.
 
 [float]
 [[django-installation]]
-=== Installation
+==== Installation
 
 Install the Elastic APM agent using pip:
 
@@ -25,7 +25,7 @@ threads].
 
 [float]
 [[django-setup]]
-=== Setup
+==== Setup
 
 Set up the Elastic APM agent in Django with these two steps:
 
@@ -77,7 +77,7 @@ ELASTIC_APM = {
 
 [float]
 [[django-performance-metrics]]
-=== Performance Metrics
+==== Performance metrics
 
 To send performance metrics to Elastic APM, simply add our tracing middleware to your `MIDDLEWARE` settings:
 
@@ -95,14 +95,14 @@ Make sure that it is the first middleware in the list.
 
 [float]
 [[django-instrumenting-custom-python-code]]
-==== Instrumenting custom Python code
+===== Instrumenting custom Python code
 
 To gain further insights into the performance of your code, please see
 <<instrumenting-custom-code, instrumenting custom code>>.
 
 [float]
 [[django-ignoring-specific-views]]
-==== Ignoring specific views
+===== Ignoring specific views
 
 You can use the `TRANSACTIONS_IGNORE_PATTERNS` configuration option to ignore specific views.
 The list given should be a list of regular expressions which are matched against the transaction name as seen in the Elastic APM user interface:
@@ -116,7 +116,7 @@ This example ignores any requests using the `OPTIONS` method and any requests co
 
 [float]
 [[django-transaction-name-route]]
-==== Using the route as transaction name
+===== Using the route as transaction name
 
 By default, we use the function or class name of the view as the transaction name.
 Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
@@ -131,7 +131,7 @@ NOTE: in versions previous to Django 2.2, changing this setting will have no eff
 
 [float]
 [[django-integrating-with-the-rum-agent]]
-==== Integrating with the RUM agent
+===== Integrating with the RUM Agent
 
 To correlate performance measurement in the browser with measurements in your Django app,
 you can help the RUM (Real User Monitoring) agent by configuring it with the Trace ID and Span ID of the backend request.
@@ -173,7 +173,7 @@ See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
 
 [float]
 [[django-enabling-and-disabling-the-agent]]
-=== Enabling and disabling the agent
+==== Enabling and disabling the agent
 
 The easiest way to disable the agent is to set Django’s `DEBUG` option to `True` in your development configuration.
 No errors or metrics will be logged to Elastic APM.
@@ -191,7 +191,7 @@ ELASTIC_APM = {
 
 [float]
 [[django-logging]]
-=== Integrating with Python logging
+==== Integrating with Python logging
 
 To easily send Python `logging` messages as "error" objects to Elasticsearch,
 we provide a `LoggingHandler` which you can use in your logging setup.
@@ -270,7 +270,7 @@ Without it, only the message is sent.
 
 [float]
 [[django-extra-data]]
-==== Extra data
+===== Extra data
 
 If you want to send more data  than what you get with the agent by default, logging can be done like so:
 
@@ -293,7 +293,7 @@ except MyModel.DoesNotExist:
 
 [float]
 [[django-celery-integration]]
-=== Celery Integration
+==== Celery integration
 
 For a general guide on how to set up Django with Celery, head over to
 Celery's http://celery.readthedocs.org/en/latest/django/first-steps-with-django.html#django-first-steps[Django
@@ -303,7 +303,7 @@ Elastic APM will automatically log errors from your celery tasks, and record per
 
 [float]
 [[django-logging-http-404-not-found-errors]]
-=== Logging "HTTP 404 Not Found" Errors
+==== Logging "HTTP 404 Not Found" errors
 
 By default, Elastic APM does not log HTTP 404 errors. If you wish to log
 these errors, add
@@ -325,7 +325,7 @@ setting.
 
 [float]
 [[django-disable-agent-during-tests]]
-=== Disable the agent during tests
+==== Disable the agent during tests
 
 To prevent the agent from sending any data to the APM Server during tests, set the `ELASTIC_APM_DISABLE_SEND` environment variable to `true`, e.g.:
 
@@ -336,7 +336,7 @@ ELASTIC_APM_DISABLE_SEND=true python manage.py test
 
 [float]
 [[django-troubleshooting]]
-=== Troubleshooting
+==== Troubleshooting
 
 Elastic APM comes with a Django command that helps troubleshooting your setup. To check your configuration, run
 
@@ -369,6 +369,6 @@ Success! We tracked the error successfully! You should be able to see it in a fe
 
 [float]
 [[supported-django-and-python-versions]]
-=== Supported Django and Python versions
+==== Supported Django and Python versions
 
 A list of supported <<supported-django,Django>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  
