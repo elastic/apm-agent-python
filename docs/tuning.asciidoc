@@ -84,7 +84,7 @@ Other contextual information, like the SQL query, will still be available.
 [[tuning-frame-context]]
 === Collecting Frame Context
 
-When a stack trace is captured, the agent will also capture several lines of source code around each frame location in the stack trace. This allows the APM UI to give greater insight into where exactly the error or span happens. 
+When a stack trace is captured, the agent will also capture several lines of source code around each frame location in the stack trace. This allows the APM app to give greater insight into where exactly the error or span happens. 
 
 There are four settings you can modify to control this behavior:
 
