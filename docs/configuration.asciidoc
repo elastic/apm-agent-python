@@ -137,7 +137,7 @@ e.g. "production" or "staging".
 
 Environments allow you to easily filter data on a global level in the APM app.
 It's important to be consistent when naming environments across agents.
-See {kibana-ref}/filters.html#environment-selector[environment selector] in the APM app for more information.
+See {apm-app-ref}/filters.html#environment-selector[environment selector] in the APM app for more information.
 
 NOTE: This feature is fully supported in the APM app in Kibana versions >= 7.2.
 You must use the query bar to filter for a specific environment in versions prior to 7.2.
@@ -662,7 +662,7 @@ NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 When enabled, the agent will make periodic requests to the APM Server to fetch updated configuration.
 
-See {kibana-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
+See {apm-app-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 
