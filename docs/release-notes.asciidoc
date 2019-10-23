@@ -1,4 +1,14 @@
+:pull: https://github.com/elastic/apm-server/pull/
+
 [[release-notes]]
 == Release notes
 
-Release notes are published in the https://github.com/elastic/apm-agent-python/blob/master/CHANGELOG.md[changelog].
+All notable changes to this project will be documented here.
+
+* <<release-notes-5.x>>
+* <<release-notes-4.x>>
+* <<release-notes-3.x>>
+* <<release-notes-2.x>>
+* <<release-notes-1.x>>
+
+include::../CHANGELOG.asciidoc[]
