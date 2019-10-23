@@ -72,6 +72,7 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
+    assert span["context"]["destination"]["address"] == os.environ["ES_URL"]
 
 
 @pytest.mark.integrationtest

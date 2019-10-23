@@ -35,7 +35,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     extract_signature,
 )
 from elasticapm.traces import capture_span
-from elasticapm.utils import default_ports
+from elasticapm.utils import compat, default_ports
 
 
 class PGCursorProxy(CursorProxy):
@@ -52,14 +52,14 @@ class PGCursorProxy(CursorProxy):
         return extract_signature(sql)
 
     def __enter__(self):
-        return PGCursorProxy(self.__wrapped__.__enter__())
+        return PGCursorProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
 
 class PGConnectionProxy(ConnectionProxy):
     cursor_proxy = PGCursorProxy
 
     def __enter__(self):
-        return PGConnectionProxy(self.__wrapped__.__enter__())
+        return PGConnectionProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
 
 class Psycopg2Instrumentation(DbApi2Instrumentation):
@@ -72,19 +72,26 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
 
         host = kwargs.get("host")
         if host:
-            signature += " " + str(host)
+            signature += " " + compat.text_type(host)
 
             port = kwargs.get("port")
             if port:
                 port = str(port)
                 if int(port) != default_ports.get("postgresql"):
-                    signature += ":" + port
+                    host += ":" + port
+            signature += " " + compat.text_type(host)
         else:
             # Parse connection string and extract host/port
             pass
 
-        with capture_span(signature, span_type="db", span_subtype="postgresql", span_action="connect"):
-            return PGConnectionProxy(wrapped(*args, **kwargs))
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype="postgresql",
+            span_action="connect",
+            extra={"destination": {"address": host}},
+        ):
+            return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=host)
 
 
 class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):

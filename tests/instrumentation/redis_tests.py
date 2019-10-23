@@ -54,6 +54,9 @@ def redis_conn():
     del conn
 
 
+CONN_STRING = "%s:%s" % (os.environ["REDIS_HOST"], os.environ.get("REDIS_PORT", 6379))
+
+
 @pytest.mark.integrationtest
 def test_pipeline(instrument, elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
@@ -71,6 +74,7 @@ def test_pipeline(instrument, elasticapm_client, redis_conn):
     assert spans[0]["type"] == "db"
     assert spans[0]["subtype"] == "redis"
     assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"]["address"] == CONN_STRING
 
     assert spans[1]["name"] == "test_pipeline"
     assert spans[1]["type"] == "test"
@@ -125,11 +129,13 @@ def test_redis_client(instrument, elasticapm_client, redis_conn):
     assert spans[0]["type"] == "db"
     assert spans[0]["subtype"] == "redis"
     assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"]["address"] == CONN_STRING
 
     assert spans[1]["name"] == "EXPIRE"
     assert spans[1]["type"] == "db"
     assert spans[1]["subtype"] == "redis"
     assert spans[1]["action"] == "query"
+    assert spans[1]["context"]["destination"]["address"] == CONN_STRING
 
     assert spans[2]["name"] == "test_redis_client"
     assert spans[2]["type"] == "test"

@@ -81,7 +81,7 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             if isinstance(body, dict) and "script" in body:
                 # only get the `script` field from the body
                 context["db"]["statement"] = json.dumps({"script": body["script"]})
-        # TODO: add instance.base_url to context once we agreed on a format
+        context["destination"] = {"address": instance.host}
         with elasticapm.capture_span(
             signature,
             span_type="db",

@@ -44,6 +44,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.python_memcached.PythonMemcachedInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisPipelineInstrumentation",
+    "elasticapm.instrumentation.packages.redis.RedisConnectionInstrumentation",
     "elasticapm.instrumentation.packages.requests.RequestsInstrumentation",
     "elasticapm.instrumentation.packages.sqlite.SQLiteInstrumentation",
     "elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation",
