@@ -192,11 +192,11 @@ def extract_signature(sql):
 
 QUERY_ACTION = "query"
 EXEC_ACTION = "exec"
-DML_QUERIES = {"INSERT", "DELETE", "UPDATE"}
 
 
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
+    DML_QUERIES = ("INSERT", "DELETE", "UPDATE")
 
     def callproc(self, procname, params=None):
         return self._trace_sql(self.__wrapped__.callproc, procname, params, action=EXEC_ACTION)
@@ -232,8 +232,8 @@ class CursorProxy(wrapt.ObjectProxy):
                 result = method(sql)
             else:
                 result = method(sql, params)
-            # store "rows affected", but only for insert/update/delete
-            if span and self.rowcount not in (-1, None) and signature[:6] in DML_QUERIES:
+            # store "rows affected", but only for DML queries like insert/update/delete
+            if span and self.rowcount not in (-1, None) and signature.startswith(self.DML_QUERIES):
                 span.update_context("db", {"rows_affected": self.rowcount})
             return result
 
