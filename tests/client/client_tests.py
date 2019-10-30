@@ -555,10 +555,10 @@ def test_transaction_max_spans_dynamic(elasticapm_client):
 @pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
 def test_transaction_span_frames_min_duration(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("noframes"):
-        time.sleep(0.001)
-    with elasticapm.capture_span("frames"):
-        time.sleep(0.040)
+    with elasticapm.capture_span("noframes", duration=0.001):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
     elasticapm_client.end_transaction("test")
 
     spans = elasticapm_client.events[SPAN]
@@ -576,8 +576,8 @@ def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("frames"):
         pass
-    with elasticapm.capture_span("frames"):
-        time.sleep(0.040)
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
     elasticapm_client.end_transaction("test")
 
     spans = elasticapm_client.events[SPAN]
