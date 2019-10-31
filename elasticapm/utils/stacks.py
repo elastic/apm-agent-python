@@ -170,9 +170,9 @@ def iter_traceback_frames(tb, config=None):
     local variable.
     """
     max_frames = config.stack_trace_limit if config else -1
-    frames = []
     if not max_frames:
-        return frames
+        return
+    frames = []
     while tb:
         # support for __traceback_hide__ which is used by a few libraries
         # to hide internal frames.
