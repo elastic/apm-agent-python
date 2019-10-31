@@ -410,6 +410,22 @@ This is helpful in cases where a transaction creates a very high amount of spans
 Setting an upper limit will prevent overloading the agent and the APM Server with too much work for such edge cases.
 
 [float]
+[[config-stack-trace-limit]]
+==== `stack_trace_limit`
+
+|============
+| Environment                     | Django/Flask        | Default
+| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
+|============
+
+Limits the number of frames captured for each stack trace.
+
+Setting the limit to `0` will disable stack trace collection,
+while any positive integer value will be used as the maximum number of frames to collect.
+Setting a negative value, such as `-1`, means that all frames will be collected.
+
+
+[float]
 [[config-span-frames-min-duration]]
 ==== `span_frames_min_duration`
 
@@ -423,8 +439,8 @@ While this is very helpful to find the exact place in your code that causes the 
 collecting this stack trace does have some overhead.
 
 To collect traces for all spans, independent of the length, set the value to `-1`.
-Setting it to a positive value, e.g. `5`, will limit stack trace collection to spans
-with durations equal or longer than the given value in milliseconds, e.g. 5 milliseconds.
+Setting it to a positive value, e.g. `5ms`, will limit stack trace collection to spans
+with durations equal or longer than the given value.
 
 To disable stack trace collection for spans completely, set the value to `0`.
 

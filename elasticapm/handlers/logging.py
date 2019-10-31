@@ -92,7 +92,7 @@ class LoggingHandler(logging.Handler):
 
         stack = getattr(record, "stack", None)
         if stack is True:
-            stack = iter_stack_frames()
+            stack = iter_stack_frames(config=self.client.config)
 
         if stack:
             frames = []
