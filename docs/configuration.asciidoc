@@ -422,7 +422,7 @@ Limits the number of frames captured for each stack trace.
 
 Setting the limit to `0` will disable stack trace collection,
 while any positive integer value will be used as the maximum number of frames to collect.
-Setting a negative value, such as `-1`, means that all frames will be collected.
+To disable the limit and always capture all frames, set the value to `-1`.
 
 
 [float]
