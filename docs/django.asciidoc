@@ -80,9 +80,13 @@ ELASTIC_APM = {
 === Performance Metrics
 
 In order to collect performance metrics,
-the agent automatically inserts a middleware at the top of your middleware list.
+the agent automatically inserts a middleware at the top of your middleware list
+(`settings.MIDDLEWARE` in current versions of Django, `settings.MIDDLEWARE_CLASSES` in some older versions).
 To disable the automatic insertion of the middleware,
 see <<config-django-autoinsert-middleware,django_autoinsert_middleware>>.
+
+NOTE: For automatic insertion to work,
+your list of middlewares (`settings.MIDDLEWARE` or `settings.MIDDLEWARE_CLASSES`) must be of type `list` or `tuple`.
 
 In addition to broad request metrics (what will appear in the APM app as transactions),
 the agent also collects fine grained metrics on template rendering, 

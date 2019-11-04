@@ -77,13 +77,16 @@ class ElasticAPMConfig(AppConfig):
             middleware_list = settings.MIDDLEWARE_CLASSES
             middleware_attr = "MIDDLEWARE_CLASSES"
         else:
-            middleware_list = middleware_attr = None
-        if isinstance(middleware_list, tuple):
-            is_tuple = True
+            logger.debug("Could not find middleware setting, not autoinserting tracing middleware")
+            return
+        is_tuple = isinstance(middleware_list, tuple)
+        if is_tuple:
             middleware_list = list(middleware_list)
-        else:
-            is_tuple = False
-        if middleware_list and MIDDLEWARE_NAME not in middleware_list:
+        elif not isinstance(middleware_list, list):
+            logger.debug("%s setting is not of type list or tuple, not autoinserting tracing middleware")
+            return
+        if middleware_list is not None and MIDDLEWARE_NAME not in middleware_list:
+            logger.debug("Inserting tracing middleware into settings.%s", middleware_attr)
             middleware_list.insert(0, MIDDLEWARE_NAME)
         if is_tuple:
             middleware_list = tuple(middleware_list)
