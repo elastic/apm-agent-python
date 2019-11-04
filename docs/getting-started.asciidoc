@@ -8,15 +8,65 @@ It has built-in support for Django and Flask performance metrics and error loggi
 [[how-it-works]]
 === How does the Agent work?
 
-The agent auto-instruments <<supported-technologies,supported technologies>> and records interesting events,
-like HTTP requests and database queries. To do this, it {CONTENT_HERE}
-This means that for the supported technologies, there are no code changes required.
-
-The Agent automatically {CONTENT_HERE}
-
-These events, called Transactions and Spans, are sent to the APM Server.
+To gather APM events (called Transactions and Spans), errors and metrics,
+the Python agent instruments your application in a few different ways.
+These events, are then sent to the APM Server.
 The APM Server converts them to a format suitable for Elasticsearch, and sends them to an Elasticsearch cluster.
 You can then use the APM app in Kibana to gain insight into latency issues and error culprits within your application.
+
+Broadly, we differentiate between three different approaches to collect the necessary data:
+framework integration, instrumentation, and background collection.
+
+[[how-it-works-framework-integration]]
+==== Framework integration
+
+To collect data about incoming requests and background tasks,
+we integrate with frameworks like <<django-support,Django>>, <<flask-support,Flask>> and Celery.
+Whenever possible, framework integrations make use of hooks and signals provided by the framework.
+Examples of this are 
+
+ * `request_started`, `request_finished`, and `got_request_exception` signals from `django.core.signals`
+ * `request_started`, `request_finished`, and `got_request_exception` signals from `flask.signals`
+ *  `task_prerun`, `task_postrun`, and `task_failure` signals from `celery.signals`
+
+Framework integrations require some limited code changes in your app.
+E.g. for Django, you need to add `elasticapm.contrib.django` to `INSTALLED_APPS`.
+
+[[how-it-works-instrumentation]]
+==== Instrumentation
+
+To collect data from database drivers, HTTP libraries etc.,
+we instrument certain functions and methods in these libraries.
+Our instrumentation wraps these callables and collects additional data, like
+
+ * time spent in the call
+ * the executed query for database drivers
+ * the fetched URL for HTTP libraries
+
+We use a 3rd party library, https://github.com/GrahamDumpleton/wrapt[`wrapt`], to wrap the callables.
+You can read more on how `wrapt` works in Graham Dumpleton's
+excellent series of http://blog.dscpl.com.au/search/label/wrapt[blog posts].
+
+Instrumentations are set up automatically and do not require any code changes.
+See <<automatic-instrumentation,Automatic Instrumentation>> to learn more about which libraries we support.
+
+[[how-it-works-background-collection]]
+==== Background collection
+
+In addition to APM and error data,
+the Python agent also collects system and application metrics in regular intervals.
+This collection happens in a background thread that is started by the agent.
+
+In addition to the metrics collection background thread,
+the agent starts two additional threads per process:
+
+ * a thread to regularly fetch remote configuration from the APM Server
+ * a thread to process the collected data and send it to the APM Server via HTTP.
+
+Note that every process that instantiates the agent will have these three threads.
+This means that when you e.g. use gunicorn or uwsgi workers,
+each worker will have three threads started by the Python agent.
+
 
 [float]
 [[additional-components]]
