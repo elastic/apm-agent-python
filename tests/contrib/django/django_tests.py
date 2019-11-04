@@ -32,8 +32,6 @@
 
 import pytest  # isort:skip
 
-django = pytest.importorskip("django")  # isort:skip
-
 import json
 import logging
 import os
@@ -59,12 +57,16 @@ from conftest import BASE_TEMPLATE_DIR
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
+from elasticapm.contrib.django.apps import ElasticAPMConfig
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.utils import compat
 from tests.contrib.django.testapp.views import IgnoredException, MyException
 from tests.utils.compat import middleware_setting
+
+django = pytest.importorskip("django")  # isort:skip
+
 
 try:
     # Django 1.10+
@@ -883,6 +885,38 @@ def test_request_metrics_name_override(django_elasticapm_client, client):
     transaction = django_elasticapm_client.events[TRANSACTION][0]
     assert transaction["name"] == "foo"
     assert transaction["result"] == "okydoky"
+
+
+def test_tracing_middleware_autoinsertion_new_style_list():
+    settings = mock.Mock(spec=["MIDDLEWARE"], MIDDLEWARE=["a", "b", "c"])
+    ElasticAPMConfig.insert_middleware(settings)
+    assert len(settings.MIDDLEWARE) == 4
+    assert settings.MIDDLEWARE[0] == "elasticapm.contrib.django.middleware.TracingMiddleware"
+    assert isinstance(settings.MIDDLEWARE, list)
+
+
+def test_tracing_middleware_autoinsertion_old_style_list():
+    settings = mock.Mock(spec=["MIDDLEWARE_CLASSES"], MIDDLEWARE_CLASSES=["a", "b", "c"])
+    ElasticAPMConfig.insert_middleware(settings)
+    assert len(settings.MIDDLEWARE_CLASSES) == 4
+    assert settings.MIDDLEWARE_CLASSES[0] == "elasticapm.contrib.django.middleware.TracingMiddleware"
+    assert isinstance(settings.MIDDLEWARE_CLASSES, list)
+
+
+def test_tracing_middleware_autoinsertion_new_style_tuple():
+    settings = mock.Mock(spec=["MIDDLEWARE"], MIDDLEWARE=("a", "b", "c"))
+    ElasticAPMConfig.insert_middleware(settings)
+    assert len(settings.MIDDLEWARE) == 4
+    assert settings.MIDDLEWARE[0] == "elasticapm.contrib.django.middleware.TracingMiddleware"
+    assert isinstance(settings.MIDDLEWARE, tuple)
+
+
+def test_tracing_middleware_autoinsertion_old_style_tuple():
+    settings = mock.Mock(spec=["MIDDLEWARE_CLASSES"], MIDDLEWARE_CLASSES=("a", "b", "c"))
+    ElasticAPMConfig.insert_middleware(settings)
+    assert len(settings.MIDDLEWARE_CLASSES) == 4
+    assert settings.MIDDLEWARE_CLASSES[0] == "elasticapm.contrib.django.middleware.TracingMiddleware"
+    assert isinstance(settings.MIDDLEWARE_CLASSES, tuple)
 
 
 def test_traceparent_header_handling(django_elasticapm_client, client):

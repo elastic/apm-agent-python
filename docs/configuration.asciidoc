@@ -711,6 +711,19 @@ If you want to use the route instead of the view name as the transaction name, y
 NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
 [float]
+[[config-django-autoinsert-middleware]]
+==== `django_autoinsert_middleware`
+|============
+| Environment                                 | Django                         | Default
+| `ELASTIC_APM_DJANGO_AUTOINSERT_MIDDLEWARE`  | `DJANGO_AUTOINSERT_MIDDLEWARE` | `True`
+|============
+
+To trace Django requests, the agent uses a middleware, `elasticapm.contrib.django.middleware.TracingMiddleware`.
+By default, this middleware is inserted automatically as the first item in `settings.MIDDLEWARES`.
+To disable the automatic insertion of the middleware, change this setting to `False`.
+
+
+[float]
 [[config-generic-environment]]
 === Generic Environment variables
 

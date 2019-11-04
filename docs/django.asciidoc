@@ -79,19 +79,15 @@ ELASTIC_APM = {
 [[django-performance-metrics]]
 === Performance Metrics
 
-To send performance metrics to Elastic APM, simply add our tracing middleware to your `MIDDLEWARE` settings:
+In order to collect performance metrics,
+the agent automatically inserts a middleware at the top of your middleware list.
+To disable the automatic insertion of the middleware,
+see <<config-django-autoinsert-middleware,django_autoinsert_middleware>>.
 
-[source,python]
-----
-MIDDLEWARE = (
-    'elasticapm.contrib.django.middleware.TracingMiddleware',
-    # ...
-)
-----
-
-NOTE: For Django 1.8, you can add the same middleware to `MIDDLEWARE_CLASSES`.
-
-Make sure that it is the first middleware in the list.
+In addition to broad request metrics (what will appear in the APM app as transactions),
+the agent also collects fine grained metrics on template rendering, 
+database queries, HTTP requests, etc.
+You can find more information on what we instrument in the <<automatic-instrumentation, Automatic Instrumentation>> section.
 
 [float]
 [[django-instrumenting-custom-python-code]]
