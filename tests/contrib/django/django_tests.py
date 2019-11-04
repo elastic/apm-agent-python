@@ -32,6 +32,9 @@
 
 import pytest  # isort:skip
 
+django = pytest.importorskip("django")  # isort:skip
+
+
 import json
 import logging
 import os
@@ -64,9 +67,6 @@ from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.utils import compat
 from tests.contrib.django.testapp.views import IgnoredException, MyException
 from tests.utils.compat import middleware_setting
-
-django = pytest.importorskip("django")  # isort:skip
-
 
 try:
     # Django 1.10+
