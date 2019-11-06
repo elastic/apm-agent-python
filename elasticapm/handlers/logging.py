@@ -217,7 +217,7 @@ def _add_attributes_to_log_record(record):
     record.elasticapm_trace_id = trace_id
 
     span = execution_context.get_span()
-    span_id = span.id if span else None
+    span_id = span.id if span and hasattr(span, "id") else None
     record.elasticapm_span_id = span_id
 
     record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
