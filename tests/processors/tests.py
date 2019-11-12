@@ -88,26 +88,51 @@ def test_stacktrace():
         "exception": {
             "stacktrace": [
                 {"vars": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"}}
-            ]
+            ],
+            "cause": [
+                {
+                    "stacktrace": [
+                        {"vars": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"}}
+                    ],
+                    "cause": [
+                        {
+                            "stacktrace": [
+                                {
+                                    "vars": {
+                                        "foo": "bar",
+                                        "password": "hello",
+                                        "the_secret": "hello",
+                                        "a_password_here": "hello",
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                }
+            ],
         }
     }
 
     result = processors.sanitize_stacktrace_locals(None, data)
 
     assert "stacktrace" in result["exception"]
-    stack = result["exception"]["stacktrace"]
-    assert len(stack) == 1
-    frame = stack[0]
-    assert "vars" in frame
-    vars = frame["vars"]
-    assert "foo" in vars
-    assert vars["foo"] == "bar"
-    assert "password" in vars
-    assert vars["password"] == processors.MASK
-    assert "the_secret" in vars
-    assert vars["the_secret"] == processors.MASK
-    assert "a_password_here" in vars
-    assert vars["a_password_here"] == processors.MASK
+    for stacktrace in (
+        result["exception"]["stacktrace"],
+        result["exception"]["cause"][0]["stacktrace"],
+        result["exception"]["cause"][0]["cause"][0]["stacktrace"],
+    ):
+        assert len(stacktrace) == 1
+        frame = stacktrace[0]
+        assert "vars" in frame
+        vars = frame["vars"]
+        assert "foo" in vars
+        assert vars["foo"] == "bar"
+        assert "password" in vars
+        assert vars["password"] == processors.MASK
+        assert "the_secret" in vars
+        assert vars["the_secret"] == processors.MASK
+        assert "a_password_here" in vars
+        assert vars["a_password_here"] == processors.MASK
 
 
 def test_remove_http_request_body(http_test_data):

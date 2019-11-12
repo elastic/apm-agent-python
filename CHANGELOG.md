@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.2...master)
+
+### Bugfixes
+
+ * ensure that metrics with value 0 are not collected if they have the `reset_on_collect` flag set (#615)
+ * unwrap postgres cursor for newly introduced psycopg2 extensions (#621)
+
+## v5.2.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.1...v5.2.2)
+
+### Bugfixes
+ * fixed an issue where a `cpu_total` of `0` could cause an exception (#610, #611)
+
+## v5.2.1
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.0...v5.2.1)
+
+### Bugfixes
+ * fixed an issue with DroppedSpans and logging integration (#602)
+ * fixed an issue with processors not being applied to chained exceptions (#604)
+
 ## v5.2.0
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.1.2...v5.2.0)
 

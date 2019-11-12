@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent any
+  agent { label 'linux && immutable' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -40,7 +40,6 @@ pipeline {
   }
   stages {
     stage('Initializing'){
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
@@ -87,7 +86,6 @@ pipeline {
     Execute unit tests.
     */
     stage('Test') {
-      agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
@@ -113,7 +111,6 @@ pipeline {
       }
     }
     stage('Building packages') {
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
@@ -155,7 +152,6 @@ pipeline {
       }
     }
     stage('Release') {
-      agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
