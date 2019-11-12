@@ -171,7 +171,7 @@ pipeline {
         stage('Notify') {
           steps {
               emailext subject: '[apm-agent-python] Release ready to be pushed',
-                       to: 'observability-team@elastic.co',
+                       to: "${NOTIFY_TO}",
                        body: "Please go to ${env.BUILD_URL}input to approve or reject within 12 hours."
           }
         }
