@@ -26,6 +26,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.2\...master[Check the d
 ===== Bug fixes
 
 * Ensure that metrics with value 0 are not collected if they have the `reset_on_collect` flag set {pull}615[#615]
+* Unwrap postgres cursor for newly introduced psycopg2 extensions (#621)
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
