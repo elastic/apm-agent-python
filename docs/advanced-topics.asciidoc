@@ -7,5 +7,6 @@
 
 include::./custom-instrumentation.asciidoc[Custom Instrumentation]
 include::./sanitizing-data.asciidoc[Sanitizing Data]
+include::./how-the-agent-works.asciidoc[How the Agent works]
 include::./run-tests-locally.asciidoc[Run Tests Locally]
 
