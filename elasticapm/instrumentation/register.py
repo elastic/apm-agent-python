@@ -35,7 +35,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation",
     "elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation",
-    "elasticapm.instrumentation.packages.psycopg2.Psycopg2RegisterTypeInstrumentation",
+    "elasticapm.instrumentation.packages.psycopg2.Psycopg2ExtensionsInstrumentation",
     "elasticapm.instrumentation.packages.mysql.MySQLInstrumentation",
     "elasticapm.instrumentation.packages.pylibmc.PyLibMcInstrumentation",
     "elasticapm.instrumentation.packages.pymongo.PyMongoInstrumentation",
