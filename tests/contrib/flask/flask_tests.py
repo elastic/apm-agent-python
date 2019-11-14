@@ -51,7 +51,7 @@ def test_error_handler(flask_apm_client):
     client = flask_apm_client.app.test_client()
     response = client.get("/an-error/")
     assert response.status_code == 500
-    assert len(flask_apm_client.client.events) == 1
+    assert len(flask_apm_client.client.events[ERROR]) == 1
 
     event = flask_apm_client.client.events[ERROR][0]
 
@@ -62,12 +62,16 @@ def test_error_handler(flask_apm_client):
     assert exc["handled"] is False
     assert event["culprit"] == "tests.contrib.flask.fixtures.an_error"
 
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+    assert transaction["result"] == "HTTP 5xx"
+    assert transaction["name"] == "GET /an-error/"
+
 
 def test_get(flask_apm_client):
     client = flask_apm_client.app.test_client()
     response = client.get("/an-error/?foo=bar")
     assert response.status_code == 500
-    assert len(flask_apm_client.client.events) == 1
+    assert len(flask_apm_client.client.events[ERROR]) == 1
 
     event = flask_apm_client.client.events[ERROR][0]
 
@@ -104,7 +108,7 @@ def test_get_debug_elasticapm(flask_apm_client):
     flask_apm_client.client.config.debug = True
     with pytest.raises(ValueError):
         app.test_client().get("/an-error/?foo=bar")
-    assert len(flask_apm_client.client.events) == 1
+    assert len(flask_apm_client.client.events[ERROR]) == 1
 
 
 @pytest.mark.parametrize(
@@ -267,7 +271,7 @@ def test_post_files(flask_apm_client):
             },
         )
     assert response.status_code == 500
-    assert len(flask_apm_client.client.events) == 1
+    assert len(flask_apm_client.client.events[ERROR]) == 1
 
     event = flask_apm_client.client.events[ERROR][0]
     if flask_apm_client.client.config.capture_body in ("errors", "all"):
