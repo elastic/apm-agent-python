@@ -1,7 +1,4 @@
-:branch: current
-:server-branch: 6.5
-:ecs_version: current
-
+include::{asciidoc-dir}/../../shared/versions/stack/current.asciidoc[]
 include::{asciidoc-dir}/../../shared/attributes.asciidoc[]
 
 ifdef::env-github[]
@@ -11,26 +8,26 @@ endif::[]
 
 = APM Python Agent Reference
 
-include::./getting-started.asciidoc[Getting Started]
+include::./getting-started.asciidoc[]
 
-include::./configuration.asciidoc[Configuration]
+include::./set-up.asciidoc[]
 
-include::./supported-technologies.asciidoc[Supported Technologies]
+include::./supported-technologies.asciidoc[]
 
-include::./django.asciidoc[Django support]
+include::./configuration.asciidoc[]
 
-include::./flask.asciidoc[Flask support]
+include::./advanced-topics.asciidoc[]
 
-include::./metrics.asciidoc[Metrics]
+include::./api.asciidoc[]
 
-include::./opentracing.asciidoc[OpenTracing]
+include::./metrics.asciidoc[]
 
-include::./advanced-topics.asciidoc[Advanced Topics]
+include::./opentracing.asciidoc[]
 
-include::./api.asciidoc[API documentation]
+include::./logging.asciidoc[]
 
-include::./upgrading.asciidoc[Upgrading from previous versions]
+include::./tuning.asciidoc[]
 
-include::./tuning.asciidoc[Tuning and Overhead considerations]
+include::./upgrading.asciidoc[]
 
-include::./release-notes.asciidoc[Release notes]
+include::./release-notes.asciidoc[]
