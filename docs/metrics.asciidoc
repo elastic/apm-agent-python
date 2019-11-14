@@ -4,11 +4,17 @@
 With Elastic APM, you can capture system and process metrics.
 These metrics will be sent regularly to the APM Server and from there to Elasticsearch
 
+[float]
 [[metric-sets]]
-=== Metric Sets
+=== Metric sets
 
+* <<cpu-memory-metricset>>
+* <<transactions-metricset>>
+* <<breakdown-metricset>>
+
+[float]
 [[cpu-memory-metricset]]
-==== CPU/Memory Metric Set
+==== CPU/Memory metric set
 
 `elasticapm.metrics.sets.cpu.CPUMetricSet`
 
@@ -21,7 +27,7 @@ type: scaled_float
 
 format: percent
 
-The percentage of CPU time in states other than Idle and IOWait, normalised by the number of cores.
+The percentage of CPU time in states other than Idle and IOWait, normalized by the number of cores.
 --
 
 
@@ -81,8 +87,9 @@ he Resident Set Size. The amount of memory the process occupied in main memory (
 
 NOTE: if you do *not* use Linux, you need to install https://pypi.org/project/psutil/[`psutil`] for this metric set.
 
+[float]
 [[transactions-metricset]]
-==== Transactions Metric Set
+==== Transactions metric set
 
 This metric set collects metrics in relation with transactions.
 
@@ -104,10 +111,11 @@ You can filter and group by these dimensions:
 * `transaction.type`: The type of the transaction, for example `request`
 --
 
+[float]
 [[breakdown-metricset]]
-==== Breakdown Metric Set
+==== Breakdown metric set
 
-NOTE: tracking and collection of this metric set can be disabled using the `<<config-breakdown_metrics, breakdown_metrics>>` setting.
+NOTE: Tracking and collection of this metric set can be disabled using the <<config-breakdown_metrics>> setting.
 
 *`transaction.breakdown.count`*::
 +
