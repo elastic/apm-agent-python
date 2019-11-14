@@ -163,23 +163,31 @@ def to_dict(dictish):
     return dict((k, dictish[k]) for k in m())
 
 
-def iter_traceback_frames(tb):
+def iter_traceback_frames(tb, config=None):
     """
     Given a traceback object, it will iterate over all
     frames that do not contain the ``__traceback_hide__``
     local variable.
     """
+    max_frames = config.stack_trace_limit if config else -1
+    if not max_frames:
+        return
+    frames = []
     while tb:
         # support for __traceback_hide__ which is used by a few libraries
         # to hide internal frames.
         frame = tb.tb_frame
-        f_locals = getattr(frame, "f_locals", {})
-        if not _getitem_from_frame(f_locals, "__traceback_hide__"):
-            yield frame, getattr(tb, "tb_lineno", None)
+        f_locals = getattr(frame, "f_locals", None)
+        if f_locals is None or not _getitem_from_frame(f_locals, "__traceback_hide__"):
+            frames.append((frame, getattr(tb, "tb_lineno", None)))
         tb = tb.tb_next
+    if max_frames != -1:
+        frames = frames[-max_frames:]
+    for frame in frames:
+        yield frame
 
 
-def iter_stack_frames(frames=None, start_frame=None, skip=0, skip_top_modules=()):
+def iter_stack_frames(frames=None, start_frame=None, skip=0, skip_top_modules=(), config=None):
     """
     Given an optional list of frames (defaults to current stack),
     iterates over all frames that do not contain the ``__traceback_hide__``
@@ -197,13 +205,18 @@ def iter_stack_frames(frames=None, start_frame=None, skip=0, skip_top_modules=()
     :param start_frame: a Frame object or None
     :param skip: number of frames to skip from the beginning
     :param skip_top_modules: tuple of strings
+    :param config: agent configuration
 
     """
     if not frames:
         frame = start_frame if start_frame is not None else inspect.currentframe().f_back
         frames = _walk_stack(frame)
+    max_frames = config.stack_trace_limit if config else -1
     stop_ignoring = False
+    frames_count = 0  # can't use i, as we don't want to count skipped and ignored frames
     for i, frame in enumerate(frames):
+        if max_frames != -1 and frames_count == max_frames:
+            break
         if i < skip:
             continue
         f_globals = getattr(frame, "f_globals", {})
@@ -212,6 +225,7 @@ def iter_stack_frames(frames=None, start_frame=None, skip=0, skip_top_modules=()
         stop_ignoring = True
         f_locals = getattr(frame, "f_locals", {})
         if not _getitem_from_frame(f_locals, "__traceback_hide__"):
+            frames_count += 1
             yield frame, frame.f_lineno
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.3...master)
+
+### New Features
+
+ * implemented stack_trace_limit configuration option (#623)
+
+### 
+
 ## v5.2.3
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.2...v5.2.3)
 

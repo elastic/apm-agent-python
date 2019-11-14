@@ -94,7 +94,7 @@ class Exception(BaseEvent):
             exc_type, exc_value, exc_traceback = exc_info
 
             frames = get_stack_info(
-                iter_traceback_frames(exc_traceback),
+                iter_traceback_frames(exc_traceback, config=client.config),
                 with_locals=client.config.collect_local_variables in ("errors", "all"),
                 library_frame_context_lines=client.config.source_lines_error_library_frames,
                 in_app_frame_context_lines=client.config.source_lines_error_app_frames,

@@ -36,6 +36,7 @@ import pytest
 import elasticapm
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH
 from elasticapm.utils import compat, encoding
+from tests.utils.stacks import get_me_more_test_frames
 
 
 def test_explicit_message_on_exception_event(elasticapm_client):
@@ -291,3 +292,37 @@ def test_message_keyword_truncation(sending_elasticapm_client):
     assert error["log"]["message"] == too_long  # message is not truncated
 
     assert error["log"]["logger_name"] == expected
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"stack_trace_limit": 10}], indirect=True)
+def test_stack_trace_limit(elasticapm_client):
+    def func():
+        1 / 0  # I'm the context line of the last frame!
+
+    try:
+        list(get_me_more_test_frames(15, func))
+    except ZeroDivisionError:
+        elasticapm_client.capture_exception()
+    exception = elasticapm_client.events[ERROR][-1]
+    frames = exception["exception"]["stacktrace"]
+    assert len(frames) == 10
+    assert "I'm the context line of the last frame" in frames[-1]["context_line"]
+
+    elasticapm_client.config.update("1", stack_trace_limit=-1)
+    try:
+        list(get_me_more_test_frames(15, func))
+    except ZeroDivisionError:
+        elasticapm_client.capture_exception()
+    exception = elasticapm_client.events[ERROR][-1]
+    frames = exception["exception"]["stacktrace"]
+    assert len(frames) > 15
+    assert "I'm the context line of the last frame" in frames[-1]["context_line"]
+
+    elasticapm_client.config.update("1", stack_trace_limit=0)
+    try:
+        list(get_me_more_test_frames(15, func))
+    except ZeroDivisionError:
+        elasticapm_client.capture_exception()
+    exception = elasticapm_client.events[ERROR][-1]
+    frames = exception["exception"]["stacktrace"]
+    assert len(frames) == 0

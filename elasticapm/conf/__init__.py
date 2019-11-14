@@ -302,6 +302,7 @@ class Config(_ConfigBase):
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
+    stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
     span_frames_min_duration = _ConfigValue(
         "SPAN_FRAMES_MIN_DURATION",
         default=5,
