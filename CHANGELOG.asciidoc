@@ -20,7 +20,25 @@ endif::[]
 
 === Unreleased
 
-https://github.com/elastic/apm-agent-python/compare/v5.2.2\...master[Check the diff]
+https://github.com/elastic/apm-agent-python/compare/v5.2.3\...master[Check the diff]
+
+[float]
+===== New Features
+
+* Added instrumentation for mysql-connector and pymysql {pull}603[#603]
+* Implemented stack_trace_limit configuration option {pull}623[#623]
+* Autoinsert tracing middleware in django settings {pull}625[#625]
+
+[float]
+===== Bug fixes
+
+* Fixed issue with transactions not being captured when errors occur in Flask {pull}635[#635]
+
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+[[release-notes-5.2.3]]
+==== v5.2.3
 
 [float]
 ===== Bug fixes
@@ -29,13 +47,10 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.2\...master[Check the d
 * Unwrap postgres cursor for newly introduced psycopg2 extensions {pull}621[#621]
 * Fix pod ID for kubernetes when using the systemd cgroup driver {pull}631[#631]
 
-[[release-notes-5.x]]
-=== Python Agent version 5.x
-
 [[release-notes-5.2.2]]
 ==== v5.2.2
 
-https://github.com/elastic/apm-agent-python/compare/v5.2.1\...v5.2.2[Check the diff]
+https://github.com/elastic/apm-agent-python/compare/v5.2.2\...v5.2.3[Check the diff]
 
 [float]
 ===== Bug fixes
