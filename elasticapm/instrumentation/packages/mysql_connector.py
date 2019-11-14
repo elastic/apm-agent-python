@@ -28,18 +28,30 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import inspect
+
+from elasticapm.instrumentation.packages.dbapi2 import (
+    ConnectionProxy,
+    CursorProxy,
+    DbApi2Instrumentation,
+    extract_signature,
+)
 
 
-def get_me_a_test_frame():
-    a_local_var = 42
-    return inspect.currentframe()
+class MySQLCursorProxy(CursorProxy):
+    provider_name = "mysql"
+
+    def extract_signature(self, sql):
+        return extract_signature(sql)
 
 
-def get_me_more_test_frames(count, func=None):
-    if count <= 1:
-        if func:
-            func()
-        return [inspect.currentframe()]
-    else:
-        return get_me_more_test_frames(count=count - 1, func=func) + [inspect.currentframe()]
+class MySQLConnectionProxy(ConnectionProxy):
+    cursor_proxy = MySQLCursorProxy
+
+
+class MySQLConnectorInstrumentation(DbApi2Instrumentation):
+    name = "mysql_connector"
+
+    instrument_list = [("mysql.connector", "connect")]
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        return MySQLConnectionProxy(wrapped(*args, **kwargs))

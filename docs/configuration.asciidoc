@@ -410,6 +410,22 @@ This is helpful in cases where a transaction creates a very high amount of spans
 Setting an upper limit will prevent overloading the agent and the APM Server with too much work for such edge cases.
 
 [float]
+[[config-stack-trace-limit]]
+==== `stack_trace_limit`
+
+|============
+| Environment                     | Django/Flask        | Default
+| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
+|============
+
+Limits the number of frames captured for each stack trace.
+
+Setting the limit to `0` will disable stack trace collection,
+while any positive integer value will be used as the maximum number of frames to collect.
+To disable the limit and always capture all frames, set the value to `-1`.
+
+
+[float]
 [[config-span-frames-min-duration]]
 ==== `span_frames_min_duration`
 
@@ -423,8 +439,8 @@ While this is very helpful to find the exact place in your code that causes the 
 collecting this stack trace does have some overhead.
 
 To collect traces for all spans, independent of the length, set the value to `-1`.
-Setting it to a positive value, e.g. `5`, will limit stack trace collection to spans
-with durations equal or longer than the given value in milliseconds, e.g. 5 milliseconds.
+Setting it to a positive value, e.g. `5ms`, will limit stack trace collection to spans
+with durations equal or longer than the given value.
 
 To disable stack trace collection for spans completely, set the value to `0`.
 
@@ -709,6 +725,19 @@ Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) a
 If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
 
 NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
+
+[float]
+[[config-django-autoinsert-middleware]]
+==== `django_autoinsert_middleware`
+|============
+| Environment                                 | Django                         | Default
+| `ELASTIC_APM_DJANGO_AUTOINSERT_MIDDLEWARE`  | `DJANGO_AUTOINSERT_MIDDLEWARE` | `True`
+|============
+
+To trace Django requests, the agent uses a middleware, `elasticapm.contrib.django.middleware.TracingMiddleware`.
+By default, this middleware is inserted automatically as the first item in `settings.MIDDLEWARES`.
+To disable the automatic insertion of the middleware, change this setting to `False`.
+
 
 [float]
 [[config-generic-environment]]

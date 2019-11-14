@@ -124,6 +124,17 @@ services:
     volumes:
       - pymssqldata:/var/opt/mssql
 
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password --log_error_verbosity=3
+    environment:
+      - MYSQL_DATABASE=eapm_tests
+      - MYSQL_USER=eapm
+      - MYSQL_PASSWORD=Very(!)Secure
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+    volumes:
+      - mysqldata:/var/lib/mysql
+
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
@@ -155,4 +166,6 @@ volumes:
   pycassandradata3:
     driver: local
   pymssqldata:
+    driver: local
+  mysqldata:
     driver: local

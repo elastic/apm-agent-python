@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent any
+  agent { label 'linux && immutable' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -40,7 +40,6 @@ pipeline {
   }
   stages {
     stage('Initializing'){
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
@@ -87,7 +86,6 @@ pipeline {
     Execute unit tests.
     */
     stage('Test') {
-      agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
@@ -113,7 +111,6 @@ pipeline {
       }
     }
     stage('Building packages') {
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
@@ -155,40 +152,52 @@ pipeline {
       }
     }
     stage('Release') {
-      agent { label 'linux && immutable' }
-      options { skipDefaultCheckout() }
+      options {
+        skipDefaultCheckout()
+        timeout(time: 12, unit: 'HOURS')
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
-      input {
-        message 'Should we release a new version?'
-        ok 'Yes, we should.'
-        parameters {
-          choice(
-            choices: [
-              'https://upload.pypi.org/legacy/',
-              'https://test.pypi.org/legacy/'
-             ],
-             description: 'PyPI repository URL',
-             name: 'REPO_URL')
-        }
-      }
       when {
-        beforeAgent true
         beforeInput true
         anyOf {
           tag pattern: 'v\\d+.*', comparator: 'REGEXP'
           expression { return params.Run_As_Master_Branch }
         }
       }
-      steps {
-        withGithubNotify(context: 'Release') {
-          deleteDir()
-          unstash 'source'
-          unstash('packages')
-          dir("${BASE_DIR}"){
-            releasePackages()
+      stages {
+        stage('Notify') {
+          steps {
+              emailext subject: '[apm-agent-python] Release ready to be pushed',
+                       to: "${NOTIFY_TO}",
+                       body: "Please go to ${env.BUILD_URL}input to approve or reject within 12 hours."
+          }
+        }
+        stage('Release') {
+          input {
+            message 'Should we release a new version?'
+            ok 'Yes, we should.'
+            parameters {
+              choice(
+                choices: [
+                  'https://upload.pypi.org/legacy/',
+                  'https://test.pypi.org/legacy/'
+                 ],
+                 description: 'PyPI repository URL',
+                 name: 'REPO_URL')
+            }
+          }
+          steps {
+            withGithubNotify(context: 'Release') {
+              deleteDir()
+              unstash 'source'
+              unstash('packages')
+              dir("${BASE_DIR}"){
+                releasePackages()
+              }
+            }
           }
         }
       }

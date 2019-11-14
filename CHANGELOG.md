@@ -1,6 +1,29 @@
 # Changelog
 
-=======
+## Unreleased
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.3...master)
+
+### New Features
+
+ * added instrumentation for mysql-connector and pymysql (#603)
+ * implemented stack_trace_limit configuration option (#623)
+ * autoinsert tracing middleware in django settings (#625)
+
+## v5.2.3
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.2...v5.2.3)
+
+### Bugfixes
+
+ * ensure that metrics with value 0 are not collected if they have the `reset_on_collect` flag set (#615)
+ * unwrap postgres cursor for newly introduced psycopg2 extensions (#621)
+ * fix pod ID for kubernetes when using the systemd cgroup driver (#631)
+
+## v5.2.2
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.1...v5.2.2)
+
+### Bugfixes
+ * fixed an issue where a `cpu_total` of `0` could cause an exception (#610, #611)
+
 ## v5.2.1
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.0...v5.2.1)
 

@@ -2,7 +2,7 @@
 @Library('apm@current') _
 
 pipeline {
-  agent any
+  agent { label 'linux && immutable' }
   options {
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
     timestamps()
@@ -17,7 +17,6 @@ pipeline {
   }
   stages {
     stage('Sanity checks') {
-      agent { label 'docker && linux && immutable' }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/bin"

@@ -163,3 +163,33 @@ def test_metric_limit(caplog):
     assert len(caplog.records) == 1
     record = caplog.records[0]
     assert "The limit of 3 metricsets has been reached" in record.message
+
+
+def test_metrics_not_collected_if_zero_and_reset():
+    m = MetricsSet(MetricsRegistry(0, lambda x: None))
+    counter = m.counter("counter", reset_on_collect=False)
+    resetting_counter = m.counter("resetting_counter", reset_on_collect=True)
+    gauge = m.gauge("gauge", reset_on_collect=False)
+    resetting_gauge = m.gauge("resetting_gauge", reset_on_collect=True)
+    timer = m.timer("timer", reset_on_collect=False)
+    resetting_timer = m.timer("resetting_timer", reset_on_collect=True)
+
+    counter.inc(), resetting_counter.inc()
+    gauge.val = 5
+    resetting_gauge.val = 5
+    timer.update(1, 1)
+    resetting_timer.update(1, 1)
+
+    data = list(m.collect())
+    more_data = list(m.collect())
+    assert set(data[0]["samples"].keys()) == {
+        "counter",
+        "resetting_counter",
+        "gauge",
+        "resetting_gauge",
+        "timer.count",
+        "timer.sum.us",
+        "resetting_timer.count",
+        "resetting_timer.sum.us",
+    }
+    assert set(more_data[0]["samples"].keys()) == {"counter", "gauge", "timer.count", "timer.sum.us"}

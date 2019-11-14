@@ -160,7 +160,9 @@ class Client(object):
 
         self.tracer = Tracer(
             frames_collector_func=lambda: list(
-                stacks.iter_stack_frames(start_frame=inspect.currentframe(), skip_top_modules=skip_modules)
+                stacks.iter_stack_frames(
+                    start_frame=inspect.currentframe(), skip_top_modules=skip_modules, config=self.config
+                )
             ),
             frames_processing_func=lambda frames: self._get_stack_info_for_trace(
                 frames,
@@ -403,7 +405,7 @@ class Client(object):
         log = event_data.get("log", {})
         if stack and "stacktrace" not in log:
             if stack is True:
-                frames = stacks.iter_stack_frames(skip=3)
+                frames = stacks.iter_stack_frames(skip=3, config=self.config)
             else:
                 frames = stack
             frames = stacks.get_stack_info(

@@ -3,8 +3,8 @@
 FRAMEWORK:
   - django-1.11
   - django-2.0
-  - django-2.1
   - django-2.2
+  - django-3.0
   - flask-0.12
   - flask-1.0
   - opentracing-newest
@@ -30,3 +30,5 @@ FRAMEWORK:
   - eventlet-newest
   - gevent-newest
   - zerorpc-0.4
+  - mysql_connector-newest
+  - pymysql-newest
