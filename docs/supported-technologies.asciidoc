@@ -91,13 +91,45 @@ Collected trace data:
 
 [float]
 [[automatic-instrumentation-db-mysql]]
-==== MySQL
+==== MySQLdb
 
 Library: `MySQLdb`
 
 Instrumented methods:
 
  * `MySQLdb.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-mysql-connector]]
+==== mysql-connector
+
+Library: `mysql-connector-python`
+
+Instrumented methods:
+
+ * `mysql.connector.connect`
+ 
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-pymysql]]
+==== pymysql
+
+Library: `pymysql`
+
+Instrumented methods:
+
+ * `pymysql.connect`
  
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
