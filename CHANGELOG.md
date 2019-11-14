@@ -8,6 +8,10 @@
  * added instrumentation for mysql-connector and pymysql (#603)
  * implemented stack_trace_limit configuration option (#623)
  * autoinsert tracing middleware in django settings (#625)
+ 
+### Bugfixes
+
+ * fixed issue with transactions not being captured when errors occur in Flask (#635)
 
 ## v5.2.3
 [Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.2...v5.2.3)
