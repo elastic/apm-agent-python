@@ -231,7 +231,7 @@ def sanitize_http_request_body(client, event):
     return event
 
 
-@for_events(ERROR, TRANSACTION)
+@for_events(ERROR, SPAN)
 def add_context_lines_to_frames(client, event):
     # divide frames up into source files before reading from disk. This should help
     # with utilizing the disk cache better
