@@ -6,6 +6,7 @@
 ### New Features
 
  * implemented stack_trace_limit configuration option (#623)
+ * autoinsert tracing middleware in django settings (#625)
 
 ### 
 
