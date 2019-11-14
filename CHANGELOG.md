@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.3...master)
+## v5.3.0
+[Check the diff](https://github.com/elastic/apm-agent-python/compare/v5.2.3...v5.3.0)
 
 ### New Features
 
