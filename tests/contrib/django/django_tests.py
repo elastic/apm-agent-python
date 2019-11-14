@@ -110,7 +110,7 @@ def test_basic(django_elasticapm_client):
 
 def test_basic_django(django_elasticapm_client):
     django_elasticapm_client.capture("Message", message="foo")
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     log = event["log"]
     assert "message" in log
@@ -126,7 +126,7 @@ def test_signal_integration(django_elasticapm_client):
     except ValueError:
         got_request_exception.send(sender=None, request=None)
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert "exception" in event
     exc = event["exception"]
@@ -140,7 +140,7 @@ def test_view_exception(django_elasticapm_client, client):
     with pytest.raises(Exception):
         client.get(reverse("elasticapm-raise-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert "exception" in event
     exc = event["exception"]
@@ -163,7 +163,7 @@ def test_view_exception_elasticapm_debug(django_elasticapm_client, client):
     with override_settings(DEBUG=True):
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
 
 
 @pytest.mark.django_db
@@ -214,7 +214,7 @@ def test_user_info_raises_database_error(django_elasticapm_client, client):
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert "user" in event["context"]
     user_info = event["context"]["user"]
@@ -234,7 +234,7 @@ def test_user_info_with_custom_user(django_elasticapm_client, client):
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
 
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
         assert "user" in event["context"]
         user_info = event["context"]["user"]
@@ -258,7 +258,7 @@ def test_user_info_with_custom_user_non_string_username(django_elasticapm_client
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
 
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
         assert "user" in event["context"]
         user_info = event["context"]["user"]
@@ -279,7 +279,7 @@ def test_user_info_with_non_django_auth(django_elasticapm_client, client):
         with pytest.raises(Exception):
             resp = client.get(reverse("elasticapm-raise-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert event["context"]["user"] == {}
 
@@ -295,7 +295,7 @@ def test_user_info_with_non_django_auth_django_2(django_elasticapm_client, clien
         with pytest.raises(Exception):
             resp = client.get(reverse("elasticapm-raise-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert event["context"]["user"] == {}
 
@@ -309,7 +309,7 @@ def test_user_info_without_auth_middleware(django_elasticapm_client, client):
     ):
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert event["context"]["user"] == {}
 
@@ -322,7 +322,7 @@ def test_user_info_without_auth_middleware_django_2(django_elasticapm_client, cl
     ):
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert event["context"]["user"] == {}
 
@@ -334,7 +334,7 @@ def test_request_middleware_exception(django_elasticapm_client, client):
         with pytest.raises(ImportError):
             client.get(reverse("elasticapm-raise-exc"))
 
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
 
         assert "exception" in event
@@ -354,7 +354,7 @@ def test_response_middlware_exception(django_elasticapm_client, client):
         with pytest.raises(ImportError):
             client.get(reverse("elasticapm-no-error"))
 
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
 
         assert "exception" in event
@@ -400,7 +400,7 @@ def test_view_middleware_exception(django_elasticapm_client, client):
         with pytest.raises(ImportError):
             client.get(reverse("elasticapm-raise-exc"))
 
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
 
         assert "exception" in event
@@ -416,7 +416,7 @@ def test_exclude_modules_view(django_elasticapm_client, client):
     with pytest.raises(Exception):
         client.get(reverse("elasticapm-raise-exc-decor"))
 
-    assert len(django_elasticapm_client.events) == 1, django_elasticapm_client.events
+    assert len(django_elasticapm_client.events[ERROR]) == 1, django_elasticapm_client.events
     event = django_elasticapm_client.events[ERROR][0]
 
     assert event["culprit"] == "tests.contrib.django.testapp.views.raise_exc"
@@ -428,7 +428,7 @@ def test_include_modules(django_elasticapm_client, client):
     with pytest.raises(Exception):
         client.get(reverse("elasticapm-django-exc"))
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
 
     assert event["culprit"] == "django.shortcuts.get_object_or_404"
@@ -437,7 +437,7 @@ def test_include_modules(django_elasticapm_client, client):
 def test_ignored_exception_is_ignored(django_elasticapm_client, client):
     with pytest.raises(IgnoredException):
         client.get(reverse("elasticapm-ignored-exception"))
-    assert len(django_elasticapm_client.events) == 0
+    assert len(django_elasticapm_client.events[ERROR]) == 0
 
 
 @pytest.mark.skipif(compat.PY3, reason="see Python bug #10805")
@@ -451,7 +451,7 @@ def test_record_none_exc_info(django_elasticapm_client):
     handler = LoggingHandler()
     handler.emit(record)
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
 
     assert event["log"]["param_message"] == "test"
@@ -467,7 +467,7 @@ def test_404_middleware(django_elasticapm_client, client):
         resp = client.get("/non-existant-page")
         assert resp.status_code == 404
 
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
 
         assert event["log"]["level"] == "info"
@@ -504,7 +504,7 @@ def test_response_error_id_middleware(django_elasticapm_client, client):
         assert resp.status_code == 404
         headers = dict(resp.items())
         assert "X-ElasticAPM-ErrorId" in headers
-        assert len(django_elasticapm_client.events) == 1
+        assert len(django_elasticapm_client.events[ERROR]) == 1
         event = django_elasticapm_client.events[ERROR][0]
         assert event["id"] == headers["X-ElasticAPM-ErrorId"]
 
@@ -538,7 +538,7 @@ def test_raw_post_data_partial_read(django_elasticapm_client):
 
     django_elasticapm_client.capture("Message", message="foo", request=request)
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
 
     assert "request" in event["context"]
@@ -566,7 +566,7 @@ def test_post_data(django_elasticapm_client):
     request.POST = QueryDict("x=1&y=2&y=3")
     django_elasticapm_client.capture("Message", message="foo", request=request)
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
 
     assert "request" in event["context"]
@@ -598,7 +598,7 @@ def test_post_raw_data(django_elasticapm_client):
     )
     django_elasticapm_client.capture("Message", message="foo", request=request)
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
 
     assert "request" in event["context"]
@@ -683,7 +683,7 @@ def test_request_capture(django_elasticapm_client):
 
     django_elasticapm_client.capture("Message", message="foo", request=request)
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
 
     assert "request" in event["context"]
@@ -1041,7 +1041,7 @@ def test_django_logging_request_kwarg(django_elasticapm_client):
         },
     )
 
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert "request" in event["context"]
     request = event["context"]["request"]
@@ -1060,7 +1060,7 @@ def test_django_logging_middleware(django_elasticapm_client, client):
         **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.LogMiddleware"])
     ):
         client.get(reverse("elasticapm-logging"))
-    assert len(django_elasticapm_client.events) == 1
+    assert len(django_elasticapm_client.events[ERROR]) == 1
     event = django_elasticapm_client.events[ERROR][0]
     assert "request" in event["context"]
     assert event["context"]["request"]["url"]["pathname"] == reverse("elasticapm-logging")
