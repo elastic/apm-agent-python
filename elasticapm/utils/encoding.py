@@ -178,15 +178,41 @@ def to_string(value):
         return to_unicode(value).encode("utf-8")
 
 
-def shorten(var, list_length=50, string_length=200):
+def shorten(var, list_length=50, string_length=200, dict_length=50):
+    """
+    Shorten a given variable based on configurable maximum lengths, leaving
+    breadcrumbs in the object to show that it was shortened.
+
+    For strings, truncate the string to the max length, and append "..." so
+    the user knows data was lost.
+
+    For lists, truncate the list to the max length, and append two new strings
+    to the list: "..." and "(<x> more elements)" where <x> is the number of
+    elements removed.
+
+    For dicts, truncate the dict to the max length (based on number of key/value
+    pairs) and add a new (key, value) pair to the dict:
+    ("...", "(<x> more elements)") where <x> is the number of key/value pairs
+    removed.
+
+    :param var: Variable to be shortened
+    :param list_length: Max length (in items) of lists
+    :param string_length: Max length (in characters) of strings
+    :param dict_length: Max length (in key/value pairs) of dicts
+    :return: Shortened variable
+    """
     var = transform(var)
     if isinstance(var, compat.string_types) and len(var) > string_length:
         var = var[: string_length - 3] + "..."
     elif isinstance(var, (list, tuple, set, frozenset)) and len(var) > list_length:
         # TODO: we should write a real API for storing some metadata with vars when
         # we get around to doing ref storage
-        # TODO: when we finish the above, we should also implement this for dicts
         var = list(var)[:list_length] + ["...", "(%d more elements)" % (len(var) - list_length,)]
+    elif isinstance(var, dict) and len(var) > dict_length:
+        trimmed_tuples = [(k, v) for (k, v) in compat.iteritems(var)][:dict_length]
+        if "..." not in var:
+            trimmed_tuples += [("...", "(%d more elements)" % (len(var) - dict_length))]
+        var = dict(trimmed_tuples)
     return var
 
 

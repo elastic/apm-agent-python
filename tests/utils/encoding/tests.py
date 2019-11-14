@@ -227,6 +227,12 @@ def test_shorten_tuple():
     #     assert result[-1] == '(450 more elements)'
 
 
+def test_shorten_dict():
+    result = shorten({k: v for k in range(500) for v in range(500)}, dict_length=50)
+    assert len(result) == 51
+    assert result["..."] == "(450 more elements)"
+
+
 def test_enforce_label_format():
     class MyObj(object):
         def __str__(self):
