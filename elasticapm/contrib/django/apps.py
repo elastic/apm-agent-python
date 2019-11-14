@@ -44,6 +44,8 @@ ERROR_DISPATCH_UID = "elasticapm-exceptions"
 REQUEST_START_DISPATCH_UID = "elasticapm-request-start"
 REQUEST_FINISH_DISPATCH_UID = "elasticapm-request-stop"
 
+MIDDLEWARE_NAME = "elasticapm.contrib.django.middleware.TracingMiddleware"
+
 TRACEPARENT_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
 
 
@@ -58,11 +60,38 @@ class ElasticAPMConfig(AppConfig):
 
     def ready(self):
         self.client = get_client()
+        if self.client.config.autoinsert_django_middleware:
+            self.insert_middleware(django_settings)
         register_handlers(self.client)
         if self.client.config.instrument:
             instrument(self.client)
         else:
             self.client.logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
+
+    @staticmethod
+    def insert_middleware(settings):
+        if hasattr(settings, "MIDDLEWARE"):
+            middleware_list = settings.MIDDLEWARE
+            middleware_attr = "MIDDLEWARE"
+        elif hasattr(settings, "MIDDLEWARE_CLASSES"):  # can be removed when we drop support for Django 1.x
+            middleware_list = settings.MIDDLEWARE_CLASSES
+            middleware_attr = "MIDDLEWARE_CLASSES"
+        else:
+            logger.debug("Could not find middleware setting, not autoinserting tracing middleware")
+            return
+        is_tuple = isinstance(middleware_list, tuple)
+        if is_tuple:
+            middleware_list = list(middleware_list)
+        elif not isinstance(middleware_list, list):
+            logger.debug("%s setting is not of type list or tuple, not autoinserting tracing middleware")
+            return
+        if middleware_list is not None and MIDDLEWARE_NAME not in middleware_list:
+            logger.debug("Inserting tracing middleware into settings.%s", middleware_attr)
+            middleware_list.insert(0, MIDDLEWARE_NAME)
+        if is_tuple:
+            middleware_list = tuple(middleware_list)
+        if middleware_list:
+            setattr(settings, middleware_attr, middleware_list)
 
 
 def register_handlers(client):
