@@ -20,7 +20,17 @@ endif::[]
 
 === Unreleased
 
-https://github.com/elastic/apm-agent-python/compare/v5.2.3\...master[Check the diff]
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.0\...master[Check the diff]
+
+
+
+[[release-notes-5.3.0]]
+==== v5.3.0
+
+https://github.com/elastic/apm-agent-python/compare/v5.2.3\...v5.3.0[Check the diff]
 
 [float]
 ===== New Features
@@ -34,11 +44,10 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.3\...master[Check the d
 
 * Fixed issue with transactions not being captured when errors occur in Flask {pull}635[#635]
 
-[[release-notes-5.x]]
-=== Python Agent version 5.x
-
 [[release-notes-5.2.3]]
 ==== v5.2.3
+
+https://github.com/elastic/apm-agent-python/compare/v5.2.2\...v5.2.3[Check the diff]
 
 [float]
 ===== Bug fixes
@@ -50,7 +59,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.3\...master[Check the d
 [[release-notes-5.2.2]]
 ==== v5.2.2
 
-https://github.com/elastic/apm-agent-python/compare/v5.2.2\...v5.2.3[Check the diff]
+https://github.com/elastic/apm-agent-python/compare/v5.2.1\...v5.2.2[Check the diff]
 
 [float]
 ===== Bug fixes
