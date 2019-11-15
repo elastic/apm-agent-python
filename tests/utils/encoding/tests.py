@@ -230,7 +230,7 @@ def test_shorten_tuple():
 def test_shorten_dict():
     result = shorten({k: k for k in range(500)}, dict_length=50)
     assert len(result) == 51
-    assert result["..."] == "(450 more elements)"
+    assert result["<truncated>"] == "(450 more elements)"
 
 
 def test_enforce_label_format():
