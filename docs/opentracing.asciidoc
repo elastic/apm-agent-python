@@ -1,15 +1,10 @@
-ifdef::env-github[]
-NOTE: For the best reading experience,
-please view this documentation at https://www.elastic.co/guide/en/apm/agent/java[elastic.co]
-endif::[]
-
 [[opentracing-bridge]]
-== Elastic APM OpenTracing bridge
+== OpenTracing API
 
-The Elastic APM OpenTracing bridge allows to create Elastic APM `Transactions` and `Spans`,
+The Elastic APM OpenTracing bridge allows you to create Elastic APM `Transactions` and `Spans`,
 using the OpenTracing API.
 In other words,
-it translates the calls to the OpenTracing API to Elastic APM and thus allows for reusing existing instrumentation.
+it translates calls to the OpenTracing API to Elastic APM events, which allows for the reuse of existing instrumentation.
 
 The first span of a service will be converted to an Elastic APM
 {apm-overview-ref-v}/transactions.html[`Transaction`],
@@ -81,7 +76,7 @@ Not all features of the OpenTracing API are supported.
 [[opentracing-scope-managers]]
 ==== Scope Managers
 Currently, only the `ThreadLocalScopeManager` is supported.
-Using other scope managers will lead to unpredictable and possibly app-breaking behaviour.
+Using other scope managers will lead to unpredictable and possibly app-breaking behavior.
 
 [float]
 [[opentracing-instrumentation]]
@@ -99,7 +94,7 @@ This bridge only supports the formats `Format.Builtin.TEXT_MAP` and `Format.Buil
 
 [float]
 [[opentracing-references]]
-==== Span References
+==== Span references
 Currently, this bridge only supports `child_of` references.
 Other references,
 like `follows_from` are not supported yet.

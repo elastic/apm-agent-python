@@ -1,5 +1,5 @@
 [[api]]
-== Public API
+== API reference
 
 The Elastic APM Python agent has several public APIs.
 Most of the public API functionality is not needed when using one of our <<framework-support, supported frameworks>>,
