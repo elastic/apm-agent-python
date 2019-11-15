@@ -228,7 +228,7 @@ def test_shorten_tuple():
 
 
 def test_shorten_dict():
-    result = shorten({k: v for k in range(500) for v in range(500)}, dict_length=50)
+    result = shorten({k: v for k, v in enumerate(range(500))}, dict_length=50)
     assert len(result) == 51
     assert result["..."] == "(450 more elements)"
 

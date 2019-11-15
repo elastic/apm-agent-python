@@ -25,9 +25,10 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.0\...master[Check the d
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
+[float]
 ===== New Features
 
-* Added support for shortening dicts in local variables {pull}638[#638 ]
+* Added support for shortening dicts in local variables {pull}638[#638]
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
