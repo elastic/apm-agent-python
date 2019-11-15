@@ -211,7 +211,7 @@ def shorten(var, list_length=50, string_length=200, dict_length=50):
         var = list(var)[:list_length] + ["...", "(%d more elements)" % (len(var) - list_length,)]
     elif isinstance(var, dict) and len(var) > dict_length:
         trimmed_tuples = [(k, v) for (k, v) in itertools.islice(compat.iteritems(var), dict_length)]
-        if "..." not in var:
+        if "<truncated>" not in var:
             trimmed_tuples += [("<truncated>", "(%d more elements)" % (len(var) - dict_length))]
         var = dict(trimmed_tuples)
     return var
