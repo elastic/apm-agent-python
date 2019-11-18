@@ -20,18 +20,23 @@ endif::[]
 
 === Unreleased
 
-https://github.com/elastic/apm-agent-python/compare/v5.3.0\...master[Check the diff]
+https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the diff]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+[[release-notes-5.3.1]]
+==== v5.3.1
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.0\...v5.3.1[Check the diff]
 
 [float]
 ===== New Features
 
 * Added support for shortening dicts in local variables {pull}638[#638]
-
-[[release-notes-5.x]]
-=== Python Agent version 5.x
 
 [[release-notes-5.3.0]]
 ==== v5.3.0
