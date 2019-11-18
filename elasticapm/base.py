@@ -32,6 +32,7 @@
 from __future__ import absolute_import
 
 import inspect
+import itertools
 import logging
 import os
 import platform
@@ -503,12 +504,10 @@ class Client(object):
 
         :return: a list of callables
         """
-        # make a copy of the processors list, as we're going to modify it
-        processors = self.config.processors[:] or []
-        processors.extend(constants.HARDCODED_PROCESSORS)
+        processors = itertools.chain(self.config.processors, constants.HARDCODED_PROCESSORS)
         seen = {}
-        processors = [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
-        return processors
+        # setdefault has the nice property that it returns the value that it just set on the dict
+        return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
 
 class DummyClient(Client):
