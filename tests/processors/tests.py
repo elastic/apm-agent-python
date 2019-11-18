@@ -360,9 +360,9 @@ def test_context_lines_processor(elasticapm_client):
     data = {
         "exception": {
             "stacktrace": [
-                {"context": (fname1, 3, 2)},
-                {"context": (fname2, 5, 2)},
-                {"context": (fname1, 17, 2)},
+                {"context_metadata": (fname1, 3, 2, None, None)},
+                {"context_metadata": (fname2, 5, 2, None, None)},
+                {"context_metadata": (fname1, 17, 2, None, None)},
                 {"no": "context"},
             ]
         }

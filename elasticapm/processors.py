@@ -240,11 +240,17 @@ def add_context_lines_to_frames(client, event):
     # TODO: blocks at once.
     per_file = defaultdict(list)
     _process_stack_frames(
-        event, lambda frame: per_file[frame["context"][0]].append(frame) if "context" in frame else None
+        event,
+        lambda frame: per_file[frame["context_metadata"][0]].append(frame) if "context_metadata" in frame else None,
     )
     for filename, frames in compat.iteritems(per_file):
         for frame in frames:
-            pre_context, context_line, post_context = get_lines_from_file(*frame.pop("context"))
+            # context_metadata key has been set in elasticapm.utils.stacks.get_frame_info for
+            # all frames for which we should gather source code context lines
+            fname, lineno, context_lines, loader, module_name = frame.pop("context_metadata")
+            pre_context, context_line, post_context = get_lines_from_file(
+                fname, lineno, context_lines, loader, module_name
+            )
             if context_line:
                 frame["pre_context"] = pre_context
                 frame["context_line"] = context_line

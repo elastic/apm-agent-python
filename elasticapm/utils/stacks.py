@@ -278,7 +278,10 @@ def get_frame_info(
 
     context_lines = library_frame_context_lines if frame_result["library_frame"] else in_app_frame_context_lines
     if context_lines and lineno is not None and abs_path:
-        frame_result["context"] = (abs_path, lineno, int(context_lines / 2), loader, module_name)
+        # context_metadata will be processed by elasticapm.processors.add_context_lines_to_frames.
+        # This ensures that blocking operations (reading from source files) happens on the background
+        # processing thread.
+        frame_result["context_metadata"] = (abs_path, lineno, int(context_lines / 2), loader, module_name)
     if with_locals:
         if f_locals is not None and not isinstance(f_locals, dict):
             # XXX: Genshi (and maybe others) have broken implementations of
