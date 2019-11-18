@@ -119,9 +119,6 @@ class Client(object):
                 new_factory = elastic_logging.log_record_factory(record_factory)
                 logging.setLogRecordFactory(new_factory)
 
-        processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
-        processors.extend(import_string(p) for p in constants.HARDCODED_PROCESSORS)
-
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
@@ -138,7 +135,7 @@ class Client(object):
             "timeout": self.config.server_timeout,
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
-            "processors": processors,
+            "processors": self.load_processors(),
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
@@ -498,6 +495,20 @@ class Client(object):
             exclude_paths_re=self.exclude_paths_re,
             locals_processor_func=locals_processor_func,
         )
+
+    def load_processors(self):
+        """
+        Loads processors from self.config.processors, as well as constants.HARDCODED_PROCESSORS.
+        Duplicate processors (based on the path) will be discarded.
+
+        :return: a list of callables
+        """
+        # make a copy of the processors list, as we're going to modify it
+        processors = self.config.processors[:] or []
+        processors.extend(constants.HARDCODED_PROCESSORS)
+        seen = {}
+        processors = [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
+        return processors
 
 
 class DummyClient(Client):

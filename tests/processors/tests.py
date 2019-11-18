@@ -311,6 +311,25 @@ def test_message_processing(elasticapm_client):
     assert "processed_no_events" not in elasticapm_client.events[ERROR][0]
 
 
+@mock.patch("elasticapm.base.constants.HARDCODED_PROCESSORS", ["tests.processors.tests.dummy_processor"])
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "processors": "tests.processors.tests.dummy_processor,"
+            "tests.processors.tests.dummy_processor_no_events,"
+            "tests.processors.tests.dummy_processor"
+        }
+    ],
+    indirect=True,
+)
+def test_deduplicate_processors(elasticapm_client):
+    processors = elasticapm_client.load_processors()
+    assert len(processors) == 2
+    for p in processors:
+        assert callable(p)
+
+
 def test_for_events_decorator():
     @processors.for_events("error", "transaction")
     def foo(client, event):
