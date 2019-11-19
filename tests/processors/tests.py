@@ -232,6 +232,11 @@ def test_sanitize_credit_card_with_spaces():
     assert result == processors.MASK
 
 
+def test_sanitize_dict():
+    result = processors._sanitize("foo", {1: 2})
+    assert result == {1: 2}
+
+
 def test_non_utf8_encoding(http_test_data):
     broken = compat.b("broken=") + u"aéöüa".encode("latin-1")
     http_test_data["context"]["request"]["url"]["search"] = broken

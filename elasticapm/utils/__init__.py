@@ -61,7 +61,7 @@ def varmap(func, var, context=None, name=None):
         return func(name, "<...>")
     context.add(objid)
     if isinstance(var, dict):
-        ret = dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var))
+        ret = func(name, dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var)))
     elif isinstance(var, (list, tuple)):
         ret = func(name, [varmap(func, f, context, name) for f in var])
     else:

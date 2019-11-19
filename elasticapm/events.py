@@ -105,6 +105,7 @@ class Exception(BaseEvent):
                         val,
                         list_length=client.config.local_var_list_max_length,
                         string_length=client.config.local_var_max_length,
+                        dict_length=client.config.local_var_dict_max_length,
                     ),
                     local_var,
                 ),

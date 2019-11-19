@@ -328,6 +328,18 @@ With this setting, you can limit the length of lists in local variables.
 
 
 [float]
+[[config-local-dict-var-max-length]]
+==== `local_var_dict_max_length`
+
+|============
+| Environment                             | Django/Flask                | Default
+| `ELASTIC_APM_LOCAL_VAR_DICT_MAX_LENGTH` | `LOCAL_VAR_DICT_MAX_LENGTH` | `10`
+|============
+
+With this setting, you can limit the length of dicts in local variables.
+
+
+[float]
 [[config-source-lines-error-app-frames]]
 ==== `source_lines_error_app_frames`
 [float]

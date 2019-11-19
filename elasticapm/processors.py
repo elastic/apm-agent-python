@@ -274,6 +274,11 @@ def _sanitize(key, value):
     if isinstance(value, compat.string_types) and any(pattern.match(value) for pattern in SANITIZE_VALUE_PATTERNS):
         return MASK
 
+    if isinstance(value, dict):
+        # varmap will call _sanitize on each k:v pair of the dict, so we don't
+        # have to do anything with dicts here
+        return value
+
     if not key:  # key can be a NoneType
         return value
 
