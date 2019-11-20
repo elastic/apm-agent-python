@@ -28,8 +28,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from django.apps import apps
-
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat
 
@@ -40,6 +38,8 @@ class DjangoCommandInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("django.core.management", "BaseCommand.execute")]
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
+        from django.apps import apps  # import at top level fails if Django is not installed
+
         app = apps.get_app_config("elasticapm.contrib.django")
         client = getattr(app, "client", None)
         full_name = compat.text_type(instance.__module__)
