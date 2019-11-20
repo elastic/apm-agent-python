@@ -42,9 +42,11 @@ class DjangoCommandInstrumentation(AbstractInstrumentedModule):
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
         app = apps.get_app_config("elasticapm.contrib.django")
         client = getattr(app, "client", None)
-        if not client or not client.config.instrument_django_commands:
+        full_name = compat.text_type(instance.__module__)
+        name = full_name.rsplit(".", 1)[-1]
+        if not client or any(pattern.match(name) for pattern in client.config.django_commands_exclude):
             return wrapped(*args, **kwargs)
-        name = compat.text_type(instance.__module__)
+
         transaction = client.begin_transaction("django_command")
         transaction.is_sampled = True  # always sample transactions
         status = "ok"
@@ -61,4 +63,4 @@ class DjangoCommandInstrumentation(AbstractInstrumentedModule):
                 transaction, v, tb = sys.exc_info()
                 raise transaction(v).with_traceback(tb)
         finally:
-            client.end_transaction(name, status)
+            client.end_transaction(full_name, status)

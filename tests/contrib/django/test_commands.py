@@ -27,6 +27,9 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import pytest  # isort:skip
+
+django = pytest.importorskip("django")  # isort:skip
 
 from django.core.management import CommandError, call_command
 
@@ -73,3 +76,33 @@ def test_management_command_other_error(django_elasticapm_client):
     assert exception["culprit"] == "tests.contrib.django.testapp.management.commands.eapm_test_command.handle"
     assert exception["exception"]["message"] == "ZeroDivisionError: division by zero"
     assert exception["transaction_id"] == transaction["id"]
+
+
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_commands_exclude": "*"}], indirect=True)
+def test_management_command_ignore_all(django_elasticapm_client):
+    call_command("eapm_test_command")
+    assert len(django_elasticapm_client.events[constants.TRANSACTION]) == 0
+
+
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"django_commands_exclude": "eapm_test_command,other_command"}], indirect=True
+)
+def test_management_command_ignore_exact(django_elasticapm_client):
+    call_command("eapm_test_command")
+    assert len(django_elasticapm_client.events[constants.TRANSACTION]) == 0
+
+
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"django_commands_exclude": "eapm_test_command,other_command"}], indirect=True
+)
+def test_management_command_ignore_exact(django_elasticapm_client):
+    call_command("eapm_test_command")
+    assert len(django_elasticapm_client.events[constants.TRANSACTION]) == 0
+
+
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"django_commands_exclude": "this_command,other_command"}], indirect=True
+)
+def test_management_command_ignore_no_match(django_elasticapm_client):
+    call_command("eapm_test_command")
+    assert len(django_elasticapm_client.events[constants.TRANSACTION]) == 1
