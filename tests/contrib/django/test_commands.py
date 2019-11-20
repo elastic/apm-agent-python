@@ -36,6 +36,7 @@ from django.core.management import CommandError, call_command
 import pytest
 
 from elasticapm.conf import constants
+from elasticapm.utils import compat
 
 
 def test_management_command(django_elasticapm_client):
@@ -74,7 +75,7 @@ def test_management_command_other_error(django_elasticapm_client):
 
     exception = django_elasticapm_client.events[constants.ERROR][0]
     assert exception["culprit"] == "tests.contrib.django.testapp.management.commands.eapm_test_command.handle"
-    assert exception["exception"]["message"] == "ZeroDivisionError: division by zero"
+    assert exception["exception"]["message"].startswith("ZeroDivisionError:")
     assert exception["transaction_id"] == transaction["id"]
 
 
