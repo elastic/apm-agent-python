@@ -83,7 +83,7 @@ In order to collect performance metrics,
 the agent automatically inserts a middleware at the top of your middleware list
 (`settings.MIDDLEWARE` in current versions of Django, `settings.MIDDLEWARE_CLASSES` in some older versions).
 To disable the automatic insertion of the middleware,
-see <<config-django-autoinsert-middleware,django_autoinsert_middleware>>.
+see <<config-django-autoinsert-middleware,`django_autoinsert_middleware`>>.
 
 NOTE: For automatic insertion to work,
 your list of middlewares (`settings.MIDDLEWARE` or `settings.MIDDLEWARE_CLASSES`) must be of type `list` or `tuple`.
@@ -92,6 +92,20 @@ In addition to broad request metrics (what will appear in the APM app as transac
 the agent also collects fine grained metrics on template rendering, 
 database queries, HTTP requests, etc.
 You can find more information on what we instrument in the <<automatic-instrumentation, Automatic Instrumentation>> section.
+
+Lastly, the agent will also collect performance data for Django management commands.
+To disable this, use the <<config-django-instrument-commands,`django_instrument_commands`>> setting.
+
+[NOTE]
+====
+The agent also collects command line arguments as additional meta data for transactions.
+If you run a command that contains sensitive data, like tokens or passwords,
+we recommend to prefix the call with `ELASTIC_APM_DJANGO_INSTRUMENT_COMMANDS=False`, e.g.
+[source,bash]
+----
+ELASTIC_APM_DJANGO_INSTRUMENT_COMMANDS=False ./manage.py upload_to_service --token FCXNk23PHFy9A6q764BJ
+----
+====
 
 [float]
 [[django-instrumenting-custom-python-code]]

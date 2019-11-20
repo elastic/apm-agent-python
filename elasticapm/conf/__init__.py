@@ -322,6 +322,7 @@ class Config(_ConfigBase):
     capture_body = _ConfigValue("CAPTURE_BODY", default="off")
     async_mode = _BoolConfigValue("ASYNC_MODE", default=True)
     instrument_django_middleware = _BoolConfigValue("INSTRUMENT_DJANGO_MIDDLEWARE", default=True)
+    instrument_django_commands = _BoolConfigValue("INSTRUMENT_DJANGO_COMMANDS", default=True)
     autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)
     transactions_ignore_patterns = _ListConfigValue("TRANSACTIONS_IGNORE_PATTERNS", default=[])
     service_version = _ConfigValue("SERVICE_VERSION")
