@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import sys
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat
@@ -52,15 +53,9 @@ class DjangoCommandInstrumentation(AbstractInstrumentedModule):
         status = "ok"
         try:
             return wrapped(*args, **kwargs)
-        except Exception as e:
+        except Exception:
             status = "failed"
             client.capture_exception()
-            if compat.PY3:
-                raise e  # Python 3
-            else:
-                import sys
-
-                transaction, v, tb = sys.exc_info()
-                raise transaction(v).with_traceback(tb)
+            compat.reraise(*sys.exc_info())
         finally:
             client.end_transaction(full_name, status)
