@@ -94,11 +94,11 @@ database queries, HTTP requests, etc.
 You can find more information on what we instrument in the <<automatic-instrumentation, Automatic Instrumentation>> section.
 
 Lastly, the agent will also collect performance data for Django management commands.
-You can disable instrumenting for certain commands using the 
+You can disable instrumentation for certain commands using the 
 <<config-django-commands-exclude,`django_commands_exclude`>> setting.
 Transactions for management commands can be accessed in the APM app in Kibana by choosing `django_command` in the "transaction type" filter.
 
-NOTE: The agent collects command line arguments as additional meta data for transactions.
+NOTE: The agent collects command line arguments as additional metadata for transactions.
 If you run a command that contains sensitive data on the command line, like tokens or passwords,
 we recommend to exclude that command from instrumentation.
 
