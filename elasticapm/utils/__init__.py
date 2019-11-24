@@ -103,7 +103,10 @@ def is_master_process():
 
 def get_url_dict(url):
     scheme, netloc, path, params, query, fragment = compat.urlparse.urlparse(url)
-    if ":" in netloc:
+    if '[' in netloc and ']' in netloc:
+        hostname = netloc.split(']')[0][1:]
+        port = (netloc.split(']:') + [None])[1]
+    elif ":" in netloc:
         hostname, port = netloc.split(":")
     else:
         hostname, port = (netloc, None)
