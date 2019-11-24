@@ -103,7 +103,7 @@ def is_master_process():
 
 def get_url_dict(url):
     parse_result = compat.urlparse.urlparse(url)
-    
+
     url_dict = {
         "full": encoding.keyword_field(url),
         "protocol": parse_result.scheme + ":",
