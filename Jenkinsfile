@@ -193,7 +193,7 @@ pipeline {
               dir(BASE_DIR){
                 sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
                                              user_var: 'ES_USER', pass_var: 'ES_PASS') {
-                  sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${GIT_BASE_COMMIT}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+                  sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
                 }
               }
             }
