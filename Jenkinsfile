@@ -166,6 +166,11 @@ pipeline {
     stage('Benchmarks') {
       agent { label 'metal' }
       options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+        PIP_CACHE = "${env.WORKSPACE}/.cache"
+      }
       when {
         beforeAgent true
         allOf {
