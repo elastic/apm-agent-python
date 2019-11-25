@@ -39,6 +39,8 @@ pipeline {
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
     booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
+    booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
+    booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
   }
   stages {
     stage('Initializing'){
@@ -89,6 +91,10 @@ pipeline {
     */
     stage('Test') {
       options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        expression { return params.tests_ci }
+      }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
           deleteDir()
@@ -114,6 +120,10 @@ pipeline {
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        expression { return params.package_ci }
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
