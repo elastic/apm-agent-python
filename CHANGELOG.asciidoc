@@ -25,8 +25,20 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the d
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
+
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
+
+[[release-notes-5.3.2]]
+==== v5.3.2
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.1\...v5.3.2[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * Added support for IPv6 address format when parsing urls {pull}649[#649]
 
 [[release-notes-5.3.1]]
 ==== v5.3.1

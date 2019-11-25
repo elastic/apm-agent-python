@@ -102,21 +102,21 @@ def is_master_process():
 
 
 def get_url_dict(url):
-    scheme, netloc, path, params, query, fragment = compat.urlparse.urlparse(url)
-    if ":" in netloc:
-        hostname, port = netloc.split(":")
-    else:
-        hostname, port = (netloc, None)
+    parse_result = compat.urlparse.urlparse(url)
+
     url_dict = {
         "full": encoding.keyword_field(url),
-        "protocol": scheme + ":",
-        "hostname": encoding.keyword_field(hostname),
-        "pathname": encoding.keyword_field(path),
+        "protocol": parse_result.scheme + ":",
+        "hostname": encoding.keyword_field(parse_result.hostname),
+        "pathname": encoding.keyword_field(parse_result.path),
     }
+
+    port = None if parse_result.port is None else str(parse_result.port)
+
     if port:
         url_dict["port"] = port
-    if query:
-        url_dict["search"] = encoding.keyword_field("?" + query)
+    if parse_result.query:
+        url_dict["search"] = encoding.keyword_field("?" + parse_result.query)
     return url_dict
 
 
