@@ -171,6 +171,8 @@ pipeline {
         PATH = "${env.WORKSPACE}/.local/bin:${env.PATH}"
         PIP_CACHE = "${env.WORKSPACE}/.cache"
         AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
+        LANG = 'C.UTF-8'
+        LC_ALL = "${env.LANG}"
       }
       when {
         beforeAgent true
