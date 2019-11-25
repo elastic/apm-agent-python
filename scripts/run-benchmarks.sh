@@ -24,4 +24,4 @@ python run_bench_commits.py \
     --es-url "${ES_URL}" \
     --es-user "${ES_USER}" \
     --es-password "${ES_PASS}" \
-    --start-commit "${COMMIT_SHA}"
+    --as-is
