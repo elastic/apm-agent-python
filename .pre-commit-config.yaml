@@ -27,3 +27,11 @@ repos:
         exclude: "(elasticapm/utils/wrapt/.*|tests/utils/stacks/linenos.py)"
         language: script
         types: [python]
+
+-   repo: git@github.com:elastic/apm-pipeline-library
+    rev: current
+    hooks:
+    -   id: check-bash-syntax
+    -   id: check-jenkins-pipelines
+        files: ^(.ci/(.*\.groovy|Jenkinsfile)|Jenkinsfile)$
+    -   id: check-jjbb
