@@ -21,6 +21,7 @@ pipeline {
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
     GITHUB_CHECK_ITS_NAME = 'Integration Tests'
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
+    BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -37,6 +38,7 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+    booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
   }
   stages {
     stage('Initializing'){
@@ -149,6 +151,41 @@ pipeline {
                            string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
                            string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
         githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
+      }
+    }
+    stage('Benchmarks') {
+      agent { label 'metal' }
+      options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            branch 'master'
+            expression { return params.Run_As_Master_Branch }
+          }
+          expression { return params.bench_ci }
+        }
+      }
+      steps {
+        withGithubNotify(context: 'Benchmarks', tab: 'artifacts') {
+          dir(env.BUILD_NUMBER) {
+            deleteDir()
+            unstash 'source'
+            dir(BASE_DIR){
+              sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
+                                           user_var: 'ES_USER', pass_var: 'ES_PASS') {
+                sh 'scripts/run-benchmarks.sh "${GIT_BASE_COMMIT}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+              }
+            }
+          }
+        }
+      }
+      post {
+        always {
+          catchError(message: 'deleteDir failed', buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+            deleteDir()
+          }
+        }
       }
     }
     stage('Release') {
