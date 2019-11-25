@@ -119,6 +119,7 @@ def get_url_dict(url):
         url_dict["search"] = encoding.keyword_field("?" + parse_result.query)
     return url_dict
 
+
 def sanitize_url(url):
     if "@" not in url:
         return url
