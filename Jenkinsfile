@@ -181,10 +181,12 @@ pipeline {
           dir(env.BUILD_NUMBER) {
             deleteDir()
             unstash 'source'
-            dir(BASE_DIR){
-              sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
-                                           user_var: 'ES_USER', pass_var: 'ES_PASS') {
-                sh 'scripts/run-benchmarks.sh "${GIT_BASE_COMMIT}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+            script {
+              dir(BASE_DIR){
+                sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
+                                             user_var: 'ES_USER', pass_var: 'ES_PASS') {
+                  sh 'scripts/run-benchmarks.sh "${GIT_BASE_COMMIT}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+                }
               }
             }
           }
