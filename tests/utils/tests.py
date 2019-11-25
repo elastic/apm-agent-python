@@ -89,6 +89,21 @@ def test_get_url_dict():
             "search": "?de",
             "full": "https://example.com:443/a/b/c?de",
         },
+        "https://[::ffff:a9fe:a9fe]/a/b/c?de": {
+            "protocol": "https:",
+            "hostname": "::ffff:a9fe:a9fe",
+            "pathname": "/a/b/c",
+            "search": "?de",
+            "full": "https://[::ffff:a9fe:a9fe]/a/b/c?de",
+        },
+        "http://[::ffff:a9fe:a9fe]:80/a/b/c?de": {
+            "protocol": "http:",
+            "hostname": "::ffff:a9fe:a9fe",
+            "port": "80",
+            "pathname": "/a/b/c",
+            "search": "?de",
+            "full": "http://[::ffff:a9fe:a9fe]:80/a/b/c?de",
+        },
     }
     for url, expected in data.items():
         assert get_url_dict(url) == expected
