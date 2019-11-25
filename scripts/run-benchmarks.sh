@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 AGENT_WORKDIR=${1:?Please specify the python agent workspace}
 ES_URL=${2:?Please specify the elasticstack URL}
