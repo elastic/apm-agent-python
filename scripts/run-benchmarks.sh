@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -ex
 
-COMMIT_SHA=${1:?Please specify the git SHA commit}
-ES_URL=${2:?Please specify the elasticstack URL}
-ES_USER=${3:?Please specify the user to connect with}
-ES_PASS=${4:?Please specify the password to connect with}
+AGENT_WORKDIR=${1:?Please specify the python agent workspace}
+COMMIT_SHA=${2:?Please specify the git SHA commit}
+ES_URL=${3:?Please specify the elasticstack URL}
+ES_USER=${4:?Please specify the user to connect with}
+ES_PASS=${5:?Please specify the password to connect with}
 
 if [ -d .benchmarks ] ; then
     rm -rf .benchmarks
@@ -19,7 +20,7 @@ virtualenv -p python3 "${HOME}/.local"
 pip install -r requirements.txt
 
 python run_bench_commits.py \
-    --worktree agent \
+    --worktree "${AGENT_WORKDIR}" \
     --es-url "${ES_URL}" \
     --es-user "${ES_USER}" \
     --es-password "${ES_PASS}" \
