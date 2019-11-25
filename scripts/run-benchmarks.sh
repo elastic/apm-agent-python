@@ -6,6 +6,9 @@ ES_URL=${2:?Please specify the elasticstack URL}
 ES_USER=${3:?Please specify the user to connect with}
 ES_PASS=${4:?Please specify the password to connect with}
 
+if [ -d .benchmarks ] ; then
+    rm -rf .benchmarks
+fi
 git clone https://github.com/elastic/apm-agent-python-benchmarks.git .benchmarks
 
 cd .benchmarks
@@ -13,7 +16,7 @@ cd .benchmarks
 ## Prepare virtualenv
 virtualenv -p python3 "${HOME}/.local"
 
-pip install --user -r requirements.txt
+pip install -r requirements.txt
 
 python run_bench_commits.py \
     --worktree agent \
