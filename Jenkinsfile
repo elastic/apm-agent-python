@@ -168,7 +168,7 @@ pipeline {
       options { skipDefaultCheckout() }
       environment {
         HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+        PATH = "${env.WORKSPACE}/.local/bin:${env.PATH}"
         PIP_CACHE = "${env.WORKSPACE}/.cache"
       }
       when {

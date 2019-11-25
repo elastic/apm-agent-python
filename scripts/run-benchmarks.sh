@@ -10,6 +10,9 @@ git clone https://github.com/elastic/apm-agent-python-benchmarks.git .benchmarks
 
 cd .benchmarks
 
+## Prepare virtualenv
+virtualenv -p python3 "${HOME}/.local"
+
 pip install --user -r requirements.txt
 
 python run_bench_commits.py \
