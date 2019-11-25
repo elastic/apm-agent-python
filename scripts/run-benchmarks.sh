@@ -6,13 +6,6 @@ ES_URL=${2:?Please specify the elasticstack URL}
 ES_USER=${3:?Please specify the user to connect with}
 ES_PASS=${4:?Please specify the password to connect with}
 
-## If BRANCH_NAME is set then use the tag filter.
-## This particular env variable is inferred from the Jenkins CI.
-EXTRA_ARGS=''
-if [ -n "${BRANCH_NAME}" ] ; then
-    EXTRA_ARGS="--tag \"branch=${BRANCH_NAME}\""
-fi
-
 if [ -d .benchmarks ] ; then
     rm -rf .benchmarks
 fi
@@ -31,4 +24,4 @@ python run_bench_commits.py \
     --es-user "${ES_USER}" \
     --es-password "${ES_PASS}" \
     --as-is \
-    "${EXTRA_ARGS}"
+    --tag "branch=${BRANCH_NAME}"
