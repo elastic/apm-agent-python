@@ -1,9 +1,19 @@
+[[log-correlation]]
+== Log correlation
+
+Log correlation allows you to navigate to all logs belonging to a particular trace, and vice-versa -- for a specific log, see in which context it has been logged, and which parameters the user provided.
+
+The Agent provides integrations with both the default Python logging library,
+as well as http://www.structlog.org/en/stable/[`structlog`].
+
+* <<logging-integrations>>
+* <<log-correlation-in-es>>
+
+[float]
 [[logging-integrations]]
 === Logging integrations
 
-The Elastic APM agent provides integrations with both the default Python logging library,
-as well as http://www.structlog.org/en/stable/[`structlog`].
-
+[float]
 [[logging]]
 ==== `logging`
 
@@ -20,15 +30,11 @@ This factory also adds these fields to a dictionary attribute,
 
 You can disable this automatic behavior by using the
 <<config-generic-disable-log-record-factory,`disable_log_record_factory`>> setting
-in your configuration
+in your configuration.
 
 For Python versions <3.2, we also provide a
 https://docs.python.org/3/library/logging.html#filter-objects[filter] which will
 add the same new attributes to any filtered `LogRecord`:
-
-Note: Because https://docs.python.org/3/library/logging.html#filter-objects[filters
-are not propagated to descendent loggers], you should add the filter to each of
-your log handlers, as handlers are propagated, along with their attached filters.
 
 [source,python]
 ----
@@ -41,7 +47,11 @@ console.addFilter(LoggingFilter())
 logging.getLogger("").addHandler(console)
 ----
 
+NOTE: Because https://docs.python.org/3/library/logging.html#filter-objects[filters
+are not propagated to descendent loggers], you should add the filter to each of
+your log handlers, as handlers are propagated, along with their attached filters.
 
+[float]
 [[structlog]]
 ==== `structlog`
 
@@ -64,6 +74,7 @@ log = logger.new()
 log.msg("some_event")
 ----
 
+[float]
 ===== Use structlog for agent-internal logging
 
 The Elastic APM Python agent uses logging to log internal events and issues.
@@ -71,7 +82,8 @@ By default, it will use a `logging` logger.
 If your project uses structlog, you can tell the agent to use a structlog logger
 by setting the environment variable `ELASTIC_APM_USE_STRUCTLOG` to `true`.
 
-[[log-correlation]]
+[float]
+[[log-correlation-in-es]]
 === Log correlation in Elasticsearch
 
 In order to correlate logs from your app with transactions captured by the
@@ -133,7 +145,6 @@ formatstring = formatstring + " | elasticapm " \
 
 Then, you could use a grok pattern like this (for the
 {ref}/grok-processor.html[Elasticsearch Grok Processor]):
-
 
 [source, json]
 ----

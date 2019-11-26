@@ -1,0 +1,13 @@
+[[set-up]]
+== Set up the Agent
+
+To get you off the ground, we’ve prepared guides for setting up the Agent with different frameworks:
+
+ * <<django-support,Django>>
+ * <<flask-support,Flask>>
+
+For custom instrumentation, see the <<api>>.
+
+include::./django.asciidoc[]
+
+include::./flask.asciidoc[]
