@@ -344,7 +344,8 @@ class Span(BaseSpan):
         "parent_span_id",
         "frames",
         "labels",
-        "sync" "_child_durations",
+        "sync",
+        "_child_durations",
     )
 
     def __init__(
