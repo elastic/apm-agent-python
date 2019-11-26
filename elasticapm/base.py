@@ -32,6 +32,7 @@
 from __future__ import absolute_import
 
 import inspect
+import itertools
 import logging
 import os
 import platform
@@ -135,6 +136,7 @@ class Client(object):
             "timeout": self.config.server_timeout,
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
+            "processors": self.load_processors(),
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
@@ -146,8 +148,6 @@ class Client(object):
             exc_to_filter_type = exc_to_filter.split(".")[-1]
             exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
             self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
-
-        self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         if platform.python_implementation() == "PyPy":
             # PyPy introduces a `_functools.partial.__call__` frame due to our use
@@ -245,19 +245,6 @@ class Client(object):
     def queue(self, event_type, data, flush=False):
         if self.config.disable_send:
             return
-        # Run the data through processors
-        for processor in self.processors:
-            if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
-                if not data:
-                    self.logger.debug(
-                        "Dropped event of type %s due to processor %s.%s",
-                        event_type,
-                        getattr(processor, "__module__"),
-                        getattr(processor, "__name__"),
-                    )
-                    data = None  # normalize all "falsy" values to None
-                    break
         if flush and is_master_process():
             # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
             flush = False
@@ -511,6 +498,18 @@ class Client(object):
             exclude_paths_re=self.exclude_paths_re,
             locals_processor_func=locals_processor_func,
         )
+
+    def load_processors(self):
+        """
+        Loads processors from self.config.processors, as well as constants.HARDCODED_PROCESSORS.
+        Duplicate processors (based on the path) will be discarded.
+
+        :return: a list of callables
+        """
+        processors = itertools.chain(self.config.processors, constants.HARDCODED_PROCESSORS)
+        seen = {}
+        # setdefault has the nice property that it returns the value that it just set on the dict
+        return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
 
 class DummyClient(Client):
