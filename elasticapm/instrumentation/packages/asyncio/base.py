@@ -29,26 +29,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
-
-    instrument_list = [("requests.sessions", "Session.send")]
-
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
-
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
-
-        with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
-        ):
-            return wrapped(*args, **kwargs)
+class AsyncAbstractInstrumentedModule(AbstractInstrumentedModule):
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        raise NotImplementedError()

@@ -28,27 +28,42 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+import functools
+
+from elasticapm.traces import capture_span, error_logger, execution_context
+from elasticapm.utils import get_name_from_func
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+class async_capture_span(capture_span):
+    def __call__(self, func):
+        self.name = self.name or get_name_from_func(func)
 
-    instrument_list = [("requests.sessions", "Session.send")]
+        @functools.wraps(func)
+        async def decorated(*args, **kwds):
+            async with self:
+                return await func(*args, **kwds)
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
+        return decorated
 
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
+    async def __aenter__(self):
+        transaction = execution_context.get_transaction()
+        if transaction and transaction.is_sampled:
+            return transaction.begin_span(
+                self.name,
+                self.type,
+                context=self.extra,
+                leaf=self.leaf,
+                labels=self.labels,
+                span_subtype=self.subtype,
+                span_action=self.action,
+                sync=False,
+                start=self.start,
+            )
 
-        with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
-        ):
-            return wrapped(*args, **kwargs)
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        transaction = execution_context.get_transaction()
+        if transaction and transaction.is_sampled:
+            try:
+                transaction.end_span(self.skip_frames)
+            except LookupError:
+                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
