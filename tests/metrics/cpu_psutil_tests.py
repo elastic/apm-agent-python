@@ -61,6 +61,7 @@ def test_cpu_mem_from_psutil():
 cpu_linux = pytest.importorskip("elasticapm.metrics.sets.cpu_linux")
 
 
+@pytest.mark.skip("test is flaky on CI")
 def test_compare_psutil_linux_metricsets():
     psutil_metricset = cpu_psutil.CPUMetricSet(MetricsRegistry(0, lambda x: None))
     linux_metricset = cpu_linux.CPUMetricSet(MetricsRegistry(0, lambda x: None))
