@@ -28,27 +28,24 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
+from elasticapm import async_capture_span
+from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.utils import get_host_from_url, sanitize_url
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
+    name = "aiohttp_client"
 
-    instrument_list = [("requests.sessions", "Session.send")]
+    instrument_list = [("aiohttp.client", "ClientSession._request")]
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        method = kwargs["method"] if "method" in kwargs else args[0]
+        url = kwargs["url"] if "url" in kwargs else args[1]
 
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
+        signature = " ".join([method.upper(), get_host_from_url(url)])
+        url = sanitize_url(url)
 
-        with capture_span(
+        async with async_capture_span(
             signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
         ):
-            return wrapped(*args, **kwargs)
+            return await wrapped(*args, **kwargs)

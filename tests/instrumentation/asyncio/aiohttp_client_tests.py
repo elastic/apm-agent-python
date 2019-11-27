@@ -28,27 +28,30 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+import aiohttp
+import pytest
+
+from elasticapm.conf import constants
+
+pytestmark = [pytest.mark.asyncio, pytest.mark.aiohttp_client]
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+async def test_http_get(instrument, event_loop, elasticapm_client, httpserver):
+    assert event_loop.is_running()
+    elasticapm_client.begin_transaction("test")
 
-    instrument_list = [("requests.sessions", "Session.send")]
+    async with aiohttp.ClientSession() as session:
+        async with session.get(httpserver.url) as resp:
+            status = resp.status
+            text = await resp.text()
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
-
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
-
-        with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
-        ):
-            return wrapped(*args, **kwargs)
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "GET %s:%s" % httpserver.server_address
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
+    assert span["sync"] is False
+    assert span["context"]["http"]["url"] == httpserver.url
