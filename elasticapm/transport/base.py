@@ -69,6 +69,7 @@ class Transport(object):
         max_buffer_size=None,
         queue_chill_count=500,
         queue_chill_time=1.0,
+        processors=None,
         **kwargs
     ):
         """
@@ -95,6 +96,7 @@ class Transport(object):
         self._counts = defaultdict(int)
         self._flushed = threading.Event()
         self._closed = False
+        self._processors = processors if processors is not None else []
         # only start the event processing thread if we are not in a uwsgi master process
         if not is_master_process():
             self._start_event_processor()
@@ -135,9 +137,11 @@ class Transport(object):
                 return  # time to go home!
 
             if data is not None:
-                buffer.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
-                buffer_written = True
-                self._counts[event_type] += 1
+                data = self._process_event(event_type, data)
+                if data is not None:
+                    buffer.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
+                    buffer_written = True
+                    self._counts[event_type] += 1
 
             queue_size = 0 if buffer.fileobj is None else buffer.fileobj.tell()
 
@@ -166,6 +170,21 @@ class Transport(object):
                 buffer_written = False
                 max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
                 self._flushed.set()
+
+    def _process_event(self, event_type, data):
+        # Run the data through processors
+        for processor in self._processors:
+            if not hasattr(processor, "event_types") or event_type in processor.event_types:
+                data = processor(self, data)
+                if not data:
+                    logger.debug(
+                        "Dropped event of type %s due to processor %s.%s",
+                        event_type,
+                        getattr(processor, "__module__"),
+                        getattr(processor, "__name__"),
+                    )
+                    return None
+        return data
 
     def _init_buffer(self):
         buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)

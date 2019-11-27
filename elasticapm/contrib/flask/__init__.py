@@ -120,6 +120,12 @@ class ElasticAPM(object):
             custom={"app": self.app},
             handled=False,
         )
+        # End the transaction here, as `request_finished` won't be called when an
+        # unhandled exception occurs.
+        #
+        # Unfortunately, that also means that we can't capture any response data,
+        # as the response isn't ready at this point in time.
+        self.client.end_transaction(result="HTTP 5xx")
 
     def init_app(self, app, **defaults):
         self.app = app
@@ -182,11 +188,6 @@ class ElasticAPM(object):
             else:
                 trace_parent = None
             self.client.begin_transaction("request", trace_parent=trace_parent)
-
-    def request_finished(self, app, response):
-        if not self.app.debug or self.client.config.debug:
-            rule = request.url_rule.rule if request.url_rule is not None else ""
-            rule = build_name_with_http_method_prefix(rule, request)
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     request,
@@ -195,6 +196,12 @@ class ElasticAPM(object):
                 ),
                 "request",
             )
+            rule = request.url_rule.rule if request.url_rule is not None else ""
+            rule = build_name_with_http_method_prefix(rule, request)
+            elasticapm.set_transaction_name(rule, override=False)
+
+    def request_finished(self, app, response):
+        if not self.app.debug or self.client.config.debug:
             elasticapm.set_context(
                 lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
             )
@@ -202,7 +209,6 @@ class ElasticAPM(object):
                 result = "HTTP {}xx".format(response.status_code // 100)
             else:
                 result = response.status
-            elasticapm.set_transaction_name(rule, override=False)
             elasticapm.set_transaction_result(result, override=False)
             # Instead of calling end_transaction here, we defer the call until the response is closed.
             # This ensures that we capture things that happen until the WSGI server closes the response.

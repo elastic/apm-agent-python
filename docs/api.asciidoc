@@ -1,5 +1,5 @@
 [[api]]
-== Public API
+== API reference
 
 The Elastic APM Python agent has several public APIs.
 Most of the public API functionality is not needed when using one of our <<framework-support, supported frameworks>>,
@@ -307,7 +307,7 @@ def coffee_maker(strength):
 
     with elasticapm.capture_span('near-to-machine', labels={"type": "arabica"}):
         insert_filter()
-        for i in range(strengh):
+        for i in range(strength):
             pour_coffee()
 
         start_drip()
