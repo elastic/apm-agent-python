@@ -22,6 +22,7 @@ pipeline {
     GITHUB_CHECK_ITS_NAME = 'Integration Tests'
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
+    OPBEANS_REPO = 'opbeans-python'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -254,6 +255,23 @@ pipeline {
               dir("${BASE_DIR}"){
                 releasePackages()
               }
+            }
+          }
+        }
+        stage('Opbeans') {
+          environment {
+            REPO_NAME = "${OPBEANS_REPO}"
+          }
+          steps {
+            deleteDir()
+            dir("${OPBEANS_REPO}"){
+              git credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
+                  url: "git@github.com:elastic/${OPBEANS_REPO}.git"
+              sh script: ".ci/bump-version.sh ${env.BRANCH_NAME}", label: 'Bump version'
+              // The opbeans pipeline will trigger a release for the master branch
+              gitPush()
+              // The opbeans pipeline will trigger a release for the release tag
+              gitCreateTag(tag: "${env.BRANCH_NAME}")
             }
           }
         }
