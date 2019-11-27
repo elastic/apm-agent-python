@@ -1,6 +1,5 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
 #  Copyright (c) 2019, Elasticsearch BV
 #  All rights reserved.
 #
@@ -27,23 +26,44 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-import sys
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__all__ = ("VERSION", "Client")
+import functools
 
-try:
-    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
-except Exception:
-    VERSION = "unknown"
-
-from elasticapm.base import Client
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import capture_span, set_context, set_custom_context  # noqa: F401
-from elasticapm.traces import set_transaction_name, set_user_context, tag, label  # noqa: F401
-from elasticapm.traces import set_transaction_result  # noqa: F401
-from elasticapm.traces import get_transaction_id, get_trace_id, get_span_id  # noqa: F401
+from elasticapm.traces import capture_span, error_logger, execution_context
+from elasticapm.utils import get_name_from_func
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+class async_capture_span(capture_span):
+    def __call__(self, func):
+        self.name = self.name or get_name_from_func(func)
+
+        @functools.wraps(func)
+        async def decorated(*args, **kwds):
+            async with self:
+                return await func(*args, **kwds)
+
+        return decorated
+
+    async def __aenter__(self):
+        transaction = execution_context.get_transaction()
+        if transaction and transaction.is_sampled:
+            return transaction.begin_span(
+                self.name,
+                self.type,
+                context=self.extra,
+                leaf=self.leaf,
+                labels=self.labels,
+                span_subtype=self.subtype,
+                span_action=self.action,
+                sync=False,
+                start=self.start,
+            )
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        transaction = execution_context.get_transaction()
+        if transaction and transaction.is_sampled:
+            try:
+                transaction.end_span(self.skip_frames)
+            except LookupError:
+                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
