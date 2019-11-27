@@ -30,7 +30,9 @@
 
 from aiohttp.web import middleware
 
+import elasticapm
 from elasticapm.conf import constants
+from elasticapm.contrib.aiohttp.utils import get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
 
 
@@ -50,6 +52,25 @@ def tracing_middleware(app):
 
         try:
             response = await handler(request)
+            status = "HTTP {}xx".format(response.status // 100)
+            resource = request.match_info.route.resource
+            if resource:
+                name = "{} {}".format(request.method, resource.canonical)
+            else:
+                name = "unkown route"
+            elasticapm.set_context(
+                lambda: get_data_from_request(
+                    request,
+                    capture_body=elasticapm_client.config.capture_body in ("transactions", "all"),
+                    capture_headers=elasticapm_client.config.capture_headers,
+                ),
+                "request",
+            )
+            elasticapm.set_context(
+                lambda: get_data_from_response(response, capture_headers=elasticapm_client.config.capture_headers),
+                "response",
+            )
+            elasticapm_client.end_transaction(name, status)
             return response
         except Exception:
             if elasticapm_client:

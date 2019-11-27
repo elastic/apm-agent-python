@@ -28,23 +28,31 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import aiohttp
-
-from elasticapm import Client
-
-CLIENT_KEY = "_elasticapm_client_instance"
+from elasticapm.utils import compat, get_url_dict
 
 
-class ElasticAPM:
-    def __init__(self, app):
-        config = app.get("ELASTIC_APM", {})
-        config.setdefault("framework_name", "aiohttp")
-        config.setdefault("framework_version", aiohttp.__version__)
-        client = Client(config=config)
-        app[CLIENT_KEY] = client
-        self.install_tracing(app)
+def get_data_from_request(request, capture_body=False, capture_headers=True):
+    result = {
+        "method": request.method,
+        "socket": {"remote_address": request.remote, "encrypted": request.secure},
+        "cookies": dict(request.cookies),
+    }
+    if capture_headers:
+        result["headers"] = dict(request.headers)
 
-    def install_tracing(self, app):
-        from elasticapm.contrib.aiohttp.middleware import tracing_middleware
+    # TODO: capture body
 
-        app.middlewares.insert(0, tracing_middleware(app))
+    result["url"] = get_url_dict(str(request.url))
+    return result
+
+
+def get_data_from_response(response, capture_headers=True):
+    result = {}
+
+    if isinstance(getattr(response, "status", None), compat.integer_types):
+        result["status_code"] = response.status
+
+    if capture_headers and getattr(response, "headers", None):
+        headers = response.headers
+        result["headers"] = {key: ";".join(headers.getall(key)) for key in compat.iterkeys(headers)}
+    return result
