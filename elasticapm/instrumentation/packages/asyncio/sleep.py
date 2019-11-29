@@ -38,9 +38,5 @@ class AsyncIOSleepInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("asyncio.tasks", "sleep")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        delay = args[0] if args else kwargs["delay"]
-
-        signature = "asyncio.sleep %.3f" % delay
-
-        async with async_capture_span(signature, leaf=True, span_type="task", span_subtype="sleep"):
+        async with async_capture_span("asyncio.sleep", leaf=True, span_type="task", span_subtype="sleep"):
             return await wrapped(*args, **kwargs)
