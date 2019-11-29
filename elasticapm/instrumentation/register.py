@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 
 from elasticapm.utils.module_import import import_string
 
@@ -58,6 +59,9 @@ _cls_register = {
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation",
     "elasticapm.instrumentation.packages.urllib.UrllibInstrumentation",
 }
+
+if sys.version_info >= (3, 5):
+    _cls_register.update(["elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation"])
 
 
 def register(cls):
