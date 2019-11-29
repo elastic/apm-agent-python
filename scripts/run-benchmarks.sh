@@ -24,4 +24,5 @@ python run_bench_commits.py \
     --es-user "${ES_USER}" \
     --es-password "${ES_PASS}" \
     --as-is \
-    --tag "branch=${BRANCH_NAME}"
+    --tag "branch=${BRANCH_NAME}" \
+    --tag mode=CI

@@ -1,6 +1,5 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
 #  Copyright (c) 2019, Elasticsearch BV
 #  All rights reserved.
 #
@@ -27,23 +26,41 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-import sys
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__all__ = ("VERSION", "Client")
+from asyncio import tasks
 
-try:
-    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
-except Exception:
-    VERSION = "unknown"
+import pytest
 
-from elasticapm.base import Client
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import capture_span, set_context, set_custom_context  # noqa: F401
-from elasticapm.traces import set_transaction_name, set_user_context, tag, label  # noqa: F401
-from elasticapm.traces import set_transaction_result  # noqa: F401
-from elasticapm.traces import get_transaction_id, get_trace_id, get_span_id  # noqa: F401
+import elasticapm
+from elasticapm.conf import constants
+
+pytestmark = [pytest.mark.asyncio]
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+async def test_async_capture_span(instrument, elasticapm_client):
+    @elasticapm.async_capture_span()
+    async def do_some_work():
+        async with elasticapm.async_capture_span("more-work"):
+            await tasks.sleep(0.1)
+
+    elasticapm_client.begin_transaction("test")
+    await do_some_work()
+    elasticapm_client.end_transaction("test", "OK")
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 3
+    sleep, c, d = spans
+    assert sleep["subtype"] == "sleep"
+    assert not sleep["sync"]
+    assert sleep["transaction_id"] == transaction["id"]
+
+    assert c["type"] == "code"
+    assert c["subtype"] == "custom"
+    assert not c["sync"]
+    assert c["transaction_id"] == transaction["id"]
+
+    assert d["type"] == "code"
+    assert d["subtype"] == "custom"
+    assert not d["sync"]
+    assert d["transaction_id"] == transaction["id"]
