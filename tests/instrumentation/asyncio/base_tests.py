@@ -38,7 +38,7 @@ from elasticapm.conf import constants
 pytestmark = [pytest.mark.asyncio]
 
 
-async def test_async_capture_span(elasticapm_client):
+async def test_async_capture_span(instrument, elasticapm_client):
     @elasticapm.async_capture_span()
     async def do_some_work():
         async with elasticapm.async_capture_span("more-work"):
