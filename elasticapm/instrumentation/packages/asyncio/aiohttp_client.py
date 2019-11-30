@@ -29,8 +29,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm import async_capture_span
+from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
+from elasticapm.traces import DroppedSpan, execution_context
 from elasticapm.utils import get_host_from_url, sanitize_url
+from elasticapm.utils.disttracing import TracingOptions
 
 
 class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
@@ -44,8 +47,31 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
 
         signature = " ".join([method.upper(), get_host_from_url(url)])
         url = sanitize_url(url)
+        transaction = execution_context.get_transaction()
 
         async with async_capture_span(
             signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
-        ):
+        ) as span:
+            leaf_span = span
+            while isinstance(leaf_span, DroppedSpan):
+                leaf_span = leaf_span.parent
+
+            parent_id = leaf_span.id if leaf_span else transaction.id
+            trace_parent = transaction.trace_parent.copy_from(
+                span_id=parent_id, trace_options=TracingOptions(recorded=True)
+            )
+            headers = kwargs.get("headers", {})
+            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+            kwargs["headers"] = headers
             return await wrapped(*args, **kwargs)
+
+    def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
+        # since we don't have a span, we set the span id to the transaction id
+        trace_parent = transaction.trace_parent.copy_from(
+            span_id=transaction.id, trace_options=TracingOptions(recorded=False)
+        )
+
+        headers = kwargs.get("headers", {})
+        headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+        kwargs["headers"] = headers
+        return args, kwargs
