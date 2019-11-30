@@ -37,12 +37,15 @@ CLIENT_KEY = "_elasticapm_client_instance"
 
 
 class ElasticAPM:
-    def __init__(self, app):
-        config = app.get("ELASTIC_APM", {})
-        config.setdefault("framework_name", "aiohttp")
-        config.setdefault("framework_version", aiohttp.__version__)
-        client = Client(config=config)
+    def __init__(self, app, client=None):
+        if not client:
+            config = app.get("ELASTIC_APM", {})
+            config.setdefault("framework_name", "aiohttp")
+            config.setdefault("framework_version", aiohttp.__version__)
+            client = Client(config=config)
         app[CLIENT_KEY] = client
+        self.app = app
+        self.client = client
         self.install_tracing(app, client)
 
     def install_tracing(self, app, client):

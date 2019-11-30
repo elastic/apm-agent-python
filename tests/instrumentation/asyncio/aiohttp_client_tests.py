@@ -33,7 +33,7 @@ import pytest
 
 from elasticapm.conf import constants
 
-pytestmark = [pytest.mark.asyncio, pytest.mark.aiohttp_client]
+pytestmark = [pytest.mark.asyncio, pytest.mark.aiohttp]
 
 
 async def test_http_get(instrument, event_loop, elasticapm_client, httpserver):

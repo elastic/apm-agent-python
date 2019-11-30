@@ -28,6 +28,15 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#  BSD 3-Clause License
+#
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#
+#
+#
 from aiohttp.web import middleware
 
 import elasticapm
@@ -49,10 +58,6 @@ def tracing_middleware(app):
             else:
                 trace_parent = None
             elasticapm_client.begin_transaction("request", trace_parent=trace_parent)
-
-        try:
-            response = await handler(request)
-            elasticapm.set_transaction_result("HTTP {}xx".format(response.status // 100), override=False)
             resource = request.match_info.route.resource
             if resource:
                 name = "{} {}".format(request.method, resource.canonical)
@@ -67,6 +72,10 @@ def tracing_middleware(app):
                 ),
                 "request",
             )
+
+        try:
+            response = await handler(request)
+            elasticapm.set_transaction_result("HTTP {}xx".format(response.status // 100), override=False)
             elasticapm.set_context(
                 lambda: get_data_from_response(response, capture_headers=elasticapm_client.config.capture_headers),
                 "response",
@@ -81,6 +90,8 @@ def tracing_middleware(app):
                         )
                     }
                 )
+                elasticapm.set_transaction_result("HTTP 5xx", override=False)
+                elasticapm.set_context({"status_code": 500}, "response")
             raise
         finally:
             elasticapm_client.end_transaction()
