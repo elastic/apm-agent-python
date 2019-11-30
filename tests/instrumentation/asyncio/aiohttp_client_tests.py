@@ -28,8 +28,9 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import aiohttp
-import pytest
+import pytest  # isort:skip
+
+aiohttp = pytest.importorskip("aiohttp")  # isort:skip
 
 from elasticapm.conf import constants
 from elasticapm.utils.disttracing import TraceParent
