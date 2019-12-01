@@ -90,7 +90,11 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
             trace_parent = transaction.trace_parent.copy_from(
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
-            request_object.add_header(constants.TRACEPARENT_HEADER_NAME, trace_parent.to_string())
+            trace_parent_str = trace_parent.to_string()
+
+            request_object.add_header(constants.TRACEPARENT_HEADER_NAME, trace_parent_str)
+            if transaction.tracer.config.use_elastic_traceparent_header:
+                request_object.add_header(constants.TRACEPARENT_LEGACY_HEADER_NAME, trace_parent_str)
             return wrapped(*args, **kwargs)
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
@@ -100,5 +104,9 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
             span_id=transaction.id, trace_options=TracingOptions(recorded=False)
         )
 
-        request_object.add_header(constants.TRACEPARENT_HEADER_NAME, trace_parent.to_string())
+        trace_parent_str = trace_parent.to_string()
+
+        request_object.add_header(constants.TRACEPARENT_HEADER_NAME, trace_parent_str)
+        if transaction.tracer.config.use_elastic_traceparent_header:
+            request_object.add_header(constants.TRACEPARENT_LEGACY_HEADER_NAME, trace_parent_str)
         return args, kwargs

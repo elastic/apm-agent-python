@@ -30,19 +30,21 @@
 
 import ctypes
 
+from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.utils")
 
 
 class TraceParent(object):
-    __slots__ = ("version", "trace_id", "span_id", "trace_options")
+    __slots__ = ("version", "trace_id", "span_id", "trace_options", "is_legacy")
 
-    def __init__(self, version, trace_id, span_id, trace_options):
+    def __init__(self, version, trace_id, span_id, trace_options, is_legacy=False):
         self.version = version
         self.trace_id = trace_id
         self.span_id = span_id
         self.trace_options = trace_options
+        self.is_legacy = is_legacy
 
     def copy_from(self, version=None, trace_id=None, span_id=None, trace_options=None):
         return TraceParent(
@@ -59,7 +61,7 @@ class TraceParent(object):
         return self.to_string().encode("ascii")
 
     @classmethod
-    def from_string(cls, traceparent_string):
+    def from_string(cls, traceparent_string, is_legacy=False):
         try:
             parts = traceparent_string.split("-")
             version, trace_id, span_id, trace_flags = parts[:4]
@@ -79,7 +81,21 @@ class TraceParent(object):
         except ValueError:
             logger.debug("Invalid trace-options field, value %s", trace_flags)
             return
-        return TraceParent(version, trace_id, span_id, tracing_options)
+        return TraceParent(version, trace_id, span_id, tracing_options, is_legacy)
+
+    @classmethod
+    def from_headers(
+        cls,
+        headers,
+        header_name=constants.TRACEPARENT_HEADER_NAME,
+        legacy_header_name=constants.TRACEPARENT_LEGACY_HEADER_NAME,
+    ):
+        if header_name in headers:
+            return TraceParent.from_string(headers[header_name], is_legacy=False)
+        elif legacy_header_name in headers:
+            return TraceParent.from_string(headers[legacy_header_name], is_legacy=False)
+        else:
+            return None
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):

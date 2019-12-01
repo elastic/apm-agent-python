@@ -222,11 +222,10 @@ def test_instrumentation_404(flask_apm_client):
     assert len(spans) == 0, [t["signature"] for t in spans]
 
 
-def test_traceparent_handling(flask_apm_client):
+@pytest.mark.parametrize("header_name", [constants.TRACEPARENT_HEADER_NAME, constants.TRACEPARENT_LEGACY_HEADER_NAME])
+def test_traceparent_handling(flask_apm_client, header_name):
     resp = flask_apm_client.app.test_client().post(
-        "/users/",
-        data={"foo": "bar"},
-        headers={constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"},
+        "/users/", data={"foo": "bar"}, headers={header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"}
     )
     resp.close()
 
