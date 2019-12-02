@@ -48,6 +48,7 @@ MIDDLEWARE_NAME = "elasticapm.contrib.django.middleware.TracingMiddleware"
 
 TRACEPARENT_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
 TRACEPARENT_LEGACY_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_LEGACY_HEADER_NAME.upper().replace("-", "_")
+TRACESTATE_HEADER_NAME_WSGI = "HTTP_" + constants.TRACESTATE_HEADER_NAME.upper().replace("-", "_")
 
 
 class ElasticAPMConfig(AppConfig):
@@ -134,7 +135,10 @@ def _request_started_handler(client, sender, *args, **kwargs):
     # try to find trace id
     if "environ" in kwargs:
         trace_parent = TraceParent.from_headers(
-            kwargs["environ"], TRACEPARENT_HEADER_NAME_WSGI, TRACEPARENT_LEGACY_HEADER_NAME_WSGI
+            kwargs["environ"],
+            TRACEPARENT_HEADER_NAME_WSGI,
+            TRACEPARENT_LEGACY_HEADER_NAME_WSGI,
+            TRACESTATE_HEADER_NAME_WSGI,
         )
     elif "scope" in kwargs and "headers" in kwargs["scope"]:
         trace_parent = TraceParent.from_headers(kwargs["scope"]["headers"])

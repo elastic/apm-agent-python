@@ -138,6 +138,25 @@ def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiti
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME not in headers
 
 
+@pytest.mark.parametrize(
+    "is_sampled", [pytest.param(True, id="is_sampled-True"), pytest.param(False, id="is_sampled-False")]
+)
+def test_tracestate_propagation(instrument, elasticapm_client, waiting_httpserver, is_sampled):
+    traceparent = TraceParent.from_string(
+        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", "foo=bar,baz=bazzinga"
+    )
+
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    transaction_object = elasticapm_client.begin_transaction("transaction", trace_parent=traceparent)
+    transaction_object.is_sampled = is_sampled
+    pool = urllib3.PoolManager(timeout=0.1)
+    r = pool.request("GET", url)
+    elasticapm_client.end_transaction("MyView")
+    headers = waiting_httpserver.requests[0].headers
+    assert headers[constants.TRACESTATE_HEADER_NAME] == "foo=bar,baz=bazzinga"
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
 def test_span_only_dropped(instrument, elasticapm_client, waiting_httpserver):
     """test that urllib3 instrumentation does not fail if no parent span can be found"""
