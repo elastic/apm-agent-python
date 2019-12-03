@@ -28,3 +28,5 @@ venv
 benchmarks/result*
 coverage.xml
 tests/python-agent-junit.xml
+*.code-workspace
+.pytest_cache/
