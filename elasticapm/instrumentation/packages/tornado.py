@@ -28,34 +28,38 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-Framework integration for Tornado
-
-Note that transaction creation is actually done in the tornado
-instrumentation. This module only creates the client for later use by the
-that instrumentation, and triggers the global instrumentation itself.
+Instrumentation for Tornado
 """
-import elasticapm
-import tornado
-from elasticapm import Client
+from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
 
 
-class ElasticAPM:
-    def __init__(self, app, client=None):
-        """
-        Create the elasticapm Client object and store in the app for later
-        use.
-        """
-        if not client:
-            # TODO get config for the client
-            # TODO what's our strategy for multiple processes?
-            # https://www.tornadoweb.org/en/stable/guide/running.html#processes-and-ports
-            config = {}
-            config.setdefault("framework_name", "tornado")
-            config.setdefault("framework_version", tornado.version)
-            client = Client(config)
-        self.app = app
-        self.client = client
-        app.elastiapm_client = client
+class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
+    name = "tornado_request_execute"
 
-        if client.config.instrument:
-            elasticapm.instrument()
+    instrument_list = [("tornado.web.RequestHandler", "_execute")]
+
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        # TODO
+        ret = await wrapped(*args, **kwargs)
+
+        return ret
+
+
+class TornadoHandleExceptionInstrumentation(AbstractInstrumentedModule):
+    name = "tornado_handle_exception"
+
+    instrument_list = [("tornado.web.RequestHandler", "_handle_exception")]
+
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        # TODO
+        return wrapped(*args, **kwargs)
+
+
+class TornadoRenderInstrumentation(AbstractInstrumentedModule):
+    name = "tornado_render"
+
+    instrument_list = [("tornado.web.RequestHandler", "render")]
+
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        # TODO
+        return wrapped(*args, **kwargs)
