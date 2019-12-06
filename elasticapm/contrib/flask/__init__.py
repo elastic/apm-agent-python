@@ -37,7 +37,7 @@ from flask import request, signals
 import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
-from elasticapm.conf import constants, setup_logging
+from elasticapm.conf import setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.traces import execution_context
@@ -183,10 +183,7 @@ class ElasticAPM(object):
 
     def request_started(self, app):
         if not self.app.debug or self.client.config.debug:
-            if constants.TRACEPARENT_HEADER_NAME in request.headers:
-                trace_parent = TraceParent.from_string(request.headers[constants.TRACEPARENT_HEADER_NAME])
-            else:
-                trace_parent = None
+            trace_parent = TraceParent.from_headers(request.headers)
             self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
                 lambda: get_data_from_request(
