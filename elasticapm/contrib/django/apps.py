@@ -47,6 +47,8 @@ REQUEST_FINISH_DISPATCH_UID = "elasticapm-request-stop"
 MIDDLEWARE_NAME = "elasticapm.contrib.django.middleware.TracingMiddleware"
 
 TRACEPARENT_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
+TRACEPARENT_LEGACY_HEADER_NAME_WSGI = "HTTP_" + constants.TRACEPARENT_LEGACY_HEADER_NAME.upper().replace("-", "_")
+TRACESTATE_HEADER_NAME_WSGI = "HTTP_" + constants.TRACESTATE_HEADER_NAME.upper().replace("-", "_")
 
 
 class ElasticAPMConfig(AppConfig):
@@ -131,15 +133,15 @@ def _request_started_handler(client, sender, *args, **kwargs):
     if not _should_start_transaction(client):
         return
     # try to find trace id
-    traceparent_header = None
     if "environ" in kwargs:
-        traceparent_header = kwargs["environ"].get(TRACEPARENT_HEADER_NAME_WSGI)
-    elif "scope" in kwargs:
-        # TODO handle Django Channels
-        traceparent_header = None
-    if traceparent_header:
-        trace_parent = TraceParent.from_string(traceparent_header)
-        logger.debug("Read traceparent header %s", traceparent_header)
+        trace_parent = TraceParent.from_headers(
+            kwargs["environ"],
+            TRACEPARENT_HEADER_NAME_WSGI,
+            TRACEPARENT_LEGACY_HEADER_NAME_WSGI,
+            TRACESTATE_HEADER_NAME_WSGI,
+        )
+    elif "scope" in kwargs and "headers" in kwargs["scope"]:
+        trace_parent = TraceParent.from_headers(kwargs["scope"]["headers"])
     else:
         trace_parent = None
     client.begin_transaction("request", trace_parent=trace_parent)
