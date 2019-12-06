@@ -25,6 +25,10 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the d
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
+[float]
+===== New Features
+
+ * Added support for W3C `traceparent` and `tracestate` headers {pull}660[#660]
 
 
 [[release-notes-5.x]]

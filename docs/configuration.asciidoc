@@ -720,6 +720,21 @@ automatically adds tracing fields to your log records. You can disable this
 behavior by setting this to `True`.
 
 [float]
+[[config-use-elastic-traceparent-header]]
+==== `use_elastic_traceparent_header`
+|============
+| Environment                                  | Django/Flask                     | Default
+| `ELASTIC_APM_USE_ELASTIC_TRACEPARENT_HEADER` | `USE_ELASTIC_TRACEPARENT_HEADER` | `True`
+|============
+
+To enable {apm-overview-ref-v}/distributed-tracing.html[distributed tracing],
+the agent sets a number of HTTP headers to outgoing requests made with <<automatic-instrumentation-http,instrumented HTTP libraries>>.
+These headers (`traceparent` and `tracestate`) are defined in the https://www.w3.org/TR/trace-context-1/[W3C Trace Context] specification.
+
+Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
+
+
+[float]
 [[config-django-specific]]
 === Django-specific configuration
 
