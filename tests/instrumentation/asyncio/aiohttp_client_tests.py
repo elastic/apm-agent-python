@@ -59,6 +59,14 @@ async def test_http_get(instrument, event_loop, elasticapm_client, waiting_https
     assert span["context"]["http"]["url"] == waiting_httpserver.url
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        pytest.param({"use_elastic_traceparent_header": True}, id="use_elastic_traceparent_header-True"),
+        pytest.param({"use_elastic_traceparent_header": False}, id="use_elastic_traceparent_header-False"),
+    ],
+    indirect=True,
+)
 async def test_trace_parent_propagation_sampled(instrument, event_loop, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
@@ -71,13 +79,28 @@ async def test_trace_parent_propagation_sampled(instrument, event_loop, elastica
     transactions = elasticapm_client.events[constants.TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
-    assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    headers = waiting_httpserver.requests[0].headers
+    assert constants.TRACEPARENT_HEADER_NAME in headers
+    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
 
+    if elasticapm_client.config.use_elastic_traceparent_header:
+        assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
+        assert headers[constants.TRACEPARENT_HEADER_NAME] == headers[constants.TRACEPARENT_LEGACY_HEADER_NAME]
+    else:
+        assert constants.TRACEPARENT_LEGACY_HEADER_NAME not in headers
 
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        pytest.param({"use_elastic_traceparent_header": True}, id="use_elastic_traceparent_header-True"),
+        pytest.param({"use_elastic_traceparent_header": False}, id="use_elastic_traceparent_header-False"),
+    ],
+    indirect=True,
+)
 async def test_trace_parent_propagation_unsampled(instrument, event_loop, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
@@ -93,8 +116,36 @@ async def test_trace_parent_propagation_unsampled(instrument, event_loop, elasti
 
     assert not spans
 
-    assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    headers = waiting_httpserver.requests[0].headers
+    assert constants.TRACEPARENT_HEADER_NAME in headers
+    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == transaction_object.id
     assert not trace_parent.trace_options.recorded
+
+    if elasticapm_client.config.use_elastic_traceparent_header:
+        assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
+        assert headers[constants.TRACEPARENT_HEADER_NAME] == headers[constants.TRACEPARENT_LEGACY_HEADER_NAME]
+    else:
+        assert constants.TRACEPARENT_LEGACY_HEADER_NAME not in headers
+
+
+@pytest.mark.parametrize(
+    "is_sampled", [pytest.param(True, id="is_sampled-True"), pytest.param(False, id="is_sampled-False")]
+)
+async def test_tracestate_propagation(instrument, event_loop, elasticapm_client, waiting_httpserver, is_sampled):
+    traceparent = TraceParent.from_string(
+        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", "foo=bar,baz=bazzinga"
+    )
+
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    transaction_object = elasticapm_client.begin_transaction("transaction", trace_parent=traceparent)
+    transaction_object.is_sampled = is_sampled
+    async with aiohttp.ClientSession() as session:
+        async with session.get(waiting_httpserver.url) as resp:
+            status = resp.status
+            text = await resp.text()
+    elasticapm_client.end_transaction("MyView")
+    headers = waiting_httpserver.requests[0].headers
+    assert headers[constants.TRACESTATE_HEADER_NAME] == "foo=bar,baz=bazzinga"

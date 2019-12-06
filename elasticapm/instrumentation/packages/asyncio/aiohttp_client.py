@@ -61,7 +61,7 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
             headers = kwargs.get("headers", {})
-            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+            self._set_disttracing_headers(headers, trace_parent, transaction)
             kwargs["headers"] = headers
             return await wrapped(*args, **kwargs)
 
@@ -72,6 +72,14 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
         )
 
         headers = kwargs.get("headers", {})
-        headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+        self._set_disttracing_headers(headers, trace_parent, transaction)
         kwargs["headers"] = headers
         return args, kwargs
+
+    def _set_disttracing_headers(self, headers, trace_parent, transaction):
+        trace_parent_str = trace_parent.to_string()
+        headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent_str
+        if transaction.tracer.config.use_elastic_traceparent_header:
+            headers[constants.TRACEPARENT_LEGACY_HEADER_NAME] = trace_parent_str
+        if trace_parent.tracestate:
+            headers[constants.TRACESTATE_HEADER_NAME] = trace_parent.tracestate
