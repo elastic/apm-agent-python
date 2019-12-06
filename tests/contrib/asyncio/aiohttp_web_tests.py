@@ -32,9 +32,13 @@ import pytest  # isort:skip
 
 aiohttp = pytest.importorskip("aiohttp")  # isort:skip
 
+import mock
+
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp import ElasticAPM
+from elasticapm.utils.disttracing import TraceParent
+from multidict import CIMultiDict
 
 pytestmark = [pytest.mark.aiohttp]
 
@@ -111,11 +115,20 @@ async def test_traceparent_handling(aiohttp_client, aioeapm):
     app = aioeapm.app
     client = await aiohttp_client(app)
     elasticapm_client = aioeapm.client
-    resp = await client.get(
-        "/boom", headers={constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"}
-    )
+    with mock.patch(
+        "elasticapm.contrib.aiohttp.middleware.TraceParent.from_string", wraps=TraceParent.from_string
+    ) as wrapped_from_string:
+        resp = await client.get(
+            "/boom",
+            headers=(
+                (constants.TRACEPARENT_HEADER_NAME, "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"),
+                (constants.TRACESTATE_HEADER_NAME, "foo=bar,bar=baz"),
+                (constants.TRACESTATE_HEADER_NAME, "baz=bazzinga"),
+            ),
+        )
 
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
 
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
+    assert "foo=bar,bar=baz,baz=bazzinga" in wrapped_from_string.call_args[0]

@@ -31,9 +31,14 @@
 from aiohttp.web import middleware
 
 import elasticapm
-from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp.utils import get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
+
+
+class AioHttpTraceParent(TraceParent):
+    @classmethod
+    def merge_duplicate_headers(cls, headers, key):
+        return ",".join(headers.getall(key))
 
 
 def tracing_middleware(app):
@@ -44,10 +49,7 @@ def tracing_middleware(app):
         elasticapm_client = app.get(CLIENT_KEY)
         if elasticapm_client:
             request[CLIENT_KEY] = elasticapm_client
-            if constants.TRACEPARENT_HEADER_NAME in request.headers:
-                trace_parent = TraceParent.from_string(request.headers[constants.TRACEPARENT_HEADER_NAME])
-            else:
-                trace_parent = None
+            trace_parent = AioHttpTraceParent.from_headers(request.headers)
             elasticapm_client.begin_transaction("request", trace_parent=trace_parent)
             resource = request.match_info.route.resource
             if resource:
