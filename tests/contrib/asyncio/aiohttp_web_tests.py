@@ -37,8 +37,9 @@ import mock
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp import ElasticAPM
+from elasticapm.contrib.aiohttp.middleware import AioHttpTraceParent
 from elasticapm.utils.disttracing import TraceParent
-from multidict import CIMultiDict
+from multidict import MultiDict
 
 pytestmark = [pytest.mark.aiohttp]
 
@@ -132,3 +133,9 @@ async def test_traceparent_handling(aiohttp_client, aioeapm):
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
     assert "foo=bar,bar=baz,baz=bazzinga" in wrapped_from_string.call_args[0]
+
+
+@pytest.mark.parametrize("headers,expected", ((MultiDict((("a", "1"), ("a", "2"))), "1,2"), (MultiDict(), None)))
+async def test_aiohttptraceparent_merge(headers, expected):
+    result = AioHttpTraceParent.merge_duplicate_headers(headers, "a")
+    assert result == expected

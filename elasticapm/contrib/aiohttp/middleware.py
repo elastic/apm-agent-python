@@ -38,7 +38,7 @@ from elasticapm.utils.disttracing import TraceParent
 class AioHttpTraceParent(TraceParent):
     @classmethod
     def merge_duplicate_headers(cls, headers, key):
-        return ",".join(headers.getall(key))
+        return ",".join(headers.getall(key, [])) or None
 
 
 def tracing_middleware(app):
