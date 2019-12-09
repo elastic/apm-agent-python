@@ -43,6 +43,7 @@ def get_data_from_request(request, capture_body=False, capture_headers=True):
         "method": request.method,
         "socket": {"remote_address": request.uri, "encrypted": request.protocol == "https"},
         "cookies": request.cookies,
+        "http_version": request.version,
     }
     if capture_headers:
         result["headers"] = dict(request.headers)
