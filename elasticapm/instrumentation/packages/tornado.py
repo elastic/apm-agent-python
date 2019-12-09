@@ -30,7 +30,11 @@
 """
 Instrumentation for Tornado
 """
+import elasticapm
+from elasticapm.conf import constants
+from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
+from elasticapm.utils.disttracing import TraceParent
 
 
 class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
@@ -39,8 +43,31 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("tornado.web.RequestHandler", "_execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        # TODO
+        request = instance.request
+        if constants.TRACEPARENT_HEADER_NAME in request.headers:
+            trace_parent = TraceParent.from_string(request.headers[constants.TRACEPARENT_HEADER_NAME])
+        else:
+            trace_parent = None
+        client = instance.application.elasticapm_client
+        client.begin_transaction("request", trace_parent=trace_parent)
+        elasticapm.set_context(
+            lambda: get_data_from_request(
+                request,
+                capture_body=self.client.config.capture_body in ("transactions", "all"),
+                capture_headers=self.client.config.capture_headers,
+            ),
+            "request",
+        )
+        elasticapm.set_transaction_name("{} {}".format(request.method, request.path), override=False)
+
         ret = await wrapped(*args, **kwargs)
+
+        elasticapm.set_context(
+            lambda: get_data_from_response(instance, capture_headers=self.client.config.capture_headers), "response"
+        )
+        result = "HTTP {}xx".format(instance.get_status() // 100)
+        elasticapm.set_transaction_result(result, override=False)
+        client.end_transaction()
 
         return ret
 

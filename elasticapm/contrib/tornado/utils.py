@@ -27,36 +27,47 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-Framework integration for Tornado
+from elasticapm.conf import constants
 
-Note that transaction creation is actually done in the tornado
-instrumentation. This module only creates the client for later use by the
-that instrumentation, and triggers the global instrumentation itself.
-"""
-import elasticapm
-import tornado
-from elasticapm import Client
+try:
+    import tornado.escape
+except ImportError:
+    pass
 
 
-class ElasticAPM:
-    def __init__(self, app, client=None, **config):
-        """
-        Create the elasticapm Client object and store in the app for later
-        use.
+def get_data_from_request(request, capture_body=False, capture_headers=True):
+    """
+    Capture relevant data from a tornado.httputil.HTTPServerRequest
+    """
+    result = {
+        "method": request.method,
+        "socket": {"remote_address": request.uri, "encrypted": request.protocol == "https"},
+        "cookies": request.cookies,
+    }
+    if capture_headers:
+        result["headers"] = dict(request.headers)
+    if request.method in constants.HTTP_WITH_BODY:
+        body = None
+        try:
+            # TODO what if request.body is a future?
+            # https://github.com/tornadoweb/tornado/blob/18d7026853900c56a1879141235c6b6bd51b0a6a/tornado/web.py#L1691-L1699
+            body = tornado.escape.json_decode(request.body)
+        except Exception:
+            pass
 
-        ElasticAPM configuration is sent in via the **config kwargs
+        if body is not None:
+            result["body"] = body if capture_body else "[REDACTED]"
 
-        TODO: Optionally provide a config file?
-        """
-        if not client:
-            config.setdefault("framework_name", "tornado")
-            config.setdefault("framework_version", tornado.version)
-            client = Client(config)
-        self.app = app
-        self.client = client
-        app.elastiapm_client = client
+    result["url"] = request.get_url()
+    return result
 
-        # Don't instrument if debug=True in tornado
-        if not self.app.settings.get("debug") and client.config.instrument:
-            elasticapm.instrument()
+
+def get_data_from_response(request_handler, capture_headers=True):
+    result = {}
+
+    result["status_code"] = request_handler.get_status()
+
+    if capture_headers:
+        # TODO
+        pass
+    return result
