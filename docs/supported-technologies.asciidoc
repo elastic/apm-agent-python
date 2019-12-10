@@ -69,6 +69,7 @@ Instrumented methods:
 
  * `elasticsearch.connection.http_urllib3.Urllib3HttpConnection.perform_request`
  * `elasticsearch.connection.http_requests.RequestsHttpConnection.perform_request`
+ * `elasticsearch_async.connection.AIOHttpConnection.perform_request`
  
 Additionally, the instrumentation wraps the following methods of the `Elasticsearch` client class:
 
