@@ -36,7 +36,6 @@ itsdangerous
 mock
 msgpack-python
 pep8
-urllib3-mock
 pytz
 
 
