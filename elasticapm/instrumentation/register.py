@@ -52,7 +52,6 @@ _cls_register = {
     "elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation",
     "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation",
     "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
     "elasticapm.instrumentation.packages.cassandra.CassandraInstrumentation",
     "elasticapm.instrumentation.packages.pymssql.PyMSSQLInstrumentation",
     "elasticapm.instrumentation.packages.pyodbc.PyODBCInstrumentation",
@@ -62,7 +61,12 @@ _cls_register = {
 }
 
 if sys.version_info >= (3, 5):
-    _cls_register.update(["elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation"])
+    _cls_register.update(
+        [
+            "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
+        ]
+    )
 
 
 def register(cls):
