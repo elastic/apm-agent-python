@@ -93,6 +93,35 @@ async def test_trace_parent_propagation_sampled(instrument, event_loop, elastica
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME not in headers
 
 
+@pytest.mark.parametrize("sampled", [True, False])
+async def test_trace_parent_propagation_sampled_headers_none(
+    instrument, event_loop, elasticapm_client, waiting_httpserver, sampled
+):
+    """
+    Test that we don't blow up if headers are explicitly set to None
+    """
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    transaction = elasticapm_client.begin_transaction("transaction")
+    transaction.is_sampled = sampled
+    async with aiohttp.ClientSession() as session:
+        async with session.get(waiting_httpserver.url, headers=None) as resp:
+            status = resp.status
+            text = await resp.text()
+    elasticapm_client.end_transaction("MyView")
+    transactions = elasticapm_client.events[constants.TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    headers = waiting_httpserver.requests[0].headers
+    assert constants.TRACEPARENT_HEADER_NAME in headers
+    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
+    assert trace_parent.trace_id == transactions[0]["trace_id"]
+    if sampled:
+        assert trace_parent.span_id == spans[0]["id"]
+    else:
+        assert trace_parent.span_id == transactions[0]["id"]
+
+
 @pytest.mark.parametrize(
     "elasticapm_client",
     [

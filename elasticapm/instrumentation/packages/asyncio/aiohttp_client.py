@@ -60,7 +60,7 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
             trace_parent = transaction.trace_parent.copy_from(
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
-            headers = kwargs.get("headers", {})
+            headers = kwargs.get("headers") or {}
             self._set_disttracing_headers(headers, trace_parent, transaction)
             kwargs["headers"] = headers
             return await wrapped(*args, **kwargs)
@@ -71,7 +71,7 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
             span_id=transaction.id, trace_options=TracingOptions(recorded=False)
         )
 
-        headers = kwargs.get("headers", {})
+        headers = kwargs.get("headers") or {}
         self._set_disttracing_headers(headers, trace_parent, transaction)
         kwargs["headers"] = headers
         return args, kwargs
