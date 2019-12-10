@@ -55,7 +55,7 @@ def tracing_middleware(app):
             if resource:
                 name = "{} {}".format(request.method, resource.canonical)
             else:
-                name = "unkown route"
+                name = "unknown route"
             elasticapm.set_transaction_name(name, override=False)
             elasticapm.set_context(
                 lambda: get_data_from_request(
