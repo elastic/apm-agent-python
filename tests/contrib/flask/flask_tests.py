@@ -49,6 +49,8 @@ try:
 except ImportError:
     from urllib2 import urlopen
 
+pytestmark = pytest.mark.flask
+
 
 def test_error_handler(flask_apm_client):
     client = flask_apm_client.app.test_client()

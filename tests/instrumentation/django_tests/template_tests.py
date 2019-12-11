@@ -49,6 +49,7 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 
+pytestmark = pytest.mark.django
 
 # Testing Django 1.8+ backends
 TEMPLATES = (

@@ -38,7 +38,6 @@ from os.path import abspath, dirname
 try:
     import eventlet
 
-    print("patching eventlet")
     eventlet.monkey_patch()
 except ImportError:
     pass
@@ -57,6 +56,7 @@ sys.path.insert(0, where_am_i)
 
 # don't run tests of dependencies that land in "build" and "src"
 collect_ignore = ["build", "src"]
+
 pytest_plugins = ["tests.fixtures"]
 
 for module, fixtures in {

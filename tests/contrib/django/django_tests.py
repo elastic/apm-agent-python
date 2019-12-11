@@ -85,6 +85,8 @@ except ImportError:
 
     has_with_eager_tasks = False
 
+pytestmark = pytest.mark.django
+
 
 class MockClientHandler(_TestClientHandler):
     def __call__(self, environ, start_response=[]):
