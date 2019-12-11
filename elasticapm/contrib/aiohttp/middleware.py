@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import aiohttp
 from aiohttp.web import middleware
 
 import elasticapm
@@ -44,7 +45,6 @@ class AioHttpTraceParent(TraceParent):
 def tracing_middleware(app):
     from elasticapm.contrib.aiohttp import CLIENT_KEY  # noqa
 
-    @middleware
     async def handle_request(request, handler):
         elasticapm_client = app.get(CLIENT_KEY)
         if elasticapm_client:
@@ -89,4 +89,7 @@ def tracing_middleware(app):
         finally:
             elasticapm_client.end_transaction()
 
+    # decorating with @middleware is only required in aiohttp < 4.0, and we only support 3+
+    if aiohttp.__version__.startswith("3"):
+        return middleware(handle_request)
     return handle_request

@@ -180,6 +180,30 @@ exclude:
     FRAMEWORK: gevent-newest
   # aiohttp client, only supported in Python 3.7+
   - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: aiohttp-newest
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: aiohttp-newest
