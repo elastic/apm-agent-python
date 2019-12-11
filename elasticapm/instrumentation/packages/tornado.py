@@ -31,7 +31,6 @@
 Instrumentation for Tornado
 """
 import elasticapm
-from elasticapm.conf import constants
 from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
 from elasticapm.utils.disttracing import TraceParent
@@ -44,10 +43,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         request = instance.request
-        if constants.TRACEPARENT_HEADER_NAME in request.headers:
-            trace_parent = TraceParent.from_string(request.headers[constants.TRACEPARENT_HEADER_NAME])
-        else:
-            trace_parent = None
+        trace_parent = TraceParent.from_headers(request.headers)
         client = instance.application.elasticapm_client
         client.begin_transaction("request", trace_parent=trace_parent)
         elasticapm.set_context(

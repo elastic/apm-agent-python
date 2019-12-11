@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import elasticapm
 from elasticapm.conf import constants
 
 try:
@@ -41,7 +42,7 @@ def get_data_from_request(request, capture_body=False, capture_headers=True):
     """
     result = {
         "method": request.method,
-        "socket": {"remote_address": request.uri, "encrypted": request.protocol == "https"},
+        "socket": {"remote_address": request.remote_ip, "encrypted": request.protocol == "https"},
         "cookies": request.cookies,
         "http_version": request.version,
     }
@@ -59,7 +60,7 @@ def get_data_from_request(request, capture_body=False, capture_headers=True):
         if body is not None:
             result["body"] = body if capture_body else "[REDACTED]"
 
-    result["url"] = request.get_url()
+    result["url"] = elasticapm.utils.get_url_dict(request.full_url())
     return result
 
 
