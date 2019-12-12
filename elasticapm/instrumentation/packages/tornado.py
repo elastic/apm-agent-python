@@ -49,8 +49,8 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         elasticapm.set_context(
             lambda: get_data_from_request(
                 request,
-                capture_body=self.client.config.capture_body in ("transactions", "all"),
-                capture_headers=self.client.config.capture_headers,
+                capture_body=client.config.capture_body in ("transactions", "all"),
+                capture_headers=client.config.capture_headers,
             ),
             "request",
         )
@@ -59,7 +59,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         ret = await wrapped(*args, **kwargs)
 
         elasticapm.set_context(
-            lambda: get_data_from_response(instance, capture_headers=self.client.config.capture_headers), "response"
+            lambda: get_data_from_response(instance, capture_headers=client.config.capture_headers), "response"
         )
         result = "HTTP {}xx".format(instance.get_status() // 100)
         elasticapm.set_transaction_result(result, override=False)
