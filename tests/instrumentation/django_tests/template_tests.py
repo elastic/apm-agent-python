@@ -37,11 +37,10 @@ from os.path import join
 import django
 from django.test.utils import override_settings
 
-import mock
 import pytest
 
-from conftest import BASE_TEMPLATE_DIR
 from elasticapm.conf.constants import TRANSACTION
+from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
 from tests.utils.compat import middleware_setting
 
 try:
@@ -50,6 +49,7 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 
+pytestmark = pytest.mark.django
 
 # Testing Django 1.8+ backends
 TEMPLATES = (
