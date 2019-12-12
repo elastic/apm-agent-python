@@ -178,3 +178,16 @@ exclude:
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
     FRAMEWORK: gevent-newest
+  # aiopg
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiopg-newest
