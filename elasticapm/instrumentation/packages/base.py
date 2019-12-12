@@ -44,7 +44,7 @@ class AbstractInstrumentedModule(object):
     instrument library functions using wrapt.
 
     Instrumentation modules inherit from this class and override pieces as
-    needed. Only `name` and `instrumented_list`, and `call` are required in
+    needed. Only `name`, `instrumented_list`, and `call` are required in
     the inheriting class.
 
     The `instrument_list` is a list of (module, method) pairs that will be
