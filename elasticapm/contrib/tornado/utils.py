@@ -51,7 +51,7 @@ def get_data_from_request(request, capture_body=False, capture_headers=True):
     if request.method in constants.HTTP_WITH_BODY:
         body = None
         try:
-            # TODO what if request.body is a future?
+            # FIXME what if request.body is a future?
             # https://github.com/tornadoweb/tornado/blob/18d7026853900c56a1879141235c6b6bd51b0a6a/tornado/web.py#L1691-L1699
             body = tornado.escape.json_decode(request.body)
         except Exception:
@@ -70,6 +70,6 @@ def get_data_from_response(request_handler, capture_headers=True):
     result["status_code"] = request_handler.get_status()
 
     if capture_headers:
-        # TODO
+        # FIXME
         pass
     return result

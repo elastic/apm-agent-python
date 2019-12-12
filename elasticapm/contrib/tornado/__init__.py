@@ -47,7 +47,7 @@ class ElasticAPM:
 
         ElasticAPM configuration is sent in via the **config kwargs
 
-        TODO: Optionally provide a config file?
+        FIXME: Optionally provide a config file?
         """
         if not client:
             config.setdefault("framework_name", "tornado")

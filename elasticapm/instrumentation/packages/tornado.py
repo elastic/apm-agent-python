@@ -74,7 +74,7 @@ class TornadoHandleExceptionInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("tornado.web.RequestHandler", "_handle_exception")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        # TODO
+        # FIXME
         return wrapped(*args, **kwargs)
 
 
@@ -84,5 +84,5 @@ class TornadoRenderInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("tornado.web.RequestHandler", "render")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        # TODO
+        # FIXME
         return wrapped(*args, **kwargs)
