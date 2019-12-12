@@ -64,9 +64,9 @@ apm = ElasticAPM(app)
 ==== Usage
 
 Once you have configured the agent,
-it will automatically track transactions and capture uncaught exceptions within Flask.
+it will automatically track transactions and capture uncaught exceptions within aiohttp.
 
-Capture an arbitrary exception by calling `capture_exception`:
+Capture an arbitrary exception by calling <<client-api-capture-exception,`capture_exception`>>:
 
 [source,python]
 ----
@@ -76,7 +76,7 @@ except ZeroDivisionError:
     apm.client.capture_exception()
 ----
 
-Log a generic message with `capture_message`:
+Log a generic message with <<client-api-capture-message,`capture_message`>>:
 
 [source,python]
 ----
