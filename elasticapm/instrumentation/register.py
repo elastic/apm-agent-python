@@ -66,6 +66,7 @@ if sys.version_info >= (3, 5):
             "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
+            "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
         ]
     )
 

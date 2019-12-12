@@ -31,7 +31,7 @@ import elasticapm
 from elasticapm.conf import constants
 
 try:
-    import tornado.escape
+    import tornado
 except ImportError:
     pass
 

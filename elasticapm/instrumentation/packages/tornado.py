@@ -38,8 +38,8 @@ from elasticapm.utils.disttracing import TraceParent
 
 class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
     name = "tornado_request_execute"
-
-    instrument_list = [("tornado.web.RequestHandler", "_execute")]
+    creates_transactions = True
+    instrument_list = [("tornado.web", "RequestHandler._execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         request = instance.request
