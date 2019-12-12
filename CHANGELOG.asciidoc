@@ -31,14 +31,14 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the d
 This will be the last minor release to support the following versions:
 
  * Python 3.4
- * Django 1.8, 1.9 and 1.11
+ * Django 1.8, 1.9 and 1.10
  * Flask < 1.0
 
 [float]
 ===== New Features
 
  * Added support for W3C `traceparent` and `tracestate` headers {pull}660[#660]
- * Added Django 3.0 and Flask 1.1 to the support matrix {pull}666[#]
+ * Added Django 3.0 and Flask 1.1 to the support matrix {pull}667[#667]
 
 
 [[release-notes-5.x]]
