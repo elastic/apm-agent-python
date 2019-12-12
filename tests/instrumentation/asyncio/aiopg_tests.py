@@ -62,16 +62,23 @@ def dsn():
 
 
 @pytest.fixture()
-async def cursor():
-    pool = await aiopg.create_pool(dsn())
-    with (await pool.cursor()) as cur:
-        await cur.execute(
-            "BEGIN;"
-            "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
-            "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
-        )
-        yield cur
-        await cur.execute("ROLLBACK")
+async def cursor(request):
+    conn = await aiopg.connect(dsn())
+    cur = await conn.cursor()
+
+    # we use a finalizer instead of yield, because Python 3.5 throws a syntax error, even if the test doesn't run
+    def rollback():
+        cur.raw.execute("ROLLBACK")
+        cur.close()
+        conn.close()
+
+    request.addfinalizer(rollback)
+    await cur.execute(
+        "BEGIN;"
+        "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
+        "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
+    )
+    return cur
 
 
 async def test_select_sleep(instrument, cursor, elasticapm_client):
