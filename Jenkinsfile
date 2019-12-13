@@ -298,7 +298,7 @@ pipeline {
       }
       notifyBuildResult()
     }
-    aborted {
+    failure {
       script {
         // If there is an issue with the default checkout then the env variable
         // won't be created and let's rebuild
