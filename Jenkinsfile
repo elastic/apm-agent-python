@@ -299,6 +299,19 @@ pipeline {
       notifyBuildResult()
     }
   }
+  failure {
+    script{
+      // If there is an issue with the default checkout then the env variable
+      // won't be created and let's rebuild
+      if(!env.GIT_BUILD_CAUSE?.trim()) {
+        build(job: env.JOB_NAME, propagate: false, quietPeriod: 1, wait: false,
+              parameters: [booleanParam(name: 'Run_As_Master_Branch', value: params.Run_As_Master_Branch),
+                           booleanParam(name: 'bench_ci', value: params.bench_ci),
+                           booleanParam(name: 'tests_ci', value: params.tests_ci),
+                           booleanParam(name: 'package_ci', value: params.package_ci)])
+      }
+    }
+  }
 }
 
 
