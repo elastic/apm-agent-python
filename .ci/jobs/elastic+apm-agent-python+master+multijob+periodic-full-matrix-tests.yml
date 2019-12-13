@@ -36,15 +36,15 @@
         - linux
     - axis:
         type: yaml
-        filename: src/github.com/elastic/apm-agent-python/tests/.jenkins_framework_full.yml
+        filename: src/github.com/elastic/apm-agent-python/.ci/.jenkins_framework_full.yml
         name: FRAMEWORK
     - axis:
         type: yaml
-        filename: src/github.com/elastic/apm-agent-python/tests/.jenkins_python.yml
+        filename: src/github.com/elastic/apm-agent-python/.ci/.jenkins_python.yml
         name: PYTHON_VERSION
     yaml-strategy:
       exclude-key: exclude
-      filename: src/github.com/elastic/apm-agent-python/tests/.jenkins_exclude.yml
+      filename: src/github.com/elastic/apm-agent-python/.ci/.jenkins_exclude.yml
     vault:
       role_id: 35ad5918-eab7-c814-f8be-a305c811732e
     wrappers:
