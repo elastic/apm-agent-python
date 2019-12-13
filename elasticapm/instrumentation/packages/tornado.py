@@ -54,7 +54,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
             ),
             "request",
         )
-        elasticapm.set_transaction_name("{} {}".format(request.method, request.path), override=False)
+        elasticapm.set_transaction_name("{} {}".format(request.method, type(instance)), override=False)
 
         ret = await wrapped(*args, **kwargs)
 

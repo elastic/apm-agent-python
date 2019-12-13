@@ -176,8 +176,17 @@ class AbstractInstrumentedModule(object):
         This is the function which will wrap the instrumented method/function.
 
         By default, will call the instrumented method/function, via `call()`,
-        only if a transaction is active. This behavior can be overridden by
-        setting `creates_transactions = True` at the class level.
+        only if a transaction is active and sampled. This behavior can be
+        overridden by setting `creates_transactions = True` at the class
+        level.
+
+        If `creates_transactions == False` and there's an active transaction
+        with `transaction.is_sampled == False`, then the
+        `mutate_unsampled_call_args()` method is called, and the resulting
+        args and kwargs are passed into the wrapped function directly, not
+        via `call()`. This can e.g. be used to add traceparent headers to the
+        underlying http call for HTTP instrumentations, even if we're not
+        sampling the transaction.
         """
         if self.creates_transactions:
             return self.call(module, method, wrapped, instance, args, kwargs)
