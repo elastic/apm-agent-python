@@ -1,7 +1,7 @@
 ---
 - job:
-    name: elastic+apm-agent-python+master+periodic-full-matrix
-    display-name: 'elastic / apm-agent-python # master / full matrix'
+    name: apm-agent-python/periodic-full-matrix
+    display-name: 'apm-agent-python # master / full matrix'
     description: Testing of the APM Python Agent master branch with full matrix.
     project-type: multijob
     parameters:
