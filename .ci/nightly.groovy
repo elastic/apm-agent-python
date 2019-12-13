@@ -18,11 +18,6 @@ pipeline {
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
-    CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
-    GITHUB_CHECK_ITS_NAME = 'Integration Tests'
-    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
-    BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
-    OPBEANS_REPO = 'opbeans-python'
   }
   options {
     timeout(time: 3, unit: 'HOURS')
