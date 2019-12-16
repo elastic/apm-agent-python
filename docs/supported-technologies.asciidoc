@@ -54,6 +54,13 @@ We support these Flask versions:
  * 1.0
  * 1.1
 
+[float]
+[[supported-aiohttp]]
+=== Aiohttp Server
+
+We support these aiohttp versions:
+
+ * 3.0+
 
 [float]
 [[automatic-instrumentation]]

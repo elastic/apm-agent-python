@@ -115,7 +115,7 @@ class TraceParent(object):
 
         :param headers: a dict-like header object
         :param key: header name
-        :return: a single string value
+        :return: a single string value or None
         """
         # this works for all known WSGI implementations
         return headers.get(key)

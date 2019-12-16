@@ -33,4 +33,5 @@ FRAMEWORK:
   - zerorpc-0.4
   - mysql_connector-newest
   - pymysql-newest
+  - aiohttp-newest
   - aiopg-newest

@@ -28,27 +28,31 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+from elasticapm.utils import compat, get_url_dict
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+def get_data_from_request(request, capture_body=False, capture_headers=True):
+    result = {
+        "method": request.method,
+        "socket": {"remote_address": request.remote, "encrypted": request.secure},
+        "cookies": dict(request.cookies),
+    }
+    if capture_headers:
+        result["headers"] = dict(request.headers)
 
-    instrument_list = [("requests.sessions", "Session.send")]
+    # TODO: capture body
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
+    result["url"] = get_url_dict(str(request.url))
+    return result
 
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
 
-        with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
-        ):
-            return wrapped(*args, **kwargs)
+def get_data_from_response(response, capture_headers=True):
+    result = {}
+
+    if isinstance(getattr(response, "status", None), compat.integer_types):
+        result["status_code"] = response.status
+
+    if capture_headers and getattr(response, "headers", None):
+        headers = response.headers
+        result["headers"] = {key: ";".join(headers.getall(key)) for key in compat.iterkeys(headers)}
+    return result

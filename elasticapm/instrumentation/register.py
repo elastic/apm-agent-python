@@ -64,6 +64,7 @@ if sys.version_info >= (3, 5):
     _cls_register.update(
         [
             "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
         ]
     )
