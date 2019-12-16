@@ -151,7 +151,7 @@ Collected trace data:
 [[automatic-instrumentation-db-postgres]]
 ==== PostgreSQL
 
-Library: `psycopg2`, `psycopg2-binary` (`>=2.5,<2.8`)
+Library: `psycopg2`, `psycopg2-binary` (`>=2.7`)
 
 Instrumented methods:
 

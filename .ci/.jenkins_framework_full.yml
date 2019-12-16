@@ -41,8 +41,7 @@ FRAMEWORK:
   - redis-2.8
   - redis-2.9
   - redis-newest
-  - psycopg2-2.5
-  - psycopg2-2.6
+  - psycopg2-2.7
   - psycopg2-newest
   - pymssql-newest
   - memcached-1.51
