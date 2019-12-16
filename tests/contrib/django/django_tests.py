@@ -56,7 +56,6 @@ from django.test.utils import override_settings
 
 import mock
 
-from conftest import BASE_TEMPLATE_DIR
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
@@ -66,6 +65,7 @@ from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
+from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
 from tests.contrib.django.testapp.views import IgnoredException, MyException
 from tests.utils.compat import middleware_setting
 
@@ -84,6 +84,8 @@ except ImportError:
     from elasticapm.utils.compat import noop_decorator as with_eager_tasks
 
     has_with_eager_tasks = False
+
+pytestmark = pytest.mark.django
 
 
 class MockClientHandler(_TestClientHandler):
