@@ -29,7 +29,8 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the d
 ===== New Features
 
  * Added support for W3C `traceparent` and `tracestate` headers {pull}660[#660]
- * use Span ID as parent ID in errors if an error happens inside a span {pull}669[#669]
+ * Added support for aiopg {pull}668[#668] 
+ * Use Span ID as parent ID in errors if an error happens inside a span {pull}669[#669]
 
 
 [[release-notes-5.x]]

@@ -61,3 +61,4 @@ FRAMEWORK:
   - elasticsearch-7
   - gevent-newest
   - zerorpc-0.4
+  - aiopg-newest

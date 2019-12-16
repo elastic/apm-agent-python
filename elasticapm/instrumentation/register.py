@@ -61,7 +61,12 @@ _cls_register = {
 }
 
 if sys.version_info >= (3, 5):
-    _cls_register.update(["elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation"])
+    _cls_register.update(
+        [
+            "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
+        ]
+    )
 
 
 def register(cls):
