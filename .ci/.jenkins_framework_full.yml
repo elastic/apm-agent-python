@@ -13,6 +13,7 @@ FRAMEWORK:
   - flask-0.11
   - flask-0.12
   - flask-1.0
+  - flask-1.1
   - celery-3-flask-1.0
   - celery-3-django-1.11
   - celery-3-django-2.0
@@ -64,3 +65,4 @@ FRAMEWORK:
   - aiohttp-3.0
   - aiohttp-4.0
   - aiohttp-newest
+  - aiopg-newest
