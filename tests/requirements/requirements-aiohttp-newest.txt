@@ -1,3 +1,2 @@
 aiohttp
-pytest-aiohttp
 -r requirements-base.txt
