@@ -30,7 +30,7 @@
 
 import functools
 
-from elasticapm.traces import capture_span, error_logger, execution_context
+from elasticapm.traces import DroppedSpan, capture_span, error_logger, execution_context
 from elasticapm.utils import get_name_from_func
 
 
@@ -64,6 +64,12 @@ class async_capture_span(capture_span):
         transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             try:
-                transaction.end_span(self.skip_frames)
+                span = transaction.end_span(self.skip_frames)
+                if exc_val and not isinstance(span, DroppedSpan):
+                    try:
+                        exc_val._elastic_apm_span_id = span.id
+                    except AttributeError:
+                        # could happen if the exception has __slots__
+                        pass
             except LookupError:
                 error_logger.info("ended non-existing span %s of type %s", self.name, self.type)

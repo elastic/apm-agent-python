@@ -361,6 +361,7 @@ class Client(object):
         Captures, processes and serializes an event into a dict object
         """
         transaction = execution_context.get_transaction()
+        span = execution_context.get_span()
         if transaction:
             transaction_context = deepcopy(transaction.context)
         else:
@@ -453,7 +454,8 @@ class Client(object):
         if transaction:
             if transaction.trace_parent:
                 event_data["trace_id"] = transaction.trace_parent.trace_id
-            event_data["parent_id"] = transaction.id
+            # parent id might already be set in the handler
+            event_data.setdefault("parent_id", span.id if span else transaction.id)
             event_data["transaction_id"] = transaction.id
             event_data["transaction"] = {"sampled": transaction.is_sampled, "type": transaction.transaction_type}
 
