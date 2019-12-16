@@ -168,6 +168,21 @@ Collected trace data:
  * parametrized SQL query
 
 [float]
+[[automatic-instrumentation-db-aiopg]]
+==== aiopg
+
+Library: `aiopg` (`>=1.0`)
+
+Instrumented methods:
+
+ * `aiopg.cursor.Cursor.execute`
+ * `aiopg.cursor.Cursor.callproc`
+ 
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
 [[automatic-instrumentation-db-pyodbc]]
 ==== PyODBC
 

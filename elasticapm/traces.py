@@ -611,9 +611,16 @@ class capture_span(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = execution_context.get_transaction()
+
         if transaction and transaction.is_sampled:
             try:
-                transaction.end_span(self.skip_frames, duration=self.duration)
+                span = transaction.end_span(self.skip_frames, duration=self.duration)
+                if exc_val and not isinstance(span, DroppedSpan):
+                    try:
+                        exc_val._elastic_apm_span_id = span.id
+                    except AttributeError:
+                        # could happen if the exception has __slots__
+                        pass
             except LookupError:
                 logger.info("ended non-existing span %s of type %s", self.name, self.type)
 
