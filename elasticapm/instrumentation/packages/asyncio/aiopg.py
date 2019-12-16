@@ -28,51 +28,39 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest  # isort:skip
-
-flask = pytest.importorskip("flask")  # isort:skip
-celery = pytest.importorskip("celery")  # isort:skip
-
-import mock
-
-from elasticapm.conf.constants import ERROR, TRANSACTION
-
-pytestmark = [pytest.mark.celery, pytest.mark.flask]
+from elasticapm.contrib.asyncio.traces import async_capture_span
+from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
+from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
 
-def test_task_failure(flask_celery):
-    apm_client = flask_celery.flask_apm_client.client
+class AioPGInstrumentation(AsyncAbstractInstrumentedModule):
+    name = "aiopg"
 
-    @flask_celery.task()
-    def failing_task():
-        raise ValueError("foo")
+    instrument_list = [("aiopg.cursor", "Cursor.execute"), ("aiopg.cursor", "Cursor.callproc")]
 
-    t = failing_task.delay()
-    assert t.status == "FAILURE"
-    assert len(apm_client.events[ERROR]) == 1
-    error = apm_client.events[ERROR][0]
-    assert error["culprit"] == "tests.contrib.celery.flask_tests.failing_task"
-    assert error["exception"]["message"] == "ValueError: foo"
-    assert error["exception"]["handled"] is False
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        if method == "Cursor.execute":
+            query = args[0] if len(args) else kwargs["operation"]
+            query = _bake_sql(instance.raw, query)
+            name = extract_signature(query)
+            context = {"db": {"type": "sql", "statement": query}}
+            action = "query"
+        elif method == "Cursor.callproc":
+            func = args[0] if len(args) else kwargs["procname"]
+            name = func + "()"
+            context = None
+            action = "exec"
+        else:
+            raise AssertionError("call from uninstrumented method")
+        async with async_capture_span(
+            name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
+        ):
+            return await wrapped(*args, **kwargs)
 
-    transaction = apm_client.events[TRANSACTION][0]
-    assert transaction["name"] == "tests.contrib.celery.flask_tests.failing_task"
-    assert transaction["type"] == "celery"
-    assert transaction["result"] == "FAILURE"
 
-
-def test_task_instrumentation(flask_celery):
-    apm_client = flask_celery.flask_apm_client.client
-
-    @flask_celery.task()
-    def successful_task():
-        return "OK"
-
-    t = successful_task.delay()
-
-    assert t.status == "SUCCESS"
-    assert len(apm_client.events[TRANSACTION]) == 1
-    transaction = apm_client.events[TRANSACTION][0]
-    assert transaction["name"] == "tests.contrib.celery.flask_tests.successful_task"
-    assert transaction["type"] == "celery"
-    assert transaction["result"] == "SUCCESS"
+def _bake_sql(cursor, sql):
+    # if this is a Composable object, use its `as_string` method
+    # see http://initd.org/psycopg/docs/sql.html
+    if hasattr(sql, "as_string"):
+        return sql.as_string(cursor)
+    return sql

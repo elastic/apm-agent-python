@@ -1,6 +1,7 @@
 # This is the full list of matrix builds, to be triggered with a daily build
 # or manually
 FRAMEWORK:
+  - none
   - django-1.8
   - django-1.11
   - django-2.0
@@ -60,3 +61,4 @@ FRAMEWORK:
   - elasticsearch-7
   - gevent-newest
   - zerorpc-0.4
+  - aiopg-newest

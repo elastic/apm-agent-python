@@ -35,7 +35,6 @@ import mock
 import pytest
 import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError
-from urllib3_mock import Responses
 
 from elasticapm.conf import constants
 from elasticapm.transport.base import TransportException
@@ -48,9 +47,6 @@ except ImportError:
     from urllib import parse as urlparse
 
 
-responses = Responses("urllib3")
-
-
 def test_send(waiting_httpserver):
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(waiting_httpserver.url)
@@ -61,11 +57,11 @@ def test_send(waiting_httpserver):
         transport.close()
 
 
-@responses.activate
-def test_timeout():
+@mock.patch("urllib3.poolmanager.PoolManager.urlopen")
+def test_timeout(mock_urlopen):
     transport = Transport("http://localhost", timeout=5)
+    mock_urlopen.side_effect = MaxRetryError(None, None, reason=TimeoutError())
     try:
-        responses.add("POST", "/", status=202, body=MaxRetryError(None, None, reason=TimeoutError()))
         with pytest.raises(TransportException) as exc_info:
             transport.send("x")
         assert "timeout" in str(exc_info.value)
@@ -85,11 +81,11 @@ def test_http_error(waiting_httpserver):
         transport.close()
 
 
-@responses.activate
-def test_generic_error():
+@mock.patch("urllib3.poolmanager.PoolManager.urlopen")
+def test_generic_error(mock_urlopen):
     url, status, message, body = ("http://localhost:9999", 418, "I'm a teapot", "Nothing")
     transport = Transport(url)
-    responses.add("POST", "/", status=status, body=Exception("Oopsie"))
+    mock_urlopen.side_effect = Exception("Oopsie")
     try:
         with pytest.raises(TransportException) as exc_info:
             transport.send("x")
