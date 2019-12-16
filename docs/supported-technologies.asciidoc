@@ -18,7 +18,7 @@ NOTE: The Elastic APM Python agent does currently not support asynchronous frame
 The following Python versions are supported:
 
  * 2.7
- * 3.4
+ * 3.4 (Deprecated)
  * 3.5
  * 3.6
  * 3.7
@@ -36,8 +36,11 @@ We support these Django versions:
  * 2.0
  * 2.1
  * 2.2
+ * 3.0
  
 For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
+
+NOTE: we currently don't support Django running in ASGI mode.
 
 [float]
 [[supported-flask]]
@@ -45,10 +48,11 @@ For upcoming Django versions, we generally aim to ensure compatibility starting 
 
 We support these Flask versions:
 
- * 0.10
- * 0.11
- * 0.12
+ * 0.10 (Deprecated)
+ * 0.11 (Deprecated)
+ * 0.12 (Deprecated)
  * 1.0
+ * 1.1
 
 
 [float]
