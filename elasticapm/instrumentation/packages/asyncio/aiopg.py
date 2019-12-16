@@ -28,27 +28,39 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+from elasticapm.contrib.asyncio.traces import async_capture_span
+from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
+from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+class AioPGInstrumentation(AsyncAbstractInstrumentedModule):
+    name = "aiopg"
 
-    instrument_list = [("requests.sessions", "Session.send")]
+    instrument_list = [("aiopg.cursor", "Cursor.execute"), ("aiopg.cursor", "Cursor.callproc")]
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        if method == "Cursor.execute":
+            query = args[0] if len(args) else kwargs["operation"]
+            query = _bake_sql(instance.raw, query)
+            name = extract_signature(query)
+            context = {"db": {"type": "sql", "statement": query}}
+            action = "query"
+        elif method == "Cursor.callproc":
+            func = args[0] if len(args) else kwargs["procname"]
+            name = func + "()"
+            context = None
+            action = "exec"
         else:
-            request = args[0]
-
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
-
-        with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
+            raise AssertionError("call from uninstrumented method")
+        async with async_capture_span(
+            name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
         ):
-            return wrapped(*args, **kwargs)
+            return await wrapped(*args, **kwargs)
+
+
+def _bake_sql(cursor, sql):
+    # if this is a Composable object, use its `as_string` method
+    # see http://initd.org/psycopg/docs/sql.html
+    if hasattr(sql, "as_string"):
+        return sql.as_string(cursor)
+    return sql

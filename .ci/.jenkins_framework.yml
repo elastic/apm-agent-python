@@ -7,7 +7,7 @@ FRAMEWORK:
   - django-2.2
   - django-3.0
   - flask-0.12
-  - flask-1.0
+  - flask-1.1
   - opentracing-newest
   - twisted-18
   - celery-3-flask-1.0
@@ -33,3 +33,5 @@ FRAMEWORK:
   - zerorpc-0.4
   - mysql_connector-newest
   - pymysql-newest
+  - aiohttp-newest
+  - aiopg-newest
