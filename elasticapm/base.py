@@ -126,8 +126,11 @@ class Client(object):
             "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
         }
 
-        if self.config.secret_token:
+        if self.config.api_key:
+            headers["Authorization"] = "ApiKey " + self.config.api_key
+        elif self.config.secret_token:
             headers["Authorization"] = "Bearer %s" % self.config.secret_token
+
         transport_kwargs = {
             "metadata": self._build_metadata(),
             "headers": headers,
