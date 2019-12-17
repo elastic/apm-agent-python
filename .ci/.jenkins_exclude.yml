@@ -109,19 +109,6 @@ exclude:
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
-  # psycopg2
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: psycopg2-2.6
   # python-memcached
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: memcached-1.51
