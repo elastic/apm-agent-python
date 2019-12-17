@@ -198,21 +198,26 @@ class MetricsSet(object):
         if self._counters:
             for (name, labels), c in compat.iteritems(self._counters):
                 if c is not noop_metric:
-                    samples[labels].update({name: {"value": c.val}})
+                    val = c.val
+                    if val or not c.reset_on_collect:
+                        samples[labels].update({name: {"value": val}})
                     if c.reset_on_collect:
                         c.reset()
         if self._gauges:
             for (name, labels), g in compat.iteritems(self._gauges):
                 if g is not noop_metric:
-                    samples[labels].update({name: {"value": g.val}})
+                    val = g.val
+                    if val or not g.reset_on_collect:
+                        samples[labels].update({name: {"value": val}})
                     if g.reset_on_collect:
                         g.reset()
         if self._timers:
             for (name, labels), t in compat.iteritems(self._timers):
                 if t is not noop_metric:
                     val, count = t.val
-                    samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
-                    samples[labels].update({name + ".count": {"value": count}})
+                    if val or not t.reset_on_collect:
+                        samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
+                        samples[labels].update({name + ".count": {"value": count}})
                     if t.reset_on_collect:
                         t.reset()
         if samples:

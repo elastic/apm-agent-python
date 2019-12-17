@@ -35,6 +35,8 @@ exclude:
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: flask-1.1
   # celery
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: celery-3-django-2.0
@@ -107,19 +109,6 @@ exclude:
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
-  # psycopg2
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: psycopg2-2.6
   # python-memcached
   - PYTHON_VERSION: python-3.4
     FRAMEWORK: memcached-1.51
@@ -178,3 +167,53 @@ exclude:
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
     FRAMEWORK: gevent-newest
+  # aiohttp client, only supported in Python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-newest
+  # aiopg
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiopg-newest

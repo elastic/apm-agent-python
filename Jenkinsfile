@@ -21,6 +21,8 @@ pipeline {
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
     GITHUB_CHECK_ITS_NAME = 'Integration Tests'
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
+    BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
+    OPBEANS_REPO = 'opbeans-python'
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -37,6 +39,9 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+    booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
+    booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
+    booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
   }
   stages {
     stage('Initializing'){
@@ -52,6 +57,7 @@ pipeline {
         */
         stage('Checkout') {
           steps {
+            pipelineManager([ cancelPreviousRunningBuilds: [ when: 'PR' ] ])
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
@@ -87,6 +93,10 @@ pipeline {
     */
     stage('Test') {
       options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        expression { return params.tests_ci }
+      }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
           deleteDir()
@@ -112,6 +122,10 @@ pipeline {
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        expression { return params.package_ci }
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
@@ -151,40 +165,116 @@ pipeline {
         githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
-    stage('Release') {
+    stage('Benchmarks') {
+      agent { label 'metal' }
       options { skipDefaultCheckout() }
+      environment {
+        HOME = "${env.WORKSPACE}"
+        PATH = "${env.WORKSPACE}/.local/bin:${env.PATH}"
+        PIP_CACHE = "${env.WORKSPACE}/.cache"
+        AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
+        LANG = 'C.UTF-8'
+        LC_ALL = "${env.LANG}"
+      }
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            branch 'master'
+            expression { return params.Run_As_Master_Branch }
+          }
+          expression { return params.bench_ci }
+        }
+      }
+      steps {
+        withGithubNotify(context: 'Benchmarks', tab: 'artifacts') {
+          dir(env.BUILD_NUMBER) {
+            deleteDir()
+            unstash 'source'
+            script {
+              dir(BASE_DIR){
+                sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
+                                             user_var: 'ES_USER', pass_var: 'ES_PASS') {
+                  sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+                }
+              }
+            }
+          }
+        }
+      }
+      post {
+        always {
+          catchError(message: 'deleteDir failed', buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+            deleteDir()
+          }
+        }
+      }
+    }
+    stage('Release') {
+      options {
+        skipDefaultCheckout()
+        timeout(time: 12, unit: 'HOURS')
+      }
       environment {
         HOME = "${env.WORKSPACE}"
         PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
-      input {
-        message 'Should we release a new version?'
-        ok 'Yes, we should.'
-        parameters {
-          choice(
-            choices: [
-              'https://upload.pypi.org/legacy/',
-              'https://test.pypi.org/legacy/'
-             ],
-             description: 'PyPI repository URL',
-             name: 'REPO_URL')
-        }
-      }
       when {
-        beforeAgent true
         beforeInput true
         anyOf {
           tag pattern: 'v\\d+.*', comparator: 'REGEXP'
           expression { return params.Run_As_Master_Branch }
         }
       }
-      steps {
-        withGithubNotify(context: 'Release') {
-          deleteDir()
-          unstash 'source'
-          unstash('packages')
-          dir("${BASE_DIR}"){
-            releasePackages()
+      stages {
+        stage('Notify') {
+          steps {
+              emailext subject: '[apm-agent-python] Release ready to be pushed',
+                       to: "${NOTIFY_TO}",
+                       body: "Please go to ${env.BUILD_URL}input to approve or reject within 12 hours."
+          }
+        }
+        stage('Release') {
+          input {
+            message 'Should we release a new version?'
+            ok 'Yes, we should.'
+            parameters {
+              choice(
+                choices: [
+                  'https://upload.pypi.org/legacy/',
+                  'https://test.pypi.org/legacy/'
+                 ],
+                 description: 'PyPI repository URL',
+                 name: 'REPO_URL')
+            }
+          }
+          steps {
+            withGithubNotify(context: 'Release') {
+              deleteDir()
+              unstash 'source'
+              unstash('packages')
+              dir("${BASE_DIR}"){
+                releasePackages()
+              }
+            }
+          }
+        }
+        stage('Opbeans') {
+          environment {
+            REPO_NAME = "${OPBEANS_REPO}"
+          }
+          steps {
+            deleteDir()
+            dir("${OPBEANS_REPO}"){
+              git credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
+                  url: "git@github.com:elastic/${OPBEANS_REPO}.git"
+              // It's required to transform the tag value to the artifact version
+              sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
+              // The opbeans pipeline will trigger a release for the master branch
+              gitPush()
+              // The opbeans pipeline will trigger a release for the release tag
+              gitCreateTag(tag: "${env.BRANCH_NAME}")
+            }
           }
         }
       }

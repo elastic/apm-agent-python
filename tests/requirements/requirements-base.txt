@@ -36,11 +36,9 @@ itsdangerous
 mock
 msgpack-python
 pep8
-urllib3-mock
 pytz
 
 
-aiohttp ; python_version >= '3.5'
 pytest-asyncio ; python_version >= '3.5'
 asynctest==0.12.2 ; python_version >= '3.5'
 

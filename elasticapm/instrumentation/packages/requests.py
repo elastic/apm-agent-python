@@ -30,18 +30,7 @@
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import default_ports, sanitize_url
-from elasticapm.utils.compat import urlparse
-
-
-def get_host_from_url(url):
-    parsed_url = urlparse.urlparse(url)
-    host = parsed_url.hostname or " "
-
-    if parsed_url.port and default_ports.get(parsed_url.scheme) != parsed_url.port:
-        host += ":" + str(parsed_url.port)
-
-    return host
+from elasticapm.utils import get_host_from_url, sanitize_url
 
 
 class RequestsInstrumentation(AbstractInstrumentedModule):

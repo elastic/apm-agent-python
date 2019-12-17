@@ -1,26 +1,23 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python34"
-      WEBFRAMEWORK: "django-1.8"
-      ASYNCIO: "false"
-    - PYTHON: "C:\\Python34"
-      WEBFRAMEWORK: "django-1.9"
-      ASYNCIO: "false"
     - PYTHON: "C:\\Python35"
-      WEBFRAMEWORK: "django-1.10"
+      WEBFRAMEWORK: "django-1.11"
+      ASYNCIO: "false"
+    - PYTHON: "C:\\Python36"
+      WEBFRAMEWORK: "django-1.11"
       ASYNCIO: "true"
-    - PYTHON: "C:\\Python34-x64"
+    - PYTHON: "C:\\Python35-x64"
       DISTUTILS_USE_SDK: "1"
       WEBFRAMEWORK: "flask-0.12"
       ASYNCIO: "false"
-    - PYTHON: "C:\\Python34-x64"
+    - PYTHON: "C:\\Python35-x64"
       DISTUTILS_USE_SDK: "1"
       WEBFRAMEWORK: "flask-1.0"
       ASYNCIO: "false"
-    - PYTHON: "C:\\Python35-x64"
+    - PYTHON: "C:\\Python36-x64"
       WEBFRAMEWORK: "django-2.0"
       ASYNCIO: "true"
-    - PYTHON: "C:\\Python36-x64"
+    - PYTHON: "C:\\Python37-x64"
       WEBFRAMEWORK: "django-2.0"
       ASYNCIO: "true"
 
@@ -42,7 +39,7 @@ build: off
 test_script:
   - bash .\\tests\\scripts\\download_json_schema.sh
   - if "%ASYNCIO%" == "true" call appveyor-retry .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest -m "not integrationtest"
-  - if "%ASYNCIO%" == "false" call appveyor-retry .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest --ignore=tests/asyncio -m "not integrationtest"
+  - if "%ASYNCIO%" == "false" call appveyor-retry .\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pytest --ignore-glob="*/asyncio/*" -m "not integrationtest"
 
 after_test:
   - ".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"

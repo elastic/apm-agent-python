@@ -27,7 +27,7 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-
+import sys
 
 __all__ = ("VERSION", "Client")
 
@@ -43,3 +43,7 @@ from elasticapm.traces import capture_span, set_context, set_custom_context  # n
 from elasticapm.traces import set_transaction_name, set_user_context, tag, label  # noqa: F401
 from elasticapm.traces import set_transaction_result  # noqa: F401
 from elasticapm.traces import get_transaction_id, get_trace_id, get_span_id  # noqa: F401
+
+
+if sys.version_info >= (3, 5):
+    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401

@@ -94,13 +94,21 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
             return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=host)
 
 
-class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
-    name = "psycopg2-register-type"
+class Psycopg2ExtensionsInstrumentation(DbApi2Instrumentation):
+    """
+    Some extensions do a type check on the Connection/Cursor in C-code, which our
+    proxy fails. For these extensions, we need to ensure that the unwrapped
+    Connection/Cursor is passed.
+    """
+
+    name = "psycopg2"
 
     instrument_list = [
         ("psycopg2.extensions", "register_type"),
         # specifically instrument `register_json` as it bypasses `register_type`
         ("psycopg2._json", "register_json"),
+        ("psycopg2.extensions", "quote_ident"),
+        ("psycopg2.extensions", "encrypt_password"),
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
@@ -114,5 +122,12 @@ class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
         elif method == "register_json":
             if args and hasattr(args[0], "__wrapped__"):
                 args = (args[0].__wrapped__,) + args[1:]
+
+        elif method == "encrypt_password":
+            # connection/cursor is either 3rd argument, or "scope" keyword argument
+            if len(args) >= 3 and hasattr(args[2], "__wrapped__"):
+                args = args[:2] + (args[2].__wrapped__,) + args[3:]
+            elif "scope" in kwargs and hasattr(kwargs["scope"], "__wrapped__"):
+                kwargs["scope"] = kwargs["scope"].__wrapped__
 
         return wrapped(*args, **kwargs)

@@ -1,5 +1,5 @@
 [[api]]
-== Public API
+== API reference
 
 The Elastic APM Python agent has several public APIs.
 Most of the public API functionality is not needed when using one of our <<framework-support, supported frameworks>>,
@@ -307,7 +307,7 @@ def coffee_maker(strength):
 
     with elasticapm.capture_span('near-to-machine', labels={"type": "arabica"}):
         insert_filter()
-        for i in range(strengh):
+        for i in range(strength):
             pour_coffee()
 
         start_drip()
@@ -322,6 +322,43 @@ def coffee_maker(strength):
  * `labels`: a dictionary of labels. Keys must be strings, values can be strings, booleans, or numerical (`int`, `float`, `decimal.Decimal`). Defaults to `None`.
  * `span_subtype`: subtype of the span, e.g. name of the database. Defaults to `None`.
  * `span_action`: action of the span, e.g. `query`. Defaults to `None`
+
+[float]
+[[api-async-capture-span]]
+==== `elasticapm.async_capture_span`
+
+Capture a custom async-aware span.
+This can be used either as a function decorator or as a context manager (in an `async with` statement).
+When used as a decorator, the name of the span will be set to the name of the function.
+When used as a context manager, a name has to be provided.
+
+[source,python]
+----
+import elasticapm
+
+@elasticapm.async_capture_span()
+async def coffee_maker(strength):
+    await fetch_water()
+
+    async with elasticapm.async_capture_span('near-to-machine', labels={"type": "arabica"}):
+        await insert_filter()
+        async for i in range(strength):
+            await pour_coffee()
+
+        start_drip()
+
+    fresh_pots()
+----
+
+ * `name`: The name of the span
+ * `span_type`: The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`. Alternatively, type, subtype and action can be provided as three separate arguments, see `span_subtype` and `span_action`.
+ * `skip_frames`: The number of stack frames to skip when collecting stack traces. Defaults to `0`.
+ * `leaf`: if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
+ * `labels`: a dictionary of labels. Keys must be strings, values can be strings, booleans, or numerical (`int`, `float`, `decimal.Decimal`). Defaults to `None`.
+ * `span_subtype`: subtype of the span, e.g. name of the database. Defaults to `None`.
+ * `span_action`: action of the span, e.g. `query`. Defaults to `None`
+
+NOTE: `asyncio` is only supported for Python 3.7+.
 
 [float]
 [[api-label]]

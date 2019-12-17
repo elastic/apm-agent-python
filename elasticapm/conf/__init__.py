@@ -302,6 +302,7 @@ class Config(_ConfigBase):
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
+    stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
     span_frames_min_duration = _ConfigValue(
         "SPAN_FRAMES_MIN_DURATION",
         default=5,
@@ -317,9 +318,11 @@ class Config(_ConfigBase):
     source_lines_span_library_frames = _ConfigValue("SOURCE_LINES_SPAN_LIBRARY_FRAMES", type=int, default=0)
     local_var_max_length = _ConfigValue("LOCAL_VAR_MAX_LENGTH", type=int, default=200)
     local_var_list_max_length = _ConfigValue("LOCAL_VAR_LIST_MAX_LENGTH", type=int, default=10)
+    local_var_dict_max_length = _ConfigValue("LOCAL_VAR_DICT_MAX_LENGTH", type=int, default=10)
     capture_body = _ConfigValue("CAPTURE_BODY", default="off")
     async_mode = _BoolConfigValue("ASYNC_MODE", default=True)
     instrument_django_middleware = _BoolConfigValue("INSTRUMENT_DJANGO_MIDDLEWARE", default=True)
+    autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)
     transactions_ignore_patterns = _ListConfigValue("TRANSACTIONS_IGNORE_PATTERNS", default=[])
     service_version = _ConfigValue("SERVICE_VERSION")
     framework_name = _ConfigValue("FRAMEWORK_NAME", default=None)
@@ -331,6 +334,7 @@ class Config(_ConfigBase):
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
     disable_log_record_factory = _BoolConfigValue("DISABLE_LOG_RECORD_FACTORY", default=False)
+    use_elastic_traceparent_header = _BoolConfigValue("USE_ELASTIC_TRACEPARENT_HEADER", default=True)
 
 
 class VersionedConfig(object):

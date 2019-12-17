@@ -1,12 +1,13 @@
 # this is a limited list of matrix builds to be used for PRs
 # see .jenkins_framework_full.yml for a full list
 FRAMEWORK:
+  - none
   - django-1.11
   - django-2.0
   - django-2.2
   - django-3.0
   - flask-0.12
-  - flask-1.0
+  - flask-1.1
   - opentracing-newest
   - twisted-18
   - celery-3-flask-1.0
@@ -30,3 +31,7 @@ FRAMEWORK:
   - eventlet-newest
   - gevent-newest
   - zerorpc-0.4
+  - mysql_connector-newest
+  - pymysql-newest
+  - aiohttp-newest
+  - aiopg-newest

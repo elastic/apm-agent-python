@@ -94,7 +94,7 @@ class Exception(BaseEvent):
             exc_type, exc_value, exc_traceback = exc_info
 
             frames = get_stack_info(
-                iter_traceback_frames(exc_traceback),
+                iter_traceback_frames(exc_traceback, config=client.config),
                 with_locals=client.config.collect_local_variables in ("errors", "all"),
                 library_frame_context_lines=client.config.source_lines_error_library_frames,
                 in_app_frame_context_lines=client.config.source_lines_error_app_frames,
@@ -105,6 +105,7 @@ class Exception(BaseEvent):
                         val,
                         list_length=client.config.local_var_list_max_length,
                         string_length=client.config.local_var_max_length,
+                        dict_length=client.config.local_var_dict_max_length,
                     ),
                     local_var,
                 ),
@@ -142,6 +143,9 @@ class Exception(BaseEvent):
                 "stacktrace": frames,
             },
         }
+        if hasattr(exc_value, "_elastic_apm_span_id"):
+            data["parent_id"] = exc_value._elastic_apm_span_id
+            del exc_value._elastic_apm_span_id
         if compat.PY3:
             depth = kwargs.get("_exc_chain_depth", 0)
             if depth > EXCEPTION_CHAIN_MAX_DEPTH:
