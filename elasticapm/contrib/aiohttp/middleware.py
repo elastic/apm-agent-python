@@ -52,10 +52,17 @@ def tracing_middleware(app):
             trace_parent = AioHttpTraceParent.from_headers(request.headers)
             elasticapm_client.begin_transaction("request", trace_parent=trace_parent)
             resource = request.match_info.route.resource
+            name = request.method
             if resource:
-                name = "{} {}".format(request.method, resource.canonical)
+                # canonical has been added in 3.3, and returns one of path, formatter, prefix
+                for attr in ("canonical", "_path", "_formatter", "_prefix"):
+                    if hasattr(resource, attr):
+                        name += " " + getattr(resource, attr)
+                        break
+                else:
+                    name += " unknown route"
             else:
-                name = "unknown route"
+                name += " unknown route"
             elasticapm.set_transaction_name(name, override=False)
             elasticapm.set_context(
                 lambda: get_data_from_request(
