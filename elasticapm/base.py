@@ -126,11 +126,6 @@ class Client(object):
             "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
         }
 
-        if self.config.api_key:
-            headers["Authorization"] = "ApiKey " + self.config.api_key
-        elif self.config.secret_token:
-            headers["Authorization"] = "Bearer %s" % self.config.secret_token
-
         transport_kwargs = {
             "metadata": self._build_metadata(),
             "headers": headers,
@@ -145,7 +140,8 @@ class Client(object):
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
             constants.EVENTS_API_PATH,
         )
-        self._transport = import_string(self.config.transport_class)(self._api_endpoint_url, **transport_kwargs)
+        transport_class = import_string(self.config.transport_class)
+        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
