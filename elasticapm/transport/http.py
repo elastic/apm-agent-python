@@ -166,6 +166,11 @@ class Transport(HTTPTransportBase):
             return digest.hexdigest()
         return None
 
+    @property
+    def auth_headers(self):
+        headers = super(Transport, self).auth_headers
+        return {k.encode("ascii"): v.encode("ascii") for k, v in compat.iteritems(headers)}
+
 
 class AsyncTransport(AsyncHTTPTransportBase, Transport):
     async_mode = True

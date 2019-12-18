@@ -34,7 +34,7 @@ import pytest
 
 from pytest_bdd import given, parsers, scenario, scenarios, then, when
 
-pytestmarks = pytest.mark.bdd
+pytestmark = pytest.mark.bdd
 
 version_counter = itertools.count(0)
 
@@ -51,8 +51,37 @@ def set_api_key_to_value(an_agent, key):
     an_agent.config.update(version=next(version_counter), api_key=key)
 
 
+@when("an api key is set in the config")
+def set_any_api_key(an_agent):
+    an_agent.config.update(next(version_counter), api_key="foo")
+
+
+@when("a secret_token is set in the config")
+def set_any_secret_token(an_agent):
+    an_agent.config.update(next(version_counter), secret_token="foo")
+
+
+@when("an api key is not set in the config")
+def unset_api_key(an_agent):
+    an_agent.config.update(next(version_counter), api_key=None)
+
+
 @then(parsers.parse("the Authorization header is '{full_key}'"))
 def authorization_full_key(an_agent, key, full_key):
     auth_headers = an_agent._transport.auth_headers
     assert "Authorization" in auth_headers
     assert auth_headers["Authorization"] == full_key
+
+
+@then("the api key is sent in the Authorization header")
+def authorization_api_key(an_agent):
+    auth_headers = an_agent._transport.auth_headers
+    assert "Authorization" in auth_headers
+    assert auth_headers["Authorization"].startswith("ApiKey ")
+
+
+@then("the secret token is sent in the Authorization header")
+def authorization_secret_token(an_agent):
+    auth_headers = an_agent._transport.auth_headers
+    assert "Authorization" in auth_headers
+    assert auth_headers["Authorization"].startswith("Bearer ")
