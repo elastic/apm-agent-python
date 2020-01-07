@@ -23,6 +23,9 @@ pipeline {
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
+    HOME = "${env.WORKSPACE}"
+    PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+    PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -121,10 +124,6 @@ pipeline {
         beforeAgent true
         expression { return params.package_ci }
       }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
-      }
       steps {
         withGithubNotify(context: 'Building packages') {
           deleteDir()
@@ -162,9 +161,6 @@ pipeline {
       agent { label 'metal' }
       options { skipDefaultCheckout() }
       environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.WORKSPACE}/.local/bin:${env.PATH}"
-        PIP_CACHE = "${env.WORKSPACE}/.cache"
         AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
         LANG = 'C.UTF-8'
         LC_ALL = "${env.LANG}"
@@ -207,10 +203,6 @@ pipeline {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
-      }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       when {
         beforeInput true
@@ -366,9 +358,6 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
