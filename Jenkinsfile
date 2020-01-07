@@ -46,9 +46,6 @@ pipeline {
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
-      environment {
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
       stages {
         /**
         Checkout the code and stash it, to use it on other stages.
@@ -145,11 +142,9 @@ pipeline {
       agent none
       when {
         beforeAgent true
-        allOf {
-          anyOf {
-            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
-            expression { return !params.Run_As_Master_Branch }
-          }
+        anyOf {
+          changeRequest()
+          expression { return !params.Run_As_Master_Branch }
         }
       }
       steps {
