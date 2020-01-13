@@ -34,6 +34,7 @@ from __future__ import absolute_import
 
 import os
 import platform
+import socket
 import sys
 import time
 from collections import defaultdict
@@ -79,6 +80,7 @@ def test_system_info(elasticapm_client):
         mocked.return_value = {}
         system_info = elasticapm_client.get_system_info()
     assert {"hostname", "architecture", "platform"} == set(system_info.keys())
+    assert system_info["hostname"] == socket.gethostname()
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"hostname": "my_custom_hostname"}], indirect=True)
@@ -96,14 +98,11 @@ def test_global_labels(elasticapm_client):
 
 def test_docker_kubernetes_system_info(elasticapm_client):
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
-    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata, mock.patch(
-        "socket.gethostname"
-    ) as mock_gethostname:
+    with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mock_metadata:
         mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
-        mock_gethostname.return_value = "foo"
         system_info = elasticapm_client.get_system_info()
     assert system_info["container"] == {"id": "123"}
-    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": "foo"}}
+    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": socket.gethostname()}}
 
 
 @mock.patch.dict(
@@ -171,7 +170,7 @@ def test_docker_kubernetes_system_info_except_hostname_from_environ():
         mock_gethostname.return_value = "foo"
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
-    assert system_info["kubernetes"] == {"pod": {"name": "foo"}, "namespace": "namespace"}
+    assert system_info["kubernetes"] == {"pod": {"name": socket.gethostname()}, "namespace": "namespace"}
 
 
 def test_config_by_environment():
