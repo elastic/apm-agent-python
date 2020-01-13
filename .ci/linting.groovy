@@ -3,6 +3,9 @@
 
 pipeline {
   agent { label 'linux && immutable' }
+  environment {
+    HOME = "${env.WORKSPACE}"
+  }
   options {
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
     timestamps()
@@ -20,7 +23,7 @@ pipeline {
       steps {
         script {
           def sha = getGitCommitSha()
-          docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+          docker.image('python:3.7-stretch').inside(){
             // registry: '' will help to disable the docker login
             preCommit(commit: "${sha}", junit: true, registry: '')
           }
