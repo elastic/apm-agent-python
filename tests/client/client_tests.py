@@ -81,6 +81,13 @@ def test_system_info(elasticapm_client):
     assert {"hostname", "architecture", "platform"} == set(system_info.keys())
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"hostname": "my_custom_hostname"}], indirect=True)
+def test_system_info_hostname_configurable(elasticapm_client):
+    # mock docker/kubernetes data here to get consistent behavior if test is run in docker
+    system_info = elasticapm_client.get_system_info()
+    assert system_info["hostname"] == "my_custom_hostname"
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,az.rack=8"}], indirect=True)
 def test_global_labels(elasticapm_client):
     data = elasticapm_client._build_metadata()
