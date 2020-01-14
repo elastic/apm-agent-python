@@ -68,7 +68,7 @@ async def test_get(app, base_url, http_client):
     assert len(spans) == 1
     span = spans[0]
 
-    assert transaction["name"] == "GET /"
+    assert transaction["name"] == "GET HelloHandler"
     assert transaction["result"] == "HTTP 2xx"
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1

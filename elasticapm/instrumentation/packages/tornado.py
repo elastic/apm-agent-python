@@ -54,7 +54,8 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
             ),
             "request",
         )
-        elasticapm.set_transaction_name("{} {}".format(request.method, type(instance)), override=False)
+        # TODO: Can we somehow incorporate the routing rule itself here?
+        elasticapm.set_transaction_name("{} {}".format(request.method, type(instance).__name__), override=False)
 
         ret = await wrapped(*args, **kwargs)
 
