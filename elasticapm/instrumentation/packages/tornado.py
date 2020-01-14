@@ -69,13 +69,35 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         return ret
 
 
-class TornadoHandleExceptionInstrumentation(AbstractInstrumentedModule):
-    name = "tornado_handle_exception"
+class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
+    name = "tornado_handle_request_exception"
 
-    instrument_list = [("tornado.web.RequestHandler", "_handle_exception")]
+    instrument_list = [("tornado.web.RequestHandler", "_handle_request_exception")]
 
-    async def call(self, module, method, wrapped, instance, args, kwargs):
-        # FIXME
+    def call(self, module, method, wrapped, instance, args, kwargs):
+
+        # Late import to avoid ImportErrors
+        from tornado.web import Finish, HTTPError
+
+        e = args[0]
+        if isinstance(e, Finish):
+            # Not an error; Finish is an exception that ends a request without an error response
+            return wrapped(*args, **kwargs)
+
+        client = instance.application.elasticapm_client
+        request = instance.request
+        client.capture_exception(
+            context={
+                "request": get_data_from_request(request, capture_body=client.config.capture_body in ("all", "errors"))
+            }
+        )
+        if isinstance(e, HTTPError):
+            elasticapm.set_transaction_result("HTTP {}xx".format(int(e.status_code / 100)), override=False)
+            elasticapm.set_context({"status_code": e.status_code}, "response")
+        else:
+            elasticapm.set_transaction_result("HTTP 5xx", override=False)
+            elasticapm.set_context({"status_code": 500}, "response")
+
         return wrapped(*args, **kwargs)
 
 
