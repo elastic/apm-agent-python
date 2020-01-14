@@ -47,6 +47,17 @@ This will be the last minor release to support the following versions:
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
+[[release-notes-5.3.3]]
+==== v5.3.3
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.2\...v5.3.3[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * Fixed an issue with OpenTracing bridge and dropped spans {pull}687[#687]
+ * Fixed bug that would make the agent ignore the `hostname` configuration setting {pull}689[#689]
+
 [[release-notes-5.3.2]]
 ==== v5.3.2
 
