@@ -37,6 +37,9 @@ import mock
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.tornado import ElasticAPM
+from elasticapm.utils.disttracing import TraceParent
+
+pytestmark = pytest.mark.tornado
 
 
 @pytest.fixture
@@ -49,7 +52,7 @@ def app(elasticapm_client):
 
     class BoomHandler(tornado.web.RequestHandler):
         def get(self):
-            raise ValueError()
+            raise tornado.web.HTTPError()
 
     app = tornado.web.Application([(r"/", HelloHandler), (r"/boom", BoomHandler)])
     apm = ElasticAPM(app, elasticapm_client)
@@ -77,3 +80,49 @@ async def test_get(app, base_url, http_client):
     request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
 
     assert span["name"] == "test"
+
+
+@pytest.mark.gen_test
+async def test_exception(app, base_url, http_client):
+    elasticapm_client = app.elasticapm_client
+    with pytest.raises(tornado.httpclient.HTTPClientError):
+        response = await http_client.fetch(base_url + "/boom")
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 0
+
+    assert transaction["name"] == "GET BoomHandler"
+    assert transaction["result"] == "HTTP 5xx"
+    assert transaction["type"] == "request"
+    request = transaction["context"]["request"]
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert transaction["context"]["response"]["status_code"] == 500
+
+    assert len(elasticapm_client.events[constants.ERROR]) == 1
+    error = elasticapm_client.events[constants.ERROR][0]
+    assert error["transaction_id"] == transaction["id"]
+    assert error["exception"]["type"] == "HTTPError"
+    assert error["context"]["request"] == transaction["context"]["request"]
+
+
+@pytest.mark.gen_test
+async def test_traceparent_handling(app, base_url, http_client):
+    elasticapm_client = app.elasticapm_client
+    with mock.patch(
+        "elasticapm.instrumentation.packages.tornado.TraceParent.from_headers", wraps=TraceParent.from_headers
+    ) as wrapped_from_string:
+        headers = tornado.httputil.HTTPHeaders()
+        headers.add(constants.TRACEPARENT_HEADER_NAME, "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+        headers.add(constants.TRACESTATE_HEADER_NAME, "foo=bar,bar=baz")
+        headers.add(constants.TRACESTATE_HEADER_NAME, "baz=bazzinga")
+        request = tornado.httpclient.HTTPRequest(url=base_url, headers=headers)
+        resp = await http_client.fetch(request)
+
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+
+    assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+    assert transaction["parent_id"] == "b7ad6b7169203331"
+    assert "foo=bar,bar=baz,baz=bazzinga" == wrapped_from_string.call_args[0][0]["TraceState"]
