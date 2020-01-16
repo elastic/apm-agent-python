@@ -59,11 +59,7 @@ collect_ignore = ["build", "src"]
 
 pytest_plugins = ["tests.fixtures"]
 
-for module, fixtures in {
-    "django": "tests.contrib.django.fixtures",
-    "flask": "tests.contrib.flask.fixtures",
-    "aiohttp": "aiohttp.pytest_plugin",
-}.items():
+for module, fixtures in {"django": "tests.contrib.django.fixtures", "flask": "tests.contrib.flask.fixtures"}.items():
     try:
         importlib.import_module(module)
         pytest_plugins.append(fixtures)
