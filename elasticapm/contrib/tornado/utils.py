@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import elasticapm
 from elasticapm.conf import constants
+from elasticapm.utils import compat
 
 try:
     import tornado
@@ -36,7 +37,7 @@ except ImportError:
     pass
 
 
-def get_data_from_request(request, capture_body=False, capture_headers=True):
+def get_data_from_request(request_handler, request, capture_body=False, capture_headers=True):
     """
     Capture relevant data from a tornado.httputil.HTTPServerRequest
     """
@@ -49,16 +50,20 @@ def get_data_from_request(request, capture_body=False, capture_headers=True):
     if capture_headers:
         result["headers"] = dict(request.headers)
     if request.method in constants.HTTP_WITH_BODY:
-        body = None
-        try:
-            # FIXME what if request.body is a future?
-            # https://github.com/tornadoweb/tornado/blob/18d7026853900c56a1879141235c6b6bd51b0a6a/tornado/web.py#L1691-L1699
-            body = tornado.escape.json_decode(request.body)
-        except Exception:
-            pass
+        if tornado.web._has_stream_request_body(request_handler.__class__):
+            # Body is a future and streaming is expected to be handled by
+            # the user in the RequestHandler.data_received function.
+            # Currently not sure of a safe way to get the body in this case.
+            result["body"] = "[STREAMING]" if capture_body else "[REDACTED]"
+        else:
+            body = None
+            try:
+                body = tornado.escape.json_decode(request.body)
+            except Exception:
+                body = request.body
 
-        if body is not None:
-            result["body"] = body if capture_body else "[REDACTED]"
+            if body is not None:
+                result["body"] = body if capture_body else "[REDACTED]"
 
     result["url"] = elasticapm.utils.get_url_dict(request.full_url())
     return result
@@ -69,7 +74,8 @@ def get_data_from_response(request_handler, capture_headers=True):
 
     result["status_code"] = request_handler.get_status()
 
-    if capture_headers:
-        # FIXME
+    if capture_headers and request_handler._headers:
+        headers = request_handler._headers
+        result["headers"] = {key: ";".join(headers.get_list(key)) for key in compat.iterkeys(headers)}
         pass
     return result

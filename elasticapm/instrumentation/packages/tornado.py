@@ -49,6 +49,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         client.begin_transaction("request", trace_parent=trace_parent)
         elasticapm.set_context(
             lambda: get_data_from_request(
+                instance,
                 request,
                 capture_body=client.config.capture_body in ("transactions", "all"),
                 capture_headers=client.config.capture_headers,
@@ -89,7 +90,9 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
         request = instance.request
         client.capture_exception(
             context={
-                "request": get_data_from_request(request, capture_body=client.config.capture_body in ("all", "errors"))
+                "request": get_data_from_request(
+                    instance, request, capture_body=client.config.capture_body in ("all", "errors")
+                )
             }
         )
         if isinstance(e, HTTPError):
