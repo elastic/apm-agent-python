@@ -32,6 +32,8 @@ import pytest  # isort:skip
 
 tornado = pytest.importorskip("tornado")  # isort:skip
 
+import os
+
 import mock
 
 from elasticapm import async_capture_span
@@ -50,11 +52,21 @@ def app(elasticapm_client):
                 pass
             return self.write("Hello, world")
 
+    class RenderHandler(tornado.web.RequestHandler):
+        def get(self):
+            with async_capture_span("test"):
+                pass
+            items = ["Item 1", "Item 2", "Item 3"]
+            return self.render("test.html", title="Testing so hard", items=items)
+
     class BoomHandler(tornado.web.RequestHandler):
         def get(self):
             raise tornado.web.HTTPError()
 
-    app = tornado.web.Application([(r"/", HelloHandler), (r"/boom", BoomHandler)])
+    app = tornado.web.Application(
+        [(r"/", HelloHandler), (r"/boom", BoomHandler), (r"/render", RenderHandler)],
+        template_path=os.path.join(os.path.dirname(__file__), "templates"),
+    )
     apm = ElasticAPM(app, elasticapm_client)
     return app
 
@@ -126,3 +138,30 @@ async def test_traceparent_handling(app, base_url, http_client):
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
     assert "foo=bar,bar=baz,baz=bazzinga" == wrapped_from_string.call_args[0][0]["TraceState"]
+
+
+@pytest.mark.gen_test
+async def test_render(app, base_url, http_client):
+    elasticapm_client = app.elasticapm_client
+    response = await http_client.fetch(base_url + "/render")
+    assert response.code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 2
+
+    assert transaction["name"] == "GET RenderHandler"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["type"] == "request"
+    assert transaction["span_count"]["started"] == 2
+    request = transaction["context"]["request"]
+    request["method"] == "GET"
+    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+
+    span = spans[0]
+    assert span["name"] == "test"
+    span = spans[1]
+    assert span["name"] == "test.html"
+    assert span["action"] == "render"
+    assert span["type"] == "template"
