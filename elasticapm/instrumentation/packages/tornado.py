@@ -33,6 +33,7 @@ Instrumentation for Tornado
 import elasticapm
 from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
+from elasticapm.traces import capture_span
 from elasticapm.utils.disttracing import TraceParent
 
 
@@ -107,5 +108,10 @@ class TornadoRenderInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("tornado.web", "RequestHandler.render")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        # FIXME
-        return wrapped(*args, **kwargs)
+        if "template_name" in kwargs:
+            name = kwargs["template_name"]
+        else:
+            name = args[0]
+
+        with capture_span(name, span_type="template", span_subtype="tornado", span_action="render"):
+            return wrapped(*args, **kwargs)
