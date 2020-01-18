@@ -68,7 +68,7 @@ We support these aiohttp versions:
 
 We support these tornado versions:
 
- * 5.0+
+ * 6.0+
 
 [float]
 [[automatic-instrumentation]]
