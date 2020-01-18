@@ -38,9 +38,10 @@ This will be the last minor release to support the following versions:
 ===== New Features
 
  * Added support for aiohttp client and server {pull}659[#659]
+ * Added support for tornado web framework {pull}661[#661]
  * Added support for W3C `traceparent` and `tracestate` headers {pull}660[#660]
  * Added Django 3.0 and Flask 1.1 to the support matrix {pull}667[#667]
- * Added support for aiopg {pull}668[#668] 
+ * Added support for aiopg {pull}668[#668]
  * Use Span ID as parent ID in errors if an error happens inside a span {pull}669[#669]
 
 

@@ -6,7 +6,7 @@ The Elastic APM Python Agent comes with support for the following frameworks:
 
  * <<django-support,Django>>
  * <<flask-support,Flask>>
- 
+
 For other frameworks and custom Python code, the agent exposes a set of <<api,APIs>> for integration.
 
 NOTE: The Elastic APM Python agent does currently not support asynchronous frameworks like Twisted or Tornado.
@@ -22,7 +22,7 @@ The following Python versions are supported:
  * 3.5
  * 3.6
  * 3.7
- 
+
 WARNING: Python 2.7 will reach End of Life on January 1, 2020.
 The Elastic APM agent will stop supporting Python 2.7 in the first major version after that date.
 
@@ -37,7 +37,7 @@ We support these Django versions:
  * 2.1
  * 2.2
  * 3.0
- 
+
 For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
 
 NOTE: we currently don't support Django running in ASGI mode.
@@ -63,6 +63,14 @@ We support these aiohttp versions:
  * 3.0+
 
 [float]
+[[supported-tornado]]
+=== Tornado
+
+We support these tornado versions:
+
+ * 5.0+
+
+[float]
 [[automatic-instrumentation]]
 == Automatic Instrumentation
 
@@ -80,7 +88,7 @@ Instrumented methods:
 
  * `elasticsearch.connection.http_urllib3.Urllib3HttpConnection.perform_request`
  * `elasticsearch.connection.http_requests.RequestsHttpConnection.perform_request`
- 
+
 Additionally, the instrumentation wraps the following methods of the `Elasticsearch` client class:
 
  * `elasticsearch.client.Elasticsearch.delete_by_query`
@@ -102,7 +110,7 @@ Instrumented methods:
  * `sqlite3.connect`
  * `sqlite3.dbapi2.connect`
  * `pysqlite2.dbapi2.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -119,7 +127,7 @@ Library: `MySQLdb`
 Instrumented methods:
 
  * `MySQLdb.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -135,7 +143,7 @@ Library: `mysql-connector-python`
 Instrumented methods:
 
  * `mysql.connector.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -151,7 +159,7 @@ Library: `pymysql`
 Instrumented methods:
 
  * `pymysql.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -167,7 +175,7 @@ Library: `psycopg2`, `psycopg2-binary` (`>=2.7`)
 Instrumented methods:
 
  * `psycopg2.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -184,7 +192,7 @@ Instrumented methods:
 
  * `aiopg.cursor.Cursor.execute`
  * `aiopg.cursor.Cursor.callproc`
- 
+
 Collected trace data:
 
  * parametrized SQL query
@@ -198,7 +206,7 @@ Library: `pyodbc`, (`>=4.0`)
 Instrumented methods:
 
  * `pyodbc.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -214,7 +222,7 @@ Library: `pymssql`, (`>=2.1.0`)
 Instrumented methods:
 
  * `pymssql.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -281,7 +289,7 @@ Instrumented methods:
 Collected trace data:
 
     * Redis command name
-    
+
 
 [float]
 [[automatic-instrumentation-db-cassandra]]
@@ -310,7 +318,7 @@ Library: `urllib2` (Python 2) / `urllib.request` (Python 3)
 
 Instrumented methods:
 
- * `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open` 
+ * `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open`
 
 Collected trace data:
 
@@ -331,8 +339,8 @@ Additionally, we instrumented vendored instances of urllib3 in the following lib
 
  * `requests`
  * `botocore`
- 
-Both libraries have "unvendored" urllib3 in more recent versions, we recommend to use the newest versions. 
+
+Both libraries have "unvendored" urllib3 in more recent versions, we recommend to use the newest versions.
 
 Collected trace data:
 
@@ -346,7 +354,7 @@ Collected trace data:
 Instrumented methods:
 
  * `requests.sessions.Session.send`
- 
+
 Collected trace data:
 
  * HTTP method
@@ -366,13 +374,13 @@ Library: `boto3` (`>=1.0`)
 Instrumented methods:
 
  * `botocore.client.BaseClient._make_api_call`
- 
+
 Collected trace data:
 
  * AWS region (e.g. `eu-central-1`)
  * AWS service name (e.g. `s3`)
  * operation name (e.g. `ListBuckets`)
- 
+
 
 
 [float]
@@ -392,7 +400,7 @@ Instrumented methods:
 Collected trace data:
 
  * template name
- 
+
 [float]
 [[automatic-instrumentation-jinja2]]
 ==== Jinja2

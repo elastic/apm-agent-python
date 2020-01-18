@@ -45,10 +45,14 @@ class ElasticAPM:
         Create the elasticapm Client object and store in the app for later
         use.
 
-        ElasticAPM configuration is sent in via the **config kwargs
-
-        FIXME: Optionally provide a config file?
+        ElasticAPM configuration is sent in via the **config kwargs, or
+        optionally can be added to the application via the Application object
+        (as a dictionary under the "ELASTIC_APM" key in the settings).
         """
+        if "ELASTIC_APM" in app.settings and isinstance(app.settings["ELASTIC_APM"], dict):
+            settings = app.settings["ELASTIC_APM"]
+            settings.update(config)
+            config = settings
         if not client:
             config.setdefault("framework_name", "tornado")
             config.setdefault("framework_version", tornado.version)
