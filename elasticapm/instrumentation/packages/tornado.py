@@ -31,7 +31,6 @@
 Instrumentation for Tornado
 """
 import elasticapm
-from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.disttracing import TraceParent
@@ -43,6 +42,9 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("tornado.web", "RequestHandler._execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
+        # Late import to avoid ImportErrors
+        from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
+
         request = instance.request
         trace_parent = TraceParent.from_headers(request.headers)
         client = instance.application.elasticapm_client
@@ -80,6 +82,7 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
 
         # Late import to avoid ImportErrors
         from tornado.web import Finish, HTTPError
+        from elasticapm.contrib.tornado.utils import get_data_from_request
 
         e = args[0]
         if isinstance(e, Finish):
