@@ -43,6 +43,8 @@ from elasticapm.base import Client
 from elasticapm.contrib.starlette.utils import get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
+from elasticapm.contrib.asyncio.traces import set_context
+
 
 logger = get_logger("elasticapm.errors.client")
 
@@ -168,13 +170,14 @@ class ElasticAPM(BaseHTTPMiddleware):
         trace_parent = TraceParent.from_headers(dict(request.headers))
         self.client.begin_transaction("request", trace_parent=trace_parent)
 
-        request_data = await get_data_from_request(
-            request,
-            capture_body=self.client.config.capture_body in ("transactions", "all"),
-            capture_headers=self.client.config.capture_headers,
+        await set_context(
+            lambda: get_data_from_request(
+                request,
+                capture_body=self.client.config.capture_body in ("transactions", "all"),
+                capture_headers=self.client.config.capture_headers,
+            ),
+            "request"
         )
-
-        elasticapm.set_context(request_data, "request")
         elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
 
     async def _request_finished(self, response: Response):
@@ -183,8 +186,10 @@ class ElasticAPM(BaseHTTPMiddleware):
         Args:
             response (Response)
         """
-        response_data = await get_data_from_response(response, capture_headers=self.client.config.capture_headers)
-        elasticapm.set_context(response_data, "response")
+        await set_context(
+            lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers),
+            "response"
+        )
 
         result = "HTTP {}xx".format(response.status_code // 100)
         elasticapm.set_transaction_result(result, override=False)

@@ -32,6 +32,7 @@ import functools
 
 from elasticapm.traces import DroppedSpan, capture_span, error_logger, execution_context
 from elasticapm.utils import get_name_from_func
+from elasticapm.conf.constants import LABEL_RE
 
 
 class async_capture_span(capture_span):
@@ -73,3 +74,30 @@ class async_capture_span(capture_span):
                         pass
             except LookupError:
                 error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
+
+
+async def set_context(data, key="custom"):
+    """
+    Asynchronous copy of elasticapm.traces.set_context().
+    Attach contextual data to the current transaction and errors that happen during the current transaction.
+
+    If the transaction is not sampled, this function becomes a no-op.
+
+    :param data: a dictionary, or a callable that returns a dictionary
+    :param key: the namespace for this data
+    """
+    transaction = execution_context.get_transaction()
+    if not (transaction and transaction.is_sampled):
+        return
+    if callable(data):
+        data = await data()
+
+    # remove invalid characters from key names
+    for k in list(data.keys()):
+        if LABEL_RE.search(k):
+            data[LABEL_RE.sub("_", k)] = data.pop(k)
+
+    if key in transaction.context:
+        transaction.context[key].update(data)
+    else:
+        transaction.context[key] = data
