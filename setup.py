@@ -181,7 +181,7 @@ setup_kwargs = dict(
         "tests": tests_require,
         "flask": ["blinker"],
         "aiohttp": ["aiohttp"],
-        "starlette": ["starlette"],
+        "starlette": ["starlette", "flask", "requests"],
         "opentracing": ["opentracing>=2.0.0"],
     },
     cmdclass={"test": PyTest},
