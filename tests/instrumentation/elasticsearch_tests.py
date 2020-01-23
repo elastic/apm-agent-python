@@ -268,7 +268,9 @@ def test_update_script(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         r1 = elasticsearch.update("tweets", document_type, 1, {"script": "ctx._source.text = 'adios'"}, refresh=True)
     else:
-        r1 = elasticsearch.update("tweets", 1, document_type, {"script": "ctx._source.text = 'adios'"}, refresh=True)
+        r1 = elasticsearch.update(
+            index="tweets", id=1, doc_type=document_type, body={"script": "ctx._source.text = 'adios'"}, refresh=True
+        )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -296,7 +298,9 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         r1 = elasticsearch.update("tweets", document_type, 1, {"doc": {"text": "adios"}}, refresh=True)
     else:
-        r1 = elasticsearch.update("tweets", 1, document_type, {"doc": {"text": "adios"}}, refresh=True)
+        r1 = elasticsearch.update(
+            index="tweets", id=1, doc_type=document_type, body={"doc": {"text": "adios"}}, refresh=True
+        )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -329,10 +333,8 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    if ES_VERSION[0] < 7:
-        assert span["name"] == "ES GET /_search"
-    else:
-        assert span["name"] == "ES GET /_all/_search"
+    # Depending on ES_VERSION, could be /_all/_search or /_search
+    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -355,7 +357,9 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets/_search"
+    # Starting in 7.5.1, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets/_search", "ES POST /tweets/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -403,10 +407,10 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    if ES_VERSION[0] < 7:
-        assert span["name"] == "ES GET /_count"
-    else:
-        assert span["name"] == "ES GET /_all/_count"
+    # Depending on ES_VERSION, could be /_all/_count or /_count, and either GET
+    # or POST. None of these details actually matter much for this test.
+    # Technically no version does `POST /_all/_count` but I added it anyway
+    assert span["name"] in ("ES GET /_count", "ES GET /_all/_count", "ES POST /_count", "ES POST /_all/_count")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
