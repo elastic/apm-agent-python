@@ -31,6 +31,7 @@
 import json
 
 from starlette.requests import Request
+from starlette.types import Message
 from starlette.responses import Response
 
 from elasticapm.conf import constants
