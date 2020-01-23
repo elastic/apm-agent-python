@@ -90,7 +90,7 @@ instrumentation within the base RequestHandler class in tornado.web. This will
 measure response times, as well as detailed performance data for all supported
 technologies.
 
-NOTE: due to the fact that `asyncio` drivers are usually separate from their
+NOTE: Due to the fact that `asyncio` drivers are usually separate from their
 synchronous counterparts, specific instrumentation is needed for all drivers.
 The support for asynchronous drivers is currently quite limited.
 
