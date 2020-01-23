@@ -50,16 +50,15 @@ for m in ("multiprocessing", "billiard"):
     except ImportError:
         pass
 
-import sys
-import os
 import ast
+import os
+import sys
 from codecs import open
-
-from setuptools import setup, find_packages, Extension
-from setuptools.command.test import test as TestCommand
-
 from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+
+from setuptools import Extension, find_packages, setup
+from setuptools.command.test import test as TestCommand
 
 if sys.platform == "win32":
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
@@ -139,7 +138,7 @@ except ImportError:
     tests_require += ["psycopg2"]
 
 if sys.version_info >= (3, 5):
-    tests_require += ["aiohttp", "pytest-asyncio", "pytest-mock"]
+    tests_require += ["aiohttp", "tornado", "pytest-asyncio", "pytest-mock"]
 
 install_requires = ["urllib3", "certifi", "cachetools;python_version=='2.7'"]
 
@@ -180,6 +179,7 @@ setup_kwargs = dict(
         "tests": tests_require,
         "flask": ["blinker"],
         "asyncio": ["aiohttp"],
+        "tornado": ["tornado"],
         "opentracing": ["opentracing>=2.0.0"],
     },
     cmdclass={"test": PyTest},

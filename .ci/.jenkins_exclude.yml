@@ -207,6 +207,19 @@ exclude:
     FRAMEWORK: aiohttp-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: aiohttp-newest
+  # tornado, only supported in Python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: tornado-newest
   # aiopg
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: aiopg-newest

@@ -65,3 +65,4 @@ FRAMEWORK:
   - aiohttp-4.0
   - aiohttp-newest
   - aiopg-newest
+  - tornado-newest
