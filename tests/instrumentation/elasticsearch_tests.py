@@ -99,7 +99,7 @@ def test_create(instrument, elasticapm_client, elasticsearch):
     elif ES_VERSION[0] < 7:
         r1 = elasticsearch.create("tweets", document_type, 1, body={"user": "kimchy", "text": "hola"})
     else:
-        r1 = elasticsearch.create("tweets", 1, body={"user": "kimchy", "text": "hola"})
+        r1 = elasticsearch.create(index="tweets", id=1, body={"user": "kimchy", "text": "hola"})
     r2 = elasticsearch.create(
         index="tweets", doc_type=document_type, id=2, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
@@ -179,7 +179,7 @@ def test_exists_source(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         assert elasticsearch.exists_source("tweets", document_type, 1) is True
     else:
-        assert elasticsearch.exists_source("tweets", 1, document_type) is True
+        assert elasticsearch.exists_source(index="tweets", id=1, doc_type=document_type) is True
     assert elasticsearch.exists_source(index="tweets", doc_type=document_type, id=1) is True
     elasticapm_client.end_transaction("test", "OK")
 
@@ -208,7 +208,7 @@ def test_get(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] == 6:
         r1 = elasticsearch.get("tweets", document_type, 1)
     else:
-        r1 = elasticsearch.get("tweets", 1, document_type)
+        r1 = elasticsearch.get(index="tweets", id=1, doc_type=document_type)
     r2 = elasticsearch.get(index="tweets", doc_type=document_type, id=1)
     elasticapm_client.end_transaction("test", "OK")
 
@@ -237,7 +237,7 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         r1 = elasticsearch.get_source("tweets", document_type, 1)
     else:
-        r1 = elasticsearch.get_source("tweets", 1, document_type)
+        r1 = elasticsearch.get_source(index="tweets", id=1, doc_type=document_type)
     r2 = elasticsearch.get_source(index="tweets", doc_type=document_type, id=1)
     elasticapm_client.end_transaction("test", "OK")
 
@@ -433,7 +433,9 @@ def test_count_querystring(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets/_count"
+    # Starting in 7.5.1, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets/_count", "ES POST /tweets/_count")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"

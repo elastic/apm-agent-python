@@ -76,7 +76,8 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
             if isinstance(body, dict) and "query" in body:
                 query.append(json.dumps(body["query"], default=compat.text_type))
-            context["db"]["statement"] = "\n\n".join(query)
+            if query:
+                context["db"]["statement"] = "\n\n".join(query)
         elif api_method == "Elasticsearch.update":
             if isinstance(body, dict) and "script" in body:
                 # only get the `script` field from the body
