@@ -94,10 +94,8 @@ def test_info(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.integrationtest
 def test_create(instrument, elasticapm_client, elasticsearch):
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] < 5:
-        r1 = elasticsearch.create("tweets", document_type, {"user": "kimchy", "text": "hola"}, 1)
-    elif ES_VERSION[0] < 7:
-        r1 = elasticsearch.create("tweets", document_type, 1, body={"user": "kimchy", "text": "hola"})
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.create(index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"})
     else:
         r1 = elasticsearch.create(index="tweets", id=1, body={"user": "kimchy", "text": "hola"})
     r2 = elasticsearch.create(
@@ -128,7 +126,7 @@ def test_index(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         r1 = elasticsearch.index("tweets", document_type, {"user": "kimchy", "text": "hola"})
     else:
-        r1 = elasticsearch.index("tweets", {"user": "kimchy", "text": "hola"})
+        r1 = elasticsearch.index(index="tweets", body={"user": "kimchy", "text": "hola"})
     r2 = elasticsearch.index(
         index="tweets", doc_type=document_type, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
@@ -265,12 +263,9 @@ def test_update_script(instrument, elasticapm_client, elasticsearch):
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] < 7:
-        r1 = elasticsearch.update("tweets", document_type, 1, {"script": "ctx._source.text = 'adios'"}, refresh=True)
-    else:
-        r1 = elasticsearch.update(
-            index="tweets", id=1, doc_type=document_type, body={"script": "ctx._source.text = 'adios'"}, refresh=True
-        )
+    r1 = elasticsearch.update(
+        index="tweets", id=1, doc_type=document_type, body={"script": "ctx._source.text = 'adios'"}, refresh=True
+    )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -295,12 +290,9 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] < 7:
-        r1 = elasticsearch.update("tweets", document_type, 1, {"doc": {"text": "adios"}}, refresh=True)
-    else:
-        r1 = elasticsearch.update(
-            index="tweets", id=1, doc_type=document_type, body={"doc": {"text": "adios"}}, refresh=True
-        )
+    r1 = elasticsearch.update(
+        index="tweets", id=1, doc_type=document_type, body={"doc": {"text": "adios"}}, refresh=True
+    )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
