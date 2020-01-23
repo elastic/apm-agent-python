@@ -6,6 +6,7 @@ To get you off the ground, we’ve prepared guides for setting up the Agent with
  * <<django-support,Django>>
  * <<flask-support,Flask>>
  * <<aiohttp-server-support,aiohttp>>
+ * <<tornado-support,tornado>>
 
 For custom instrumentation, see the <<api>>.
 
@@ -14,3 +15,5 @@ include::./django.asciidoc[]
 include::./flask.asciidoc[]
 
 include::./aiohttp-server.asciidoc[]
+
+include::./tornado.asciidoc[]
