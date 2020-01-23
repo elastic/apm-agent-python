@@ -30,7 +30,7 @@
 
 import pytest  # isort:skip
 
-aiohttp = pytest.importorskip("starlette")  # isort:skip
+starlette = pytest.importorskip("starlette")  # isort:skip
 
 import mock
 
