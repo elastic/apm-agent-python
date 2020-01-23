@@ -100,6 +100,19 @@ async def get_data_from_response(response: Response, capture_body=False, capture
     return result
 
 
+async def set_body(request: Request, body: bytes):
+    """Overwrites body in Starlette.
+
+    Args:
+        request (Request)
+        body (bytes)
+    """
+    async def receive() -> Message:
+        return {"type": "http.request", "body": body}
+
+    request._receive = receive
+
+
 async def get_body(request: Request) -> str:
     """Gets body from the request.
 
@@ -112,7 +125,9 @@ async def get_body(request: Request) -> str:
         str
     """
     body = await request.body()
-    request._body = body
+    await set_body(request, body)
+
+    request._stream_consumed = False
 
     return body.decode("utf-8")
 
