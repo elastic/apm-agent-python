@@ -76,7 +76,8 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
             if isinstance(body, dict) and "query" in body:
                 query.append(json.dumps(body["query"], default=compat.text_type))
-            context["db"]["statement"] = "\n\n".join(query)
+            if query:
+                context["db"]["statement"] = "\n\n".join(query)
         elif api_method == "Elasticsearch.update":
             if isinstance(body, dict) and "script" in body:
                 # only get the `script` field from the body
@@ -96,73 +97,6 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
 
 class ElasticsearchInstrumentation(AbstractInstrumentedModule):
     name = "elasticsearch"
-
-    body_positions = {
-        2: {
-            "count_percolate": 3,
-            "create": 2,
-            "field_stats": 1,
-            "mpercolate": 0,
-            "percolate": 3,
-            "put_script": 2,
-            "search_exists": 2,
-            "suggest": 0,
-            "index": 2,
-            "search": 2,
-            "scroll": 1,
-            "search_template": 2,
-            "update_by_query": 2,
-        },
-        5: {
-            "count_percolate": 3,
-            "create": 3,
-            "field_stats": 1,
-            "mpercolate": 0,
-            "percolate": 3,
-            "put_script": 2,
-            "suggest": 0,
-            "index": 2,
-            "search": 2,
-            "scroll": 1,
-            "search_template": 2,
-            "update_by_query": 2,
-        },
-        6: {
-            "create": 3,
-            "put_script": 1,
-            "index": 2,
-            "search": 2,
-            "scroll": 1,
-            "search_template": 2,
-            "update_by_query": 2,
-        },
-        7: {
-            "create": 2,
-            "put_script": 1,
-            "index": 1,
-            "search": 1,
-            "scroll": 0,
-            "search_template": 1,
-            "update_by_query": 1,
-        },
-        "all": {
-            "bulk": 0,
-            "clear_scroll": 1,
-            "count": 2,
-            "delete_by_query": 1,
-            "explain": 3,
-            "field_caps": 1,
-            "mget": 0,
-            "msearch": 0,
-            "msearch_template": 0,
-            "mtermvectors": 2,
-            "put_template": 1,
-            "reindex": 0,
-            "render_search_template": 1,
-            "termvectors": 3,
-            "update": 3,
-        },
-    }
 
     instrument_list = [
         ("elasticsearch.client", "Elasticsearch.delete_by_query"),
@@ -193,12 +127,9 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
         params = params.copy() if params is not None else {}
 
         cls_name, method_name = method.split(".", 1)
-        body_pos = (
-            self.body_positions["all"].get(method_name) or self.body_positions[self.version].get(method_name) or None
-        )
 
         # store a reference to the non-serialized body so we can use it in the connection layer
-        body = args[body_pos] if (body_pos is not None and len(args) > body_pos) else kwargs.get("body")
+        body = kwargs.get("body")
         params[BODY_REF_NAME] = body
         params[API_METHOD_KEY_NAME] = method
 
