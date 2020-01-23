@@ -34,6 +34,11 @@ This will be the last minor release to support the following versions:
  * Django 1.8, 1.9 and 1.10
  * Flask < 1.0
 
+ In addition, as of this release we no longer support positional args for
+ elasticsearch-py. This is in keeping with the
+ https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[upstream policy]
+ of positional args being unsupported. {pull}697[#697]
+
 [float]
 ===== New Features
 
