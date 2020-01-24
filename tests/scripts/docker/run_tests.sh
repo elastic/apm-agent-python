@@ -44,7 +44,7 @@ fi
 
 # CASS_DRIVER_NO_EXTENSIONS is set so we don't build the Cassandra C-extensions,
 # as this can take several minutes
-docker build --pull --force-rm --build-arg PYTHON_IMAGE=${1/-/:} -t apm-agent-python:${1} . # replace - with : to get the correct docker image
+docker build --force-rm --build-arg PYTHON_IMAGE=${1/-/:} -t apm-agent-python:${1} . # replace - with : to get the correct docker image
 PYTHON_VERSION=${1} docker-compose run \
   -e LOCAL_USER_ID=$UID \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
