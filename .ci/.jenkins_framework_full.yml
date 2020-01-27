@@ -66,3 +66,5 @@ FRAMEWORK:
   - aiohttp-newest
   - aiopg-newest
   - tornado-newest
+  - starlette-0.13
+  - starlette-newest
