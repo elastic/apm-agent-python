@@ -27,6 +27,40 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+Framework integration for Tornado
 
-__version__ = (5, 3, 3)
-VERSION = ".".join(map(str, __version__))
+Note that transaction creation is actually done in the tornado
+instrumentation. This module only creates the client for later use by the
+that instrumentation, and triggers the global instrumentation itself.
+"""
+import elasticapm
+import tornado
+from elasticapm import Client
+
+
+class ElasticAPM:
+    def __init__(self, app, client=None, **config):
+        """
+        Create the elasticapm Client object and store in the app for later
+        use.
+
+        ElasticAPM configuration is sent in via the **config kwargs, or
+        optionally can be added to the application via the Application object
+        (as a dictionary under the "ELASTIC_APM" key in the settings).
+        """
+        if "ELASTIC_APM" in app.settings and isinstance(app.settings["ELASTIC_APM"], dict):
+            settings = app.settings["ELASTIC_APM"]
+            settings.update(config)
+            config = settings
+        if not client:
+            config.setdefault("framework_name", "tornado")
+            config.setdefault("framework_version", tornado.version)
+            client = Client(config)
+        self.app = app
+        self.client = client
+        app.elasticapm_client = client
+
+        # Don't instrument if debug=True in tornado, unless client.config.debug is True
+        if (not self.app.settings.get("debug") or client.config.debug) and client.config.instrument:
+            elasticapm.instrument()

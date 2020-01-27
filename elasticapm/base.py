@@ -36,7 +36,6 @@ import itertools
 import logging
 import os
 import platform
-import socket
 import sys
 import time
 import warnings
@@ -316,7 +315,7 @@ class Client(object):
 
     def get_system_info(self):
         system_data = {
-            "hostname": keyword_field(socket.gethostname()),
+            "hostname": keyword_field(self.config.hostname),
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }

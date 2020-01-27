@@ -166,6 +166,21 @@ def test_span_tags(tracer):
     assert span2["context"]["tags"] == {"something_else": "bar"}
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
+def test_dropped_spans(tracer):
+    assert tracer._agent.config.transaction_max_spans == 1
+    with tracer.start_active_span("transaction") as ot_scope_t:
+        with tracer.start_active_span("span") as ot_scope_s:
+            s = ot_scope_s.span
+            s.set_tag("db.type", "sql")
+        with tracer.start_active_span("span") as ot_scope_s:
+            s = ot_scope_s.span
+            s.set_tag("db.type", "sql")
+    client = tracer._agent
+    spans = client.events[constants.SPAN]
+    assert len(spans) == 1
+
+
 def test_error_log(tracer):
     with tracer.start_active_span("transaction") as tx_scope:
         try:
