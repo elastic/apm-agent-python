@@ -8,6 +8,7 @@ The Elastic APM Python Agent comes with support for the following frameworks:
  * <<flask-support,Flask>>
  * <<supported-aiohttp,Aiohttp Server>>
  * <<supported-tornado,Tornado>>
+ * <<supported-starlette,Starlette/FastAPI>>
 
 For other frameworks and custom Python code, the agent exposes a set of <<api,APIs>> for integration.
 
@@ -70,6 +71,18 @@ We support these tornado versions:
 
  * 6.0+
 
+
+[float]
+[[supported-starlette]]
+=== Starlette/FastAPI
+
+We support these Starlette versions:
+
+ * 0.13.0+
+
+Any FastAPI version which uses a supported Starlette version should also
+be supported.
+
 [float]
 [[automatic-instrumentation]]
 == Automatic Instrumentation
@@ -101,7 +114,7 @@ Collected trace data:
  * the query string (if available)
  * the `query` element from the request body (if available)
 
-We recommend using keyword args only with elasticsearch-py, as recommended by
+We recommend using keyword arguments only with elasticsearch-py, as recommended by
 https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[the elasticsearch-py docs].
 If you are using positional arguments, we will be unable to gather the `query`
 element from the request body.
