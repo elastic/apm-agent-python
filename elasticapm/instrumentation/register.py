@@ -69,6 +69,7 @@ if sys.version_info >= (3, 5):
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.base.RunInExecutorInstrumentation",
         ]
     )
 
