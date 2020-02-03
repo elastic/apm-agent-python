@@ -50,6 +50,7 @@ This will be the last minor release to support the following versions:
  * Added Django 3.0 and Flask 1.1 to the support matrix {pull}667[#667]
  * Added support for aiopg {pull}668[#668]
  * Use Span ID as parent ID in errors if an error happens inside a span {pull}669[#669]
+ * Added experimental support for API Key authentication {pull}679[#679]
 
 
 [[release-notes-5.x]]
