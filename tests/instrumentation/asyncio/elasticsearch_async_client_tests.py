@@ -136,10 +136,7 @@ async def test_search_body(instrument, elasticapm_client, elasticsearch_async):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    if ES_VERSION[0] < 7:
-        assert span["name"] == "ES GET /_search"
-    else:
-        assert span["name"] == "ES GET /_all/_search"
+    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -162,10 +159,7 @@ async def test_count_body(instrument, elasticapm_client, elasticsearch_async):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    if ES_VERSION[0] < 7:
-        assert span["name"] == "ES GET /_count"
-    else:
-        assert span["name"] == "ES GET /_all/_count"
+    assert span["name"] in ("ES GET /_count", "ES POST /_count", "ES GET /_all/_count")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
