@@ -35,7 +35,9 @@ EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
 
 TRACE_CONTEXT_VERSION = 0
-TRACEPARENT_HEADER_NAME = "elastic-apm-traceparent"
+TRACEPARENT_HEADER_NAME = "traceparent"
+TRACEPARENT_LEGACY_HEADER_NAME = "elastic-apm-traceparent"
+TRACESTATE_HEADER_NAME = "tracestate"
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 

@@ -35,16 +35,21 @@ pytest.importorskip("flask")  # isort:skip
 import logging
 import os
 
+import mock
+
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.utils import compat
+from elasticapm.utils.disttracing import TraceParent
 from tests.contrib.flask.utils import captured_templates
 
 try:
     from urllib.request import urlopen
 except ImportError:
     from urllib2 import urlopen
+
+pytestmark = pytest.mark.flask
 
 
 def test_error_handler(flask_apm_client):
@@ -222,13 +227,20 @@ def test_instrumentation_404(flask_apm_client):
     assert len(spans) == 0, [t["signature"] for t in spans]
 
 
-def test_traceparent_handling(flask_apm_client):
-    resp = flask_apm_client.app.test_client().post(
-        "/users/",
-        data={"foo": "bar"},
-        headers={constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"},
-    )
-    resp.close()
+@pytest.mark.parametrize("header_name", [constants.TRACEPARENT_HEADER_NAME, constants.TRACEPARENT_LEGACY_HEADER_NAME])
+def test_traceparent_handling(flask_apm_client, header_name):
+    with mock.patch(
+        "elasticapm.contrib.flask.TraceParent.from_string", wraps=TraceParent.from_string
+    ) as wrapped_from_string:
+        resp = flask_apm_client.app.test_client().post(
+            "/users/",
+            data={"foo": "bar"},
+            headers={
+                header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+                constants.TRACESTATE_HEADER_NAME: "foo=bar,baz=bazzinga",
+            },
+        )
+        resp.close()
 
     assert resp.status_code == 200, resp.response
 
@@ -236,6 +248,7 @@ def test_traceparent_handling(flask_apm_client):
 
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
+    assert "foo=bar,baz=bazzinga" in wrapped_from_string.call_args[0]
 
 
 def test_non_standard_http_status(flask_apm_client):

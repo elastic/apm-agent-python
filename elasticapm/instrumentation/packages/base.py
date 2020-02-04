@@ -39,8 +39,53 @@ logger = get_logger("elasticapm.instrument")
 
 
 class AbstractInstrumentedModule(object):
+    """
+    This class is designed to reduce the amount of code required to
+    instrument library functions using wrapt.
+
+    Instrumentation modules inherit from this class and override pieces as
+    needed. Only `name`, `instrumented_list`, and `call` are required in
+    the inheriting class.
+
+    The `instrument_list` is a list of (module, method) pairs that will be
+    instrumented. The module/method need not be imported -- in fact, because
+    instrumentation modules are all processed during the instrumentation
+    process, lazy imports should be used in order to avoid ImportError
+    exceptions.
+
+    The `instrument()` method will be called for each InstrumentedModule
+    listed in the instrument register (elasticapm.instrumentation.register),
+    and each method in the `instrument_list` will be wrapped (using wrapt)
+    with the `call_if_sampling()` function, which (by default) will either
+    call the wrapped function by itself, or pass it into `call()` to be
+    called if there is a transaction active.
+
+    For simple span-wrapping of instrumented libraries, a very simple
+    InstrumentedModule might look like this::
+
+        from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+        from elasticapm.traces import capture_span
+
+        class Jinja2Instrumentation(AbstractInstrumentedModule):
+            name = "jinja2"
+            instrument_list = [("jinja2", "Template.render")]
+            def call(self, module, method, wrapped, instance, args, kwargs):
+                signature = instance.name or instance.filename
+                with capture_span(signature, span_type="template", span_subtype="jinja2", span_action="render"):
+                    return wrapped(*args, **kwargs)
+
+    This class can also be used to instrument callables which are expected to
+    create their own transactions (rather than spans within a transaction).
+    In this case, set `creates_transaction = True` next to your `name` and
+    `instrument_list`. This tells the instrumenting code to always wrap the
+    method with `call()`, even if there is no transaction active. It is
+    expected in this case that a new transaction will be created as part of
+    your `call()` method.
+    """
+
     name = None
     mutates_unsampled_arguments = False
+    creates_transactions = False
 
     instrument_list = [
         # List of (module, method) pairs to instrument. E.g.:
@@ -48,10 +93,6 @@ class AbstractInstrumentedModule(object):
     ]
 
     def __init__(self):
-        """
-
-        :param client: elasticapm.base.Client
-        """
         self.originals = {}
         self.instrumented = False
 
@@ -131,6 +172,24 @@ class AbstractInstrumentedModule(object):
         self.originals = {}
 
     def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
+        """
+        This is the function which will wrap the instrumented method/function.
+
+        By default, will call the instrumented method/function, via `call()`,
+        only if a transaction is active and sampled. This behavior can be
+        overridden by setting `creates_transactions = True` at the class
+        level.
+
+        If `creates_transactions == False` and there's an active transaction
+        with `transaction.is_sampled == False`, then the
+        `mutate_unsampled_call_args()` method is called, and the resulting
+        args and kwargs are passed into the wrapped function directly, not
+        via `call()`. This can e.g. be used to add traceparent headers to the
+        underlying http call for HTTP instrumentations, even if we're not
+        sampling the transaction.
+        """
+        if self.creates_transactions:
+            return self.call(module, method, wrapped, instance, args, kwargs)
         transaction = execution_context.get_transaction()
         if not transaction:
             return wrapped(*args, **kwargs)
@@ -142,8 +201,9 @@ class AbstractInstrumentedModule(object):
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
         """
-        Method called for unsampled wrapped calls. This can e.g. be used to add traceparent headers to the
-        underlying http call for HTTP instrumentations.
+        Method called for unsampled wrapped calls. This can e.g. be used to
+        add traceparent headers to the underlying http call for HTTP
+        instrumentations.
 
         :param module:
         :param method:
@@ -158,8 +218,13 @@ class AbstractInstrumentedModule(object):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         """
-        Wrapped call. This method should gather all necessary data, then call `wrapped` in a `capture_span` context
-        manager.
+        Wrapped call. This method should gather all necessary data, then call
+        `wrapped` in a `capture_span` context manager.
+
+        Note that by default this wrapper will only be used if a transaction is
+        currently active. If you want the ability to create a transaction in
+        your `call()` method, set `create_transactions = True` at the class
+        level.
 
         :param module: Name of the wrapped module
         :param method: Name of the wrapped method/function

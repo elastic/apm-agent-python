@@ -18,12 +18,34 @@ def coffee_maker(strength):
 
     with elasticapm.capture_span('near-to-machine'):
         insert_filter()
-        for i in range(strengh):
+        for i in range(strength):
             pour_coffee()
 
         start_drip()
 
     fresh_pots()
 ----
+
+Similarly, you can use `elasticapm.async_capture_span` for instrumenting `async` workloads:
+
+[source,python]
+----
+import elasticapm
+
+@elasticapm.async_capture_span()
+async def coffee_maker(strength):
+    await fetch_water()
+
+    async with elasticapm.async_capture_span('near-to-machine'):
+        await insert_filter()
+        async for i in range(strength):
+            await pour_coffee()
+
+        start_drip()
+
+    fresh_pots()
+----
+
+NOTE: `asyncio` support is only available in Python 3.7+.
 
 See <<api-capture-span, the API docs>> for more information on `capture_span`. 

@@ -39,7 +39,7 @@ from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.celery import register_exception_tracking, register_instrumentation
 from tests.contrib.django.testapp.tasks import failing_task, successful_task
 
-pytestmark = pytest.mark.celery
+pytestmark = [pytest.mark.celery, pytest.mark.django]
 
 
 def test_failing_celery_task(django_elasticapm_client):

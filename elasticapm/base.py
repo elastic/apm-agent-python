@@ -36,7 +36,6 @@ import itertools
 import logging
 import os
 import platform
-import socket
 import sys
 import time
 import warnings
@@ -126,8 +125,6 @@ class Client(object):
             "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
         }
 
-        if self.config.secret_token:
-            headers["Authorization"] = "Bearer %s" % self.config.secret_token
         transport_kwargs = {
             "metadata": self._build_metadata(),
             "headers": headers,
@@ -142,7 +139,8 @@ class Client(object):
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
             constants.EVENTS_API_PATH,
         )
-        self._transport = import_string(self.config.transport_class)(self._api_endpoint_url, **transport_kwargs)
+        transport_class = import_string(self.config.transport_class)
+        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -317,7 +315,7 @@ class Client(object):
 
     def get_system_info(self):
         system_data = {
-            "hostname": keyword_field(socket.gethostname()),
+            "hostname": keyword_field(self.config.hostname),
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }
@@ -361,6 +359,7 @@ class Client(object):
         Captures, processes and serializes an event into a dict object
         """
         transaction = execution_context.get_transaction()
+        span = execution_context.get_span()
         if transaction:
             transaction_context = deepcopy(transaction.context)
         else:
@@ -453,7 +452,8 @@ class Client(object):
         if transaction:
             if transaction.trace_parent:
                 event_data["trace_id"] = transaction.trace_parent.trace_id
-            event_data["parent_id"] = transaction.id
+            # parent id might already be set in the handler
+            event_data.setdefault("parent_id", span.id if span else transaction.id)
             event_data["transaction_id"] = transaction.id
             event_data["transaction"] = {"sampled": transaction.is_sampled, "type": transaction.transaction_type}
 
