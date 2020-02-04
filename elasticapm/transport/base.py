@@ -31,7 +31,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
-import os
 import random
 import threading
 import time
@@ -41,6 +40,7 @@ from collections import defaultdict
 from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import compat, json_encoder
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.threading import ThreadManager
 
 logger = get_logger("elasticapm.transport")
 
@@ -52,7 +52,7 @@ class TransportException(Exception):
         self.print_trace = print_trace
 
 
-class Transport(object):
+class Transport(ThreadManager):
     """
     All transport implementations need to subclass this class
 
@@ -100,16 +100,8 @@ class Transport(object):
         self._flushed = threading.Event()
         self._closed = False
         self._processors = processors if processors is not None else []
-        self._pid = None
-        self._thread_starter_lock = threading.Lock()
 
     def queue(self, event_type, data, flush=False):
-        with self._thread_starter_lock:
-            # check if self._pid is the same as os.getpid(). If they are not the same, it means that our
-            # process was forked at some point, so we need to start another processor thread
-            if self._pid != os.getpid():
-                self._start_event_processor()
-                self._pid = os.getpid()
         try:
             self._flushed.clear()
             kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
@@ -234,7 +226,7 @@ class Transport(object):
             except Exception as e:
                 self.handle_transport_fail(e)
 
-    def _start_event_processor(self):
+    def start_thread(self):
         if (not self._event_process_thread or not self._event_process_thread.is_alive()) and not self._closed:
             try:
                 self._event_process_thread = threading.Thread(
@@ -263,6 +255,8 @@ class Transport(object):
         self.queue("close", None)
         if not self._flushed.wait(timeout=self._max_flush_time):
             raise ValueError("close timed out")
+
+    stop_thread = close
 
     def flush(self):
         """

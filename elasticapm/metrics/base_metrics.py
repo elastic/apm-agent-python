@@ -36,14 +36,14 @@ from elasticapm.conf import constants
 from elasticapm.utils import compat, is_master_process
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
+from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
 logger = get_logger("elasticapm.metrics")
 
 DISTINCT_LABEL_LIMIT = 1000
 
 
-class MetricsRegistry(object):
+class MetricsRegistry(ThreadManager):
     def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
         """
         Creates a new metric registry
@@ -97,16 +97,18 @@ class MetricsRegistry(object):
             for data in metricset.collect():
                 self._queue_func(constants.METRICSET, data)
 
-    def _start_collect_timer(self, timeout=None):
-        timeout = timeout or self._collect_interval
-        self._collect_timer = IntervalTimer(self.collect, timeout, name="eapm metrics collect timer", daemon=True)
+    def start_thread(self):
+        self._collect_timer = IntervalTimer(
+            self.collect, self._collect_interval, name="eapm metrics collect timer", daemon=True
+        )
         logger.debug("Starting metrics collect timer")
         self._collect_timer.start()
 
-    def _stop_collect_timer(self):
+    def stop_thread(self):
         if self._collect_timer:
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
+            self._collect_timer = None
 
 
 class MetricsSet(object):
