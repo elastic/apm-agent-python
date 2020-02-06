@@ -33,7 +33,7 @@ import time
 from collections import defaultdict
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, is_master_process
+from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
@@ -58,13 +58,6 @@ class MetricsRegistry(ThreadManager):
         self._tags = tags or {}
         self._collect_timer = None
         self._ignore_patterns = ignore_patterns or ()
-        if self._collect_interval:
-            # we only start the thread if we are not in a uwsgi master process
-            if not is_master_process():
-                self._start_collect_timer()
-            else:
-                # If we _are_ in a uwsgi master process, we use the postfork hook to start the thread after the fork
-                compat.postfork(lambda: self._start_collect_timer())
 
     def register(self, class_path):
         """
@@ -98,14 +91,15 @@ class MetricsRegistry(ThreadManager):
                 self._queue_func(constants.METRICSET, data)
 
     def start_thread(self):
-        self._collect_timer = IntervalTimer(
-            self.collect, self._collect_interval, name="eapm metrics collect timer", daemon=True
-        )
-        logger.debug("Starting metrics collect timer")
-        self._collect_timer.start()
+        if self._collect_interval:
+            self._collect_timer = IntervalTimer(
+                self.collect, self._collect_interval, name="eapm metrics collect timer", daemon=True
+            )
+            logger.debug("Starting metrics collect timer")
+            self._collect_timer.start()
 
     def stop_thread(self):
-        if self._collect_timer:
+        if self._collect_timer and self._collect_timer.is_alive():
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
             self._collect_timer = None

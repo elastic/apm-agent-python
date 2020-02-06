@@ -207,7 +207,7 @@ class Client(object):
         with self._thread_starter_lock:
             current_pid = os.getpid()
             if self._pid != current_pid:
-                for manager in self._thread_managers.items():
+                for manager_type, manager in self._thread_managers.items():
                     manager.start_thread()
                 self._pid = current_pid
 
@@ -287,11 +287,9 @@ class Client(object):
         return transaction
 
     def close(self):
-        if self._metrics:
-            self._metrics._stop_collect_timer()
-        if self._config_updater:
-            self._config_updater.cancel()
-        self._transport.close()
+        with self._thread_starter_lock:
+            for manager_type, manager in self._thread_managers.items():
+                manager.stop_thread()
 
     def get_service_info(self):
         if self._service_info:

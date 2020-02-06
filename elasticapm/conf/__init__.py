@@ -347,7 +347,7 @@ class VersionedConfig(ThreadManager):
 
     __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock", "transport", "_update_thread")
 
-    def __init__(self, config_object, version, transport):
+    def __init__(self, config_object, version, transport=None):
         """
         Create a new VersionedConfig with an initial Config object
         :param config_object: the initial Config object
@@ -411,7 +411,7 @@ class VersionedConfig(ThreadManager):
         keys = {"service": {"name": self.service_name}}
         if self.environment:
             keys["service"]["environment"] = self.environment
-        new_version, new_config, next_run = self._transport.get_config(self.config_version, keys)
+        new_version, new_config, next_run = self.transport.get_config(self.config_version, keys)
         if new_version and new_config:
             errors = self.update(new_version, **new_config)
             if errors:
@@ -438,8 +438,9 @@ class VersionedConfig(ThreadManager):
         self._update_thread.start()
 
     def stop_thread(self):
-        self._update_thread.cancel()
-        self._update_thread = None
+        if self._update_thread:
+            self._update_thread.cancel()
+            self._update_thread = None
 
 
 def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
