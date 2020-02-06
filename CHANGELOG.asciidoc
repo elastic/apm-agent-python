@@ -52,6 +52,11 @@ This will be the last minor release to support the following versions:
  * Use Span ID as parent ID in errors if an error happens inside a span {pull}669[#669]
  * Added experimental support for API Key authentication {pull}679[#679]
 
+[float]
+===== Bug fixes
+
+ * introduced workaround to avoid instrumenting twice in rare cases (#708)
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x

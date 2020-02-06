@@ -38,6 +38,11 @@ from elasticapm.utils.logging import get_logger
 logger = get_logger("elasticapm.instrument")
 
 
+class ElasticAPMFunctionWrapper(wrapt.FunctionWrapper):
+    # used to differentiate between our own function wrappers and 1st/3rd party wrappers
+    pass
+
+
 class AbstractInstrumentedModule(object):
     """
     This class is designed to reduce the amount of code required to
@@ -136,8 +141,13 @@ class AbstractInstrumentedModule(object):
                     # We jump through hoop here to get the original
                     # `module`/`method` in the call to `call_if_sampling`
                     parent, attribute, original = wrapt.resolve_path(module, method)
+                    if isinstance(original, ElasticAPMFunctionWrapper):
+                        logger.debug("%s.%s already instrumented, skipping", module, method)
+                        continue
                     self.originals[(module, method)] = original
-                    wrapper = wrapt.FunctionWrapper(original, functools.partial(self.call_if_sampling, module, method))
+                    wrapper = ElasticAPMFunctionWrapper(
+                        original, functools.partial(self.call_if_sampling, module, method)
+                    )
                     wrapt.apply_patch(parent, attribute, wrapper)
                     instrumented_methods.append((module, method))
                 except ImportError:
