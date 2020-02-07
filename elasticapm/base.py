@@ -207,7 +207,9 @@ class Client(object):
         with self._thread_starter_lock:
             current_pid = os.getpid()
             if self._pid != current_pid:
+                self.logger.debug("Detected PID change from %d to %d, starting threads", self._pid, current_pid)
                 for manager_type, manager in self._thread_managers.items():
+                    self.logger.debug("Starting %s thread", manager_type)
                     manager.start_thread()
                 self._pid = current_pid
 
@@ -288,7 +290,7 @@ class Client(object):
 
     def close(self):
         with self._thread_starter_lock:
-            for manager_type, manager in self._thread_managers.items():
+            for _manager_type, manager in self._thread_managers.items():
                 manager.stop_thread()
 
     def get_service_info(self):

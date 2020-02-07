@@ -31,6 +31,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import os
 import random
 import threading
 import time
@@ -94,7 +95,7 @@ class Transport(ThreadManager):
         self._queued_data = None
         self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
         self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
-        self._event_process_thread = None
+        self._thread = None
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._flushed = threading.Event()
@@ -227,13 +228,13 @@ class Transport(ThreadManager):
                 self.handle_transport_fail(e)
 
     def start_thread(self):
-        if (not self._event_process_thread or not self._event_process_thread.is_alive()) and not self._closed:
+        current_pid = os.getpid()
+        if (not self._thread or current_pid != self._thread.pid) and not self._closed:
             try:
-                self._event_process_thread = threading.Thread(
-                    target=self._process_queue, name="eapm event processor thread"
-                )
-                self._event_process_thread.daemon = True
-                self._event_process_thread.start()
+                self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
+                self._thread.daemon = True
+                self._thread.pid = current_pid
+                self._thread.start()
             except RuntimeError:
                 pass
 
@@ -249,7 +250,7 @@ class Transport(ThreadManager):
         Cleans up resources and closes connection
         :return:
         """
-        if self._closed:
+        if self._closed or (not self._thread or self._thread.pid != os.getpid()):
             return
         self._closed = True
         self.queue("close", None)
