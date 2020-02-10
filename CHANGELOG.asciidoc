@@ -43,6 +43,7 @@ This will be the last minor release to support the following versions:
 [float]
 ===== New Features
 
+ * Refactored spawning of background threads {pull}636[#636]
  * Added support for aiohttp client and server {pull}659[#659]
  * Added support for tornado web framework {pull}661[#661]
  * Added support for starlette/fastapi {pull}694[#694]
