@@ -37,12 +37,13 @@ import logging
 import os
 import platform
 import sys
+import threading
 import time
 import warnings
 from copy import deepcopy
 
 import elasticapm
-from elasticapm.conf import Config, VersionedConfig, constants, update_config
+from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
@@ -50,7 +51,6 @@ from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
 
 __all__ = ("Client",)
 
@@ -91,6 +91,10 @@ class Client(object):
         cls = self.__class__
         self.logger = get_logger("%s.%s" % (cls.__module__, cls.__name__))
         self.error_logger = get_logger("elasticapm.errors")
+
+        self._pid = None
+        self._thread_starter_lock = threading.Lock()
+        self._thread_managers = {}
 
         self.tracer = None
         self.processors = []
@@ -141,6 +145,8 @@ class Client(object):
         )
         transport_class = import_string(self.config.transport_class)
         self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self.config.transport = self._transport
+        self._thread_managers["transport"] = self._transport
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -188,14 +194,24 @@ class Client(object):
             self._metrics.register(path)
         if self.config.breakdown_metrics:
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+        self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
-            self._config_updater = IntervalTimer(
-                update_config, 1, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
-            )
-            self._config_updater.start()
+            self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
+
+        self.start_threads()
+
+    def start_threads(self):
+        with self._thread_starter_lock:
+            current_pid = os.getpid()
+            if self._pid != current_pid:
+                self.logger.debug("Detected PID change from %d to %d, starting threads", self._pid, current_pid)
+                for manager_type, manager in self._thread_managers.items():
+                    self.logger.debug("Starting %s thread", manager_type)
+                    manager.start_thread()
+                self._pid = current_pid
 
     def get_handler(self, name):
         return import_string(name)
@@ -243,6 +259,7 @@ class Client(object):
     def queue(self, event_type, data, flush=False):
         if self.config.disable_send:
             return
+        self.start_threads()
         if flush and is_master_process():
             # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
             flush = False
@@ -272,11 +289,9 @@ class Client(object):
         return transaction
 
     def close(self):
-        if self._metrics:
-            self._metrics._stop_collect_timer()
-        if self._config_updater:
-            self._config_updater.cancel()
-        self._transport.close()
+        with self._thread_starter_lock:
+            for _manager_type, manager in self._thread_managers.items():
+                manager.stop_thread()
 
     def get_service_info(self):
         if self._service_info:

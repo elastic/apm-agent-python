@@ -31,6 +31,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import os
 import random
 import threading
 import time
@@ -38,8 +39,9 @@ import timeit
 from collections import defaultdict
 
 from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import compat, is_master_process, json_encoder
+from elasticapm.utils import compat, json_encoder
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.threading import ThreadManager
 
 logger = get_logger("elasticapm.transport")
 
@@ -51,7 +53,7 @@ class TransportException(Exception):
         self.print_trace = print_trace
 
 
-class Transport(object):
+class Transport(ThreadManager):
     """
     All transport implementations need to subclass this class
 
@@ -93,18 +95,12 @@ class Transport(object):
         self._queued_data = None
         self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
         self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
-        self._event_process_thread = None
+        self._thread = None
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._flushed = threading.Event()
         self._closed = False
         self._processors = processors if processors is not None else []
-        # only start the event processing thread if we are not in a uwsgi master process
-        if not is_master_process():
-            self._start_event_processor()
-        else:
-            # if we _are_ in a uwsgi master process, use the postfork mixup to start the thread after the fork
-            compat.postfork(lambda: self._start_event_processor())
 
     def queue(self, event_type, data, flush=False):
         try:
@@ -231,14 +227,14 @@ class Transport(object):
             except Exception as e:
                 self.handle_transport_fail(e)
 
-    def _start_event_processor(self):
-        if (not self._event_process_thread or not self._event_process_thread.is_alive()) and not self._closed:
+    def start_thread(self):
+        current_pid = os.getpid()
+        if (not self._thread or current_pid != self._thread.pid) and not self._closed:
             try:
-                self._event_process_thread = threading.Thread(
-                    target=self._process_queue, name="eapm event processor thread"
-                )
-                self._event_process_thread.daemon = True
-                self._event_process_thread.start()
+                self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
+                self._thread.daemon = True
+                self._thread.pid = current_pid
+                self._thread.start()
             except RuntimeError:
                 pass
 
@@ -254,12 +250,14 @@ class Transport(object):
         Cleans up resources and closes connection
         :return:
         """
-        if self._closed:
+        if self._closed or (not self._thread or self._thread.pid != os.getpid()):
             return
         self._closed = True
         self.queue("close", None)
         if not self._flushed.wait(timeout=self._max_flush_time):
             raise ValueError("close timed out")
+
+    stop_thread = close
 
     def flush(self):
         """
