@@ -37,8 +37,10 @@ import threading
 
 from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
 __all__ = ("setup_logging", "Config")
+
 
 logger = get_logger("elasticapm.conf")
 
@@ -252,6 +254,7 @@ class Config(_ConfigBase):
     service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
     environment = _ConfigValue("ENVIRONMENT", default=None)
     secret_token = _ConfigValue("SECRET_TOKEN")
+    api_key = _ConfigValue("API_KEY")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
     server_cert = _ConfigValue("SERVER_CERT", default=None, required=False, validators=[FileIsReadableValidator()])
@@ -337,14 +340,14 @@ class Config(_ConfigBase):
     use_elastic_traceparent_header = _BoolConfigValue("USE_ELASTIC_TRACEPARENT_HEADER", default=True)
 
 
-class VersionedConfig(object):
+class VersionedConfig(ThreadManager):
     """
     A thin layer around Config that provides versioning
     """
 
-    __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock")
+    __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock", "transport", "_update_thread")
 
-    def __init__(self, config_object, version):
+    def __init__(self, config_object, version, transport=None):
         """
         Create a new VersionedConfig with an initial Config object
         :param config_object: the initial Config object
@@ -352,7 +355,9 @@ class VersionedConfig(object):
         """
         self._config = self._first_config = config_object
         self._version = self._first_version = version
+        self.transport = transport
         self._lock = threading.Lock()
+        self._update_thread = None
 
     def update(self, version, **config):
         """
@@ -398,32 +403,44 @@ class VersionedConfig(object):
     def config_version(self):
         return self._version
 
+    def update_config(self):
+        if not self.transport:
+            logger.warning("No transport set for config updates, skipping")
+            return
+        logger.debug("Checking for new config...")
+        keys = {"service": {"name": self.service_name}}
+        if self.environment:
+            keys["service"]["environment"] = self.environment
+        new_version, new_config, next_run = self.transport.get_config(self.config_version, keys)
+        if new_version and new_config:
+            errors = self.update(new_version, **new_config)
+            if errors:
+                logger.error("Error applying new configuration: %s", repr(errors))
+            else:
+                logger.info(
+                    "Applied new configuration: %s",
+                    "; ".join(
+                        "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
+                    ),
+                )
+        elif new_version == self.config_version:
+            logger.debug("Remote config unchanged")
+        elif not new_config and self.changed:
+            logger.debug("Remote config disappeared, resetting to original")
+            self.reset()
 
-def update_config(agent):
-    logger.debug("Checking for new config...")
-    transport = agent._transport
-    keys = {"service": {"name": agent.config.service_name}}
-    if agent.config.environment:
-        keys["service"]["environment"] = agent.config.environment
-    new_version, new_config, next_run = transport.get_config(agent.config.config_version, keys)
-    if new_version and new_config:
-        errors = agent.config.update(new_version, **new_config)
-        if errors:
-            logger.error("Error applying new configuration: %s", repr(errors))
-        else:
-            logger.info(
-                "Applied new configuration: %s",
-                "; ".join(
-                    "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
-                ),
-            )
-    elif new_version == agent.config.config_version:
-        logger.debug("Remote config unchanged")
-    elif not new_config and agent.config.changed:
-        logger.debug("Remote config disappeared, resetting to original")
-        agent.config.reset()
+        return next_run
 
-    return next_run
+    def start_thread(self):
+        self._update_thread = IntervalTimer(
+            self.update_config, 1, "eapm conf updater", daemon=True, evaluate_function_interval=True
+        )
+        self._update_thread.start()
+
+    def stop_thread(self):
+        if self._update_thread:
+            self._update_thread.cancel()
+            self._update_thread = None
 
 
 def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):

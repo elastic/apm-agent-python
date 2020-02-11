@@ -35,3 +35,5 @@ FRAMEWORK:
   - pymysql-newest
   - aiohttp-newest
   - aiopg-newest
+  - tornado-newest
+  - starlette-newest

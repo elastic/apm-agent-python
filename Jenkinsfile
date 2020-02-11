@@ -23,6 +23,9 @@ pipeline {
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
+    HOME = "${env.WORKSPACE}"
+    PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+    PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -46,11 +49,6 @@ pipeline {
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
       stages {
         /**
         Checkout the code and stash it, to use it on other stages.
@@ -76,7 +74,7 @@ pipeline {
               deleteDir()
               unstash 'source'
               script {
-                docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+                docker.image('python:3.7-stretch').inside(){
                   dir("${BASE_DIR}"){
                     // registry: '' will help to disable the docker login
                     preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
@@ -126,10 +124,6 @@ pipeline {
         beforeAgent true
         expression { return params.package_ci }
       }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
-      }
       steps {
         withGithubNotify(context: 'Building packages') {
           deleteDir()
@@ -147,11 +141,9 @@ pipeline {
       agent none
       when {
         beforeAgent true
-        allOf {
-          anyOf {
-            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
-            expression { return !params.Run_As_Master_Branch }
-          }
+        anyOf {
+          changeRequest()
+          expression { return !params.Run_As_Master_Branch }
         }
       }
       steps {
@@ -169,9 +161,6 @@ pipeline {
       agent { label 'metal' }
       options { skipDefaultCheckout() }
       environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.WORKSPACE}/.local/bin:${env.PATH}"
-        PIP_CACHE = "${env.WORKSPACE}/.cache"
         AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
         LANG = 'C.UTF-8'
         LC_ALL = "${env.LANG}"
@@ -214,10 +203,6 @@ pipeline {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
-      }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       when {
         beforeInput true
@@ -373,9 +358,6 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'

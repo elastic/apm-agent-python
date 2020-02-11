@@ -18,6 +18,9 @@ pipeline {
     PIPELINE_LOG_LEVEL='INFO'
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
+    HOME = "${env.WORKSPACE}"
+    PATH = "${env.PATH}:${env.WORKSPACE}/bin"
+    PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
     timeout(time: 3, unit: 'HOURS')
@@ -35,10 +38,6 @@ pipeline {
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-      }
       stages {
         stage('Checkout') {
           steps {
@@ -160,9 +159,6 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'

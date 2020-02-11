@@ -136,7 +136,7 @@ def test_message_event(elasticapm_client):
 def test_param_message_event(elasticapm_client):
     elasticapm_client.capture("Message", param_message={"message": "test %s %d", "params": ("x", 1)})
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "test x 1"
     assert event["log"]["param_message"] == "test %s %d"
@@ -145,7 +145,7 @@ def test_param_message_event(elasticapm_client):
 def test_message_with_percent(elasticapm_client):
     elasticapm_client.capture("Message", message="This works 100% of the time")
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "This works 100% of the time"
     assert event["log"]["param_message"] == "This works 100% of the time"
@@ -154,7 +154,7 @@ def test_message_with_percent(elasticapm_client):
 def test_logger(elasticapm_client):
     elasticapm_client.capture("Message", message="test", logger_name="test")
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["logger_name"] == "test"
     assert "timestamp" in event

@@ -85,8 +85,9 @@ def test_transport_state_set_success():
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_empty_queue_flush_is_not_sent(mock_send):
-    transport = Transport(metadata={"x": "y"}, max_flush_time=5)
+    transport = Transport(client=None, metadata={"x": "y"}, max_flush_time=5)
     try:
+        transport.start_thread()
         transport.flush()
         assert mock_send.call_count == 0
     finally:
@@ -95,7 +96,8 @@ def test_empty_queue_flush_is_not_sent(mock_send):
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_metadata_prepended(mock_send):
-    transport = Transport(metadata={"x": "y"}, max_flush_time=5, compress_level=0)
+    transport = Transport(client=None, metadata={"x": "y"}, max_flush_time=5, compress_level=0)
+    transport.start_thread()
     transport.queue("error", {}, flush=True)
     transport.close()
     assert mock_send.call_count == 1
@@ -111,7 +113,8 @@ def test_metadata_prepended(mock_send):
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_flush_time(mock_send, caplog):
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(metadata={}, max_flush_time=0.1)
+        transport = Transport(client=None, metadata={}, max_flush_time=0.1)
+        transport.start_thread()
         # let first run finish
         time.sleep(0.2)
         transport.close()
@@ -122,29 +125,36 @@ def test_flush_time(mock_send, caplog):
 
 @mock.patch("elasticapm.transport.base.Transport._flush")
 def test_flush_time_size(mock_flush, caplog):
-    transport = Transport(metadata={}, max_buffer_size=100, queue_chill_count=1)
-    with caplog.at_level("DEBUG", "elasticapm.transport"):
-        # we need to add lots of uncompressible data to fill up the gzip-internal buffer
-        for i in range(12):
-            transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
-        transport._flushed.wait(timeout=0.1)
-    assert mock_flush.call_count == 1
-    transport.close()
+    transport = Transport(client=None, metadata={}, max_buffer_size=100, queue_chill_count=1)
+    transport.start_thread()
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport"):
+            # we need to add lots of uncompressible data to fill up the gzip-internal buffer
+            for i in range(12):
+                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+            transport._flushed.wait(timeout=0.1)
+        assert mock_flush.call_count == 1
+    finally:
+        transport.close()
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_forced_flush(mock_send, caplog):
-    transport = Transport(metadata={}, max_buffer_size=1000, compress_level=0)
-    with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport.queue("error", "x", flush=True)
-    transport.close()
+    transport = Transport(client=None, metadata={}, max_buffer_size=1000, compress_level=0)
+    transport.start_thread()
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport"):
+            transport.queue("error", "x", flush=True)
+    finally:
+        transport.close()
     assert mock_send.call_count == 1
     assert transport._queued_data is None
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_sync_transport_fail_and_recover(mock_send, caplog):
-    transport = Transport()
+    transport = Transport(client=None)
+    transport.start_thread()
     try:
         mock_send.side_effect = TransportException("meh")
         transport.queue("x", {})
@@ -174,24 +184,7 @@ def test_send_timer(sending_elasticapm_client, caplog):
     assert_any_record_contains(caplog.records, "Sent request")
 
 
-@mock.patch("tests.fixtures.DummyTransport._start_event_processor")
-@mock.patch("elasticapm.transport.base.is_master_process")
-def test_client_doesnt_start_processor_thread_in_master_process(is_master_process, mock_start_event_processor):
-    # when in the master process, the client should not start worker threads
-    is_master_process.return_value = True
-    before = mock_start_event_processor.call_count
-    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_event_processor.call_count == before
-    client.close()
-
-    is_master_process.return_value = False
-    before = mock_start_event_processor.call_count
-    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_event_processor.call_count == before + 1
-    client.close()
-
-
 def test_compress_level_sanitization():
-    assert DummyTransport(compress_level=None, url="")._compress_level == 0
-    assert DummyTransport(compress_level=-1, url="")._compress_level == 0
-    assert DummyTransport(compress_level=10, url="")._compress_level == 9
+    assert DummyTransport(compress_level=None, url="", client=None)._compress_level == 0
+    assert DummyTransport(compress_level=-1, url="", client=None)._compress_level == 0
+    assert DummyTransport(compress_level=10, url="", client=None)._compress_level == 9

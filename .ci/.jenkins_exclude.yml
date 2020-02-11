@@ -131,6 +131,9 @@ exclude:
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.8 # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
+  # psycopg2
+  - PYTHON_VERSION: python-3.8 # see https://github.com/psycopg/psycopg2/issues/858
+    FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: pyodbc-newest
@@ -204,6 +207,44 @@ exclude:
     FRAMEWORK: aiohttp-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: aiohttp-newest
+  # tornado, only supported in Python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: tornado-newest
+  # Starlette, only supported in python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: python-3.4
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: starlette-newest
   # aiopg
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: aiopg-newest
