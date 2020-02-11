@@ -36,6 +36,7 @@ import pytest
 
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm.utils import default_ports
 
 psycopg2 = pytest.importorskip("psycopg2")
 
@@ -264,6 +265,22 @@ def test_fully_qualified_table_name():
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_destination(instrument, postgres_connection, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    cursor = postgres_connection.cursor()
+    cursor.execute("SELECT 1")
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("POSTGRES_HOST", None),
+        "port": default_ports["postgresql"],
+        "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+    }
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_type(instrument, postgres_connection, elasticapm_client):
     import psycopg2.extras
 
@@ -364,7 +381,6 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
-        assert span["context"]["destination"]["address"] == os.environ.get("POSTGRES_HOST", None)
 
 
 @pytest.mark.integrationtest
@@ -395,7 +411,6 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == baked_query
-        assert span["context"]["destination"]["address"] == os.environ.get("POSTGRES_HOST", None)
 
 
 @pytest.mark.integrationtest
@@ -421,7 +436,6 @@ def test_psycopg2_call_stored_procedure(instrument, postgres_connection, elastic
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
     assert span["name"] == "squareme()"
     assert span["action"] == "exec"
-    assert span["context"]["destination"]["address"] == os.environ.get("POSTGRES_HOST", None)
 
 
 @pytest.mark.integrationtest
@@ -438,8 +452,6 @@ def test_psycopg_context_manager(instrument, elasticapm_client):
     assert len(spans) == 2
     assert spans[0]["subtype"] == "postgresql"
     assert spans[0]["action"] == "connect"
-    assert spans[0]["context"]["destination"]["address"] == os.environ.get("POSTGRES_HOST", None)
 
     assert spans[1]["subtype"] == "postgresql"
     assert spans[1]["action"] == "query"
-    assert spans[1]["context"]["destination"]["address"] == os.environ.get("POSTGRES_HOST", None)

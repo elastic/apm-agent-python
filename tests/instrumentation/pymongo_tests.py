@@ -40,8 +40,8 @@ pymongo = pytest.importorskip("pymongo")
 
 pytestmark = [pytest.mark.mongodb]
 
-if "MONGODB_HOST" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping mongodb tests, no MONGODB_HOST environment variable set"))
+# if "MONGODB_HOST" not in os.environ:
+#     pytestmark.append(pytest.mark.skip("Skipping mongodb tests, no MONGODB_HOST environment variable set"))
 
 
 @pytest.fixture()
@@ -96,6 +96,11 @@ def test_collection_count(instrument, elasticapm_client, mongo_database):
     assert span["subtype"] == "mongodb"
     assert span["action"] == "query"
     assert span["name"] == "elasticapm_test.blogposts.count"
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("MONGODB_HOST", "localhost"),
+        "port": int(os.environ.get("MONGODB_PORT", 27017)),
+        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+    }
 
 
 @pytest.mark.integrationtest

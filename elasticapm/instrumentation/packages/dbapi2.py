@@ -229,10 +229,7 @@ class CursorProxy(wrapt.ObjectProxy):
             span_type="db",
             span_subtype=self.provider_name,
             span_action=action,
-            extra={
-                "db": {"type": "sql", "statement": sql_string},
-                "destination": {"address": self._self_destination_info},
-            },
+            extra={"db": {"type": "sql", "statement": sql_string}, "destination": self._self_destination_info},
             skip_frames=1,
         ):
             if params is None:

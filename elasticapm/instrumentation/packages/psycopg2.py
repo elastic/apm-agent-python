@@ -83,15 +83,19 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
         else:
             # Parse connection string and extract host/port
             pass
-
+        destination_info = {
+            "address": kwargs.get("host", "localhost"),
+            "port": int(kwargs.get("port", default_ports.get("postgresql"))),
+            "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+        }
         with capture_span(
             signature,
             span_type="db",
             span_subtype="postgresql",
             span_action="connect",
-            extra={"destination": {"address": host}},
+            extra={"destination": destination_info},
         ):
-            return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=host)
+            return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
 
 
 class Psycopg2ExtensionsInstrumentation(DbApi2Instrumentation):
