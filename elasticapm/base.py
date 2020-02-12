@@ -31,6 +31,7 @@
 
 from __future__ import absolute_import
 
+import functools
 import inspect
 import itertools
 import logging
@@ -47,7 +48,7 @@ from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
-from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, compat, get_name_from_func, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -532,3 +533,35 @@ class DummyClient(Client):
 
     def send(self, url, **kwargs):
         return None
+
+
+class capture_serverless(object):
+    """
+    Context manager and decorator designed for instrumenting serverless
+    functions.
+
+    Uses a logging-only version of the transport, and no background threads.
+    Begins and ends a single transaction.
+    """
+
+    def __init__(self, **kwargs):
+        # TODO set up Client
+        pass
+
+    def __call__(self, func):
+        self.name = self.name or get_name_from_func(func)
+
+        @functools.wraps(func)
+        def decorated(*args, **kwds):
+            with self:
+                return func(*args, **kwds)
+
+        return decorated
+
+    def __enter__(self):
+        self.client.begin_transaction(self.name)
+        # TODO
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.client.end_transaction(self.name)
+        # TODO
