@@ -40,8 +40,8 @@ pymongo = pytest.importorskip("pymongo")
 
 pytestmark = [pytest.mark.mongodb]
 
-# if "MONGODB_HOST" not in os.environ:
-#     pytestmark.append(pytest.mark.skip("Skipping mongodb tests, no MONGODB_HOST environment variable set"))
+if "MONGODB_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping mongodb tests, no MONGODB_HOST environment variable set"))
 
 
 @pytest.fixture()

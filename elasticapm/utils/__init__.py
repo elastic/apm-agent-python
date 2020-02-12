@@ -45,7 +45,7 @@ except ImportError:
     partial_types = (partial,)
 
 
-default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306}
+default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
 
 
 def varmap(func, var, context=None, name=None):
