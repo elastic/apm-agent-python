@@ -72,9 +72,10 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         cls_name, method_name = method.split(".", 1)
         signature = ".".join([instance.full_name, method_name])
+        host, port = instance.database.client.address
         destination_info = {
-            "address": instance.database.client.HOST,
-            "port": instance.database.client.PORT,
+            "address": host,
+            "port": port,
             "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
         }
         with capture_span(
@@ -85,7 +86,8 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
             leaf=True,
             extra={"destination": destination_info},
         ):
-            return wrapped(*args, **kwargs)
+            result = wrapped(*args, **kwargs)
+            return result
 
 
 class PyMongoBulkInstrumentation(AbstractInstrumentedModule):

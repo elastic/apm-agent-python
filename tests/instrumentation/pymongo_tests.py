@@ -85,7 +85,6 @@ def test_collection_bulk_write(instrument, elasticapm_client, mongo_database):
 def test_collection_count(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
     mongo_database.blogposts.insert(blogpost)
-    elasticapm_client.events[TRANSACTION]
     elasticapm_client.begin_transaction("transaction.test")
     count = mongo_database.blogposts.count()
     assert count == 1
