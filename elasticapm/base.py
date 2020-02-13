@@ -561,6 +561,7 @@ class capture_serverless(object):
     # transaction in __exit__/__enter__
 
     def __init__(self, **kwargs):
+        self.name = kwargs.get("name")
         self.client = ServerlessClient(**kwargs)
         elasticapm.instrument()
 
