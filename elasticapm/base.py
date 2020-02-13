@@ -145,7 +145,7 @@ class Client(object):
             constants.EVENTS_API_PATH,
         )
         transport_class = import_string(self.config.transport_class)
-        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self._transport = transport_class(url=self._api_endpoint_url, client=self, **transport_kwargs)
         self.config.transport = self._transport
         self._thread_managers["transport"] = self._transport
 
