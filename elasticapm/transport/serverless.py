@@ -35,6 +35,7 @@ from elasticapm.transport.base import Transport
 
 # TODO logging formatter for minimal formatting
 logger = logging.getLogger("elasticapm.transport.serverless")
+logger.setLevel(logging.INFO)
 
 
 class ServerlessTransport(Transport):
