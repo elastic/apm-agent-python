@@ -528,6 +528,26 @@ class Client(object):
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
 
+class ServerlessClient(Client):
+    """
+    Custom client for serverless applications, where we don't want any
+    background threads and need to dump messages to logs rather than to the
+    APM server directly.
+    """
+
+    def __init__(self, config=None, **inline):
+        inline["transport_class"] = "elasticapm.transport.serverless.ServerlessTransport"
+        if isinstance(config, dict) and "transport_class" in config:
+            config.pop("transport_class")
+        super(ServerlessClient, self).__init__(config, **inline)
+
+    def start_threads(self):
+        """
+        No background threads for serverless
+        """
+        pass
+
+
 class capture_serverless(object):
     """
     Context manager and decorator designed for instrumenting serverless
@@ -537,9 +557,12 @@ class capture_serverless(object):
     Begins and ends a single transaction.
     """
 
+    # TODO save event information from API gateway in __call__, add to
+    # transaction in __exit__/__enter__
+
     def __init__(self, **kwargs):
-        # TODO set up Client
-        pass
+        self.client = ServerlessClient(**kwargs)
+        elasticapm.instrument()
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -552,9 +575,9 @@ class capture_serverless(object):
         return decorated
 
     def __enter__(self):
-        self.client.begin_transaction(self.name)
-        # TODO
+        self.transaction = self.client.begin_transaction(self.name)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
         self.client.end_transaction(self.name)
-        # TODO
