@@ -528,13 +528,6 @@ class Client(object):
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
 
-class DummyClient(Client):
-    """Sends messages into an empty void"""
-
-    def send(self, url, **kwargs):
-        return None
-
-
 class capture_serverless(object):
     """
     Context manager and decorator designed for instrumenting serverless
