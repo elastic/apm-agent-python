@@ -28,14 +28,11 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAG
 
+from __future__ import print_function
+
 import json
-import logging
 
 from elasticapm.transport.base import Transport
-
-# TODO logging formatter for minimal formatting
-logger = logging.getLogger("elasticapm.transport.serverless")
-logger.setLevel(logging.INFO)
 
 
 class ServerlessTransport(Transport):
@@ -58,5 +55,4 @@ class ServerlessTransport(Transport):
         Rather than queueing the data, just dump it to a log immediately
         """
         # TODO definitely need to enrich and format this data
-        # TODO log level?
-        logger.info(json.dumps(data))
+        print(json.dumps(data))
