@@ -54,5 +54,6 @@ class ServerlessTransport(Transport):
         """
         Rather than queueing the data, just dump it to a log immediately
         """
-        # TODO definitely need to enrich and format this data
-        print(json.dumps(data))
+        # This does use processors right now, and we're not in a background
+        # thread. We could cause blocking.
+        print(json.dumps(self._process_event(event_type, data)))
