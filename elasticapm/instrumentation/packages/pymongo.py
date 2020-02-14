@@ -86,8 +86,7 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
             leaf=True,
             extra={"destination": destination_info},
         ):
-            result = wrapped(*args, **kwargs)
-            return result
+            return wrapped(*args, **kwargs)
 
 
 class PyMongoBulkInstrumentation(AbstractInstrumentedModule):

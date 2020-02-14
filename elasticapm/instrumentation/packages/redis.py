@@ -87,5 +87,11 @@ class RedisConnectionInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
         if span and span.subtype == "redis":
-            span.context["destination"] = {"address": "%s:%d" % (instance.host, instance.port)}
+            port = int(instance.port) if instance.port else None
+            destination_info = {
+                "address": instance.host,
+                "port": port,
+                "service": {"name": "redis", "resource": "redis", "type": "db"},
+            }
+            span.context["destination"] = destination_info
         return wrapped(*args, **kwargs)
