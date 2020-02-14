@@ -1,6 +1,5 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
 #  Copyright (c) 2019, Elasticsearch BV
 #  All rights reserved.
 #
@@ -27,33 +26,46 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-import sys
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.base import Client  # noqa: F401
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.contrib.serverless import capture_serverless  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import (  # noqa: F401
-    capture_span,
-    get_span_id,
-    get_trace_id,
-    get_transaction_id,
-    label,
-    set_context,
-    set_custom_context,
-    set_transaction_name,
-    set_transaction_result,
-    set_user_context,
-    tag,
-)
+import functools
 
-__all__ = ("VERSION", "Client")
-
-try:
-    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
-except Exception:
-    VERSION = "unknown"
+import elasticapm
+from elasticapm.base import ServerlessClient
+from elasticapm.utils import get_name_from_func
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+class capture_serverless(object):
+    """
+    Context manager and decorator designed for instrumenting serverless
+    functions.
+
+    Uses a logging-only version of the transport, and no background threads.
+    Begins and ends a single transaction.
+    """
+
+    # TODO save event information from API gateway in __call__, add to
+    # transaction in __exit__/__enter__
+
+    def __init__(self, **kwargs):
+        self.name = kwargs.get("name")
+        self.client = ServerlessClient(**kwargs)
+        elasticapm.instrument()
+
+    def __call__(self, func):
+        self.name = self.name or get_name_from_func(func)
+
+        @functools.wraps(func)
+        def decorated(*args, **kwds):
+            with self:
+                return func(*args, **kwds)
+
+        return decorated
+
+    def __enter__(self):
+        self.transaction = self.client.begin_transaction(self.name)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
+        self.client.end_transaction(self.name)

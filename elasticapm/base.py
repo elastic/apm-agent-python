@@ -31,7 +31,6 @@
 
 from __future__ import absolute_import
 
-import functools
 import inspect
 import itertools
 import logging
@@ -48,7 +47,7 @@ from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
-from elasticapm.utils import cgroup, compat, get_name_from_func, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -546,39 +545,3 @@ class ServerlessClient(Client):
         No background threads for serverless
         """
         pass
-
-
-class capture_serverless(object):
-    """
-    Context manager and decorator designed for instrumenting serverless
-    functions.
-
-    Uses a logging-only version of the transport, and no background threads.
-    Begins and ends a single transaction.
-    """
-
-    # TODO save event information from API gateway in __call__, add to
-    # transaction in __exit__/__enter__
-
-    def __init__(self, **kwargs):
-        self.name = kwargs.get("name")
-        self.client = ServerlessClient(**kwargs)
-        elasticapm.instrument()
-
-    def __call__(self, func):
-        self.name = self.name or get_name_from_func(func)
-
-        @functools.wraps(func)
-        def decorated(*args, **kwds):
-            with self:
-                return func(*args, **kwds)
-
-        return decorated
-
-    def __enter__(self):
-        self.transaction = self.client.begin_transaction(self.name)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_val:
-            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
-        self.client.end_transaction(self.name)
