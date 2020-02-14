@@ -56,4 +56,4 @@ class ServerlessTransport(Transport):
         """
         # This does use processors right now, and we're not in a background
         # thread. We could cause blocking.
-        print(json.dumps(self._process_event(event_type, data)))
+        print("ELASTICAPM " + json.dumps(self._process_event(event_type, data)))
