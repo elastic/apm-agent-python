@@ -339,13 +339,22 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           } finally {
             steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
+            )
             steps.env.PYTHON_VERSION = "${x}"
             steps.env.WEBFRAMEWORK = "${y}"
             steps.codecov(repo: "${steps.env.REPO}",
               basedir: "${steps.env.BASE_DIR}",
               flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}")
+              secret: "${steps.env.CODECOV_SECRET}"
+            )
+            dir("${steps.env.BASE_DIR}/tests"){
+              steps.archiveArtifacts(
+                allowEmptyArchive: true,
+                artifacts: '**/docker-info/**',
+                defaultExcludes: false
+              )
+            }
           }
         }
       }
