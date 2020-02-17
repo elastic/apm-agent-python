@@ -4,7 +4,7 @@ set -ex
 function cleanup {
     if [ -n "${BUILD_NUMBER}" ]; then # only on CI
         ./scripts/docker/docker-summary.sh
-        STEP="${1}-${2}" ./scripts/docker/docker-get-logs.sh
+        ./scripts/docker/docker-get-logs.sh "${1}-${2}"
     fi
     PYTHON_VERSION=${1} docker-compose down -v
 
