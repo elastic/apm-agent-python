@@ -2,6 +2,10 @@
 set -ex
 
 function cleanup {
+    if [ -n "${BUILD_NUMBER}" ]; then # only on CI
+        ./scripts/docker/docker-summary.sh
+        STEP="${1}-${2}" ./scripts/docker/docker-get-logs.sh
+    fi
     PYTHON_VERSION=${1} docker-compose down -v
 
     if [[ $CODECOV_TOKEN ]]; then

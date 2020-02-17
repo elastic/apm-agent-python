@@ -346,6 +346,10 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
               basedir: "${steps.env.BASE_DIR}",
               flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
               secret: "${steps.env.CODECOV_SECRET}")
+            steps.archiveArtifacts(
+              allowEmptyArchive: true,
+              artifacts: '**/docker-info/**',
+              defaultExcludes: false)
           }
         }
       }
