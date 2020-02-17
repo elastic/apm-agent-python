@@ -51,10 +51,11 @@ if "POSTGRES_DB" not in os.environ:
 
 
 def dsn():
-    return "dbname={database} user={user} host={host} port={port}".format(
+    return "dbname={database} user={user} password={password} host={host} port={port}".format(
         **{
             "database": os.environ.get("POSTGRES_DB", "elasticapm_test"),
             "user": os.environ.get("POSTGRES_USER", "postgres"),
+            "password": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "host": os.environ.get("POSTGRES_HOST", "localhost"),
             "port": os.environ.get("POSTGRES_PORT", "5432"),
         }
