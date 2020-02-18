@@ -26,6 +26,16 @@ endif::[]
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
+[[release-notes-5.4.1]]
+==== v5.4.1
+
+https://github.com/elastic/apm-agent-python/compare/v5.4.0\...v5.4.1[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * fixed an issue with a DEBUG log message raising an error in some cases {pull}722[#722]
+
 [[release-notes-5.4.0]]
 ==== v5.4.0
 
@@ -62,7 +72,7 @@ of positional arguments being unsupported. {pull}697[#697]
 [float]
 ===== Bug fixes
 
- * introduced workaround to avoid instrumenting twice in rare cases (#708)
+ * introduced workaround to avoid instrumenting twice in rare cases {pull}708[#708]
 
 
 [[release-notes-5.3.3]]
