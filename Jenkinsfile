@@ -89,39 +89,37 @@ pipeline {
     /**
     Execute unit tests.
     */
-    stage('Parallel') {
-      parallel {
-        /*
-        stage('Test') {
-          options { skipDefaultCheckout() }
-          when {
-            beforeAgent true
-            expression { return params.tests_ci }
-          }
-          steps {
-            withGithubNotify(context: 'Test', tab: 'tests') {
-              deleteDir()
-              unstash "source"
-              dir("${BASE_DIR}"){
-                script {
-                  pythonTasksGen = new PythonParallelTaskGenerator(
-                    xKey: 'PYTHON_VERSION',
-                    yKey: 'FRAMEWORK',
-                    xFile: ".ci/.jenkins_python.yml",
-                    yFile: ".ci/.jenkins_framework.yml",
-                    exclusionFile: ".ci/.jenkins_exclude.yml",
-                    tag: "Python",
-                    name: "Python",
-                    steps: this
-                    )
-                  def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-                  parallel(mapPatallelTasks)
-                }
-              }
+    stage('Test') {
+      options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        expression { return params.tests_ci }
+      }
+      steps {
+        withGithubNotify(context: 'Test', tab: 'tests') {
+          deleteDir()
+          unstash "source"
+          dir("${BASE_DIR}"){
+            script {
+              pythonTasksGen = new PythonParallelTaskGenerator(
+                xKey: 'PYTHON_VERSION',
+                yKey: 'FRAMEWORK',
+                xFile: ".ci/.jenkins_python.yml",
+                yFile: ".ci/.jenkins_framework.yml",
+                exclusionFile: ".ci/.jenkins_exclude.yml",
+                tag: "Python",
+                name: "Python",
+                steps: this
+                )
+              //def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              //parallel(mapPatallelTasks)
             }
           }
         }
-        */
+      }
+    }
+    stage('Parallel Windows Tests') {
+      parallel {
         stage('Windows Py 2.7') {
           agent { label 'windows-2019-immutable' }
           steps {
