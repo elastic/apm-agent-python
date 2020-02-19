@@ -127,10 +127,10 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
+                powershell label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.ps1"
                 powershell label: 'Install Python2.7', script: "choco install python2 -y"
-                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
-                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
+                powershell label: 'Install Modules', script: ".\\tests\\scripts\\download_json_schema.ps1"
+                powershell label: 'Install Modules', script: ".\\tests\\scripts\\install_modules.ps1"
                 powershell label: 'Execute Tests', script: "pytest"
               }
             }
