@@ -68,6 +68,7 @@ def test_default_library_paths(version_tuple, python_implementation, system):
         assert compat.get_default_library_patters() == expected
 
 
+@pytest.mark.django
 @pytest.mark.skipif(not has_multivaluedict, reason="Django not installed")
 def test_multivalue_dict():
     d = MultiValueDict()
@@ -77,6 +78,7 @@ def test_multivalue_dict():
     assert d == {"a": ["b", "c"], "b": "d", "e": "f"}
 
 
+@pytest.mark.flask
 @pytest.mark.skipif(not has_multidict, reason="Werkzeug not installed")
 def test_multi_dict():
     d = MultiDict()

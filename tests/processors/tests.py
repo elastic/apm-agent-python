@@ -33,6 +33,7 @@
 from __future__ import absolute_import
 
 import logging
+import os
 
 import mock
 import pytest
@@ -315,6 +316,25 @@ def test_message_processing(elasticapm_client):
     assert "processed_no_events" not in elasticapm_client.events[ERROR][0]
 
 
+@mock.patch("elasticapm.base.constants.HARDCODED_PROCESSORS", ["tests.processors.tests.dummy_processor"])
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "processors": "tests.processors.tests.dummy_processor,"
+            "tests.processors.tests.dummy_processor_no_events,"
+            "tests.processors.tests.dummy_processor"
+        }
+    ],
+    indirect=True,
+)
+def test_deduplicate_processors(elasticapm_client):
+    processors = elasticapm_client.load_processors()
+    assert len(processors) == 2
+    for p in processors:
+        assert callable(p)
+
+
 def test_for_events_decorator():
     @processors.for_events("error", "transaction")
     def foo(client, event):
@@ -323,18 +343,39 @@ def test_for_events_decorator():
     assert foo.event_types == {"error", "transaction"}
 
 
-def test_drop_events_in_processor(sending_elasticapm_client, caplog):
-    def dropping_processor(client, event):
-        return None
+def test_drop_events_in_processor(elasticapm_client, caplog):
+    dropping_processor = mock.MagicMock(return_value=None, event_types=[SPAN], __name__="dropper")
+    shouldnt_be_called_processor = mock.Mock(event_types=[])
 
-    shouldnt_be_called_processor = mock.Mock()
-
-    sending_elasticapm_client.processors = [dropping_processor, shouldnt_be_called_processor]
-    with caplog.at_level(logging.DEBUG):
-        sending_elasticapm_client.queue(SPAN, {"some": "data"})
-    sending_elasticapm_client.close()
+    elasticapm_client._transport._processors = [dropping_processor, shouldnt_be_called_processor]
+    with caplog.at_level(logging.DEBUG, logger="elasticapm.transport"):
+        elasticapm_client.queue(SPAN, {"some": "data"})
+    assert dropping_processor.call_count == 1
     assert shouldnt_be_called_processor.call_count == 0
-    assert len(sending_elasticapm_client.httpserver.requests) == 0
+    assert elasticapm_client._transport.events[SPAN][0] is None
     record = caplog.records[0]
-    assert record.message == "Dropped event of type span due to processor tests.processors.tests.dropping_processor"
+    assert record.message == "Dropped event of type span due to processor mock.mock.dropper"
     assert record.levelname == "DEBUG"
+
+
+def test_context_lines_processor(elasticapm_client):
+    abs_path = os.path.join(os.path.dirname(__file__), "..", "utils", "stacks")
+    fname1 = os.path.join(abs_path, "linenos.py")
+    fname2 = os.path.join(abs_path, "linenos2.py")
+    data = {
+        "exception": {
+            "stacktrace": [
+                {"context_metadata": (fname1, 3, 2, None, None)},
+                {"context_metadata": (fname2, 5, 2, None, None)},
+                {"context_metadata": (fname1, 17, 2, None, None)},
+                {"no": "context"},
+            ]
+        }
+    }
+    processed = processors.add_context_lines_to_frames(elasticapm_client, data)
+    assert processed["exception"]["stacktrace"] == [
+        {"pre_context": ["1", "2"], "context_line": "3", "post_context": ["4", "5"]},
+        {"pre_context": ["c", "d"], "context_line": "e", "post_context": ["f", "g"]},
+        {"pre_context": ["15", "16"], "context_line": "17", "post_context": ["18", "19"]},
+        {"no": "context"},
+    ]

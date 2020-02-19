@@ -1,6 +1,6 @@
 ifdef::env-github[]
 NOTE: Release notes are best read in our documentation at
-https://www.elastic.co/guide/en/apm/agent/ruby/current/release-notes.html[elastic.co]
+https://www.elastic.co/guide/en/apm/agent/python/current/release-notes.html[elastic.co]
 endif::[]
 
 ////
@@ -18,17 +18,83 @@ endif::[]
 ===== Bug fixes
 ////
 
-=== Unreleased
-
-https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the diff]
+//=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
-
-
 [[release-notes-5.x]]
 === Python Agent version 5.x
+
+[[release-notes-5.4.2]]
+==== v5.4.2
+
+https://github.com/elastic/apm-agent-python/compare/v5.4.1\...v5.4.2[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * fixed a bug in our celery implementation related to the threading refactor in 5.4.0 {pull}724[#724]
+
+[[release-notes-5.4.1]]
+==== v5.4.1
+
+https://github.com/elastic/apm-agent-python/compare/v5.4.0\...v5.4.1[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * fixed an issue with a DEBUG log message raising an error in some cases {pull}722[#722]
+
+[[release-notes-5.4.0]]
+==== v5.4.0
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.3\...v5.4.0[Check the diff]
+
+[float]
+===== Deprecations
+
+This will be the last minor release to support the following versions:
+
+ * Python 3.4
+ * Django 1.8, 1.9 and 1.10
+ * Flask < 1.0
+
+In addition, as of this release we only supported capturing extended
+information on Elasticsearch queries when using keyword arguments with the
+elasticsearch-py API. This is in keeping with the
+https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[upstream policy]
+of positional arguments being unsupported. {pull}697[#697]
+
+[float]
+===== New Features
+
+ * Refactored spawning of background threads {pull}636[#636]
+ * Added support for aiohttp client and server {pull}659[#659]
+ * Added support for tornado web framework {pull}661[#661]
+ * Added support for starlette/fastapi {pull}694[#694]
+ * Added support for W3C `traceparent` and `tracestate` headers {pull}660[#660]
+ * Added Django 3.0 and Flask 1.1 to the support matrix {pull}667[#667]
+ * Added support for aiopg {pull}668[#668]
+ * Use Span ID as parent ID in errors if an error happens inside a span {pull}669[#669]
+ * Added experimental support for API Key authentication {pull}679[#679]
+
+[float]
+===== Bug fixes
+
+ * introduced workaround to avoid instrumenting twice in rare cases {pull}708[#708]
+
+
+[[release-notes-5.3.3]]
+==== v5.3.3
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.2\...v5.3.3[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * Fixed an issue with OpenTracing bridge and dropped spans {pull}687[#687]
+ * Fixed bug that would make the agent ignore the `hostname` configuration setting {pull}689[#689]
 
 [[release-notes-5.3.2]]
 ==== v5.3.2

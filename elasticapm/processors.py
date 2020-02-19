@@ -31,10 +31,12 @@
 
 import re
 import warnings
+from collections import defaultdict
 
 from elasticapm.conf.constants import ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
+from elasticapm.utils.stacks import get_lines_from_file
 
 SANITIZE_FIELD_NAMES = frozenset(
     ["authorization", "password", "secret", "passwd", "token", "api_key", "access_token", "sessionid"]
@@ -226,6 +228,33 @@ def sanitize_http_request_body(client, event):
     if "=" in body:
         sanitized_query_string = _sanitize_string(body, "&", "=")
         event["context"]["request"]["body"] = sanitized_query_string
+    return event
+
+
+@for_events(ERROR, SPAN)
+def add_context_lines_to_frames(client, event):
+    # divide frames up into source files before reading from disk. This should help
+    # with utilizing the disk cache better
+    #
+    # TODO: further optimize by only opening each file once and reading all needed source
+    # TODO: blocks at once.
+    per_file = defaultdict(list)
+    _process_stack_frames(
+        event,
+        lambda frame: per_file[frame["context_metadata"][0]].append(frame) if "context_metadata" in frame else None,
+    )
+    for filename, frames in compat.iteritems(per_file):
+        for frame in frames:
+            # context_metadata key has been set in elasticapm.utils.stacks.get_frame_info for
+            # all frames for which we should gather source code context lines
+            fname, lineno, context_lines, loader, module_name = frame.pop("context_metadata")
+            pre_context, context_line, post_context = get_lines_from_file(
+                fname, lineno, context_lines, loader, module_name
+            )
+            if context_line:
+                frame["pre_context"] = pre_context
+                frame["context_line"] = context_line
+                frame["post_context"] = post_context
     return event
 
 

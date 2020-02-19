@@ -37,6 +37,7 @@ import mock
 import pytest
 
 import elasticapm
+from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat, wrapt
@@ -65,7 +66,8 @@ class _TestDummyInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         kwargs = kwargs or {}
         kwargs["call_args"] = (module, method)
-        return wrapped(*args, **kwargs)
+        with elasticapm.capture_span("dummy"):
+            return wrapped(*args, **kwargs)
 
 
 def test_instrument_nonexisting_method_on_module():
@@ -77,6 +79,25 @@ def test_instrument_nonexisting_method(caplog):
         _TestInstrumentNonExistingMethod().instrument()
     record = caplog.records[0]
     assert "has no attribute" in record.message
+
+
+def test_double_instrument(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    inst = _TestDummyInstrumentation()
+    try:
+        inst.instrument()
+        assert hasattr(Dummy.dummy, "_self_wrapper")
+        Dummy().dummy()
+        elasticapm_client.end_transaction()
+        assert len(elasticapm_client.spans_for_transaction(elasticapm_client.events[constants.TRANSACTION][0])) == 1
+        inst.instrumented = False
+        inst.instrument()
+        elasticapm_client.begin_transaction("test")
+        Dummy().dummy()
+        elasticapm_client.end_transaction()
+        assert len(elasticapm_client.spans_for_transaction(elasticapm_client.events[constants.TRANSACTION][1])) == 1
+    finally:
+        inst.uninstrument()
 
 
 @pytest.mark.skipif(compat.PY3, reason="different object model")

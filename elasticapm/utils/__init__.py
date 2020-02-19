@@ -127,6 +127,16 @@ def sanitize_url(url):
     return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
+def get_host_from_url(url):
+    parsed_url = compat.urlparse.urlparse(url)
+    host = parsed_url.hostname or " "
+
+    if parsed_url.port and default_ports.get(parsed_url.scheme) != parsed_url.port:
+        host += ":" + str(parsed_url.port)
+
+    return host
+
+
 def read_pem_file(file_obj):
     cert = b""
     for line in file_obj:

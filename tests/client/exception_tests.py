@@ -136,7 +136,7 @@ def test_message_event(elasticapm_client):
 def test_param_message_event(elasticapm_client):
     elasticapm_client.capture("Message", param_message={"message": "test %s %d", "params": ("x", 1)})
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "test x 1"
     assert event["log"]["param_message"] == "test %s %d"
@@ -145,7 +145,7 @@ def test_param_message_event(elasticapm_client):
 def test_message_with_percent(elasticapm_client):
     elasticapm_client.capture("Message", message="This works 100% of the time")
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "This works 100% of the time"
     assert event["log"]["param_message"] == "This works 100% of the time"
@@ -154,7 +154,7 @@ def test_message_with_percent(elasticapm_client):
 def test_logger(elasticapm_client):
     elasticapm_client.capture("Message", message="test", logger_name="test")
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["logger_name"] == "test"
     assert "timestamp" in event
@@ -228,19 +228,77 @@ def test_collect_source_errors(elasticapm_client):
         assert "post_context" not in in_app_frame, in_app_frame_context
 
 
-def test_transaction_data_is_attached_to_errors(elasticapm_client):
+def test_transaction_data_is_attached_to_errors_no_transaction(elasticapm_client):
     elasticapm_client.capture_message("noid")
     elasticapm_client.begin_transaction("test")
-    elasticapm_client.capture_message("id")
-    transaction = elasticapm_client.end_transaction("test", "test")
+    elasticapm_client.end_transaction("test", "test")
     elasticapm_client.capture_message("noid")
 
     errors = elasticapm_client.events[ERROR]
     assert "transaction_id" not in errors[0]
-    assert errors[1]["transaction_id"] == transaction.id
-    assert errors[1]["transaction"]["sampled"]
-    assert errors[1]["transaction"]["type"] == "test"
-    assert "transaction_id" not in errors[2]
+    assert "transaction_id" not in errors[1]
+
+
+def test_transaction_data_is_attached_to_errors_message_outside_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    elasticapm_client.capture_message("outside_span")
+    transaction = elasticapm_client.end_transaction("test", "test")
+
+    error = elasticapm_client.events[ERROR][0]
+    assert error["transaction_id"] == transaction.id
+    assert error["parent_id"] == transaction.id
+    assert error["transaction"]["sampled"]
+    assert error["transaction"]["type"] == "test"
+
+
+def test_transaction_data_is_attached_to_errors_message_in_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+
+    with elasticapm.capture_span("in_span_handler_test") as span_obj:
+        elasticapm_client.capture_message("in_span")
+
+    transaction = elasticapm_client.end_transaction("test", "test")
+
+    error = elasticapm_client.events[ERROR][0]
+
+    assert error["transaction_id"] == transaction.id
+    assert error["parent_id"] == span_obj.id
+    assert error["transaction"]["sampled"]
+    assert error["transaction"]["type"] == "test"
+
+
+def test_transaction_data_is_attached_to_errors_exc_handled_in_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("in_span_handler_test") as span_obj:
+        try:
+            assert False
+        except AssertionError:
+            elasticapm_client.capture_exception()
+    transaction = elasticapm_client.end_transaction("test", "test")
+
+    error = elasticapm_client.events[ERROR][0]
+
+    assert error["transaction_id"] == transaction.id
+    assert error["parent_id"] == span_obj.id
+    assert error["transaction"]["sampled"]
+    assert error["transaction"]["type"] == "test"
+
+
+def test_transaction_data_is_attached_to_errors_exc_handled_outside_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    try:
+        with elasticapm.capture_span("out_of_span_handler_test") as span_obj:
+            assert False
+    except AssertionError:
+        elasticapm_client.capture_exception()
+    transaction = elasticapm_client.end_transaction("test", "test")
+
+    error = elasticapm_client.events[ERROR][0]
+
+    assert error["transaction_id"] == transaction.id
+    assert error["parent_id"] == span_obj.id
+    assert error["transaction"]["sampled"]
+    assert error["transaction"]["type"] == "test"
 
 
 def test_transaction_context_is_used_in_errors(elasticapm_client):

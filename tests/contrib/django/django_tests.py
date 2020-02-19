@@ -56,7 +56,6 @@ from django.test.utils import override_settings
 
 import mock
 
-from conftest import BASE_TEMPLATE_DIR
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
@@ -65,6 +64,8 @@ from elasticapm.contrib.django.client import client, get_client
 from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.utils import compat
+from elasticapm.utils.disttracing import TraceParent
+from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
 from tests.contrib.django.testapp.views import IgnoredException, MyException
 from tests.utils.compat import middleware_setting
 
@@ -83,6 +84,8 @@ except ImportError:
     from elasticapm.utils.compat import noop_decorator as with_eager_tasks
 
     has_with_eager_tasks = False
+
+pytestmark = pytest.mark.django
 
 
 class MockClientHandler(_TestClientHandler):
@@ -923,16 +926,25 @@ def test_tracing_middleware_autoinsertion_wrong_type(middleware_attr, caplog):
     assert "not of type list or tuple" in record.message
 
 
-def test_traceparent_header_handling(django_elasticapm_client, client):
+@pytest.mark.parametrize("header_name", [constants.TRACEPARENT_HEADER_NAME, constants.TRACEPARENT_LEGACY_HEADER_NAME])
+def test_traceparent_header_handling(django_elasticapm_client, client, header_name):
     with override_settings(
         **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-    ):
-        header_name = "HTTP_" + constants.TRACEPARENT_HEADER_NAME.upper().replace("-", "_")
-        kwargs = {header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"}
+    ), mock.patch(
+        "elasticapm.contrib.django.apps.TraceParent.from_string", wraps=TraceParent.from_string
+    ) as wrapped_from_string:
+        wsgi = lambda s: "HTTP_" + s.upper().replace("-", "_")
+        wsgi_header_name = wsgi(header_name)
+        wsgi_tracestate_name = wsgi(constants.TRACESTATE_HEADER_NAME)
+        kwargs = {
+            wsgi_header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            wsgi_tracestate_name: "foo=bar,baz=bazzinga",
+        }
         client.get(reverse("elasticapm-no-error"), **kwargs)
         transaction = django_elasticapm_client.events[TRANSACTION][0]
         assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
         assert transaction["parent_id"] == "b7ad6b7169203331"
+        assert "foo=bar,baz=bazzinga" in wrapped_from_string.call_args[0]
 
 
 def test_get_service_info(django_elasticapm_client):

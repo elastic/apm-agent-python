@@ -1,4 +1,11 @@
 [flake8]
-exclude=elasticapm/utils/wrapt,build,src,tests,dist,conftest.py,setup.py
+exclude=
+    elasticapm/utils/wrapt/**,
+    build/**,
+    src/**,
+    tests/**,
+    dist/**,
+    conftest.py,
+    setup.py
 max-line-length=120
-ignore=E731,W503,E203
+ignore=E731,W503,E203,BLK100,B301

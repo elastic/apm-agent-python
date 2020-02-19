@@ -143,6 +143,9 @@ class Exception(BaseEvent):
                 "stacktrace": frames,
             },
         }
+        if hasattr(exc_value, "_elastic_apm_span_id"):
+            data["parent_id"] = exc_value._elastic_apm_span_id
+            del exc_value._elastic_apm_span_id
         if compat.PY3:
             depth = kwargs.get("_exc_chain_depth", 0)
             if depth > EXCEPTION_CHAIN_MAX_DEPTH:

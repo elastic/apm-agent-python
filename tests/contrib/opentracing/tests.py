@@ -166,6 +166,21 @@ def test_span_tags(tracer):
     assert span2["context"]["tags"] == {"something_else": "bar"}
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
+def test_dropped_spans(tracer):
+    assert tracer._agent.config.transaction_max_spans == 1
+    with tracer.start_active_span("transaction") as ot_scope_t:
+        with tracer.start_active_span("span") as ot_scope_s:
+            s = ot_scope_s.span
+            s.set_tag("db.type", "sql")
+        with tracer.start_active_span("span") as ot_scope_s:
+            s = ot_scope_s.span
+            s.set_tag("db.type", "sql")
+    client = tracer._agent
+    spans = client.events[constants.SPAN]
+    assert len(spans) == 1
+
+
 def test_error_log(tracer):
     with tracer.start_active_span("transaction") as tx_scope:
         try:
@@ -249,22 +264,42 @@ def test_tracer_extract_corrupted(tracer):
         tracer.extract(Format.HTTP_HEADERS, {"nothing-to": "see-here"})
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        pytest.param({"use_elastic_traceparent_header": True}, id="use_elastic_traceparent_header-True"),
+        pytest.param({"use_elastic_traceparent_header": False}, id="use_elastic_traceparent_header-False"),
+    ],
+    indirect=True,
+)
 def test_tracer_inject_http(tracer):
     span_context = OTSpanContext(
         trace_parent=TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
     )
     carrier = {}
     tracer.inject(span_context, Format.HTTP_HEADERS, carrier)
-    assert carrier["elastic-apm-traceparent"] == b"00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+    assert carrier[constants.TRACEPARENT_HEADER_NAME] == b"00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+    if tracer._agent.config.use_elastic_traceparent_header:
+        assert carrier[constants.TRACEPARENT_LEGACY_HEADER_NAME] == carrier[constants.TRACEPARENT_HEADER_NAME]
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        pytest.param({"use_elastic_traceparent_header": True}, id="use_elastic_traceparent_header-True"),
+        pytest.param({"use_elastic_traceparent_header": False}, id="use_elastic_traceparent_header-False"),
+    ],
+    indirect=True,
+)
 def test_tracer_inject_map(tracer):
     span_context = OTSpanContext(
         trace_parent=TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
     )
     carrier = {}
     tracer.inject(span_context, Format.TEXT_MAP, carrier)
-    assert carrier["elastic-apm-traceparent"] == b"00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+    assert carrier[constants.TRACEPARENT_HEADER_NAME] == b"00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+    if tracer._agent.config.use_elastic_traceparent_header:
+        assert carrier[constants.TRACEPARENT_LEGACY_HEADER_NAME] == carrier[constants.TRACEPARENT_HEADER_NAME]
 
 
 def test_tracer_inject_binary(tracer):

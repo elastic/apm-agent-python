@@ -223,16 +223,20 @@ def sending_elasticapm_client(request, validating_httpserver):
 
 
 class DummyTransport(HTTPTransportBase):
-    def __init__(self, url, **kwargs):
-        super(DummyTransport, self).__init__(url, **kwargs)
+    def __init__(self, url, *args, **kwargs):
+        super(DummyTransport, self).__init__(url, *args, **kwargs)
         self.events = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
         self._flushed.clear()
+        data = self._process_event(event_type, data)
         self.events[event_type].append(data)
         self._flushed.set()
 
-    def _start_event_processor(self):
+    def start_thread(self):
+        pass
+
+    def stop_thread(self):
         pass
 
     def get_config(self, current_version=None, keys=None):

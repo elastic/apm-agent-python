@@ -1,6 +1,7 @@
 # This is the full list of matrix builds, to be triggered with a daily build
 # or manually
 FRAMEWORK:
+  - none
   - django-1.8
   - django-1.11
   - django-2.0
@@ -12,6 +13,7 @@ FRAMEWORK:
   - flask-0.11
   - flask-0.12
   - flask-1.0
+  - flask-1.1
   - celery-3-flask-1.0
   - celery-3-django-1.11
   - celery-3-django-2.0
@@ -40,8 +42,7 @@ FRAMEWORK:
   - redis-2.8
   - redis-2.9
   - redis-newest
-  - psycopg2-2.5
-  - psycopg2-2.6
+  - psycopg2-2.7
   - psycopg2-newest
   - pymssql-newest
   - memcached-1.51
@@ -60,3 +61,10 @@ FRAMEWORK:
   - elasticsearch-7
   - gevent-newest
   - zerorpc-0.4
+  - aiohttp-3.0
+  - aiohttp-4.0
+  - aiohttp-newest
+  - aiopg-newest
+  - tornado-newest
+  - starlette-0.13
+  - starlette-newest

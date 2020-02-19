@@ -21,6 +21,11 @@ pipeline {
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
     GITHUB_CHECK_ITS_NAME = 'Integration Tests'
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
+    BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
+    OPBEANS_REPO = 'opbeans-python'
+    HOME = "${env.WORKSPACE}"
+    PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+    PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -37,21 +42,20 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+    booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
+    booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
+    booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
   }
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
-      }
       stages {
         /**
         Checkout the code and stash it, to use it on other stages.
         */
         stage('Checkout') {
           steps {
+            pipelineManager([ cancelPreviousRunningBuilds: [ when: 'PR' ] ])
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
@@ -70,7 +74,7 @@ pipeline {
               deleteDir()
               unstash 'source'
               script {
-                docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+                docker.image('python:3.7-stretch').inside(){
                   dir("${BASE_DIR}"){
                     // registry: '' will help to disable the docker login
                     preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
@@ -89,6 +93,10 @@ pipeline {
       parallel {
         stage('Test') {
           options { skipDefaultCheckout() }
+          when {
+            beforeAgent true
+            expression { return params.tests_ci }
+          }
           steps {
             withGithubNotify(context: 'Test', tab: 'tests') {
               deleteDir()
@@ -196,9 +204,9 @@ pipeline {
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+      when {
+        beforeAgent true
+        expression { return params.package_ci }
       }
       steps {
         withGithubNotify(context: 'Building packages') {
@@ -217,11 +225,9 @@ pipeline {
       agent none
       when {
         beforeAgent true
-        allOf {
-          anyOf {
-            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
-            expression { return !params.Run_As_Master_Branch }
-          }
+        anyOf {
+          changeRequest()
+          expression { return !params.Run_As_Master_Branch }
         }
       }
       steps {
@@ -235,14 +241,52 @@ pipeline {
         githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
+    stage('Benchmarks') {
+      agent { label 'metal' }
+      options { skipDefaultCheckout() }
+      environment {
+        AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
+        LANG = 'C.UTF-8'
+        LC_ALL = "${env.LANG}"
+      }
+      when {
+        beforeAgent true
+        allOf {
+          anyOf {
+            branch 'master'
+            expression { return params.Run_As_Master_Branch }
+          }
+          expression { return params.bench_ci }
+        }
+      }
+      steps {
+        withGithubNotify(context: 'Benchmarks', tab: 'artifacts') {
+          dir(env.BUILD_NUMBER) {
+            deleteDir()
+            unstash 'source'
+            script {
+              dir(BASE_DIR){
+                sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
+                                             user_var: 'ES_USER', pass_var: 'ES_PASS') {
+                  sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+                }
+              }
+            }
+          }
+        }
+      }
+      post {
+        always {
+          catchError(message: 'deleteDir failed', buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+            deleteDir()
+          }
+        }
+      }
+    }
     stage('Release') {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
-      }
-      environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
       }
       when {
         beforeInput true
@@ -281,6 +325,24 @@ pipeline {
               dir("${BASE_DIR}"){
                 releasePackages()
               }
+            }
+          }
+        }
+        stage('Opbeans') {
+          environment {
+            REPO_NAME = "${OPBEANS_REPO}"
+          }
+          steps {
+            deleteDir()
+            dir("${OPBEANS_REPO}"){
+              git credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
+                  url: "git@github.com:elastic/${OPBEANS_REPO}.git"
+              // It's required to transform the tag value to the artifact version
+              sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
+              // The opbeans pipeline will trigger a release for the master branch
+              gitPush()
+              // The opbeans pipeline will trigger a release for the release tag
+              gitCreateTag(tag: "${env.BRANCH_NAME}")
             }
           }
         }
@@ -361,13 +423,22 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           } finally {
             steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
+            )
+            steps.dir("${steps.env.BASE_DIR}/tests"){
+              steps.archiveArtifacts(
+                allowEmptyArchive: true,
+                artifacts: '**/docker-info/**',
+                defaultExcludes: false
+              )
+            }
             steps.env.PYTHON_VERSION = "${x}"
             steps.env.WEBFRAMEWORK = "${y}"
             steps.codecov(repo: "${steps.env.REPO}",
               basedir: "${steps.env.BASE_DIR}",
               flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}")
+              secret: "${steps.env.CODECOV_SECRET}"
+            )
           }
         }
       }
@@ -380,9 +451,6 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'

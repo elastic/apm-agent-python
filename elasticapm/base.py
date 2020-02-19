@@ -32,17 +32,18 @@
 from __future__ import absolute_import
 
 import inspect
+import itertools
 import logging
 import os
 import platform
-import socket
 import sys
+import threading
 import time
 import warnings
 from copy import deepcopy
 
 import elasticapm
-from elasticapm.conf import Config, VersionedConfig, constants, update_config
+from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
@@ -50,7 +51,6 @@ from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
 
 __all__ = ("Client",)
 
@@ -92,6 +92,10 @@ class Client(object):
         self.logger = get_logger("%s.%s" % (cls.__module__, cls.__name__))
         self.error_logger = get_logger("elasticapm.errors")
 
+        self._pid = None
+        self._thread_starter_lock = threading.Lock()
+        self._thread_managers = {}
+
         self.tracer = None
         self.processors = []
         self.filter_exception_types_dict = {}
@@ -125,8 +129,6 @@ class Client(object):
             "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
         }
 
-        if self.config.secret_token:
-            headers["Authorization"] = "Bearer %s" % self.config.secret_token
         transport_kwargs = {
             "metadata": self._build_metadata(),
             "headers": headers,
@@ -135,19 +137,21 @@ class Client(object):
             "timeout": self.config.server_timeout,
             "max_flush_time": self.config.api_request_time / 1000.0,
             "max_buffer_size": self.config.api_request_size,
+            "processors": self.load_processors(),
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
             constants.EVENTS_API_PATH,
         )
-        self._transport = import_string(self.config.transport_class)(self._api_endpoint_url, **transport_kwargs)
+        transport_class = import_string(self.config.transport_class)
+        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self.config.transport = self._transport
+        self._thread_managers["transport"] = self._transport
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
             exc_to_filter_module = ".".join(exc_to_filter.split(".")[:-1])
             self.filter_exception_types_dict[exc_to_filter_type] = exc_to_filter_module
-
-        self.processors = [import_string(p) for p in self.config.processors] if self.config.processors else []
 
         if platform.python_implementation() == "PyPy":
             # PyPy introduces a `_functools.partial.__call__` frame due to our use
@@ -190,14 +194,24 @@ class Client(object):
             self._metrics.register(path)
         if self.config.breakdown_metrics:
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+        self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
-            self._config_updater = IntervalTimer(
-                update_config, 1, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
-            )
-            self._config_updater.start()
+            self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
+
+        self.start_threads()
+
+    def start_threads(self):
+        with self._thread_starter_lock:
+            current_pid = os.getpid()
+            if self._pid != current_pid:
+                self.logger.debug("Detected PID change from %r to %r, starting threads", self._pid, current_pid)
+                for manager_type, manager in self._thread_managers.items():
+                    self.logger.debug("Starting %s thread", manager_type)
+                    manager.start_thread()
+                self._pid = current_pid
 
     def get_handler(self, name):
         return import_string(name)
@@ -245,19 +259,7 @@ class Client(object):
     def queue(self, event_type, data, flush=False):
         if self.config.disable_send:
             return
-        # Run the data through processors
-        for processor in self.processors:
-            if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
-                if not data:
-                    self.logger.debug(
-                        "Dropped event of type %s due to processor %s.%s",
-                        event_type,
-                        getattr(processor, "__module__"),
-                        getattr(processor, "__name__"),
-                    )
-                    data = None  # normalize all "falsy" values to None
-                    break
+        self.start_threads()
         if flush and is_master_process():
             # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
             flush = False
@@ -287,11 +289,9 @@ class Client(object):
         return transaction
 
     def close(self):
-        if self._metrics:
-            self._metrics._stop_collect_timer()
-        if self._config_updater:
-            self._config_updater.cancel()
-        self._transport.close()
+        with self._thread_starter_lock:
+            for _manager_type, manager in self._thread_managers.items():
+                manager.stop_thread()
 
     def get_service_info(self):
         if self._service_info:
@@ -330,7 +330,7 @@ class Client(object):
 
     def get_system_info(self):
         system_data = {
-            "hostname": keyword_field(socket.gethostname()),
+            "hostname": keyword_field(self.config.hostname),
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }
@@ -374,6 +374,7 @@ class Client(object):
         Captures, processes and serializes an event into a dict object
         """
         transaction = execution_context.get_transaction()
+        span = execution_context.get_span()
         if transaction:
             transaction_context = deepcopy(transaction.context)
         else:
@@ -466,7 +467,8 @@ class Client(object):
         if transaction:
             if transaction.trace_parent:
                 event_data["trace_id"] = transaction.trace_parent.trace_id
-            event_data["parent_id"] = transaction.id
+            # parent id might already be set in the handler
+            event_data.setdefault("parent_id", span.id if span else transaction.id)
             event_data["transaction_id"] = transaction.id
             event_data["transaction"] = {"sampled": transaction.is_sampled, "type": transaction.transaction_type}
 
@@ -511,6 +513,18 @@ class Client(object):
             exclude_paths_re=self.exclude_paths_re,
             locals_processor_func=locals_processor_func,
         )
+
+    def load_processors(self):
+        """
+        Loads processors from self.config.processors, as well as constants.HARDCODED_PROCESSORS.
+        Duplicate processors (based on the path) will be discarded.
+
+        :return: a list of callables
+        """
+        processors = itertools.chain(self.config.processors, constants.HARDCODED_PROCESSORS)
+        seen = {}
+        # setdefault has the nice property that it returns the value that it just set on the dict
+        return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
 
 class DummyClient(Client):

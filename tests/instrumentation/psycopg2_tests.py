@@ -63,6 +63,7 @@ def connect_kwargs():
     return {
         "database": os.environ.get("POSTGRES_DB", "elasticapm_test"),
         "user": os.environ.get("POSTGRES_USER", "postgres"),
+        "password": os.environ.get("POSTGRES_PASSWORD", "postgres"),
         "host": os.environ.get("POSTGRES_HOST", None),
         "port": os.environ.get("POSTGRES_PORT", None),
     }

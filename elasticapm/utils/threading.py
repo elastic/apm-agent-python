@@ -85,3 +85,11 @@ class IntervalTimer(threading.Thread):
 
     def cancel(self):
         self._interval_done.set()
+
+
+class ThreadManager(object):
+    def start_thread(self):
+        raise NotImplementedError()
+
+    def stop_thread(self):
+        raise NotImplementedError()

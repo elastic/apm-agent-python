@@ -52,9 +52,12 @@ def test_metrics_registry():
     mock_queue = mock.Mock()
     registry = MetricsRegistry(0.001, queue_func=mock_queue)
     registry.register("tests.metrics.base_tests.DummyMetricSet")
-    time.sleep(0.1)
-    assert mock_queue.call_count > 0
-    registry._stop_collect_timer()
+    try:
+        registry.start_thread()
+        time.sleep(0.1)
+        assert mock_queue.call_count > 0
+    finally:
+        registry.stop_thread()
 
 
 @pytest.mark.parametrize(
@@ -124,23 +127,6 @@ def test_metrics_multithreaded():
     pool.join()
     expected = 10 * ((500 * 501) / 2)
     assert metricset.counter("x").val == expected
-
-
-@mock.patch("elasticapm.base.MetricsRegistry._start_collect_timer")
-@mock.patch("elasticapm.metrics.base_metrics.is_master_process")
-def test_client_doesnt_start_collector_thread_in_master_process(is_master_process, mock_start_collect_timer):
-    # when in the master process, the client should not start worker threads
-    is_master_process.return_value = True
-    before = mock_start_collect_timer.call_count
-    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_collect_timer.call_count == before
-    client.close()
-
-    before = mock_start_collect_timer.call_count
-    is_master_process.return_value = False
-    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_collect_timer.call_count == before + 1
-    client.close()
 
 
 @mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)

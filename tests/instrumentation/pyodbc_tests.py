@@ -45,9 +45,10 @@ if "POSTGRES_DB" not in os.environ:
 
 @pytest.yield_fixture(scope="function")
 def pyodbc_postgres_connection(request):
-    conn_str = ("DRIVER={PostgreSQL Unicode};" "DATABASE=%s;" "UID=%s;" "SERVER=%s;" "PORT=%s;") % (
+    conn_str = ("DRIVER={PostgreSQL Unicode};" "DATABASE=%s;" "UID=%s;" "PASSWORD=%s;" "SERVER=%s;" "PORT=%s;") % (
         os.environ.get("POSTGRES_DB", "elasticapm_test"),
         os.environ.get("POSTGRES_USER", "postgres"),
+        os.environ.get("POSTGRES_PASSWORD", "postgres"),
         os.environ.get("POSTGRES_HOST", None),
         os.environ.get("POSTGRES_PORT", None),
     )

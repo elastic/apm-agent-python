@@ -54,6 +54,7 @@ class OTSpan(OTSpanBase):
         super(OTSpan, self).__init__(tracer, context)
         self.elastic_apm_ref = elastic_apm_ref
         self.is_transaction = isinstance(elastic_apm_ref, traces.Transaction)
+        self.is_dropped = isinstance(elastic_apm_ref, traces.DroppedSpan)
         if not context.span:
             context.span = self
 
@@ -101,7 +102,7 @@ class OTSpan(OTSpanBase):
                 traces.set_context({"framework": {"name": value}}, "service")
             else:
                 self.elastic_apm_ref.label(**{key: value})
-        else:
+        elif not self.is_dropped:
             if key.startswith("db."):
                 span_context = self.elastic_apm_ref.context or {}
                 if "db" not in span_context:
@@ -125,7 +126,7 @@ class OTSpan(OTSpanBase):
     def finish(self, finish_time=None):
         if self.is_transaction:
             self.tracer._agent.end_transaction()
-        else:
+        elif not self.is_dropped:
             self.elastic_apm_ref.transaction.end_span()
 
 
