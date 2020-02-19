@@ -1,1 +1,0 @@
-choco install python --version=$args -y

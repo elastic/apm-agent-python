@@ -1,0 +1,10 @@
+%1 -m pip install -U pytest
+%1 -m pip install -U jsonschema
+%1 -m pip install -U pytest_localserver
+%1 -m pip install -U logbook
+%1 -m pip install -U mock
+%1 -m pip install -U urllib3
+%1 -m pip install -U jinja2
+%1 -m pip install -U webob
+%1 -m pip install -U urllib3_mock
+%1 -m pip install -U certifi

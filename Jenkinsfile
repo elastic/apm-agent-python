@@ -127,11 +127,10 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                powershell label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.ps1"
-                powershell label: 'Install Python2.7', script: "choco install python2 -y"
-                powershell label: 'Install Modules', script: ".\\tests\\scripts\\download_json_schema.ps1"
-                powershell label: 'Install Modules', script: ".\\tests\\scripts\\install_modules.ps1"
-                powershell label: 'Execute Tests', script: "pytest"
+                bat label: 'Uninstall Python3', script: "choco uninstall python3"
+                bat label: 'Install Modules', script: ".\\tests\\scripts\\download_json_schema.bat"
+                bat label: 'Install Modules', script: ".\\tests\\scripts\\install_modules.bat python"
+                bat label: 'Execute Tests', script: "pytest"
               }
             }
           }
@@ -143,11 +142,10 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
-                powershell label: 'Install Python3.5', script: "./tests/scripts/install_python.ps1 3.5.4"
-                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
-                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
-                powershell label: 'Execute Tests', script: "pytest"
+                bat label: 'Install Python3.5', script: "./tests/scripts/install_python.bat 3.5.4"
+                bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
+                bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
+                bat label: 'Execute Tests', script: "pytest"
               }
             }
           }
@@ -159,11 +157,10 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
-                powershell label: 'Install Python3.6', script: "./tests/scripts/install_python.ps1 3.6.7"
-                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
-                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
-                powershell label: 'Execute Tests', script: "pytest"
+                bat label: 'Install Python3.6', script: "./tests/scripts/install_python.bat 3.6.7"
+                bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
+                bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
+                bat label: 'Execute Tests', script: "pytest"
               }
             }
           }
@@ -175,11 +172,10 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
-                powershell label: 'Install Python3.7', script: "./tests/scripts/install_python.ps1 3.7.2"
-                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
-                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
-                powershell label: 'Execute Tests', script: "pytest"
+                bat label: 'Install Python3.7', script: "./tests/scripts/install_python.bat 3.7.2"
+                bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
+                bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
+                bat label: 'Execute Tests', script: "pytest"
               }
             }
           }
@@ -191,11 +187,10 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
-                powershell label: 'Install Python3.8', script: "./tests/scripts/install_python.ps1 3.8.0"
-                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
-                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
-                powershell label: 'Execute Tests', script: "pytest"
+                bat label: 'Install Python3.8', script: "./tests/scripts/install_python.bat 3.8.0"
+                bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
+                bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
+                bat label: 'Execute Tests', script: "pytest"
                 }
               }
             }
