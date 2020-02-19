@@ -91,6 +91,7 @@ pipeline {
     */
     stage('Parallel') {
       parallel {
+        /*
         stage('Test') {
           options { skipDefaultCheckout() }
           when {
@@ -120,6 +121,7 @@ pipeline {
             }
           }
         }
+        */
         stage('Windows Py 2.7') {
           agent { label 'windows-2019-immutable' }
           steps {
