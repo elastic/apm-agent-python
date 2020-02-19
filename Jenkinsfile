@@ -85,28 +85,112 @@ pipeline {
     /**
     Execute unit tests.
     */
-    stage('Test') {
-      options { skipDefaultCheckout() }
-      steps {
-        withGithubNotify(context: 'Test', tab: 'tests') {
-          deleteDir()
-          unstash "source"
-          dir("${BASE_DIR}"){
-            script {
-              pythonTasksGen = new PythonParallelTaskGenerator(
-                xKey: 'PYTHON_VERSION',
-                yKey: 'FRAMEWORK',
-                xFile: ".ci/.jenkins_python.yml",
-                yFile: ".ci/.jenkins_framework.yml",
-                exclusionFile: ".ci/.jenkins_exclude.yml",
-                tag: "Python",
-                name: "Python",
-                steps: this
-                )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-              parallel(mapPatallelTasks)
+    stage('Parallel') {
+      parallel {
+        stage('Test') {
+          options { skipDefaultCheckout() }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}"){
+                script {
+                  pythonTasksGen = new PythonParallelTaskGenerator(
+                    xKey: 'PYTHON_VERSION',
+                    yKey: 'FRAMEWORK',
+                    xFile: ".ci/.jenkins_python.yml",
+                    yFile: ".ci/.jenkins_framework.yml",
+                    exclusionFile: ".ci/.jenkins_exclude.yml",
+                    tag: "Python",
+                    name: "Python",
+                    steps: this
+                    )
+                  def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+                  parallel(mapPatallelTasks)
+                }
+              }
             }
           }
+        }
+        stage('Windows Py 2.7') {
+          agent { label 'windows-2019-immutable' }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}") {
+                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
+                powershell label: 'Install Python2.7', script: "choco install python2 -y"
+                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
+                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
+                powershell label: 'Execute Tests', script: "pytest"
+              }
+            }
+          }
+        }
+        stage('Windows Py 3.5.4') {
+          agent { label 'windows-2019-immutable' }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}") {
+                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
+                powershell label: 'Install Python3.5', script: "./tests/scripts/install_python.ps1 3.5.4"
+                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
+                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
+                powershell label: 'Execute Tests', script: "pytest"
+              }
+            }
+          }
+        }
+        stage('Windows Py 3.6.7') {
+          agent { label 'windows-2019-immutable' }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}") {
+                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
+                powershell label: 'Install Python3.6', script: "./tests/scripts/install_python.ps1 3.6.7"
+                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
+                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
+                powershell label: 'Execute Tests', script: "pytest"
+              }
+            }
+          }
+        }
+        stage('Windows Py 3.7.2') {
+          agent { label 'windows-2019-immutable' }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}") {
+                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
+                powershell label: 'Install Python3.7', script: "./tests/scripts/install_python.ps1 3.7.2"
+                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
+                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
+                powershell label: 'Execute Tests', script: "pytest"
+              }
+            }
+          }
+        }
+        stage('Windows Py 3.8.0') {
+          agent { label 'windows-2019-immutable' }
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}") {
+                powershell label: 'Install Chocolatey', script: "./tests/scripts/install_chocolatey.ps1"
+                powershell label: 'Install Python3.8', script: "./tests/scripts/install_python.ps1 3.8.0"
+                powershell label: 'Install Modules', script: "./tests/scripts/download_json_schema.ps1"
+                powershell label: 'Install Modules', script: "./tests/scripts/install_modules.ps1"
+                powershell label: 'Execute Tests', script: "pytest"
+                }
+              }
+            }
         }
       }
     }
