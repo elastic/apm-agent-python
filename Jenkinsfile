@@ -122,6 +122,10 @@ pipeline {
       parallel {
         stage('Windows Py 2.7') {
           agent { label 'windows-2019-immutable' }
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "C:\\Windows\\System32;${env.PATH}";
+          }
           steps {
             withGithubNotify(context: 'Test', tab: 'tests') {
               deleteDir()
@@ -137,6 +141,10 @@ pipeline {
         }
         stage('Windows Py 3.5.4') {
           agent { label 'windows-2019-immutable' }
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "C:\\Windows\\System32;${env.PATH}";
+          }
           steps {
             withGithubNotify(context: 'Test', tab: 'tests') {
               deleteDir()
@@ -152,6 +160,10 @@ pipeline {
         }
         stage('Windows Py 3.6.7') {
           agent { label 'windows-2019-immutable' }
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "C:\\Windows\\System32;${env.PATH}";
+          }
           steps {
             withGithubNotify(context: 'Test', tab: 'tests') {
               deleteDir()
@@ -167,6 +179,10 @@ pipeline {
         }
         stage('Windows Py 3.7.2') {
           agent { label 'windows-2019-immutable' }
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "C:\\Windows\\System32;${env.PATH}";
+          }
           steps {
             withGithubNotify(context: 'Test', tab: 'tests') {
               deleteDir()
@@ -180,14 +196,17 @@ pipeline {
             }
           }
         }
-        stage('Windows Py 3.8.0') {
+        stage('Windows Py 3.8.1') {
           agent { label 'windows-2019-immutable' }
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "C:\\Windows\\System32;${env.PATH}";
+          }
           steps {
             withGithubNotify(context: 'Test', tab: 'tests') {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Install Python3.8', script: "./tests/scripts/install_python.bat 3.8.0"
                 bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
                 bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
                 bat label: 'Execute Tests', script: "pytest"
