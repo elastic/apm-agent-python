@@ -168,7 +168,7 @@ def get_url_dict(event):
     proto = headers.get("X-Forwarded-Proto", "https")
     host = headers.get("Host")
     path = event.get("path")
-    port = headers.get("X-Forwarded-Port", "443")
+    port = headers.get("X-Forwarded-Port")
     query = ""
     if event.get("queryStringParameters"):
         query = "?"
@@ -182,8 +182,6 @@ def get_url_dict(event):
         "hostname": encoding.keyword_field(host),
         "pathname": encoding.keyword_field(path),
     }
-
-    port = None if port == "443" else str(port)
 
     if port:
         url_dict["port"] = port
