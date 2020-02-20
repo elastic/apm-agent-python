@@ -48,9 +48,6 @@ class capture_serverless(object):
     Begins and ends a single transaction.
     """
 
-    # TODO save event information from API gateway in __call__, add to
-    # transaction in __exit__/__enter__
-
     def __init__(self, **kwargs):
         self.name = kwargs.get("name")
         self.event = {}
