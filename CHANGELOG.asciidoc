@@ -18,12 +18,38 @@ endif::[]
 ===== Bug fixes
 ////
 
-=== Unreleased
-
-https://github.com/elastic/apm-agent-python/compare/v5.3.1\...master[Check the diff]
+//=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+[[release-notes-5.4.2]]
+==== v5.4.2
+
+https://github.com/elastic/apm-agent-python/compare/v5.4.1\...v5.4.2[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * fixed a bug in our celery implementation related to the threading refactor in 5.4.0 {pull}724[#724]
+
+[[release-notes-5.4.1]]
+==== v5.4.1
+
+https://github.com/elastic/apm-agent-python/compare/v5.4.0\...v5.4.1[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * fixed an issue with a DEBUG log message raising an error in some cases {pull}722[#722]
+
+[[release-notes-5.4.0]]
+==== v5.4.0
+
+https://github.com/elastic/apm-agent-python/compare/v5.3.3\...v5.4.0[Check the diff]
 
 [float]
 ===== Deprecations
@@ -34,11 +60,11 @@ This will be the last minor release to support the following versions:
  * Django 1.8, 1.9 and 1.10
  * Flask < 1.0
 
- In addition, as of this release we only supported capturing extended
- information on elasticsearch queries when using keyword arguments with the
- elasticsearch-py API. This is in keeping with the
- https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[upstream policy]
- of positional arguments being unsupported. {pull}697[#697]
+In addition, as of this release we only supported capturing extended
+information on Elasticsearch queries when using keyword arguments with the
+elasticsearch-py API. This is in keeping with the
+https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[upstream policy]
+of positional arguments being unsupported. {pull}697[#697]
 
 [float]
 ===== New Features
@@ -56,11 +82,8 @@ This will be the last minor release to support the following versions:
 [float]
 ===== Bug fixes
 
- * introduced workaround to avoid instrumenting twice in rare cases (#708)
+ * introduced workaround to avoid instrumenting twice in rare cases {pull}708[#708]
 
-
-[[release-notes-5.x]]
-=== Python Agent version 5.x
 
 [[release-notes-5.3.3]]
 ==== v5.3.3

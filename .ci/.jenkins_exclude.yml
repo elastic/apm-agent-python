@@ -258,3 +258,6 @@ exclude:
     FRAMEWORK: aiopg-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: aiopg-newest
+  # psutil
+  - PYTHON_VERSION: pypy-2  #currently fails on pypy2 (https://github.com/giampaolo/psutil/issues/1659)
+    FRAMEWORK: psutil-newest

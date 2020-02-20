@@ -2,6 +2,10 @@
 set -ex
 
 function cleanup {
+    if [ -n "${BUILD_NUMBER}" ]; then # only on CI
+        ./scripts/docker/docker-summary.sh
+        ./scripts/docker/docker-get-logs.sh "${TEST}"
+    fi
     PYTHON_VERSION=${1} docker-compose down -v
 
     if [[ $CODECOV_TOKEN ]]; then
@@ -18,6 +22,7 @@ fi
 
 pip_cache="$HOME/.cache"
 docker_pip_cache="/tmp/cache/pip"
+TEST="${1}/${2}"
 
 cd tests
 
