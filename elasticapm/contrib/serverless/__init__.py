@@ -168,21 +168,22 @@ def get_url_dict(event):
     """
     headers = event.get("headers", {})
     proto = headers.get("X-Forwarded-Proto", "https")
-    host = headers.get("Host")
-    path = event.get("path")
+    host = headers.get("Host", "")
+    path = event.get("path", "")
     port = headers.get("X-Forwarded-Port")
+    stage = "/" + event.get("requestContext", {}).get("stage", "")
     query = ""
     if event.get("queryStringParameters"):
         query = "?"
         for k, v in compat.iteritems(event["queryStringParameters"]):
             query += "{}={}".format(k, v)
-    url = proto + "://" + host + path + query
+    url = proto + "://" + host + stage + path + query
 
     url_dict = {
         "full": encoding.keyword_field(url),
         "protocol": proto,
         "hostname": encoding.keyword_field(host),
-        "pathname": encoding.keyword_field(path),
+        "pathname": encoding.keyword_field(stage + path),
     }
 
     if port:
