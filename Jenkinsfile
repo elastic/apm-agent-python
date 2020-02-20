@@ -131,7 +131,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Install Chocolatey', script: ".\\tests\scripts\\install_chocolatey.bat"
+                bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Uninstall Python3', script: "choco uninstall python3"
                 bat label: 'Install Modules', script: ".\\tests\\scripts\\download_json_schema.bat"
                 bat label: 'Install Modules', script: ".\\tests\\scripts\\install_modules.bat python"
@@ -151,7 +151,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Install Chocolatey', script: ".\\tests\scripts\\install_chocolatey.bat"
+                bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.5', script: "./tests/scripts/install_python.bat 3.5.4"
                 bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
                 bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
@@ -171,7 +171,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Install Chocolatey', script: ".\\tests\scripts\\install_chocolatey.bat"
+                bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.6', script: "./tests/scripts/install_python.bat 3.6.7"
                 bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
                 bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
@@ -191,7 +191,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Install Chocolatey', script: ".\\tests\scripts\\install_chocolatey.bat"
+                bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.7', script: "./tests/scripts/install_python.bat 3.7.2"
                 bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
                 bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
@@ -211,7 +211,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Install Chocolatey', script: ".\\tests\scripts\\install_chocolatey.bat"
+                bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.7', script: "./tests/scripts/install_python.bat 3.8.1"
                 bat label: 'Install Modules', script: "./tests/scripts/download_json_schema.bat"
                 bat label: 'Install Modules', script: "./tests/scripts/install_modules.bat py"
