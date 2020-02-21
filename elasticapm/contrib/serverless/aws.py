@@ -104,8 +104,6 @@ class capture_serverless(object):
         else:
             self.transaction = self.client.begin_transaction("function", trace_parent=trace_parent)
             elasticapm.set_transaction_name(os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name), override=False)
-        if os.environ.get("AWS_LAMBDA_FUNCTION_VERSION"):
-            elasticapm.set_context({"version": os.environ["AWS_LAMBDA_FUNCTION_VERSION"]}, "service")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
