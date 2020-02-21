@@ -81,18 +81,22 @@ class capture_serverless(object):
         Transaction setup
         """
         trace_parent = TraceParent.from_headers(self.event.get("headers"))
-        self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
-        elasticapm.set_context(
-            lambda: get_data_from_request(
-                self.event,
-                capture_body=self.client.config.capture_body in ("transactions", "all"),
-                capture_headers=self.client.config.capture_headers,
-            ),
-            "request",
-        )
-        if "httpMethod" in self.event and "resource" in self.event:
-            elasticapm.set_transaction_name("{} {}".format(self.event["httpMethod"], self.event["resource"]))
+        if "httpMethod" in self.event:
+            self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
+            elasticapm.set_context(
+                lambda: get_data_from_request(
+                    self.event,
+                    capture_body=self.client.config.capture_body in ("transactions", "all"),
+                    capture_headers=self.client.config.capture_headers,
+                ),
+                "request",
+            )
+            if "resource" in self.event:
+                elasticapm.set_transaction_name("{} {}".format(self.event["httpMethod"], self.event["resource"]))
+            else:
+                elasticapm.set_transaction_name(self.name, override=False)
         else:
+            self.transaction = self.client.begin_transaction("function", trace_parent=trace_parent)
             elasticapm.set_transaction_name(self.name, override=False)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
