@@ -44,6 +44,10 @@ class ServerlessTransport(Transport):
     it anywhere.
     """
 
+    def __init__(self, *args, **kwargs):
+        super(ServerlessTransport, self).__init__(*args, **kwargs)
+        self.printed_metadata = False
+
     def start_thread(self):
         """
         No background threads are needed, as we have no queueing needs
@@ -56,4 +60,7 @@ class ServerlessTransport(Transport):
         """
         # This does use processors right now, and we're not in a background
         # thread. We could cause blocking.
+        if not self.printed_metadata:
+            self.printed_metadata = True
+            print("ELASTICAPM_METADATA " + json.dumps(self._metadata))
         print("ELASTICAPM " + json.dumps(self._process_event(event_type, data)))
