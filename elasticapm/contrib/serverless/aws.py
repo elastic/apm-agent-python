@@ -133,14 +133,15 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     result["method"] = event["httpMethod"]
     if event["httpMethod"] in constants.HTTP_WITH_BODY and "body" in event:
         body = event["body"]
-        if event.get("isBase64Encoded"):
-            body = base64.b64decode(body)
-        else:
-            try:
-                jsonbody = json.loads(body)
-                body = jsonbody
-            except Exception:
-                pass
+        if capture_body:
+            if event.get("isBase64Encoded"):
+                body = base64.b64decode(body)
+            else:
+                try:
+                    jsonbody = json.loads(body)
+                    body = jsonbody
+                except Exception:
+                    pass
 
         if body is not None:
             result["body"] = body if capture_body else "[REDACTED]"
