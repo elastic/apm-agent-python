@@ -31,6 +31,7 @@
 import base64
 import functools
 import json
+import os
 
 import elasticapm
 from elasticapm.base import ServerlessClient
@@ -53,6 +54,9 @@ class capture_serverless(object):
         self.event = {}
         self.context = {}
         self.response = None
+        if "framework_name" not in kwargs:
+            kwargs["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
+
         self.client = ServerlessClient(**kwargs)
         if not self.client.config.debug and self.client.config.instrument:
             elasticapm.instrument()
@@ -91,13 +95,17 @@ class capture_serverless(object):
                 ),
                 "request",
             )
-            if "resource" in self.event:
-                elasticapm.set_transaction_name("{} {}".format(self.event["httpMethod"], self.event["resource"]))
+            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+                elasticapm.set_transaction_name(
+                    "{} {}".format(self.event["httpMethod"], os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+                )
             else:
                 elasticapm.set_transaction_name(self.name, override=False)
         else:
             self.transaction = self.client.begin_transaction("function", trace_parent=trace_parent)
-            elasticapm.set_transaction_name(self.name, override=False)
+            elasticapm.set_transaction_name(os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name), override=False)
+        if os.environ.get("AWS_LAMBDA_FUNCTION_VERSION"):
+            elasticapm.set_context({"version": os.environ["AWS_LAMBDA_FUNCTION_VERSION"]}, "service")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
