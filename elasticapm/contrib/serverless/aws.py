@@ -54,8 +54,11 @@ class capture_serverless(object):
         self.event = {}
         self.context = {}
         self.response = None
-        if "framework_name" not in kwargs:
-            kwargs["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
+
+        config = kwargs.get("config", {})
+        if "framework_name" not in config:
+            config["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
+        kwargs["config"] = config
 
         self.client = ServerlessClient(**kwargs)
         if not self.client.config.debug and self.client.config.instrument:
