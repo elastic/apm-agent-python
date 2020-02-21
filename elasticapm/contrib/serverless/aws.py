@@ -87,7 +87,7 @@ class capture_serverless(object):
         """
         Transaction setup
         """
-        trace_parent = TraceParent.from_headers(self.event.get("headers"))
+        trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
         if "httpMethod" in self.event:
             self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
