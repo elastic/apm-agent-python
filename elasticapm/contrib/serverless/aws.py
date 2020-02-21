@@ -32,7 +32,6 @@ import base64
 import functools
 import json
 import os
-import sys
 
 import elasticapm
 from elasticapm.base import ServerlessClient
@@ -58,7 +57,6 @@ class capture_serverless(object):
 
         if "framework_name" not in kwargs:
             kwargs["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
-            kwargs["framework_version"] = sys.version
 
         self.client = ServerlessClient(**kwargs)
         if not self.client.config.debug and self.client.config.instrument:
