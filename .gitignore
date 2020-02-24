@@ -3,7 +3,7 @@
 *.egg
 *.db
 *.pid
-.coverage
+.coverage*
 .DS_Store
 .idea
 .vscode
