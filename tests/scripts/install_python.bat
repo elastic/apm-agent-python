@@ -1,5 +1,5 @@
 SETLOCAL EnableDelayedExpansion
-choco uninstall python3
+choco uninstall python3 -y
 set pythonVersion=%1
 set pythonVersion=!pythonVersion:~0,1!
 echo !pythonVersion!
