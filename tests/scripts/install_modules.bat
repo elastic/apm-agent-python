@@ -9,3 +9,4 @@ py -m pip install -U webob
 py -m pip install -U urllib3_mock
 py -m pip install -U certifi
 py -m pip install -U pytest_bdd
+py -m pip install -U pytest-asyncio
