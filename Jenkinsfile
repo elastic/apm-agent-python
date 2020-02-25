@@ -275,7 +275,7 @@ pipeline {
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
           catchError(buildResult: 'SUCCESS') {
             def datafile = readFile(file: "results.json")
-            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
+            def json = getVaultSecret(secret: env.BENCHMARK_SECRET)
             sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
           }
         }
