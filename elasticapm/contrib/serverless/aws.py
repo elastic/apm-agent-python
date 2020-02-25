@@ -131,8 +131,6 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     result = {}
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
-    if capture_headers and "requestContext" in event:
-        result["requestContext"] = event["requestContext"]
     if "httpMethod" not in event:
         # Not API Gateway
         return result
