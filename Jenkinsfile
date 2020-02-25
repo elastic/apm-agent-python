@@ -120,7 +120,7 @@ pipeline {
     }
     stage('Parallel Windows Tests') {
       parallel {
-        stage('Windows Py 2.7') {
+        stage('Windows Py 2.7.16') {
           agent { label 'windows-2019-immutable' }
           options { skipDefaultCheckout() }
           environment {
@@ -131,7 +131,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 2.7.2"
+                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 2.7.16 python27"
                 /*
                 bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Uninstall Python3', script: "choco uninstall python3"
@@ -154,7 +154,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.5.4"
+                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.5.4 python35"
                 /*
                 bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.5', script: "./tests/scripts/install_python.bat 3.5.4"
@@ -177,7 +177,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.6.7"
+                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.6.7 python36"
                 /*
                 bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.6', script: "./tests/scripts/install_python.bat 3.6.7"
@@ -200,7 +200,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.7.2"
+                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.7.2 python37"
                 /*
                 bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.7', script: "./tests/scripts/install_python.bat 3.7.2"
@@ -223,7 +223,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.8.1"
+                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.8.1 python38"
                 /*
                 bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.7', script: "./tests/scripts/install_python.bat 3.8.1"
