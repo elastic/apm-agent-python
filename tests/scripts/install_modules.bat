@@ -1,12 +1,7 @@
-%1 -m pip install -U pytest
-%1 -m pip install -U jsonschema
-%1 -m pip install -U pytest_localserver
-%1 -m pip install -U logbook
-%1 -m pip install -U mock
-%1 -m pip install -U urllib3
-%1 -m pip install -U jinja2
-%1 -m pip install -U webob
-%1 -m pip install -U urllib3_mock
-%1 -m pip install -U certifi
-%1 -m pip install -U pytest_bdd
-%1 -m pip install -U pytest-asyncio
+SETLOCAL EnableDelayedExpansion
+set pythonVersion=%1
+set pythonExecutable=%2
+set majorVersion=!pythonVersion:~0,1!
+echo !majorVersion!
+if %majorVersion% EQU 2 (!pythonExecutable! -m pip install -r .\tests\requirements\requirements-base.txt) else (!pythonExecutable! -m pip install /r .\tests\requirements\requirements-base.txt)
+SETLOCAL DisableDelayedExpansion
