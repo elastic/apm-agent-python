@@ -200,7 +200,7 @@ pipeline {
               deleteDir()
               unstash "source"
               dir("${BASE_DIR}") {
-                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.7.2 python37"
+                bat label: 'Execute Tests', script: ".\\tests\\scripts\\configure_windows_instance.bat 3.7.2 python"
                 /*
                 bat label: 'Install Chocolatey', script: ".\\tests\\scripts\\install_chocolatey.bat"
                 bat label: 'Install Python3.7', script: "./tests/scripts/install_python.bat 3.7.2"
