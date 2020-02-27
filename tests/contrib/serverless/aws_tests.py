@@ -50,14 +50,12 @@ def test_request_data(event):
 
     assert data["method"] == "GET"
     assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
-    assert data["requestContext"]["stage"] == "dev"
     assert data["headers"]["Host"] == "02plqthge2.execute-api.us-east-1.amazonaws.com"
 
     data = get_data_from_request(event, capture_body=False, capture_headers=False)
 
     assert data["method"] == "GET"
     assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
-    assert "requestContext" not in data
     assert "headers" not in data
 
 
@@ -115,5 +113,4 @@ def test_capture_serverless(event, capsys):
     assert transaction_data["span_count"]["started"] == 1
     assert transaction_data["context"]["request"]["method"] == "GET"
     assert transaction_data["context"]["request"]["headers"]
-    assert transaction_data["context"]["request"]["requestContext"]
     assert transaction_data["context"]["response"]["status_code"] == 200
