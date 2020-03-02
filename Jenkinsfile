@@ -267,6 +267,16 @@ pipeline {
   }
   post {
     cleanup {
+      // Coverage
+      def matrixDump = pythonTasksGen.dumpMatrix("-")
+      script {
+        for(vector in matrixDump) {
+          unstash("coverage-${vector}")
+        }
+      }
+      sh('coverage combine && coverage xml')
+      cobertura coberturaReportFile: 'coverage.xml'
+      // Results
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -350,10 +360,9 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             }
             steps.env.PYTHON_VERSION = "${x}"
             steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: "${steps.env.REPO}",
-              basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}"
+            steps.stash(
+              name: "coverage-${steps.env.PYTHON_VERSION}-${steps.env.WEBFRAMEWORK}",
+              includes: ".coverage.*"
             )
           }
         }
