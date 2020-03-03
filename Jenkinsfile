@@ -268,8 +268,8 @@ pipeline {
   post {
     cleanup {
       // Coverage
-      def matrixDump = pythonTasksGen.dumpMatrix("-")
       script {
+        def matrixDump = pythonTasksGen.dumpMatrix("-")
         for(vector in matrixDump) {
           unstash("coverage-${vector}")
         }
