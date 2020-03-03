@@ -10,14 +10,6 @@ exclude:
     FRAMEWORK: django-3.0
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-2.1
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-2.2
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-3.0
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: django-3.0
   - PYTHON_VERSION: python-3.7
@@ -35,8 +27,6 @@ exclude:
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: flask-1.1
   # celery
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: celery-3-django-2.0
@@ -62,8 +52,6 @@ exclude:
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: celery-4-flask-1.0
   # requests
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.6
@@ -110,8 +98,6 @@ exclude:
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
   # python-memcached
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.6
@@ -157,8 +143,6 @@ exclude:
   # zerorpc - only run on py2
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.6
@@ -177,8 +161,6 @@ exclude:
     FRAMEWORK: aiohttp-3.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: aiohttp-3.0
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: aiohttp-3.0
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: aiohttp-3.0
   - PYTHON_VERSION: python-3.6
@@ -189,8 +171,6 @@ exclude:
     FRAMEWORK: aiohttp-4.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: aiohttp-4.0
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: aiohttp-4.0
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: aiohttp-4.0
   - PYTHON_VERSION: python-3.6
@@ -200,8 +180,6 @@ exclude:
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: aiohttp-newest
   - PYTHON_VERSION: pypy-3
-    FRAMEWORK: aiohttp-newest
-  - PYTHON_VERSION: python-3.4
     FRAMEWORK: aiohttp-newest
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: aiohttp-newest
@@ -214,8 +192,6 @@ exclude:
     FRAMEWORK: tornado-newest
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: tornado-newest
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: tornado-newest
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: tornado-newest
   - PYTHON_VERSION: python-3.6
@@ -227,8 +203,6 @@ exclude:
     FRAMEWORK: starlette-0.13
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: starlette-0.13
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: starlette-0.13
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: starlette-0.13
   - PYTHON_VERSION: python-3.6
@@ -238,8 +212,6 @@ exclude:
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: starlette-newest
   - PYTHON_VERSION: pypy-3
-    FRAMEWORK: starlette-newest
-  - PYTHON_VERSION: python-3.4
     FRAMEWORK: starlette-newest
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: starlette-newest
@@ -251,8 +223,6 @@ exclude:
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: aiopg-newest
   - PYTHON_VERSION: pypy-3
-    FRAMEWORK: aiopg-newest
-  - PYTHON_VERSION: python-3.4
     FRAMEWORK: aiopg-newest
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: aiopg-newest
