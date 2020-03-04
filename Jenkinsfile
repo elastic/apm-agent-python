@@ -112,6 +112,11 @@ pipeline {
                 steps: this
                 )
               def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+
+              // Let's now enable the windows stages:
+              mapPatallelTasks['windows-3.5'] = generateStepForWindows(version: '3.5', distutils:'', framework: 'django-1.11', asyncio: 'false')
+              mapPatallelTasks['windows-3.6'] = generateStepForWindows(version: '3.6', distutils:'', framework: 'django-1.11', asyncio: 'true')
+              mapPatallelTasks['windows-3.7'] = generateStepForWindows(version: '3.7', distutils:'', framework: 'django-2.0', asyncio: 'true')
               parallel(mapPatallelTasks)
             }
           }
@@ -384,5 +389,37 @@ def releasePackages(){
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
     """)
+  }
+}
+
+def generateStepForWindows(Map params = [:]){
+  return {
+    version = params.version
+    distutils = params.distutils
+    framework = params.framework
+    asyncio = params.asyncio
+    node('windows-2019-docker-immutable'){
+      // When installing with choco the PATH might not be updated within the already connected worker.
+      // PYTHON env variable requires some transformation
+      withEnv(["PATH=${PATH};C:\\Program Files\\nodejs",
+               "PYTHON=${version}",
+               "DISTUTILS_USE_SDK=${distutils}",
+               "ASYNCIO=${asyncio}",
+               "WEBFRAMEWORK=${framework}"]) {
+        try {
+          deleteDir()
+          unstash 'source'
+          dir(BASE_DIR) {
+            installTools([ [tool: 'python3', version: "${version}" ] ])
+            bat 'scripts/intall.bat'
+            bat 'scripts/test-script.bat'
+          }
+        } catch(e){
+          error(e.toString())
+        } finally {
+          echo 'JUnit archiving no yet in place'
+        }
+      }
+    }
   }
 }
