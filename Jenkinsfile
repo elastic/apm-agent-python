@@ -111,7 +111,7 @@ pipeline {
                 name: "Python",
                 steps: this
                 )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              def mapPatallelTasks = [:] // = pythonTasksGen.generateParallelTests()
 
               // Let's now enable the windows stages:
               mapPatallelTasks['windows-3.5'] = generateStepForWindows(version: '3.5', distutils:'', framework: 'django-1.11', asyncio: 'false')
