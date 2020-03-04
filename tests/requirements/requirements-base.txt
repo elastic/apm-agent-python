@@ -4,8 +4,12 @@ more-itertools==4.1.0
 pluggy==0.13.0
 pytest-django==3.5.1
 atomicwrites==1.1.5
-coverage==5.0.3
-pytest-cov==2.8.1
+## Testing
+#coverage==5.0.3
+#pytest-cov==2.8.1
+coverage
+pytest-cov
+## end testing
 pytest-localserver==0.5.0
 pytest-mock==1.10.4
 pytest-benchmark==3.2.2
