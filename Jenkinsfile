@@ -24,7 +24,6 @@ pipeline {
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
     HOME = "${env.WORKSPACE}"
-    PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
     PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
@@ -49,6 +48,9 @@ pipeline {
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       stages {
         /**
         Checkout the code and stash it, to use it on other stages.
