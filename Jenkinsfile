@@ -270,7 +270,11 @@ pipeline {
       script {
         def matrixDump = pythonTasksGen.dumpMatrix("-")
         for(vector in matrixDump) {
-          unstash("coverage-${vector}")
+          try {
+            unstash("coverage-${vector}")
+          } catch (Exception e) {
+            echo "Failed to unstash "coverage-${vector}" but continuing anyway"
+          }
         }
       }
       sh script: 'pip3 install --user coverage', label: "Installing coverage"
