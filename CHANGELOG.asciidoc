@@ -18,13 +18,28 @@ endif::[]
 ===== Bug fixes
 ////
 
-//=== Unreleased
+=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
+[float]
+===== Deprecations
+
+ * Python 3.4 is no longer supported.
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
+
+[[release-notes-5.4.3]]
+==== v5.4.3
+
+https://github.com/elastic/apm-agent-python/compare/v5.4.2\...v5.4.3[Check the diff]
+
+[float]
+===== Bug fixes
+
+ * fixed a bug in our aiohttp.client support if used with a yarl URL {pull}733[#733]
 
 [[release-notes-5.4.2]]
 ==== v5.4.2
