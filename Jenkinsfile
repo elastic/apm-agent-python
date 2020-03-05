@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@current') _
+@Library('apm@b74b8a1') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
@@ -273,7 +273,8 @@ pipeline {
           unstash("coverage-${vector}")
         }
       }
-      sh('coverage combine && coverage xml')
+      sh script: 'pip3 install --user coverage', label: "Installing coverage"
+      sh('python3 -m coverage combine && python3 -m coverage xml')
       cobertura coberturaReportFile: 'coverage.xml'
       // Results
       script{
