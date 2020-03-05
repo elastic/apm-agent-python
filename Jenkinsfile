@@ -273,7 +273,7 @@ pipeline {
           try {
             unstash("coverage-${vector}")
           } catch (Exception e) {
-            echo "Failed to unstash "coverage-${vector}" but continuing anyway"
+            echo "Failed to unstash coverage-${vector} but continuing anyway"
           }
         }
       }
