@@ -362,7 +362,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
               steps.script {
                 def massaged_py_ver = steps.sh(returnStdout: true,
                 script: """
-                    ${steps.env.PYTHON_VERSION} -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))"
+                    docker run apm-agent-python:${steps.env.PYTHON_VERSION} python -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))"
                     """
                 ).trim()
                 steps.stash(
