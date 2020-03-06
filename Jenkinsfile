@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@b74b8a1') _
+@Library('apm@current') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
@@ -358,7 +358,6 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             // steps.env.PYTHON_VERSION = "${x}"
             // steps.env.WEBFRAMEWORK = "${y}"
             steps.dir("${steps.env.BASE_DIR}"){
-              steps.sh(script: "ls -larth")
               steps.script {
                 def massaged_py_ver = steps.sh(returnStdout: true,
                 script: """
