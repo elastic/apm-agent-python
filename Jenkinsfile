@@ -366,7 +366,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                     """
                 ).trim()
                 steps.stash(
-                name: "coverage-${steps.env.PYTHON_VERSION}-${steps.env.WEBFRAMEWORK}",
+                name: "coverage-${massaged_py_ver}-${steps.env.WEBFRAMEWORK}",
                 includes: ".coverage.${massaged_py_ver}.${steps.env.WEBFRAMEWORK}",
                 allowEmpty: false
               )
