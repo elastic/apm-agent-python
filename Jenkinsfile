@@ -355,19 +355,19 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                 defaultExcludes: false
               )
             }
-            steps.env.PYTHON_VERSION = "${x}"
-            steps.env.WEBFRAMEWORK = "${y}"
+            // steps.env.PYTHON_VERSION = "${x}"
+            // steps.env.WEBFRAMEWORK = "${y}"
             steps.dir("${steps.env.BASE_DIR}"){
               steps.sh(script: "ls -larth")
               steps.script {
                 def massaged_py_ver = steps.sh(returnStdout: true,
                 script: """
-                    docker run apm-agent-python:${steps.env.PYTHON_VERSION} python -c \"import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))\" | egrep -v 'Starting with'
+                    docker run apm-agent-python:${x} python -c \"import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))\" | egrep -v 'Starting with'
                     """
                 ).trim()
                 steps.stash(
-                name: "coverage-${massaged_py_ver}-${steps.env.WEBFRAMEWORK}",
-                includes: ".coverage.${massaged_py_ver}.${steps.env.WEBFRAMEWORK}",
+                name: "coverage-${massaged_py_ver}-${y}",
+                includes: ".coverage.${massaged_py_ver}.${y}",
                 allowEmpty: false
               )
              }
