@@ -360,7 +360,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.dir("${steps.env.BASE_DIR}"){
               steps.sh(script: "ls -larth")
               steps.script {
-                def massaged_py_ver = sh(returnStdout: true,
+                def massaged_py_ver = steps.sh(returnStdout: true,
                 script: """
                     python -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))"
                     """
