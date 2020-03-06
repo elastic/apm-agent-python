@@ -360,8 +360,8 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.dir("${steps.env.BASE_DIR}"){
               steps.sh(script: "ls -larth")
               steps.stash(
-                name: "coverage-${steps.env.PYTHON_VERSION}-${steps.env.WEBFRAMEWORK}",
-                includes: ".coverage.${steps.env.PYTHON_VERSION}.${steps.env.WEBFRAMEWORK}",
+                name: "${steps.env.COVERAGE_FILE}",
+                includes: "${steps.env.COVERAGE_FILE}",
                 allowEmpty: false
               )
             }
