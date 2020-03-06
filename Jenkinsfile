@@ -359,11 +359,18 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.env.WEBFRAMEWORK = "${y}"
             steps.dir("${steps.env.BASE_DIR}"){
               steps.sh(script: "ls -larth")
-              steps.stash(
+              steps.script {
+                def massaged_py_ver = sh(returnStdout: true,
+                script: """
+                    python -c "import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))"
+                    """
+                ).trim()
+                steps.stash(
                 name: "coverage-${steps.env.PYTHON_VERSION}-${steps.env.WEBFRAMEWORK}",
-                includes: ".coverage.${steps.env.PYTHON_VERSION}.${steps.env.WEBFRAMEWORK}",
+                includes: ".coverage.${massaged_py_ver}.${steps.env.WEBFRAMEWORK}",
                 allowEmpty: false
               )
+             }
             }
           }
         }
