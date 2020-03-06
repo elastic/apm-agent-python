@@ -271,9 +271,7 @@ pipeline {
         def matrixDump = pythonTasksGen.dumpMatrix("-")
         for(vector in matrixDump) {
           def massaged_vector = sh(returnStdout: true, script: "echo ${vector}|sed s/-python//")
-          catchError(stageResult: 'SUCCESS') {
-            unstash("coverage-${massaged_vector}")
-          } 
+          unstash("coverage-${massaged_vector}")
         }
       }
       sh script: 'pip3 install --user coverage', label: "Installing coverage"
