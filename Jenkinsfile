@@ -400,9 +400,11 @@ def generateStepForWindows(Map params = [:]){
     distutils = params.distutils
     framework = params.framework
     asyncio = params.asyncio
-    pythonPath = "C:\\Python${version.replaceAll('.', '')}"
+    // Python installations with choco in Windows do follow the pattern:
+    //  C:\Python<Major><Minor>, for instance: C:\Python27
+    pythonPath = "C:\\Python${version.replaceAll('\\.', '')}"
     node('windows-2019-docker-immutable'){
-      withEnv(["PYTHON=${version}",
+      withEnv(["PYTHON=${pythonPath}",
                "DISTUTILS_USE_SDK=${distutils}",
                "ASYNCIO=${asyncio}",
                "WEBFRAMEWORK=${framework}"]) {
@@ -411,8 +413,8 @@ def generateStepForWindows(Map params = [:]){
           unstash 'source'
           dir("${BASE_DIR}"){
             installTools([ [tool: 'python3', version: "${version}" ] ])
-            bat script: '.\\scripts\\install.bat'
-            bat script: '.\\scripts\\test-script.bat'
+            bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
+            bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
           }
         } catch(e){
           error(e.toString())

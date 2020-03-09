@@ -1,7 +1,12 @@
 : Adding gherkin feature download for windows
-mkdir .\tests\tempFeatures
-curl https://codeload.github.com/elastic/apm/zip/master -o .\tests\tempFeatures\features.zip
-7z x .\tests\tempFeatures\features.zip -o.\tests\tempFeatures *.feature -y -r
-mkdir .\tests\bdd\features
-xcopy .\tests\tempFeatures\apm-master\tests\agents\gherkin-specs\* .\tests\bdd\features /Y /S
-del .\tests\tempFeatures\ /F /Q /S
+@echo off
+SET TMP_FOLDER=.\tests\tempFeatures
+SET FOLDER=.\tests\bdd\features
+SET APM_BRANCH=master
+
+mkdir %TMP_FOLDER%
+curl -s https://codeload.github.com/elastic/apm/zip/%APM_BRANCH% -o %TMP_FOLDER%\features.zip
+7z x %TMP_FOLDER%\features.zip -o%TMP_FOLDER% *.feature -y -r
+mkdir %FOLDER%
+xcopy %TMP_FOLDER%\apm-master\tests\agents\gherkin-specs\* %FOLDER% /Y /S /Q
+del %TMP_FOLDER%\ /F /Q /S 1>nul
