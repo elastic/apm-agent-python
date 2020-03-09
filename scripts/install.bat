@@ -1,10 +1,11 @@
 : Required tools before running the tests in windows.
 
-: Needed to compile pymongo
-if "%platform%" == "x86" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
-if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
-if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
+: Install dependencies
+: See https://devblogs.microsoft.com/python/unable-to-find-vcvarsall-bat/
+choco install windows-sdk-7.1 -y --no-progress -r --version 5.1.0
+refreshenv
+
 : We need wheel installed to build wheels
-".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pip install -U wheel pip setuptools"
-".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pip install -r tests\\requirements\\requirements-%WEBFRAMEWORK%.txt"
-".\\tests\\appveyor\\build.cmd %PYTHON%\\python.exe -m pip install psutil"
+call .\tests\appveyor\build.cmd %PYTHON%\python.exe -m pip install -U wheel pip setuptools
+call .\tests\appveyor\build.cmd %PYTHON%\python.exe -m pip install -r tests\requirements\requirements-%WEBFRAMEWORK%.txt
+call .\tests\appveyor\build.cmd %PYTHON%\python.exe -m pip install psutil
