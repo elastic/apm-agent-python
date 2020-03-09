@@ -410,8 +410,8 @@ def generateStepForWindows(Map params = [:]){
           unstash 'source'
           dir("${BASE_DIR}"){
             installTools([ [tool: 'python3', version: "${version}" ] ])
-            bat script: '.\\scripts\\install.bat')
-            bat script: '.\\scripts\\test-script.bat')
+            bat script: '.\\scripts\\install.bat'
+            bat script: '.\\scripts\\test-script.bat'
           }
         } catch(e){
           error(e.toString())
