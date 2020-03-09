@@ -270,8 +270,7 @@ pipeline {
       script {
         def matrixDump = pythonTasksGen.dumpMatrix("-")
         for(vector in matrixDump) {
-          def massaged_vector = "${vector}".replace('python-', '')
-          unstash("coverage-${massaged_vector}")
+          unstash("coverage-${vector}")
         }
       }
       sh script: 'pip3 install --user coverage', label: "Installing coverage"
@@ -358,14 +357,9 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             // steps.env.WEBFRAMEWORK = "${y}"
             steps.dir("${steps.env.BASE_DIR}"){
               steps.script {
-                def massaged_py_ver = steps.sh(returnStdout: true,
-                script: """
-                    docker run apm-agent-python:${x} python -c \"import platform; pv=platform.python_version_tuple(); print('pypy' + ('' if pv[0] == 2 else str(pv[0])) if platform.python_implementation() == 'PyPy' else '.'.join(map(str, platform.python_version_tuple()[:2])))\" | egrep -v 'Starting with'
-                    """
-                ).trim()
                 steps.stash(
-                name: "coverage-${massaged_py_ver}-${y}",
-                includes: ".coverage.${massaged_py_ver}.${y}",
+                name: "coverage-${x}-${y}",
+                includes: ".coverage.${x}.${y}",
                 allowEmpty: false
               )
              }
