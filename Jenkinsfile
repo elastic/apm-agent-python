@@ -267,10 +267,12 @@ pipeline {
   post {
     cleanup {
       // Coverage
-      script {
-        def matrixDump = pythonTasksGen.dumpMatrix("-")
-        for(vector in matrixDump) {
-          unstash("coverage-${vector}")
+      steps.dir("${steps.env.BASE_DIR}"){
+        script {
+          def matrixDump = pythonTasksGen.dumpMatrix("-")
+          for(vector in matrixDump) {
+            unstash("coverage-${vector}")
+          }
         }
       }
       sh script: 'pip3 install --user coverage', label: "Installing coverage"
