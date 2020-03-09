@@ -9,6 +9,10 @@ IF "%DISTUTILS_USE_SDK%"=="1" (
     : See https://devblogs.microsoft.com/python/unable-to-find-vcvarsall-bat/
     ECHO Install dependencies
     choco install windows-sdk-7.1 -y --no-progress -r
+) ELSE (
+    ECHO Setup local installation
+    : See https://stackoverflow.com/a/43570522
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\vsdevcmd.bat" -arch=amd64
 )
 
 : We need wheel installed to build wheels
