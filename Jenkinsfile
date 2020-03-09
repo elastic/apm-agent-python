@@ -267,17 +267,17 @@ pipeline {
   post {
     cleanup {
       // Coverage
+      sh script: 'pip3 install --user coverage', label: "Installing coverage"
       dir("${BASE_DIR}"){
         script {
           def matrixDump = pythonTasksGen.dumpMatrix("-")
           for(vector in matrixDump) {
             unstash("coverage-${vector}")
           }
+          sh('python3 -m coverage combine && python3 -m coverage xml')
+          cobertura coberturaReportFile: 'coverage.xml'
         }
-      }
-      sh script: 'pip3 install --user coverage', label: "Installing coverage"
-      sh('python3 -m coverage combine && python3 -m coverage xml')
-      cobertura coberturaReportFile: 'coverage.xml'
+      }   
       // Results
       script{
         if(pythonTasksGen?.results){
