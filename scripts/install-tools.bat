@@ -1,4 +1,8 @@
 : Required tools before running the tests in windows.
+: It does require the below list of environment variables:
+:  - DISTUTILS_USE_SDK: optional
+:  - PYTHON: the python installation path.
+:  - WEBFRAMEWORK: the framework to be installed.
 @echo off
 
 IF "%DISTUTILS_USE_SDK%"=="1" (

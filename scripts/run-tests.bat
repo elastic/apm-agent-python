@@ -1,8 +1,12 @@
 : Run the tests in Windows
+: It does require the below list of environment variables:
+:  - ASYNCIO: if asyncio is enabled or not.
+:  - PYTHON: the python installation path.
 @echo off
-echo "Download json schema dependencies"
+
+ECHO Download json schema dependencies
 call .\tests\scripts\download_json_schema.bat
-echo "Download gherkin feature dependencies"
+ECHO Download gherkin feature dependencies
 call .\tests\scripts\download_gherkin_features.bat
 
 set PYTEST_JUNIT="--junitxml=.\tests\python-agent-junit.xml"
