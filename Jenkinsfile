@@ -267,7 +267,7 @@ pipeline {
   post {
     cleanup {
       // Coverage
-      steps.dir("${steps.env.BASE_DIR}"){
+      dir("${steps.env.BASE_DIR}"){
         script {
           def matrixDump = pythonTasksGen.dumpMatrix("-")
           for(vector in matrixDump) {
