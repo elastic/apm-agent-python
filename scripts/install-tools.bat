@@ -9,6 +9,7 @@ IF "%DISTUTILS_USE_SDK%"=="1" (
     : See https://devblogs.microsoft.com/python/unable-to-find-vcvarsall-bat/
     ECHO Install dependencies
     choco install windows-sdk-7.1 -y --no-progress -r
+    call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 ) ELSE (
     ECHO Setup local installation
     : See https://stackoverflow.com/a/43570522
