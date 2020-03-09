@@ -396,28 +396,25 @@ def releasePackages(){
   }
 }
 
-def generateStepForWindows(Map params = [:]){
+def generateStepForWindows(Map v = [:]){
   return {
-    version = params.VERSION
-    distutils = params.DISTUTILS_USE_SDK
-    framework = params.WEBFRAMEWORK
-    asyncio = params.ASYNCIO
-    log(level: 'INFO', text: "version=${version} distutils=${distutils} framework=${framework} asyncio=${asyncio}")
+    log(level: 'INFO', text: "version=${v.VERSION} distutils=${v.DISTUTILS_USE_SDK} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
-    pythonPath = "C:\\Python${version.replaceAll('\\.', '')}"
+    pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
     // For the choco provider uses the major version.
-    majorVersion = version.split('\\.')[0]
+    majorVersion = v.VERSION.split('\\.')[0]
     node('windows-2019-docker-immutable'){
-      withEnv(["PYTHON=${pythonPath}",
-               "DISTUTILS_USE_SDK=${distutils}",
-               "ASYNCIO=${asyncio}",
-               "WEBFRAMEWORK=${framework}"]) {
+      withEnv(["VERSION=${v.VERSION}",
+               "PYTHON=${pythonPath}",
+               "DISTUTILS_USE_SDK=${v.DISTUTILS_USE_SDK}",
+               "ASYNCIO=${v.ASYNCIO}",
+               "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
         try {
           deleteDir()
           unstash 'source'
           dir("${BASE_DIR}"){
-            installTools([ [tool: "python${majorVersion}", version: "${version}" ] ])
+            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
           }
