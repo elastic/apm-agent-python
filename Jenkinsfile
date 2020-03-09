@@ -116,8 +116,8 @@ pipeline {
               def mapPatallelTasks = [:] // = pythonTasksGen.generateParallelTests()
 
               // Let's now enable the windows stages:
-              mapPatallelTasks['windows-3.5'] = generateStepForWindows(version: '3.5', distutils:'', framework: 'none', asyncio: 'false')
-              mapPatallelTasks['windows-3.6'] = generateStepForWindows(version: '3.6', distutils:'', framework: 'none', asyncio: 'true')
+              //mapPatallelTasks['windows-3.5'] = generateStepForWindows(version: '3.5', distutils:'', framework: 'none', asyncio: 'false')
+              //mapPatallelTasks['windows-3.6'] = generateStepForWindows(version: '3.6', distutils:'', framework: 'none', asyncio: 'true')
               mapPatallelTasks['windows-3.7'] = generateStepForWindows(version: '3.7', distutils:'', framework: 'none', asyncio: 'true')
               parallel(mapPatallelTasks)
             }
@@ -400,6 +400,7 @@ def generateStepForWindows(Map params = [:]){
     distutils = params.distutils
     framework = params.framework
     asyncio = params.asyncio
+    pythonPath = "C:\\Python${version.replaceAll('.', '')}"
     node('windows-2019-docker-immutable'){
       withEnv(["PYTHON=${version}",
                "DISTUTILS_USE_SDK=${distutils}",
