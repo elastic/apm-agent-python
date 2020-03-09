@@ -401,6 +401,7 @@ def generateStepForWindows(Map params = [:]){
     distutils = params.distutils
     framework = params.framework
     asyncio = params.asyncio
+    log(level: 'INFO', text: "version=${version} distutils=${distutils} framework=${framework} asyncio=${asyncio}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
     pythonPath = "C:\\Python${version.replaceAll('\\.', '')}"
