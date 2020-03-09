@@ -270,7 +270,9 @@ pipeline {
       script {
         def matrixDump = pythonTasksGen.dumpMatrix("-")
         for(vector in matrixDump) {
+          sh(script: "ls -larth")
           def massaged_vector = "${vector}".replace('-python', '')
+          echo "${massaged_vector}"
           unstash("coverage-${massaged_vector}")
         }
       }
