@@ -419,7 +419,7 @@ def generateStepForWindows(Map params = [:]){
         } catch(e){
           error(e.toString())
         } finally {
-          echo 'JUnit archiving no yet in place'
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
         }
       }
     }
