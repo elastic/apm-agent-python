@@ -401,20 +401,17 @@ def generateStepForWindows(Map params = [:]){
     framework = params.framework
     asyncio = params.asyncio
     node('windows-2019-docker-immutable'){
-      // When installing with choco the PATH might not be updated within the already connected worker.
-      // PYTHON env variable requires some transformation
-      withEnv(["PATH=${PATH};C:\\Program Files\\nodejs",
-               "PYTHON=${version}",
+      withEnv(["PYTHON=${version}",
                "DISTUTILS_USE_SDK=${distutils}",
                "ASYNCIO=${asyncio}",
                "WEBFRAMEWORK=${framework}"]) {
         try {
           deleteDir()
           unstash 'source'
-          dir(BASE_DIR) {
+          dir("${BASE_DIR}"){
             installTools([ [tool: 'python3', version: "${version}" ] ])
-            bat 'scripts/intall.bat'
-            bat 'scripts/test-script.bat'
+            bat script: '.\\scripts\\install.bat')
+            bat script: '.\\scripts\\test-script.bat')
           }
         } catch(e){
           error(e.toString())
