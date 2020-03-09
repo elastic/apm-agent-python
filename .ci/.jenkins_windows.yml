@@ -10,16 +10,16 @@ windows:
   - VERSION: "3.5"
     WEBFRAMEWORK: "none"
     ASYNCIO: "false"
-    DISTUTILS_USE_SDK: 0
+    DISTUTILS_USE_SDK: "0"
   - VERSION: "3.5"
     WEBFRAMEWORK: "none"
     ASYNCIO: "false"
-    DISTUTILS_USE_SDK: 1
+    DISTUTILS_USE_SDK: "1"
   - VERSION: "3.6"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-    DISTUTILS_USE_SDK: 0
+    DISTUTILS_USE_SDK: "0"
   - VERSION: "3.7"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-    DISTUTILS_USE_SDK: 0
+    DISTUTILS_USE_SDK: "0"

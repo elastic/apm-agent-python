@@ -117,7 +117,8 @@ pipeline {
 
               // Let's now enable the windows stages
               readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-                def description = "${v.VERSION}-${v.DISTUTILS_USE_SDK.equals('1') ? 'use-sdk' : ''}-${v.WEBFRAMEWORK}"
+                def description = "${v.VERSION}-${v.DISTUTILS_USE_SDK.equals('1') ? 'sdk' : ''}-${v.WEBFRAMEWORK}"
+                log(level: 'INFO', text: "version=${v.VERSION} distutils=${v.DISTUTILS_USE_SDK} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
                 mapPatallelTasks["windows-${description}"] = generateStepForWindows(v)
               }
               parallel(mapPatallelTasks)
