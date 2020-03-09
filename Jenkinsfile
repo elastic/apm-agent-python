@@ -406,8 +406,6 @@ def generateStepForWindows(Map v = [:]){
     node('windows-2019-docker-immutable'){
       withEnv(["VERSION=${v.VERSION}",
                "PYTHON=${pythonPath}",
-               "PATH+PYTHON=${pythonPath}",
-               "PATH+PYTHON_SCRIPTS=${pythonPath}\\Scripts",
                "DISTUTILS_USE_SDK=${v.DISTUTILS_USE_SDK}",
                "ASYNCIO=${v.ASYNCIO}",
                "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
@@ -416,7 +414,6 @@ def generateStepForWindows(Map v = [:]){
           unstash 'source'
           dir("${BASE_DIR}"){
             installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
-            bat(label: 'Debug', script: 'set')
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
           }
