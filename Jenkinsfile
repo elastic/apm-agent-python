@@ -400,9 +400,9 @@ def generateStepForWindows(Map v = [:]){
     log(level: 'INFO', text: "version=${v.VERSION} distutils=${v.DISTUTILS_USE_SDK} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
-    pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
+    def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
     // For the choco provider uses the major version.
-    majorVersion = v.VERSION.split('\\.')[0]
+    def majorVersion = v.VERSION.split('\\.')[0]
     node('windows-2019-docker-immutable'){
       withEnv(["VERSION=${v.VERSION}",
                "PYTHON=${pythonPath}",
