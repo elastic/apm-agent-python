@@ -113,7 +113,7 @@ pipeline {
                 name: "Python",
                 steps: this
                 )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              def mapPatallelTasks = [:] //= pythonTasksGen.generateParallelTests()
 
               // Let's now enable the windows stages
               readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
