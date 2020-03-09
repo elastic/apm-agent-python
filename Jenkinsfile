@@ -115,10 +115,11 @@ pipeline {
                 )
               def mapPatallelTasks = [:] // = pythonTasksGen.generateParallelTests()
 
-              // Let's now enable the windows stages:
-              //mapPatallelTasks['windows-3.5'] = generateStepForWindows(version: '3.5', distutils:'', framework: 'none', asyncio: 'false')
-              //mapPatallelTasks['windows-3.6'] = generateStepForWindows(version: '3.6', distutils:'', framework: 'none', asyncio: 'true')
-              mapPatallelTasks['windows-3.7'] = generateStepForWindows(version: '3.7', distutils:'', framework: 'none', asyncio: 'true')
+              // Let's now enable the windows stages
+              readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+                mapPatallelTasks["windows-${v.VERSION}"] = generateStepForWindows(version: "${v.VERSION}", asyncio: "${v.ASYNCIO}",
+                                                            distutils: "${v.DISTUTILS_USE_SDK}", framework: "${v.WEBFRAMEWORK}")
+              }
               parallel(mapPatallelTasks)
             }
           }
