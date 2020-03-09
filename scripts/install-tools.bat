@@ -1,8 +1,11 @@
 : Required tools before running the tests in windows.
 @echo off
-: See https://devblogs.microsoft.com/python/unable-to-find-vcvarsall-bat/
-echo Install dependencies
-choco install windows-sdk-7.1 -y --no-progress -r --version 5.1.0
+
+IF "%DISTUTILS_USE_SDK%"=="1" (
+    : See https://devblogs.microsoft.com/python/unable-to-find-vcvarsall-bat/
+    ECHO Install dependencies
+    choco install windows-sdk-7.1 -y --no-progress -r
+)
 
 : We need wheel installed to build wheels
 call .\tests\appveyor\build.cmd %PYTHON%\python.exe -m pip install -U wheel pip setuptools
