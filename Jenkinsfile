@@ -117,8 +117,8 @@ pipeline {
 
               // Let's now enable the windows stages
               readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-                mapPatallelTasks["windows-${v.VERSION}"] = generateStepForWindows(version: "${v.VERSION}", asyncio: "${v.ASYNCIO}",
-                                                            distutils: "${v.DISTUTILS_USE_SDK}", framework: "${v.WEBFRAMEWORK}")
+                def description = "${v.VERSION}-${v.DISTUTILS_USE_SDK.equals('1') ? 'use-sdk' : ''}-${WEBFRAMEWORK}"
+                mapPatallelTasks["windows-${description}"] = generateStepForWindows(v)
               }
               parallel(mapPatallelTasks)
             }
@@ -397,14 +397,16 @@ def releasePackages(){
 
 def generateStepForWindows(Map params = [:]){
   return {
-    version = params.version
-    distutils = params.distutils
-    framework = params.framework
-    asyncio = params.asyncio
+    version = params.VERSION
+    distutils = params.DISTUTILS_USE_SDK
+    framework = params.WEBFRAMEWORK
+    asyncio = params.ASYNCIO
     log(level: 'INFO', text: "version=${version} distutils=${distutils} framework=${framework} asyncio=${asyncio}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
     pythonPath = "C:\\Python${version.replaceAll('\\.', '')}"
+    // For the choco provider uses the major version.
+    majorVersion = version.split('\\.')[0]
     node('windows-2019-docker-immutable'){
       withEnv(["PYTHON=${pythonPath}",
                "DISTUTILS_USE_SDK=${distutils}",
@@ -414,7 +416,7 @@ def generateStepForWindows(Map params = [:]){
           deleteDir()
           unstash 'source'
           dir("${BASE_DIR}"){
-            installTools([ [tool: 'python3', version: "${version}" ] ])
+            installTools([ [tool: "python${majorVersion}", version: "${version}" ] ])
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
           }
