@@ -112,15 +112,15 @@ pipeline {
                 tag: "Python",
                 name: "Python",
                 steps: this
-                )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
+              )
+              def mapParallelTasks = pythonTasksGen.generateParallelTests()
 
               // Let's now enable the windows stages
               readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
                 def description = "${v.VERSION}${v.DISTUTILS_USE_SDK.equals('1') ? '-sdk' : ''}-${v.WEBFRAMEWORK}"
-                mapPatallelTasks["windows-${description}"] = generateStepForWindows(v)
+                mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
               }
-              parallel(mapPatallelTasks)
+              parallel(mapParallelTasks)
             }
           }
         }
@@ -291,7 +291,7 @@ pipeline {
           sh('python3 -m coverage combine && python3 -m coverage xml')
           cobertura coberturaReportFile: 'coverage.xml'
         }
-      }   
+      }
       // Results
       script{
         if(pythonTasksGen?.results){
