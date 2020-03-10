@@ -280,6 +280,19 @@ pipeline {
   }
   post {
     cleanup {
+      // Coverage
+      sh script: 'pip3 install --user coverage', label: "Installing coverage"
+      dir("${BASE_DIR}"){
+        script {
+          def matrixDump = pythonTasksGen.dumpMatrix("-")
+          for(vector in matrixDump) {
+            unstash("coverage-${vector}")
+          }
+          sh('python3 -m coverage combine && python3 -m coverage xml')
+          cobertura coberturaReportFile: 'coverage.xml'
+        }
+      }   
+      // Results
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -356,13 +369,17 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                 defaultExcludes: false
               )
             }
-            steps.env.PYTHON_VERSION = "${x}"
-            steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: "${steps.env.REPO}",
-              basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}"
-            )
+            // steps.env.PYTHON_VERSION = "${x}"
+            // steps.env.WEBFRAMEWORK = "${y}"
+            steps.dir("${steps.env.BASE_DIR}"){
+              steps.script {
+                steps.stash(
+                name: "coverage-${x}-${y}",
+                includes: ".coverage.${x}.${y}",
+                allowEmpty: false
+              )
+             }
+            }
           }
         }
       }

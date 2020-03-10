@@ -37,6 +37,7 @@ import platform
 import socket
 import sys
 import time
+import warnings
 from collections import defaultdict
 
 import mock
@@ -722,3 +723,26 @@ def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
 )
 def test_server_url_joining(elasticapm_client, expected):
     assert elasticapm_client._api_endpoint_url == expected
+
+
+@pytest.mark.parametrize(
+    "version,raises",
+    [(("2", "7", "0"), False), (("3", "3", "0"), True), (("3", "4", "0"), True), (("3", "5", "0"), False)],
+)
+@mock.patch("platform.python_version_tuple")
+def test_python_version_deprecation(mock_python_version_tuple, version, raises, recwarn):
+    warnings.simplefilter("always")
+
+    mock_python_version_tuple.return_value = version
+    e = None
+    try:
+        e = elasticapm.Client()
+    finally:
+        if e:
+            e.close()
+    if raises:
+        assert len(recwarn) == 1
+        w = recwarn.pop(DeprecationWarning)
+        assert "agent only supports" in w.message.args[0]
+    else:
+        assert len(recwarn) == 0
