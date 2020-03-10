@@ -128,6 +128,9 @@ pipeline {
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       when {
         beforeAgent true
         expression { return params.package_ci }
@@ -210,6 +213,9 @@ pipeline {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
+      }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
       }
       when {
         beforeInput true
