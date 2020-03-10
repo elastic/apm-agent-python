@@ -23,3 +23,7 @@ windows:
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
     DISTUTILS_USE_SDK: "0"
+  - VERSION: "3.8"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
+    DISTUTILS_USE_SDK: "0"
