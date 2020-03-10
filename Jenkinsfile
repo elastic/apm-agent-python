@@ -428,7 +428,6 @@ def generateStepForWindows(Map v = [:]){
         } finally {
           dir("${BASE_DIR}"){
             junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
-            archiveArtifacts(allowEmptyArchive: true, artifacts: '**/dist/**', defaultExcludes: false)
           }
         }
       }
