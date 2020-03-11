@@ -3,31 +3,21 @@
 #  VERSION: Major.Minor python version.
 #  WEBFRAMEWORK: What framework to be tested. String format.
 #  ASYNCIO: Whether it's enabled or disabled. Boolean format.
-#  DISTUTILS_USE_SDK: Whether configuring the environment to build with MSVC on a 64bit architecture. Binary format.
 #
 
 windows:
   - VERSION: "2.7"
     WEBFRAMEWORK: "none"
     ASYNCIO: "false"
-    DISTUTILS_USE_SDK: "1"
   - VERSION: "3.5"
     WEBFRAMEWORK: "none"
     ASYNCIO: "false"
-    DISTUTILS_USE_SDK: "0"
-  - VERSION: "3.5"
-    WEBFRAMEWORK: "none"
-    ASYNCIO: "false"
-    DISTUTILS_USE_SDK: "1"
   - VERSION: "3.6"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-    DISTUTILS_USE_SDK: "0"
   - VERSION: "3.7"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-    DISTUTILS_USE_SDK: "0"
   - VERSION: "3.8"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-    DISTUTILS_USE_SDK: "0"
