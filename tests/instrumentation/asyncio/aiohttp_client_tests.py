@@ -31,6 +31,7 @@
 import pytest  # isort:skip
 
 aiohttp = pytest.importorskip("aiohttp")  # isort:skip
+yarl = pytest.importorskip("yarl")  # isort:skip
 
 from elasticapm.conf import constants
 from elasticapm.utils.disttracing import TraceParent
@@ -38,9 +39,13 @@ from elasticapm.utils.disttracing import TraceParent
 pytestmark = [pytest.mark.asyncio, pytest.mark.aiohttp]
 
 
-async def test_http_get(instrument, event_loop, elasticapm_client, waiting_httpserver):
+@pytest.mark.parametrize("use_yarl", [True, False])
+async def test_http_get(instrument, event_loop, elasticapm_client, waiting_httpserver, use_yarl):
     assert event_loop.is_running()
     elasticapm_client.begin_transaction("test")
+
+    url = waiting_httpserver.url
+    url = yarl.URL(url) if use_yarl else url
 
     async with aiohttp.ClientSession() as session:
         async with session.get(waiting_httpserver.url) as resp:
