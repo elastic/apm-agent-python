@@ -12,7 +12,7 @@ call .\tests\scripts\download_gherkin_features.bat
 
 @echo on
 set IGNORE_PYTHON3_WITH_PYTHON2=
-if "%VERSION%" == "2.7" set IGNORE_PYTHON3_WITH_PYTHON2="--ignore-glob='*\py3_*.py'"
+if "%VERSION%" == "2.7" set IGNORE_PYTHON3_WITH_PYTHON2=--ignore-glob="*\py3_*.py"
 
 set PYTEST_JUNIT="--junitxml=.\tests\python-agent-junit.xml"
 if "%ASYNCIO%" == "true" (
