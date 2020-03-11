@@ -7,6 +7,10 @@
 #
 
 windows:
+  - VERSION: "2.7"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "false"
+    DISTUTILS_USE_SDK: "1"
   - VERSION: "3.5"
     WEBFRAMEWORK: "none"
     ASYNCIO: "false"
