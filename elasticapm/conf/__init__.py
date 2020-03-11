@@ -272,7 +272,7 @@ class Config(_ConfigBase):
     )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue("AUTO_LOG_STACKS", default=True)
-    transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.AsyncTransport", required=True)
+    transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.Transport", required=True)
     processors = _ListConfigValue(
         "PROCESSORS",
         default=[

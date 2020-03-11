@@ -107,15 +107,11 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 
 |============
 | Environment                   | Django/Flask      | Default
-| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http.AsyncTransport`
+| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http.Transport`
 |============
 
 
 The transport class to use when sending events to the APM Server.
-The default `AsyncTransport` uses a background thread to send data.
-If your environment doesn't allow background threads, you can use
-`elasticapm.transport.http.Transport` instead.
-Note however that this can have adverse effects on performance.
 
 
 [float]
