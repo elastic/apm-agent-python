@@ -31,7 +31,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm.conf import constants
-from elasticapm.transport.base import AsyncTransport, Transport
+from elasticapm.transport.base import Transport
 from elasticapm.utils import compat
 
 
@@ -98,6 +98,5 @@ class HTTPTransportBase(Transport):
         return {}
 
 
-class AsyncHTTPTransportBase(AsyncTransport, HTTPTransportBase):
-    async_mode = True
-    sync_transport = HTTPTransportBase
+# left for backwards compatibility
+AsyncHTTPTransportBase = HTTPTransportBase

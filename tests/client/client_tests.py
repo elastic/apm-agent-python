@@ -276,33 +276,6 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     client.close()
 
 
-@pytest.mark.parametrize(
-    "sending_elasticapm_client",
-    [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
-    indirect=True,
-)
-@pytest.mark.parametrize("validating_httpserver", [{"app": ContentServer}], indirect=True)
-@mock.patch("elasticapm.transport.base.TransportState.should_try")
-def test_send_remote_failover_async(should_try, sending_elasticapm_client, caplog):
-    should_try.return_value = True
-    sending_elasticapm_client.httpserver.code = 400
-
-    # test error
-    with caplog.at_level("ERROR", "elasticapm.transport"):
-        sending_elasticapm_client.capture_message("foo", handled=False)
-        sending_elasticapm_client._transport.flush()
-        time.sleep(0.1)  # give event processor thread some time to do its thing
-    assert sending_elasticapm_client._transport.state.did_fail()
-    assert "400" in caplog.records[0].message
-
-    # test recovery
-    sending_elasticapm_client.httpserver.code = 202
-    with caplog.at_level("ERROR", "elasticapm.transport"):
-        sending_elasticapm_client.capture_message("bar", handled=False)
-        sending_elasticapm_client.close()
-    assert not sending_elasticapm_client._transport.state.did_fail()
-
-
 @pytest.mark.parametrize("validating_httpserver", [{"skip_validate": True}], indirect=True)
 def test_send(sending_elasticapm_client):
     sending_elasticapm_client.queue("x", {})
@@ -336,17 +309,6 @@ def test_send_not_enabled(sending_elasticapm_client):
     indirect=True,
 )
 def test_client_shutdown_sync(sending_elasticapm_client):
-    sending_elasticapm_client.capture_message("x")
-    sending_elasticapm_client.close()
-    assert len(sending_elasticapm_client.httpserver.requests) == 1
-
-
-@pytest.mark.parametrize(
-    "sending_elasticapm_client",
-    [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
-    indirect=True,
-)
-def test_client_shutdown_async(sending_elasticapm_client):
     sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
     assert len(sending_elasticapm_client.httpserver.requests) == 1
