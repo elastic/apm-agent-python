@@ -16,7 +16,7 @@ test:
 		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/py3_*.py' --ignore-glob='*/asyncio/*'; \
 	fi
 
-coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg
+coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg --cov-branch
 coverage: export COVERAGE_FILE=.coverage.$(PYTHON_FULL_VERSION).$(WEBFRAMEWORK)
 coverage: test
 
