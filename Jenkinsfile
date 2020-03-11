@@ -24,7 +24,6 @@ pipeline {
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
     HOME = "${env.WORKSPACE}"
-    PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
     PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
@@ -49,6 +48,9 @@ pipeline {
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       stages {
         /**
         Checkout the code and stash it, to use it on other stages.
@@ -110,9 +112,15 @@ pipeline {
                 tag: "Python",
                 name: "Python",
                 steps: this
-                )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-              parallel(mapPatallelTasks)
+              )
+              def mapParallelTasks = pythonTasksGen.generateParallelTests()
+
+              // Let's now enable the windows stages
+              readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+                def description = "${v.VERSION}${v.DISTUTILS_USE_SDK.equals('1') ? '-sdk' : ''}-${v.WEBFRAMEWORK}"
+                mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
+              }
+              parallel(mapParallelTasks)
             }
           }
         }
@@ -120,6 +128,9 @@ pipeline {
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       when {
         beforeAgent true
         expression { return params.package_ci }
@@ -203,6 +214,9 @@ pipeline {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
       }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       when {
         beforeInput true
         anyOf {
@@ -277,7 +291,7 @@ pipeline {
           sh('python3 -m coverage combine && python3 -m coverage xml')
           cobertura coberturaReportFile: 'coverage.xml'
         }
-      }   
+      }
       // Results
       script{
         if(pythonTasksGen?.results){
@@ -401,5 +415,39 @@ def releasePackages(){
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
     """)
+  }
+}
+
+def generateStepForWindows(Map v = [:]){
+  return {
+    log(level: 'INFO', text: "version=${v.VERSION} distutils=${v.DISTUTILS_USE_SDK} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
+    // Python installations with choco in Windows do follow the pattern:
+    //  C:\Python<Major><Minor>, for instance: C:\Python27
+    def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
+    // For the choco provider uses the major version.
+    def majorVersion = v.VERSION.split('\\.')[0]
+    node('windows-2019-docker-immutable'){
+      withEnv(["VERSION=${v.VERSION}",
+               "PYTHON=${pythonPath}",
+               "DISTUTILS_USE_SDK=${v.DISTUTILS_USE_SDK}",
+               "ASYNCIO=${v.ASYNCIO}",
+               "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
+        try {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
+            bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
+            bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
+          }
+        } catch(e){
+          error(e.toString())
+        } finally {
+          dir("${BASE_DIR}"){
+            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
+          }
+        }
+      }
+    }
   }
 }
