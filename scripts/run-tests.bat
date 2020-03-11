@@ -11,9 +11,15 @@ ECHO Download gherkin feature dependencies
 call .\tests\scripts\download_gherkin_features.bat
 
 set IGNORE_PYTHON3_WITH_PYTHON2=
-if "%VERSION%" == "2.7" set IGNORE_PYTHON3_WITH_PYTHON2="--ignore-glob='*/py3_*.py"
+if "%VERSION%" == "2.7" set IGNORE_PYTHON3_WITH_PYTHON2="--ignore-glob='*/py3_*.py'"
 
 set PYTEST_JUNIT="--junitxml=.\tests\python-agent-junit.xml"
-if "%ASYNCIO%" == "true" call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% %IGNORE_PYTHON3_WITH_PYTHON2% -m "not integrationtest"
-if "%ASYNCIO%" == "false" call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob="*/asyncio/*" %IGNORE_PYTHON3_WITH_PYTHON2% -m "not integrationtest"
+if "%ASYNCIO%" == "true" (
+    echo "%PYTHON%\python.exe -m pytest %PYTEST_JUNIT% %IGNORE_PYTHON3_WITH_PYTHON2% -m 'not integrationtest'"
+    call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% %IGNORE_PYTHON3_WITH_PYTHON2% -m "not integrationtest"
+)
+if "%ASYNCIO%" == "false" (
+    echo "%PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob='*/asyncio/*' %IGNORE_PYTHON3_WITH_PYTHON2% -m 'not integrationtest'"
+    call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob="*/asyncio/*" %IGNORE_PYTHON3_WITH_PYTHON2% -m "not integrationtest"
+)
 call %PYTHON%\python.exe setup.py bdist_wheel
