@@ -1,0 +1,142 @@
+[[troubleshooting]]
+== Troubleshooting
+
+Below are some resources and tips for troubleshooting and debugging the
+python agent.
+
+[float]
+[[easy-fixes]]
+=== Easy Fixes
+
+Before you try anything else, go through the following sections to ensure that
+the agent is configured correctly. This is not an exhaustive list, but rather
+a list of common problems that users run into.
+
+[float]
+[[debug-mode]]
+==== Debug Mode
+
+Most frameworks support a debug mode. Generally, this mode is intended for
+non-prod environments and provides detailed error messages and logging of
+potentially sensitive data. Because of these security issues, the agent will
+not collect traces if the app is in debug mode by default.
+
+You can override this behavior with the <<config-debug,`DEBUG`>> configuration.
+
+Note that configuration of the agent should occur before creation of any
+`ElasticAPM` objects:
+
+[source,python]
+----
+app = Flask(__name__)
+app.config["ELASTIC_APM"] = {"DEBUG": True}
+apm = ElasticAPM(app, service_name="flask-app")
+----
+
+[float]
+[[psutil-metrics]]
+==== `psutil` for Metrics
+
+To get CPU and system metrics, `psutil` must be installed. The agent should
+automatically show a warning on start if it is not installed, but sometimes this
+warning can be suppressed. Install `psutil` and metrics should be collected
+by the agent and sent to the APM Server.
+
+[source,bash]
+----
+python3 -m pip install psutil
+----
+
+[float]
+[[apm-server-credentials]]
+==== Credential issues
+
+In order for the agent to send data to the APM Server, it may need an
+<<config-api-key,`API_KEY`>> or a <<config-secret-token,`SECRET_TOKEN`>>. Double
+check your APM Server settings and make sure that your credentials are
+configured correctly. Additionally, check that <<config-server-url,`SERVER_URL`>>
+is correct.
+
+[float]
+[[django-test]]
+=== Django `check` and `test`
+
+When used with Django, the agent provides two management commands to help debug
+common issues. Head over to the <<django-troubleshooting,Django troubleshooting section>>
+for more information.
+
+[float]
+[[agent-logging]]
+=== Agent logging
+
+To get the agent to log more data, all that is needed is a
+https://docs.python.org/3/library/logging.html#handler-objects[Handler] which
+is attached either to the `elasticapm` logger or to the root logger.
+
+[float]
+[[django-agent-logging]]
+==== Django
+
+The simplest way to log more data from the agent is to add a console logging
+Handler to the `elasticapm` logger. Here's a (very simplified) example:
+
+[source,python]
+----
+LOGGING = {
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler'
+        }
+    },
+    'loggers': {
+        'elasticapm': {
+            'level': 'DEBUG',
+            'handlers': ['console']
+        },
+    },
+}
+----
+
+[float]
+[[flask-agent-logging]]
+==== Flask
+
+Flask https://flask.palletsprojects.com/en/1.1.x/logging/[recommends using `dictConfig()`]
+to set up logging. If you're using this format, adding logging for the agent
+will be very similar to the <<django-agent-logging,instructions for Django above>>.
+
+Otherwise, you can use the <<generic-agent-logging,generic instructions below>>.
+
+[float]
+[[generic-agent-logging]]
+==== Generic instructions
+
+Creating a console Handler and adding it to the `elasticapm` logger is easy:
+
+[source,python]
+----
+import logging
+
+elastic_apm_logger = logging.getLogger("elasticapm")
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+elastic_apm_logger.addHandler(console_handler)
+----
+
+You can also just add the console Handler to the root logger. This will apply
+that handler to all log messages from all modules.
+
+[source,python]
+----
+import logging
+
+logger = logging.getLogger()
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+logger.addHandler(console_handler)
+----
+
+See the https://docs.python.org/3/library/logging.html[python logging docs]
+for more details about Handlers (and information on how to format your logs
+using Formatters).
