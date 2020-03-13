@@ -21,7 +21,7 @@ a list of common problems that users run into.
 ==== Debug Mode
 
 Most frameworks support a debug mode. Generally, this mode is intended for
-non-prod environments and provides detailed error messages and logging of
+non-production environments and provides detailed error messages and logging of
 potentially sensitive data. Because of these security issues, the agent will
 not collect traces if the app is in debug mode by default.
 
@@ -41,10 +41,10 @@ apm = ElasticAPM(app, service_name="flask-app")
 [[psutil-metrics]]
 ==== `psutil` for Metrics
 
-To get CPU and system metrics, `psutil` must be installed. The agent should
-automatically show a warning on start if it is not installed, but sometimes this
-warning can be suppressed. Install `psutil` and metrics should be collected
-by the agent and sent to the APM Server.
+To get CPU and system metrics on non-Linux systems, `psutil` must be
+installed. The agent should automatically show a warning on start if it is
+not installed, but sometimes this warning can be suppressed. Install `psutil`
+and metrics should be collected by the agent and sent to the APM Server.
 
 [source,bash]
 ----
