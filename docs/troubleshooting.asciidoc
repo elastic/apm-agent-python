@@ -4,6 +4,10 @@
 Below are some resources and tips for troubleshooting and debugging the
 python agent.
 
+* <<easy-fixes>>
+* <<django-test>>
+* <<agent-logging>>
+
 [float]
 [[easy-fixes]]
 === Easy Fixes
