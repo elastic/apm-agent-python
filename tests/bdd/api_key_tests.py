@@ -61,6 +61,11 @@ def set_any_secret_token(an_agent):
     an_agent.config.update(next(version_counter), secret_token="foo")
 
 
+@when(parsers.parse("a secret_token is set to '{key}' in the config"))
+def set_any_secret_token(an_agent, key):
+    an_agent.config.update(next(version_counter), secret_token=key)
+
+
 @when("an api key is not set in the config")
 def unset_api_key(an_agent):
     an_agent.config.update(next(version_counter), api_key=None)
