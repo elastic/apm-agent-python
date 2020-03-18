@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2020, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,33 +28,18 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.instrumentation.packages.http_utils import url_to_destination
-from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+from elasticapm.utils import compat, default_ports
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
-
-    instrument_list = [("requests.sessions", "Session.send")]
-
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
-
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
-        destination = url_to_destination(url)
-
-        with capture_span(
-            signature,
-            span_type="external",
-            span_subtype="http",
-            extra={"http": {"url": url}, "destination": destination},
-            leaf=True,
-        ):
-            return wrapped(*args, **kwargs)
+def url_to_destination(url, service_type="external"):
+    parts = compat.urlparse.urlsplit(url)
+    hostname = parts.hostname
+    port = parts.port
+    default_port = default_ports.get(parts.scheme, None)
+    name = "%s://%s" % (parts.scheme, hostname)
+    resource = hostname
+    if port:
+        if port != default_port:
+            name += ":%d" % port
+        resource += ":%d" % port
+    return {"service": {"name": name, "resource": resource, "type": service_type}}

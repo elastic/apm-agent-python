@@ -65,6 +65,11 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     assert spans[0]["type"] == "external"
     assert spans[0]["subtype"] == "http"
     assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "resource": "127.0.0.1:%d" % parsed_url.port,
+        "type": "external",
+    }
     assert spans[0]["parent_id"] == spans[1]["id"]
 
     assert spans[1]["name"] == "test_name"
