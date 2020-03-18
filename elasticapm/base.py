@@ -101,6 +101,8 @@ class Client(object):
         self.filter_exception_types_dict = {}
         self._service_info = None
 
+        self.check_python_version()
+
         config = Config(config, inline_dict=inline)
         if config.errors:
             for msg in config.errors.values():
@@ -207,7 +209,7 @@ class Client(object):
         with self._thread_starter_lock:
             current_pid = os.getpid()
             if self._pid != current_pid:
-                self.logger.debug("Detected PID change from %d to %d, starting threads", self._pid, current_pid)
+                self.logger.debug("Detected PID change from %r to %r, starting threads", self._pid, current_pid)
                 for manager_type, manager in self._thread_managers.items():
                     self.logger.debug("Starting %s thread", manager_type)
                     manager.start_thread()
@@ -525,6 +527,11 @@ class Client(object):
         seen = {}
         # setdefault has the nice property that it returns the value that it just set on the dict
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
+
+    def check_python_version(self):
+        v = tuple(map(int, platform.python_version_tuple()[:2]))
+        if (2, 7) < v < (3, 5):
+            warnings.warn("The Elastic APM agent only supports Python 2.7 and 3.5+", DeprecationWarning)
 
 
 class DummyClient(Client):

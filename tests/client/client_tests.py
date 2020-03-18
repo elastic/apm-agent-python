@@ -37,6 +37,7 @@ import platform
 import socket
 import sys
 import time
+import warnings
 from collections import defaultdict
 
 import mock
@@ -275,33 +276,6 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     client.close()
 
 
-@pytest.mark.parametrize(
-    "sending_elasticapm_client",
-    [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
-    indirect=True,
-)
-@pytest.mark.parametrize("validating_httpserver", [{"app": ContentServer}], indirect=True)
-@mock.patch("elasticapm.transport.base.TransportState.should_try")
-def test_send_remote_failover_async(should_try, sending_elasticapm_client, caplog):
-    should_try.return_value = True
-    sending_elasticapm_client.httpserver.code = 400
-
-    # test error
-    with caplog.at_level("ERROR", "elasticapm.transport"):
-        sending_elasticapm_client.capture_message("foo", handled=False)
-        sending_elasticapm_client._transport.flush()
-        time.sleep(0.1)  # give event processor thread some time to do its thing
-    assert sending_elasticapm_client._transport.state.did_fail()
-    assert "400" in caplog.records[0].message
-
-    # test recovery
-    sending_elasticapm_client.httpserver.code = 202
-    with caplog.at_level("ERROR", "elasticapm.transport"):
-        sending_elasticapm_client.capture_message("bar", handled=False)
-        sending_elasticapm_client.close()
-    assert not sending_elasticapm_client._transport.state.did_fail()
-
-
 @pytest.mark.parametrize("validating_httpserver", [{"skip_validate": True}], indirect=True)
 def test_send(sending_elasticapm_client):
     sending_elasticapm_client.queue("x", {})
@@ -335,17 +309,6 @@ def test_send_not_enabled(sending_elasticapm_client):
     indirect=True,
 )
 def test_client_shutdown_sync(sending_elasticapm_client):
-    sending_elasticapm_client.capture_message("x")
-    sending_elasticapm_client.close()
-    assert len(sending_elasticapm_client.httpserver.requests) == 1
-
-
-@pytest.mark.parametrize(
-    "sending_elasticapm_client",
-    [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
-    indirect=True,
-)
-def test_client_shutdown_async(sending_elasticapm_client):
     sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
     assert len(sending_elasticapm_client.httpserver.requests) == 1
@@ -722,3 +685,26 @@ def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
 )
 def test_server_url_joining(elasticapm_client, expected):
     assert elasticapm_client._api_endpoint_url == expected
+
+
+@pytest.mark.parametrize(
+    "version,raises",
+    [(("2", "7", "0"), False), (("3", "3", "0"), True), (("3", "4", "0"), True), (("3", "5", "0"), False)],
+)
+@mock.patch("platform.python_version_tuple")
+def test_python_version_deprecation(mock_python_version_tuple, version, raises, recwarn):
+    warnings.simplefilter("always")
+
+    mock_python_version_tuple.return_value = version
+    e = None
+    try:
+        e = elasticapm.Client()
+    finally:
+        if e:
+            e.close()
+    if raises:
+        assert len(recwarn) == 1
+        w = recwarn.pop(DeprecationWarning)
+        assert "agent only supports" in w.message.args[0]
+    else:
+        assert len(recwarn) == 0

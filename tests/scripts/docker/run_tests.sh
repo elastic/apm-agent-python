@@ -2,6 +2,10 @@
 set -ex
 
 function cleanup {
+    if [ -n "${BUILD_NUMBER}" ]; then # only on CI
+        ./scripts/docker/docker-summary.sh
+        ./scripts/docker/docker-get-logs.sh "${TEST}"
+    fi
     PYTHON_VERSION=${1} docker-compose down -v
 
     if [[ $CODECOV_TOKEN ]]; then
@@ -18,6 +22,7 @@ fi
 
 pip_cache="$HOME/.cache"
 docker_pip_cache="/tmp/cache/pip"
+TEST="${1}/${2}"
 
 cd tests
 
@@ -46,6 +51,7 @@ fi
 # as this can take several minutes
 docker build --build-arg PYTHON_IMAGE=${1/-/:} -t apm-agent-python:${1} . # replace - with : to get the correct docker image
 PYTHON_VERSION=${1} docker-compose run \
+  -e PYTHON_FULL_VERSION=${1} \
   -e LOCAL_USER_ID=$UID \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
   -e WITH_COVERAGE=true \

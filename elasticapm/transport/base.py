@@ -38,7 +38,6 @@ import time
 import timeit
 from collections import defaultdict
 
-from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import compat, json_encoder
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import ThreadManager
@@ -284,34 +283,8 @@ class Transport(ThreadManager):
         self.state.set_fail()
 
 
-class AsyncTransport(Transport):
-    async_mode = True
-    sync_transport = Transport
-
-    def __init__(self, *args, **kwargs):
-        super(AsyncTransport, self).__init__(*args, **kwargs)
-        self._worker = None
-
-    @property
-    def worker(self):
-        if not self._worker or not self._worker.is_alive():
-            self._worker = AsyncWorker()
-        return self._worker
-
-    def send_sync(self, data=None):
-        try:
-            self.sync_transport.send(self, data)
-            self.handle_transport_success()
-        except Exception as e:
-            self.handle_transport_fail(exception=e)
-
-    def send_async(self, data):
-        self.worker.queue(self.send_sync, {"data": data})
-
-    def close(self):
-        super(AsyncTransport, self).close()
-        if self._worker:
-            self._worker.main_thread_terminated()
+# left for backwards compatibility
+AsyncTransport = Transport
 
 
 class TransportState(object):

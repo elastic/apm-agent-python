@@ -7,6 +7,26 @@ Upgrades that involve a major version bump often come with some backwards incomp
 We highly recommend to always pin the version of `elastic-apm` in your `requirements.txt` or `Pipfile`.
 This avoids automatic upgrades to potentially incompatible versions.
 
+[float]
+[[end-of-life-dates]]
+=== End of life dates
+
+We love all our products, but sometimes we must say goodbye to a release so that we can continue moving
+forward on future development and innovation.
+Our https://www.elastic.co/support/eol[End of life policy] defines how long a given release is considered supported,
+as well as how long a release is considered still in active development or maintenance.
+The table below is a simplified description of this policy.
+
+[options="header"]
+|====
+|Agent version |EOL Date |Maintained until
+|1.x |2019-06-11 |2.0
+|2.x |2019-08-06 |3.0
+|3.x |2020-01-20 |4.0
+|4.x |2020-05-14 |5.0
+|5.x |2021-02-05 |6.0
+|====
+
 [[upgrading-5.x]]
 === Upgrading to version 5 of the agent
 

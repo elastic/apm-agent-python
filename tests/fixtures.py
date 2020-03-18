@@ -233,7 +233,10 @@ class DummyTransport(HTTPTransportBase):
         self.events[event_type].append(data)
         self._flushed.set()
 
-    def _start_event_processor(self):
+    def start_thread(self):
+        pass
+
+    def stop_thread(self):
         pass
 
     def get_config(self, current_version=None, keys=None):

@@ -1,0 +1,23 @@
+# This is the limited list of matrix builds in Windows, to be triggered on a PR basis
+# The format is:
+#  VERSION: Major.Minor python version.
+#  WEBFRAMEWORK: What framework to be tested. String format.
+#  ASYNCIO: Whether it's enabled or disabled. Boolean format.
+#
+
+windows:
+  - VERSION: "2.7"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "false"
+  - VERSION: "3.5"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "false"
+  - VERSION: "3.6"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
+  - VERSION: "3.7"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
+  - VERSION: "3.8"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
