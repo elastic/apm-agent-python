@@ -210,7 +210,7 @@ pipeline {
         }
       }
     }
-    stage('Release') {
+    stage('Prepare Release') {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
