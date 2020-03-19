@@ -228,12 +228,12 @@ def test_multiple_transactions(elasticapm_client):
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 # precision lost due to float arithmetic
-                assert elem["samples"]["span.self_time.sum.us"]["value"] == 10000000
+                assert 9999999 <= elem["samples"]["span.self_time.sum.us"]["value"] <= 10000000
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
             elif elem["span"] == {"type": "code", "subtype": "custom"}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
-                assert elem["samples"]["span.self_time.sum.us"]["value"] == 10000000
+                assert 9999999 <= elem["samples"]["span.self_time.sum.us"]["value"] <= 10000000
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
     assert asserts == 3
@@ -243,5 +243,5 @@ def test_multiple_transactions(elasticapm_client):
     )
     transaction_data = list(transaction_metrics.collect())
     assert len(transaction_data) == 1
-    assert transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] == 20000000
+    assert 19999999 <= transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] <= 20000000
     assert transaction_data[0]["samples"]["transaction.duration.count"]["value"] == 2

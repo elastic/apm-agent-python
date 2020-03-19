@@ -3,7 +3,7 @@
 *.egg
 *.db
 *.pid
-.coverage
+.coverage*
 .DS_Store
 .idea
 .vscode
@@ -31,3 +31,4 @@ tests/python-agent-junit.xml
 *.code-workspace
 .pytest_cache/
 tests/bdd/features/*.feature
+.python-version

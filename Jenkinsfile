@@ -24,7 +24,6 @@ pipeline {
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
     HOME = "${env.WORKSPACE}"
-    PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
     PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
@@ -49,6 +48,9 @@ pipeline {
   stages {
     stage('Initializing'){
       options { skipDefaultCheckout() }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       stages {
         /**
         Checkout the code and stash it, to use it on other stages.
@@ -110,9 +112,15 @@ pipeline {
                 tag: "Python",
                 name: "Python",
                 steps: this
-                )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-              parallel(mapPatallelTasks)
+              )
+              def mapParallelTasks = pythonTasksGen.generateParallelTests()
+
+              // Let's now enable the windows stages
+              readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+                def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
+                mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
+              }
+              parallel(mapParallelTasks)
             }
           }
         }
@@ -120,6 +128,9 @@ pipeline {
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
       when {
         beforeAgent true
         expression { return params.package_ci }
@@ -163,6 +174,7 @@ pipeline {
         AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
         LANG = 'C.UTF-8'
         LC_ALL = "${env.LANG}"
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
       }
       when {
         beforeAgent true
@@ -198,10 +210,13 @@ pipeline {
         }
       }
     }
-    stage('Release') {
+    stage('Prepare Release') {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
+      }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
       }
       when {
         beforeInput true
@@ -266,6 +281,19 @@ pipeline {
   }
   post {
     cleanup {
+      // Coverage
+      sh script: 'pip3 install --user coverage', label: "Installing coverage"
+      dir("${BASE_DIR}"){
+        script {
+          def matrixDump = pythonTasksGen.dumpMatrix("-")
+          for(vector in matrixDump) {
+            unstash("coverage-${vector}")
+          }
+          sh('python3 -m coverage combine && python3 -m coverage xml')
+          cobertura coberturaReportFile: 'coverage.xml'
+        }
+      }
+      // Results
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -342,13 +370,17 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                 defaultExcludes: false
               )
             }
-            steps.env.PYTHON_VERSION = "${x}"
-            steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: "${steps.env.REPO}",
-              basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}"
-            )
+            // steps.env.PYTHON_VERSION = "${x}"
+            // steps.env.WEBFRAMEWORK = "${y}"
+            steps.dir("${steps.env.BASE_DIR}"){
+              steps.script {
+                steps.stash(
+                name: "coverage-${x}-${y}",
+                includes: ".coverage.${x}.${y}",
+                allowEmpty: false
+              )
+             }
+            }
           }
         }
       }
@@ -384,5 +416,38 @@ def releasePackages(){
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
     """)
+  }
+}
+
+def generateStepForWindows(Map v = [:]){
+  return {
+    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
+    // Python installations with choco in Windows do follow the pattern:
+    //  C:\Python<Major><Minor>, for instance: C:\Python27
+    def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
+    // For the choco provider uses the major version.
+    def majorVersion = v.VERSION.split('\\.')[0]
+    node('windows-2019-docker-immutable'){
+      withEnv(["VERSION=${v.VERSION}",
+               "PYTHON=${pythonPath}",
+               "ASYNCIO=${v.ASYNCIO}",
+               "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
+        try {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
+            bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
+            bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
+          }
+        } catch(e){
+          error(e.toString())
+        } finally {
+          dir("${BASE_DIR}"){
+            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
+          }
+        }
+      }
+    }
   }
 }

@@ -35,6 +35,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     DbApi2Instrumentation,
     extract_signature,
 )
+from elasticapm.utils import default_ports
 
 
 class MySQLCursorProxy(CursorProxy):
@@ -54,4 +55,9 @@ class MySQLConnectorInstrumentation(DbApi2Instrumentation):
     instrument_list = [("mysql.connector", "connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        return MySQLConnectionProxy(wrapped(*args, **kwargs))
+        destination_info = {
+            "address": kwargs.get("host", "localhost"),
+            "port": int(kwargs.get("port", default_ports.get("mysql"))),
+            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+        }
+        return MySQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
