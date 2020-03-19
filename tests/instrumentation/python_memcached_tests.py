@@ -41,8 +41,8 @@ memcache = pytest.importorskip("memcache")  # isort:skip
 pytestmark = [pytest.mark.memcached]
 
 
-# if "MEMCACHED_HOST" not in os.environ:
-#     pytestmark.append(pytest.mark.skip("Skipping memchached tests, no MEMCACHED_HOST environment variable set"))
+if "MEMCACHED_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping memchached tests, no MEMCACHED_HOST environment variable set"))
 
 
 @pytest.mark.integrationtest

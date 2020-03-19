@@ -40,8 +40,8 @@ connector = pytest.importorskip("mysql.connector")
 pytestmark = [pytest.mark.mysql_connector]
 
 
-# if "MYSQL_HOST" not in os.environ:
-#     pytestmark.append(pytest.mark.skip("Skipping mysql-connector tests, no MYSQL_HOST environment variable set"))
+if "MYSQL_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping mysql-connector tests, no MYSQL_HOST environment variable set"))
 
 
 @pytest.yield_fixture(scope="function")
