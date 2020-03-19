@@ -29,9 +29,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.instrumentation.packages.http_utils import url_to_destination
 from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
 
 
 class RequestsInstrumentation(AbstractInstrumentedModule):

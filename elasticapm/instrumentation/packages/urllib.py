@@ -31,9 +31,8 @@
 
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.instrumentation.packages.http_utils import url_to_destination
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import compat, default_ports, sanitize_url
+from elasticapm.utils import compat, default_ports, sanitize_url, url_to_destination
 from elasticapm.utils.disttracing import TracingOptions
 
 
