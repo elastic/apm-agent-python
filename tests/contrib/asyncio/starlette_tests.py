@@ -33,14 +33,14 @@ import pytest  # isort:skip
 starlette = pytest.importorskip("starlette")  # isort:skip
 
 import mock
+from starlette.applications import Starlette
+from starlette.responses import PlainTextResponse
+from starlette.testclient import TestClient
 
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.starlette import ElasticAPM
 from elasticapm.utils.disttracing import TraceParent
-from starlette.applications import Starlette
-from starlette.responses import PlainTextResponse
-from starlette.testclient import TestClient
 
 pytestmark = [pytest.mark.starlette]
 
