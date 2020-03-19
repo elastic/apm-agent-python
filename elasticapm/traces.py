@@ -382,7 +382,7 @@ class Span(BaseSpan):
         self.id = "%016x" % random.getrandbits(64)
         self.transaction = transaction
         self.name = name
-        self.context = context
+        self.context = context if context is not None else {}
         self.leaf = leaf
         # timestamp is bit of a mix of monotonic and non-monotonic time sources.
         # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
@@ -479,6 +479,22 @@ class DroppedSpan(BaseSpan):
 
     def child_ended(self, timestamp):
         pass
+
+    @property
+    def type(self):
+        return None
+
+    @property
+    def subtype(self):
+        return None
+
+    @property
+    def action(self):
+        return None
+
+    @property
+    def context(self):
+        return None
 
 
 class Tracer(object):

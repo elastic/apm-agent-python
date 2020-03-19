@@ -31,7 +31,7 @@
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import default_ports
+from elasticapm.utils import default_ports, url_to_destination
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -70,12 +70,17 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         signature = method.upper() + " " + host
 
-        # TODO: reconstruct URL more faithfully, e.g. include port
-        url = instance.scheme + "://" + host + url
+        url = "%s://%s%s" % (instance.scheme, host, url)
+        destination = url_to_destination(url)
+
         transaction = execution_context.get_transaction()
 
         with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
+            signature,
+            span_type="external",
+            span_subtype="http",
+            extra={"http": {"url": url}, "destination": destination},
+            leaf=True,
         ) as span:
             # if urllib3 has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span

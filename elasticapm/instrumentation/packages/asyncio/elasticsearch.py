@@ -40,7 +40,7 @@ class ElasticSearchAsyncConnection(ElasticSearchConnectionMixin, AsyncAbstractIn
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         signature = self.get_signature(args, kwargs)
-        context = self.get_context(args, kwargs)
+        context = self.get_context(instance, args, kwargs)
 
         async with elasticapm.async_capture_span(
             signature,

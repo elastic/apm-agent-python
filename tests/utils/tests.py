@@ -33,7 +33,7 @@ from functools import partial
 import pytest
 
 from elasticapm.conf import constants
-from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url, starmatch_to_regex
+from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url, starmatch_to_regex, url_to_destination
 from elasticapm.utils.deprecation import deprecated
 
 try:
@@ -200,3 +200,17 @@ def test_url_sanitization():
 def test_url_sanitization_urlencoded_password():
     sanitized = sanitize_url("http://user:%F0%9F%9A%B4@localhost:123/foo?bar=baz#bazzinga")
     assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+
+
+@pytest.mark.parametrize(
+    "url,name,resource",
+    [
+        ("http://user:pass@testing.local:1234/path?query", "http://testing.local:1234", "testing.local:1234"),
+        ("https://www.elastic.co:443/products/apm", "https://www.elastic.co", "www.elastic.co:443"),
+        ("http://[::1]/", "http://[::1]", "[::1]:80"),
+    ],
+)
+def test_url_to_destination(url, name, resource):
+    destination = url_to_destination(url)
+    assert destination["service"]["name"] == name
+    assert destination["service"]["resource"] == resource

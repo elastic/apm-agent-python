@@ -22,6 +22,9 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+* Added destination information to database/HTTP spans, used for service maps {pull}618[#618]
 
 [float]
 ===== Deprecations

@@ -49,7 +49,7 @@ def mysql_connector_connection(request):
     conn = connector.connect(
         host=os.environ.get("MYSQL_HOST", "localhost"),
         user=os.environ.get("MYSQL_USER", "eapm"),
-        password=os.environ.get("MYSQL_PASSWORD", ""),
+        password=os.environ.get("MYSQL_PASSWORD", "Very(!)Secure"),
         database=os.environ.get("MYSQL_DATABASE", "eapm_tests"),
     )
     cursor = conn.cursor()
@@ -84,3 +84,8 @@ def test_mysql_connector_select(instrument, mysql_connector_connection, elastica
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["destination"] == {
+            "address": "mysql",
+            "port": 3306,
+            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+        }

@@ -36,6 +36,7 @@ import pytest
 
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm.utils import default_ports
 
 psycopg2 = pytest.importorskip("psycopg2")
 
@@ -261,6 +262,22 @@ def test_fully_qualified_table_name():
     sql_statement = """SELECT a.b FROM db.schema.mytable as a;"""
     actual = extract_signature(sql_statement)
     assert "SELECT FROM db.schema.mytable" == actual
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_destination(instrument, postgres_connection, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    cursor = postgres_connection.cursor()
+    cursor.execute("SELECT 1")
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("POSTGRES_HOST", None),
+        "port": default_ports["postgresql"],
+        "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+    }
 
 
 @pytest.mark.integrationtest
