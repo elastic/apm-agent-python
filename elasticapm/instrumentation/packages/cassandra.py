@@ -44,11 +44,21 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
         context = {}
         if method == "Cluster.connect":
             span_action = "connect"
-            host = instance.endpoints_resolved[0].address
-            port = instance.endpoints_resolved[0].port
+            if hasattr(instance, "contact_points_resolved"):  # < cassandra-driver 3.18
+                host = instance.contact_points_resolved[0]
+                port = instance.port
+            else:
+                host = instance.endpoints_resolved[0].address
+                port = instance.endpoints_resolved[0].port
         else:
-            host = instance.hosts[0].endpoint.address
-            port = instance.hosts[0].endpoint.port
+            hosts = list(instance.hosts)
+            if hasattr(hosts[0], "endpoint"):
+                host = hosts[0].endpoint.address
+                port = hosts[0].endpoint.port
+            else:
+                # < cassandra-driver 3.18
+                host = hosts[0].address
+                port = instance.cluster.port
             span_action = "query"
             query = args[0] if args else kwargs.get("query")
             if hasattr(query, "query_string"):
