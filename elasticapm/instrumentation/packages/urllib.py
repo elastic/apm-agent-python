@@ -32,7 +32,7 @@
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import compat, default_ports, sanitize_url
+from elasticapm.utils import compat, default_ports, sanitize_url, url_to_destination
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -74,12 +74,17 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
         host = request_host(request_object)
 
         url = sanitize_url(request_object.get_full_url())
+        destination = url_to_destination(url)
         signature = method.upper() + " " + host
 
         transaction = execution_context.get_transaction()
 
         with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
+            signature,
+            span_type="external",
+            span_subtype="http",
+            extra={"http": {"url": url}, "destination": destination},
+            leaf=True,
         ) as span:
             # if urllib has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span

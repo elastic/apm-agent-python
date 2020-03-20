@@ -30,12 +30,11 @@
 
 import json
 
-from starlette.requests import Request
-from starlette.types import Message
-from starlette.responses import Response
-
 from elasticapm.conf import constants
 from elasticapm.utils import compat, get_url_dict
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.types import Message
 
 
 async def get_data_from_request(request: Request, capture_body=False, capture_headers=True) -> dict:
@@ -51,21 +50,22 @@ async def get_data_from_request(request: Request, capture_body=False, capture_he
     """
     result = {
         "method": request.method,
-        "socket": {
-            "remote_address": _get_client_ip(request),
-            "encrypted": request.url.is_secure
-        },
+        "socket": {"remote_address": _get_client_ip(request), "encrypted": request.url.is_secure},
         "cookies": request.cookies,
     }
     if capture_headers:
         result["headers"] = dict(request.headers)
 
     if request.method in constants.HTTP_WITH_BODY:
-        body = await get_body(request)
-        if request.headers['content-type'] == "application/x-www-form-urlencoded":
-            body = await query_params_to_dict(body)
-        else:
-            body = json.loads(body)
+        body = None
+        try:
+            body = await get_body(request)
+            if request.headers.get("content-type") == "application/x-www-form-urlencoded":
+                body = await query_params_to_dict(body)
+            else:
+                body = json.loads(body)
+        except Exception:
+            pass
         if body is not None:
             result["body"] = body if capture_body else "[REDACTED]"
 
@@ -107,6 +107,7 @@ async def set_body(request: Request, body: bytes):
         request (Request)
         body (bytes)
     """
+
     async def receive() -> Message:
         return {"type": "http.request", "body": body}
 
@@ -155,9 +156,9 @@ async def query_params_to_dict(query_params: str) -> dict:
 
 
 def _get_client_ip(request: Request):
-    x_forwarded_for = request.headers.get('HTTP_X_FORWARDED_FOR')
+    x_forwarded_for = request.headers.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(",")[0]
     else:
-        ip = request.headers.get('REMOTE_ADDR')
+        ip = request.headers.get("REMOTE_ADDR")
     return ip

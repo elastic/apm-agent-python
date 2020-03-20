@@ -28,6 +28,8 @@ include::./logging.asciidoc[]
 
 include::./tuning.asciidoc[]
 
+include::./troubleshooting.asciidoc[]
+
 include::./upgrading.asciidoc[]
 
 include::./release-notes.asciidoc[]

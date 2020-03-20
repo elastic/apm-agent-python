@@ -117,7 +117,7 @@ pipeline {
 
               // Let's now enable the windows stages
               readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-                def description = "${v.VERSION}${v.DISTUTILS_USE_SDK.equals('1') ? '-sdk' : ''}-${v.WEBFRAMEWORK}"
+                def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
                 mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
               }
               parallel(mapParallelTasks)
@@ -210,7 +210,7 @@ pipeline {
         }
       }
     }
-    stage('Release') {
+    stage('Prepare Release') {
       options {
         skipDefaultCheckout()
         timeout(time: 12, unit: 'HOURS')
@@ -421,7 +421,7 @@ def releasePackages(){
 
 def generateStepForWindows(Map v = [:]){
   return {
-    log(level: 'INFO', text: "version=${v.VERSION} distutils=${v.DISTUTILS_USE_SDK} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
+    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
     def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
@@ -430,7 +430,6 @@ def generateStepForWindows(Map v = [:]){
     node('windows-2019-docker-immutable'){
       withEnv(["VERSION=${v.VERSION}",
                "PYTHON=${pythonPath}",
-               "DISTUTILS_USE_SDK=${v.DISTUTILS_USE_SDK}",
                "ASYNCIO=${v.ASYNCIO}",
                "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
         try {

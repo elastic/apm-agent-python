@@ -18,18 +18,33 @@ endif::[]
 ===== Bug fixes
 ////
 
-=== Unreleased
+//=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+[[release-notes-5.5.1]]
+==== v5.5.1
+
+[float]
+===== Bug fixes
+* Fixed Starlette middleware when capturing request body while the content-type header is absent {pull}763[#763]
+
+[[release-notes-5.5.0]]
+==== v5.5.0
+
+[float]
+===== Features
+* Added destination information to database/HTTP spans, used for service maps {pull}618[#618]
+
 [float]
 ===== Deprecations
 
- * Python 3.4 is no longer supported.
+ * *Python 3.4 is no longer supported.*
 
-[[release-notes-5.x]]
-=== Python Agent version 5.x
 
 [[release-notes-5.4.3]]
 ==== v5.4.3

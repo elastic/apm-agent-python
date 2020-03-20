@@ -54,7 +54,7 @@ class ElasticSearchConnectionMixin(object):
 
         return "ES %s %s" % (http_method, http_path)
 
-    def get_context(self, args, kwargs):
+    def get_context(self, instance, args, kwargs):
         args_len = len(args)
         params = args[2] if args_len > 2 else kwargs.get("params")
         body = params.pop(BODY_REF_NAME, None) if params else None
@@ -78,7 +78,10 @@ class ElasticSearchConnectionMixin(object):
             if isinstance(body, dict) and "script" in body:
                 # only get the `script` field from the body
                 context["db"]["statement"] = json.dumps({"script": body["script"]})
-        # TODO: add instance.base_url to context once we agreed on a format
+        context["destination"] = {
+            "address": instance.host,
+            "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
+        }
         return context
 
 
@@ -92,7 +95,7 @@ class ElasticsearchConnectionInstrumentation(ElasticSearchConnectionMixin, Abstr
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         signature = self.get_signature(args, kwargs)
-        context = self.get_context(args, kwargs)
+        context = self.get_context(instance, args, kwargs)
 
         with elasticapm.capture_span(
             signature,

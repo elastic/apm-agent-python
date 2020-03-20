@@ -1,2 +1,2 @@
-psutil==5.0.0
+mysqlclient
 -r requirements-base.txt

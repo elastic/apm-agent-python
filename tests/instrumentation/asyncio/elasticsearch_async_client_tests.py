@@ -136,7 +136,8 @@ async def test_search_body(instrument, elasticapm_client, elasticsearch_async):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search")
+    # Depending on ES_VERSION, could be /_all/_search or /_search, and GET or POST
+    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search", "ES POST /_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"

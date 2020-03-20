@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2019, Elasticsearch BV
@@ -33,47 +35,45 @@ import os
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
-from elasticapm.instrumentation.packages.pymssql import get_host_port
-from elasticapm.utils import default_ports
+from elasticapm.instrumentation.packages.mysql import extract_signature
 
-pymssql = pytest.importorskip("pymssql")
-
-pytestmark = [pytest.mark.pymssql]
+mysqldb = pytest.importorskip("MySQLdb")
 
 
-if "MSSQL_HOST" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping MS-SQL tests, no MSSQL_HOST environment variable set"))
+pytestmark = [pytest.mark.mysqlclient]
+
+if "MYSQL_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping mysqlclient tests, no MYSQL_HOST environment variable set"))
 
 
 @pytest.yield_fixture(scope="function")
-def pymssql_connection(request):
-    conn = pymssql.connect(
-        os.environ.get("MSSQL_HOST", "localhost"),
-        os.environ.get("MSSQL_USER", "SA"),
-        os.environ.get("MSSQL_PASSWORD", ""),
-        os.environ.get("MSSQL_DATABASE", "tempdb"),
+def mysqlclient_connection(request):
+    conn = mysqldb.connect(
+        host=os.environ.get("MYSQL_HOST", "localhost"),
+        user=os.environ.get("MYSQL_USER", "eapm"),
+        password=os.environ.get("MYSQL_PASSWORD", "Very(!)Secure"),
+        database=os.environ.get("MYSQL_DATABASE", "eapm_tests"),
     )
     cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE test(id INT, name NVARCHAR(5) NOT NULL);"
-        "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
-    )
+    cursor.execute("CREATE TABLE `test` (`id` INT, `name` VARCHAR(5))")
+    cursor.execute("INSERT INTO `test` (`id`, `name`) VALUES (1, 'one'), (2, 'two'), (3, 'three')")
+    row = cursor.fetchone()
+    print(row)
 
     yield conn
 
-    # cleanup
-    conn.rollback()
+    cursor.execute("DROP TABLE `test`")
 
 
 @pytest.mark.integrationtest
-def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
-    cursor = pymssql_connection.cursor()
+def test_mysql_connector_select(instrument, mysqlclient_connection, elasticapm_client):
+    cursor = mysqlclient_connection.cursor()
     query = "SELECT * FROM test WHERE name LIKE 't%' ORDER BY id"
 
     try:
         elasticapm_client.begin_transaction("web.django")
         cursor.execute(query)
-        assert cursor.fetchall() == [(2, "two"), (3, "three")]
+        assert cursor.fetchall() == ((2, "two"), (3, "three"))
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         transactions = elasticapm_client.events[TRANSACTION]
@@ -81,28 +81,13 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
         assert span["type"] == "db"
-        assert span["subtype"] == "pymssql"
+        assert span["subtype"] == "mysql"
         assert span["action"] == "query"
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
         assert span["context"]["destination"] == {
-            "address": "mssql",
-            "port": default_ports["mssql"],
-            "service": {"name": "mssql", "resource": "mssql", "type": "db"},
+            "address": "mysql",
+            "port": 3306,
+            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
         }
-
-
-@pytest.mark.parametrize(
-    "args,kwargs,expected",
-    [
-        (("localhost",), {"port": 1234}, {"host": "localhost", "port": 1234}),
-        (("localhost",), {}, {"host": "localhost", "port": default_ports["mssql"]}),
-        ((), {"host": "localhost,1234"}, {"host": "localhost", "port": 1234}),
-        ((), {"host": "localhost:1234"}, {"host": "localhost", "port": 1234}),
-    ],
-)
-def test_host_port_parsing(args, kwargs, expected):
-    host, port = get_host_port(args, kwargs)
-    assert host == expected["host"]
-    assert port == expected["port"]
