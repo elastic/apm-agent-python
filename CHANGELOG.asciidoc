@@ -26,6 +26,13 @@ endif::[]
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
+[[release-notes-5.5.1]]
+==== v5.5.1
+
+[float]
+===== Bug fixes
+* Fixed Starlette middleware when capturing request body while the content-type header is absent {pull}763[#763]
+
 [[release-notes-5.5.0]]
 ==== v5.5.0
 
