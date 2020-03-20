@@ -26,6 +26,13 @@ endif::[]
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
+[[release-notes-5.5.2]]
+==== v5.5.2
+
+[float]
+===== Bug fixes
+* Fixed an issue with Redis using unix domain sockets and destination information {pull}766[#766]
+
 [[release-notes-5.5.1]]
 ==== v5.5.1
 
