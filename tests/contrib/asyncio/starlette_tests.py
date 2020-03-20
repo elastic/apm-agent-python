@@ -33,15 +33,14 @@ import pytest  # isort:skip
 starlette = pytest.importorskip("starlette")  # isort:skip
 
 import mock
-
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.testclient import TestClient
-from elasticapm.utils.disttracing import TraceParent
-from elasticapm import async_capture_span
 
+from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.starlette import ElasticAPM
+from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.starlette]
 
@@ -50,7 +49,7 @@ pytestmark = [pytest.mark.starlette]
 def app(elasticapm_client):
     app = Starlette()
 
-    @app.route("/")
+    @app.route("/", methods=["GET", "POST"])
     async def hi(request):
         with async_capture_span("test"):
             pass
@@ -68,11 +67,14 @@ def app(elasticapm_client):
 def test_get(app, elasticapm_client):
     client = TestClient(app)
 
-    response = client.get('/', headers={
-        constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
-        constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
-        "REMOTE_ADDR": "127.0.0.1",
-    })
+    response = client.get(
+        "/",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
 
     assert response.status_code == 200
 
@@ -93,15 +95,52 @@ def test_get(app, elasticapm_client):
     assert span["name"] == "test"
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"capture_body": "all"}], indirect=True)
+def test_post(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.post(
+        "/",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+        data={"foo": "bar"},
+    )
+
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+
+    assert transaction["name"] == "POST /"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["type"] == "request"
+    assert transaction["span_count"]["started"] == 1
+    request = transaction["context"]["request"]
+    request["method"] == "GET"
+    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["body"]["foo"] == "bar"
+
+    assert span["name"] == "test"
+
+
 def test_exception(app, elasticapm_client):
     client = TestClient(app)
 
     with pytest.raises(ValueError):
-        client.get('/raise-exception', headers={
-            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
-            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
-            "REMOTE_ADDR": "127.0.0.1",
-        })
+        client.get(
+            "/raise-exception",
+            headers={
+                constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+                constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+                "REMOTE_ADDR": "127.0.0.1",
+            },
+        )
 
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
@@ -129,10 +168,13 @@ def test_traceparent_handling(app, elasticapm_client, header_name):
     with mock.patch(
         "elasticapm.contrib.flask.TraceParent.from_string", wraps=TraceParent.from_string
     ) as wrapped_from_string:
-        response = client.get('/', headers={
-            header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
-            constants.TRACESTATE_HEADER_NAME: "foo=bar,baz=bazzinga",
-        })
+        response = client.get(
+            "/",
+            headers={
+                header_name: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+                constants.TRACESTATE_HEADER_NAME: "foo=bar,baz=bazzinga",
+            },
+        )
 
     assert response.status_code == 200
 
