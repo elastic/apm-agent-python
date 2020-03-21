@@ -37,7 +37,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?(?:full\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -103,11 +103,17 @@ pipeline {
           unstash "source"
           dir("${BASE_DIR}"){
             script {
+              // To enable the full test matrix upon GitHub PR comments
+              def frameworkFile = '.ci/.jenkins_framework.yml'
+              if (env.GITHUB_COMMENT?.contains('full tests')) {
+                log(level: 'INFO', text: 'Full test matrix has been enabled.')
+                frameworkFile = '.ci/.jenkins_framework_full.yml'
+              }
               pythonTasksGen = new PythonParallelTaskGenerator(
                 xKey: 'PYTHON_VERSION',
                 yKey: 'FRAMEWORK',
                 xFile: ".ci/.jenkins_python.yml",
-                yFile: ".ci/.jenkins_framework.yml",
+                yFile: frameworkFile,
                 exclusionFile: ".ci/.jenkins_exclude.yml",
                 tag: "Python",
                 name: "Python",
