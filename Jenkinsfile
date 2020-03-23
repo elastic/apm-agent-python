@@ -289,6 +289,12 @@ pipeline {
           for(vector in matrixDump) {
             unstash("coverage-${vector}")
           }
+          // Windows coverage converge
+          readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+            unstash(
+              name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+            )
+          }
           sh('python3 -m coverage combine && python3 -m coverage xml')
           cobertura coberturaReportFile: 'coverage.xml'
         }
@@ -439,6 +445,13 @@ def generateStepForWindows(Map v = [:]){
             installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
+            script{
+              stash{
+                name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
+                includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
+                allowEmpty: false
+              }
+            }
           }
         } catch(e){
           error(e.toString())
