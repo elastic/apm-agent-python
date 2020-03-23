@@ -446,11 +446,11 @@ def generateStepForWindows(Map v = [:]){
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
             script{
-              stash{
+              stash(
                 name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
                 includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
                 allowEmpty: false
-              }
+              )
             }
           }
         } catch(e){
