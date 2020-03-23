@@ -34,11 +34,13 @@ import json
 import os
 import random
 import socket
+import sys
 import time
 import zlib
 from collections import defaultdict
 
 import jsonschema
+import mock
 import pytest
 from pytest_localserver.http import ContentServer
 from werkzeug.wrappers import Request, Response
@@ -146,8 +148,31 @@ class ValidatingWSGIApp(ContentServer):
         return response(environ, start_response)
 
 
+@pytest.fixture
+def mock_client_excepthook():
+    with mock.patch('tests.fixtures.TempStoreClient._excepthook') as m:
+        yield m
+
+
+@pytest.fixture
+def mock_client_capture_exception():
+    with mock.patch('tests.fixtures.TempStoreClient.capture_exception') as m:
+        yield m
+
+
+@pytest.fixture
+def original_exception_hook(request):
+    mock_params = getattr(request, "param", {})
+    original_excepthook = sys.excepthook
+    mck = mock.Mock(side_effect=mock_params.get('side_effect'))
+    sys.excepthook = mck
+    yield mck
+    sys.excepthook = original_excepthook
+
+
 @pytest.fixture()
 def elasticapm_client(request):
+    original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
@@ -160,6 +185,7 @@ def elasticapm_client(request):
     yield client
     client.close()
     # clear any execution context that might linger around
+    sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.set_span(None)
 
