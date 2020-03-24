@@ -33,13 +33,13 @@ import pytest  # isort:skip
 aiohttp = pytest.importorskip("aiohttp")  # isort:skip
 
 import mock
+from multidict import MultiDict
 
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp import ElasticAPM
 from elasticapm.contrib.aiohttp.middleware import AioHttpTraceParent
 from elasticapm.utils.disttracing import TraceParent
-from multidict import MultiDict
 
 pytestmark = [pytest.mark.aiohttp]
 
