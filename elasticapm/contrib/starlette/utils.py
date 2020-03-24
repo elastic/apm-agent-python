@@ -30,11 +30,12 @@
 
 import json
 
-from elasticapm.conf import constants
-from elasticapm.utils import compat, get_url_dict
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import Message
+
+from elasticapm.conf import constants
+from elasticapm.utils import compat, get_url_dict
 
 
 async def get_data_from_request(request: Request, capture_body=False, capture_headers=True) -> dict:

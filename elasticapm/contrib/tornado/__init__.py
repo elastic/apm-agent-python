@@ -34,8 +34,9 @@ Note that transaction creation is actually done in the tornado
 instrumentation. This module only creates the client for later use by the
 that instrumentation, and triggers the global instrumentation itself.
 """
-import elasticapm
 import tornado
+
+import elasticapm
 from elasticapm import Client
 
 

@@ -30,9 +30,9 @@
 
 import functools
 
+from elasticapm.conf.constants import LABEL_RE
 from elasticapm.traces import DroppedSpan, capture_span, error_logger, execution_context
 from elasticapm.utils import get_name_from_func
-from elasticapm.conf.constants import LABEL_RE
 
 
 class async_capture_span(capture_span):

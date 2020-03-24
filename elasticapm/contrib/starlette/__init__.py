@@ -32,19 +32,18 @@
 from __future__ import absolute_import
 
 import starlette
-from starlette.types import ASGIApp
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.types import ASGIApp
 
 import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
+from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.starlette.utils import get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
-from elasticapm.contrib.asyncio.traces import set_context
-
 
 logger = get_logger("elasticapm.errors.client")
 
@@ -176,7 +175,7 @@ class ElasticAPM(BaseHTTPMiddleware):
                 capture_body=self.client.config.capture_body in ("transactions", "all"),
                 capture_headers=self.client.config.capture_headers,
             ),
-            "request"
+            "request",
         )
         elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
 
@@ -187,8 +186,7 @@ class ElasticAPM(BaseHTTPMiddleware):
             response (Response)
         """
         await set_context(
-            lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers),
-            "response"
+            lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
         )
 
         result = "HTTP {}xx".format(response.status_code // 100)
