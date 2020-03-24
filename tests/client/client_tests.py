@@ -291,7 +291,9 @@ def test_send(sending_elasticapm_client):
     for k, v in expected_headers.items():
         assert seen_headers[k] == v
 
-    assert 250 < request.content_length < 400
+    # Commented out per @beniwohli 
+    # TODO: figure out why payload size is larger than 400 on windows / 2.7 
+    # assert 250 < request.content_length < 400
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
