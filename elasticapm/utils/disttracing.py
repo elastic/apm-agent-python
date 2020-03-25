@@ -143,19 +143,9 @@ def trace_parent_from_string(traceparent_string, tracestate_string=None, is_lega
     return TraceParent.from_string(traceparent_string, tracestate_string=tracestate_string, is_legacy=is_legacy)
 
 
-def trace_parent_from_headers(
-    headers,
-    header_name=constants.TRACEPARENT_HEADER_NAME,
-    legacy_header_name=constants.TRACEPARENT_LEGACY_HEADER_NAME,
-    tracestate_header_name=constants.TRACESTATE_HEADER_NAME,
-):
+def trace_parent_from_headers(headers):
     """
     This is a wrapper function so we can add traceparent generation to the
     public API.
     """
-    return TraceParent.from_headers(
-        headers,
-        header_name=header_name,
-        legacy_header_name=legacy_header_name,
-        tracestate_header_name=tracestate_header_name,
-    )
+    return TraceParent.from_headers(headers)
