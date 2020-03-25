@@ -44,13 +44,13 @@ class ElasticAPM(object):
     >>> application = ElasticAPM(application, Client())
     """
 
-    def __init__(self, application, client):
-        self.application = application
+    def __init__(self, app, client):
+        self.app = app
         self.client = client
 
     def __call__(self, environ, start_response):
         try:
-            for event in self.application(environ, start_response):
+            for event in self.app(environ, start_response):
                 yield event
         except Exception:
             exc_info = sys.exc_info()
