@@ -133,3 +133,19 @@ class TracingOptions(ctypes.Union):
         super(TracingOptions, self).__init__()
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+
+def trace_parent_from_string(traceparent_string, tracestate_string=None, is_legacy=False):
+    """
+    This is a wrapper function so we can add traceparent generation to the
+    public API.
+    """
+    return TraceParent.from_string(traceparent_string, tracestate_string=tracestate_string, is_legacy=is_legacy)
+
+
+def trace_parent_from_headers(headers):
+    """
+    This is a wrapper function so we can add traceparent generation to the
+    public API.
+    """
+    return TraceParent.from_headers(headers)
