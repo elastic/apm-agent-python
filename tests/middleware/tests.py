@@ -42,7 +42,7 @@ def example_app(environ, start_response):
 
 
 def test_error_handler(elasticapm_client):
-    middleware = ElasticAPM(example_app, client=elasticapm_client)
+    middleware = ElasticAPM(app=example_app, client=elasticapm_client)
 
     request = webob.Request.blank("/an-error?foo=bar")
     response = middleware(request.environ, lambda *args: None)
