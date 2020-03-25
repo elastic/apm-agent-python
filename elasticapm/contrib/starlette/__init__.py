@@ -166,18 +166,19 @@ class ElasticAPM(BaseHTTPMiddleware):
         Args:
             request (Request)
         """
-        trace_parent = TraceParent.from_headers(dict(request.headers))
-        self.client.begin_transaction("request", trace_parent=trace_parent)
+        if not self.client.should_ignore_url(request.url.path):
+            trace_parent = TraceParent.from_headers(dict(request.headers))
+            self.client.begin_transaction("request", trace_parent=trace_parent)
 
-        await set_context(
-            lambda: get_data_from_request(
-                request,
-                capture_body=self.client.config.capture_body in ("transactions", "all"),
-                capture_headers=self.client.config.capture_headers,
-            ),
-            "request",
-        )
-        elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
+            await set_context(
+                lambda: get_data_from_request(
+                    request,
+                    capture_body=self.client.config.capture_body in ("transactions", "all"),
+                    capture_headers=self.client.config.capture_headers,
+                ),
+                "request",
+            )
+            elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
 
     async def _request_finished(self, response: Response):
         """Captures the end of the request processing to APM.

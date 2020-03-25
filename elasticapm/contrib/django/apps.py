@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from functools import partial
+from wsgiref.util import request_uri
 
 from django.apps import AppConfig
 from django.conf import settings as django_settings
@@ -133,17 +134,31 @@ def _request_started_handler(client, sender, *args, **kwargs):
     if not _should_start_transaction(client):
         return
     # try to find trace id
+    trace_parent = None
     if "environ" in kwargs:
+        url = request_uri(kwargs["environ"], include_query=False)
+        if client.should_ignore_url(url):
+            logger.debug("Ignoring request due to %s matching transaction_ignore_urls")
+            return
         trace_parent = TraceParent.from_headers(
             kwargs["environ"],
             TRACEPARENT_HEADER_NAME_WSGI,
             TRACEPARENT_LEGACY_HEADER_NAME_WSGI,
             TRACESTATE_HEADER_NAME_WSGI,
         )
-    elif "scope" in kwargs and "headers" in kwargs["scope"]:
-        trace_parent = TraceParent.from_headers(kwargs["scope"]["headers"])
-    else:
-        trace_parent = None
+    elif "scope" in kwargs:
+        scope = kwargs["scope"]
+        fake_environ = {
+            "SCRIPT_NAME": scope.get("root_path", ""),
+            "PATH_INFO": scope["path"],
+            "QUERY_STRING": scope["query_string"].decode("ascii"),
+        }
+        url = request_uri(fake_environ, include_query=False)
+        if client.should_ignore_url(url):
+            logger.debug("Ignoring request due to %s matching transaction_ignore_urls")
+            return
+        if "headers" in scope:
+            trace_parent = TraceParent.from_headers(scope["headers"])
     client.begin_transaction("request", trace_parent=trace_parent)
 
 

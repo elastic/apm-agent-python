@@ -359,6 +359,25 @@ def test_ignore_patterns_with_none_transaction_name(elasticapm_client):
     assert t.name == ""
 
 
+@pytest.mark.parametrize(
+    "setting,url,result",
+    [
+        ("", "/foo/bar", False),
+        ("*", "/foo/bar", True),
+        ("/foo/bar,/baz", "/foo/bar", True),
+        ("/foo/bar,/baz", "/baz", True),
+        ("/foo/bar,/bazz", "/baz", False),
+        ("/foo/*/bar,/bazz", "/foo/bar", False),
+        ("/foo/*/bar,/bazz", "/foo/ooo/bar", True),
+        ("*/foo/*/bar,/bazz", "/foo/ooo/bar", True),
+        ("*/foo/*/bar,/bazz", "/baz/foo/ooo/bar", True),
+    ],
+)
+def test_should_ignore_url(elasticapm_client, setting, url, result):
+    elasticapm_client.config.update(1, transaction_ignore_urls=setting)
+    assert elasticapm_client.should_ignore_url(url) is result
+
+
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
 def test_disable_send(sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send
