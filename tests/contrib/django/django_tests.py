@@ -1347,6 +1347,38 @@ def test_capture_body_config_is_dynamic_for_transactions(client, django_elastica
     assert transaction["context"]["request"]["body"] == "[REDACTED]"
 
 
+def test_capture_headers_config_is_dynamic_for_errors(client, django_elasticapm_client):
+    django_elasticapm_client.config.update(version="1", capture_headers=True)
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"))
+    error = django_elasticapm_client.events[ERROR][0]
+    assert error["context"]["request"]["headers"]
+
+    django_elasticapm_client.config.update(version="1", capture_headers=False)
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"))
+    error = django_elasticapm_client.events[ERROR][1]
+    assert "headers" not in error["context"]["request"]
+
+
+def test_capture_headers_config_is_dynamic_for_transactions(client, django_elasticapm_client):
+    django_elasticapm_client.config.update(version="1", capture_headers=True)
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-no-error"))
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["headers"]
+
+    django_elasticapm_client.config.update(version="1", capture_headers=False)
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-no-error"))
+    transaction = django_elasticapm_client.events[TRANSACTION][1]
+    assert "headers" not in transaction["context"]["request"]
+
+
 @pytest.mark.parametrize(
     "django_elasticapm_client",
     [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],

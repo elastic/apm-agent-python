@@ -314,14 +314,42 @@ def test_capture_body_config_is_dynamic_for_transactions(flask_apm_client):
     flask_apm_client.client.config.update(version="1", capture_body="all")
     resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
     resp.close()
-    error = flask_apm_client.client.events[TRANSACTION][0]
-    assert error["context"]["request"]["body"] == {"foo": "bar"}
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["body"] == {"foo": "bar"}
 
     flask_apm_client.client.config.update(version="2", capture_body="off")
     resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
     resp.close()
-    error = flask_apm_client.client.events[TRANSACTION][1]
-    assert error["context"]["request"]["body"] == "[REDACTED]"
+    transaction = flask_apm_client.client.events[TRANSACTION][1]
+    assert transaction["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_capture_headers_config_is_dynamic_for_errors(flask_apm_client):
+    flask_apm_client.client.config.update(version="1", capture_headers=True)
+    resp = flask_apm_client.app.test_client().post("/an-error/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[ERROR][0]
+    assert error["context"]["request"]["headers"]
+
+    flask_apm_client.client.config.update(version="2", capture_headers=False)
+    resp = flask_apm_client.app.test_client().post("/an-error/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[ERROR][1]
+    assert "headers" not in error["context"]["request"]
+
+
+def test_capture_headers_config_is_dynamic_for_transactions(flask_apm_client):
+    flask_apm_client.client.config.update(version="1", capture_headers=True)
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["headers"]
+
+    flask_apm_client.client.config.update(version="2", capture_headers=False)
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
+    transaction = flask_apm_client.client.events[TRANSACTION][1]
+    assert "headers" not in transaction["context"]["request"]
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"capture_body": "transactions"}], indirect=True)
