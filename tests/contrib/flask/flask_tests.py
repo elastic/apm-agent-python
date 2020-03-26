@@ -426,3 +426,14 @@ def test_logging_by_level(flask_apm_client):
     assert len(flask_apm_client.client.events[ERROR]) == 1
     error = flask_apm_client.client.events[ERROR][0]
     assert error["log"]["level"] == "error"
+
+
+def test_flask_transaction_ignore_urls(flask_apm_client):
+    resp = flask_apm_client.app.test_client().get("/users/")
+    resp.close()
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 1
+
+    flask_apm_client.client.config.update(version=1, transaction_ignore_urls="/user*")
+    resp = flask_apm_client.app.test_client().get("/users/")
+    resp.close()
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 1

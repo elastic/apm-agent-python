@@ -56,6 +56,7 @@ def aioeapm(elasticapm_client):
 
     app = aiohttp.web.Application()
     app.router.add_route("GET", "/", hello)
+    app.router.add_route("GET", "/hello", hello)
     app.router.add_route("GET", "/boom", boom)
     apm = ElasticAPM(app, elasticapm_client)
     yield apm
@@ -139,3 +140,15 @@ async def test_traceparent_handling(aiohttp_client, aioeapm):
 async def test_aiohttptraceparent_merge(headers, expected):
     result = AioHttpTraceParent.merge_duplicate_headers(headers, "a")
     assert result == expected
+
+
+async def test_aiohttp_transaction_ignore_urls(aiohttp_client, aioeapm):
+    app = aioeapm.app
+    client = await aiohttp_client(app)
+    elasticapm_client = aioeapm.client
+    resp = await client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ello,/world")
+    resp = await client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1

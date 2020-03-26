@@ -55,6 +55,12 @@ def app(elasticapm_client):
             pass
         return PlainTextResponse("ok")
 
+    @app.route("/hello", methods=["GET", "POST"])
+    async def hello(request):
+        with async_capture_span("test"):
+            pass
+        return PlainTextResponse("ok")
+
     @app.route("/raise-exception")
     async def raise_exception(request):
         raise ValueError()
@@ -183,3 +189,13 @@ def test_traceparent_handling(app, elasticapm_client, header_name):
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
     assert "foo=bar,baz=bazzinga" in wrapped_from_string.call_args[0]
+
+
+def test_starlette_transaction_ignore_urls(app, elasticapm_client):
+    client = TestClient(app)
+    response = client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ello,/world")
+    response = client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1

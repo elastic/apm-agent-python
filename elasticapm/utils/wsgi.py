@@ -88,7 +88,7 @@ def get_host(environ):
 
 
 # `get_current_url` comes from `werkzeug.wsgi`
-def get_current_url(environ, root_only=False, strip_querystring=False, host_only=False):
+def get_current_url(environ, root_only=False, strip_querystring=False, host_only=False, path_only=False):
     """A handy helper function that recreates the full URL for the current
     request or parts of it.  Here an example:
 
@@ -108,7 +108,10 @@ def get_current_url(environ, root_only=False, strip_querystring=False, host_only
     :param strip_querystring: set to `True` if you don't want the querystring.
     :param host_only: set to `True` if the host URL should be returned.
     """
-    tmp = [environ["wsgi.url_scheme"], "://", get_host(environ)]
+    if path_only:
+        tmp = []
+    else:
+        tmp = [environ["wsgi.url_scheme"], "://", get_host(environ)]
     cat = tmp.append
     if host_only:
         return "".join(tmp) + "/"

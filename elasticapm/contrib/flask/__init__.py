@@ -182,7 +182,7 @@ class ElasticAPM(object):
             return {}
 
     def request_started(self, app):
-        if not self.app.debug or self.client.config.debug or self.client.should_ignore_url(request.path):
+        if (not self.app.debug or self.client.config.debug) and not self.client.should_ignore_url(request.path):
             trace_parent = TraceParent.from_headers(request.headers)
             self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(

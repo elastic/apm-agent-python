@@ -29,7 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from functools import partial
-from wsgiref.util import request_uri
 
 from django.apps import AppConfig
 from django.conf import settings as django_settings
@@ -38,6 +37,7 @@ from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.wsgi import get_current_url
 
 logger = get_logger("elasticapm.traces")
 
@@ -136,7 +136,7 @@ def _request_started_handler(client, sender, *args, **kwargs):
     # try to find trace id
     trace_parent = None
     if "environ" in kwargs:
-        url = request_uri(kwargs["environ"], include_query=False)
+        url = get_current_url(kwargs["environ"], strip_querystring=True, path_only=True)
         if client.should_ignore_url(url):
             logger.debug("Ignoring request due to %s matching transaction_ignore_urls")
             return
@@ -148,12 +148,8 @@ def _request_started_handler(client, sender, *args, **kwargs):
         )
     elif "scope" in kwargs:
         scope = kwargs["scope"]
-        fake_environ = {
-            "SCRIPT_NAME": scope.get("root_path", ""),
-            "PATH_INFO": scope["path"],
-            "QUERY_STRING": scope["query_string"].decode("ascii"),
-        }
-        url = request_uri(fake_environ, include_query=False)
+        fake_environ = {"SCRIPT_NAME": scope.get("root_path", ""), "PATH_INFO": scope["path"], "QUERY_STRING": ""}
+        url = get_current_url(fake_environ, strip_querystring=True, path_only=True)
         if client.should_ignore_url(url):
             logger.debug("Ignoring request due to %s matching transaction_ignore_urls")
             return
