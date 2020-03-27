@@ -61,14 +61,23 @@ pipeline {
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
+            script {
+              dir("${BASE_DIR}"){
+                // Skip all the stages except docs for PR's with asciidoc and md changes only
+                env.ONLY_DOCS = isGitRegionMatch(patterns: [ '.*\\.(asciidoc|md)' ], shouldMatchAll: true)
+              }
+            }
           }
         }
         stage('Sanity checks') {
           when {
             beforeAgent true
-            anyOf {
-              not { changeRequest() }
-              expression { return params.Run_As_Master_Branch }
+            allOf {
+              expression { return env.ONLY_DOCS == "false" }
+              anyOf {
+                not { changeRequest() }
+                expression { return params.Run_As_Master_Branch }
+              }
             }
           }
           steps {
@@ -95,7 +104,10 @@ pipeline {
       options { skipDefaultCheckout() }
       when {
         beforeAgent true
-        expression { return params.tests_ci }
+        allOf {
+          expression { return env.ONLY_DOCS == "false" }
+          expression { return params.tests_ci }
+        }
       }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
@@ -139,7 +151,10 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { return params.package_ci }
+        allOf {
+          expression { return env.ONLY_DOCS == "false" }
+          expression { return params.package_ci }
+        }
       }
       steps {
         withGithubNotify(context: 'Building packages') {
@@ -158,9 +173,12 @@ pipeline {
       agent none
       when {
         beforeAgent true
-        anyOf {
-          changeRequest()
-          expression { return !params.Run_As_Master_Branch }
+        allOf {
+          expression { return env.ONLY_DOCS == "false" }
+          anyOf {
+            changeRequest()
+            expression { return !params.Run_As_Master_Branch }
+          }
         }
       }
       steps {
