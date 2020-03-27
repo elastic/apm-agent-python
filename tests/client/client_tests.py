@@ -478,6 +478,38 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
         assert transaction["sampled"] or not "context" in transaction
 
 
+def test_transaction_sample_rate_dynamic(elasticapm_client, not_so_random):
+    elasticapm_client.config.update(version="1", transaction_sample_rate=0.4)
+    for i in range(10):
+        elasticapm_client.begin_transaction("test_type")
+        with elasticapm.capture_span("xyz"):
+            pass
+        elasticapm_client.end_transaction("test")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans_per_transaction = defaultdict(list)
+    for span in elasticapm_client.events[SPAN]:
+        spans_per_transaction[span["transaction_id"]].append(span)
+
+    # seed is fixed by not_so_random fixture
+    assert len([t for t in transactions if t["sampled"]]) == 3
+    for transaction in transactions:
+        assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
+        assert transaction["sampled"] or not "context" in transaction
+
+    elasticapm_client.config.update(version="1", transaction_sample_rate=1.0)
+    for i in range(5):
+        elasticapm_client.begin_transaction("test_type")
+        with elasticapm.capture_span("xyz"):
+            pass
+        elasticapm_client.end_transaction("test")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+
+    # seed is fixed by not_so_random fixture
+    assert len([t for t in transactions if t["sampled"]]) == 8
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
 def test_transaction_max_spans(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
