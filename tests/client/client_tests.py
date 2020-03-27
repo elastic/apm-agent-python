@@ -561,6 +561,42 @@ def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
     assert spans[1]["stacktrace"] is not None
 
 
+def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
+    elasticapm_client.config.update(version="1", span_frames_min_duration=20)
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("noframes", duration=0.001):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
+    elasticapm_client.end_transaction("test")
+
+    spans = elasticapm_client.events[SPAN]
+
+    assert len(spans) == 2
+    assert spans[0]["name"] == "noframes"
+    assert "stacktrace" not in spans[0]
+
+    assert spans[1]["name"] == "frames"
+    assert spans[1]["stacktrace"] is not None
+
+    elasticapm_client.config.update(version="1", span_frames_min_duration=-1)
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("frames"):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
+    elasticapm_client.end_transaction("test")
+
+    spans = elasticapm_client.events[SPAN]
+
+    assert len(spans) == 4
+    assert spans[2]["name"] == "frames"
+    assert spans[2]["stacktrace"] is not None
+
+    assert spans[3]["name"] == "frames"
+    assert spans[3]["stacktrace"] is not None
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 3}], indirect=True)
 def test_transaction_max_span_nested(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
