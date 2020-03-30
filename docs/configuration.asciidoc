@@ -10,7 +10,7 @@ You can either configure the agent by setting environment variables:
 ELASTIC_APM_SERVICE_NAME=foo python manage.py runserver
 ----
 
-or with inline configuration: 
+or with inline configuration:
 
 [source,python]
 ----
@@ -481,7 +481,7 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 
 |============
 | Environment                    | Django/Flask       | Default
-| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"724kb"`
+| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"768kb"`
 |============
 
 Maximum queue length of the request buffer before sending the request to the APM Server.
@@ -692,7 +692,7 @@ NOTE: this setting only disables the *sending* of the given metrics, not collect
 |============
 
 Enable/disable the tracking and collection of breakdown metrics.
-By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent. 
+By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 
@@ -824,12 +824,12 @@ The unit is provided as suffix directly after the number, without and separation
 
 *Example*: `5ms`
 
-*Supported units* 
+*Supported units*
 
  * `ms` (milliseconds)
  * `s` (seconds)
  * `m` (minutes)
- 
+
 [float]
 [[config-format-size]]
 ==== Size format

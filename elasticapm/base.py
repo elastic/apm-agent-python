@@ -137,8 +137,6 @@ class Client(object):
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
             "timeout": self.config.server_timeout,
-            "max_flush_time": self.config.api_request_time / 1000.0,
-            "max_buffer_size": self.config.api_request_size,
             "processors": self.load_processors(),
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
