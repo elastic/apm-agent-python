@@ -22,7 +22,6 @@ else
 fi
 
 make update-json-schema
-make update-gherkin-features
 
 if [[ -n $WAIT_FOR_HOST ]]
 then

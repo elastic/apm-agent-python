@@ -7,8 +7,6 @@
 
 ECHO Download json schema dependencies
 call .\tests\scripts\download_json_schema.bat
-ECHO Download gherkin feature dependencies
-call .\tests\scripts\download_gherkin_features.bat
 
 @echo on
 set COVERAGE_FILE=.coverage.%VERSION%.%WEBFRAMEWORK%
