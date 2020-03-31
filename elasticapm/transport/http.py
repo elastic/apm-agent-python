@@ -126,6 +126,8 @@ class Transport(HTTPTransportBase):
         url = self._config_url
         data = json_encoder.dumps(keys).encode("utf-8")
         headers = self._headers.copy()
+        headers[b"Content-Type"] = "application/json"
+        headers.pop(b"Content-Encoding", None)  # remove gzip content-encoding header
         headers.update(self.auth_headers)
         max_age = 300
         if current_version:
