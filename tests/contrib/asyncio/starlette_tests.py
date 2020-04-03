@@ -122,7 +122,7 @@ def test_post(app, elasticapm_client):
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
-    assert request["method"] == "GET"
+    assert request["method"] == "POST"
     assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
     assert request["body"]["foo"] == "bar"
 
