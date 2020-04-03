@@ -322,7 +322,11 @@ class Config(_ConfigBase):
     local_var_max_length = _ConfigValue("LOCAL_VAR_MAX_LENGTH", type=int, default=200)
     local_var_list_max_length = _ConfigValue("LOCAL_VAR_LIST_MAX_LENGTH", type=int, default=10)
     local_var_dict_max_length = _ConfigValue("LOCAL_VAR_DICT_MAX_LENGTH", type=int, default=10)
-    capture_body = _ConfigValue("CAPTURE_BODY", default="off")
+    capture_body = _ConfigValue(
+        "CAPTURE_BODY",
+        default="off",
+        validators=[lambda val, _: {"errors": "error", "transactions": "transaction"}.get(val, val)],
+    )
     async_mode = _BoolConfigValue("ASYNC_MODE", default=True)
     instrument_django_middleware = _BoolConfigValue("INSTRUMENT_DJANGO_MIDDLEWARE", default=True)
     autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)

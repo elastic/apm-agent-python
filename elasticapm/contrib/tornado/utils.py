@@ -37,7 +37,7 @@ except ImportError:
     pass
 
 
-def get_data_from_request(request_handler, request, capture_body=False, capture_headers=True):
+def get_data_from_request(request_handler, request, config, event_type):
     """
     Capture relevant data from a tornado.httputil.HTTPServerRequest
     """
@@ -47,14 +47,14 @@ def get_data_from_request(request_handler, request, capture_body=False, capture_
         "cookies": request.cookies,
         "http_version": request.version,
     }
-    if capture_headers:
+    if config.capture_headers:
         result["headers"] = dict(request.headers)
     if request.method in constants.HTTP_WITH_BODY:
         if tornado.web._has_stream_request_body(request_handler.__class__):
             # Body is a future and streaming is expected to be handled by
             # the user in the RequestHandler.data_received function.
             # Currently not sure of a safe way to get the body in this case.
-            result["body"] = "[STREAMING]" if capture_body else "[REDACTED]"
+            result["body"] = "[STREAMING]" if config.capture_body in ("all", event_type) else "[REDACTED]"
         else:
             body = None
             try:
@@ -63,18 +63,18 @@ def get_data_from_request(request_handler, request, capture_body=False, capture_
                 body = request.body
 
             if body is not None:
-                result["body"] = body if capture_body else "[REDACTED]"
+                result["body"] = body if config.capture_body in ("all", event_type) else "[REDACTED]"
 
     result["url"] = elasticapm.utils.get_url_dict(request.full_url())
     return result
 
 
-def get_data_from_response(request_handler, capture_headers=True):
+def get_data_from_response(request_handler, config, event_type):
     result = {}
 
     result["status_code"] = request_handler.get_status()
 
-    if capture_headers and request_handler._headers:
+    if config.capture_headers and request_handler._headers:
         headers = request_handler._headers
         result["headers"] = {key: ";".join(headers.get_list(key)) for key in compat.iterkeys(headers)}
         pass

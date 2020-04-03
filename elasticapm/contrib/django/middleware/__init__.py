@@ -38,6 +38,7 @@ from django.apps import apps
 from django.conf import settings as django_settings
 
 import elasticapm
+from elasticapm.conf import constants
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.utils import build_name_with_http_method_prefix, get_name_from_func, wrapt
 
@@ -176,12 +177,11 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     elasticapm.set_transaction_name(transaction_name, override=False)
 
                 elasticapm.set_context(
-                    lambda: self.client.get_data_from_request(
-                        request, capture_body=self.client.config.capture_body in ("all", "transactions")
-                    ),
-                    "request",
+                    lambda: self.client.get_data_from_request(request, constants.TRANSACTION), "request"
                 )
-                elasticapm.set_context(lambda: self.client.get_data_from_response(response), "response")
+                elasticapm.set_context(
+                    lambda: self.client.get_data_from_response(response, constants.TRANSACTION), "response"
+                )
                 elasticapm.set_context(lambda: self.client.get_user_info(request), "user")
                 elasticapm.set_transaction_result("HTTP {}xx".format(response.status_code // 100), override=False)
         except Exception:

@@ -114,7 +114,7 @@ class DjangoClient(Client):
 
         return user_info
 
-    def get_data_from_request(self, request, capture_body=False):
+    def get_data_from_request(self, request, event_type):
         result = {
             "env": dict(get_environ(request.META)),
             "method": request.method,
@@ -138,7 +138,7 @@ class DjangoClient(Client):
                 except Exception as e:
                     self.logger.debug("Can't capture request body: %s", compat.text_type(e))
                     data = "<unavailable>"
-
+            capture_body = self.config.capture_body in ("all", event_type)
             result["body"] = data if (capture_body or not data) else "[REDACTED]"
 
         if hasattr(request, "get_raw_uri"):
@@ -158,7 +158,7 @@ class DjangoClient(Client):
             result["url"] = get_url_dict(url)
         return result
 
-    def get_data_from_response(self, response):
+    def get_data_from_response(self, response, event_type):
         result = {"status_code": response.status_code}
 
         if self.config.capture_headers and hasattr(response, "items"):
@@ -173,9 +173,7 @@ class DjangoClient(Client):
 
         is_http_request = isinstance(request, HttpRequest)
         if is_http_request:
-            context["request"] = self.get_data_from_request(
-                request, capture_body=self.config.capture_body in ("all", "errors")
-            )
+            context["request"] = self.get_data_from_request(request, constants.ERROR)
             context["user"] = self.get_user_info(request)
 
         result = super(DjangoClient, self).capture(event_type, **kwargs)
