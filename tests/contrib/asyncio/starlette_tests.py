@@ -55,7 +55,7 @@ def app(elasticapm_client):
             pass
         return PlainTextResponse("ok")
 
-    @app.route("/raise-exception")
+    @app.route("/raise-exception", methods=["GET", "POST"])
     async def raise_exception(request):
         raise ValueError()
 
@@ -89,8 +89,8 @@ def test_get(app, elasticapm_client):
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
-    request["method"] == "GET"
-    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
 
     assert span["name"] == "test"
 
@@ -122,8 +122,8 @@ def test_post(app, elasticapm_client):
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
-    request["method"] == "GET"
-    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
     assert request["body"]["foo"] == "bar"
 
     assert span["name"] == "test"
@@ -183,3 +183,27 @@ def test_traceparent_handling(app, elasticapm_client, header_name):
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
     assert "foo=bar,baz=bazzinga" in wrapped_from_string.call_args[0]
+
+
+def test_capture_headers_body_is_dynamic(app, elasticapm_client):
+    client = TestClient(app)
+
+    for i, val in enumerate((True, False)):
+        elasticapm_client.config.update(str(i), capture_body="transaction" if val else "none", capture_headers=val)
+        client.post("/", "somedata", headers={"foo": "bar"})
+
+        elasticapm_client.config.update(str(i) + str(i), capture_body="error" if val else "none", capture_headers=val)
+        with pytest.raises(ValueError):
+            client.post("/raise-exception", "somedata", headers={"foo": "bar"})
+
+    assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["request"]
+    assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["response"]
+    assert elasticapm_client.events[constants.TRANSACTION][0]["context"]["request"]["body"] == "somedata"
+    assert "headers" in elasticapm_client.events[constants.ERROR][0]["context"]["request"]
+    assert elasticapm_client.events[constants.ERROR][0]["context"]["request"]["body"] == "somedata"
+
+    assert "headers" not in elasticapm_client.events[constants.TRANSACTION][2]["context"]["request"]
+    assert "headers" not in elasticapm_client.events[constants.TRANSACTION][2]["context"]["response"]
+    assert elasticapm_client.events[constants.TRANSACTION][2]["context"]["request"]["body"] == "[REDACTED]"
+    assert "headers" not in elasticapm_client.events[constants.ERROR][1]["context"]["request"]
+    assert elasticapm_client.events[constants.ERROR][1]["context"]["request"]["body"] == "[REDACTED]"
