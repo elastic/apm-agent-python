@@ -132,7 +132,7 @@ def test_post(flask_apm_client):
     assert request["url"]["full"] == "http://localhost/an-error/?biz=baz"
     assert request["url"]["search"] == "?biz=baz"
     assert request["method"] == "POST"
-    if flask_apm_client.client.config.capture_body in ("errors", "all"):
+    if flask_apm_client.client.config.capture_body in (constants.ERROR, "all"):
         assert request["body"] == {"foo": "bar"}
     else:
         assert request["body"] == "[REDACTED]"
@@ -171,7 +171,7 @@ def test_instrumentation(flask_apm_client):
     assert "request" in transaction["context"]
     assert transaction["context"]["request"]["url"]["full"] == "http://localhost/users/"
     assert transaction["context"]["request"]["method"] == "POST"
-    if flask_apm_client.client.config.capture_body in ("transactions", "all"):
+    if flask_apm_client.client.config.capture_body in (constants.TRANSACTION, "all"):
         assert transaction["context"]["request"]["body"] == {"foo": "bar"}
     else:
         assert transaction["context"]["request"]["body"] == "[REDACTED]"
@@ -287,7 +287,7 @@ def test_post_files(flask_apm_client):
     assert len(flask_apm_client.client.events[ERROR]) == 1
 
     event = flask_apm_client.client.events[ERROR][0]
-    if flask_apm_client.client.config.capture_body in ("errors", "all"):
+    if flask_apm_client.client.config.capture_body in (constants.ERROR, "all"):
         assert event["context"]["request"]["body"] == {
             "foo": ["bar", "baz"],
             "_files": {"f1": "bla", "f2": ["flask_tests.py", "blub"]},

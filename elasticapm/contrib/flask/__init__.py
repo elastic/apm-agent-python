@@ -37,7 +37,7 @@ from flask import request, signals
 import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
-from elasticapm.conf import setup_logging
+from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.traces import execution_context
@@ -110,13 +110,7 @@ class ElasticAPM(object):
 
         self.client.capture_exception(
             exc_info=kwargs.get("exc_info"),
-            context={
-                "request": get_data_from_request(
-                    request,
-                    capture_body=self.client.config.capture_body in ("errors", "all"),
-                    capture_headers=self.client.config.capture_headers,
-                )
-            },
+            context={"request": get_data_from_request(request, self.client.config, constants.ERROR)},
             custom={"app": self.app},
             handled=False,
         )
@@ -186,12 +180,7 @@ class ElasticAPM(object):
             trace_parent = TraceParent.from_headers(request.headers)
             self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
-                lambda: get_data_from_request(
-                    request,
-                    capture_body=self.client.config.capture_body in ("transactions", "all"),
-                    capture_headers=self.client.config.capture_headers,
-                ),
-                "request",
+                lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request"
             )
             rule = request.url_rule.rule if request.url_rule is not None else ""
             rule = build_name_with_http_method_prefix(rule, request)
@@ -200,7 +189,7 @@ class ElasticAPM(object):
     def request_finished(self, app, response):
         if not self.app.debug or self.client.config.debug:
             elasticapm.set_context(
-                lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
+                lambda: get_data_from_response(response, self.client.config, constants.TRANSACTION), "response"
             )
             if response.status_code:
                 result = "HTTP {}xx".format(response.status_code // 100)
