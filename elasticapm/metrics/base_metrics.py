@@ -44,20 +44,18 @@ DISTINCT_LABEL_LIMIT = 1000
 
 
 class MetricsRegistry(ThreadManager):
-    def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
+    def __init__(self, client, tags=None):
         """
         Creates a new metric registry
 
-        :param collect_interval: the interval to collect metrics from registered metric sets
-        :param queue_func: the function to call with the collected metrics
+        :param client: client instance
         :param tags:
         """
-        self._collect_interval = collect_interval
-        self._queue_func = queue_func
+        self.client = client
         self._metricsets = {}
         self._tags = tags or {}
         self._collect_timer = None
-        self._ignore_patterns = ignore_patterns or ()
+        super(MetricsRegistry, self).__init__()
 
     def register(self, class_path):
         """
@@ -84,16 +82,18 @@ class MetricsRegistry(ThreadManager):
         Collect metrics from all registered metric sets and queues them for sending
         :return:
         """
-        logger.debug("Collecting metrics")
+        if self.client.config.is_recording:
+            logger.debug("Collecting metrics")
 
-        for name, metricset in compat.iteritems(self._metricsets):
-            for data in metricset.collect():
-                self._queue_func(constants.METRICSET, data)
+            for name, metricset in compat.iteritems(self._metricsets):
+                for data in metricset.collect():
+                    self.client.queue(constants.METRICSET, data)
 
-    def start_thread(self):
-        if self._collect_interval:
+    def start_thread(self, pid=None):
+        super(MetricsRegistry, self).start_thread(pid=pid)
+        if self.client.config.metrics_interval:
             self._collect_timer = IntervalTimer(
-                self.collect, self._collect_interval, name="eapm metrics collect timer", daemon=True
+                self.collect, self.collect_interval, name="eapm metrics collect timer", daemon=True
             )
             logger.debug("Starting metrics collect timer")
             self._collect_timer.start()
@@ -103,6 +103,14 @@ class MetricsRegistry(ThreadManager):
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
             self._collect_timer = None
+
+    @property
+    def collect_interval(self):
+        return self.client.config.metrics_interval / 1000.0
+
+    @property
+    def ignore_patterns(self):
+        return self.client.config.disable_metrics or []
 
 
 class MetricsSet(object):
@@ -159,9 +167,7 @@ class MetricsSet(object):
         key = (name, labels)
         with self._lock:
             if key not in container:
-                if self._registry._ignore_patterns and any(
-                    pattern.match(name) for pattern in self._registry._ignore_patterns
-                ):
+                if any(pattern.match(name) for pattern in self._registry.ignore_patterns):
                     metric = noop_metric
                 elif len(self._gauges) + len(self._counters) + len(self._timers) >= DISTINCT_LABEL_LIMIT:
                     if not self._label_limit_logged:
