@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import aiohttp
-from aiohttp.web import Response, middleware
+from aiohttp.web import HTTPException, Response, middleware
 
 import elasticapm
 from elasticapm.conf import constants
@@ -82,13 +82,14 @@ def tracing_middleware(app):
                     context={"request": get_data_from_request(request, elasticapm_client.config, constants.ERROR)}
                 )
                 elasticapm.set_transaction_result("HTTP 5xx", override=False)
-                if isinstance(exc, Response):
+                elasticapm.set_context({"status_code": 500}, "response")
+                # some exceptions are response-like, e.g. have headers and status code. Let's try and capture them
+                if isinstance(exc, (Response, HTTPException)):
                     elasticapm.set_context(
                         lambda: get_data_from_response(exc, elasticapm_client.config, constants.ERROR),  # noqa: F821
                         "response",
                     )
-                else:
-                    elasticapm.set_context({"status_code": 500}, "response")
+
             raise
         finally:
             elasticapm_client.end_transaction()
