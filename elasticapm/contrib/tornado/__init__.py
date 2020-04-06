@@ -63,5 +63,9 @@ class ElasticAPM:
         app.elasticapm_client = client
 
         # Don't instrument if debug=True in tornado, unless client.config.debug is True
-        if (not self.app.settings.get("debug") or client.config.debug) and client.config.instrument:
+        if (
+            (not self.app.settings.get("debug") or client.config.debug)
+            and client.config.instrument
+            and client.config.enabled
+        ):
             elasticapm.instrument()

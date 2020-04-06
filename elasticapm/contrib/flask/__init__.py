@@ -30,6 +30,7 @@
 
 
 from __future__ import absolute_import
+
 import logging
 
 import flask
@@ -145,7 +146,7 @@ class ElasticAPM(object):
             pass
 
         # Instrument to get spans
-        if self.client.config.instrument:
+        if self.client.config.instrument and self.client.enabled:
             elasticapm.instrumentation.control.instrument()
 
             signals.request_started.connect(self.request_started, sender=app)

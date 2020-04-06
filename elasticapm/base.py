@@ -292,7 +292,7 @@ class Client(object):
     def close(self):
         if self.config.enabled:
             with self._thread_starter_lock:
-                for _manager_type, manager in self._thread_managers.items():
+                for _, manager in self._thread_managers.items():
                     manager.stop_thread()
 
     def get_service_info(self):

@@ -85,7 +85,7 @@ class MetricsRegistry(ThreadManager):
         if self.client.config.is_recording:
             logger.debug("Collecting metrics")
 
-            for name, metricset in compat.iteritems(self._metricsets):
+            for _, metricset in compat.iteritems(self._metricsets):
                 for data in metricset.collect():
                     self.client.queue(constants.METRICSET, data)
 

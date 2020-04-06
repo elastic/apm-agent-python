@@ -107,7 +107,7 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 [options="header"]
 |============
 | Environment           | Django/Flask | Default 
-| `ELASTIC_APM_ENABLED` | `ENABLED`    | `false`
+| `ELASTIC_APM_ENABLED` | `ENABLED`    | `true`
 |============
 
 Enable or disable the agent.
