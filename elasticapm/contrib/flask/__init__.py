@@ -146,7 +146,7 @@ class ElasticAPM(object):
             pass
 
         # Instrument to get spans
-        if self.client.config.instrument and self.client.enabled:
+        if self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrumentation.control.instrument()
 
             signals.request_started.connect(self.request_started, sender=app)
