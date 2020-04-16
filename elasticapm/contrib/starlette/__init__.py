@@ -114,6 +114,9 @@ class ElasticAPM(BaseHTTPMiddleware):
         """
         self.client = client
 
+        if self.client.config.instrument:
+            elasticapm.instrumentation.control.instrument()
+
         super().__init__(app)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
