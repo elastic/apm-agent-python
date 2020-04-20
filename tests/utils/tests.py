@@ -214,3 +214,8 @@ def test_url_to_destination(url, name, resource):
     destination = url_to_destination(url)
     assert destination["service"]["name"] == name
     assert destination["service"]["resource"] == resource
+
+
+def test_url_to_destination_bad_port():
+    destination = url_to_destination("https://www.elastic.co:bad")
+    assert destination["service"]["resource"] == "www.elastic.co:443"
