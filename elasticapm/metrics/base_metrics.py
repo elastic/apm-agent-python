@@ -198,7 +198,8 @@ class MetricsSet(object):
         timestamp = int(time.time() * 1000000)
         samples = defaultdict(dict)
         if self._counters:
-            for (name, labels), c in compat.iteritems(self._counters):
+            # iterate over a copy of the dict to avoid threading issues, see #717
+            for (name, labels), c in compat.iteritems(self._counters.copy()):
                 if c is not noop_metric:
                     val = c.val
                     if val or not c.reset_on_collect:
@@ -206,7 +207,7 @@ class MetricsSet(object):
                     if c.reset_on_collect:
                         c.reset()
         if self._gauges:
-            for (name, labels), g in compat.iteritems(self._gauges):
+            for (name, labels), g in compat.iteritems(self._gauges.copy()):
                 if g is not noop_metric:
                     val = g.val
                     if val or not g.reset_on_collect:
@@ -214,7 +215,7 @@ class MetricsSet(object):
                     if g.reset_on_collect:
                         g.reset()
         if self._timers:
-            for (name, labels), t in compat.iteritems(self._timers):
+            for (name, labels), t in compat.iteritems(self._timers.copy()):
                 if t is not noop_metric:
                     val, count = t.val
                     if val or not t.reset_on_collect:
