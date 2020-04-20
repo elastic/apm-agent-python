@@ -122,7 +122,13 @@ class DjangoClient(Client):
             "cookies": dict(request.COOKIES),
         }
         if self.config.capture_headers:
-            result["headers"] = dict(get_headers(request.META))
+            request_headers = dict(get_headers(request.META))
+
+            for key, value in request_headers.items():
+                if isinstance(value, (int, float)):
+                    request_headers[key] = str(value)
+
+            result["headers"] = request_headers
 
         if request.method in constants.HTTP_WITH_BODY:
             content_type = request.META.get("CONTENT_TYPE")
@@ -162,7 +168,14 @@ class DjangoClient(Client):
         result = {"status_code": response.status_code}
 
         if self.config.capture_headers and hasattr(response, "items"):
-            result["headers"] = dict(response.items())
+            response_headers = dict(response.items())
+
+            for key, value in response_headers.items():
+                if isinstance(value, (int, float)):
+                    response_headers[key] = str(value)
+
+            result["headers"] = response_headers
+
         return result
 
     def capture(self, event_type, request=None, **kwargs):

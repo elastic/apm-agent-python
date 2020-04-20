@@ -28,11 +28,23 @@ ELASTIC_APM = {
 
 The precedence is as follows:
 
- * <<config-central_config, central configuration>>
+ * <<config-central_config,Central configuration>>
+(supported options are marked with <<dynamic-configuration, image:./images/dynamic-config.svg[] >>)
  * environment variables
  * inline configuration
  * framework specific configuration
  * default value
+
+[float]
+[[dynamic-configuration]]
+=== Dynamic configuration
+
+Configuration options marked with the image:./images/dynamic-config.svg[] badge can be changed at runtime
+when set from a supported source.
+
+The Python Agent supports {apm-app-ref}/agent-configuration.html[Central configuration],
+which allows you to fine-tune certain configurations from in the APM app.
+This feature is enabled in the Agent by default, with <<config-central_config>>.
 
 [float]
 [[django-configuration]]
@@ -387,6 +399,8 @@ WARNING: Especially for spans, collecting source code can have a large impact on
 [[config-capture-body]]
 ==== `capture_body`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 |============
 | Environment                | Django/Flask   | Default
 | `ELASTIC_APM_CAPTURE_BODY` | `CAPTURE_BODY` | `off`
@@ -410,6 +424,8 @@ If your service handles data like this, we advise to only enable this feature wi
 [[config-capture-headers]]
 ==== `capture_headers`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 |============
 | Environment                   | Django/Flask      | Default
 | `ELASTIC_APM_CAPTURE_HEADERS` | `CAPTURE_HEADERS` | `true`
@@ -427,6 +443,8 @@ filter such data.
 [float]
 [[config-transaction-max-spans]]
 ==== `transaction_max_spans`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
 
 |============
 | Environment                         | Django/Flask            | Default
@@ -457,6 +475,8 @@ To disable the limit and always capture all frames, set the value to `-1`.
 [[config-span-frames-min-duration]]
 ==== `span_frames_min_duration`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 |============
 | Environment                            | Django/Flask               | Default
 | `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION` | `SPAN_FRAMES_MIN_DURATION` | `"5ms"`
@@ -479,6 +499,8 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 [[config-api-request-size]]
 ==== `api_request_size`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 |============
 | Environment                    | Django/Flask       | Default
 | `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"768kb"`
@@ -498,6 +520,8 @@ By default, the APM Server limits request payload size to 1 MByte.
 [float]
 [[config-api-request-time]]
 ==== `api_request_time`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
 
 |============
 | Environment                    | Django/Flask       | Default
@@ -538,6 +562,8 @@ WARNING: We recommend to always include the default set of validators if you cus
 [float]
 [[config-transaction-sample-rate]]
 ==== `transaction_sample_rate`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
 
 |============
 | Environment                           | Django/Flask              | Default
@@ -706,7 +732,7 @@ NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 When enabled, the agent will make periodic requests to the APM Server to fetch updated configuration.
 
-See {apm-app-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
+See <<dynamic-configuration>> for more information.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 
