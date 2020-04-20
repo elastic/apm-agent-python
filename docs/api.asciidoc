@@ -219,7 +219,7 @@ elasticapm.set_transaction_name('myapp.billing_process')
 [[api-set-transaction-result]]
 ==== `elasticapm.set_transaction_result()`
 
-Set the name of the current transaction.
+Set the result of the current transaction.
 For supported frameworks, the transaction result is determined automatically,
 and can be overridden using this function. Example:
 

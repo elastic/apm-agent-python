@@ -143,7 +143,11 @@ def url_to_destination(url, service_type="external"):
     # preserve brackets for IPv6 URLs
     if "://[" in url:
         hostname = "[%s]" % hostname
-    port = parts.port
+    try:
+        port = parts.port
+    except ValueError:
+        # Malformed port, just use None rather than raising an exception
+        port = None
     default_port = default_ports.get(parts.scheme, None)
     name = "%s://%s" % (parts.scheme, hostname)
     resource = hostname
