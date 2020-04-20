@@ -18,10 +18,14 @@ endif::[]
 ===== Bug fixes
 ////
 
-//=== Unreleased
+=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+
+[float]
+===== Bug fixes
+ * Fixed an issue with metrics collection raising RuntimeErrors {pull}802[#802]
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
