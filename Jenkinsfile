@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent any
+  agent { label 'linux && immutable' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -21,6 +21,10 @@ pipeline {
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
     GITHUB_CHECK_ITS_NAME = 'Integration Tests'
     ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
+    BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
+    OPBEANS_REPO = 'opbeans-python'
+    HOME = "${env.WORKSPACE}"
+    PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -33,19 +37,19 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?(?:full\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+    booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
+    booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
+    booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
   }
   stages {
     stage('Initializing'){
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-        ELASTIC_DOCS = "${env.WORKSPACE}/elastic/docs"
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
       }
       stages {
         /**
@@ -53,17 +57,27 @@ pipeline {
         */
         stage('Checkout') {
           steps {
+            pipelineManager([ cancelPreviousRunningBuilds: [ when: 'PR' ] ])
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
+            script {
+              dir("${BASE_DIR}"){
+                // Skip all the stages except docs for PR's with asciidoc and md changes only
+                env.ONLY_DOCS = isGitRegionMatch(patterns: [ '.*\\.(asciidoc|md)' ], shouldMatchAll: true)
+              }
+            }
           }
         }
         stage('Sanity checks') {
           when {
             beforeAgent true
-            anyOf {
-              not { changeRequest() }
-              expression { return params.Run_As_Master_Branch }
+            allOf {
+              expression { return env.ONLY_DOCS == "false" }
+              anyOf {
+                not { changeRequest() }
+                expression { return params.Run_As_Master_Branch }
+              }
             }
           }
           steps {
@@ -71,7 +85,7 @@ pipeline {
               deleteDir()
               unstash 'source'
               script {
-                docker.image('python:3.7-stretch').inside("-e PATH=${PATH}:${env.WORKSPACE}/bin"){
+                docker.image('python:3.7-stretch').inside(){
                   dir("${BASE_DIR}"){
                     // registry: '' will help to disable the docker login
                     preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
@@ -87,37 +101,60 @@ pipeline {
     Execute unit tests.
     */
     stage('Test') {
-      agent { label 'linux && immutable' }
       options { skipDefaultCheckout() }
+      when {
+        beforeAgent true
+        allOf {
+          expression { return env.ONLY_DOCS == "false" }
+          expression { return params.tests_ci }
+        }
+      }
       steps {
         withGithubNotify(context: 'Test', tab: 'tests') {
           deleteDir()
           unstash "source"
           dir("${BASE_DIR}"){
             script {
+              // To enable the full test matrix upon GitHub PR comments
+              def frameworkFile = '.ci/.jenkins_framework.yml'
+              if (env.GITHUB_COMMENT?.contains('full tests')) {
+                log(level: 'INFO', text: 'Full test matrix has been enabled.')
+                frameworkFile = '.ci/.jenkins_framework_full.yml'
+              }
               pythonTasksGen = new PythonParallelTaskGenerator(
                 xKey: 'PYTHON_VERSION',
                 yKey: 'FRAMEWORK',
                 xFile: ".ci/.jenkins_python.yml",
-                yFile: ".ci/.jenkins_framework.yml",
+                yFile: frameworkFile,
                 exclusionFile: ".ci/.jenkins_exclude.yml",
                 tag: "Python",
                 name: "Python",
                 steps: this
-                )
-              def mapPatallelTasks = pythonTasksGen.generateParallelTests()
-              parallel(mapPatallelTasks)
+              )
+              def mapParallelTasks = pythonTasksGen.generateParallelTests()
+
+              // Let's now enable the windows stages
+              readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+                def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
+                mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
+              }
+              parallel(mapParallelTasks)
             }
           }
         }
       }
     }
     stage('Building packages') {
-      agent { label 'docker && linux && immutable' }
       options { skipDefaultCheckout() }
       environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
+      when {
+        beforeAgent true
+        allOf {
+          expression { return env.ONLY_DOCS == "false" }
+          expression { return params.package_ci }
+        }
       }
       steps {
         withGithubNotify(context: 'Building packages') {
@@ -137,58 +174,130 @@ pipeline {
       when {
         beforeAgent true
         allOf {
+          expression { return env.ONLY_DOCS == "false" }
           anyOf {
-            environment name: 'GIT_BUILD_CAUSE', value: 'pr'
+            changeRequest()
             expression { return !params.Run_As_Master_Branch }
           }
         }
       }
       steps {
-        log(level: 'INFO', text: 'Launching Async ITs')
         build(job: env.ITS_PIPELINE, propagate: false, wait: false,
-              parameters: [string(name: 'AGENT_INTEGRATION_TEST', value: 'Python'),
-                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT}"),
+              parameters: [string(name: 'INTEGRATION_TEST', value: 'Python'),
+                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT} --opbeans-python-agent-branch ${env.GIT_BASE_COMMIT}"),
                            string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
                            string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
                            string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
         githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
       }
     }
-    stage('Release') {
-      agent { label 'linux && immutable' }
+    stage('Benchmarks') {
+      agent { label 'metal' }
       options { skipDefaultCheckout() }
       environment {
-        HOME = "${env.WORKSPACE}"
-        PATH = "${env.PATH}:${env.WORKSPACE}/.local/bin"
-      }
-      input {
-        message 'Should we release a new version?'
-        ok 'Yes, we should.'
-        parameters {
-          choice(
-            choices: [
-              'https://upload.pypi.org/legacy/',
-              'https://test.pypi.org/legacy/'
-             ],
-             description: 'PyPI repository URL',
-             name: 'REPO_URL')
-        }
+        AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
+        LANG = 'C.UTF-8'
+        LC_ALL = "${env.LANG}"
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
       }
       when {
         beforeAgent true
+        allOf {
+          anyOf {
+            branch 'master'
+            expression { return params.Run_As_Master_Branch }
+          }
+          expression { return params.bench_ci }
+        }
+      }
+      steps {
+        withGithubNotify(context: 'Benchmarks', tab: 'artifacts') {
+          dir(env.BUILD_NUMBER) {
+            deleteDir()
+            unstash 'source'
+            script {
+              dir(BASE_DIR){
+                sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
+                                             user_var: 'ES_USER', pass_var: 'ES_PASS') {
+                  sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+                }
+              }
+            }
+          }
+        }
+      }
+      post {
+        always {
+          catchError(message: 'deleteDir failed', buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+            deleteDir()
+          }
+        }
+      }
+    }
+    stage('Prepare Release') {
+      options {
+        skipDefaultCheckout()
+        timeout(time: 12, unit: 'HOURS')
+      }
+      environment {
+        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      }
+      when {
         beforeInput true
         anyOf {
           tag pattern: 'v\\d+.*', comparator: 'REGEXP'
           expression { return params.Run_As_Master_Branch }
         }
       }
-      steps {
-        withGithubNotify(context: 'Release') {
-          deleteDir()
-          unstash 'source'
-          unstash('packages')
-          dir("${BASE_DIR}"){
-            releasePackages()
+      stages {
+        stage('Notify') {
+          steps {
+              emailext subject: '[apm-agent-python] Release ready to be pushed',
+                       to: "${NOTIFY_TO}",
+                       body: "Please go to ${env.BUILD_URL}input to approve or reject within 12 hours."
+          }
+        }
+        stage('Release') {
+          input {
+            message 'Should we release a new version?'
+            ok 'Yes, we should.'
+            parameters {
+              choice(
+                choices: [
+                  'https://upload.pypi.org/legacy/',
+                  'https://test.pypi.org/legacy/'
+                 ],
+                 description: 'PyPI repository URL',
+                 name: 'REPO_URL')
+            }
+          }
+          steps {
+            withGithubNotify(context: 'Release') {
+              deleteDir()
+              unstash 'source'
+              unstash('packages')
+              dir("${BASE_DIR}"){
+                releasePackages()
+              }
+            }
+          }
+        }
+        stage('Opbeans') {
+          environment {
+            REPO_NAME = "${OPBEANS_REPO}"
+          }
+          steps {
+            deleteDir()
+            dir("${OPBEANS_REPO}"){
+              git credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
+                  url: "git@github.com:elastic/${OPBEANS_REPO}.git"
+              // It's required to transform the tag value to the artifact version
+              sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
+              // The opbeans pipeline will trigger a release for the master branch
+              gitPush()
+              // The opbeans pipeline will trigger a release for the release tag
+              gitCreateTag(tag: "${env.BRANCH_NAME}")
+            }
           }
         }
       }
@@ -196,6 +305,25 @@ pipeline {
   }
   post {
     cleanup {
+      // Coverage
+      sh script: 'pip3 install --user coverage', label: "Installing coverage"
+      dir("${BASE_DIR}"){
+        script {
+          def matrixDump = pythonTasksGen.dumpMatrix("-")
+          for(vector in matrixDump) {
+            unstash("coverage-${vector}")
+          }
+          // Windows coverage converge
+          readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+            unstash(
+              name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+            )
+          }
+          sh('python3 -m coverage combine && python3 -m coverage xml')
+          cobertura coberturaReportFile: 'coverage.xml'
+        }
+      }
+      // Results
       script{
         if(pythonTasksGen?.results){
           writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
@@ -203,11 +331,6 @@ pipeline {
           def processor = new ResultsProcessor()
           processor.processResults(mapResults)
           archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
-          catchError(buildResult: 'SUCCESS') {
-            def datafile = readFile(file: "results.json")
-            def json = getVaultSecret(secret: 'secret/apm-team/ci/apm-server-benchmark-cloud')
-            sendDataToElasticsearch(es: json.data.url, data: datafile, restCall: '/jenkins-builds-test-results/_doc/')
-          }
         }
       }
       notifyBuildResult()
@@ -268,13 +391,26 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           } finally {
             steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-            steps.env.PYTHON_VERSION = "${x}"
-            steps.env.WEBFRAMEWORK = "${y}"
-            steps.codecov(repo: "${steps.env.REPO}",
-              basedir: "${steps.env.BASE_DIR}",
-              flags: "-e PYTHON_VERSION,WEBFRAMEWORK",
-              secret: "${steps.env.CODECOV_SECRET}")
+              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
+            )
+            steps.dir("${steps.env.BASE_DIR}/tests"){
+              steps.archiveArtifacts(
+                allowEmptyArchive: true,
+                artifacts: '**/docker-info/**',
+                defaultExcludes: false
+              )
+            }
+            // steps.env.PYTHON_VERSION = "${x}"
+            // steps.env.WEBFRAMEWORK = "${y}"
+            steps.dir("${steps.env.BASE_DIR}"){
+              steps.script {
+                steps.stash(
+                name: "coverage-${x}-${y}",
+                includes: ".coverage.${x}.${y}",
+                allowEmpty: false
+              )
+             }
+            }
           }
         }
       }
@@ -287,9 +423,6 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  env.HOME = "${env.WORKSPACE}"
-  env.PATH = "${env.PATH}:${env.WORKSPACE}/bin"
-  env.PIP_CACHE = "${env.WORKSPACE}/.cache"
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
@@ -313,5 +446,45 @@ def releasePackages(){
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} dist/*.tar.gz
     python -m twine upload --username "\${TWINE_USER}" --password "\${TWINE_PASSWORD}" --skip-existing --repository-url \${REPO_URL} wheelhouse/*.whl
     """)
+  }
+}
+
+def generateStepForWindows(Map v = [:]){
+  return {
+    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
+    // Python installations with choco in Windows do follow the pattern:
+    //  C:\Python<Major><Minor>, for instance: C:\Python27
+    def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
+    // For the choco provider uses the major version.
+    def majorVersion = v.VERSION.split('\\.')[0]
+    node('windows-2019-docker-immutable'){
+      withEnv(["VERSION=${v.VERSION}",
+               "PYTHON=${pythonPath}",
+               "ASYNCIO=${v.ASYNCIO}",
+               "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
+        try {
+          deleteDir()
+          unstash 'source'
+          dir("${BASE_DIR}"){
+            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
+            bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
+            bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
+            script{
+              stash(
+                name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
+                includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
+                allowEmpty: false
+              )
+            }
+          }
+        } catch(e){
+          error(e.toString())
+        } finally {
+          dir("${BASE_DIR}"){
+            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
+          }
+        }
+      }
+    }
   }
 }

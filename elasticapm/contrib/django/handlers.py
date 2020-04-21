@@ -39,8 +39,9 @@ from django.apps import apps
 from django.conf import settings as django_settings
 
 from elasticapm.handlers.logging import LoggingHandler as BaseLoggingHandler
+from elasticapm.utils.logging import get_logger
 
-logger = logging.getLogger("elasticapm.logging")
+logger = get_logger("elasticapm.logging")
 
 
 class LoggingHandler(BaseLoggingHandler):

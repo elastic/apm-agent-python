@@ -33,6 +33,7 @@ import pytest  # isort:skip
 pytest.importorskip("cassandra")  # isort:skip
 
 import os
+import socket
 
 from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
@@ -40,7 +41,10 @@ from cassandra.query import SimpleStatement
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
-pytestmark = pytest.mark.cassandra
+pytestmark = [pytest.mark.cassandra]
+
+if "CASSANDRA_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping cassandra tests, no CASSANDRA_HOST environment variable set"))
 
 
 @pytest.fixture()
@@ -78,6 +82,11 @@ def test_cassandra_connect(instrument, elasticapm_client, cassandra_cluster):
     assert span["action"] == "connect"
     assert span["duration"] > 0
     assert span["name"] == "Cluster.connect"
+    assert span["context"]["destination"] == {
+        "address": socket.gethostbyname(os.environ.get("CASSANDRA_HOST", "localhost")),
+        "port": 9042,
+        "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
+    }
 
 
 def test_select_query_string(instrument, cassandra_session, elasticapm_client):
@@ -90,7 +99,12 @@ def test_select_query_string(instrument, cassandra_session, elasticapm_client):
     assert span["subtype"] == "cassandra"
     assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
-    assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
+    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql"}
+    assert span["context"]["destination"] == {
+        "address": socket.gethostbyname(os.environ.get("CASSANDRA_HOST", "localhost")),
+        "port": 9042,
+        "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
+    }
 
 
 def test_select_simple_statement(instrument, cassandra_session, elasticapm_client):
@@ -104,7 +118,7 @@ def test_select_simple_statement(instrument, cassandra_session, elasticapm_clien
     assert span["subtype"] == "cassandra"
     assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
-    assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
+    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql"}
 
 
 def test_select_prepared_statement(instrument, cassandra_session, elasticapm_client):
@@ -118,7 +132,7 @@ def test_select_prepared_statement(instrument, cassandra_session, elasticapm_cli
     assert span["subtype"] == "cassandra"
     assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
-    assert span["context"] == {"db": {"statement": "SELECT name from users", "type": "sql"}}
+    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql"}
 
 
 def test_signature_create_keyspace():

@@ -28,13 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
-
 from opentracing.span import Span as OTSpanBase
 from opentracing.span import SpanContext as OTSpanContextBase
 
 from elasticapm import traces
 from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils.logging import get_logger
 
 try:
     # opentracing-python 2.1+
@@ -47,7 +46,7 @@ except ImportError:
     ot_logs = None
 
 
-logger = logging.getLogger("elasticapm.contrib.opentracing")
+logger = get_logger("elasticapm.contrib.opentracing")
 
 
 class OTSpan(OTSpanBase):
@@ -55,6 +54,7 @@ class OTSpan(OTSpanBase):
         super(OTSpan, self).__init__(tracer, context)
         self.elastic_apm_ref = elastic_apm_ref
         self.is_transaction = isinstance(elastic_apm_ref, traces.Transaction)
+        self.is_dropped = isinstance(elastic_apm_ref, traces.DroppedSpan)
         if not context.span:
             context.span = self
 
@@ -102,7 +102,7 @@ class OTSpan(OTSpanBase):
                 traces.set_context({"framework": {"name": value}}, "service")
             else:
                 self.elastic_apm_ref.label(**{key: value})
-        else:
+        elif not self.is_dropped:
             if key.startswith("db."):
                 span_context = self.elastic_apm_ref.context or {}
                 if "db" not in span_context:
@@ -126,7 +126,7 @@ class OTSpan(OTSpanBase):
     def finish(self, finish_time=None):
         if self.is_transaction:
             self.tracer._agent.end_transaction()
-        else:
+        elif not self.is_dropped:
             self.elastic_apm_ref.transaction.end_span()
 
 

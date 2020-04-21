@@ -34,3 +34,12 @@ import inspect
 def get_me_a_test_frame():
     a_local_var = 42
     return inspect.currentframe()
+
+
+def get_me_more_test_frames(count, func=None):
+    if count <= 1:
+        if func:
+            func()
+        return [inspect.currentframe()]
+    else:
+        return get_me_more_test_frames(count=count - 1, func=func) + [inspect.currentframe()]

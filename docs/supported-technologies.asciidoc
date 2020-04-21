@@ -1,6 +1,17 @@
 [[supported-technologies]]
 == Supported Technologies
 
+[[framework-support]]
+The Elastic APM Python Agent comes with support for the following frameworks:
+
+ * <<django-support,Django>>
+ * <<flask-support,Flask>>
+ * <<supported-aiohttp,Aiohttp Server>>
+ * <<supported-tornado,Tornado>>
+ * <<supported-starlette,Starlette/FastAPI>>
+
+For other frameworks and custom Python code, the agent exposes a set of <<api,APIs>> for integration.
+
 [float]
 [[supported-python]]
 === Python
@@ -8,11 +19,11 @@
 The following Python versions are supported:
 
  * 2.7
- * 3.4
  * 3.5
  * 3.6
  * 3.7
- 
+ * 3.8
+
 WARNING: Python 2.7 will reach End of Life on January 1, 2020.
 The Elastic APM agent will stop supporting Python 2.7 in the first major version after that date.
 
@@ -26,8 +37,11 @@ We support these Django versions:
  * 2.0
  * 2.1
  * 2.2
- 
+ * 3.0
+
 For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
+
+NOTE: we currently don't support Django running in ASGI mode.
 
 [float]
 [[supported-flask]]
@@ -35,11 +49,39 @@ For upcoming Django versions, we generally aim to ensure compatibility starting 
 
 We support these Flask versions:
 
- * 0.10
- * 0.11
- * 0.12
+ * 0.10 (Deprecated)
+ * 0.11 (Deprecated)
+ * 0.12 (Deprecated)
  * 1.0
+ * 1.1
 
+[float]
+[[supported-aiohttp]]
+=== Aiohttp Server
+
+We support these aiohttp versions:
+
+ * 3.0+
+
+[float]
+[[supported-tornado]]
+=== Tornado
+
+We support these tornado versions:
+
+ * 6.0+
+
+
+[float]
+[[supported-starlette]]
+=== Starlette/FastAPI
+
+We support these Starlette versions:
+
+ * 0.13.0+
+
+Any FastAPI version which uses a supported Starlette version should also
+be supported.
 
 [float]
 [[automatic-instrumentation]]
@@ -59,7 +101,8 @@ Instrumented methods:
 
  * `elasticsearch.connection.http_urllib3.Urllib3HttpConnection.perform_request`
  * `elasticsearch.connection.http_requests.RequestsHttpConnection.perform_request`
- 
+ * `elasticsearch_async.connection.AIOHttpConnection.perform_request`
+
 Additionally, the instrumentation wraps the following methods of the `Elasticsearch` client class:
 
  * `elasticsearch.client.Elasticsearch.delete_by_query`
@@ -72,6 +115,11 @@ Collected trace data:
  * the query string (if available)
  * the `query` element from the request body (if available)
 
+We recommend using keyword arguments only with elasticsearch-py, as recommended by
+https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[the elasticsearch-py docs].
+If you are using positional arguments, we will be unable to gather the `query`
+element from the request body.
+
 [float]
 [[automatic-instrumentation-db-sqlite]]
 ==== SQLite
@@ -81,7 +129,7 @@ Instrumented methods:
  * `sqlite3.connect`
  * `sqlite3.dbapi2.connect`
  * `pysqlite2.dbapi2.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -91,14 +139,46 @@ Collected trace data:
 
 [float]
 [[automatic-instrumentation-db-mysql]]
-==== MySQL
+==== MySQLdb
 
 Library: `MySQLdb`
 
 Instrumented methods:
 
  * `MySQLdb.connect`
- 
+
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-mysql-connector]]
+==== mysql-connector
+
+Library: `mysql-connector-python`
+
+Instrumented methods:
+
+ * `mysql.connector.connect`
+
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-pymysql]]
+==== pymysql
+
+Library: `pymysql`
+
+Instrumented methods:
+
+ * `pymysql.connect`
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -109,13 +189,28 @@ Collected trace data:
 [[automatic-instrumentation-db-postgres]]
 ==== PostgreSQL
 
-Library: `psycopg2`, `psycopg2-binary` (`>=2.5,<2.8`)
+Library: `psycopg2`, `psycopg2-binary` (`>=2.7`)
 
 Instrumented methods:
 
  * `psycopg2.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-aiopg]]
+==== aiopg
+
+Library: `aiopg` (`>=1.0`)
+
+Instrumented methods:
+
+ * `aiopg.cursor.Cursor.execute`
+ * `aiopg.cursor.Cursor.callproc`
 
 Collected trace data:
 
@@ -130,7 +225,7 @@ Library: `pyodbc`, (`>=4.0`)
 Instrumented methods:
 
  * `pyodbc.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -146,7 +241,7 @@ Library: `pymssql`, (`>=2.1.0`)
 Instrumented methods:
 
  * `pymssql.connect`
- 
+
 The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
 
 Collected trace data:
@@ -213,7 +308,7 @@ Instrumented methods:
 Collected trace data:
 
     * Redis command name
-    
+
 
 [float]
 [[automatic-instrumentation-db-cassandra]]
@@ -242,7 +337,7 @@ Library: `urllib2` (Python 2) / `urllib.request` (Python 3)
 
 Instrumented methods:
 
- * `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open` 
+ * `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open`
 
 Collected trace data:
 
@@ -263,8 +358,8 @@ Additionally, we instrumented vendored instances of urllib3 in the following lib
 
  * `requests`
  * `botocore`
- 
-Both libraries have "unvendored" urllib3 in more recent versions, we recommend to use the newest versions. 
+
+Both libraries have "unvendored" urllib3 in more recent versions, we recommend to use the newest versions.
 
 Collected trace data:
 
@@ -278,7 +373,7 @@ Collected trace data:
 Instrumented methods:
 
  * `requests.sessions.Session.send`
- 
+
 Collected trace data:
 
  * HTTP method
@@ -298,13 +393,13 @@ Library: `boto3` (`>=1.0`)
 Instrumented methods:
 
  * `botocore.client.BaseClient._make_api_call`
- 
+
 Collected trace data:
 
  * AWS region (e.g. `eu-central-1`)
  * AWS service name (e.g. `s3`)
  * operation name (e.g. `ListBuckets`)
- 
+
 
 
 [float]
@@ -324,7 +419,7 @@ Instrumented methods:
 Collected trace data:
 
  * template name
- 
+
 [float]
 [[automatic-instrumentation-jinja2]]
 ==== Jinja2

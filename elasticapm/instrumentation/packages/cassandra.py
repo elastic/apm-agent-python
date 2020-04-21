@@ -41,10 +41,24 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = self.get_wrapped_name(wrapped, instance, method)
-        context = None
+        context = {}
         if method == "Cluster.connect":
             span_action = "connect"
+            if hasattr(instance, "contact_points_resolved"):  # < cassandra-driver 3.18
+                host = instance.contact_points_resolved[0]
+                port = instance.port
+            else:
+                host = instance.endpoints_resolved[0].address
+                port = instance.endpoints_resolved[0].port
         else:
+            hosts = list(instance.hosts)
+            if hasattr(hosts[0], "endpoint"):
+                host = hosts[0].endpoint.address
+                port = hosts[0].endpoint.port
+            else:
+                # < cassandra-driver 3.18
+                host = hosts[0].address
+                port = instance.cluster.port
             span_action = "query"
             query = args[0] if args else kwargs.get("query")
             if hasattr(query, "query_string"):
@@ -57,7 +71,12 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
                 query_str = None
             if query_str:
                 name = extract_signature(query_str)
-                context = {"db": {"type": "sql", "statement": query_str}}
+                context["db"] = {"type": "sql", "statement": query_str}
+        context["destination"] = {
+            "address": host,
+            "port": port,
+            "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
+        }
 
         with capture_span(name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context):
             return wrapped(*args, **kwargs)

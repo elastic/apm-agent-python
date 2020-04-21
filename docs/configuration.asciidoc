@@ -10,7 +10,7 @@ You can either configure the agent by setting environment variables:
 ELASTIC_APM_SERVICE_NAME=foo python manage.py runserver
 ----
 
-or with inline configuration: 
+or with inline configuration:
 
 [source,python]
 ----
@@ -28,11 +28,23 @@ ELASTIC_APM = {
 
 The precedence is as follows:
 
- * <<config-central_config, central configuration>>
+ * <<config-central_config,Central configuration>>
+(supported options are marked with <<dynamic-configuration, image:./images/dynamic-config.svg[] >>)
  * environment variables
  * inline configuration
  * framework specific configuration
  * default value
+
+[float]
+[[dynamic-configuration]]
+=== Dynamic configuration
+
+Configuration options marked with the image:./images/dynamic-config.svg[] badge can be changed at runtime
+when set from a supported source.
+
+The Python Agent supports {apm-app-ref}/agent-configuration.html[Central configuration],
+which allows you to fine-tune certain configurations from in the APM app.
+This feature is enabled in the Agent by default, with <<config-central_config>>.
 
 [float]
 [[django-configuration]]
@@ -105,17 +117,14 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 [[config-transport-class]]
 ==== `transport_class`
 
+[options="header"]
 |============
 | Environment                   | Django/Flask      | Default
-| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http.AsyncTransport`
+| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http.Transport`
 |============
 
 
 The transport class to use when sending events to the APM Server.
-The default `AsyncTransport` uses a background thread to send data.
-If your environment doesn't allow background threads, you can use
-`elasticapm.transport.http.Transport` instead.
-Note however that this can have adverse effects on performance.
 
 
 [float]
@@ -152,11 +161,11 @@ meaningfulness.
 The name of the environment this service is deployed in,
 e.g. "production" or "staging".
 
-Environments allow you to easily filter data on a global level in the APM UI.
+Environments allow you to easily filter data on a global level in the APM app.
 It's important to be consistent when naming environments across agents.
-See {kibana-ref}/filters.html#environment-selector[environment selector] in the Kibana UI for more information.
+See {apm-app-ref}/filters.html#environment-selector[environment selector] in the APM app for more information.
 
-NOTE: This feature is fully supported in the APM UI in Kibana versions >= 7.2.
+NOTE: This feature is fully supported in the APM app in Kibana versions >= 7.2.
 You must use the query bar to filter for a specific environment in versions prior to 7.2.
 
 [float]
@@ -179,6 +188,26 @@ python -c "import uuid; print(str(uuid.uuid4()))"
 ----
 
 WARNING: secret tokens only provide any security if your APM Server use TLS.
+
+[float]
+[[config-api-key]]
+==== `api_key`
+
+[options="header"]
+|============
+| Environment           | `Config` key | Default | Example
+| `ELASTIC_APM_API_KEY` | `api_key`    | `None`   | A base64-encoded string
+|============
+
+experimental::[]
+
+// TODO: add link to APM Server API Key docs once the docs are released
+
+This base64-encoded string is used to ensure that only your agents can send data to your APM Server.
+You must have created the API key using the APM Server command line tool. Please see the APM Server
+documentation for details on how to do that.
+
+WARNING: API keys only provide any real security if your APM Server uses TLS.
 
 [float]
 [[config-service-version]]
@@ -305,6 +334,7 @@ logger.info('something happened', extra={'stack': False})
 [[config-collect-local-variables]]
 ==== `collect_local_variables`
 
+[options="header"]
 |============
 | Environment                           | Django/Flask              | Default
 | `ELASTIC_APM_COLLECT_LOCAL_VARIABLES` | `COLLECT_LOCAL_VARIABLES` | `errors`
@@ -323,6 +353,7 @@ can have adverse effects for the performance of your service.
 [[config-local-var-max-length]]
 ==== `local_var_max_length`
 
+[options="header"]
 |============
 | Environment                        | Django/Flask           | Default
 | `ELASTIC_APM_LOCAL_VAR_MAX_LENGTH` | `LOCAL_VAR_MAX_LENGTH` | `200`
@@ -345,6 +376,19 @@ With this setting, you can limit the length of lists in local variables.
 
 
 [float]
+[[config-local-dict-var-max-length]]
+==== `local_var_dict_max_length`
+
+[options="header"]
+|============
+| Environment                             | Django/Flask                | Default
+| `ELASTIC_APM_LOCAL_VAR_DICT_MAX_LENGTH` | `LOCAL_VAR_DICT_MAX_LENGTH` | `10`
+|============
+
+With this setting, you can limit the length of dicts in local variables.
+
+
+[float]
 [[config-source-lines-error-app-frames]]
 ==== `source_lines_error_app_frames`
 [float]
@@ -357,6 +401,7 @@ With this setting, you can limit the length of lists in local variables.
 [[config-source-lines-span-library-frames]]
 ==== `source_lines_span_library_frames`
 
+[options="header"]
 |============
 | Environment                                     | Django/Flask                        | Default
 | `ELASTIC_APM_SOURCE_LINES_ERROR_APP_FRAMES`     | `SOURCE_LINES_ERROR_APP_FRAMES`     | `5`
@@ -376,6 +421,9 @@ WARNING: Especially for spans, collecting source code can have a large impact on
 [[config-capture-body]]
 ==== `capture_body`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                | Django/Flask   | Default
 | `ELASTIC_APM_CAPTURE_BODY` | `CAPTURE_BODY` | `off`
@@ -399,6 +447,9 @@ If your service handles data like this, we advise to only enable this feature wi
 [[config-capture-headers]]
 ==== `capture_headers`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                   | Django/Flask      | Default
 | `ELASTIC_APM_CAPTURE_HEADERS` | `CAPTURE_HEADERS` | `true`
@@ -417,6 +468,9 @@ filter such data.
 [[config-transaction-max-spans]]
 ==== `transaction_max_spans`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                         | Django/Flask            | Default
 | `ELASTIC_APM_TRANSACTION_MAX_SPANS` | `TRANSACTION_MAX_SPANS` | `500`
@@ -427,9 +481,29 @@ This is helpful in cases where a transaction creates a very high amount of spans
 Setting an upper limit will prevent overloading the agent and the APM Server with too much work for such edge cases.
 
 [float]
+[[config-stack-trace-limit]]
+==== `stack_trace_limit`
+
+[options="header"]
+|============
+| Environment                     | Django/Flask        | Default
+| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
+|============
+
+Limits the number of frames captured for each stack trace.
+
+Setting the limit to `0` will disable stack trace collection,
+while any positive integer value will be used as the maximum number of frames to collect.
+To disable the limit and always capture all frames, set the value to `-1`.
+
+
+[float]
 [[config-span-frames-min-duration]]
 ==== `span_frames_min_duration`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                            | Django/Flask               | Default
 | `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION` | `SPAN_FRAMES_MIN_DURATION` | `"5ms"`
@@ -440,8 +514,8 @@ While this is very helpful to find the exact place in your code that causes the 
 collecting this stack trace does have some overhead.
 
 To collect traces for all spans, independent of the length, set the value to `-1`.
-Setting it to a positive value, e.g. `5`, will limit stack trace collection to spans
-with durations equal or longer than the given value in milliseconds, e.g. 5 milliseconds.
+Setting it to a positive value, e.g. `5ms`, will limit stack trace collection to spans
+with durations equal or longer than the given value.
 
 To disable stack trace collection for spans completely, set the value to `0`.
 
@@ -452,9 +526,12 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 [[config-api-request-size]]
 ==== `api_request_size`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                    | Django/Flask       | Default
-| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"724kb"`
+| `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"768kb"`
 |============
 
 Maximum queue length of the request buffer before sending the request to the APM Server.
@@ -472,6 +549,9 @@ By default, the APM Server limits request payload size to 1 MByte.
 [[config-api-request-time]]
 ==== `api_request_time`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                    | Django/Flask       | Default
 | `ELASTIC_APM_API_REQUEST_TIME` | `API_REQUEST_TIME` | `"10s"`
@@ -492,6 +572,7 @@ to avoid stampedes of instances that start at the same time.
 [[config-processors]]
 ==== `processors`
 
+[options="header"]
 |============
 | Environment              | Django/Flask | Default
 | `ELASTIC_APM_PROCESSORS` | `PROCESSORS` | `['elasticapm.processors.sanitize_stacktrace_locals',
@@ -512,6 +593,9 @@ WARNING: We recommend to always include the default set of validators if you cus
 [[config-transaction-sample-rate]]
 ==== `transaction_sample_rate`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
 |============
 | Environment                           | Django/Flask              | Default
 | `ELASTIC_APM_TRANSACTION_SAMPLE_RATE` | `TRANSACTION_SAMPLE_RATE` | `1.0`
@@ -525,6 +609,7 @@ We still record overall time and the result for unsampled transactions, but no c
 [[config-include-paths]]
 ==== `include_paths`
 
+[options="header"]
 |============
 | Environment                 | Django/Flask    | Default
 | `ELASTIC_APM_INCLUDE_PATHS` | `INCLUDE_PATHS` | `[]`
@@ -542,6 +627,7 @@ to be an "in-app frame".
 [[config-exclude-paths]]
 ==== `exclude_paths`
 
+[options="header"]
 |============
 | Environment                 | Django/Flask    | Default
 | `ELASTIC_APM_EXCLUDE_PATHS` | `EXCLUDE_PATHS` | Varies on Python version and implementation
@@ -563,6 +649,8 @@ The default value varies based on your Python version and implementation, e.g.:
 [float]
 [[config-debug]]
 ==== `debug`
+
+[options="header"]
 |============
 | Environment         | Django/Flask  | Default
 | `ELASTIC_APM_DEBUG` | `DEBUG`       | `False`
@@ -575,6 +663,8 @@ the agent won't send any data to the APM Server. You can override it by changing
 [float]
 [[config-disable-send]]
 ==== `disable_send`
+
+[options="header"]
 |============
 | Environment                 | Django/Flask   | Default
 | `ELASTIC_APM_DISABLE_SEND`  | `DISABLE_SEND` | `False`
@@ -586,6 +676,8 @@ If set to `True`, the agent won't send any events to the APM Server, independent
 [float]
 [[config-instrument]]
 ==== `instrument`
+
+[options="header"]
 |============
 | Environment               | Django/Flask | Default
 | `ELASTIC_APM_INSTRUMENT`  | `INSTRUMENT` | `True`
@@ -598,6 +690,8 @@ This disables most of the tracing functionality, but can be useful to debug poss
 [float]
 [[config-verify-server-cert]]
 ==== `verify_server_cert`
+
+[options="header"]
 |============
 | Environment                       | Django/Flask         | Default
 | `ELASTIC_APM_VERIFY_SERVER_CERT`  | `VERIFY_SERVER_CERT` | `True`
@@ -626,6 +720,8 @@ certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
 [float]
 [[config-metrics_interval]]
 ==== `metrics_interval`
+
+[options="header"]
 |============
 | Environment                     | Django/Flask       | Default
 | `ELASTIC_APM_METRICS_INTERVAL`  | `METRICS_INTERVAL` | `30s`
@@ -640,6 +736,8 @@ It has to be provided in *<<config-format-duration, duration format>>*.
 [float]
 [[config-disable_metrics]]
 ==== `disable_metrics`
+
+[options="header"]
 |============
 | Environment                     | Django/Flask      | Default
 | `ELASTIC_APM_DISABLE_METRICS`   | `DISABLE_METRICS` | `None`
@@ -659,19 +757,23 @@ NOTE: this setting only disables the *sending* of the given metrics, not collect
 [float]
 [[config-breakdown_metrics]]
 ==== `breakdown_metrics`
+
+[options="header"]
 |============
 | Environment                       | Django/Flask        | Default
 | `ELASTIC_APM_BREAKDOWN_METRICS`   | `BREAKDOWN_METRICS` | `True`
 |============
 
 Enable/disable the tracking and collection of breakdown metrics.
-By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent. 
+By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 [float]
 [[config-central_config]]
 ==== `central_config`
+
+[options="header"]
 |============
 | Environment                       | Django/Flask        | Default
 | `ELASTIC_APM_CENTRAL_CONFIG`      | `CENTRAL_CONFIG`    | `True`
@@ -679,13 +781,15 @@ NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 When enabled, the agent will make periodic requests to the APM Server to fetch updated configuration.
 
-See {kibana-ref}/agent-configuration.html#agent-configuration[APM Agent Configuration] for more documentation on central agent configuration.
+See <<dynamic-configuration>> for more information.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 [float]
 [[config-global_labels]]
 ==== `global_labels`
+
+[options="header"]
 |============
 | Environment                       | Django/Flask        | Default
 | `ELASTIC_APM_GLOBAL_LABELS`       | `GLOBAL_LABELS`     | `None`
@@ -699,6 +803,8 @@ NOTE: This feature requires APM Server >= 7.2.
 [float]
 [[config-generic-disable-log-record-factory]]
 ==== `disable_log_record_factory`
+
+[options="header"]
 |============
 | Environment                              | Django/Flask                 | Default
 | `ELASTIC_APM_DISABLE_LOG_RECORD_FACTORY` | `DISABLE_LOG_RECORD_FACTORY` | `False`
@@ -709,12 +815,31 @@ automatically adds tracing fields to your log records. You can disable this
 behavior by setting this to `True`.
 
 [float]
+[[config-use-elastic-traceparent-header]]
+==== `use_elastic_traceparent_header`
+
+[options="header"]
+|============
+| Environment                                  | Django/Flask                     | Default
+| `ELASTIC_APM_USE_ELASTIC_TRACEPARENT_HEADER` | `USE_ELASTIC_TRACEPARENT_HEADER` | `True`
+|============
+
+To enable {apm-overview-ref-v}/distributed-tracing.html[distributed tracing],
+the agent sets a number of HTTP headers to outgoing requests made with <<automatic-instrumentation-http,instrumented HTTP libraries>>.
+These headers (`traceparent` and `tracestate`) are defined in the https://www.w3.org/TR/trace-context-1/[W3C Trace Context] specification.
+
+Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
+
+
+[float]
 [[config-django-specific]]
 === Django-specific configuration
 
 [float]
 [[config-django-transaction-name-from-route]]
 ==== `django_transaction_name_from_route`
+
+[options="header"]
 |============
 | Environment                                       | Django                               | Default
 | `ELASTIC_APM_DJANGO_TRANSACTION_NAME_FROM_ROUTE`  | `DJANGO_TRANSACTION_NAME_FROM_ROUTE` | `False`
@@ -726,6 +851,21 @@ Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) a
 If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
 
 NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
+
+[float]
+[[config-django-autoinsert-middleware]]
+==== `django_autoinsert_middleware`
+
+[options="header"]
+|============
+| Environment                                 | Django                         | Default
+| `ELASTIC_APM_DJANGO_AUTOINSERT_MIDDLEWARE`  | `DJANGO_AUTOINSERT_MIDDLEWARE` | `True`
+|============
+
+To trace Django requests, the agent uses a middleware, `elasticapm.contrib.django.middleware.TracingMiddleware`.
+By default, this middleware is inserted automatically as the first item in `settings.MIDDLEWARES`.
+To disable the automatic insertion of the middleware, change this setting to `False`.
+
 
 [float]
 [[config-generic-environment]]
@@ -769,12 +909,12 @@ The unit is provided as suffix directly after the number, without and separation
 
 *Example*: `5ms`
 
-*Supported units* 
+*Supported units*
 
  * `ms` (milliseconds)
  * `s` (seconds)
  * `m` (minutes)
- 
+
 [float]
 [[config-format-size]]
 ==== Size format

@@ -100,6 +100,8 @@ def parse_cgroups(filehandle):
             pod_id = kubepods_match.group(1)
             if not pod_id:
                 pod_id = kubepods_match.group(2)
+                if pod_id:
+                    pod_id = pod_id.replace("_", "-")
             return {"container": {"id": container_id}, "kubernetes": {"pod": {"uid": pod_id}}}
         elif container_id_regexp.match(container_id):
             return {"container": {"id": container_id}}

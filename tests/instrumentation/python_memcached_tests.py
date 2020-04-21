@@ -38,14 +38,18 @@ from elasticapm.traces import capture_span
 memcache = pytest.importorskip("memcache")  # isort:skip
 
 
-pytestmark = pytest.mark.memcached
+pytestmark = [pytest.mark.memcached]
+
+
+if "MEMCACHED_HOST" not in os.environ:
+    pytestmark.append(pytest.mark.skip("Skipping memchached tests, no MEMCACHED_HOST environment variable set"))
 
 
 @pytest.mark.integrationtest
 def test_memcached(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
+    host = os.environ.get("MEMCACHED_HOST", "localhost")
     with capture_span("test_memcached", "test"):
-        host = os.environ.get("MEMCACHED_HOST", "localhost")
         conn = memcache.Client([host + ":11211"], debug=0)
         conn.set("mykey", "a")
         assert "a" == conn.get("mykey")
@@ -70,6 +74,11 @@ def test_memcached(instrument, elasticapm_client):
     assert spans[1]["subtype"] == "memcached"
     assert spans[1]["action"] == "query"
     assert spans[1]["parent_id"] == spans[3]["id"]
+    assert spans[1]["context"]["destination"] == {
+        "address": host,
+        "port": 11211,
+        "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
+    }
 
     assert spans[2]["name"] == "Client.get_multi"
     assert spans[2]["type"] == "cache"

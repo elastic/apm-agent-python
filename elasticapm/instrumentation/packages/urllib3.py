@@ -31,7 +31,7 @@
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import default_ports
+from elasticapm.utils import default_ports, url_to_destination
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -70,12 +70,17 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         signature = method.upper() + " " + host
 
-        # TODO: reconstruct URL more faithfully, e.g. include port
-        url = instance.scheme + "://" + host + url
+        url = "%s://%s%s" % (instance.scheme, host, url)
+        destination = url_to_destination(url)
+
         transaction = execution_context.get_transaction()
 
         with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
+            signature,
+            span_type="external",
+            span_subtype="http",
+            extra={"http": {"url": url}, "destination": destination},
+            leaf=True,
         ) as span:
             # if urllib3 has been called in a leaf span, this span might be a DroppedSpan.
             leaf_span = span
@@ -89,7 +94,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
                 trace_parent = transaction.trace_parent.copy_from(
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
-                headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+                self._set_disttracing_headers(headers, trace_parent, transaction)
             return wrapped(*args, **kwargs)
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
@@ -102,5 +107,13 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
             if headers is None:
                 headers = {}
                 kwargs["headers"] = headers
-            headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent.to_string()
+            self._set_disttracing_headers(headers, trace_parent, transaction)
         return args, kwargs
+
+    def _set_disttracing_headers(self, headers, trace_parent, transaction):
+        trace_parent_str = trace_parent.to_string()
+        headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent_str
+        if transaction.tracer.config.use_elastic_traceparent_header:
+            headers[constants.TRACEPARENT_LEGACY_HEADER_NAME] = trace_parent_str
+        if trace_parent.tracestate:
+            headers[constants.TRACESTATE_HEADER_NAME] = trace_parent.tracestate

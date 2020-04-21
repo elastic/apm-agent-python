@@ -5,7 +5,7 @@ repos:
 #    hooks:
 #    -   id: seed-isort-config
 -   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.4
+    rev: v4.3.21
     hooks:
     -   id: isort
 -   repo: https://github.com/ambv/black
@@ -14,7 +14,7 @@ repos:
     -   id: black
         language_version: python3
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v1.3.0
+    rev: v2.3.0
     hooks:
     -   id: flake8
         exclude: elasticapm\/utils\/wrapt|build|src|tests|dist|conftest.py|setup.py
@@ -24,6 +24,6 @@ repos:
         name: License header check
         description: Checks the existance of license headers in all Python files
         entry: ./tests/scripts/license_headers_check.sh
-        exclude: "(elasticapm/utils/wrapt/.*|tests/utils/stacks/linenos.py)"
+        exclude: "(elasticapm/utils/wrapt/.*|tests/utils/stacks/linenos.py|tests/utils/stacks/linenos2.py)"
         language: script
         types: [python]

@@ -37,7 +37,7 @@ import mock
 
 from elasticapm.conf.constants import ERROR, TRANSACTION
 
-pytestmark = pytest.mark.celery
+pytestmark = [pytest.mark.celery, pytest.mark.flask]
 
 
 def test_task_failure(flask_celery):

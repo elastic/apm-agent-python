@@ -101,7 +101,8 @@ should "Squash and merge".
 If you have commit access, the process is as follows:
 
 1. Update the version in `elasticapm/version.py` according to the scale of the change. (major, minor or patch)
-1. Update `CHANGELOG.md`
+1. Update `CHANGELOG.asciidoc`. Rename the `Unreleased` section to the correct version (`vX.X.X`), and nest under the appropriate sub-heading, e.g., `Python Agent version 5.x`.
+1. For Majors: Add a new row to the EOL table in `docs/upgrading.asciidoc`. The EOL date is the release date plus 18 months.
 1. Commit changes with message `update CHANGELOG and bump version to X.Y.Z` where `X.Y.Z` is the version in `elasticapm/version.py`
 1. Tag the commit with `git tag -a vX.Y.Z`, for example `git tag -a v1.2.3`.
    Copy the changelog for the release to the tag message, removing any leading `#`.
@@ -112,3 +113,5 @@ If you have commit access, the process is as follows:
    To upload them to PyPI, go to [Jenkins](https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/activity)
    and look for the build with the correct tag name (`vX.Y.Z`). Once the build is done, a dialog will be shown.
    Note that you need to be logged in to trigger an upload.
+1. Create a [Github release](https://github.com/elastic/apm-agent-python/releases)
+   targeting the new tag. Copy the changelog into the body of the release.

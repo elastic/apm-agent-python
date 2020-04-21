@@ -29,17 +29,18 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-import logging
 import random
 import sys
 
-from elasticapm.utils import varmap
+from elasticapm.conf.constants import EXCEPTION_CHAIN_MAX_DEPTH
+from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
+from elasticapm.utils.logging import get_logger
 from elasticapm.utils.stacks import get_culprit, get_stack_info, iter_traceback_frames
 
 __all__ = ("BaseEvent", "Exception", "Message")
 
-logger = logging.getLogger("elasticapm.events")
+logger = get_logger("elasticapm.events")
 
 
 class BaseEvent(object):
@@ -86,14 +87,14 @@ class Exception(BaseEvent):
             new_exc_info = True
             exc_info = sys.exc_info()
 
-        if not exc_info:
-            raise ValueError("No exception found")
+        if exc_info == (None, None, None):
+            raise ValueError("No exception found: capture_exception requires an active exception.")
 
         try:
             exc_type, exc_value, exc_traceback = exc_info
 
             frames = get_stack_info(
-                iter_traceback_frames(exc_traceback),
+                iter_traceback_frames(exc_traceback, config=client.config),
                 with_locals=client.config.collect_local_variables in ("errors", "all"),
                 library_frame_context_lines=client.config.source_lines_error_library_frames,
                 in_app_frame_context_lines=client.config.source_lines_error_app_frames,
@@ -104,12 +105,15 @@ class Exception(BaseEvent):
                         val,
                         list_length=client.config.local_var_list_max_length,
                         string_length=client.config.local_var_max_length,
+                        dict_length=client.config.local_var_dict_max_length,
                     ),
                     local_var,
                 ),
             )
 
-            culprit = get_culprit(frames, client.config.include_paths, client.config.exclude_paths)
+            culprit = kwargs.get("culprit", None) or get_culprit(
+                frames, client.config.include_paths, client.config.exclude_paths
+            )
 
             if hasattr(exc_type, "__module__"):
                 exc_module = exc_type.__module__
@@ -129,7 +133,7 @@ class Exception(BaseEvent):
         else:
             message = "%s: %s" % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
 
-        return {
+        data = {
             "id": "%032x" % random.getrandbits(128),
             "culprit": keyword_field(culprit),
             "exception": {
@@ -139,6 +143,33 @@ class Exception(BaseEvent):
                 "stacktrace": frames,
             },
         }
+        if hasattr(exc_value, "_elastic_apm_span_id"):
+            data["parent_id"] = exc_value._elastic_apm_span_id
+            del exc_value._elastic_apm_span_id
+        if compat.PY3:
+            depth = kwargs.get("_exc_chain_depth", 0)
+            if depth > EXCEPTION_CHAIN_MAX_DEPTH:
+                return
+            cause = exc_value.__cause__
+            chained_context = exc_value.__context__
+
+            # we follow the pattern of Python itself here and only capture the chained exception
+            # if cause is not None and __suppress_context__ is False
+            if chained_context and not (exc_value.__suppress_context__ and cause is None):
+                if cause:
+                    chained_exc_type = type(cause)
+                    chained_exc_value = cause
+                else:
+                    chained_exc_type = type(chained_context)
+                    chained_exc_value = chained_context
+                chained_exc_info = chained_exc_type, chained_exc_value, chained_context.__traceback__
+
+                chained_cause = Exception.capture(
+                    client, exc_info=chained_exc_info, culprit="None", _exc_chain_depth=depth + 1
+                )
+                if chained_cause:
+                    data["exception"]["cause"] = [chained_cause["exception"]]
+        return data
 
 
 class Message(BaseEvent):

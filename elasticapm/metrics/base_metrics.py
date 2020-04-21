@@ -28,22 +28,22 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
 import threading
 import time
 from collections import defaultdict
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, is_master_process
+from elasticapm.utils import compat
+from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
+from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
-logger = logging.getLogger("elasticapm.metrics")
+logger = get_logger("elasticapm.metrics")
 
 DISTINCT_LABEL_LIMIT = 1000
 
 
-class MetricsRegistry(object):
+class MetricsRegistry(ThreadManager):
     def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
         """
         Creates a new metric registry
@@ -58,13 +58,6 @@ class MetricsRegistry(object):
         self._tags = tags or {}
         self._collect_timer = None
         self._ignore_patterns = ignore_patterns or ()
-        if self._collect_interval:
-            # we only start the thread if we are not in a uwsgi master process
-            if not is_master_process():
-                self._start_collect_timer()
-            else:
-                # If we _are_ in a uwsgi master process, we use the postfork hook to start the thread after the fork
-                compat.postfork(lambda: self._start_collect_timer())
 
     def register(self, class_path):
         """
@@ -97,16 +90,19 @@ class MetricsRegistry(object):
             for data in metricset.collect():
                 self._queue_func(constants.METRICSET, data)
 
-    def _start_collect_timer(self, timeout=None):
-        timeout = timeout or self._collect_interval
-        self._collect_timer = IntervalTimer(self.collect, timeout, name="eapm metrics collect timer", daemon=True)
-        logger.debug("Starting metrics collect timer")
-        self._collect_timer.start()
+    def start_thread(self):
+        if self._collect_interval:
+            self._collect_timer = IntervalTimer(
+                self.collect, self._collect_interval, name="eapm metrics collect timer", daemon=True
+            )
+            logger.debug("Starting metrics collect timer")
+            self._collect_timer.start()
 
-    def _stop_collect_timer(self):
-        if self._collect_timer:
+    def stop_thread(self):
+        if self._collect_timer and self._collect_timer.is_alive():
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
+            self._collect_timer = None
 
 
 class MetricsSet(object):
@@ -196,23 +192,29 @@ class MetricsSet(object):
         timestamp = int(time.time() * 1000000)
         samples = defaultdict(dict)
         if self._counters:
-            for (name, labels), c in compat.iteritems(self._counters):
+            # iterate over a copy of the dict to avoid threading issues, see #717
+            for (name, labels), c in compat.iteritems(self._counters.copy()):
                 if c is not noop_metric:
-                    samples[labels].update({name: {"value": c.val}})
+                    val = c.val
+                    if val or not c.reset_on_collect:
+                        samples[labels].update({name: {"value": val}})
                     if c.reset_on_collect:
                         c.reset()
         if self._gauges:
-            for (name, labels), g in compat.iteritems(self._gauges):
+            for (name, labels), g in compat.iteritems(self._gauges.copy()):
                 if g is not noop_metric:
-                    samples[labels].update({name: {"value": g.val}})
+                    val = g.val
+                    if val or not g.reset_on_collect:
+                        samples[labels].update({name: {"value": val}})
                     if g.reset_on_collect:
                         g.reset()
         if self._timers:
-            for (name, labels), t in compat.iteritems(self._timers):
+            for (name, labels), t in compat.iteritems(self._timers.copy()):
                 if t is not noop_metric:
                     val, count = t.val
-                    samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
-                    samples[labels].update({name + ".count": {"value": count}})
+                    if val or not t.reset_on_collect:
+                        samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
+                        samples[labels].update({name + ".count": {"value": count}})
                     if t.reset_on_collect:
                         t.reset()
         if samples:

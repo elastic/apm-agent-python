@@ -28,4 +28,4 @@ params="--chunk=1"
 if [ "$PREVIEW" = "1" ]; then
   params="--chunk=1 --open"
 fi
-$docs_dir/build_docs $params --doc "$index" --out "$dest_dir"
+$docs_dir/build_docs --direct_html $params --doc "$index" --out "$dest_dir"

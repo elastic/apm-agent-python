@@ -35,7 +35,9 @@ EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
 
 TRACE_CONTEXT_VERSION = 0
-TRACEPARENT_HEADER_NAME = "elastic-apm-traceparent"
+TRACEPARENT_HEADER_NAME = "traceparent"
+TRACEPARENT_LEGACY_HEADER_NAME = "elastic-apm-traceparent"
+TRACESTATE_HEADER_NAME = "tracestate"
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -45,12 +47,16 @@ HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
 
 MASK = 8 * "*"
 
+EXCEPTION_CHAIN_MAX_DEPTH = 50
+
 ERROR = "error"
 TRANSACTION = "transaction"
 SPAN = "span"
 METRICSET = "metricset"
 
 LABEL_RE = re.compile('[.*"]')
+
+HARDCODED_PROCESSORS = ["elasticapm.processors.add_context_lines_to_frames"]
 
 try:
     # Python 2

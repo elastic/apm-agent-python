@@ -1,0 +1,2 @@
+mysqlclient
+-r requirements-base.txt

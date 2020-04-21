@@ -27,7 +27,25 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+import sys
 
+from elasticapm.base import Client
+from elasticapm.conf import setup_logging  # noqa: F401
+from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
+from elasticapm.traces import (  # noqa: F401
+    capture_span,
+    get_span_id,
+    get_trace_id,
+    get_transaction_id,
+    label,
+    set_context,
+    set_custom_context,
+    set_transaction_name,
+    set_transaction_result,
+    set_user_context,
+    tag,
+)
+from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
 
 __all__ = ("VERSION", "Client")
 
@@ -36,10 +54,6 @@ try:
 except Exception:
     VERSION = "unknown"
 
-from elasticapm.base import Client
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import capture_span, set_context, set_custom_context  # noqa: F401
-from elasticapm.traces import set_transaction_name, set_user_context, tag, label  # noqa: F401
-from elasticapm.traces import set_transaction_result  # noqa: F401
-from elasticapm.traces import get_transaction_id, get_trace_id, get_span_id  # noqa: F401
+
+if sys.version_info >= (3, 5):
+    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401

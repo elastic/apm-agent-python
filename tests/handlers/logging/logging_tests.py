@@ -36,9 +36,9 @@ import pytest
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
-from elasticapm.handlers.logging import LoggingFilter, LoggingHandler, log_record_factory
+from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler
 from elasticapm.handlers.structlog import structlog_processor
-from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.traces import Tracer, capture_span
 from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
@@ -252,9 +252,8 @@ def test_arbitrary_object(logger):
     assert event["log"]["param_message"] == "['a', 'list', 'of', 'strings']"
 
 
-def test_logging_filter_no_span():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
+def test_logging_filter_no_span(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
     f = LoggingFilter()
     record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
     f.filter(record)
@@ -264,9 +263,8 @@ def test_logging_filter_no_span():
     assert record.elasticapm_labels
 
 
-def test_structlog_processor_no_span():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
+def test_structlog_processor_no_span(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
     event_dict = {}
     new_dict = structlog_processor(None, None, event_dict)
     assert new_dict["transaction.id"] == transaction.id
@@ -274,9 +272,9 @@ def test_structlog_processor_no_span():
     assert "span.id" not in new_dict
 
 
-def test_logging_filter_span():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
+def test_logging_filter_span(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
     with capture_span("test") as span:
         f = LoggingFilter()
         record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
@@ -286,16 +284,43 @@ def test_logging_filter_span():
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
 
+    # Capture too many spans so we start dropping
+    for i in range(10):
+        with capture_span("drop"):
+            pass
 
-def test_structlog_processor_span():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
+    # Test logging with DroppedSpan
+    with capture_span("drop") as span:
+        record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg2", [], None)
+        f.filter(record)
+        assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
+        assert record.elasticapm_span_id is None
+        assert record.elasticapm_labels
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
+def test_structlog_processor_span(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
     with capture_span("test") as span:
         event_dict = {}
         new_dict = structlog_processor(None, None, event_dict)
         assert new_dict["transaction.id"] == transaction.id
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert new_dict["span.id"] == span.id
+
+    # Capture too many spans so we start dropping
+    for i in range(10):
+        with capture_span("drop"):
+            pass
+
+    # Test logging with DroppedSpan
+    with capture_span("drop") as span:
+        event_dict = {}
+        new_dict = structlog_processor(None, None, event_dict)
+        assert new_dict["transaction.id"] == transaction.id
+        assert new_dict["trace.id"] == transaction.trace_parent.trace_id
+        assert "span.id" not in new_dict
 
 
 @pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
@@ -304,8 +329,7 @@ def test_automatic_log_record_factory_install(elasticapm_client):
     Use the elasticapm_client fixture to load the client, which in turn installs
     the log_record_factory. Check to make sure it happened.
     """
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
+    transaction = elasticapm_client.begin_transaction("test")
     with capture_span("test") as span:
         record_factory = logging.getLogRecordFactory()
         record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
@@ -313,3 +337,15 @@ def test_automatic_log_record_factory_install(elasticapm_client):
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
+
+
+def test_formatter():
+    record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+    formatter = Formatter()
+    formatted_record = formatter.format(record)
+    assert "| elasticapm" in formatted_record
+    assert hasattr(record, "elasticapm_transaction_id")
+    record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
+    formatted_time = formatter.formatTime(record)
+    assert formatted_time
+    assert hasattr(record, "elasticapm_transaction_id")

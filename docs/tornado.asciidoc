@@ -1,0 +1,125 @@
+[[tornado-support]]
+=== Tornado Support
+
+Incorporating Elastic APM into your Tornado project only requires a few easy
+steps.
+
+[float]
+[[tornado-installation]]
+==== Installation
+
+Install the Elastic APM agent using pip:
+
+[source,bash]
+----
+$ pip install elastic-apm
+----
+
+or add `elastic-apm` to your project's `requirements.txt` file.
+
+
+[float]
+[[tornado-setup]]
+==== Setup
+
+To set up the agent, you need to initialize it with appropriate settings.
+
+The settings are configured either via environment variables,
+the application's settings, or as initialization arguments.
+
+You can find a list of all available settings in the
+<<configuration, Configuration>> page.
+
+To initialize the agent for your application using environment variables:
+
+[source,python]
+----
+import tornado.web
+from elasticapm.contrib.tornado import ElasticAPM
+
+app = tornado.web.Application()
+apm = ElasticAPM(app)
+----
+
+To configure the agent using `ELASTIC_APM` in your application's settings:
+
+[source,python]
+----
+import tornado.web
+from elasticapm.contrib.tornado import ElasticAPM
+
+app = tornado.web.Application()
+app.settings['ELASTIC_APM'] = {
+    'SERVICE_NAME': '<SERVICE-NAME>',
+    'SECRET_TOKEN': '<SECRET-TOKEN>',
+}
+apm = ElasticAPM(app)
+----
+
+[float]
+[[tornado-usage]]
+==== Usage
+
+Once you have configured the agent, it will automatically track transactions
+and capture uncaught exceptions within tornado.
+
+Capture an arbitrary exception by calling
+<<client-api-capture-exception,`capture_exception`>>:
+
+[source,python]
+----
+try:
+    1 / 0
+except ZeroDivisionError:
+    apm.client.capture_exception()
+----
+
+Log a generic message with <<client-api-capture-message,`capture_message`>>:
+
+[source,python]
+----
+apm.client.capture_message('hello, world!')
+----
+
+[float]
+[[tornado-performance-metrics]]
+==== Performance metrics
+
+If you've followed the instructions above, the agent has installed our
+instrumentation within the base RequestHandler class in tornado.web. This will
+measure response times, as well as detailed performance data for all supported
+technologies.
+
+NOTE: Due to the fact that `asyncio` drivers are usually separate from their
+synchronous counterparts, specific instrumentation is needed for all drivers.
+The support for asynchronous drivers is currently quite limited.
+
+[float]
+[[tornado-ignoring-specific-views]]
+===== Ignoring specific routes
+
+You can use the
+<<config-transactions-ignore-patterns,`TRANSACTIONS_IGNORE_PATTERNS`>>
+configuration option to ignore specific routes. The list given should be a
+list of regular expressions which are matched against the transaction name:
+
+[source,python]
+----
+app.settings['ELASTIC_APM'] = {
+    # ...
+    'TRANSACTIONS_IGNORE_PATTERNS': ['^GET SecretHandler', 'MainHandler']
+    # ...
+}
+----
+
+This would ignore any requests using the `GET SecretHandler` route
+and any requests containing `MainHandler`.
+
+
+[float]
+[[supported-tornado-and-python-versions]]
+==== Supported tornado and Python versions
+
+A list of supported <<supported-tornado,tornado>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.
+
+NOTE: Elastic APM only supports `asyncio` when using Python 3.7+

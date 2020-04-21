@@ -29,7 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import functools
-import logging
 import random
 import re
 import threading
@@ -45,11 +44,12 @@ from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
+from elasticapm.utils.logging import get_logger
 
 __all__ = ("capture_span", "tag", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
-error_logger = logging.getLogger("elasticapm.errors")
-logger = logging.getLogger("elasticapm.traces")
+error_logger = get_logger("elasticapm.errors")
+logger = get_logger("elasticapm.traces")
 
 _time_func = timeit.default_timer
 
@@ -205,6 +205,7 @@ class Transaction(BaseSpan):
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
+        sync=True,
         start=None,
     ):
         parent_span = execution_context.get_span()
@@ -227,6 +228,7 @@ class Transaction(BaseSpan):
                 parent_span_id=parent_span_id,
                 span_subtype=span_subtype,
                 span_action=span_action,
+                sync=sync,
                 start=start,
             )
             span.frames = tracer.frames_collector_func()
@@ -235,7 +237,16 @@ class Transaction(BaseSpan):
         return span
 
     def begin_span(
-        self, name, span_type, context=None, leaf=False, labels=None, span_subtype=None, span_action=None, start=None
+        self,
+        name,
+        span_type,
+        context=None,
+        leaf=False,
+        labels=None,
+        span_subtype=None,
+        span_action=None,
+        sync=True,
+        start=None,
     ):
         """
         Begin a new span
@@ -258,6 +269,7 @@ class Transaction(BaseSpan):
             parent_span_id=None,
             span_subtype=span_subtype,
             span_action=span_action,
+            sync=sync,
             start=start,
         )
 
@@ -332,6 +344,7 @@ class Span(BaseSpan):
         "parent_span_id",
         "frames",
         "labels",
+        "sync",
         "_child_durations",
     )
 
@@ -347,6 +360,7 @@ class Span(BaseSpan):
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
+        sync=True,
         start=None,
     ):
         """
@@ -361,13 +375,14 @@ class Span(BaseSpan):
         :param parent_span_id: override of the span ID
         :param span_subtype: sub type of the span, e.g. mysql
         :param span_action: sub type of the span, e.g. query
+        :param sync: indicate if the span was executed synchronously or asynchronously
         :param start: timestamp, mostly useful for testing
         """
         self.start_time = start or _time_func()
         self.id = "%016x" % random.getrandbits(64)
         self.transaction = transaction
         self.name = name
-        self.context = context
+        self.context = context if context is not None else {}
         self.leaf = leaf
         # timestamp is bit of a mix of monotonic and non-monotonic time sources.
         # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
@@ -378,6 +393,7 @@ class Span(BaseSpan):
         self.parent = parent
         self.parent_span_id = parent_span_id
         self.frames = None
+        self.sync = sync
         if span_subtype is None and "." in span_type:
             # old style dottet type, let's split it up
             type_bits = span_type.split(".")
@@ -404,6 +420,7 @@ class Span(BaseSpan):
             "type": encoding.keyword_field(self.type),
             "subtype": encoding.keyword_field(self.subtype),
             "action": encoding.keyword_field(self.action),
+            "sync": self.sync,
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
         }
@@ -446,11 +463,12 @@ class Span(BaseSpan):
 
 
 class DroppedSpan(BaseSpan):
-    __slots__ = ("leaf", "parent")
+    __slots__ = ("leaf", "parent", "id")
 
     def __init__(self, parent, leaf=False):
         self.parent = parent
         self.leaf = leaf
+        self.id = None
         super(DroppedSpan, self).__init__()
 
     def end(self, skip_frames=0, duration=None):
@@ -462,6 +480,22 @@ class DroppedSpan(BaseSpan):
     def child_ended(self, timestamp):
         pass
 
+    @property
+    def type(self):
+        return None
+
+    @property
+    def subtype(self):
+        return None
+
+    @property
+    def action(self):
+        return None
+
+    @property
+    def context(self):
+        return None
+
 
 class Tracer(object):
     def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent):
@@ -471,11 +505,13 @@ class Tracer(object):
         self.frames_collector_func = frames_collector_func
         self._agent = agent
         self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
-        if config.span_frames_min_duration in (-1, None):
-            # both None and -1 mean "no minimum"
-            self.span_frames_min_duration = None
+
+    @property
+    def span_frames_min_duration(self):
+        if self.config.span_frames_min_duration in (-1, None):
+            return None
         else:
-            self.span_frames_min_duration = config.span_frames_min_duration / 1000.0
+            return self.config.span_frames_min_duration / 1000.0
 
     def begin_transaction(self, transaction_type, trace_parent=None, start=None):
         """
@@ -593,9 +629,16 @@ class capture_span(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = execution_context.get_transaction()
+
         if transaction and transaction.is_sampled:
             try:
-                transaction.end_span(self.skip_frames, duration=self.duration)
+                span = transaction.end_span(self.skip_frames, duration=self.duration)
+                if exc_val and not isinstance(span, DroppedSpan):
+                    try:
+                        exc_val._elastic_apm_span_id = span.id
+                    except AttributeError:
+                        # could happen if the exception has __slots__
+                        pass
             except LookupError:
                 logger.info("ended non-existing span %s of type %s", self.name, self.type)
 

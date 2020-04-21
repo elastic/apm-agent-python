@@ -35,7 +35,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     extract_signature,
 )
 from elasticapm.traces import capture_span
-from elasticapm.utils import default_ports
+from elasticapm.utils import compat, default_ports
 
 
 class PGCursorProxy(CursorProxy):
@@ -52,14 +52,14 @@ class PGCursorProxy(CursorProxy):
         return extract_signature(sql)
 
     def __enter__(self):
-        return PGCursorProxy(self.__wrapped__.__enter__())
+        return PGCursorProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
 
 class PGConnectionProxy(ConnectionProxy):
     cursor_proxy = PGCursorProxy
 
     def __enter__(self):
-        return PGConnectionProxy(self.__wrapped__.__enter__())
+        return PGConnectionProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
 
 class Psycopg2Instrumentation(DbApi2Instrumentation):
@@ -72,28 +72,47 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
 
         host = kwargs.get("host")
         if host:
-            signature += " " + str(host)
+            signature += " " + compat.text_type(host)
 
             port = kwargs.get("port")
             if port:
                 port = str(port)
                 if int(port) != default_ports.get("postgresql"):
-                    signature += ":" + port
+                    host += ":" + port
+            signature += " " + compat.text_type(host)
         else:
             # Parse connection string and extract host/port
             pass
+        destination_info = {
+            "address": kwargs.get("host", "localhost"),
+            "port": int(kwargs.get("port", default_ports.get("postgresql"))),
+            "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+        }
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype="postgresql",
+            span_action="connect",
+            extra={"destination": destination_info},
+        ):
+            return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
 
-        with capture_span(signature, span_type="db", span_subtype="postgresql", span_action="connect"):
-            return PGConnectionProxy(wrapped(*args, **kwargs))
 
+class Psycopg2ExtensionsInstrumentation(DbApi2Instrumentation):
+    """
+    Some extensions do a type check on the Connection/Cursor in C-code, which our
+    proxy fails. For these extensions, we need to ensure that the unwrapped
+    Connection/Cursor is passed.
+    """
 
-class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
-    name = "psycopg2-register-type"
+    name = "psycopg2"
 
     instrument_list = [
         ("psycopg2.extensions", "register_type"),
         # specifically instrument `register_json` as it bypasses `register_type`
         ("psycopg2._json", "register_json"),
+        ("psycopg2.extensions", "quote_ident"),
+        ("psycopg2.extensions", "encrypt_password"),
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
@@ -107,5 +126,12 @@ class Psycopg2RegisterTypeInstrumentation(DbApi2Instrumentation):
         elif method == "register_json":
             if args and hasattr(args[0], "__wrapped__"):
                 args = (args[0].__wrapped__,) + args[1:]
+
+        elif method == "encrypt_password":
+            # connection/cursor is either 3rd argument, or "scope" keyword argument
+            if len(args) >= 3 and hasattr(args[2], "__wrapped__"):
+                args = args[:2] + (args[2].__wrapped__,) + args[3:]
+            elif "scope" in kwargs and hasattr(kwargs["scope"], "__wrapped__"):
+                kwargs["scope"] = kwargs["scope"].__wrapped__
 
         return wrapped(*args, **kwargs)

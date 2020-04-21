@@ -39,10 +39,11 @@ from elasticsearch import Elasticsearch
 
 from elasticapm.conf.constants import TRANSACTION
 
+pytestmark = [pytest.mark.elasticsearch]
+
 if "ES_URL" not in os.environ:
-    pytestmark = pytest.mark.skip("Skipping elasticsearch test, no ES_URL environment variable")
-else:
-    pytestmark = pytest.mark.elasticsearch
+    pytestmark.append(pytest.mark.skip("Skipping elasticsearch test, no ES_URL environment variable"))
+
 
 document_type = "_doc" if ES_VERSION[0] >= 6 else "doc"
 
@@ -71,6 +72,10 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
+    assert span["context"]["destination"] == {
+        "address": os.environ["ES_URL"],
+        "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
+    }
 
 
 @pytest.mark.integrationtest
@@ -93,12 +98,10 @@ def test_info(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.integrationtest
 def test_create(instrument, elasticapm_client, elasticsearch):
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] < 5:
-        r1 = elasticsearch.create("tweets", document_type, {"user": "kimchy", "text": "hola"}, 1)
-    elif ES_VERSION[0] < 7:
-        r1 = elasticsearch.create("tweets", document_type, 1, body={"user": "kimchy", "text": "hola"})
+    if ES_VERSION[0] < 7:
+        r1 = elasticsearch.create(index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"})
     else:
-        r1 = elasticsearch.create("tweets", 1, body={"user": "kimchy", "text": "hola"})
+        r1 = elasticsearch.create(index="tweets", id=1, body={"user": "kimchy", "text": "hola"})
     r2 = elasticsearch.create(
         index="tweets", doc_type=document_type, id=2, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
@@ -127,7 +130,7 @@ def test_index(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         r1 = elasticsearch.index("tweets", document_type, {"user": "kimchy", "text": "hola"})
     else:
-        r1 = elasticsearch.index("tweets", {"user": "kimchy", "text": "hola"})
+        r1 = elasticsearch.index(index="tweets", body={"user": "kimchy", "text": "hola"})
     r2 = elasticsearch.index(
         index="tweets", doc_type=document_type, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
@@ -178,7 +181,7 @@ def test_exists_source(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         assert elasticsearch.exists_source("tweets", document_type, 1) is True
     else:
-        assert elasticsearch.exists_source("tweets", 1, document_type) is True
+        assert elasticsearch.exists_source(index="tweets", id=1, doc_type=document_type) is True
     assert elasticsearch.exists_source(index="tweets", doc_type=document_type, id=1) is True
     elasticapm_client.end_transaction("test", "OK")
 
@@ -207,7 +210,7 @@ def test_get(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] == 6:
         r1 = elasticsearch.get("tweets", document_type, 1)
     else:
-        r1 = elasticsearch.get("tweets", 1, document_type)
+        r1 = elasticsearch.get(index="tweets", id=1, doc_type=document_type)
     r2 = elasticsearch.get(index="tweets", doc_type=document_type, id=1)
     elasticapm_client.end_transaction("test", "OK")
 
@@ -236,7 +239,7 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
     if ES_VERSION[0] < 7:
         r1 = elasticsearch.get_source("tweets", document_type, 1)
     else:
-        r1 = elasticsearch.get_source("tweets", 1, document_type)
+        r1 = elasticsearch.get_source(index="tweets", id=1, doc_type=document_type)
     r2 = elasticsearch.get_source(index="tweets", doc_type=document_type, id=1)
     elasticapm_client.end_transaction("test", "OK")
 
@@ -264,10 +267,9 @@ def test_update_script(instrument, elasticapm_client, elasticsearch):
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] < 7:
-        r1 = elasticsearch.update("tweets", document_type, 1, {"script": "ctx._source.text = 'adios'"}, refresh=True)
-    else:
-        r1 = elasticsearch.update("tweets", 1, document_type, {"script": "ctx._source.text = 'adios'"}, refresh=True)
+    r1 = elasticsearch.update(
+        index="tweets", id=1, doc_type=document_type, body={"script": "ctx._source.text = 'adios'"}, refresh=True
+    )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -292,10 +294,9 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    if ES_VERSION[0] < 7:
-        r1 = elasticsearch.update("tweets", document_type, 1, {"doc": {"text": "adios"}}, refresh=True)
-    else:
-        r1 = elasticsearch.update("tweets", 1, document_type, {"doc": {"text": "adios"}}, refresh=True)
+    r1 = elasticsearch.update(
+        index="tweets", id=1, doc_type=document_type, body={"doc": {"text": "adios"}}, refresh=True
+    )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -328,10 +329,8 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    if ES_VERSION[0] < 7:
-        assert span["name"] == "ES GET /_search"
-    else:
-        assert span["name"] == "ES GET /_all/_search"
+    # Depending on ES_VERSION, could be /_all/_search or /_search, and GET or POST
+    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search", "ES POST /_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -354,7 +353,9 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets/_search"
+    # Starting in 7.5.1, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets/_search", "ES POST /tweets/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -379,7 +380,9 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets/_search"
+    # Starting in 7.6.0, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets/_search", "ES POST /tweets/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -402,10 +405,10 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    if ES_VERSION[0] < 7:
-        assert span["name"] == "ES GET /_count"
-    else:
-        assert span["name"] == "ES GET /_all/_count"
+    # Depending on ES_VERSION, could be /_all/_count or /_count, and either GET
+    # or POST. None of these details actually matter much for this test.
+    # Technically no version does `POST /_all/_count` but I added it anyway
+    assert span["name"] in ("ES GET /_count", "ES GET /_all/_count", "ES POST /_count", "ES POST /_all/_count")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -428,7 +431,9 @@ def test_count_querystring(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets/_count"
+    # Starting in 7.5.1, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets/_count", "ES POST /tweets/_count")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -490,7 +495,9 @@ def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets,snaps/_search"
+    # Starting in 7.6.0, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets,snaps/_search", "ES POST /tweets,snaps/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
