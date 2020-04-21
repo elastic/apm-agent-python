@@ -317,6 +317,8 @@ class Client(object):
                 "name": keyword_field(self.config.framework_name),
                 "version": keyword_field(self.config.framework_version),
             }
+        if self.config.service_node_name:
+            result["node"] = {"configured_name": keyword_field(self.config.service_node_name)}
         self._service_info = result
         return result
 
