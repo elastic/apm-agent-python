@@ -143,7 +143,11 @@ def url_to_destination(url, service_type="external"):
     # preserve brackets for IPv6 URLs
     if "://[" in url:
         hostname = "[%s]" % hostname
-    port = parts.port
+    try:
+        port = parts.port
+    except ValueError:
+        # Malformed port, just use None rather than raising an exception
+        port = None
     default_port = default_ports.get(parts.scheme, None)
     name = "%s://%s" % (parts.scheme, hostname)
     resource = hostname
@@ -161,9 +165,11 @@ def read_pem_file(file_obj):
     for line in file_obj:
         if line.startswith(b"-----BEGIN CERTIFICATE-----"):
             break
+    # scan until we find the first END CERTIFICATE marker
     for line in file_obj:
-        if not line.startswith(b"-----END CERTIFICATE-----"):
-            cert += line.strip()
+        if line.startswith(b"-----END CERTIFICATE-----"):
+            break
+        cert += line.strip()
     return base64.b64decode(cert)
 
 

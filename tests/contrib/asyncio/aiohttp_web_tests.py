@@ -52,7 +52,7 @@ def aioeapm(elasticapm_client):
         return aiohttp.web.Response(body=b"Hello, world")
 
     async def boom(request):
-        raise ValueError()
+        raise aiohttp.web.HTTPInternalServerError(headers={"boom": "boom"})
 
     app = aiohttp.web.Application()
     app.router.add_route("GET", "/", hello)
@@ -109,8 +109,29 @@ async def test_exception(aiohttp_client, aioeapm):
     assert len(elasticapm_client.events[constants.ERROR]) == 1
     error = elasticapm_client.events[constants.ERROR][0]
     assert error["transaction_id"] == transaction["id"]
-    assert error["exception"]["type"] == "ValueError"
+    assert error["exception"]["type"] == "HTTPInternalServerError"
     assert error["context"]["request"] == transaction["context"]["request"]
+
+
+async def test_capture_headers_is_dynamic(aiohttp_client, aioeapm):
+    app = aioeapm.app
+    client = await aiohttp_client(app)
+    elasticapm_client = aioeapm.client
+
+    elasticapm_client.config.update("1", capture_headers=True)
+    await client.get("/boom")
+
+    elasticapm_client.config.update("2", capture_headers=False)
+    await client.get("/boom")
+    assert elasticapm_client.config.capture_headers is False
+
+    assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["request"]
+    assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["response"]
+    assert "headers" in elasticapm_client.events[constants.ERROR][0]["context"]["request"]
+
+    assert "headers" not in elasticapm_client.events[constants.TRANSACTION][1]["context"]["request"]
+    assert "headers" not in elasticapm_client.events[constants.TRANSACTION][1]["context"]["response"]
+    assert "headers" not in elasticapm_client.events[constants.ERROR][1]["context"]["request"]
 
 
 async def test_traceparent_handling(aiohttp_client, aioeapm):

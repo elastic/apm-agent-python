@@ -111,6 +111,8 @@ exclude:
   # pymssql
   - PYTHON_VERSION: pypy-2 # currently fails with error on pypy2
     FRAMEWORK: pymssql-newest
+  - PYTHON_VERSION: pypy-3 # currently fails with error on pypy3
+    FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.6 # currently fails with error on python 3.6 due to cython issues
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.7 # currently fails with error on python 3.7 due to cython issues

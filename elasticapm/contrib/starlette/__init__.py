@@ -40,6 +40,7 @@ from starlette.types import ASGIApp
 import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
+from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.starlette.utils import get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
@@ -113,6 +114,9 @@ class ElasticAPM(BaseHTTPMiddleware):
         """
         self.client = client
 
+        if self.client.config.instrument:
+            elasticapm.instrumentation.control.instrument()
+
         super().__init__(app)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -130,7 +134,9 @@ class ElasticAPM(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception:
-            await self.capture_exception()
+            await self.capture_exception(
+                context={"request": await get_data_from_request(request, self.client.config, constants.ERROR)}
+            )
             elasticapm.set_transaction_result("HTTP 5xx", override=False)
             elasticapm.set_context({"status_code": 500}, "response")
 
@@ -171,12 +177,7 @@ class ElasticAPM(BaseHTTPMiddleware):
             self.client.begin_transaction("request", trace_parent=trace_parent)
 
             await set_context(
-                lambda: get_data_from_request(
-                    request,
-                    capture_body=self.client.config.capture_body in ("transactions", "all"),
-                    capture_headers=self.client.config.capture_headers,
-                ),
-                "request",
+                lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request"
             )
             elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
 
@@ -187,7 +188,7 @@ class ElasticAPM(BaseHTTPMiddleware):
             response (Response)
         """
         await set_context(
-            lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
+            lambda: get_data_from_response(response, self.client.config, constants.TRANSACTION), "response"
         )
 
         result = "HTTP {}xx".format(response.status_code // 100)

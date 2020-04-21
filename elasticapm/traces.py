@@ -505,11 +505,13 @@ class Tracer(object):
         self.frames_collector_func = frames_collector_func
         self._agent = agent
         self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
-        if config.span_frames_min_duration in (-1, None):
-            # both None and -1 mean "no minimum"
-            self.span_frames_min_duration = None
+
+    @property
+    def span_frames_min_duration(self):
+        if self.config.span_frames_min_duration in (-1, None):
+            return None
         else:
-            self.span_frames_min_duration = config.span_frames_min_duration / 1000.0
+            return self.config.span_frames_min_duration / 1000.0
 
     def begin_transaction(self, transaction_type, trace_parent=None, start=None):
         """

@@ -31,6 +31,7 @@
 Instrumentation for Tornado
 """
 import elasticapm
+from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.disttracing import TraceParent
@@ -52,13 +53,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
             trace_parent = TraceParent.from_headers(request.headers)
             client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
-                lambda: get_data_from_request(
-                    instance,
-                    request,
-                    capture_body=client.config.capture_body in ("transactions", "all"),
-                    capture_headers=client.config.capture_headers,
-                ),
-                "request",
+                lambda: get_data_from_request(instance, request, client.config, constants.TRANSACTION), "request"
             )
             # TODO: Can we somehow incorporate the routing rule itself here?
             elasticapm.set_transaction_name("{} {}".format(request.method, type(instance).__name__), override=False)
@@ -67,7 +62,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
 
         if not should_ignore:
             elasticapm.set_context(
-                lambda: get_data_from_response(instance, capture_headers=client.config.capture_headers), "response"
+                lambda: get_data_from_response(instance, client.config, constants.TRANSACTION), "response"
             )
             result = "HTTP {}xx".format(instance.get_status() // 100)
             elasticapm.set_transaction_result(result, override=False)
@@ -95,11 +90,7 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
         client = instance.application.elasticapm_client
         request = instance.request
         client.capture_exception(
-            context={
-                "request": get_data_from_request(
-                    instance, request, capture_body=client.config.capture_body in ("all", "errors")
-                )
-            }
+            context={"request": get_data_from_request(instance, request, client.config, constants.ERROR)}
         )
         if isinstance(e, HTTPError):
             elasticapm.set_transaction_result("HTTP {}xx".format(int(e.status_code / 100)), override=False)

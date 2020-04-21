@@ -266,11 +266,18 @@ def test_get_config(waiting_httpserver, elasticapm_client):
         code=200, content=b'{"x": "y"}', headers={"Cache-Control": "max-age=5", "Etag": "2"}
     )
     url = waiting_httpserver.url
-    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    transport = Transport(
+        url + "/" + constants.EVENTS_API_PATH,
+        client=elasticapm_client,
+        headers={"Content-Type": "application/x-ndjson", "Content-Encoding": "gzip"},
+    )
     version, data, max_age = transport.get_config("1", {})
     assert version == "2"
     assert data == {"x": "y"}
     assert max_age == 5
+
+    assert "Content-Encoding" not in waiting_httpserver.requests[0].headers
+    assert waiting_httpserver.requests[0].headers["Content-Type"] == "application/json"
 
 
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")

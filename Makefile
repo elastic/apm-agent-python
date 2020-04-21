@@ -26,7 +26,4 @@ docs:
 update-json-schema:
 	bash ./tests/scripts/download_json_schema.sh
 
-update-gherkin-features:
-	bash ./tests/scripts/download_gherkin_features.sh
-
 .PHONY: isort flake8 test coverage docs update-json-schema
