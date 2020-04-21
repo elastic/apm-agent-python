@@ -192,17 +192,22 @@ def test_collection_find(instrument, elasticapm_client, mongo_database):
         blogposts.append({"author": "Tom", "comments": i})
     mongo_database.blogposts.insert(blogposts)
     r = mongo_database.blogposts.insert(blogpost)
-    elasticapm_client.events[TRANSACTION]
     elasticapm_client.begin_transaction("transaction.test")
     r = list(mongo_database.blogposts.find({"comments": {"$gt": 995}}))
 
     elasticapm_client.end_transaction("transaction.test")
     transactions = elasticapm_client.events[TRANSACTION]
-    span = _get_pymongo_span(elasticapm_client.spans_for_transaction(transactions[0]))
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    span = _get_pymongo_span(spans)
     assert span["type"] == "db"
     assert span["subtype"] == "mongodb"
     assert span["action"] == "query"
     assert span["name"] == "elasticapm_test.blogposts.cursor.refresh"
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("MONGODB_HOST", "localhost"),
+        "port": int(os.environ.get("MONGODB_PORT", 27017)),
+        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+    }
 
 
 @pytest.mark.integrationtest
@@ -220,6 +225,11 @@ def test_collection_find_one(instrument, elasticapm_client, mongo_database):
     assert span["subtype"] == "mongodb"
     assert span["action"] == "query"
     assert span["name"] == "elasticapm_test.blogposts.find_one"
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("MONGODB_HOST", "localhost"),
+        "port": int(os.environ.get("MONGODB_PORT", 27017)),
+        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+    }
 
 
 @pytest.mark.integrationtest
