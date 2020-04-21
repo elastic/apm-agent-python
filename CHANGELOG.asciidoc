@@ -24,6 +24,10 @@ endif::[]
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
 [float]
+===== New features
+ * Added SERVICE_NODE_NAME config {pull}592[#592]
+
+[float]
 ===== Bug fixes
  * Fixed an issue with metrics collection raising RuntimeErrors {pull}802[#802]
 
