@@ -309,28 +309,32 @@ pipeline {
       sh script: 'pip3 install --user coverage', label: "Installing coverage"
       dir("${BASE_DIR}"){
         script {
-          def matrixDump = pythonTasksGen.dumpMatrix("-")
-          for(vector in matrixDump) {
-            unstash("coverage-${vector}")
+          if (env.ONLY_DOCS == "false") {
+            def matrixDump = pythonTasksGen.dumpMatrix("-")
+            for(vector in matrixDump) {
+              unstash("coverage-${vector}")
+            }
+            // Windows coverage converge
+            readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+              unstash(
+                name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+              )
+            }
+            sh('python3 -m coverage combine && python3 -m coverage xml')
+            cobertura coberturaReportFile: 'coverage.xml'
           }
-          // Windows coverage converge
-          readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-            unstash(
-              name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
-            )
-          }
-          sh('python3 -m coverage combine && python3 -m coverage xml')
-          cobertura coberturaReportFile: 'coverage.xml'
         }
       }
       // Results
       script{
-        if(pythonTasksGen?.results){
-          writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
-          def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
-          def processor = new ResultsProcessor()
-          processor.processResults(mapResults)
-          archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+        if (env.ONLY_DOCS == "false") {
+          if(pythonTasksGen?.results){
+            writeJSON(file: 'results.json', json: toJSON(pythonTasksGen.results), pretty: 2)
+            def mapResults = ["${params.agent_integration_test}": pythonTasksGen.results]
+            def processor = new ResultsProcessor()
+            processor.processResults(mapResults)
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
+          }
         }
       }
       notifyBuildResult()
