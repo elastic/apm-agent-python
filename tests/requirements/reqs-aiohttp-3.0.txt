@@ -1,0 +1,2 @@
+aiohttp==3.0.6
+-r reqs-base.txt

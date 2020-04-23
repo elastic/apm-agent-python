@@ -1,0 +1,2 @@
+redis>=2.9,<2.10
+-r reqs-base.txt

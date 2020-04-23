@@ -1,0 +1,2 @@
+elasticsearch>=5.0,<6.0
+-r reqs-base.txt
