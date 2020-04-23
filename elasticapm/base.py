@@ -532,6 +532,11 @@ class Client(object):
         v = tuple(map(int, platform.python_version_tuple()[:2]))
         if (2, 7) < v < (3, 5):
             warnings.warn("The Elastic APM agent only supports Python 2.7 and 3.5+", DeprecationWarning)
+        if v == (2, 7):
+            Client.logger.warn(
+                "The Elastic APM agent will discontinue Python 2 support starting with version 6.0.0 -- "
+                "Please upgrade to Python 3.5+ to continue to use the latest features."
+            )
 
 
 class DummyClient(Client):

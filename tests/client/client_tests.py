@@ -770,11 +770,11 @@ def test_server_url_joining(elasticapm_client, expected):
 
 
 @pytest.mark.parametrize(
-    "version,raises",
-    [(("2", "7", "0"), False), (("3", "3", "0"), True), (("3", "4", "0"), True), (("3", "5", "0"), False)],
+    "version,raises,recwarn_count",
+    [(("2", "7", "0"), False, 1), (("3", "3", "0"), True, 1), (("3", "4", "0"), True, 1), (("3", "5", "0"), False, 0)],
 )
 @mock.patch("platform.python_version_tuple")
-def test_python_version_deprecation(mock_python_version_tuple, version, raises, recwarn):
+def test_python_version_deprecation(mock_python_version_tuple, version, raises, recwarn_count, recwarn):
     warnings.simplefilter("always")
 
     mock_python_version_tuple.return_value = version
@@ -785,8 +785,8 @@ def test_python_version_deprecation(mock_python_version_tuple, version, raises, 
         if e:
             e.close()
     if raises:
-        assert len(recwarn) == 1
+        assert len(recwarn) == recwarn_count
         w = recwarn.pop(DeprecationWarning)
         assert "agent only supports" in w.message.args[0]
     else:
-        assert len(recwarn) == 0
+        assert len(recwarn) == recwarn_count
