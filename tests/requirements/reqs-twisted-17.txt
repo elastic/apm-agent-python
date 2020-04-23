@@ -1,0 +1,2 @@
+Twisted>=17,<18
+-r reqs-base.txt

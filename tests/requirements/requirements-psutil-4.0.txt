@@ -1,2 +1,0 @@
-psutil>=4.0.0,<5.0
--r requirements-base.txt

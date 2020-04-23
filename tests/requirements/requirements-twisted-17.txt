@@ -1,2 +1,0 @@
-Twisted>=17,<18
--r requirements-base.txt
