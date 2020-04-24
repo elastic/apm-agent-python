@@ -770,11 +770,16 @@ def test_server_url_joining(elasticapm_client, expected):
 
 
 @pytest.mark.parametrize(
-    "version,raises,recwarn_count",
-    [(("2", "7", "0"), False, 1), (("3", "3", "0"), True, 1), (("3", "4", "0"), True, 1), (("3", "5", "0"), False, 0)],
+    "version,raises,pending",
+    [
+        (("2", "7", "0"), True, True),
+        (("3", "3", "0"), True, False),
+        (("3", "4", "0"), True, False),
+        (("3", "5", "0"), False, False),
+    ],
 )
 @mock.patch("platform.python_version_tuple")
-def test_python_version_deprecation(mock_python_version_tuple, version, raises, recwarn_count, recwarn):
+def test_python_version_deprecation(mock_python_version_tuple, version, raises, pending, recwarn):
     warnings.simplefilter("always")
 
     mock_python_version_tuple.return_value = version
@@ -785,8 +790,12 @@ def test_python_version_deprecation(mock_python_version_tuple, version, raises, 
         if e:
             e.close()
     if raises:
-        assert len(recwarn) == recwarn_count
-        w = recwarn.pop(DeprecationWarning)
-        assert "agent only supports" in w.message.args[0]
+        assert len(recwarn) == 1
+        if pending:
+            w = recwarn.pop(PendingDeprecationWarning)
+            assert "will stop supporting" in w.message.args[0]
+        else:
+            w = recwarn.pop(DeprecationWarning)
+            assert "agent only supports" in w.message.args[0]
     else:
-        assert len(recwarn) == recwarn_count
+        assert len(recwarn) == 0

@@ -24,8 +24,8 @@ The following Python versions are supported:
  * 3.7
  * 3.8
 
-WARNING: Python 2.7 will reach End of Life on January 1, 2020.
-The Elastic APM agent will stop supporting Python 2.7 in the first major version after that date.
+WARNING: Python 2.7 reached End of Life on January 1, 2020.
+The Elastic APM agent will stop supporting Python 2.7 starting in 6.0.0.
 
 [float]
 [[supported-django]]
