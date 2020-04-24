@@ -337,7 +337,7 @@ pipeline {
           }
         }
       }
-      notifyBuildResult()
+      notifyBuildResult(prComment: true)
     }
   }
 }
