@@ -45,6 +45,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.pymongo.PyMongoBulkInstrumentation",
     "elasticapm.instrumentation.packages.pymongo.PyMongoCursorInstrumentation",
     "elasticapm.instrumentation.packages.python_memcached.PythonMemcachedInstrumentation",
+    "elasticapm.instrumentation.packages.pymemcache.PyMemcacheInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisPipelineInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisConnectionInstrumentation",

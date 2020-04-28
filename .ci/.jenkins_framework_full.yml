@@ -68,3 +68,5 @@ FRAMEWORK:
   - tornado-newest
   - starlette-0.13
   - starlette-newest
+  - pymemcache-3.0
+  - pymemcache-newest

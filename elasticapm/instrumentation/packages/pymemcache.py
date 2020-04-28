@@ -39,7 +39,6 @@ class PyMemcacheInstrumentation(AbstractInstrumentedModule):
         "add",
         "append",
         "cas",
-        "close",
         "decr",
         "delete",
         "delete_many",

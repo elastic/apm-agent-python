@@ -38,3 +38,4 @@ FRAMEWORK:
   - aiopg-newest
   - tornado-newest
   - starlette-newest
+  - pymemcache-newest
