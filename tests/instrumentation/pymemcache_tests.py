@@ -35,31 +35,31 @@ import pytest
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
-memcache = pytest.importorskip("memcache")  # isort:skip
+pymemcache = pytest.importorskip("pymemcache")  # isort:skip
 
 
-pytestmark = [pytest.mark.memcached]
+pytestmark = [pytest.mark.pymemcache]
 
 
 if "MEMCACHED_HOST" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping memcached tests, no MEMCACHED_HOST environment variable set"))
+    pytestmark.append(pytest.mark.skip("Skipping pymemcache tests, no MEMCACHED_HOST environment variable set"))
 
 
 @pytest.mark.integrationtest
-def test_memcached(instrument, elasticapm_client):
+def test_pymemcache_client(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     host = os.environ.get("MEMCACHED_HOST", "localhost")
-    with capture_span("test_memcached", "test"):
-        conn = memcache.Client([host + ":11211"], debug=0)
+    with capture_span("test_pymemcache", "test"):
+        conn = pymemcache.client.base.Client((host, 11211))
         conn.set("mykey", "a")
-        assert "a" == conn.get("mykey")
-        assert {"mykey": "a"} == conn.get_multi(["mykey", "myotherkey"])
+        assert b"a" == conn.get("mykey")
+        assert {"mykey": b"a"} == conn.get_many(["mykey", "myotherkey"])
     elasticapm_client.end_transaction("BillingView")
 
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
-    expected_signatures = {"test_memcached", "Client.set", "Client.get", "Client.get_multi"}
+    expected_signatures = {"test_pymemcache", "Client.set", "Client.get", "Client.get_many"}
 
     assert {t["name"] for t in spans} == expected_signatures
 
@@ -80,13 +80,68 @@ def test_memcached(instrument, elasticapm_client):
         "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
     }
 
-    assert spans[2]["name"] == "Client.get_multi"
+    assert spans[2]["name"] == "Client.get_many"
     assert spans[2]["type"] == "cache"
     assert spans[2]["subtype"] == "memcached"
     assert spans[2]["action"] == "query"
     assert spans[2]["parent_id"] == spans[3]["id"]
 
-    assert spans[3]["name"] == "test_memcached"
+    assert spans[3]["name"] == "test_pymemcache"
     assert spans[3]["type"] == "test"
 
     assert len(spans) == 4
+
+
+@pytest.mark.integrationtest
+def test_pymemcache_pooled_client(instrument, elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    host = os.environ.get("MEMCACHED_HOST", "localhost")
+    with capture_span("test_pymemcache", "test"):
+        conn = pymemcache.client.base.PooledClient((host, 11211))
+        conn.set("mykey", "a")
+        assert b"a" == conn.get("mykey")
+        assert {"mykey": b"a"} == conn.get_many(["mykey", "myotherkey"])
+    elasticapm_client.end_transaction("BillingView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    expected_signatures = {
+        "test_pymemcache",
+        "PooledClient.set",
+        "PooledClient.get",
+        "PooledClient.get_many",
+    }
+
+    assert {t["name"] for t in spans} == expected_signatures
+
+    assert len(spans) == 4
+
+
+@pytest.mark.integrationtest
+def test_pymemcache_hash_client(instrument, elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    host = os.environ.get("MEMCACHED_HOST", "localhost")
+    with capture_span("test_pymemcache", "test"):
+        conn = pymemcache.client.hash.HashClient([(host, 11211)])
+        conn.set("mykey", "a")
+        assert b"a" == conn.get("mykey")
+        assert {"mykey": b"a"} == conn.get_many(["mykey", "myotherkey"])
+    elasticapm_client.end_transaction("BillingView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    expected_signatures = {
+        "test_pymemcache",
+        "HashClient.set",
+        "HashClient.get",
+        "HashClient.get_many",
+        "Client.set",
+        "Client.get",
+        "Client.get_many",
+    }
+
+    assert {t["name"] for t in spans} == expected_signatures
+
+    assert len(spans) == 7

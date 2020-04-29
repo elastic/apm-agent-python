@@ -26,6 +26,7 @@ endif::[]
 [float]
 ===== New features
  * Added SERVICE_NODE_NAME config {pull}592[#592]
+ * Added instrumentation support for https://github.com/pinterest/pymemcache[`pymemcache`] {pull}812[#812]
 
 [float]
 ===== Bug fixes
