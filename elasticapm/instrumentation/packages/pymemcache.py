@@ -86,7 +86,25 @@ class PyMemcacheInstrumentation(AbstractInstrumentedModule):
             "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
         }
 
-        with capture_span(
-            name, span_type="cache", span_subtype="memcached", span_action="query", extra={"destination": destination}
-        ):
-            return wrapped(*args, **kwargs)
+        if "PooledClient" in name:
+            # PooledClient calls out to Client for the "work", but only once,
+            # so we don't care about the "duplicate" spans from Client in that
+            # case
+            with capture_span(
+                name,
+                span_type="cache",
+                span_subtype="memcached",
+                span_action="query",
+                extra={"destination": destination},
+                leaf=True,
+            ):
+                return wrapped(*args, **kwargs)
+        else:
+            with capture_span(
+                name,
+                span_type="cache",
+                span_subtype="memcached",
+                span_action="query",
+                extra={"destination": destination},
+            ):
+                return wrapped(*args, **kwargs)
