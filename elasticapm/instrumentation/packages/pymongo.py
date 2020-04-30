@@ -72,7 +72,11 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         cls_name, method_name = method.split(".", 1)
         signature = ".".join([instance.full_name, method_name])
-        host, port = instance.database.client.address
+        nodes = instance.database.client.nodes
+        if nodes:
+            host, port = list(nodes)[0]
+        else:
+            host, port = None, None
         destination_info = {
             "address": host,
             "port": port,
@@ -97,7 +101,13 @@ class PyMongoBulkInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance._BulkOperationBuilder__bulk.collection
         signature = ".".join([collection.full_name, "bulk.execute"])
-        with capture_span(signature, span_type="db", span_subtype="mongodb", span_action="query"):
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype="mongodb",
+            span_action="query",
+            extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
+        ):
             return wrapped(*args, **kwargs)
 
 
@@ -109,5 +119,18 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance.collection
         signature = ".".join([collection.full_name, "cursor.refresh"])
-        with capture_span(signature, span_type="db", span_subtype="mongodb", span_action="query"):
-            return wrapped(*args, **kwargs)
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype="mongodb",
+            span_action="query",
+            extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
+        ) as span:
+            response = wrapped(*args, **kwargs)
+            if span.context:
+                host, port = instance.address
+                span.context["destination"]["address"] = host
+                span.context["destination"]["port"] = port
+            else:
+                pass
+            return response

@@ -252,6 +252,7 @@ class _ConfigBase(object):
 
 class Config(_ConfigBase):
     service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
+    service_node_name = _ConfigValue("SERVICE_NODE_NAME", default=None)
     environment = _ConfigValue("ENVIRONMENT", default=None)
     secret_token = _ConfigValue("SECRET_TOKEN")
     api_key = _ConfigValue("API_KEY")

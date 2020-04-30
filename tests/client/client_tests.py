@@ -63,6 +63,18 @@ def test_service_info(elasticapm_client):
     assert service_info["agent"]["name"] == "python"
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"environment": "production", "service_node_name": "my_node"}], indirect=True
+)
+def test_service_info_node_name(elasticapm_client):
+    service_info = elasticapm_client.get_service_info()
+    assert service_info["name"] == elasticapm_client.config.service_name
+    assert service_info["environment"] == elasticapm_client.config.environment == "production"
+    assert service_info["language"] == {"name": "python", "version": platform.python_version()}
+    assert service_info["agent"]["name"] == "python"
+    assert service_info["node"]["configured_name"] == "my_node"
+
+
 def test_process_info(elasticapm_client):
     with mock.patch.object(sys, "argv", ["a", "b", "c"]):
         process_info = elasticapm_client.get_process_info()
@@ -758,11 +770,16 @@ def test_server_url_joining(elasticapm_client, expected):
 
 
 @pytest.mark.parametrize(
-    "version,raises",
-    [(("2", "7", "0"), False), (("3", "3", "0"), True), (("3", "4", "0"), True), (("3", "5", "0"), False)],
+    "version,raises,pending",
+    [
+        (("2", "7", "0"), True, True),
+        (("3", "3", "0"), True, False),
+        (("3", "4", "0"), True, False),
+        (("3", "5", "0"), False, False),
+    ],
 )
 @mock.patch("platform.python_version_tuple")
-def test_python_version_deprecation(mock_python_version_tuple, version, raises, recwarn):
+def test_python_version_deprecation(mock_python_version_tuple, version, raises, pending, recwarn):
     warnings.simplefilter("always")
 
     mock_python_version_tuple.return_value = version
@@ -774,8 +791,12 @@ def test_python_version_deprecation(mock_python_version_tuple, version, raises, 
             e.close()
     if raises:
         assert len(recwarn) == 1
-        w = recwarn.pop(DeprecationWarning)
-        assert "agent only supports" in w.message.args[0]
+        if pending:
+            w = recwarn.pop(PendingDeprecationWarning)
+            assert "will stop supporting" in w.message.args[0]
+        else:
+            w = recwarn.pop(DeprecationWarning)
+            assert "agent only supports" in w.message.args[0]
     else:
         assert len(recwarn) == 0
 

@@ -9,5 +9,5 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Too
 
 : We need wheel installed to build wheels
 call %PYTHON%\python.exe -m pip install -U wheel pip setuptools
-call %PYTHON%\python.exe -m pip install -r tests\requirements\requirements-%WEBFRAMEWORK%.txt
+call %PYTHON%\python.exe -m pip install -r tests\requirements\reqs-%WEBFRAMEWORK%.txt
 call %PYTHON%\python.exe -m pip install psutil

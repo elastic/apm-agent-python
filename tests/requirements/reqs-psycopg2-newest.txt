@@ -1,0 +1,3 @@
+psycopg2 ; platform_python_implementation == 'CPython'
+psycopg2cffi ; platform_python_implementation == 'PyPy'
+-r reqs-base.txt

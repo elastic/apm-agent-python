@@ -8,6 +8,9 @@ endif::[]
 
 = APM Python Agent Reference
 
+NOTE: Python 2.7 reached End of Life on January 1, 2020.
+The Elastic APM agent will stop supporting Python 2.7 starting in version 6.0.0.
+
 include::./getting-started.asciidoc[]
 
 include::./set-up.asciidoc[]
