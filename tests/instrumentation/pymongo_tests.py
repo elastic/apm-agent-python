@@ -203,11 +203,12 @@ def test_collection_find(instrument, elasticapm_client, mongo_database):
     assert span["subtype"] == "mongodb"
     assert span["action"] == "query"
     assert span["name"] == "elasticapm_test.blogposts.cursor.refresh"
-    assert span["context"]["destination"] == {
-        "address": os.environ.get("MONGODB_HOST", "localhost"),
-        "port": int(os.environ.get("MONGODB_PORT", 27017)),
-        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
-    }
+    if not pymongo.version_tuple < (3, 0):
+        assert span["context"]["destination"] == {
+            "address": os.environ.get("MONGODB_HOST", "localhost"),
+            "port": int(os.environ.get("MONGODB_PORT", 27017)),
+            "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+        }
 
 
 @pytest.mark.integrationtest
