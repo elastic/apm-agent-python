@@ -130,6 +130,8 @@ When set to false, the agent will not collect any data, nor start any background
 [[config-recording]]
 === `recording`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 [options="header"]
 |============
 | Environment             | Django/Flask   | Default 
