@@ -94,6 +94,7 @@ class Transport(ThreadManager):
         self._flushed = threading.Event()
         self._closed = False
         self._processors = processors if processors is not None else []
+        super(Transport, self).__init__()
 
     @property
     def _max_flush_time(self):
@@ -228,13 +229,13 @@ class Transport(ThreadManager):
             except Exception as e:
                 self.handle_transport_fail(e)
 
-    def start_thread(self):
-        current_pid = os.getpid()
-        if (not self._thread or current_pid != self._thread.pid) and not self._closed:
+    def start_thread(self, pid=None):
+        super(Transport, self).start_thread(pid=pid)
+        if (not self._thread or self.pid != self._thread.pid) and not self._closed:
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
-                self._thread.pid = current_pid
+                self._thread.pid = self.pid
                 self._thread.start()
             except RuntimeError:
                 pass

@@ -292,3 +292,12 @@ def test_validate_catches_type_errors():
 def test_capture_body_mapping(val, expected):
     c = Config(inline_dict={"capture_body": val})
     assert c.capture_body == expected
+
+
+@pytest.mark.parametrize(
+    "enabled,recording,is_recording",
+    [(True, True, True), (True, False, False), (False, True, False), (False, False, False)],
+)
+def test_is_recording(enabled, recording, is_recording):
+    c = Config(inline_dict={"enabled": enabled, "recording": recording, "service_name": "foo"})
+    assert c.is_recording is is_recording

@@ -65,7 +65,7 @@ class ElasticAPMConfig(AppConfig):
         if self.client.config.autoinsert_django_middleware:
             self.insert_middleware(django_settings)
         register_handlers(self.client)
-        if self.client.config.instrument:
+        if self.client.config.instrument and self.client.config.enabled:
             instrument(self.client)
         else:
             self.client.logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")

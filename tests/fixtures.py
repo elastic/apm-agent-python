@@ -49,6 +49,7 @@ from elasticapm.conf.constants import SPAN
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils import compat
+from elasticapm.utils.threading import ThreadManager
 
 try:
     from urllib.request import pathname2url
@@ -234,8 +235,9 @@ class DummyTransport(HTTPTransportBase):
         self.events[event_type].append(data)
         self._flushed.set()
 
-    def start_thread(self):
-        pass
+    def start_thread(self, pid=None):
+        # don't call the parent method, but the one from ThreadManager
+        ThreadManager.start_thread(self, pid=pid)
 
     def stop_thread(self):
         pass

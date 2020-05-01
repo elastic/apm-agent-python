@@ -53,7 +53,7 @@ class Tracer(TracerBase):
                 "Usage of other scope managers will lead to unpredictable results."
             )
         self._scope_manager = scope_manager or ThreadLocalScopeManager()
-        if self._agent.config.instrument:
+        if self._agent.config.instrument and self._agent.config.enabled:
             instrument()
 
     def start_active_span(
