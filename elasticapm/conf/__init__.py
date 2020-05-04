@@ -337,6 +337,8 @@ class Config(_ConfigBase):
     framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
     global_labels = _DictConfigValue("GLOBAL_LABELS", default=None)
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
+    enabled = _BoolConfigValue("ENABLED", default=True)
+    recording = _BoolConfigValue("RECORDING", default=True)
     instrument = _BoolConfigValue("INSTRUMENT", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
@@ -344,13 +346,29 @@ class Config(_ConfigBase):
     disable_log_record_factory = _BoolConfigValue("DISABLE_LOG_RECORD_FACTORY", default=False)
     use_elastic_traceparent_header = _BoolConfigValue("USE_ELASTIC_TRACEPARENT_HEADER", default=True)
 
+    @property
+    def is_recording(self):
+        if not self.enabled:
+            return False
+        else:
+            return self.recording
+
 
 class VersionedConfig(ThreadManager):
     """
     A thin layer around Config that provides versioning
     """
 
-    __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock", "transport", "_update_thread")
+    __slots__ = (
+        "_config",
+        "_version",
+        "_first_config",
+        "_first_version",
+        "_lock",
+        "transport",
+        "_update_thread",
+        "pid",
+    )
 
     def __init__(self, config_object, version, transport=None):
         """
@@ -363,6 +381,7 @@ class VersionedConfig(ThreadManager):
         self.transport = transport
         self._lock = threading.Lock()
         self._update_thread = None
+        super(VersionedConfig, self).__init__()
 
     def update(self, version, **config):
         """
@@ -436,11 +455,12 @@ class VersionedConfig(ThreadManager):
 
         return next_run
 
-    def start_thread(self):
+    def start_thread(self, pid=None):
         self._update_thread = IntervalTimer(
             self.update_config, 1, "eapm conf updater", daemon=True, evaluate_function_interval=True
         )
         self._update_thread.start()
+        super(VersionedConfig, self).start_thread(pid=pid)
 
     def stop_thread(self):
         if self._update_thread:

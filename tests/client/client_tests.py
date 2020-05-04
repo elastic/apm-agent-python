@@ -799,3 +799,46 @@ def test_python_version_deprecation(mock_python_version_tuple, version, raises, 
             assert "agent only supports" in w.message.args[0]
     else:
         assert len(recwarn) == 0
+
+
+def test_recording(elasticapm_client):
+    assert elasticapm_client.capture_message("x") is not None
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        assert elasticapm_client.capture_exception() is not None
+    assert elasticapm_client.begin_transaction("test") is not None
+    with elasticapm.capture_span("x") as x_span:
+        assert x_span is not None
+    assert elasticapm_client.end_transaction("ok", "ok") is not None
+
+    elasticapm_client.config.update("1", recording=False)
+    assert not elasticapm_client.config.is_recording
+    assert elasticapm_client.capture_message("x") is None
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        assert elasticapm_client.capture_exception() is None
+    assert elasticapm_client.begin_transaction("test") is None
+    with elasticapm.capture_span("x") as x_span:
+        assert x_span is None
+    assert elasticapm_client.end_transaction("ok", "ok") is None
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {"enabled": True, "metrics_interval": "30s", "central_config": "true"},
+        {"enabled": False, "metrics_interval": "30s", "central_config": "true"},
+    ],
+    indirect=True,
+)
+def test_client_enabled(elasticapm_client):
+    if elasticapm_client.config.enabled:
+        assert elasticapm_client.config.is_recording
+        for manager in elasticapm_client._thread_managers.values():
+            assert manager.is_started()
+    else:
+        assert not elasticapm_client.config.is_recording
+        for manager in elasticapm_client._thread_managers.values():
+            assert not manager.is_started()

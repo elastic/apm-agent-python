@@ -127,7 +127,7 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
             extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
         ) as span:
             response = wrapped(*args, **kwargs)
-            if span.context:
+            if span.context and instance.address:
                 host, port = instance.address
                 span.context["destination"]["address"] = host
                 span.context["destination"]["port"] = port

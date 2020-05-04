@@ -52,5 +52,5 @@ class ElasticAPM:
         from elasticapm.contrib.aiohttp.middleware import tracing_middleware
 
         app.middlewares.insert(0, tracing_middleware(app))
-        if client.config.instrument:
+        if client.config.instrument and client.config.enabled:
             elasticapm.instrument()

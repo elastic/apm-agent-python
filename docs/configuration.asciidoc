@@ -112,6 +112,37 @@ Your service name must only contain characters from the ASCII alphabet, numbers,
 The URL for your APM Server.
 The URL must be fully qualified, including protocol (`http` or `https`) and port.
 
+[float]
+[[config-enabled]]
+=== `enabled`
+
+[options="header"]
+|============
+| Environment           | Django/Flask | Default 
+| `ELASTIC_APM_ENABLED` | `ENABLED`    | `true`
+|============
+
+Enable or disable the agent.
+When set to false, the agent will not collect any data, nor start any background threads.
+
+
+[float]
+[[config-recording]]
+=== `recording`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment             | Django/Flask   | Default 
+| `ELASTIC_APM_RECORDING` | `RECORDING`    | `false`
+|============
+
+Enable or disable recording of events.
+If set to false, then the Python agent does not send any events to the Elastic APM server,
+and instrumentation overhead is minimized,
+but the agent will continue to poll the server for configuration changes.
+
 
 [float]
 [[config-transport-class]]
