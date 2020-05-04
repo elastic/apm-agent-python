@@ -75,6 +75,36 @@ def app(elasticapm_client):
     return app
 
 
+@pytest.fixture
+def app_no_client():
+    class HelloHandler(tornado.web.RequestHandler):
+        def get(self):
+            with async_capture_span("test"):
+                pass
+            return self.write("Hello, world")
+
+        post = get
+
+    class RenderHandler(tornado.web.RequestHandler):
+        def get(self):
+            with async_capture_span("test"):
+                pass
+            items = ["Item 1", "Item 2", "Item 3"]
+            return self.render("test.html", title="Testing so hard", items=items)
+
+    class BoomHandler(tornado.web.RequestHandler):
+        def get(self):
+            raise tornado.web.HTTPError()
+
+        post = get
+
+    app = tornado.web.Application(
+        [(r"/", HelloHandler), (r"/boom", BoomHandler), (r"/render", RenderHandler)],
+        template_path=os.path.join(os.path.dirname(__file__), "templates"),
+    )
+    return app
+
+
 @pytest.mark.gen_test
 async def test_get(app, base_url, http_client):
     elasticapm_client = app.elasticapm_client
@@ -196,3 +226,15 @@ async def test_capture_headers_body_is_dynamic(app, base_url, http_client):
     assert transactions[2]["context"]["request"]["body"] == "[REDACTED]"
     assert "headers" not in errors[1]["context"]["request"]
     assert errors[1]["context"]["request"]["body"] == "[REDACTED]"
+
+
+@pytest.mark.gen_test
+async def test_no_elasticapm_client(app_no_client, base_url, http_client, elasticapm_client):
+    """
+    Need to make sure instrumentation works even when tornado is not
+    explicitly using the agent
+    """
+    elasticapm_client.begin_transaction("test")
+    response = await http_client.fetch(base_url)
+    assert response.code == 200
+    elasticapm_client.end_transaction("test")

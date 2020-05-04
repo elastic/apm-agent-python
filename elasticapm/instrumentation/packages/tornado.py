@@ -43,6 +43,11 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("tornado.web", "RequestHandler._execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
+        if not hasattr(instance.application, "elasticapm_client"):
+            # If tornado was instrumented but not as the main framework
+            # (i.e. in Flower), we should skip it.
+            return await wrapped(*args, **kwargs)
+
         # Late import to avoid ImportErrors
         from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 
@@ -74,6 +79,10 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("tornado.web", "RequestHandler._handle_request_exception")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
+        if not hasattr(instance.application, "elasticapm_client"):
+            # If tornado was instrumented but not as the main framework
+            # (i.e. in Flower), we should skip it.
+            return wrapped(*args, **kwargs)
 
         # Late import to avoid ImportErrors
         from tornado.web import Finish, HTTPError
