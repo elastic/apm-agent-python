@@ -27,10 +27,18 @@ endif::[]
 ===== New features
  * Added SERVICE_NODE_NAME config {pull}592[#592]
  * Added instrumentation support for https://github.com/pinterest/pymemcache[`pymemcache`] {pull}812[#812]
+ * Added new configuration options `enabled` and `recording` {pull}790[#790]
 
 [float]
 ===== Bug fixes
  * Fixed an issue with metrics collection raising RuntimeErrors {pull}802[#802]
+ * Fixed an issue with getting extended destination data from pymongo {pull}797[#797]
+ * Fixed an issue with Tornado instrumentation when Tornado isn't the "main" framework {pull}813[#813]
+
+[float]
+===== Pending Deprecations
+
+ * Python 2.7 suppot will be dropped in version 6.0 of the agent. 
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
