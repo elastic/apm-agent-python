@@ -34,6 +34,7 @@ endif::[]
  * Fixed an issue with metrics collection raising RuntimeErrors {pull}802[#802]
  * Fixed an issue with getting extended destination data from pymongo {pull}797[#797]
  * Fixed an issue with Tornado instrumentation when Tornado isn't the "main" framework {pull}813[#813]
+ * Fixed an issue with streaming requests being consumed by the agent even if capture_body is disabled {pull}817[#817]
 
 [float]
 ===== Pending Deprecations
