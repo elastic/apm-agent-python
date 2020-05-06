@@ -58,17 +58,20 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
         result["headers"] = dict(request.headers)
 
     if request.method in constants.HTTP_WITH_BODY:
-        body = None
-        try:
-            body = await get_body(request)
-            if request.headers.get("content-type") == "application/x-www-form-urlencoded":
-                body = await query_params_to_dict(body)
-            else:
-                body = json.loads(body)
-        except Exception:
-            pass
-        if body is not None:
-            result["body"] = body if config.capture_body in ("all", event_type) else "[REDACTED]"
+        if config.capture_body not in ("all", event_type):
+            result["body"] = "[REDACTED]"
+        else:
+            body = None
+            try:
+                body = await get_body(request)
+                if request.headers.get("content-type") == "application/x-www-form-urlencoded":
+                    body = await query_params_to_dict(body)
+                else:
+                    body = json.loads(body)
+            except Exception:
+                pass
+            if body is not None:
+                result["body"] = body
 
     result["url"] = get_url_dict(str(request.url))
 
