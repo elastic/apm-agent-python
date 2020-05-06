@@ -131,21 +131,25 @@ class DjangoClient(Client):
             result["headers"] = request_headers
 
         if request.method in constants.HTTP_WITH_BODY:
-            content_type = request.META.get("CONTENT_TYPE")
-            if content_type == "application/x-www-form-urlencoded":
-                data = compat.multidict_to_dict(request.POST)
-            elif content_type and content_type.startswith("multipart/form-data"):
-                data = compat.multidict_to_dict(request.POST)
-                if request.FILES:
-                    data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
-            else:
-                try:
-                    data = request.body
-                except Exception as e:
-                    self.logger.debug("Can't capture request body: %s", compat.text_type(e))
-                    data = "<unavailable>"
             capture_body = self.config.capture_body in ("all", event_type)
-            result["body"] = data if (capture_body or not data) else "[REDACTED]"
+            if not capture_body:
+                result["body"] = "[REDACTED]"
+            else:
+                content_type = request.META.get("CONTENT_TYPE")
+                if content_type == "application/x-www-form-urlencoded":
+                    data = compat.multidict_to_dict(request.POST)
+                elif content_type and content_type.startswith("multipart/form-data"):
+                    data = compat.multidict_to_dict(request.POST)
+                    if request.FILES:
+                        data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+                else:
+                    try:
+                        data = request.body
+                    except Exception as e:
+                        self.logger.debug("Can't capture request body: %s", compat.text_type(e))
+                        data = "<unavailable>"
+                if data is not None:
+                    result["body"] = data
 
         if hasattr(request, "get_raw_uri"):
             # added in Django 1.9

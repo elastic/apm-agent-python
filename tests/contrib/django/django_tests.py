@@ -613,6 +613,7 @@ def test_post_raw_data(django_elasticapm_client):
         assert request["body"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)
 def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     request = rf.post("/test", data="{}", content_type="application/json")
 
@@ -1426,8 +1427,10 @@ def test_capture_empty_body(client, django_elasticapm_client):
     with pytest.raises(MyException):
         client.post(reverse("elasticapm-raise-exc"), data={})
     error = django_elasticapm_client.events[ERROR][0]
-    # body should be empty no matter if we capture it or not
-    assert error["context"]["request"]["body"] == {}
+    if django_elasticapm_client.config.capture_body not in ("error", "all"):
+        assert error["context"]["request"]["body"] == "[REDACTED]"
+    else:
+        assert error["context"]["request"]["body"] == {}
 
 
 @pytest.mark.parametrize(

@@ -46,24 +46,27 @@ def get_data_from_request(request, config, event_type):
     if config.capture_headers:
         result["headers"] = dict(get_headers(request.environ))
     if request.method in constants.HTTP_WITH_BODY:
-        body = None
-        if request.content_type == "application/x-www-form-urlencoded":
-            body = compat.multidict_to_dict(request.form)
-        elif request.content_type and request.content_type.startswith("multipart/form-data"):
-            body = compat.multidict_to_dict(request.form)
-            if request.files:
-                body["_files"] = {
-                    field: val[0].filename if len(val) == 1 else [f.filename for f in val]
-                    for field, val in compat.iterlists(request.files)
-                }
+        if config.capture_body not in ("all", event_type):
+            result["body"] = "[REDACTED]"
         else:
-            try:
-                body = request.get_data(as_text=True)
-            except ClientDisconnected:
-                pass
+            body = None
+            if request.content_type == "application/x-www-form-urlencoded":
+                body = compat.multidict_to_dict(request.form)
+            elif request.content_type and request.content_type.startswith("multipart/form-data"):
+                body = compat.multidict_to_dict(request.form)
+                if request.files:
+                    body["_files"] = {
+                        field: val[0].filename if len(val) == 1 else [f.filename for f in val]
+                        for field, val in compat.iterlists(request.files)
+                    }
+            else:
+                try:
+                    body = request.get_data(as_text=True)
+                except ClientDisconnected:
+                    pass
 
-        if body is not None:
-            result["body"] = body if config.capture_body in ("all", event_type) else "[REDACTED]"
+            if body is not None:
+                result["body"] = body
 
     result["url"] = get_url_dict(request.url)
     return result
