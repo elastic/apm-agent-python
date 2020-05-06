@@ -23,6 +23,12 @@ endif::[]
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+[[release-notes-5.6.0]]
+==== v5.6.0
+
 [float]
 ===== New features
  * Added SERVICE_NODE_NAME config {pull}592[#592]
@@ -39,10 +45,7 @@ endif::[]
 [float]
 ===== Pending Deprecations
 
- * Python 2.7 suppot will be dropped in version 6.0 of the agent. 
-
-[[release-notes-5.x]]
-=== Python Agent version 5.x
+ * Python 2.7 suppot will be dropped in version 6.0 of the agent.
 
 [[release-notes-5.5.2]]
 ==== v5.5.2
