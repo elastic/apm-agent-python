@@ -47,6 +47,7 @@ except ImportError:
     from urllib import parse as urlparse
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
