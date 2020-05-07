@@ -31,7 +31,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm.conf import constants
-from elasticapm.transport.base import AsyncTransport, Transport
+from elasticapm.transport.base import Transport
 from elasticapm.utils import compat
 
 
@@ -39,6 +39,7 @@ class HTTPTransportBase(Transport):
     def __init__(
         self,
         url,
+        client,
         verify_server_cert=True,
         compress_level=5,
         metadata=None,
@@ -61,7 +62,7 @@ class HTTPTransportBase(Transport):
         }
         base, sep, tail = self._url.rpartition(constants.EVENTS_API_PATH)
         self._config_url = "".join((base, constants.AGENT_CONFIG_PATH, tail))
-        super(HTTPTransportBase, self).__init__(metadata=metadata, compress_level=compress_level, **kwargs)
+        super(HTTPTransportBase, self).__init__(client, metadata=metadata, compress_level=compress_level, **kwargs)
 
     def send(self, data):
         """
@@ -88,7 +89,14 @@ class HTTPTransportBase(Transport):
         """
         raise NotImplementedError()
 
+    @property
+    def auth_headers(self):
+        if self.client.config.api_key:
+            return {"Authorization": "ApiKey " + self.client.config.api_key}
+        elif self.client.config.secret_token:
+            return {"Authorization": "Bearer " + self.client.config.secret_token}
+        return {}
 
-class AsyncHTTPTransportBase(AsyncTransport, HTTPTransportBase):
-    async_mode = True
-    sync_transport = HTTPTransportBase
+
+# left for backwards compatibility
+AsyncHTTPTransportBase = HTTPTransportBase

@@ -30,6 +30,7 @@
 
 from __future__ import absolute_import
 
+import os
 import threading
 from timeit import default_timer
 
@@ -47,7 +48,7 @@ class IntervalTimer(threading.Thread):
         """
 
         :param function: the function to run
-        :param interval: the interval in-between invocations of the function
+        :param interval: the interval in-between invocations of the function, in milliseconds
         :param name: name of the thread
         :param args: arguments to call the function with
         :param kwargs: keyword arguments to call the function with
@@ -85,3 +86,21 @@ class IntervalTimer(threading.Thread):
 
     def cancel(self):
         self._interval_done.set()
+
+
+class ThreadManager(object):
+    def __init__(self):
+        self.pid = None
+
+    def start_thread(self, pid=None):
+        if not pid:
+            pid = os.getpid()
+        self.pid = pid
+
+    def stop_thread(self):
+        raise NotImplementedError()
+
+    def is_started(self, current_pid=None):
+        if not current_pid:
+            current_pid = os.getpid()
+        return self.pid == current_pid

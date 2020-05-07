@@ -38,9 +38,16 @@ import pkgutil
 import pytest
 from mock import Mock
 
+import elasticapm
+from elasticapm.conf import constants
 from elasticapm.utils import compat, stacks
 from elasticapm.utils.stacks import get_culprit, get_stack_info
-from tests.utils.stacks import get_me_a_test_frame
+from tests.utils.stacks import get_me_a_test_frame, get_me_more_test_frames
+
+
+def nested_frames(count=10):
+    if count == 0:
+        return
 
 
 class Context(object):
@@ -97,16 +104,11 @@ def test_traceback_hide(elasticapm_client):
 
 
 def test_iter_stack_frames_skip_frames():
-    frames = [
-        Mock(f_lineno=1, f_globals={}),
-        Mock(f_lineno=2, f_globals={}),
-        Mock(f_lineno=3, f_globals={}),
-        Mock(f_lineno=4, f_globals={}),
-    ]
+    frames = get_me_more_test_frames(4)
 
     iterated_frames = list(stacks.iter_stack_frames(frames, skip=3))
     assert len(iterated_frames) == 1
-    assert iterated_frames[0][1] == 4
+    assert iterated_frames[0][0].f_locals["count"] == 4
 
 
 def test_iter_stack_frames_skip_frames_by_module():
@@ -121,6 +123,51 @@ def test_iter_stack_frames_skip_frames_by_module():
     assert len(iterated_frames) == 2
     assert iterated_frames[0][1] == 3
     assert iterated_frames[1][1] == 4
+
+
+def test_iter_stack_frames_max_frames():
+    iterated_frames = list(stacks.iter_stack_frames(get_me_more_test_frames(10), config=Mock(stack_trace_limit=5)))
+    assert len(iterated_frames) == 5
+    assert iterated_frames[4][0].f_locals["count"] == 5
+
+    iterated_frames = list(stacks.iter_stack_frames(get_me_more_test_frames(10), config=Mock(stack_trace_limit=-1)))
+    assert len(iterated_frames) == 10
+
+    iterated_frames = list(stacks.iter_stack_frames(get_me_more_test_frames(10), config=Mock(stack_trace_limit=0)))
+    assert len(iterated_frames) == 0
+
+    iterated_frames = list(
+        stacks.iter_stack_frames(get_me_more_test_frames(10), skip=3, config=Mock(stack_trace_limit=5))
+    )
+    assert len(iterated_frames) == 5
+    assert iterated_frames[4][0].f_locals["count"] == 8
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"stack_trace_limit": 10, "span_frames_min_duration": -1}], indirect=True
+)
+def test_iter_stack_frames_max_frames_is_dynamic(elasticapm_client):
+    def func():
+        with elasticapm.capture_span("yay"):
+            pass
+
+    elasticapm_client.begin_transaction("foo")
+    get_me_more_test_frames(15, func=func)
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert len(span["stacktrace"]) == 10
+
+    elasticapm_client.config.update(version="2", stack_trace_limit=5)
+
+    elasticapm_client.begin_transaction("foo")
+    get_me_more_test_frames(15, func=func)
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][1]
+
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert len(span["stacktrace"]) == 5
 
 
 @pytest.mark.parametrize(
@@ -153,7 +200,9 @@ def test_get_frame_info():
     assert frame_info["filename"] == os.path.join("tests", "utils", "stacks", "__init__.py")
     assert frame_info["module"] == "tests.utils.stacks"
     assert frame_info["lineno"] == 36
-    assert frame_info["context_line"] == "    return inspect.currentframe()"
+    assert frame_info["context_metadata"][0].endswith(frame_info["filename"])
+    assert frame_info["context_metadata"][1] == frame_info["lineno"]
+    assert frame_info["context_metadata"][4] == frame_info["module"]
     assert frame_info["vars"] == {"a_local_var": 42}
 
 

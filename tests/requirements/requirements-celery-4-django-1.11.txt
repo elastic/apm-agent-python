@@ -1,2 +1,0 @@
-celery>=4,<5
--r requirements-django-1.11.txt

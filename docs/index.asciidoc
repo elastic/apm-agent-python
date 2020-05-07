@@ -1,7 +1,4 @@
-:branch: current
-:server-branch: 6.5
-:ecs_version: current
-
+include::{asciidoc-dir}/../../shared/versions/stack/current.asciidoc[]
 include::{asciidoc-dir}/../../shared/attributes.asciidoc[]
 
 ifdef::env-github[]
@@ -11,26 +8,31 @@ endif::[]
 
 = APM Python Agent Reference
 
-include::./getting-started.asciidoc[Getting Started]
+NOTE: Python 2.7 reached End of Life on January 1, 2020.
+The Elastic APM agent will stop supporting Python 2.7 starting in version 6.0.0.
 
-include::./configuration.asciidoc[Configuration]
+include::./getting-started.asciidoc[]
 
-include::./supported-technologies.asciidoc[Supported Technologies]
+include::./set-up.asciidoc[]
 
-include::./django.asciidoc[Django support]
+include::./supported-technologies.asciidoc[]
 
-include::./flask.asciidoc[Flask support]
+include::./configuration.asciidoc[]
 
-include::./metrics.asciidoc[Metrics]
+include::./advanced-topics.asciidoc[]
 
-include::./opentracing.asciidoc[OpenTracing]
+include::./api.asciidoc[]
 
-include::./advanced-topics.asciidoc[Advanced Topics]
+include::./metrics.asciidoc[]
 
-include::./api.asciidoc[API documentation]
+include::./opentracing.asciidoc[]
 
-include::./upgrading.asciidoc[Upgrading from previous versions]
+include::./logging.asciidoc[]
 
-include::./tuning.asciidoc[Tuning and Overhead considerations]
+include::./tuning.asciidoc[]
 
-include::./release-notes.asciidoc[Release notes]
+include::./troubleshooting.asciidoc[]
+
+include::./upgrading.asciidoc[]
+
+include::./release-notes.asciidoc[]

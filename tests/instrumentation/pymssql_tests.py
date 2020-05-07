@@ -33,6 +33,8 @@ import os
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
+from elasticapm.instrumentation.packages.pymssql import get_host_port
+from elasticapm.utils import default_ports
 
 pymssql = pytest.importorskip("pymssql")
 
@@ -84,6 +86,26 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["destination"] == {
+            "address": "mssql",
+            "port": default_ports["mssql"],
+            "service": {"name": "mssql", "resource": "mssql", "type": "db"},
+        }
+
+
+@pytest.mark.parametrize(
+    "args,kwargs,expected",
+    [
+        (("localhost",), {"port": 1234}, {"host": "localhost", "port": 1234}),
+        (("localhost",), {}, {"host": "localhost", "port": default_ports["mssql"]}),
+        ((), {"host": "localhost,1234"}, {"host": "localhost", "port": 1234}),
+        ((), {"host": "localhost:1234"}, {"host": "localhost", "port": 1234}),
+    ],
+)
+def test_host_port_parsing(args, kwargs, expected):
+    host, port = get_host_port(args, kwargs)
+    assert host == expected["host"]
+    assert port == expected["port"]
 
 
 @pytest.mark.integrationtest

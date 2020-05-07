@@ -152,8 +152,9 @@ class Command(BaseCommand):
             client.capture_exception()
             if not client.error_logger.errors:
                 self.write(
-                    "Success! We tracked the error successfully! You should be"
-                    " able to see it in a few seconds at the above URL"
+                    "Success! We tracked the error successfully! \n"
+                    "You should see it in the APM app in Kibana momentarily. \n"
+                    'Look for "TestException: Hi there!" in the Errors tab of the %s app' % client.config.service_name
                 )
         finally:
             client.close()

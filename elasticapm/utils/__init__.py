@@ -45,7 +45,7 @@ except ImportError:
     partial_types = (partial,)
 
 
-default_ports = {"https": 443, "http": 80, "postgresql": 5432}
+default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
 
 
 def varmap(func, var, context=None, name=None):
@@ -61,7 +61,7 @@ def varmap(func, var, context=None, name=None):
         return func(name, "<...>")
     context.add(objid)
     if isinstance(var, dict):
-        ret = dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var))
+        ret = func(name, dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var)))
     elif isinstance(var, (list, tuple)):
         ret = func(name, [varmap(func, f, context, name) for f in var])
     else:
@@ -102,21 +102,21 @@ def is_master_process():
 
 
 def get_url_dict(url):
-    scheme, netloc, path, params, query, fragment = compat.urlparse.urlparse(url)
-    if ":" in netloc:
-        hostname, port = netloc.split(":")
-    else:
-        hostname, port = (netloc, None)
+    parse_result = compat.urlparse.urlparse(url)
+
     url_dict = {
         "full": encoding.keyword_field(url),
-        "protocol": scheme + ":",
-        "hostname": encoding.keyword_field(hostname),
-        "pathname": encoding.keyword_field(path),
+        "protocol": parse_result.scheme + ":",
+        "hostname": encoding.keyword_field(parse_result.hostname),
+        "pathname": encoding.keyword_field(parse_result.path),
     }
+
+    port = None if parse_result.port is None else str(parse_result.port)
+
     if port:
         url_dict["port"] = port
-    if query:
-        url_dict["search"] = encoding.keyword_field("?" + query)
+    if parse_result.query:
+        url_dict["search"] = encoding.keyword_field("?" + parse_result.query)
     return url_dict
 
 
@@ -127,14 +127,49 @@ def sanitize_url(url):
     return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
+def get_host_from_url(url):
+    parsed_url = compat.urlparse.urlparse(url)
+    host = parsed_url.hostname or " "
+
+    if parsed_url.port and default_ports.get(parsed_url.scheme) != parsed_url.port:
+        host += ":" + str(parsed_url.port)
+
+    return host
+
+
+def url_to_destination(url, service_type="external"):
+    parts = compat.urlparse.urlsplit(url)
+    hostname = parts.hostname
+    # preserve brackets for IPv6 URLs
+    if "://[" in url:
+        hostname = "[%s]" % hostname
+    try:
+        port = parts.port
+    except ValueError:
+        # Malformed port, just use None rather than raising an exception
+        port = None
+    default_port = default_ports.get(parts.scheme, None)
+    name = "%s://%s" % (parts.scheme, hostname)
+    resource = hostname
+    if not port and parts.scheme in default_ports:
+        port = default_ports[parts.scheme]
+    if port:
+        if port != default_port:
+            name += ":%d" % port
+        resource += ":%d" % port
+    return {"service": {"name": name, "resource": resource, "type": service_type}}
+
+
 def read_pem_file(file_obj):
     cert = b""
     for line in file_obj:
         if line.startswith(b"-----BEGIN CERTIFICATE-----"):
             break
+    # scan until we find the first END CERTIFICATE marker
     for line in file_obj:
-        if not line.startswith(b"-----END CERTIFICATE-----"):
-            cert += line.strip()
+        if line.startswith(b"-----END CERTIFICATE-----"):
+            break
+        cert += line.strip()
     return base64.b64decode(cert)
 
 

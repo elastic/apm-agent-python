@@ -1,2 +1,0 @@
-celery<4
--r requirements-django-2.0.txt

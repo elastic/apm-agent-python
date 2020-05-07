@@ -30,26 +30,30 @@
 
 import ctypes
 
+from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.utils")
 
 
 class TraceParent(object):
-    __slots__ = ("version", "trace_id", "span_id", "trace_options")
+    __slots__ = ("version", "trace_id", "span_id", "trace_options", "tracestate", "is_legacy")
 
-    def __init__(self, version, trace_id, span_id, trace_options):
+    def __init__(self, version, trace_id, span_id, trace_options, tracestate=None, is_legacy=False):
         self.version = version
         self.trace_id = trace_id
         self.span_id = span_id
         self.trace_options = trace_options
+        self.is_legacy = is_legacy
+        self.tracestate = tracestate
 
-    def copy_from(self, version=None, trace_id=None, span_id=None, trace_options=None):
+    def copy_from(self, version=None, trace_id=None, span_id=None, trace_options=None, tracestate=None):
         return TraceParent(
             version or self.version,
             trace_id or self.trace_id,
             span_id or self.span_id,
             trace_options or self.trace_options,
+            tracestate or self.tracestate,
         )
 
     def to_string(self):
@@ -59,7 +63,7 @@ class TraceParent(object):
         return self.to_string().encode("ascii")
 
     @classmethod
-    def from_string(cls, traceparent_string):
+    def from_string(cls, traceparent_string, tracestate_string=None, is_legacy=False):
         try:
             parts = traceparent_string.split("-")
             version, trace_id, span_id, trace_flags = parts[:4]
@@ -79,7 +83,42 @@ class TraceParent(object):
         except ValueError:
             logger.debug("Invalid trace-options field, value %s", trace_flags)
             return
-        return TraceParent(version, trace_id, span_id, tracing_options)
+        return TraceParent(version, trace_id, span_id, tracing_options, tracestate_string, is_legacy)
+
+    @classmethod
+    def from_headers(
+        cls,
+        headers,
+        header_name=constants.TRACEPARENT_HEADER_NAME,
+        legacy_header_name=constants.TRACEPARENT_LEGACY_HEADER_NAME,
+        tracestate_header_name=constants.TRACESTATE_HEADER_NAME,
+    ):
+        tracestate = cls.merge_duplicate_headers(headers, tracestate_header_name)
+        if header_name in headers:
+            return TraceParent.from_string(headers[header_name], tracestate, is_legacy=False)
+        elif legacy_header_name in headers:
+            return TraceParent.from_string(headers[legacy_header_name], tracestate, is_legacy=False)
+        else:
+            return None
+
+    @classmethod
+    def merge_duplicate_headers(cls, headers, key):
+        """
+        HTTP allows multiple values for the same header name. Most WSGI implementations
+        merge these values using a comma as separator (this has been confirmed for wsgiref,
+        werkzeug, gunicorn and uwsgi). Other implementations may use containers like
+        multidict to store headers and have APIs to iterate over all values for a given key.
+
+        This method is provided as a hook for framework integrations to provide their own
+        TraceParent implementation. The implementation should return a single string. Multiple
+        values for the same key should be merged using a comma as separator.
+
+        :param headers: a dict-like header object
+        :param key: header name
+        :return: a single string value or None
+        """
+        # this works for all known WSGI implementations
+        return headers.get(key)
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
@@ -94,3 +133,19 @@ class TracingOptions(ctypes.Union):
         super(TracingOptions, self).__init__()
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+
+def trace_parent_from_string(traceparent_string, tracestate_string=None, is_legacy=False):
+    """
+    This is a wrapper function so we can add traceparent generation to the
+    public API.
+    """
+    return TraceParent.from_string(traceparent_string, tracestate_string=tracestate_string, is_legacy=is_legacy)
+
+
+def trace_parent_from_headers(headers):
+    """
+    This is a wrapper function so we can add traceparent generation to the
+    public API.
+    """
+    return TraceParent.from_headers(headers)

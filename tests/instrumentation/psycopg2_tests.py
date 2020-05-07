@@ -36,6 +36,7 @@ import pytest
 
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm.utils import default_ports
 
 psycopg2 = pytest.importorskip("psycopg2")
 
@@ -48,6 +49,11 @@ except ImportError:
     # as of Jan 2018, psycopg2cffi doesn't have this module
     has_sql_module = False
 
+try:
+    import psycopg2.extensions
+except ImportError:
+    psycopg2.extensions = None
+
 
 pytestmark = pytest.mark.psycopg2
 
@@ -58,6 +64,7 @@ def connect_kwargs():
     return {
         "database": os.environ.get("POSTGRES_DB", "elasticapm_test"),
         "user": os.environ.get("POSTGRES_USER", "postgres"),
+        "password": os.environ.get("POSTGRES_PASSWORD", "postgres"),
         "host": os.environ.get("POSTGRES_HOST", None),
         "port": os.environ.get("POSTGRES_PORT", None),
     }
@@ -259,7 +266,23 @@ def test_fully_qualified_table_name():
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_register_type(postgres_connection, elasticapm_client):
+def test_destination(instrument, postgres_connection, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    cursor = postgres_connection.cursor()
+    cursor.execute("SELECT 1")
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("POSTGRES_HOST", None),
+        "port": default_ports["postgresql"],
+        "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+    }
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_psycopg2_register_type(instrument, postgres_connection, elasticapm_client):
     import psycopg2.extras
 
     elasticapm_client.begin_transaction("web.django")
@@ -271,7 +294,7 @@ def test_psycopg2_register_type(postgres_connection, elasticapm_client):
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg2_register_json(postgres_connection, elasticapm_client):
+def test_psycopg2_register_json(instrument, postgres_connection, elasticapm_client):
     # register_json bypasses register_type, so we have to test unwrapping
     # separately
     import psycopg2.extras
@@ -284,6 +307,40 @@ def test_psycopg2_register_json(postgres_connection, elasticapm_client):
     new_type = psycopg2.extras.register_json(conn_or_curs=postgres_connection, loads=lambda x: x)
     assert new_type is not None
     elasticapm_client.end_transaction(None, "test-transaction")
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+@pytest.mark.skipif(
+    not hasattr(psycopg2.extensions, "quote_ident"), reason="psycopg2 driver doesn't have quote_ident extension"
+)
+def test_psycopg2_quote_ident(instrument, postgres_connection, elasticapm_client):
+    elasticapm_client.begin_transaction("web.django")
+    ident = psycopg2.extensions.quote_ident("x'x", postgres_connection)
+    elasticapm_client.end_transaction(None, "test-transaction")
+
+    assert ident == '"x\'x"'
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+@pytest.mark.skipif(
+    not hasattr(psycopg2.extensions, "encrypt_password"),
+    reason="psycopg2 driver doesn't have encrypt_password extension",
+)
+@pytest.mark.skipif(
+    hasattr(psycopg2, "__libpq_version__") and psycopg2.__libpq_version__ < 100000,
+    reason="test code requires libpq >= 10",
+)
+def test_psycopg2_encrypt_password(instrument, postgres_connection, elasticapm_client):
+    elasticapm_client.begin_transaction("web.django")
+    pw1 = psycopg2.extensions.encrypt_password("user", "password", postgres_connection)
+    pw2 = psycopg2.extensions.encrypt_password("user", "password", postgres_connection, None)
+    pw3 = psycopg2.extensions.encrypt_password("user", "password", postgres_connection, algorithm=None)
+    pw4 = psycopg2.extensions.encrypt_password("user", "password", scope=postgres_connection, algorithm=None)
+    elasticapm_client.end_transaction(None, "test-transaction")
+
+    assert pw1.startswith("md5") and (pw1 == pw2 == pw3 == pw4)
 
 
 @pytest.mark.integrationtest

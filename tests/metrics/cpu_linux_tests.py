@@ -46,7 +46,7 @@ TEMPLATE_PROC_STAT_SELF = """32677 (python) R 5333 32677 5333 34822 32677 419430
 TEMPLATE_PROC_STAT_DEBIAN = """cpu  {user} 2037 278561 {idle} 15536 0 178811 0 0 0
 cpu0 189150 166 34982 1081369 2172 0 73586 0 0 0
 cpu1 190286 201 35110 637359 1790 0 41941 0 0 0
-intr 60591079 11 12496 0 0 0 0 0 0 1 27128 0 0 474144 0 0 0 0 0 0 0 0 0 0 
+intr 60591079 11 12496 0 0 0 0 0 0 1 27128 0 0 474144 0 0 0 0 0 0 0 0 0 0
 ctxt 215687788
 btime 1544981001
 processes 416902
@@ -88,7 +88,7 @@ Inactive:        5468500 kB
 
 
 @pytest.mark.parametrize("proc_stat_template", [TEMPLATE_PROC_STAT_DEBIAN, TEMPLATE_PROC_STAT_RHEL])
-def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
+def test_cpu_mem_from_proc(elasticapm_client, proc_stat_template, tmpdir):
     proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
     proc_stat = os.path.join(tmpdir.strpath, "stat")
     proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
@@ -101,7 +101,7 @@ def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
         with open(path, mode="w") as f:
             f.write(content)
     metricset = CPUMetricSet(
-        MetricsRegistry(0, lambda x: None),
+        MetricsRegistry(elasticapm_client),
         sys_stats_file=proc_stat,
         process_stats_file=proc_stat_self,
         memory_stats_file=proc_meminfo,
@@ -125,7 +125,7 @@ def test_cpu_mem_from_proc(proc_stat_template, tmpdir):
     assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
 
 
-def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
+def test_mem_free_from_memfree_when_memavailable_not_mentioned(elasticapm_client, tmpdir):
     proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
     proc_stat = os.path.join(tmpdir.strpath, "stat")
     proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
@@ -138,7 +138,7 @@ def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
         with open(path, mode="w") as f:
             f.write(content)
     metricset = CPUMetricSet(
-        MetricsRegistry(0, lambda x: None),
+        MetricsRegistry(elasticapm_client),
         sys_stats_file=proc_stat,
         process_stats_file=proc_stat_self,
         memory_stats_file=proc_meminfo,
@@ -157,7 +157,7 @@ def test_mem_free_from_memfree_when_memavailable_not_mentioned(tmpdir):
     assert data["samples"]["system.memory.actual.free"]["value"] == mem_free_expected
 
 
-def test_cpu_usage_when_cpu_total_is_zero(tmpdir):
+def test_cpu_usage_when_cpu_total_is_zero(elasticapm_client, tmpdir):
     proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
     proc_stat = os.path.join(tmpdir.strpath, "stat")
     proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
@@ -170,7 +170,7 @@ def test_cpu_usage_when_cpu_total_is_zero(tmpdir):
         with open(path, mode="w") as f:
             f.write(content)
     metricset = CPUMetricSet(
-        MetricsRegistry(0, lambda x: None),
+        MetricsRegistry(elasticapm_client),
         sys_stats_file=proc_stat,
         process_stats_file=proc_stat_self,
         memory_stats_file=proc_meminfo,

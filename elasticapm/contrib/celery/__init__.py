@@ -76,14 +76,10 @@ def register_instrumentation(client):
 
 
 def _register_worker_signals(client):
-    def worker_startup(*args, **kwargs):
-        client._transport._start_event_processor()
-
     def worker_shutdown(*args, **kwargs):
         client.close()
 
     def connect_worker_process_init(*args, **kwargs):
-        signals.worker_process_init.connect(worker_startup, dispatch_uid="elasticapm-start-worker", weak=False)
         signals.worker_process_shutdown.connect(worker_shutdown, dispatch_uid="elasticapm-shutdown-worker", weak=False)
 
     signals.worker_init.connect(

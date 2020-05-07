@@ -48,13 +48,12 @@ class DummyMetricSet(MetricsSet):
         self.gauge("c").val = 0
 
 
-def test_metrics_registry():
-    mock_queue = mock.Mock()
-    registry = MetricsRegistry(0.001, queue_func=mock_queue)
+@pytest.mark.parametrize("elasticapm_client", [{"metrics_interval": "30s"}], indirect=True)
+def test_metrics_registry(elasticapm_client):
+    registry = MetricsRegistry(elasticapm_client)
     registry.register("tests.metrics.base_tests.DummyMetricSet")
-    time.sleep(0.1)
-    assert mock_queue.call_count > 0
-    registry._stop_collect_timer()
+    registry.collect()
+    assert len(elasticapm_client.events[constants.METRICSET])
 
 
 @pytest.mark.parametrize(
@@ -71,8 +70,8 @@ def test_disable_metrics(elasticapm_client):
     assert "c" not in metrics["samples"]
 
 
-def test_metrics_counter():
-    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
+def test_metrics_counter(elasticapm_client):
+    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
     metricset.counter("x").inc()
     data = next(metricset.collect())
     assert data["samples"]["x"]["value"] == 1
@@ -87,8 +86,8 @@ def test_metrics_counter():
     assert data["samples"]["x"]["value"] == 0
 
 
-def test_metrics_labels():
-    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
+def test_metrics_labels(elasticapm_client):
+    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
     metricset.counter("x", mylabel="a").inc()
     metricset.counter("y", mylabel="a").inc()
     metricset.counter("x", mylabel="b").inc().inc()
@@ -110,8 +109,8 @@ def test_metrics_labels():
     assert asserts == 3
 
 
-def test_metrics_multithreaded():
-    metricset = MetricsSet(MetricsRegistry(0, lambda x: None))
+def test_metrics_multithreaded(elasticapm_client):
+    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
     pool = Pool(5)
 
     def target():
@@ -126,26 +125,9 @@ def test_metrics_multithreaded():
     assert metricset.counter("x").val == expected
 
 
-@mock.patch("elasticapm.base.MetricsRegistry._start_collect_timer")
-@mock.patch("elasticapm.metrics.base_metrics.is_master_process")
-def test_client_doesnt_start_collector_thread_in_master_process(is_master_process, mock_start_collect_timer):
-    # when in the master process, the client should not start worker threads
-    is_master_process.return_value = True
-    before = mock_start_collect_timer.call_count
-    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_collect_timer.call_count == before
-    client.close()
-
-    before = mock_start_collect_timer.call_count
-    is_master_process.return_value = False
-    client = TempStoreClient(server_url="http://example.com", service_name="app_name", secret_token="secret")
-    assert mock_start_collect_timer.call_count == before + 1
-    client.close()
-
-
 @mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)
-def test_metric_limit(caplog):
-    m = MetricsSet(MetricsRegistry(0, lambda x: None))
+def test_metric_limit(caplog, elasticapm_client):
+    m = MetricsSet(MetricsRegistry(elasticapm_client))
     with caplog.at_level(logging.WARNING, logger="elasticapm.metrics"):
         for i in range(2):
             counter = m.counter("counter", some_label=i)
@@ -165,8 +147,8 @@ def test_metric_limit(caplog):
     assert "The limit of 3 metricsets has been reached" in record.message
 
 
-def test_metrics_not_collected_if_zero_and_reset():
-    m = MetricsSet(MetricsRegistry(0, lambda x: None))
+def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
+    m = MetricsSet(MetricsRegistry(elasticapm_client))
     counter = m.counter("counter", reset_on_collect=False)
     resetting_counter = m.counter("resetting_counter", reset_on_collect=True)
     gauge = m.gauge("gauge", reset_on_collect=False)

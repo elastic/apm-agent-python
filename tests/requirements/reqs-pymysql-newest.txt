@@ -1,0 +1,2 @@
+pymysql
+-r reqs-base.txt

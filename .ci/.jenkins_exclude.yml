@@ -10,14 +10,6 @@ exclude:
     FRAMEWORK: django-3.0
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: django-master
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-2.1
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-2.2
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-3.0
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: django-master
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: django-3.0
   - PYTHON_VERSION: python-3.7
@@ -60,8 +52,6 @@ exclude:
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: celery-4-flask-1.0
   # requests
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.6
@@ -107,22 +97,7 @@ exclude:
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
-  # psycopg2
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: psycopg2-2.6
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: psycopg2-2.5
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: psycopg2-2.6
   # python-memcached
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.6
@@ -136,12 +111,17 @@ exclude:
   # pymssql
   - PYTHON_VERSION: pypy-2 # currently fails with error on pypy2
     FRAMEWORK: pymssql-newest
+  - PYTHON_VERSION: pypy-3 # currently fails with error on pypy3
+    FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.6 # currently fails with error on python 3.6 due to cython issues
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.7 # currently fails with error on python 3.7 due to cython issues
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.8 # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
+  # psycopg2
+  - PYTHON_VERSION: python-3.8 # see https://github.com/psycopg/psycopg2/issues/858
+    FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: pyodbc-newest
@@ -165,8 +145,6 @@ exclude:
   # zerorpc - only run on py2
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.4
-    FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.6
@@ -178,3 +156,80 @@ exclude:
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
     FRAMEWORK: gevent-newest
+  # aiohttp client, only supported in Python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiohttp-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiohttp-newest
+  # tornado, only supported in Python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: tornado-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: tornado-newest
+  # Starlette, only supported in python 3.7+
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: starlette-0.13
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: starlette-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: starlette-newest
+  # aiopg
+  - PYTHON_VERSION: python-2.7
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: pypy-2
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: aiopg-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiopg-newest
+  # psutil
+  - PYTHON_VERSION: pypy-2  #currently fails on pypy2 (https://github.com/giampaolo/psutil/issues/1659)
+    FRAMEWORK: psutil-newest

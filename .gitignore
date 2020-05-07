@@ -3,10 +3,11 @@
 *.egg
 *.db
 *.pid
-.coverage
+.coverage*
 .DS_Store
 .idea
 .vscode
+.benchmarks
 pip-log.txt
 /*.egg-info
 /build
@@ -17,7 +18,7 @@ pip-log.txt
 /docs/doctrees
 /example_project/*.db
 tests/.schemacache
-elasticapm/utils/wrapt/_wrappers.so
+elasticapm/utils/wrapt/_wrappers*.so
 coverage
 .tox
 .eggs
@@ -27,3 +28,6 @@ venv
 benchmarks/result*
 coverage.xml
 tests/python-agent-junit.xml
+*.code-workspace
+.pytest_cache/
+.python-version

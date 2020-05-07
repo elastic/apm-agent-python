@@ -53,7 +53,7 @@ class Tracer(TracerBase):
                 "Usage of other scope managers will lead to unpredictable results."
             )
         self._scope_manager = scope_manager or ThreadLocalScopeManager()
-        if self._agent.config.instrument:
+        if self._agent.config.instrument and self._agent.config.enabled:
             instrument()
 
     def start_active_span(
@@ -115,9 +115,9 @@ class Tracer(TracerBase):
 
     def extract(self, format, carrier):
         if format in (Format.HTTP_HEADERS, Format.TEXT_MAP):
-            if constants.TRACEPARENT_HEADER_NAME not in carrier:
+            trace_parent = disttracing.TraceParent.from_headers(carrier)
+            if not trace_parent:
                 raise SpanContextCorruptedException("could not extract span context from carrier")
-            trace_parent = disttracing.TraceParent.from_string(carrier[constants.TRACEPARENT_HEADER_NAME])
             return OTSpanContext(trace_parent=trace_parent)
         raise UnsupportedFormatException
 
@@ -125,6 +125,9 @@ class Tracer(TracerBase):
         if format in (Format.HTTP_HEADERS, Format.TEXT_MAP):
             if not isinstance(carrier, dict):
                 raise InvalidCarrierException("carrier for {} format should be dict-like".format(format))
-            carrier[constants.TRACEPARENT_HEADER_NAME] = span_context.trace_parent.to_ascii()
+            val = span_context.trace_parent.to_ascii()
+            carrier[constants.TRACEPARENT_HEADER_NAME] = val
+            if self._agent.config.use_elastic_traceparent_header:
+                carrier[constants.TRACEPARENT_LEGACY_HEADER_NAME] = val
             return
         raise UnsupportedFormatException

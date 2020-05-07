@@ -49,6 +49,7 @@ from elasticapm.conf.constants import SPAN
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils import compat
+from elasticapm.utils.threading import ThreadManager
 
 try:
     from urllib.request import pathname2url
@@ -150,6 +151,7 @@ def elasticapm_client(request):
     client_config = getattr(request, "param", {})
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
+    client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("metrics_interval", "0ms")
@@ -223,16 +225,21 @@ def sending_elasticapm_client(request, validating_httpserver):
 
 
 class DummyTransport(HTTPTransportBase):
-    def __init__(self, url, **kwargs):
-        super(DummyTransport, self).__init__(url, **kwargs)
+    def __init__(self, url, *args, **kwargs):
+        super(DummyTransport, self).__init__(url, *args, **kwargs)
         self.events = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
         self._flushed.clear()
+        data = self._process_event(event_type, data)
         self.events[event_type].append(data)
         self._flushed.set()
 
-    def _start_event_processor(self):
+    def start_thread(self, pid=None):
+        # don't call the parent method, but the one from ThreadManager
+        ThreadManager.start_thread(self, pid=pid)
+
+    def stop_thread(self):
         pass
 
     def get_config(self, current_version=None, keys=None):
