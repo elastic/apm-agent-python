@@ -22,6 +22,11 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+ * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
