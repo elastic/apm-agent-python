@@ -28,6 +28,10 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import json
+
+import urllib3
+
 
 def guess_provider():
     """
@@ -42,7 +46,35 @@ def aws_metadata():
     Fetch AWS metadata from the local metadata server. If metadata server is
     not found, return an empty dictionary
     """
-    raise NotImplementedError()
+    ret = {}
+
+    try:
+        ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
+        token_url = "http://169.254.169.254/latest/api/token"
+        token_request = urllib3.request("PUT", token_url, headers=ttl_header, timeout=3.0)
+        token = token_request.data.decode("utf-8")
+        aws_token_header = {"X-aws-ec2-metadata-token": token}
+        r = json.loads(
+            urllib3.request(
+                "GET",
+                "http://169.254.169.254/latest/dynamic/instance-identity/document",
+                headers=aws_token_header,
+                timeout=3,
+            ).data.decode("utf-8")
+        )
+
+        ret = {
+            "account": {"id": r["accountId"]},
+            "instance": {"id": r["instanceId"]},
+            "availability_zone": r["availabilityZone"],
+            "machine": {"type": r["instanceType"]},
+            "provider": "aws",
+            "region": r["region"],
+        }
+    except Exception:
+        # Not on an AWS box
+        return {}
+    return ret
 
 
 def gcp_metadata():
