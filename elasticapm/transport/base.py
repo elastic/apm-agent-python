@@ -233,8 +233,9 @@ class Transport(ThreadManager):
         super(Transport, self).start_thread(pid=pid)
         if (not self._thread or self.pid != self._thread.pid) and not self._closed:
             # Update our pid in the metadata
-            self._metadata["process"]["pid"] = pid
-            self._metadata["process"]["ppid"] = os.getppid()
+            if self._metadata.get("process", {}).get("pid"):
+                self._metadata["process"]["pid"] = pid
+                self._metadata["process"]["ppid"] = os.getppid()
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
