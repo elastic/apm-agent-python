@@ -361,12 +361,44 @@ class Client(object):
             system_data["kubernetes"] = k8s
         return system_data
 
+    def get_cloud_info(self):
+        """
+        Detects if the app is running in a cloud provider and fetches relevant
+        metadata from the cloud provider's metadata endpoint.
+        """
+        provider = self.config.cloud_provider
+        if provider is None:
+            provider = elasticapm.utils.cloud.guess_provider()
+
+        if provider is False:
+            return {}
+        if provider == "aws":
+            return elasticapm.utils.cloud.aws_metadata()
+        elif provider == "gcp":
+            return elasticapm.utils.cloud.gcp_metadata()
+        elif provider == "azure":
+            return elasticapm.utils.cloud.azure_metadata()
+        else:
+            # Trial and error
+            data = {}
+            data = elasticapm.utils.cloud.aws_metadata()
+            if data:
+                return data
+            data = elasticapm.utils.cloud.gcp_metadata()
+            if data:
+                return data
+            data = elasticapm.utils.cloud.azure_metadata()
+            return data
+
     def _build_metadata(self):
         data = {
             "service": self.get_service_info(),
             "process": self.get_process_info(),
             "system": self.get_system_info(),
+            "cloud": self.get_cloud_info(),
         }
+        if not data["cloud"]:
+            data.pop("cloud")
         if self.config.global_labels:
             data["labels"] = enforce_label_format(self.config.global_labels)
         return data
