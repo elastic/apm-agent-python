@@ -30,6 +30,7 @@
 
 import logging
 import sys
+import warnings
 from logging import LogRecord
 
 import pytest
@@ -42,7 +43,6 @@ from elasticapm.traces import Tracer, capture_span
 from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
-from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
@@ -347,8 +347,10 @@ def test_formatter():
     assert hasattr(record, "elasticapm_transaction_id")
 
 
-def test_logging_handler_no_client(caplog):
+def test_logging_handler_no_client(recwarn):
     # In 6.0, this should be changed to expect a ValueError instead of a log
-    with caplog.at_level("ERROR", "elasticapm.handlers"):
-        LoggingHandler()
-    assert_any_record_contains(caplog.records, "LoggingHandler requires a Client instance")
+    warnings.simplefilter("always")
+    LoggingHandler()
+    assert len(recwarn) == 1
+    w = recwarn.pop(PendingDeprecationWarning)
+    assert "LoggingHandler requires a Client instance" in w.message.args[0]

@@ -34,6 +34,7 @@ from __future__ import absolute_import
 import logging
 import sys
 import traceback
+import warnings
 
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
@@ -58,10 +59,10 @@ class LoggingHandler(logging.Handler):
                 self.client = client_cls(*args, **kwargs)
             else:
                 # In 6.0, this should raise a ValueError
-                logger = logging.getLogger("elasticapm.handlers")
-                logger.error(
+                warnings.warn(
                     "LoggingHandler requires a Client instance. No Client was "
-                    "received. This will result in an error starting in v6.0"
+                    "received. This will result in an error starting in v6.0",
+                    PendingDeprecationWarning,
                 )
                 self.client = Client(*args, **kwargs)
         logging.Handler.__init__(self, level=kwargs.get("level", logging.NOTSET))
