@@ -57,7 +57,13 @@ class LoggingHandler(logging.Handler):
             if client_cls:
                 self.client = client_cls(*args, **kwargs)
             else:
-                raise ValueError("LoggingHandler requires a Client instance. No Client was received.")
+                # In 6.0, this should raise a ValueError
+                logger = logging.getLogger("elasticapm.handlers")
+                logger.error(
+                    "LoggingHandler requires a Client instance. No Client was "
+                    "received. This will result in an error starting in v6.0"
+                )
+                self.client = Client(*args, **kwargs)
         logging.Handler.__init__(self, level=kwargs.get("level", logging.NOTSET))
 
     def emit(self, record):

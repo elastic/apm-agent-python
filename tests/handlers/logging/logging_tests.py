@@ -42,6 +42,7 @@ from elasticapm.traces import Tracer, capture_span
 from elasticapm.utils import compat
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
+from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
@@ -212,11 +213,6 @@ def test_client_kwarg(elasticapm_client):
     assert handler.client == elasticapm_client
 
 
-def test_invalid_first_arg_type():
-    with pytest.raises(ValueError):
-        LoggingHandler(object)
-
-
 def test_logger_setup():
     handler = LoggingHandler(
         server_url="foo", service_name="bar", secret_token="baz", metrics_interval="0ms", client_cls=TempStoreClient
@@ -349,3 +345,10 @@ def test_formatter():
     formatted_time = formatter.formatTime(record)
     assert formatted_time
     assert hasattr(record, "elasticapm_transaction_id")
+
+
+def test_logging_handler_no_client(caplog):
+    # In 6.0, this should be changed to expect a ValueError instead of a log
+    with caplog.at_level("ERROR", "elasticapm.handlers"):
+        LoggingHandler()
+    assert_any_record_contains(caplog.records, "LoggingHandler requires a Client instance")
