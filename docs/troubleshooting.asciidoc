@@ -77,6 +77,16 @@ To get the agent to log more data, all that is needed is a
 https://docs.python.org/3/library/logging.html#handler-objects[Handler] which
 is attached either to the `elasticapm` logger or to the root logger.
 
+Note that if you attach the handler to the root logger, you also need to
+explicitly set the log level of the `elasticapm` logger:
+
+[source,python]
+----
+import logging
+apm_logger = logging.getLogger("elasticapm")
+apm_logger.setLevel(logging.DEBUG)
+----
+
 [float]
 [[django-agent-logging]]
 ==== Django
