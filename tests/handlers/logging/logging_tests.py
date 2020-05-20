@@ -351,6 +351,9 @@ def test_logging_handler_no_client(recwarn):
     # In 6.0, this should be changed to expect a ValueError instead of a log
     warnings.simplefilter("always")
     LoggingHandler()
-    assert len(recwarn) == 1
-    w = recwarn.pop(PendingDeprecationWarning)
-    assert "LoggingHandler requires a Client instance" in w.message.args[0]
+    while True:
+        # If we never find our desired warning this will eventually throw an
+        # AssertionError
+        w = recwarn.pop(PendingDeprecationWarning)
+        if "LoggingHandler requires a Client instance" in w.message.args[0]:
+            return True
