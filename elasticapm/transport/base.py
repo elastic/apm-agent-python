@@ -235,7 +235,9 @@ class Transport(ThreadManager):
             # Update our pid in the metadata
             if self._metadata.get("process", {}).get("pid"):
                 self._metadata["process"]["pid"] = pid
-                self._metadata["process"]["ppid"] = os.getppid()
+                if hasattr(os, "getppid"):
+                    # Windows python 2.7 was failing
+                    self._metadata["process"]["ppid"] = os.getppid()
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
