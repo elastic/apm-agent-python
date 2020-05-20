@@ -44,22 +44,20 @@ from elasticapm.utils.stacks import iter_stack_frames
 
 class LoggingHandler(logging.Handler):
     def __init__(self, *args, **kwargs):
-        client = kwargs.pop("client_cls", Client)
-        if len(args) == 1:
+        self.client = None
+        if "client" in kwargs:
+            self.client = kwargs.pop("client")
+        elif len(args) > 0:
             arg = args[0]
-            args = args[1:]
             if isinstance(arg, Client):
                 self.client = arg
-            else:
-                raise ValueError(
-                    "The first argument to %s must be a Client instance, "
-                    "got %r instead." % (self.__class__.__name__, arg)
-                )
-        elif "client" in kwargs:
-            self.client = kwargs.pop("client")
-        else:
-            self.client = client(*args, **kwargs)
 
+        if not self.client:
+            client_cls = kwargs.pop("client_cls", None)
+            if client_cls:
+                self.client = client_cls(*args, **kwargs)
+            else:
+                raise ValueError("LoggingHandler requires a Client instance. No Client was received.")
         logging.Handler.__init__(self, level=kwargs.get("level", logging.NOTSET))
 
     def emit(self, record):
