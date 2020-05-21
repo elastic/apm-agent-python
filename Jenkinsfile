@@ -143,6 +143,12 @@ pipeline {
           }
         }
       }
+      post {
+        always {
+          convergeCoverage()
+          generateResultsReport()
+        }
+      }
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
@@ -305,10 +311,6 @@ pipeline {
   }
   post {
     cleanup {
-      whenTrue(env.ONLY_DOCS == 'false') {
-        convergeCoverage()
-        generateResultsReport()
-      }
       notifyBuildResult()
     }
   }
@@ -466,9 +468,6 @@ def generateStepForWindows(Map v = [:]){
 }
 
 def convergeCoverage() {
-  deleteDir()
-  unstash('source')
-  unstash('packages')
   sh script: 'pip3 install --user coverage', label: 'Installing coverage'
   dir("${BASE_DIR}"){
     def matrixDump = pythonTasksGen.dumpMatrix("-")
