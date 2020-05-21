@@ -143,6 +143,12 @@ pipeline {
           }
         }
       }
+      post {
+        always {
+          convergeCoverage()
+          generateResultsReport()
+        }
+      }
     }
     stage('Building packages') {
       options { skipDefaultCheckout() }
@@ -305,10 +311,6 @@ pipeline {
   }
   post {
     cleanup {
-      whenTrue(env.ONLY_DOCS == 'false') {
-        convergeCoverage()
-        generateResultsReport()
-      }
       notifyBuildResult()
     }
   }
@@ -365,10 +367,6 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 0)
             steps.error("${label} tests failed : ${e.toString()}\n")
           } finally {
-            steps.junit(allowEmptyResults: true,
-              keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
-            )
             steps.dir("${steps.env.BASE_DIR}/tests"){
               steps.archiveArtifacts(
                 allowEmptyArchive: true,
@@ -376,16 +374,17 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
                 defaultExcludes: false
               )
             }
-            // steps.env.PYTHON_VERSION = "${x}"
-            // steps.env.WEBFRAMEWORK = "${y}"
             steps.dir("${steps.env.BASE_DIR}"){
-              steps.script {
-                steps.stash(
-                name: "coverage-${x}-${y}",
-                includes: ".coverage.${x}.${y}",
-                allowEmpty: false
+              steps.junit(allowEmptyResults: true,
+                keepLongStdio: true,
+                testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
               )
-             }
+              // steps.env.PYTHON_VERSION = "${x}"
+              // steps.env.WEBFRAMEWORK = "${y}"
+              steps.stash(name: "coverage-${x}-${y}",
+                includes: ".coverage.${x}.${y}",
+                allowEmpty: true
+              )
             }
           }
         }
@@ -445,19 +444,16 @@ def generateStepForWindows(Map v = [:]){
             installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
-            script{
-              stash(
-                name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
-                includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
-                allowEmpty: false
-              )
-            }
           }
         } catch(e){
           error(e.toString())
         } finally {
           dir("${BASE_DIR}"){
             junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
+            stash(name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
+              includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
+              allowEmpty: true
+            )
           }
         }
       }
@@ -466,9 +462,6 @@ def generateStepForWindows(Map v = [:]){
 }
 
 def convergeCoverage() {
-  deleteDir()
-  unstash('source')
-  unstash('packages')
   sh script: 'pip3 install --user coverage', label: 'Installing coverage'
   dir("${BASE_DIR}"){
     def matrixDump = pythonTasksGen.dumpMatrix("-")
