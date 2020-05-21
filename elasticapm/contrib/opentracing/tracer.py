@@ -91,7 +91,7 @@ class Tracer(TracerBase):
         start_time_monotonic = None
         if start_time is not None:
             start_time_monotonic = SYSTEM_TO_MONOTONIC.convert_timestamp(start_time)
-        if not transaction:
+        if not transaction or ignore_active_span:
             trace_parent = parent_context.trace_parent if parent_context else None
             transaction = self._agent.begin_transaction(
                 "custom", trace_parent=trace_parent, start=start_time_monotonic, start_timestamp=start_time
