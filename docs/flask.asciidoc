@@ -134,10 +134,10 @@ apm.capture_message('hello, world!')
 [[flask-logging]]
 ==== Shipping Logs to Elasticsearch
 
-Passing `logging=LEVEL` to the ElasticAPM constructor will make the agent
-automatically ship all log messages from Python's built-in `logging` module
-to Elasticsearch, with the given level or higher. `LEVEL` has to be one of
-the levels defined in the
+Enable automatic log shipping by passing `logging=LEVEL` to the ElasticAPM
+constructor. The agent will then ship all log messages with the given
+log-level or higher, from Python's built-in `logging` module to
+Elasticsearch. `LEVEL` must be one of the levels defined in the
 https://docs.python.org/3/library/logging.html#logging-levels[`logging`]
 module.
 
@@ -168,7 +168,7 @@ For fine-grained control, you can initialize a logging handler and add it,
 just as you would with any other handler.
 
 For information on how to increase the log verbosity from the APM agent, see
-the <<troubleshooting,`troubleshooting docs`>>.
+<<agent-logging,troubleshooting agent logging>>.
 
 [source,python]
 ----
