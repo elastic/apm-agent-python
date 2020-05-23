@@ -382,7 +382,7 @@ class Span(BaseSpan):
         self.id = "%016x" % random.getrandbits(64)
         self.transaction = transaction
         self.name = name
-        self.context = context
+        self.context = context if context is not None else {}
         self.leaf = leaf
         # timestamp is bit of a mix of monotonic and non-monotonic time sources.
         # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
@@ -458,6 +458,17 @@ class Span(BaseSpan):
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
 
+    def update_context(self, key, data):
+        """
+        Update the context data for given key
+        :param key: the key, e.g. "db"
+        :param data: a dictionary
+        :return: None
+        """
+        current = self.context.get(key, {})
+        current.update(data)
+        self.context[key] = current
+
     def __str__(self):
         return u"{}/{}/{}".format(self.name, self.type, self.subtype)
 
@@ -480,6 +491,25 @@ class DroppedSpan(BaseSpan):
     def child_ended(self, timestamp):
         pass
 
+    def update_context(self, key, data):
+        pass
+
+    @property
+    def type(self):
+        return None
+
+    @property
+    def subtype(self):
+        return None
+
+    @property
+    def action(self):
+        return None
+
+    @property
+    def context(self):
+        return None
+
 
 class Tracer(object):
     def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent):
@@ -489,11 +519,13 @@ class Tracer(object):
         self.frames_collector_func = frames_collector_func
         self._agent = agent
         self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
-        if config.span_frames_min_duration in (-1, None):
-            # both None and -1 mean "no minimum"
-            self.span_frames_min_duration = None
+
+    @property
+    def span_frames_min_duration(self):
+        if self.config.span_frames_min_duration in (-1, None):
+            return None
         else:
-            self.span_frames_min_duration = config.span_frames_min_duration / 1000.0
+            return self.config.span_frames_min_duration / 1000.0
 
     def begin_transaction(self, transaction_type, trace_parent=None, start=None):
         """

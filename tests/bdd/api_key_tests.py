@@ -31,7 +31,6 @@ import itertools
 import os
 
 import pytest
-
 from pytest_bdd import given, parsers, scenario, scenarios, then, when
 
 pytestmark = pytest.mark.bdd
@@ -59,6 +58,11 @@ def set_any_api_key(an_agent):
 @when("a secret_token is set in the config")
 def set_any_secret_token(an_agent):
     an_agent.config.update(next(version_counter), secret_token="foo")
+
+
+@when(parsers.parse("a secret_token is set to '{key}' in the config"))
+def set_any_secret_token(an_agent, key):
+    an_agent.config.update(next(version_counter), secret_token=key)
 
 
 @when("an api key is not set in the config")

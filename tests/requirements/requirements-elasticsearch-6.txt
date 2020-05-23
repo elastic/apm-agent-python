@@ -1,3 +1,0 @@
-elasticsearch>=6.0,<7.0
-elasticsearch-async ; python_version >= '3.7'
--r requirements-base.txt

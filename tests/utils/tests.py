@@ -28,12 +28,20 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
 from functools import partial
 
 import pytest
 
 from elasticapm.conf import constants
-from elasticapm.utils import get_name_from_func, get_url_dict, sanitize_url, starmatch_to_regex
+from elasticapm.utils import (
+    get_name_from_func,
+    get_url_dict,
+    read_pem_file,
+    sanitize_url,
+    starmatch_to_regex,
+    url_to_destination,
+)
 from elasticapm.utils.deprecation import deprecated
 
 try:
@@ -200,3 +208,34 @@ def test_url_sanitization():
 def test_url_sanitization_urlencoded_password():
     sanitized = sanitize_url("http://user:%F0%9F%9A%B4@localhost:123/foo?bar=baz#bazzinga")
     assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+
+
+@pytest.mark.parametrize(
+    "url,name,resource",
+    [
+        ("http://user:pass@testing.local:1234/path?query", "http://testing.local:1234", "testing.local:1234"),
+        ("https://www.elastic.co:443/products/apm", "https://www.elastic.co", "www.elastic.co:443"),
+        ("http://[::1]/", "http://[::1]", "[::1]:80"),
+    ],
+)
+def test_url_to_destination(url, name, resource):
+    destination = url_to_destination(url)
+    assert destination["service"]["name"] == name
+    assert destination["service"]["resource"] == resource
+
+
+def test_url_to_destination_bad_port():
+    destination = url_to_destination("https://www.elastic.co:bad")
+    assert destination["service"]["resource"] == "www.elastic.co:443"
+
+
+def test_read_pem_file():
+    with open(os.path.join(os.path.dirname(__file__), "..", "ca", "ca.crt"), mode="rb") as f:
+        result = read_pem_file(f)
+        assert result.startswith(b"0\x82\x05{0\x82\x03c\xa0\x03\x02\x01\x02\x02\x14")
+
+
+def test_read_pem_file_chain():
+    with open(os.path.join(os.path.dirname(__file__), "..", "ca", "chain.crt"), mode="rb") as f:
+        result = read_pem_file(f)
+        assert result.endswith(b"\xc8\xae")

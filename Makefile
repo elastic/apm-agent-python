@@ -16,7 +16,8 @@ test:
 		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/py3_*.py' --ignore-glob='*/asyncio/*'; \
 	fi
 
-coverage: PYTEST_ARGS=--cov --cov-report xml:coverage.xml
+coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg --cov-branch
+coverage: export COVERAGE_FILE=.coverage.$(PYTHON_FULL_VERSION).$(WEBFRAMEWORK)
 coverage: test
 
 docs:
@@ -24,8 +25,5 @@ docs:
 
 update-json-schema:
 	bash ./tests/scripts/download_json_schema.sh
-
-update-gherkin-features:
-	bash ./tests/scripts/download_gherkin_features.sh
 
 .PHONY: isort flake8 test coverage docs update-json-schema

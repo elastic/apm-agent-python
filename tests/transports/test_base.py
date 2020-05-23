@@ -37,7 +37,7 @@ import timeit
 import mock
 import pytest
 
-from elasticapm.transport.base import AsyncTransport, Transport, TransportException, TransportState
+from elasticapm.transport.base import Transport, TransportException, TransportState
 from elasticapm.utils import compat
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
@@ -84,8 +84,9 @@ def test_transport_state_set_success():
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
-def test_empty_queue_flush_is_not_sent(mock_send):
-    transport = Transport(client=None, metadata={"x": "y"}, max_flush_time=5)
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
+def test_empty_queue_flush_is_not_sent(mock_send, elasticapm_client):
+    transport = Transport(client=elasticapm_client, metadata={"x": "y"})
     try:
         transport.start_thread()
         transport.flush()
@@ -95,8 +96,9 @@ def test_empty_queue_flush_is_not_sent(mock_send):
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
-def test_metadata_prepended(mock_send):
-    transport = Transport(client=None, metadata={"x": "y"}, max_flush_time=5, compress_level=0)
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
+def test_metadata_prepended(mock_send, elasticapm_client):
+    transport = Transport(client=elasticapm_client, metadata={"x": "y"}, compress_level=0)
     transport.start_thread()
     transport.queue("error", {}, flush=True)
     transport.close()
@@ -111,9 +113,33 @@ def test_metadata_prepended(mock_send):
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
-def test_flush_time(mock_send, caplog):
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "100ms"}], indirect=True)
+def test_flush_time(mock_send, caplog, elasticapm_client):
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(client=None, metadata={}, max_flush_time=0.1)
+        transport = Transport(client=elasticapm_client, metadata={})
+        transport.start_thread()
+        # let first run finish
+        time.sleep(0.2)
+        transport.close()
+    record = caplog.records[0]
+    assert "due to time since last flush" in record.message
+    assert mock_send.call_count == 0
+
+
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
+    elasticapm_client.config.update(version="1", api_request_time="1s")
+    with caplog.at_level("DEBUG", "elasticapm.transport"):
+        transport = Transport(client=elasticapm_client, metadata={})
+        transport.start_thread()
+        # let first run finish
+        time.sleep(0.2)
+        transport.close()
+    assert not caplog.records
+    assert mock_send.call_count == 0
+    elasticapm_client.config.update(version="1", api_request_time="100ms")
+    with caplog.at_level("DEBUG", "elasticapm.transport"):
+        transport = Transport(client=elasticapm_client, metadata={})
         transport.start_thread()
         # let first run finish
         time.sleep(0.2)
@@ -124,8 +150,33 @@ def test_flush_time(mock_send, caplog):
 
 
 @mock.patch("elasticapm.transport.base.Transport._flush")
-def test_flush_time_size(mock_flush, caplog):
-    transport = Transport(client=None, metadata={}, max_buffer_size=100, queue_chill_count=1)
+def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
+    elasticapm_client.config.update(version="1", api_request_size="100b")
+    transport = Transport(client=elasticapm_client, metadata={}, queue_chill_count=1)
+    transport.start_thread()
+    try:
+        with caplog.at_level("DEBUG", "elasticapm.transport"):
+            # we need to add lots of uncompressible data to fill up the gzip-internal buffer
+            for i in range(12):
+                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+            transport._flushed.wait(timeout=0.1)
+        assert mock_flush.call_count == 1
+        elasticapm_client.config.update(version="1", api_request_size="1mb")
+        with caplog.at_level("DEBUG", "elasticapm.transport"):
+            # we need to add lots of uncompressible data to fill up the gzip-internal buffer
+            for i in range(12):
+                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+            transport._flushed.wait(timeout=0.1)
+        # Should be unchanged because our buffer limit is much higher.
+        assert mock_flush.call_count == 1
+    finally:
+        transport.close()
+
+
+@mock.patch("elasticapm.transport.base.Transport._flush")
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_size": "100b"}], indirect=True)
+def test_flush_time_size(mock_flush, caplog, elasticapm_client):
+    transport = Transport(client=elasticapm_client, metadata={}, queue_chill_count=1)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
@@ -139,8 +190,9 @@ def test_flush_time_size(mock_flush, caplog):
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
-def test_forced_flush(mock_send, caplog):
-    transport = Transport(client=None, metadata={}, max_buffer_size=1000, compress_level=0)
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_size": "1000b"}], indirect=True)
+def test_forced_flush(mock_send, caplog, elasticapm_client):
+    transport = Transport(client=elasticapm_client, metadata={}, compress_level=0)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):

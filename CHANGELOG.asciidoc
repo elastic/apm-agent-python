@@ -18,13 +18,66 @@ endif::[]
 ===== Bug fixes
 ////
 
-//=== Unreleased
+=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+ * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
+
+[[release-notes-5.6.0]]
+==== v5.6.0
+
+[float]
+===== New features
+ * Added SERVICE_NODE_NAME config {pull}592[#592]
+ * Added instrumentation support for https://github.com/pinterest/pymemcache[`pymemcache`] {pull}812[#812]
+ * Added new configuration options `enabled` and `recording` {pull}790[#790]
+
+[float]
+===== Bug fixes
+ * Fixed an issue with metrics collection raising RuntimeErrors {pull}802[#802]
+ * Fixed an issue with getting extended destination data from pymongo {pull}797[#797]
+ * Fixed an issue with Tornado instrumentation when Tornado isn't the "main" framework {pull}813[#813]
+ * Fixed an issue with streaming requests being consumed by the agent even if capture_body is disabled {pull}817[#817]
+
+[float]
+===== Pending Deprecations
+
+ * Python 2.7 suppot will be dropped in version 6.0 of the agent.
+
+[[release-notes-5.5.2]]
+==== v5.5.2
+
+[float]
+===== Bug fixes
+* Fixed an issue with Redis using unix domain sockets and destination information {pull}766[#766]
+
+[[release-notes-5.5.1]]
+==== v5.5.1
+
+[float]
+===== Bug fixes
+* Fixed Starlette middleware when capturing request body while the content-type header is absent {pull}763[#763]
+
+[[release-notes-5.5.0]]
+==== v5.5.0
+
+[float]
+===== Features
+* Added destination information to database/HTTP spans, used for service maps {pull}618[#618]
+
+[float]
+===== Deprecations
+
+ * *Python 3.4 is no longer supported.*
+
 
 [[release-notes-5.4.3]]
 ==== v5.4.3

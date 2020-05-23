@@ -1,7 +1,3 @@
-"""Provides classes to instrument dbapi2 providers
-
-https://www.python.org/dev/peps/pep-0249/
-"""
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2019, Elasticsearch BV
@@ -31,6 +27,11 @@ https://www.python.org/dev/peps/pep-0249/
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+"""Provides classes to instrument dbapi2 providers
+
+https://www.python.org/dev/peps/pep-0249/
+"""
 
 import re
 
@@ -196,6 +197,11 @@ EXEC_ACTION = "exec"
 
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
+    DML_QUERIES = ("INSERT", "DELETE", "UPDATE")
+
+    def __init__(self, wrapped, destination_info=None):
+        super(CursorProxy, self).__init__(wrapped)
+        self._self_destination_info = destination_info
 
     def callproc(self, procname, params=None):
         return self._trace_sql(self.__wrapped__.callproc, procname, params, action=EXEC_ACTION)
@@ -224,13 +230,17 @@ class CursorProxy(wrapt.ObjectProxy):
             span_type="db",
             span_subtype=self.provider_name,
             span_action=action,
-            extra={"db": {"type": "sql", "statement": sql_string}},
+            extra={"db": {"type": "sql", "statement": sql_string}, "destination": self._self_destination_info},
             skip_frames=1,
-        ):
+        ) as span:
             if params is None:
-                return method(sql)
+                result = method(sql)
             else:
-                return method(sql, params)
+                result = method(sql, params)
+            # store "rows affected", but only for DML queries like insert/update/delete
+            if span and self.rowcount not in (-1, None) and signature.startswith(self.DML_QUERIES):
+                span.update_context("db", {"rows_affected": self.rowcount})
+            return result
 
     def extract_signature(self, sql):
         raise NotImplementedError()
@@ -239,8 +249,12 @@ class CursorProxy(wrapt.ObjectProxy):
 class ConnectionProxy(wrapt.ObjectProxy):
     cursor_proxy = CursorProxy
 
+    def __init__(self, wrapped, destination_info=None):
+        super(ConnectionProxy, self).__init__(wrapped)
+        self._self_destination_info = destination_info
+
     def cursor(self, *args, **kwargs):
-        return self.cursor_proxy(self.__wrapped__.cursor(*args, **kwargs))
+        return self.cursor_proxy(self.__wrapped__.cursor(*args, **kwargs), self._self_destination_info)
 
 
 class DbApi2Instrumentation(AbstractInstrumentedModule):

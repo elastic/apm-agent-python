@@ -44,20 +44,18 @@ DISTINCT_LABEL_LIMIT = 1000
 
 
 class MetricsRegistry(ThreadManager):
-    def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
+    def __init__(self, client, tags=None):
         """
         Creates a new metric registry
 
-        :param collect_interval: the interval to collect metrics from registered metric sets
-        :param queue_func: the function to call with the collected metrics
+        :param client: client instance
         :param tags:
         """
-        self._collect_interval = collect_interval
-        self._queue_func = queue_func
+        self.client = client
         self._metricsets = {}
         self._tags = tags or {}
         self._collect_timer = None
-        self._ignore_patterns = ignore_patterns or ()
+        super(MetricsRegistry, self).__init__()
 
     def register(self, class_path):
         """
@@ -84,16 +82,18 @@ class MetricsRegistry(ThreadManager):
         Collect metrics from all registered metric sets and queues them for sending
         :return:
         """
-        logger.debug("Collecting metrics")
+        if self.client.config.is_recording:
+            logger.debug("Collecting metrics")
 
-        for name, metricset in compat.iteritems(self._metricsets):
-            for data in metricset.collect():
-                self._queue_func(constants.METRICSET, data)
+            for _, metricset in compat.iteritems(self._metricsets):
+                for data in metricset.collect():
+                    self.client.queue(constants.METRICSET, data)
 
-    def start_thread(self):
-        if self._collect_interval:
+    def start_thread(self, pid=None):
+        super(MetricsRegistry, self).start_thread(pid=pid)
+        if self.client.config.metrics_interval:
             self._collect_timer = IntervalTimer(
-                self.collect, self._collect_interval, name="eapm metrics collect timer", daemon=True
+                self.collect, self.collect_interval, name="eapm metrics collect timer", daemon=True
             )
             logger.debug("Starting metrics collect timer")
             self._collect_timer.start()
@@ -103,6 +103,14 @@ class MetricsRegistry(ThreadManager):
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
             self._collect_timer = None
+
+    @property
+    def collect_interval(self):
+        return self.client.config.metrics_interval / 1000.0
+
+    @property
+    def ignore_patterns(self):
+        return self.client.config.disable_metrics or []
 
 
 class MetricsSet(object):
@@ -159,9 +167,7 @@ class MetricsSet(object):
         key = (name, labels)
         with self._lock:
             if key not in container:
-                if self._registry._ignore_patterns and any(
-                    pattern.match(name) for pattern in self._registry._ignore_patterns
-                ):
+                if any(pattern.match(name) for pattern in self._registry.ignore_patterns):
                     metric = noop_metric
                 elif len(self._gauges) + len(self._counters) + len(self._timers) >= DISTINCT_LABEL_LIMIT:
                     if not self._label_limit_logged:
@@ -192,7 +198,8 @@ class MetricsSet(object):
         timestamp = int(time.time() * 1000000)
         samples = defaultdict(dict)
         if self._counters:
-            for (name, labels), c in compat.iteritems(self._counters):
+            # iterate over a copy of the dict to avoid threading issues, see #717
+            for (name, labels), c in compat.iteritems(self._counters.copy()):
                 if c is not noop_metric:
                     val = c.val
                     if val or not c.reset_on_collect:
@@ -200,7 +207,7 @@ class MetricsSet(object):
                     if c.reset_on_collect:
                         c.reset()
         if self._gauges:
-            for (name, labels), g in compat.iteritems(self._gauges):
+            for (name, labels), g in compat.iteritems(self._gauges.copy()):
                 if g is not noop_metric:
                     val = g.val
                     if val or not g.reset_on_collect:
@@ -208,7 +215,7 @@ class MetricsSet(object):
                     if g.reset_on_collect:
                         g.reset()
         if self._timers:
-            for (name, labels), t in compat.iteritems(self._timers):
+            for (name, labels), t in compat.iteritems(self._timers.copy()):
                 if t is not noop_metric:
                     val, count = t.val
                     if val or not t.reset_on_collect:

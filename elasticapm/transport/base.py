@@ -38,7 +38,6 @@ import time
 import timeit
 from collections import defaultdict
 
-from elasticapm.contrib.async_worker import AsyncWorker
 from elasticapm.utils import compat, json_encoder
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import ThreadManager
@@ -68,8 +67,6 @@ class Transport(ThreadManager):
         metadata=None,
         compress_level=5,
         json_serializer=json_encoder.dumps,
-        max_flush_time=None,
-        max_buffer_size=None,
         queue_chill_count=500,
         queue_chill_time=1.0,
         processors=None,
@@ -81,8 +78,6 @@ class Transport(ThreadManager):
         :param metadata: Metadata object to prepend to every queue
         :param compress_level: GZip compress level. If zero, no GZip compression will be used
         :param json_serializer: serializer to use for JSON encoding
-        :param max_flush_time: Maximum time between flushes in seconds
-        :param max_buffer_size: Maximum size of buffer before flush
         :param kwargs:
         """
         self.client = client
@@ -90,8 +85,6 @@ class Transport(ThreadManager):
         self._metadata = metadata if metadata is not None else {}
         self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
-        self._max_flush_time = max_flush_time
-        self._max_buffer_size = max_buffer_size
         self._queued_data = None
         self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
         self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
@@ -101,6 +94,15 @@ class Transport(ThreadManager):
         self._flushed = threading.Event()
         self._closed = False
         self._processors = processors if processors is not None else []
+        super(Transport, self).__init__()
+
+    @property
+    def _max_flush_time(self):
+        return self.client.config.api_request_time / 1000.0 if self.client else None
+
+    @property
+    def _max_buffer_size(self):
+        return self.client.config.api_request_size if self.client else None
 
     def queue(self, event_type, data, flush=False):
         try:
@@ -227,13 +229,13 @@ class Transport(ThreadManager):
             except Exception as e:
                 self.handle_transport_fail(e)
 
-    def start_thread(self):
-        current_pid = os.getpid()
-        if (not self._thread or current_pid != self._thread.pid) and not self._closed:
+    def start_thread(self, pid=None):
+        super(Transport, self).start_thread(pid=pid)
+        if (not self._thread or self.pid != self._thread.pid) and not self._closed:
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
-                self._thread.pid = current_pid
+                self._thread.pid = self.pid
                 self._thread.start()
             except RuntimeError:
                 pass
@@ -284,34 +286,8 @@ class Transport(ThreadManager):
         self.state.set_fail()
 
 
-class AsyncTransport(Transport):
-    async_mode = True
-    sync_transport = Transport
-
-    def __init__(self, *args, **kwargs):
-        super(AsyncTransport, self).__init__(*args, **kwargs)
-        self._worker = None
-
-    @property
-    def worker(self):
-        if not self._worker or not self._worker.is_alive():
-            self._worker = AsyncWorker()
-        return self._worker
-
-    def send_sync(self, data=None):
-        try:
-            self.sync_transport.send(self, data)
-            self.handle_transport_success()
-        except Exception as e:
-            self.handle_transport_fail(exception=e)
-
-    def send_async(self, data):
-        self.worker.queue(self.send_sync, {"data": data})
-
-    def close(self):
-        super(AsyncTransport, self).close()
-        if self._worker:
-            self._worker.main_thread_terminated()
+# left for backwards compatibility
+AsyncTransport = Transport
 
 
 class TransportState(object):

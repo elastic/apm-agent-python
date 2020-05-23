@@ -72,6 +72,10 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
+    assert span["context"]["destination"] == {
+        "address": os.environ["ES_URL"],
+        "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
+    }
 
 
 @pytest.mark.integrationtest
@@ -325,8 +329,8 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    # Depending on ES_VERSION, could be /_all/_search or /_search
-    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search")
+    # Depending on ES_VERSION, could be /_all/_search or /_search, and GET or POST
+    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search", "ES POST /_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -376,7 +380,9 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets/_search"
+    # Starting in 7.6.0, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets/_search", "ES POST /tweets/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -489,7 +495,9 @@ def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
-    assert span["name"] == "ES GET /tweets,snaps/_search"
+    # Starting in 7.6.0, these turned into POST instead of GET. That detail is
+    # unimportant for these tests.
+    assert span["name"] in ("ES GET /tweets,snaps/_search", "ES POST /tweets,snaps/_search")
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"

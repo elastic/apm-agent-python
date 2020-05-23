@@ -1,0 +1,2 @@
+https://github.com/django/django/archive/master.zip#egg=Django==100
+-r reqs-base.txt

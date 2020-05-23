@@ -30,15 +30,16 @@
 
 import pytest  # isort:skip
 
-pytest.importorskip("redis")  # isort:skip
+redis = pytest.importorskip("redis")  # isort:skip
 
 import os
 from functools import partial
 
-import redis
+from redis import UnixDomainSocketConnection
 from redis.client import StrictRedis
 
 from elasticapm.conf.constants import TRANSACTION
+from elasticapm.instrumentation.packages.redis import get_destination_info
 from elasticapm.traces import capture_span
 
 pytestmark = [pytest.mark.redis]
@@ -71,6 +72,11 @@ def test_pipeline(instrument, elasticapm_client, redis_conn):
     assert spans[0]["type"] == "db"
     assert spans[0]["subtype"] == "redis"
     assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "redis", "resource": "redis", "type": "db"},
+    }
 
     assert spans[1]["name"] == "test_pipeline"
     assert spans[1]["type"] == "test"
@@ -99,6 +105,11 @@ def test_rq_patches_redis(instrument, elasticapm_client, redis_conn):
     assert spans[0]["type"] == "db"
     assert spans[0]["subtype"] == "redis"
     assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "redis", "resource": "redis", "type": "db"},
+    }
 
     assert spans[1]["name"] == "test_pipeline"
     assert spans[1]["type"] == "test"
@@ -125,13 +136,30 @@ def test_redis_client(instrument, elasticapm_client, redis_conn):
     assert spans[0]["type"] == "db"
     assert spans[0]["subtype"] == "redis"
     assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "redis", "resource": "redis", "type": "db"},
+    }
 
     assert spans[1]["name"] == "EXPIRE"
     assert spans[1]["type"] == "db"
     assert spans[1]["subtype"] == "redis"
     assert spans[1]["action"] == "query"
+    assert spans[1]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "redis", "resource": "redis", "type": "db"},
+    }
 
     assert spans[2]["name"] == "test_redis_client"
     assert spans[2]["type"] == "test"
 
     assert len(spans) == 3
+
+
+def test_unix_domain_socket_connection_destination_info():
+    conn = UnixDomainSocketConnection("/some/path")
+    destination_info = get_destination_info(conn)
+    assert destination_info["port"] is None
+    assert destination_info["address"] == "unix:///some/path"

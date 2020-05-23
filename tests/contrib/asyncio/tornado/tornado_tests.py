@@ -52,6 +52,8 @@ def app(elasticapm_client):
                 pass
             return self.write("Hello, world")
 
+        post = get
+
     class RenderHandler(tornado.web.RequestHandler):
         def get(self):
             with async_capture_span("test"):
@@ -63,11 +65,43 @@ def app(elasticapm_client):
         def get(self):
             raise tornado.web.HTTPError()
 
+        post = get
+
     app = tornado.web.Application(
         [(r"/", HelloHandler), (r"/boom", BoomHandler), (r"/render", RenderHandler)],
         template_path=os.path.join(os.path.dirname(__file__), "templates"),
     )
     apm = ElasticAPM(app, elasticapm_client)
+    return app
+
+
+@pytest.fixture
+def app_no_client():
+    class HelloHandler(tornado.web.RequestHandler):
+        def get(self):
+            with async_capture_span("test"):
+                pass
+            return self.write("Hello, world")
+
+        post = get
+
+    class RenderHandler(tornado.web.RequestHandler):
+        def get(self):
+            with async_capture_span("test"):
+                pass
+            items = ["Item 1", "Item 2", "Item 3"]
+            return self.render("test.html", title="Testing so hard", items=items)
+
+    class BoomHandler(tornado.web.RequestHandler):
+        def get(self):
+            raise tornado.web.HTTPError()
+
+        post = get
+
+    app = tornado.web.Application(
+        [(r"/", HelloHandler), (r"/boom", BoomHandler), (r"/render", RenderHandler)],
+        template_path=os.path.join(os.path.dirname(__file__), "templates"),
+    )
     return app
 
 
@@ -88,8 +122,8 @@ async def test_get(app, base_url, http_client):
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
-    request["method"] == "GET"
-    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
 
     assert span["name"] == "test"
 
@@ -156,8 +190,8 @@ async def test_render(app, base_url, http_client):
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 2
     request = transaction["context"]["request"]
-    request["method"] == "GET"
-    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
 
     span = spans[0]
     assert span["name"] == "test"
@@ -165,3 +199,42 @@ async def test_render(app, base_url, http_client):
     assert span["name"] == "test.html"
     assert span["action"] == "render"
     assert span["type"] == "template"
+
+
+@pytest.mark.gen_test
+async def test_capture_headers_body_is_dynamic(app, base_url, http_client):
+    elasticapm_client = app.elasticapm_client
+    for i, val in enumerate((True, False)):
+        elasticapm_client.config.update(str(i), capture_body="transaction" if val else "none", capture_headers=val)
+        await http_client.fetch(base_url, method="POST", body=b"xyz")
+
+        elasticapm_client.config.update(str(i) + str(i), capture_body="error" if val else "none", capture_headers=val)
+        with pytest.raises(tornado.httpclient.HTTPClientError):
+            await http_client.fetch(base_url + "/boom", method="POST", body=b"xyz")
+
+    transactions = elasticapm_client.events[constants.TRANSACTION]
+    errors = elasticapm_client.events[constants.ERROR]
+
+    assert "headers" in transactions[0]["context"]["request"]
+    assert transactions[0]["context"]["request"]["body"] == b"xyz"
+    assert "headers" in transactions[0]["context"]["response"]
+    assert "headers" in errors[0]["context"]["request"]
+    assert errors[0]["context"]["request"]["body"] == b"xyz"
+
+    assert "headers" not in transactions[2]["context"]["request"]
+    assert "headers" not in transactions[2]["context"]["response"]
+    assert transactions[2]["context"]["request"]["body"] == "[REDACTED]"
+    assert "headers" not in errors[1]["context"]["request"]
+    assert errors[1]["context"]["request"]["body"] == "[REDACTED]"
+
+
+@pytest.mark.gen_test
+async def test_no_elasticapm_client(app_no_client, base_url, http_client, elasticapm_client):
+    """
+    Need to make sure instrumentation works even when tornado is not
+    explicitly using the agent
+    """
+    elasticapm_client.begin_transaction("test")
+    response = await http_client.fetch(base_url)
+    assert response.code == 200
+    elasticapm_client.end_transaction("test")

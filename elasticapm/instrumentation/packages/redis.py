@@ -31,7 +31,7 @@
 from __future__ import absolute_import
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
+from elasticapm.traces import capture_span, execution_context
 
 
 class Redis3CheckMixin(object):
@@ -77,3 +77,26 @@ class RedisPipelineInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule)
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
         with capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True):
             return wrapped(*args, **kwargs)
+
+
+class RedisConnectionInstrumentation(AbstractInstrumentedModule):
+    name = "redis"
+
+    instrument_list = (("redis.connection", "Connection.send_packed_command"),)
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        span = execution_context.get_span()
+        if span and span.subtype == "redis":
+            span.context["destination"] = get_destination_info(instance)
+        return wrapped(*args, **kwargs)
+
+
+def get_destination_info(connection):
+    destination_info = {"service": {"name": "redis", "resource": "redis", "type": "db"}}
+    if hasattr(connection, "port"):
+        destination_info["port"] = connection.port
+        destination_info["address"] = connection.host
+    elif hasattr(connection, "path"):
+        destination_info["port"] = None
+        destination_info["address"] = "unix://" + connection.path
+    return destination_info

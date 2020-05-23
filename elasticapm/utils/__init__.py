@@ -45,7 +45,7 @@ except ImportError:
     partial_types = (partial,)
 
 
-default_ports = {"https": 443, "http": 80, "postgresql": 5432}
+default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
 
 
 def varmap(func, var, context=None, name=None):
@@ -137,14 +137,39 @@ def get_host_from_url(url):
     return host
 
 
+def url_to_destination(url, service_type="external"):
+    parts = compat.urlparse.urlsplit(url)
+    hostname = parts.hostname
+    # preserve brackets for IPv6 URLs
+    if "://[" in url:
+        hostname = "[%s]" % hostname
+    try:
+        port = parts.port
+    except ValueError:
+        # Malformed port, just use None rather than raising an exception
+        port = None
+    default_port = default_ports.get(parts.scheme, None)
+    name = "%s://%s" % (parts.scheme, hostname)
+    resource = hostname
+    if not port and parts.scheme in default_ports:
+        port = default_ports[parts.scheme]
+    if port:
+        if port != default_port:
+            name += ":%d" % port
+        resource += ":%d" % port
+    return {"service": {"name": name, "resource": resource, "type": service_type}}
+
+
 def read_pem_file(file_obj):
     cert = b""
     for line in file_obj:
         if line.startswith(b"-----BEGIN CERTIFICATE-----"):
             break
+    # scan until we find the first END CERTIFICATE marker
     for line in file_obj:
-        if not line.startswith(b"-----END CERTIFICATE-----"):
-            cert += line.strip()
+        if line.startswith(b"-----END CERTIFICATE-----"):
+            break
+        cert += line.strip()
     return base64.b64decode(cert)
 
 

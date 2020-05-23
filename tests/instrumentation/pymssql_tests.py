@@ -33,6 +33,8 @@ import os
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
+from elasticapm.instrumentation.packages.pymssql import get_host_port
+from elasticapm.utils import default_ports
 
 pymssql = pytest.importorskip("pymssql")
 
@@ -84,3 +86,50 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["destination"] == {
+            "address": "mssql",
+            "port": default_ports["mssql"],
+            "service": {"name": "mssql", "resource": "mssql", "type": "db"},
+        }
+
+
+@pytest.mark.parametrize(
+    "args,kwargs,expected",
+    [
+        (("localhost",), {"port": 1234}, {"host": "localhost", "port": 1234}),
+        (("localhost",), {}, {"host": "localhost", "port": default_ports["mssql"]}),
+        ((), {"host": "localhost,1234"}, {"host": "localhost", "port": 1234}),
+        ((), {"host": "localhost:1234"}, {"host": "localhost", "port": 1234}),
+    ],
+)
+def test_host_port_parsing(args, kwargs, expected):
+    host, port = get_host_port(args, kwargs)
+    assert host == expected["host"]
+    assert port == expected["port"]
+
+
+@pytest.mark.integrationtest
+def test_pymssql_rows_affected(instrument, pymssql_connection, elasticapm_client):
+    cursor = pymssql_connection.cursor()
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        cursor.execute("INSERT INTO test VALUES (4, 'four')")
+        cursor.execute("SELECT * FROM test")
+        cursor.execute("UPDATE test SET name = 'five' WHERE  id = 4")
+        cursor.execute("DELETE FROM test WHERE  id = 4")
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+        assert spans[0]["name"] == "INSERT INTO test"
+        assert spans[0]["context"]["db"]["rows_affected"] == 1
+
+        assert spans[1]["name"] == "SELECT FROM test"
+        assert "rows_affected" not in spans[1]["context"]["db"]
+
+        assert spans[2]["name"] == "UPDATE test"
+        assert spans[2]["context"]["db"]["rows_affected"] == 1
+
+        assert spans[3]["name"] == "DELETE FROM test"
+        assert spans[3]["context"]["db"]["rows_affected"] == 1

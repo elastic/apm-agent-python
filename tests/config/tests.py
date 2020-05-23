@@ -48,6 +48,7 @@ from elasticapm.conf import (
     _ConfigValue,
     _DictConfigValue,
     _ListConfigValue,
+    constants,
     duration_validator,
     setup_logging,
     size_validator,
@@ -282,3 +283,21 @@ def test_validate_catches_type_errors():
 
     c = MyConfig({"anint": "x"})
     assert "invalid literal" in c.errors["anint"]
+
+
+@pytest.mark.parametrize(
+    "val,expected",
+    [("transactions", constants.TRANSACTION), ("errors", constants.ERROR), ("all", "all"), ("off", "off")],
+)
+def test_capture_body_mapping(val, expected):
+    c = Config(inline_dict={"capture_body": val})
+    assert c.capture_body == expected
+
+
+@pytest.mark.parametrize(
+    "enabled,recording,is_recording",
+    [(True, True, True), (True, False, False), (False, True, False), (False, False, False)],
+)
+def test_is_recording(enabled, recording, is_recording):
+    c = Config(inline_dict={"enabled": enabled, "recording": recording, "service_name": "foo"})
+    assert c.is_recording is is_recording

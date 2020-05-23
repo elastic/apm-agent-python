@@ -1,2 +1,0 @@
-Django>=1.10,<1.11
--r requirements-base.txt

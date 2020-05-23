@@ -49,6 +49,7 @@ from elasticapm.conf.constants import SPAN
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils import compat
+from elasticapm.utils.threading import ThreadManager
 
 try:
     from urllib.request import pathname2url
@@ -150,6 +151,7 @@ def elasticapm_client(request):
     client_config = getattr(request, "param", {})
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
+    client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("metrics_interval", "0ms")
@@ -233,8 +235,9 @@ class DummyTransport(HTTPTransportBase):
         self.events[event_type].append(data)
         self._flushed.set()
 
-    def start_thread(self):
-        pass
+    def start_thread(self, pid=None):
+        # don't call the parent method, but the one from ThreadManager
+        ThreadManager.start_thread(self, pid=pid)
 
     def stop_thread(self):
         pass

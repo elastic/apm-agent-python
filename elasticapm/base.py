@@ -101,6 +101,8 @@ class Client(object):
         self.filter_exception_types_dict = {}
         self._service_info = None
 
+        self.check_python_version()
+
         config = Config(config, inline_dict=inline)
         if config.errors:
             for msg in config.errors.values():
@@ -135,8 +137,6 @@ class Client(object):
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
             "timeout": self.config.server_timeout,
-            "max_flush_time": self.config.api_request_time / 1000.0,
-            "max_buffer_size": self.config.api_request_size,
             "processors": self.load_processors(),
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
@@ -187,9 +187,7 @@ class Client(object):
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
-        self._metrics = MetricsRegistry(
-            self.config.metrics_interval / 1000.0, self.queue, ignore_patterns=self.config.disable_metrics
-        )
+        self._metrics = MetricsRegistry(self)
         for path in self.config.metrics_sets:
             self._metrics.register(path)
         if self.config.breakdown_metrics:
@@ -200,8 +198,8 @@ class Client(object):
             self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
-
-        self.start_threads()
+        if config.enabled:
+            self.start_threads()
 
     def start_threads(self):
         with self._thread_starter_lock:
@@ -210,7 +208,7 @@ class Client(object):
                 self.logger.debug("Detected PID change from %r to %r, starting threads", self._pid, current_pid)
                 for manager_type, manager in self._thread_managers.items():
                     self.logger.debug("Starting %s thread", manager_type)
-                    manager.start_thread()
+                    manager.start_thread(pid=current_pid)
                 self._pid = current_pid
 
     def get_handler(self, name):
@@ -220,6 +218,8 @@ class Client(object):
         """
         Captures and processes an event and pipes it off to Client.send.
         """
+        if not self.config.is_recording:
+            return
         if event_type == "Exception":
             # never gather log stack for exceptions
             stack = False
@@ -274,7 +274,8 @@ class Client(object):
         :param start: override the start timestamp, mostly useful for testing
         :return: the started transaction object
         """
-        return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
+        if self.config.is_recording:
+            return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
 
     def end_transaction(self, name=None, result="", duration=None):
         """
@@ -289,9 +290,10 @@ class Client(object):
         return transaction
 
     def close(self):
-        with self._thread_starter_lock:
-            for _manager_type, manager in self._thread_managers.items():
-                manager.stop_thread()
+        if self.config.enabled:
+            with self._thread_starter_lock:
+                for _, manager in self._thread_managers.items():
+                    manager.stop_thread()
 
     def get_service_info(self):
         if self._service_info:
@@ -317,6 +319,8 @@ class Client(object):
                 "name": keyword_field(self.config.framework_name),
                 "version": keyword_field(self.config.framework_version),
             }
+        if self.config.service_node_name:
+            result["node"] = {"configured_name": keyword_field(self.config.service_node_name)}
         self._service_info = result
         return result
 
@@ -525,6 +529,19 @@ class Client(object):
         seen = {}
         # setdefault has the nice property that it returns the value that it just set on the dict
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
+
+    def check_python_version(self):
+        v = tuple(map(int, platform.python_version_tuple()[:2]))
+        if v == (2, 7):
+            warnings.warn(
+                (
+                    "The Elastic APM agent will stop supporting Python 2.7 starting in 6.0.0 -- "
+                    "Please upgrade to Python 3.5+ to continue to use the latest features."
+                ),
+                PendingDeprecationWarning,
+            )
+        elif v < (3, 5):
+            warnings.warn("The Elastic APM agent only supports Python 3.5+", DeprecationWarning)
 
 
 class DummyClient(Client):
