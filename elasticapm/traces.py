@@ -538,8 +538,10 @@ class Tracer(object):
         """
         transaction = execution_context.get_transaction(clear=True)
         if transaction:
+            if transaction_name is not None:
+                transaction.name = transaction_name
             if transaction.name is None:
-                transaction.name = transaction_name if transaction_name is not None else ""
+                transaction.name = ""
             transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
                 return
