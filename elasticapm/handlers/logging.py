@@ -61,7 +61,8 @@ class LoggingHandler(logging.Handler):
                 # In 6.0, this should raise a ValueError
                 warnings.warn(
                     "LoggingHandler requires a Client instance. No Client was "
-                    "received. This will result in an error starting in v6.0",
+                    "received. This will result in an error starting in v6.0 "
+                    "of the agent",
                     PendingDeprecationWarning,
                 )
                 self.client = Client(*args, **kwargs)
