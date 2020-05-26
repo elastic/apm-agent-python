@@ -1,4 +1,2 @@
 starlette==0.13.0
-requests==2.22.0
-flask==1.1.1
 -r reqs-base.txt
