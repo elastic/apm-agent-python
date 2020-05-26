@@ -166,7 +166,7 @@ def test_exception(app, elasticapm_client):
 def test_traceparent_handling(app, elasticapm_client, header_name):
     client = TestClient(app)
     with mock.patch(
-        "elasticapm.contrib.flask.TraceParent.from_string", wraps=TraceParent.from_string
+        "elasticapm.contrib.starlette.TraceParent.from_string", wraps=TraceParent.from_string
     ) as wrapped_from_string:
         response = client.get(
             "/",
