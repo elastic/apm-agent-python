@@ -70,7 +70,7 @@ class Transport(ThreadManager):
         queue_chill_count=500,
         queue_chill_time=1.0,
         processors=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a new Transport instance
@@ -132,7 +132,13 @@ class Transport(ThreadManager):
 
             if event_type == "close":
                 if buffer_written:
-                    self._flush(buffer)
+                    try:
+                        self._flush(buffer)
+                    except Exception as exc:
+                        logger.error(
+                            "Exception occurred while flushing the buffer "
+                            "before closing the transport connection: {0}".format(exc)
+                        )
                 self._flushed.set()
                 return  # time to go home!
 
@@ -257,7 +263,7 @@ class Transport(ThreadManager):
         self._closed = True
         self.queue("close", None)
         if not self._flushed.wait(timeout=self._max_flush_time):
-            raise ValueError("close timed out")
+            logger.error("Closing the transport connection timed out.")
 
     stop_thread = close
 
