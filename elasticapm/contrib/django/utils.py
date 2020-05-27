@@ -29,6 +29,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import logging
+
 from django.template.base import Node
 
 from elasticapm.utils.stacks import get_frame_info
@@ -51,11 +53,15 @@ def iterate_with_template_sources(
     locals_processor_func=None,
 ):
     template = None
+    error = False
     for f in frames:
         try:
             frame, lineno = f
         except ValueError:
             # TODO how can we possibly get anything besides a (frame, lineno) tuple here???
+            if not error:
+                error = True
+                logging.getLogger("elasticapm").error("Malformed list of frames. Frames may be missing in Kibana.")
             continue
         f_code = getattr(frame, "f_code", None)
         if f_code:
