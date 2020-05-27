@@ -116,7 +116,7 @@ def test_create(instrument, elasticapm_client, elasticsearch):
         if ES_VERSION[0] >= 5:
             assert span["name"] in (
                 "ES PUT /tweets/%s/%d/_create" % (document_type, i + 1),
-                "ES PUT /tweets/_create/%d" % i + 1,
+                "ES PUT /tweets/_create/%d" % (i + 1),
             )
         else:
             assert span["name"] == "ES PUT /tweets/%s/%d" % (document_type, i + 1)
