@@ -51,7 +51,12 @@ def iterate_with_template_sources(
     locals_processor_func=None,
 ):
     template = None
-    for frame, lineno in frames:
+    for f in frames:
+        try:
+            frame, lineno = f
+        except ValueError:
+            # TODO how can we possibly get anything besides a (frame, lineno) tuple here???
+            continue
         f_code = getattr(frame, "f_code", None)
         if f_code:
             function_name = frame.f_code.co_name
