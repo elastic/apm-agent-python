@@ -129,6 +129,12 @@ def test_no_proxy_host():
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
+def test_no_proxy_all():
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
+        transport = Transport("http://localhost:9999", client=None)
+        assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
+
+
 def test_header_encodings(elasticapm_client):
     """
     Tests that headers are encoded as bytestrings. If they aren't,
