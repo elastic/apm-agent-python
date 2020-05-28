@@ -70,7 +70,7 @@ class Transport(ThreadManager):
         queue_chill_count=500,
         queue_chill_time=1.0,
         processors=None,
-        **kwargs,
+        **kwargs
     ):
         """
         Create a new Transport instance
