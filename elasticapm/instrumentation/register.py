@@ -34,6 +34,7 @@ from elasticapm.utils.module_import import import_string
 
 _cls_register = {
     "elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation",
+    "elasticapm.instrumentation.packages.httpx.HttpxClientInstrumentation",
     "elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2ExtensionsInstrumentation",
@@ -67,6 +68,7 @@ if sys.version_info >= (3, 5):
         [
             "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.httpx.HttpxAsyncClientInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",

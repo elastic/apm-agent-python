@@ -125,6 +125,7 @@ tests_require = [
     "isort",
     "pytest-cache",
     "pytest-isort",
+    "httpx",
 ]
 
 if sys.version_info[0] == 2:

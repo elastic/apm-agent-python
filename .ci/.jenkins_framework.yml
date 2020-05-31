@@ -39,3 +39,4 @@ FRAMEWORK:
   - tornado-newest
   - starlette-newest
   - pymemcache-newest
+  - httpx-newest
