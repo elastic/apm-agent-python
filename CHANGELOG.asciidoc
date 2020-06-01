@@ -26,7 +26,7 @@ endif::[]
 ===== Features
 
  * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
- * Add instrumentation support for https://github.com/encode/httpx[`httpx`] {pull}xxx[#xxx]
+ * Add instrumentation support for https://github.com/encode/httpx[`httpx`] {pull}844[#844]
 
 
 [[release-notes-5.x]]
