@@ -27,6 +27,10 @@ endif::[]
 
  * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
 
+[float]
+===== Bug fixes
+
+* Added better error handling around closing the transport {pull}838[#838]
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
