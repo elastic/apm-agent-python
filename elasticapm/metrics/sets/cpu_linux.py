@@ -38,6 +38,15 @@ from elasticapm.metrics.base_metrics import MetricsSet
 SYS_STATS = "/proc/stat"
 MEM_STATS = "/proc/meminfo"
 PROC_STATS = "/proc/self/stat"
+CGROUP_MEMORY_LIMIT = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
+CGROUP_MEMORY_USAGE = "/sys/fs/cgroup/memory/memory.usage_in_bytes"
+CGROUP_MEMORY_STAT = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
+UNLIMIT = 0x7FFFFFFFFFFFF000
+CGROUP2_MEMORY_LIMIT = "memory.max"
+CGROUP2_MEMORY_USAGE = "memory.current"
+CGROUP2_MEMORY_STAT = "memory.stat"
+CGROUP2_SELF_CGROUP = "/proc/self/cgroup"
+CGROUP2_PATH = "/sys/fs/cgroup"
 
 CPU_FIELDS = ("user", "nice", "system", "idle", "iowait", "irq", "softirq", "steal", "guest", "guest_nice")
 MEM_FIELDS = ("MemTotal", "MemAvailable", "MemFree", "Buffers", "Cached")
@@ -50,7 +59,21 @@ if not os.path.exists(SYS_STATS):
 
 
 class CPUMetricSet(MetricsSet):
-    def __init__(self, registry, sys_stats_file=SYS_STATS, process_stats_file=PROC_STATS, memory_stats_file=MEM_STATS):
+    def __init__(
+        self,
+        registry,
+        sys_stats_file=SYS_STATS,
+        process_stats_file=PROC_STATS,
+        memory_stats_file=MEM_STATS,
+        cgroup_memory_limit=CGROUP_MEMORY_LIMIT,
+        cgroup_memory_usage=CGROUP_MEMORY_USAGE,
+        cgroup_memory_stat=CGROUP_MEMORY_STAT,
+        cgroup2_path=CGROUP2_PATH,
+        cgroup2_self_cgroup=CGROUP2_SELF_CGROUP,
+        cgroup2_memory_limit=CGROUP2_MEMORY_LIMIT,
+        cgroup2_memory_usage=CGROUP2_MEMORY_USAGE,
+        cgroup2_memory_stat=CGROUP2_MEMORY_STAT,
+    ):
         self.page_size = resource.getpagesize()
         self.previous = {}
         self._read_data_lock = threading.Lock()
@@ -58,7 +81,39 @@ class CPUMetricSet(MetricsSet):
         self.process_stats_file = process_stats_file
         self.memory_stats_file = memory_stats_file
         self._sys_clock_ticks = os.sysconf("SC_CLK_TCK")
+        self.memoryMode = "meminfo"
         with self._read_data_lock:
+            try:
+                with open(cgroup_memory_limit, "r") as memfile:
+                    memMax = int(memfile.readline().strip())
+                    if memMax < UNLIMIT:
+                        self.memoryMode = "cgroup1"
+                        self.cgroup_memory_limit = cgroup_memory_limit
+                        self.cgroup_memory_usage = cgroup_memory_usage
+                        self.cgroup_memory_stat = cgroup_memory_stat
+            except Exception:
+                pass
+            try:
+                with open(cgroup2_self_cgroup, "r") as cgrfile:
+                    for line in cgrfile:
+                        if line.startswith("0:"):
+                            lineSplit = line.strip().split(":")
+                            slicePath = lineSplit[-1][1:]
+                            with open(os.path.join(cgroup2_path, slicePath, cgroup2_memory_limit), "r") as memfile:
+                                lineMem = memfile.readline().strip()
+                                if lineMem != "max":
+                                    self.memoryMode = "cgroup2"
+                                    self.cgroup_memory_limit = os.path.join(
+                                        cgroup2_path, slicePath, cgroup2_memory_limit
+                                    )
+                                    self.cgroup_memory_usage = os.path.join(
+                                        cgroup2_path, slicePath, cgroup2_memory_usage
+                                    )
+                                    self.cgroup_memory_stat = os.path.join(
+                                        cgroup2_path, slicePath, cgroup2_memory_stat
+                                    )
+            except Exception:
+                pass
             self.previous.update(self.read_process_stats())
             self.previous.update(self.read_system_stats())
         super(CPUMetricSet, self).__init__(registry)
@@ -115,12 +170,25 @@ class CPUMetricSet(MetricsSet):
                     )
                     stats["cpu_usage"] = stats["cpu_total"] - (f["idle"] + f["iowait"])
                     break
-        with open(self.memory_stats_file, "r") as memfile:
-            for line in memfile:
-                metric_name = line.split(":")[0]
-                if metric_name in MEM_FIELDS:
-                    value_in_bytes = int(whitespace_re.split(line)[1]) * 1024
-                    stats[metric_name] = value_in_bytes
+        if self.memoryMode == "cgroup1":
+            with open(self.cgroup_memory_limit, "r") as memfile:
+                stats["MemTotal"] = int(memfile.readline())
+            with open(self.cgroup_memory_usage, "r") as memfile:
+                usage = int(memfile.readline())
+                stats["MemAvailable"] = stats["MemTotal"] - usage
+        elif self.memoryMode == "cgroup2":
+            with open(self.cgroup_memory_limit, "r") as memfile:
+                stats["MemTotal"] = int(memfile.readline())
+            with open(self.cgroup_memory_usage, "r") as memfile:
+                usage = int(memfile.readline())
+                stats["MemAvailable"] = stats["MemTotal"] - usage
+        else:
+            with open(self.memory_stats_file, "r") as memfile:
+                for line in memfile:
+                    metric_name = line.split(":")[0]
+                    if metric_name in MEM_FIELDS:
+                        value_in_bytes = int(whitespace_re.split(line)[1]) * 1024
+                        stats[metric_name] = value_in_bytes
         return stats
 
     def read_process_stats(self):
