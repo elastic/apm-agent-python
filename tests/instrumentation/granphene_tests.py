@@ -98,6 +98,6 @@ def test_create_post(instrument, elasticapm_client):
 
     expected_signatures = {
         "test_graphene",
-        "Schema.execute"
+        "Schema.execute",
     }
     assert {t["name"] for t in spans} == expected_signatures

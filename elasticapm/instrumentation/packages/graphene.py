@@ -35,15 +35,27 @@ from elasticapm.traces import capture_span
 class GrapheneInstrumentation(AbstractInstrumentedModule):
     name = "graphene"
 
-    instrument_list = [("graphene", "Schema.execute")]
+    instrument_list = [
+        ("graphene", "Schema.execute"),
+        ("graphql.execution.executors.sync", "SyncExecutor.execute")
+    ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = self.get_wrapped_name(wrapped, instance, method)
+
+        if name == "SyncExecutor.execute":
+            query = args[2]
+            try:
+                query = query._asdict()
+            except:
+                query = query.field_name
+        else:
+            query = args[0]
         with capture_span(
-                name,
+                "%s>>%s" % (name, str(query)),
                 span_type="internal",
                 span_subtype="graphql",
                 span_action="query",
-                extra={"query": args},
+                extra={"query": query},
         ):
             return wrapped(*args, **kwargs)
