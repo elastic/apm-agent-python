@@ -45,7 +45,7 @@ BODY_REF_NAME = "__elastic_apm_body_ref"
 
 
 class ElasticSearchConnectionMixin(object):
-    query_methods = ("Elasticsearch.search", "Elasticsearch.count", "Elasticsearch.delete_by_query")
+    query_methods = ("search", "count", "delete_by_query")
 
     def get_signature(self, args, kwargs):
         args_len = len(args)
@@ -74,7 +74,7 @@ class ElasticSearchConnectionMixin(object):
                 query.append(json.dumps(body["query"], default=compat.text_type))
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
-        elif api_method == "Elasticsearch.update":
+        elif api_method == "update":
             if isinstance(body, dict) and "script" in body:
                 # only get the `script` field from the body
                 context["db"]["statement"] = json.dumps({"script": body["script"]})
@@ -135,17 +135,21 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
         super(ElasticsearchInstrumentation, self).instrument()
 
     def call(self, module, method, wrapped, instance, args, kwargs):
+        kwargs = self.inject_apm_params(method, kwargs)
+        return wrapped(*args, **kwargs)
+
+    def inject_apm_params(self, method, kwargs):
         params = kwargs.pop("params", {})
 
         # make a copy of params in case the caller reuses them for some reason
         params = params.copy() if params is not None else {}
 
-        cls_name, method_name = method.split(".", 1)
+        method_name = method.partition(".")[-1]
 
         # store a reference to the non-serialized body so we can use it in the connection layer
         body = kwargs.get("body")
         params[BODY_REF_NAME] = body
-        params[API_METHOD_KEY_NAME] = method
+        params[API_METHOD_KEY_NAME] = method_name
 
         kwargs["params"] = params
-        return wrapped(*args, **kwargs)
+        return kwargs
