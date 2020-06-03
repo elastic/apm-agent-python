@@ -240,3 +240,12 @@ def test_compress_level_sanitization():
     assert DummyTransport(compress_level=None, url="", client=None)._compress_level == 0
     assert DummyTransport(compress_level=-1, url="", client=None)._compress_level == 0
     assert DummyTransport(compress_level=10, url="", client=None)._compress_level == 9
+
+
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_transport_metadata_pid_change(mock_send, elasticapm_client):
+    transport = Transport(client=elasticapm_client, metadata={})
+    assert not transport._metadata
+    transport.start_thread()
+    assert transport._metadata
+    transport.close()

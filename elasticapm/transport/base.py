@@ -75,14 +75,15 @@ class Transport(ThreadManager):
         """
         Create a new Transport instance
 
-        :param metadata: Metadata object to prepend to every queue
+        :param metadata: Metadata overrides for metadata object that will be prepended to every queue
         :param compress_level: GZip compress level. If zero, no GZip compression will be used
         :param json_serializer: serializer to use for JSON encoding
         :param kwargs:
         """
         self.client = client
         self.state = TransportState()
-        self._metadata = metadata if metadata is not None else {}
+        self._metadata = None
+        self._metadata_kwarg = metadata if metadata is not None else {}
         self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
         self._queued_data = None
@@ -235,6 +236,8 @@ class Transport(ThreadManager):
             # Rebuild the metadata to capture new process information
             if self.client:
                 self._metadata = self.client.build_metadata()
+                # Retain any explicitly-set metadata items
+                self._metadata.update(self._metadata_kwarg)
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True

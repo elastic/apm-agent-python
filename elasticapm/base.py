@@ -132,7 +132,6 @@ class Client(object):
         }
 
         transport_kwargs = {
-            "metadata": self.build_metadata(),
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
