@@ -36,26 +36,29 @@ class GrapheneInstrumentation(AbstractInstrumentedModule):
     name = "graphene"
 
     instrument_list = [
-        ("graphene", "Schema.execute"),
         ("graphql.execution.executors.sync", "SyncExecutor.execute")
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        name = self.get_wrapped_name(wrapped, instance, method)
+        name = "GraphQL"
 
-        if name == "SyncExecutor.execute":
-            query = args[2]
-            try:
-                query = query._asdict()
-            except:
-                query = query.field_name
+        query = args[2]
+        info = ""
+
+        if "ResolveInfo" == type(query).__name__:
+            op = query.operation.operation
+            field = query.field_name
+            path = ">>".join(query.path)
+            info = "%s %s" % (op, field)
+        elif "RequestParams" == type(query).__name__:
+            info = "%s %s" % ("request", query.query)
         else:
-            query = args[0]
+            info = query
+
         with capture_span(
-                "%s>>%s" % (name, str(query)),
+                "%s %s" % (name, info),
                 span_type="internal",
                 span_subtype="graphql",
-                span_action="query",
-                extra={"query": query},
+                span_action="query"
         ):
             return wrapped(*args, **kwargs)

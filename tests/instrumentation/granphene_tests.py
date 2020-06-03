@@ -38,6 +38,7 @@ import pytest
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 graphene = pytest.importorskip("graphene")
+graphql = pytest.importorskip("graphql")
 
 
 class Query(graphene.ObjectType):
@@ -73,6 +74,19 @@ class Mutations(graphene.ObjectType):
     create_post = CreatePost.Field()
 
 
+class Query(graphene.ObjectType):
+    succ = graphene.Field(Success)
+    err = graphene.Field(Error)
+
+    def resolve_succ(self, *args, **kwargs):
+        return Success(yeah='hello world')
+
+    def resolve_err(self, *args, **kwargs):
+#        import pdb; pdb.set_trace()
+        return Error(message='oops')
+
+
+
 @pytest.mark.integrationtest
 def test_create_post(instrument, elasticapm_client):
     query_string = """
@@ -95,9 +109,34 @@ def test_create_post(instrument, elasticapm_client):
     elasticapm_client.end_transaction("BillingView")
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
-
     expected_signatures = {
+        'GraphQL mutation __typename',
+        'GraphQL mutation createPost',
+        'GraphQL mutation result',
         "test_graphene",
-        "Schema.execute",
+    }
+    assert {t["name"] for t in spans} == expected_signatures
+
+
+
+@pytest.mark.integrationtest
+def test_fetch_data(instrument, elasticapm_client):
+    query_string = "{succ{yeah},err{__typename}}"
+
+    schema = graphene.Schema(query=Query, mutation=Mutations)
+
+    elasticapm_client.begin_transaction("transaction.test")
+    with capture_span("test_graphene", "test"):
+        result = schema.execute(query_string)
+        assert result.data == {'succ': {'yeah': 'hello world'}, 'err': {'__typename': 'Error'}}
+    elasticapm_client.end_transaction("BillingView")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    expected_signatures = {
+        'GraphQL query __typename',
+        'GraphQL query yeah',
+        'GraphQL query err',
+        'GraphQL query succ',
+        "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
