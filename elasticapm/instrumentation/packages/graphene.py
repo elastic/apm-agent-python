@@ -48,7 +48,6 @@ class GrapheneInstrumentation(AbstractInstrumentedModule):
         if "ResolveInfo" == type(query).__name__:
             op = query.operation.operation
             field = query.field_name
-            path = ">>".join(query.path)
             info = "%s %s" % (op, field)
         elif "RequestParams" == type(query).__name__:
             info = "%s %s" % ("request", query.query)
