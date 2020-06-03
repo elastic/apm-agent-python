@@ -26,6 +26,12 @@ endif::[]
 ===== Features
 
  * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
+ * Added instrumentation for AsyncElasticsearch {pull}843[#843]
+
+[float]
+===== Bug fixes
+
+* Added error handling around frame processing in Django {pull}837[#837]
 
 [float]
 ===== Bug fixes
