@@ -35,7 +35,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     extract_signature,
 )
 from elasticapm.traces import capture_span
-from elasticapm.utils.encoding import truncate
+from elasticapm.utils.encoding import shorten
 
 
 class SQLiteCursorProxy(CursorProxy):
@@ -53,7 +53,7 @@ class SQLiteConnectionProxy(ConnectionProxy):
 
     def _trace_sql(self, method, sql, params):
         signature = extract_signature(sql)
-        sql_string = truncate(sql, length=10000)
+        sql_string = shorten(sql, string_length=10000)
         with capture_span(
             signature,
             span_type="db",

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2019, Elasticsearch BV
@@ -142,4 +141,4 @@ def test_truncate_long_sql(instrument, elasticapm_client):
     spans = elasticapm_client.spans_for_transaction(transactions[0])
 
     assert len(spans[0]["context"]["db"]["statement"]) == 10000
-    assert spans[0]["context"]["db"]["statement"].endswith(u"…")
+    assert spans[0]["context"]["db"]["statement"].endswith("...")

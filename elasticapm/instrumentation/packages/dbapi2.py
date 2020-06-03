@@ -38,7 +38,7 @@ import re
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils import compat, wrapt
-from elasticapm.utils.encoding import force_text, truncate
+from elasticapm.utils.encoding import force_text, shorten
 
 
 class Literal(object):
@@ -228,7 +228,7 @@ class CursorProxy(wrapt.ObjectProxy):
 
         # Truncate sql_string to 10000 characters to prevent large queries from
         # causing an error to APM server.
-        sql_string = truncate(sql_string, length=10000)
+        sql_string = shorten(sql_string, string_length=10000)
 
         with capture_span(
             signature,
