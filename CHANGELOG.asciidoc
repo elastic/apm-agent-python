@@ -22,6 +22,17 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+ * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
+ * Added instrumentation for AsyncElasticsearch {pull}843[#843]
+
+[float]
+===== Bug fixes
+
+* Added error handling around frame processing in Django {pull}837[#837]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x

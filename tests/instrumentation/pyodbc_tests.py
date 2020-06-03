@@ -86,3 +86,30 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+
+
+@pytest.mark.integrationtest
+def test_psycopg2_rows_affected(instrument, pyodbc_postgres_connection, elasticapm_client):
+    cursor = pyodbc_postgres_connection.cursor()
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        cursor.execute("INSERT INTO test VALUES (4, 'four')")
+        cursor.execute("SELECT * FROM test")
+        cursor.execute("UPDATE test SET name = 'five' WHERE  id = 4")
+        cursor.execute("DELETE FROM test WHERE  id = 4")
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+        assert spans[0]["name"] == "INSERT INTO test"
+        assert spans[0]["context"]["db"]["rows_affected"] == 1
+
+        assert spans[1]["name"] == "SELECT FROM test"
+        assert "rows_affected" not in spans[1]["context"]["db"]
+
+        assert spans[2]["name"] == "UPDATE test"
+        assert spans[2]["context"]["db"]["rows_affected"] == 1
+
+        assert spans[3]["name"] == "DELETE FROM test"
+        assert spans[3]["context"]["db"]["rows_affected"] == 1

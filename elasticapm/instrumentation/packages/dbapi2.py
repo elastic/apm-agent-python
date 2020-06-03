@@ -197,6 +197,7 @@ EXEC_ACTION = "exec"
 
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
+    DML_QUERIES = ("INSERT", "DELETE", "UPDATE")
 
     def __init__(self, wrapped, destination_info=None):
         super(CursorProxy, self).__init__(wrapped)
@@ -231,11 +232,15 @@ class CursorProxy(wrapt.ObjectProxy):
             span_action=action,
             extra={"db": {"type": "sql", "statement": sql_string}, "destination": self._self_destination_info},
             skip_frames=1,
-        ):
+        ) as span:
             if params is None:
-                return method(sql)
+                result = method(sql)
             else:
-                return method(sql, params)
+                result = method(sql, params)
+            # store "rows affected", but only for DML queries like insert/update/delete
+            if span and self.rowcount not in (-1, None) and signature.startswith(self.DML_QUERIES):
+                span.update_context("db", {"rows_affected": self.rowcount})
+            return result
 
     def extract_signature(self, sql):
         raise NotImplementedError()
