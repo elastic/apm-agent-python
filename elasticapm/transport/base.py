@@ -232,12 +232,9 @@ class Transport(ThreadManager):
     def start_thread(self, pid=None):
         super(Transport, self).start_thread(pid=pid)
         if (not self._thread or self.pid != self._thread.pid) and not self._closed:
-            # Update our pid in the metadata
-            if self._metadata.get("process", {}).get("pid"):
-                self._metadata["process"]["pid"] = pid
-                if hasattr(os, "getppid"):
-                    # Windows python 2.7 was failing
-                    self._metadata["process"]["ppid"] = os.getppid()
+            # Rebuild the metadata to capture new process information
+            if self.client:
+                self._metadata = self.client.build_metadata()
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
