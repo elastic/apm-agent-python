@@ -367,24 +367,11 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 0)
             steps.error("${label} tests failed : ${e.toString()}\n")
           } finally {
-            steps.dir("${steps.env.BASE_DIR}/tests"){
-              steps.archiveArtifacts(
-                allowEmptyArchive: true,
-                artifacts: '**/docker-info/**',
-                defaultExcludes: false
-              )
-            }
             steps.dir("${steps.env.BASE_DIR}"){
-              steps.junit(allowEmptyResults: true,
-                keepLongStdio: true,
-                testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
-              )
-              // steps.env.PYTHON_VERSION = "${x}"
-              // steps.env.WEBFRAMEWORK = "${y}"
-              steps.stash(name: "coverage-${x}-${y}",
-                includes: ".coverage.${x}.${y}",
-                allowEmpty: true
-              )
+              steps.dockerLogs(step: "${label}", failNever: true)
+              steps.junit(allowEmptyResults: true, keepLongStdio: true,
+                          testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.${x}.${y}", allowEmpty: true)
             }
           }
         }
