@@ -64,7 +64,6 @@ class Transport(ThreadManager):
     def __init__(
         self,
         client,
-        metadata=None,
         compress_level=5,
         json_serializer=json_encoder.dumps,
         queue_chill_count=500,
@@ -83,7 +82,6 @@ class Transport(ThreadManager):
         self.client = client
         self.state = TransportState()
         self._metadata = None
-        self._metadata_kwarg = metadata if metadata is not None else {}
         self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
         self._queued_data = None
@@ -236,8 +234,6 @@ class Transport(ThreadManager):
             # Rebuild the metadata to capture new process information
             if self.client:
                 self._metadata = self.client.build_metadata()
-                # Retain any explicitly-set metadata items
-                self._metadata.update(self._metadata_kwarg)
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
