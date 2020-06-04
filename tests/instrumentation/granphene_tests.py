@@ -35,7 +35,6 @@ import os
 import pytest
 
 
-from collections import OrderedDict
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
