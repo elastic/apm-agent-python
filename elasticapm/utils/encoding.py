@@ -218,6 +218,10 @@ def shorten(var, list_length=50, string_length=200, dict_length=50):
 
 
 def keyword_field(string):
+    """
+    If the given string is longer than KEYWORD_MAX_LENGTH, truncate it to
+    KEYWORD_MAX_LENGTH-1, adding the "…" character at the end.
+    """
     if not isinstance(string, compat.string_types) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
     return string[: KEYWORD_MAX_LENGTH - 1] + u"…"

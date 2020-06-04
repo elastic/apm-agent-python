@@ -36,6 +36,7 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Limit SQL queries in context data to 10000 characters {pull}842[#842]
 * Update the pid/ppid in transport metadata when they change {pull}825[#825]
 
 [[release-notes-5.x]]
