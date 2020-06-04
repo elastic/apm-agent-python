@@ -31,7 +31,6 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 
-
 class GrapheneInstrumentation(AbstractInstrumentedModule):
     name = "graphene"
 
@@ -61,8 +60,8 @@ class GrapheneInstrumentation(AbstractInstrumentedModule):
             info = query
 
         with capture_span(
-                "%s %s" % (name, info),
-                span_type="internal",
+                "%s.%s" % (name, info),
+                span_type="external",
                 span_subtype="graphql",
                 span_action="query"
         ):
