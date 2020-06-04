@@ -125,3 +125,20 @@ def test_nonstandard_connection_execute(instrument, elasticapm_client):
     assert spans[3]["action"] == "query"
 
     assert len(spans) == 4
+
+
+def test_truncate_long_sql(instrument, elasticapm_client):
+    conn = sqlite3.connect(":memory:")
+
+    conn.execute("CREATE TABLE testdb (id integer, username text)")
+    conn.execute('INSERT INTO testdb VALUES (1, "Ron")')
+    elasticapm_client.begin_transaction("transaction.test")
+    conn.execute("""SELECT id, username FROM testdb WHERE username = "%s";""" % ("x" * 10010))
+    elasticapm_client.end_transaction("MyView")
+    conn.execute("DROP TABLE testdb")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    assert len(spans[0]["context"]["db"]["statement"]) == 10000
+    assert spans[0]["context"]["db"]["statement"].endswith("...")
