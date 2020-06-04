@@ -37,7 +37,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?(?:full\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?(?:(full|benchmark)\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -212,6 +212,7 @@ pipeline {
           anyOf {
             branch 'master'
             expression { return params.Run_As_Master_Branch }
+            expression { return env.GITHUB_COMMENT?.contains('benchmark tests') }
           }
           expression { return params.bench_ci }
         }
