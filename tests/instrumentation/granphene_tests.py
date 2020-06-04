@@ -35,11 +35,12 @@ import os
 import pytest
 
 
+from collections import OrderedDict
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
+
 graphene = pytest.importorskip("graphene")
 graphql = pytest.importorskip("graphql")
-
 
 class Query(graphene.ObjectType):
     rand = graphene.String()
@@ -77,6 +78,8 @@ class Mutations(graphene.ObjectType):
 class Query(graphene.ObjectType):
     succ = graphene.Field(Success)
     err = graphene.Field(Error)
+    gevent = graphene.Field(Success)
+
 
     def resolve_succ(self, *args, **kwargs):
         return Success(yeah='hello world')
@@ -84,6 +87,10 @@ class Query(graphene.ObjectType):
     def resolve_err(self, *args, **kwargs):
 #        import pdb; pdb.set_trace()
         return Error(message='oops')
+
+    def resolve_gevent(self, *args, **kwargs):
+        return Success(yeah='hello world')
+
 
 
 
@@ -123,7 +130,7 @@ def test_create_post(instrument, elasticapm_client):
 def test_fetch_data(instrument, elasticapm_client):
     query_string = "{succ{yeah},err{__typename}}"
 
-    schema = graphene.Schema(query=Query, mutation=Mutations)
+    schema = graphene.Schema(query=Query)
 
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_graphene", "test"):

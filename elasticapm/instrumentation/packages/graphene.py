@@ -36,7 +36,13 @@ class GrapheneInstrumentation(AbstractInstrumentedModule):
     name = "graphene"
 
     instrument_list = [
-        ("graphql.execution.executors.sync", "SyncExecutor.execute")
+        ("graphql.execution.executors.sync", "SyncExecutor.execute"),
+        ("graphql.execution.executors.gevent", "GeventExecutor.execute"),
+        ("graphql.execution.executors.asyncio", "AsyncioExecutor.execute"),
+        ("graphql.execution.executors.process", "ProcessExecutor.execute"),
+        ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_thread"),
+        ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_pool")
+
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
