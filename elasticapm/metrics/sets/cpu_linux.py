@@ -38,21 +38,23 @@ from elasticapm.metrics.base_metrics import MetricsSet
 SYS_STATS = "/proc/stat"
 MEM_STATS = "/proc/meminfo"
 PROC_STATS = "/proc/self/stat"
-CGROUP_MEMORY_LIMIT = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
-CGROUP_MEMORY_USAGE = "/sys/fs/cgroup/memory/memory.usage_in_bytes"
-CGROUP_MEMORY_STAT = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
-UNLIMIT = 0x7FFFFFFFFFFFF000
+CGROUP1_MEMORY_LIMIT = "memory.limit_in_bytes"
+CGROUP1_MEMORY_USAGE = "memory.usage_in_bytes"
 CGROUP2_MEMORY_LIMIT = "memory.max"
 CGROUP2_MEMORY_USAGE = "memory.current"
-CGROUP2_MEMORY_STAT = "memory.stat"
-CGROUP2_SELF_CGROUP = "/proc/self/cgroup"
-CGROUP2_PATH = "/sys/fs/cgroup"
+UNLIMIT = 0x7FFFFFFFFFFFF000
+PROC_SELF_CGROUP = "/proc/self/cgroup"
+PROC_SELF_MOUNTINFO = "/proc/self/mountinfo"
+SYS_FS_CGROUP = "/sys/fs/cgroup"
 
 CPU_FIELDS = ("user", "nice", "system", "idle", "iowait", "irq", "softirq", "steal", "guest", "guest_nice")
 MEM_FIELDS = ("MemTotal", "MemAvailable", "MemFree", "Buffers", "Cached")
 
 whitespace_re = re.compile(r"\s+")
 
+MEMORY_CGROUP = re.compile(r"^\d+\:memory\:.*")
+CGROUP1_MOUNT_POINT = re.compile(r"^\d+? \d+? .+? .+? (.*?) .*cgroup.*cgroup.*memory.*")
+CGROUP2_MOUNT_POINT = re.compile(r"^\d+? \d+? .+? .+? (.*?) .*cgroup2.*cgroup.*")
 
 if not os.path.exists(SYS_STATS):
     raise ImportError("This metric set is only available on Linux")
@@ -65,14 +67,8 @@ class CPUMetricSet(MetricsSet):
         sys_stats_file=SYS_STATS,
         process_stats_file=PROC_STATS,
         memory_stats_file=MEM_STATS,
-        cgroup_memory_limit=CGROUP_MEMORY_LIMIT,
-        cgroup_memory_usage=CGROUP_MEMORY_USAGE,
-        cgroup_memory_stat=CGROUP_MEMORY_STAT,
-        cgroup2_path=CGROUP2_PATH,
-        cgroup2_self_cgroup=CGROUP2_SELF_CGROUP,
-        cgroup2_memory_limit=CGROUP2_MEMORY_LIMIT,
-        cgroup2_memory_usage=CGROUP2_MEMORY_USAGE,
-        cgroup2_memory_stat=CGROUP2_MEMORY_STAT,
+        procSelfCgroup=PROC_SELF_CGROUP,
+        mountInfo=PROC_SELF_MOUNTINFO,
     ):
         self.page_size = resource.getpagesize()
         self.previous = {}
@@ -81,42 +77,71 @@ class CPUMetricSet(MetricsSet):
         self.process_stats_file = process_stats_file
         self.memory_stats_file = memory_stats_file
         self._sys_clock_ticks = os.sysconf("SC_CLK_TCK")
-        self.memoryMode = "meminfo"
         with self._read_data_lock:
-            try:
-                with open(cgroup_memory_limit, "r") as memfile:
-                    memMax = int(memfile.readline().strip())
-                    if memMax < UNLIMIT:
-                        self.memoryMode = "cgroup1"
-                        self.cgroup_memory_limit = cgroup_memory_limit
-                        self.cgroup_memory_usage = cgroup_memory_usage
-                        self.cgroup_memory_stat = cgroup_memory_stat
-            except Exception:
-                pass
-            try:
-                with open(cgroup2_self_cgroup, "r") as cgrfile:
-                    for line in cgrfile:
-                        if line.startswith("0:"):
-                            lineSplit = line.strip().split(":")
-                            slicePath = lineSplit[-1][1:]
-                            with open(os.path.join(cgroup2_path, slicePath, cgroup2_memory_limit), "r") as memfile:
-                                lineMem = memfile.readline().strip()
-                                if lineMem != "max":
-                                    self.memoryMode = "cgroup2"
-                                    self.cgroup_memory_limit = os.path.join(
-                                        cgroup2_path, slicePath, cgroup2_memory_limit
-                                    )
-                                    self.cgroup_memory_usage = os.path.join(
-                                        cgroup2_path, slicePath, cgroup2_memory_usage
-                                    )
-                                    self.cgroup_memory_stat = os.path.join(
-                                        cgroup2_path, slicePath, cgroup2_memory_stat
-                                    )
-            except Exception:
-                pass
+            self.cgroupFiles = self.verifyCgroupEnabled(procSelfCgroup, mountInfo)
             self.previous.update(self.read_process_stats())
             self.previous.update(self.read_system_stats())
         super(CPUMetricSet, self).__init__(registry)
+
+    def verifyCgroupEnabled(self, procSelfCgroup, mountInfo):
+        try:
+            lineCgroup = None
+            with open(procSelfCgroup, "r") as procSelfCgroupFile:
+                for line in procSelfCgroupFile:
+                    if lineCgroup == None and line.startswith("0:"):
+                        lineCgroup = line
+                    if MEMORY_CGROUP.match(line):
+                        lineCgroup = line
+            if lineCgroup != None:
+                with open(mountInfo, "r") as mountInfoFile:
+                    for line in mountInfoFile:
+                        matcher = CGROUP2_MOUNT_POINT.match(line)
+                        if matcher != None:
+                            cgroupFilesTest = self.verifyCgroup2Available(lineCgroup, matcher.group(1))
+                            if cgroupFilesTest != None:
+                                return cgroupFilesTest
+                        matcher = CGROUP1_MOUNT_POINT.match(line)
+                        if matcher != None:
+                            cgroupFilesTest = self.verifyCgroup1Available(matcher.group(1))
+                            if cgroupFilesTest != None:
+                                return cgroupFilesTest
+                cgroupFilesTest = self.verifyCgroup2Available(lineCgroup, SYS_FS_CGROUP)
+                if cgroupFilesTest != None:
+                    return cgroupFilesTest
+                cgroupFilesTest = self.verifyCgroup1Available(SYS_FS_CGROUP + os.path.sep + "memory")
+                if cgroupFilesTest != None:
+                    return cgroupFilesTest
+        except Exception:
+            pass
+        return None
+
+    def verifyCgroup2Available(self, lineCgroup, mountDiscovered):
+        try:
+            lineSplit = lineCgroup.strip().split(":")
+            slicePath = lineSplit[-1][1:]
+            with open(os.path.join(mountDiscovered, slicePath, CGROUP2_MEMORY_LIMIT), "r") as memfile:
+                lineMem = memfile.readline().strip()
+                if lineMem != "max":
+                    return (
+                        os.path.join(mountDiscovered, slicePath, CGROUP2_MEMORY_LIMIT),
+                        os.path.join(mountDiscovered, slicePath, CGROUP2_MEMORY_USAGE),
+                    )
+        except Exception:
+            pass
+        return None
+
+    def verifyCgroup1Available(self, mountDiscovered):
+        try:
+            with open(os.path.join(mountDiscovered, CGROUP1_MEMORY_LIMIT), "r") as memfile:
+                memMax = int(memfile.readline().strip())
+                if memMax < UNLIMIT:
+                    return (
+                        os.path.join(mountDiscovered, CGROUP1_MEMORY_LIMIT),
+                        os.path.join(mountDiscovered, CGROUP1_MEMORY_USAGE),
+                    )
+        except Exception:
+            pass
+        return None
 
     def before_collect(self):
         new = self.read_process_stats()
@@ -170,16 +195,10 @@ class CPUMetricSet(MetricsSet):
                     )
                     stats["cpu_usage"] = stats["cpu_total"] - (f["idle"] + f["iowait"])
                     break
-        if self.memoryMode == "cgroup1":
-            with open(self.cgroup_memory_limit, "r") as memfile:
+        if self.cgroupFiles != None:
+            with open(self.cgroupFiles[0], "r") as memfile:
                 stats["MemTotal"] = int(memfile.readline())
-            with open(self.cgroup_memory_usage, "r") as memfile:
-                usage = int(memfile.readline())
-                stats["MemAvailable"] = stats["MemTotal"] - usage
-        elif self.memoryMode == "cgroup2":
-            with open(self.cgroup_memory_limit, "r") as memfile:
-                stats["MemTotal"] = int(memfile.readline())
-            with open(self.cgroup_memory_usage, "r") as memfile:
+            with open(self.cgroupFiles[1], "r") as memfile:
                 usage = int(memfile.readline())
                 stats["MemAvailable"] = stats["MemTotal"] - usage
         else:
