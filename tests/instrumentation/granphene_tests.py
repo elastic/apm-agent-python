@@ -1,4 +1,3 @@
-
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2019, Elasticsearch BV
@@ -34,12 +33,14 @@ import os
 
 import pytest
 
-
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
 graphene = pytest.importorskip("graphene")
 graphql = pytest.importorskip("graphql")
+
+pytestmark = pytest.mark.graphene
+
 
 class Query(graphene.ObjectType):
     rand = graphene.String()
@@ -79,18 +80,15 @@ class Query(graphene.ObjectType):
     err = graphene.Field(Error)
     gevent = graphene.Field(Success)
 
-
     def resolve_succ(self, *args, **kwargs):
-        return Success(yeah='hello world')
+        return Success(yeah="hello world")
 
     def resolve_err(self, *args, **kwargs):
-#        import pdb; pdb.set_trace()
-        return Error(message='oops')
+        #        import pdb; pdb.set_trace()
+        return Error(message="oops")
 
     def resolve_gevent(self, *args, **kwargs):
-        return Success(yeah='hello world')
-
-
+        return Success(yeah="hello world")
 
 
 @pytest.mark.integrationtest
@@ -116,13 +114,12 @@ def test_create_post(instrument, elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
-        'GraphQL mutation __typename',
-        'GraphQL mutation createPost',
-        'GraphQL mutation result',
+        "GraphQL mutation __typename",
+        "GraphQL mutation createPost",
+        "GraphQL mutation result",
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
-
 
 
 @pytest.mark.integrationtest
@@ -134,15 +131,15 @@ def test_fetch_data(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_graphene", "test"):
         result = schema.execute(query_string)
-        assert result.data == {'succ': {'yeah': 'hello world'}, 'err': {'__typename': 'Error'}}
+        assert result.data == {"succ": {"yeah": "hello world"}, "err": {"__typename": "Error"}}
     elasticapm_client.end_transaction("BillingView")
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
-        'GraphQL query __typename',
-        'GraphQL query yeah',
-        'GraphQL query err',
-        'GraphQL query succ',
+        "GraphQL query __typename",
+        "GraphQL query yeah",
+        "GraphQL query err",
+        "GraphQL query succ",
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
