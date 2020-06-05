@@ -132,7 +132,6 @@ class Client(object):
         }
 
         transport_kwargs = {
-            "metadata": self._build_metadata(),
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
@@ -361,7 +360,7 @@ class Client(object):
             system_data["kubernetes"] = k8s
         return system_data
 
-    def _build_metadata(self):
+    def build_metadata(self):
         data = {
             "service": self.get_service_info(),
             "process": self.get_process_info(),
