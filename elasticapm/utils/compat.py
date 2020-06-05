@@ -183,7 +183,7 @@ try:
             return f
 
 
-except ImportError:
+except (ImportError, AttributeError):
 
     def postfork(f):
         return f

@@ -205,7 +205,7 @@ class Transaction(BaseSpan):
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
-        sync=True,
+        sync=None,
         start=None,
     ):
         parent_span = execution_context.get_span()
@@ -245,7 +245,7 @@ class Transaction(BaseSpan):
         labels=None,
         span_subtype=None,
         span_action=None,
-        sync=True,
+        sync=None,
         start=None,
     ):
         """
@@ -257,6 +257,7 @@ class Transaction(BaseSpan):
         :param labels: a flat string/string dict of labels
         :param span_subtype: sub type of the span, e.g. "postgresql"
         :param span_action: action of the span , e.g. "query"
+        :param sync: indicate if the span is synchronous or not. In most cases, `None` should be used
         :param start: timestamp, mostly useful for testing
         :return: the Span object
         """
@@ -360,7 +361,7 @@ class Span(BaseSpan):
         parent_span_id=None,
         span_subtype=None,
         span_action=None,
-        sync=True,
+        sync=None,
         start=None,
     ):
         """
@@ -420,10 +421,11 @@ class Span(BaseSpan):
             "type": encoding.keyword_field(self.type),
             "subtype": encoding.keyword_field(self.subtype),
             "action": encoding.keyword_field(self.action),
-            "sync": self.sync,
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
         }
+        if self.sync is not None:
+            result["sync"] = self.sync
         if self.labels:
             if self.context is None:
                 self.context = {}
@@ -582,7 +584,19 @@ class Tracer(object):
 
 
 class capture_span(object):
-    __slots__ = ("name", "type", "subtype", "action", "extra", "skip_frames", "leaf", "labels", "duration", "start")
+    __slots__ = (
+        "name",
+        "type",
+        "subtype",
+        "action",
+        "extra",
+        "skip_frames",
+        "leaf",
+        "labels",
+        "duration",
+        "start",
+        "sync",
+    )
 
     def __init__(
         self,
@@ -597,6 +611,7 @@ class capture_span(object):
         span_action=None,
         start=None,
         duration=None,
+        sync=None,
     ):
         self.name = name
         self.type = span_type
@@ -616,6 +631,7 @@ class capture_span(object):
         self.labels = labels
         self.start = start
         self.duration = duration
+        self.sync = sync
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -639,6 +655,7 @@ class capture_span(object):
                 span_subtype=self.subtype,
                 span_action=self.action,
                 start=self.start,
+                sync=self.sync,
             )
 
     def __exit__(self, exc_type, exc_val, exc_tb):

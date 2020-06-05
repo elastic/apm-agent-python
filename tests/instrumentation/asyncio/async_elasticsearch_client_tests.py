@@ -30,14 +30,14 @@
 
 import pytest  # isort:skip
 
-pytest.importorskip("elasticsearch_async")  # isort:skip
+pytest.importorskip("elasticsearch._async")  # isort:skip
 
 import os
 
 from elasticsearch import VERSION as ES_VERSION
+from elasticsearch import AsyncElasticsearch
 
 from elasticapm.conf.constants import TRANSACTION
-from elasticsearch_async import AsyncElasticsearch
 
 pytestmark = [pytest.mark.elasticsearch, pytest.mark.asyncio, pytest.mark.integrationtest]
 
@@ -49,19 +49,19 @@ document_type = "_doc" if ES_VERSION[0] >= 6 else "doc"
 
 
 @pytest.fixture
-async def elasticsearch_async(request):
-    """Elasticsearch client fixture."""
+async def async_elasticsearch(request):
+    """AsyncElasticsearch client fixture."""
     client = AsyncElasticsearch(hosts=os.environ["ES_URL"])
     try:
         yield client
     finally:
         await client.indices.delete(index="*")
-        await client.transport.close()
+        await client.close()
 
 
-async def test_ping(instrument, elasticapm_client, elasticsearch_async):
+async def test_ping(instrument, elasticapm_client, async_elasticsearch):
     elasticapm_client.begin_transaction("test")
-    result = await elasticsearch_async.ping()
+    result = await async_elasticsearch.ping()
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -75,9 +75,9 @@ async def test_ping(instrument, elasticapm_client, elasticsearch_async):
     assert span["sync"] is False
 
 
-async def test_info(instrument, elasticapm_client, elasticsearch_async):
+async def test_info(instrument, elasticapm_client, async_elasticsearch):
     elasticapm_client.begin_transaction("test")
-    result = await elasticsearch_async.info()
+    result = await async_elasticsearch.info()
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -92,15 +92,15 @@ async def test_info(instrument, elasticapm_client, elasticsearch_async):
     assert span["sync"] is False
 
 
-async def test_create(instrument, elasticapm_client, elasticsearch_async):
+async def test_create(instrument, elasticapm_client, async_elasticsearch):
     elasticapm_client.begin_transaction("test")
     if ES_VERSION[0] < 5:
-        r1 = await elasticsearch_async.create("tweets", document_type, {"user": "kimchy", "text": "hola"}, 1)
+        r1 = await async_elasticsearch.create("tweets", document_type, {"user": "kimchy", "text": "hola"}, 1)
     elif ES_VERSION[0] < 7:
-        r1 = await elasticsearch_async.create("tweets", document_type, 1, body={"user": "kimchy", "text": "hola"})
+        r1 = await async_elasticsearch.create("tweets", document_type, 1, body={"user": "kimchy", "text": "hola"})
     else:
-        r1 = await elasticsearch_async.create("tweets", 1, body={"user": "kimchy", "text": "hola"})
-    r2 = await elasticsearch_async.create(
+        r1 = await async_elasticsearch.create("tweets", 1, body={"user": "kimchy", "text": "hola"})
+    r2 = await async_elasticsearch.create(
         index="tweets", doc_type=document_type, id=2, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.end_transaction("test", "OK")
@@ -125,13 +125,13 @@ async def test_create(instrument, elasticapm_client, elasticsearch_async):
         assert "statement" not in span["context"]["db"]
 
 
-async def test_search_body(instrument, elasticapm_client, elasticsearch_async):
-    await elasticsearch_async.create(
+async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
+    await async_elasticsearch.create(
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}}
-    result = await elasticsearch_async.search(body=search_query, params=None)
+    result = await async_elasticsearch.search(body=search_query, params=None)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -149,13 +149,13 @@ async def test_search_body(instrument, elasticapm_client, elasticsearch_async):
     assert span["sync"] is False
 
 
-async def test_count_body(instrument, elasticapm_client, elasticsearch_async):
-    await elasticsearch_async.create(
+async def test_count_body(instrument, elasticapm_client, async_elasticsearch):
+    await async_elasticsearch.create(
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}}
-    result = await elasticsearch_async.count(body=search_query)
+    result = await async_elasticsearch.count(body=search_query)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -172,13 +172,12 @@ async def test_count_body(instrument, elasticapm_client, elasticsearch_async):
     assert span["sync"] is False
 
 
-@pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
-async def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch_async):
-    await elasticsearch_async.create(
+async def test_delete_by_query_body(instrument, elasticapm_client, async_elasticsearch):
+    await async_elasticsearch.create(
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    result = await elasticsearch_async.delete_by_query(index="tweets", body={"query": {"term": {"user": "kimchy"}}})
+    result = await async_elasticsearch.delete_by_query(index="tweets", body={"query": {"term": {"user": "kimchy"}}})
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
