@@ -31,6 +31,7 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 
+
 class GrapheneInstrumentation(AbstractInstrumentedModule):
     name = "graphene"
 
