@@ -194,7 +194,6 @@ class ElasticAPM(object):
                         rule += " GraphQL %s" % get_graphql_tx_name(query, op)
                     if request.method == "POST":
                         rule += " GraphQL %s" % get_graphql_tx_name(request.data.decode())
-                assert False
             except Exception:
                 self.client.error_logger.error("Failed on parsing GraphQL request", exc_info=True)
             elasticapm.set_transaction_name(rule, override=False)
