@@ -47,6 +47,7 @@ except ImportError:
     from urllib import parse as urlparse
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
@@ -125,6 +126,12 @@ def test_no_proxy_star():
 
 def test_no_proxy_host():
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "localhost"}):
+        transport = Transport("http://localhost:9999", client=None)
+        assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
+
+
+def test_no_proxy_all():
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
         transport = Transport("http://localhost:9999", client=None)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 

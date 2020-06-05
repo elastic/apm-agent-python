@@ -37,7 +37,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?(?:full\\W+)?tests(?:\\W+please)?.*')
+    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?(?:(full|benchmark)\\W+)?tests(?:\\W+please)?.*')
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -212,6 +212,7 @@ pipeline {
           anyOf {
             branch 'master'
             expression { return params.Run_As_Master_Branch }
+            expression { return env.GITHUB_COMMENT?.contains('benchmark tests') }
           }
           expression { return params.bench_ci }
         }
@@ -367,24 +368,11 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             saveResult(x, y, 0)
             steps.error("${label} tests failed : ${e.toString()}\n")
           } finally {
-            steps.dir("${steps.env.BASE_DIR}/tests"){
-              steps.archiveArtifacts(
-                allowEmptyArchive: true,
-                artifacts: '**/docker-info/**',
-                defaultExcludes: false
-              )
-            }
             steps.dir("${steps.env.BASE_DIR}"){
-              steps.junit(allowEmptyResults: true,
-                keepLongStdio: true,
-                testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml"
-              )
-              // steps.env.PYTHON_VERSION = "${x}"
-              // steps.env.WEBFRAMEWORK = "${y}"
-              steps.stash(name: "coverage-${x}-${y}",
-                includes: ".coverage.${x}.${y}",
-                allowEmpty: true
-              )
+              steps.dockerLogs(step: "${label}", failNever: true)
+              steps.junit(allowEmptyResults: true, keepLongStdio: true,
+                          testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.${x}.${y}", allowEmpty: true)
             }
           }
         }

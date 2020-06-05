@@ -500,3 +500,22 @@ def test_span_tagging_raises_deprecation_warning(elasticapm_client):
         with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:
             span.tag(lorem="ipsum")
     elasticapm_client.end_transaction("test", "OK")
+
+
+def test_span_sync(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with capture_span("foo", "type", sync=True):
+        with capture_span("bar", "type", sync=False):
+            with capture_span("baz", "type"):
+                pass
+    elasticapm_client.end_transaction("test", "OK")
+    spans = elasticapm_client.events[SPAN]
+
+    assert spans[0]["name"] == "baz"
+    assert "sync" not in spans[0]
+
+    assert spans[1]["name"] == "bar"
+    assert not spans[1]["sync"]
+
+    assert spans[2]["name"] == "foo"
+    assert spans[2]["sync"]
