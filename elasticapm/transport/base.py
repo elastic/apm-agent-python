@@ -74,7 +74,6 @@ class Transport(ThreadManager):
         """
         Create a new Transport instance
 
-        :param metadata: Metadata overrides for metadata object that will be prepended to every queue
         :param compress_level: GZip compress level. If zero, no GZip compression will be used
         :param json_serializer: serializer to use for JSON encoding
         :param kwargs:
