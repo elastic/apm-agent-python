@@ -33,6 +33,10 @@ endif::[]
 
 * Added error handling around frame processing in Django {pull}837[#837]
 
+[float]
+===== Bug fixes
+
+* Limit SQL queries in context data to 10000 characters {pull}842[#842]
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
