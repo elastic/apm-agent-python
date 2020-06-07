@@ -92,24 +92,24 @@ class CPUMetricSet(MetricsSet):
                         lineCgroup = line
                     if MEMORY_CGROUP.match(line):
                         lineCgroup = line
-            if lineCgroup != None:
+            if lineCgroup is not None:
                 with open(mountInfo, "r") as mountInfoFile:
                     for line in mountInfoFile:
                         matcher = CGROUP2_MOUNT_POINT.match(line)
-                        if matcher != None:
+                        if matcher is not None:
                             cgroupFilesTest = self.verifyCgroup2Available(lineCgroup, matcher.group(1))
-                            if cgroupFilesTest != None:
+                            if cgroupFilesTest is not None:
                                 return cgroupFilesTest
                         matcher = CGROUP1_MOUNT_POINT.match(line)
-                        if matcher != None:
+                        if matcher is not None:
                             cgroupFilesTest = self.verifyCgroup1Available(matcher.group(1))
-                            if cgroupFilesTest != None:
+                            if cgroupFilesTest is not None:
                                 return cgroupFilesTest
                 cgroupFilesTest = self.verifyCgroup2Available(lineCgroup, SYS_FS_CGROUP)
-                if cgroupFilesTest != None:
+                if cgroupFilesTest is not None:
                     return cgroupFilesTest
                 cgroupFilesTest = self.verifyCgroup1Available(SYS_FS_CGROUP + os.path.sep + "memory")
-                if cgroupFilesTest != None:
+                if cgroupFilesTest is not None:
                     return cgroupFilesTest
         except Exception:
             pass
@@ -195,7 +195,7 @@ class CPUMetricSet(MetricsSet):
                     )
                     stats["cpu_usage"] = stats["cpu_total"] - (f["idle"] + f["iowait"])
                     break
-        if self.cgroupFiles != None:
+        if self.cgroupFiles is not None:
             with open(self.cgroupFiles[0], "r") as memfile:
                 stats["MemTotal"] = int(memfile.readline())
             with open(self.cgroupFiles[1], "r") as memfile:
