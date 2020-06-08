@@ -31,11 +31,10 @@
 from elasticapm import set_transaction_name
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils.graphql import get_graphql_tx_name
 
 
 class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
-    name = "graphene"
+    name = "graphql"
 
     instrument_list = [
         ("graphql.execution.executors.sync", "SyncExecutor.execute"),
@@ -43,15 +42,20 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         ("graphql.execution.executors.asyncio", "AsyncioExecutor.execute"),
         ("graphql.execution.executors.process", "ProcessExecutor.execute"),
         ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_thread"),
-        ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_pool")
-
+        ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_pool"),
     ]
+
+    def get_graphql_tx_name(self, graphql_doc):
+        op = graphql_doc.definitions[0].operation
+        fields = graphql_doc.definitions[0].selection_set.selections
+        return "%s %s" % (op.upper(), "+".join([f.name.value for f in fields]))
+
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = "GraphQL"
 
-        query = args[2]
         info = ""
+        query = args[2]
 
         if "ResolveInfo" == type(query).__name__:
             op = query.operation.operation
@@ -60,7 +64,7 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         elif "RequestParams" == type(query).__name__:
             info = "%s %s" % ("request", query.query)
         else:
-            info = query
+            info = str(query)
 
         with capture_span(
                 "%s.%s" % (name, info),
