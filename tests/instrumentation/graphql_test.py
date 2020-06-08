@@ -114,12 +114,13 @@ def test_create_post(instrument, elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
-        "GraphQL mutation __typename",
-        "GraphQL mutation createPost",
-        "GraphQL mutation result",
+        "GraphQL.mutation __typename",
+        "GraphQL.mutation createPost",
+        "GraphQL.mutation result",
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
+    assert transactions[0]['name'] == 'MUTATION createPost'
 
 
 @pytest.mark.integrationtest
@@ -136,10 +137,11 @@ def test_fetch_data(instrument, elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
-        "GraphQL query __typename",
-        "GraphQL query yeah",
-        "GraphQL query err",
-        "GraphQL query succ",
+        "GraphQL.query __typename",
+        "GraphQL.query yeah",
+        "GraphQL.query err",
+        "GraphQL.query succ",
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
+    assert transactions[0]['name'] == 'QUERY succ+err'

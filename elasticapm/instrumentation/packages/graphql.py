@@ -28,11 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from elasticapm import set_transaction_name
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
+from elasticapm.utils.graphql import get_graphql_tx_name
 
 
-class GrapheneInstrumentation(AbstractInstrumentedModule):
+class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
     name = "graphene"
 
     instrument_list = [
@@ -67,3 +69,18 @@ class GrapheneInstrumentation(AbstractInstrumentedModule):
                 span_action="query"
         ):
             return wrapped(*args, **kwargs)
+
+
+class GraphQLBackendInstrumentation(AbstractInstrumentedModule):
+    name = "graphql"
+
+    instrument_list = [
+        ("graphql.backend.core", "GraphQLCoreBackend.document_from_string"),
+        ("graphql.backend.cache", "GraphQLCachedBackend.document_from_string"),
+    ]
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        graphql_document = wrapped(*args, **kwargs)
+        transaction_name = get_graphql_tx_name(graphql_document.document_ast)
+        set_transaction_name(transaction_name)
+        return graphql_document
