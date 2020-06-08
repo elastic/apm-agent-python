@@ -118,7 +118,7 @@ def test_create_post(instrument, elasticapm_client):
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
-    assert transactions[0]['name'] == 'MUTATION createPost'
+    assert transactions[0]['name'] == 'GraphQL MUTATION createPost'
 
 
 @pytest.mark.skipif(not hasattr(graphql, "VERSION") or graphql.VERSION[0] >= 3, reason="Executor is reimplementated in graphql-core 3")
@@ -143,4 +143,4 @@ def test_fetch_data(instrument, elasticapm_client):
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
-    assert transactions[0]['name'] == 'QUERY succ+err'
+    assert transactions[0]['name'] == 'GraphQL QUERY succ+err'
