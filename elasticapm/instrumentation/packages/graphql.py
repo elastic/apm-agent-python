@@ -45,11 +45,6 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_pool"),
     ]
 
-    def get_graphql_tx_name(self, graphql_doc):
-        op = graphql_doc.definitions[0].operation
-        fields = graphql_doc.definitions[0].selection_set.selections
-        return "%s %s" % (op.upper(), "+".join([f.name.value for f in fields]))
-
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = "GraphQL"
@@ -83,8 +78,15 @@ class GraphQLBackendInstrumentation(AbstractInstrumentedModule):
         ("graphql.backend.cache", "GraphQLCachedBackend.document_from_string"),
     ]
 
+
+    def get_graphql_tx_name(self, graphql_doc):
+        op = graphql_doc.definitions[0].operation
+        fields = graphql_doc.definitions[0].selection_set.selections
+        return "%s %s" % (op.upper(), "+".join([f.name.value for f in fields]))
+
+
     def call(self, module, method, wrapped, instance, args, kwargs):
         graphql_document = wrapped(*args, **kwargs)
-        transaction_name = get_graphql_tx_name(graphql_document.document_ast)
+        transaction_name = self.get_graphql_tx_name(graphql_document.document_ast)
         set_transaction_name(transaction_name)
         return graphql_document
