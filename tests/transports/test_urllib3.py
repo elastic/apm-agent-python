@@ -37,7 +37,7 @@ import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.conf import constants
-from elasticapm.transport.base import TransportException
+from elasticapm.transport.exceptions import TransportException
 from elasticapm.transport.http import Transport
 from elasticapm.utils import compat
 
