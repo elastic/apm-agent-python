@@ -41,7 +41,6 @@ import elasticapm
 from elasticapm.conf import constants
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.utils import build_name_with_http_method_prefix, get_name_from_func, wrapt
-from elasticapm.utils.graphql import get_graphql_tx_name
 
 try:
     from importlib import import_module

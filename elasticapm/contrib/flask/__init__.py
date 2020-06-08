@@ -46,7 +46,6 @@ from elasticapm.traces import execution_context
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
-from elasticapm.utils.graphql import get_graphql_tx_name
 
 logger = get_logger("elasticapm.errors.client")
 
