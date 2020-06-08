@@ -45,7 +45,6 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         ("graphql.execution.executors.thread", "ThreadExecutor.execute_in_pool"),
     ]
 
-
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = "GraphQL"
 
