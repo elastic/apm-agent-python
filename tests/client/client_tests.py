@@ -105,7 +105,7 @@ def test_system_info_hostname_configurable(elasticapm_client):
 
 @pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,az.rack=8"}], indirect=True)
 def test_global_labels(elasticapm_client):
-    data = elasticapm_client._build_metadata()
+    data = elasticapm_client.build_metadata()
     assert data["labels"] == {"az": "us-east-1", "az_rack": "8"}
 
 
