@@ -32,11 +32,10 @@ endif::[]
 ===== Bug fixes
 
 * Added error handling around frame processing in Django {pull}837[#837]
-
-[float]
-===== Bug fixes
-
 * Limit SQL queries in context data to 10000 characters {pull}842[#842]
+* Omit the "sync" property on spans by default {pull}854[#854]
+* Update the pid/ppid in transport metadata when they change {pull}825[#825]
+* Added better error handling around closing the transport {pull}838[#838]
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
