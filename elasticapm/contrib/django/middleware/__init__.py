@@ -175,15 +175,6 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     transaction_name = get_name_from_func(request._elasticapm_view_func)
                 if transaction_name:
                     transaction_name = build_name_with_http_method_prefix(transaction_name, request)
-                    if request.META.get("CONTENT_TYPE", "") == "application/graphql":
-                        try:
-                            if request.method == "GET":
-                                op, query = tuple(request.GET.items())[0]
-                                transaction_name += " GraphQL %s" % get_graphql_tx_name(query, op)
-                            if request.method == "POST":
-                                transaction_name += " GraphQL %s" % get_graphql_tx_name(request.body.decode())
-                        except Exception:
-                            self.client.error_logger.error("Exception during parsing Graphql", exc_info=True)
                     elasticapm.set_transaction_name(transaction_name, override=False)
 
                 elasticapm.set_context(

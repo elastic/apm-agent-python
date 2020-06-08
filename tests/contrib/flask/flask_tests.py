@@ -454,21 +454,3 @@ def test_logging_by_level(flask_apm_client):
     assert len(flask_apm_client.client.events[ERROR]) == 1
     error = flask_apm_client.client.events[ERROR][0]
     assert error["log"]["level"] == "error"
-
-
-
-def test_graphql_request(flask_apm_client):
-    resp = flask_apm_client.app.test_client().post(
-        "/graphql",
-        data="{foo{bar}}",
-        headers={"content-type": "application/graphql"})
-    resp.close()
-    transaction = flask_apm_client.client.events[TRANSACTION][0]
-    assert transaction["name"] == " GraphQL QUERY foo"
-
-    resp = flask_apm_client.app.test_client().get(
-        "/graphql?query={foo{bar}}",
-        headers={"content-type": "application/graphql"})
-    resp.close()
-    transaction = flask_apm_client.client.events[TRANSACTION][0]
-    assert transaction["name"] == " GraphQL QUERY foo"

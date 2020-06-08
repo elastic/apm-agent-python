@@ -1526,26 +1526,3 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
         client.get("/no-error")
     transaction = django_elasticapm_client.events[TRANSACTION][0]
     assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
-
-
-@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
-@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
-def test_transaction_name_from_route_with_graphql_get(client, django_elasticapm_client):
-    with override_settings(
-        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-    ):
-        client.get("/route/1/?query={foo{bar}}", CONTENT_TYPE = "application/graphql")
-    transaction = django_elasticapm_client.events[TRANSACTION][0]
-    assert transaction["name"] == "GET route/<int:id>/ GraphQL QUERY foo"
-
-
-@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
-@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
-def test_transaction_name_from_route_with_graphql_post(client, django_elasticapm_client):
-
-    with override_settings(
-        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
-    ):
-        client.post("/route/1/", data="{foo{bar}}", content_type = "application/graphql")
-    transaction = django_elasticapm_client.events[TRANSACTION][0]
-    assert transaction["name"] == "POST route/<int:id>/ GraphQL QUERY foo"

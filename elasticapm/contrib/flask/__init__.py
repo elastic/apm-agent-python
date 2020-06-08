@@ -187,15 +187,6 @@ class ElasticAPM(object):
             )
             rule = request.url_rule.rule if request.url_rule is not None else ""
             rule = build_name_with_http_method_prefix(rule, request)
-            try:
-                if request.headers.get("Content-Type", "") == "application/graphql":
-                    if request.method == "GET":
-                        op, query = request.query_string.decode().split("=")
-                        rule += " GraphQL %s" % get_graphql_tx_name(query, op)
-                    if request.method == "POST":
-                        rule += " GraphQL %s" % get_graphql_tx_name(request.data.decode())
-            except Exception:
-                self.client.error_logger.error("Failed on parsing GraphQL request", exc_info=True)
             elasticapm.set_transaction_name(rule, override=False)
 
     def request_finished(self, app, response):
