@@ -155,10 +155,12 @@ def azure_metadata():
     headers = {"Metadata": "true"}
 
     try:
+        # Can't use newest metadata service version, as it's not guaranteed
+        # to be available in all regions
         resp = json.loads(
             urllib3.request(
                 "GET",
-                "http://169.254.169.254/metadata/instance/compute?api-version=2019-06-01",
+                "http://169.254.169.254/metadata/instance/compute?api-version=2019-08-15",
                 headers=headers,
                 timeout=3.0,
             )
