@@ -83,25 +83,19 @@ def gcp_metadata():
     not found, return an empty dictionary
     """
     ret = {}
-    gcp_header = {"Metadata-Flavor": "Google"}
+    headers = {"Metadata-Flavor": "Google"}
 
     try:
         ret["provider"] = "gcp"
         # TODO can we get this all in one payload?
         instance_id = json.loads(
             urllib3.request(
-                "GET",
-                "http://metadata.google.internal/computeMetadata/v1/instance/id",
-                headers=gcp_header,
-                timeout=3.0,
+                "GET", "http://metadata.google.internal/computeMetadata/v1/instance/id", headers=headers, timeout=3.0,
             )
         ).data.decode("utf-8")
         instance_name = json.loads(
             urllib3.request(
-                "GET",
-                "http://metadata.google.internal/computeMetadata/v1/instance/name",
-                headers=gcp_header,
-                timeout=3.0,
+                "GET", "http://metadata.google.internal/computeMetadata/v1/instance/name", headers=headers, timeout=3.0,
             )
         ).data.decode("utf-8")
         ret["instance"] = {"id": instance_id, "name": instance_name}
@@ -110,7 +104,7 @@ def gcp_metadata():
             urllib3.request(
                 "GET",
                 "http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id",
-                headers=gcp_header,
+                headers=headers,
                 timeout=3.0,
             )
         ).data.decode("utf-8")
@@ -118,7 +112,7 @@ def gcp_metadata():
             urllib3.request(
                 "GET",
                 "http://metadata.google.internal/computeMetadata/v1/project/project-id",
-                headers=gcp_header,
+                headers=headers,
                 timeout=3.0,
             )
         ).data.decode("utf-8")
@@ -126,10 +120,7 @@ def gcp_metadata():
 
         ret["availability_zone"] = json.loads(
             urllib3.request(
-                "GET",
-                "http://metadata.google.internal/computeMetadata/v1/instance/zone",
-                headers=gcp_header,
-                timeout=3.0,
+                "GET", "http://metadata.google.internal/computeMetadata/v1/instance/zone", headers=headers, timeout=3.0,
             )
         ).data.decode("utf-8")
 
@@ -140,7 +131,7 @@ def gcp_metadata():
             urllib3.request(
                 "GET",
                 "http://metadata.google.internal/computeMetadata/v1/instance/machine-type",
-                headers=gcp_header,
+                headers=headers,
                 timeout=3.0,
             )
         ).data.decode("utf-8")
