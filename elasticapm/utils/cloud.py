@@ -160,4 +160,31 @@ def azure_metadata():
     Fetch Azure metadata from the local metadata server. If metadata server is
     not found, return an empty dictionary
     """
-    raise NotImplementedError()
+    ret = {}
+    headers = {"Metadata": "true"}
+
+    try:
+        resp = json.loads(
+            urllib3.request(
+                "GET",
+                "http://169.254.169.254/metadata/instance/compute?api-version=2019-06-01",
+                headers=headers,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+
+        ret = {
+            "account": {"id": resp["subscriptionId"]},
+            "instance": {"id": resp["vmId"], "name": resp["name"]},
+            "project": {"name": resp["resourceGroupName"]},
+            "availability_zone": resp["zone"],
+            "machine": {"type": resp["vmSize"]},
+            "provider": "azure",
+            "region": resp["location"],
+        }
+
+    except Exception:
+        # Not on an Azure box
+        return {}
+
+    return ret
