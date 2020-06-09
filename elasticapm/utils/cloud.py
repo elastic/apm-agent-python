@@ -59,7 +59,7 @@ def aws_metadata():
                 "GET",
                 "http://169.254.169.254/latest/dynamic/instance-identity/document",
                 headers=aws_token_header,
-                timeout=3,
+                timeout=3.0,
             ).data.decode("utf-8")
         )
 
@@ -82,7 +82,77 @@ def gcp_metadata():
     Fetch GCP metadata from the local metadata server. If metadata server is
     not found, return an empty dictionary
     """
-    raise NotImplementedError()
+    ret = {}
+    gcp_header = {"Metadata-Flavor": "Google"}
+
+    try:
+        ret["provider"] = "gcp"
+        # TODO can we get this all in one payload?
+        instance_id = json.loads(
+            urllib3.request(
+                "GET",
+                "http://metadata.google.internal/computeMetadata/v1/instance/id",
+                headers=gcp_header,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+        instance_name = json.loads(
+            urllib3.request(
+                "GET",
+                "http://metadata.google.internal/computeMetadata/v1/instance/name",
+                headers=gcp_header,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+        ret["instance"] = {"id": instance_id, "name": instance_name}
+
+        project_id = json.loads(
+            urllib3.request(
+                "GET",
+                "http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id",
+                headers=gcp_header,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+        project_name = json.loads(
+            urllib3.request(
+                "GET",
+                "http://metadata.google.internal/computeMetadata/v1/project/project-id",
+                headers=gcp_header,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+        ret["project"] = {"id": project_id, "name": project_name}
+
+        ret["availability_zone"] = json.loads(
+            urllib3.request(
+                "GET",
+                "http://metadata.google.internal/computeMetadata/v1/instance/zone",
+                headers=gcp_header,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+
+        # TODO parse out just the region from the fully qualified zone
+        ret["region"] = ret["availability_zone"]
+
+        machine_type = json.loads(
+            urllib3.request(
+                "GET",
+                "http://metadata.google.internal/computeMetadata/v1/instance/machine-type",
+                headers=gcp_header,
+                timeout=3.0,
+            )
+        ).data.decode("utf-8")
+        ret["machine"] = {"type": machine_type}
+
+        # TODO should we use the project information for account.id and account.name?
+
+    except Exception:
+        # Not on a gcp box
+        return {}
+
+    return ret
 
 
 def azure_metadata():
