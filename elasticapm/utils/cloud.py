@@ -54,7 +54,7 @@ def aws_metadata():
         token_request = urllib3.request("PUT", token_url, headers=ttl_header, timeout=3.0)
         token = token_request.data.decode("utf-8")
         aws_token_header = {"X-aws-ec2-metadata-token": token}
-        r = json.loads(
+        resp = json.loads(
             urllib3.request(
                 "GET",
                 "http://169.254.169.254/latest/dynamic/instance-identity/document",
@@ -64,12 +64,12 @@ def aws_metadata():
         )
 
         ret = {
-            "account": {"id": r["accountId"]},
-            "instance": {"id": r["instanceId"]},
-            "availability_zone": r["availabilityZone"],
-            "machine": {"type": r["instanceType"]},
+            "account": {"id": resp["accountId"]},
+            "instance": {"id": resp["instanceId"]},
+            "availability_zone": resp["availabilityZone"],
+            "machine": {"type": resp["instanceType"]},
             "provider": "aws",
-            "region": r["region"],
+            "region": resp["region"],
         }
     except Exception:
         # Not on an AWS box
