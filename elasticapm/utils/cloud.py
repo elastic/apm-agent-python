@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import json
+import os
 
 import urllib3
 
@@ -87,55 +88,21 @@ def gcp_metadata():
 
     try:
         ret["provider"] = "gcp"
-        # TODO can we get this all in one payload?
-        instance_id = json.loads(
-            urllib3.request(
-                "GET", "http://metadata.google.internal/computeMetadata/v1/instance/id", headers=headers, timeout=3.0,
-            )
-        ).data.decode("utf-8")
-        instance_name = json.loads(
-            urllib3.request(
-                "GET", "http://metadata.google.internal/computeMetadata/v1/instance/name", headers=headers, timeout=3.0,
-            )
-        ).data.decode("utf-8")
-        ret["instance"] = {"id": instance_id, "name": instance_name}
 
-        project_id = json.loads(
+        metadata = json.loads(
             urllib3.request(
                 "GET",
-                "http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id",
+                "http://metadata.google.internal/computeMetadata/v1/?recursive=true",
                 headers=headers,
                 timeout=3.0,
             )
         ).data.decode("utf-8")
-        project_name = json.loads(
-            urllib3.request(
-                "GET",
-                "http://metadata.google.internal/computeMetadata/v1/project/project-id",
-                headers=headers,
-                timeout=3.0,
-            )
-        ).data.decode("utf-8")
-        ret["project"] = {"id": project_id, "name": project_name}
 
-        ret["availability_zone"] = json.loads(
-            urllib3.request(
-                "GET", "http://metadata.google.internal/computeMetadata/v1/instance/zone", headers=headers, timeout=3.0,
-            )
-        ).data.decode("utf-8")
-
-        # TODO parse out just the region from the fully qualified zone
-        ret["region"] = ret["availability_zone"]
-
-        machine_type = json.loads(
-            urllib3.request(
-                "GET",
-                "http://metadata.google.internal/computeMetadata/v1/instance/machine-type",
-                headers=headers,
-                timeout=3.0,
-            )
-        ).data.decode("utf-8")
-        ret["machine"] = {"type": machine_type}
+        ret["instance"] = {"id": metadata["instance"]["id"], "name": metadata["instance"]["name"]}
+        ret["project"] = {"id": metadata["project"]["numericProjectId"], "name": metadata["project"]["projectId"]}
+        ret["availability_zone"] = os.path.split(metadata["instance"]["zone"])[1]
+        ret["region"] = ret["availability_zone"].rsplit("-", 1)[0]
+        ret["machine"] = {"type": metadata["instance"]["machineType"]}
 
         # TODO should we use the project information for account.id and account.name?
 
