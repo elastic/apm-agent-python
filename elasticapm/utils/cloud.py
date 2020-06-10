@@ -48,15 +48,16 @@ def aws_metadata():
     not found, return an empty dictionary
     """
     ret = {}
+    http = urllib3.PoolManager()
 
     try:
         ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
         token_url = "http://169.254.169.254/latest/api/token"
-        token_request = urllib3.request("PUT", token_url, headers=ttl_header, timeout=3.0)
+        token_request = http.request("PUT", token_url, headers=ttl_header, timeout=3.0)
         token = token_request.data.decode("utf-8")
         aws_token_header = {"X-aws-ec2-metadata-token": token}
         resp = json.loads(
-            urllib3.request(
+            http.request(
                 "GET",
                 "http://169.254.169.254/latest/dynamic/instance-identity/document",
                 headers=aws_token_header,
@@ -85,12 +86,13 @@ def gcp_metadata():
     """
     ret = {}
     headers = {"Metadata-Flavor": "Google"}
+    http = urllib3.PoolManager()
 
     try:
         ret["provider"] = "gcp"
 
         metadata = json.loads(
-            urllib3.request(
+            http.request(
                 "GET",
                 "http://metadata.google.internal/computeMetadata/v1/?recursive=true",
                 headers=headers,
@@ -103,8 +105,6 @@ def gcp_metadata():
         ret["availability_zone"] = os.path.split(metadata["instance"]["zone"])[1]
         ret["region"] = ret["availability_zone"].rsplit("-", 1)[0]
         ret["machine"] = {"type": metadata["instance"]["machineType"]}
-
-        # TODO should we use the project information for account.id and account.name?
 
     except Exception:
         # Not on a gcp box
@@ -120,12 +120,13 @@ def azure_metadata():
     """
     ret = {}
     headers = {"Metadata": "true"}
+    http = urllib3.PoolManager()
 
     try:
         # Can't use newest metadata service version, as it's not guaranteed
         # to be available in all regions
         resp = json.loads(
-            urllib3.request(
+            http.request(
                 "GET",
                 "http://169.254.169.254/metadata/instance/compute?api-version=2019-08-15",
                 headers=headers,
