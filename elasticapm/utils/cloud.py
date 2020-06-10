@@ -56,7 +56,7 @@ def aws_metadata():
         token_request = http.request("PUT", token_url, headers=ttl_header, timeout=3.0)
         token = token_request.data.decode("utf-8")
         aws_token_header = {"X-aws-ec2-metadata-token": token}
-        resp = json.loads(
+        metadata = json.loads(
             http.request(
                 "GET",
                 "http://169.254.169.254/latest/dynamic/instance-identity/document",
@@ -66,12 +66,12 @@ def aws_metadata():
         )
 
         ret = {
-            "account": {"id": resp["accountId"]},
-            "instance": {"id": resp["instanceId"]},
-            "availability_zone": resp["availabilityZone"],
-            "machine": {"type": resp["instanceType"]},
+            "account": {"id": metadata["accountId"]},
+            "instance": {"id": metadata["instanceId"]},
+            "availability_zone": metadata["availabilityZone"],
+            "machine": {"type": metadata["instanceType"]},
             "provider": "aws",
-            "region": resp["region"],
+            "region": metadata["region"],
         }
     except Exception:
         # Not on an AWS box
@@ -125,7 +125,7 @@ def azure_metadata():
     try:
         # Can't use newest metadata service version, as it's not guaranteed
         # to be available in all regions
-        resp = json.loads(
+        metadata = json.loads(
             http.request(
                 "GET",
                 "http://169.254.169.254/metadata/instance/compute?api-version=2019-08-15",
@@ -135,13 +135,13 @@ def azure_metadata():
         )
 
         ret = {
-            "account": {"id": resp["subscriptionId"]},
-            "instance": {"id": resp["vmId"], "name": resp["name"]},
-            "project": {"name": resp["resourceGroupName"]},
-            "availability_zone": resp["zone"],
-            "machine": {"type": resp["vmSize"]},
+            "account": {"id": metadata["subscriptionId"]},
+            "instance": {"id": metadata["vmId"], "name": metadata["name"]},
+            "project": {"name": metadata["resourceGroupName"]},
+            "availability_zone": metadata["zone"],
+            "machine": {"type": metadata["vmSize"]},
             "provider": "azure",
-            "region": resp["location"],
+            "region": metadata["location"],
         }
 
     except Exception:
