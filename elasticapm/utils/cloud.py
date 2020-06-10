@@ -97,8 +97,8 @@ def gcp_metadata():
                 "http://metadata.google.internal/computeMetadata/v1/?recursive=true",
                 headers=headers,
                 timeout=3.0,
-            )
-        ).data.decode("utf-8")
+            ).data.decode("utf-8")
+        )
 
         ret["instance"] = {"id": metadata["instance"]["id"], "name": metadata["instance"]["name"]}
         ret["project"] = {"id": metadata["project"]["numericProjectId"], "name": metadata["project"]["projectId"]}
@@ -131,8 +131,8 @@ def azure_metadata():
                 "http://169.254.169.254/metadata/instance/compute?api-version=2019-08-15",
                 headers=headers,
                 timeout=3.0,
-            )
-        ).data.decode("utf-8")
+            ).data.decode("utf-8")
+        )
 
         ret = {
             "account": {"id": resp["subscriptionId"]},
