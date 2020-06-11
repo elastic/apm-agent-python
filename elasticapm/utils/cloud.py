@@ -144,6 +144,9 @@ def azure_metadata():
             "region": metadata["location"],
         }
 
+        if not ret["availability_zone"]:
+            ret.pop("availability_zone")
+
     except Exception:
         # Not on an Azure box
         return {}
