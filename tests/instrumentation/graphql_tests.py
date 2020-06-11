@@ -137,7 +137,6 @@ def test_fetch_data(instrument, elasticapm_client):
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
         "GraphQL.query __typename",
-        "GraphQL.query yeah",
         "GraphQL.query err",
         "GraphQL.query succ",
         "test_graphene",

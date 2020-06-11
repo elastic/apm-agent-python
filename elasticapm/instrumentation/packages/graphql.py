@@ -52,6 +52,24 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         query = args[2]
 
         if "ResolveInfo" == type(query).__name__:
+            if str(query.return_type) in [
+                    'Boolean',
+                    'Context',
+                    'Date',
+                    'DateTime',
+                    'Decimal',
+                    'Dynamic',
+                    'Float',
+                    'ID',
+                    'Int',
+                    'String',
+                    'Time',
+                    'UUID',
+                    'Boolean',
+                    'String'
+            ]:
+                return wrapped(*args, **kwargs)
+
             op = query.operation.operation
             field = query.field_name
             info = "%s %s" % (op, field)
