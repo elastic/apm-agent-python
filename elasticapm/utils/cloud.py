@@ -43,9 +43,17 @@ def aws_metadata():
     http = urllib3.PoolManager()
 
     try:
+        ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
+        token_url = "http://169.254.169.254/latest/api/token"
+        token_request = http.request("PUT", token_url, headers=ttl_header, timeout=3.0)
+        token = token_request.data.decode("utf-8")
+        aws_token_header = {"X-aws-ec2-metadata-token": token} if token else {}
         metadata = json.loads(
             http.request(
-                "GET", "http://169.254.169.254/latest/dynamic/instance-identity/document", timeout=3.0,
+                "GET",
+                "http://169.254.169.254/latest/dynamic/instance-identity/document",
+                headers=aws_token_header,
+                timeout=3.0,
             ).data.decode("utf-8")
         )
 
