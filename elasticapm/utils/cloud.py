@@ -34,14 +34,6 @@ import os
 import urllib3
 
 
-def guess_provider():
-    """
-    Use low-hanging fruit methods to try to guess which cloud provider is
-    hosting this server.
-    """
-    raise NotImplementedError()
-
-
 def aws_metadata():
     """
     Fetch AWS metadata from the local metadata server. If metadata server is

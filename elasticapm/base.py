@@ -367,8 +367,6 @@ class Client(object):
         metadata from the cloud provider's metadata endpoint.
         """
         provider = self.config.cloud_provider
-        if provider is None:
-            provider = elasticapm.utils.cloud.guess_provider()
 
         if provider is False:
             return {}
