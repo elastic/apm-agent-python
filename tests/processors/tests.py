@@ -43,6 +43,14 @@ from elasticapm import Client, processors
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat
 
+_base_expected_headers = {
+    "foo": "bar",
+    "password": processors.MASK,
+    "the_secret": processors.MASK,
+    "a_password_here": processors.MASK,
+    "authorization": processors.MASK,
+}
+
 
 @pytest.fixture()
 def http_test_data():
@@ -57,6 +65,7 @@ def http_test_data():
                     "the_secret": "hello",
                     "a_password_here": "hello",
                     "authorization": "bearer xyz",
+                    "some-value": "some-secret-value",
                 },
                 "cookies": {
                     "foo": "bar",
@@ -78,6 +87,7 @@ def http_test_data():
                     "the_secret": "hello",
                     "a_password_here": "hello",
                     "authorization": "bearer xyz",
+                    "some-value": "some-secret-value",
                 },
             },
         }
@@ -177,15 +187,17 @@ def test_sanitize_http_response_cookies(http_test_data):
     )
 
 
-def test_sanitize_http_headers(http_test_data):
+@pytest.mark.parametrize(
+    "elasticapm_client, expected",
+    [
+        ({"sanitize_field_names": "some-value"}, {**_base_expected_headers, "some-value": processors.MASK}),
+        ({"sanitize_field_names": "some-"}, {**_base_expected_headers, "some-value": processors.MASK}),
+        ({"sanitize_field_names": "other-val"}, {**_base_expected_headers, "some-value": "some-secret-value"}),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_sanitize_http_headers(elasticapm_client, expected, http_test_data):
     result = processors.sanitize_http_headers(None, http_test_data)
-    expected = {
-        "foo": "bar",
-        "password": processors.MASK,
-        "the_secret": processors.MASK,
-        "a_password_here": processors.MASK,
-        "authorization": processors.MASK,
-    }
     assert result["context"]["request"]["headers"] == expected
     assert result["context"]["response"]["headers"] == expected
 
