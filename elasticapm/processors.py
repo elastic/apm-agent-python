@@ -33,7 +33,7 @@ import re
 import warnings
 from collections import defaultdict
 
-from elasticapm.conf import config_vars
+from elasticapm.conf.config_vars import config_field_names_client
 from elasticapm.conf.constants import ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
@@ -280,7 +280,7 @@ def _sanitize(key, value):
         return value
 
     key = key.lower()
-    for field in config_vars.SANITIZE_FIELD_NAMES:
+    for field in config_field_names_client.get_field_names():
         if field in key:
             # store mask as a fixed length for security
             return MASK

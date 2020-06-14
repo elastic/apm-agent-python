@@ -27,5 +27,18 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAME
 
-SANITIZE_FIELD_NAMES = []
+
+class ConfigSanitizeFieldNames:
+    def __init__(self):
+        self._sanitize_field_names = None
+
+    def set_field_names(self, field_names):
+        self._sanitize_field_names = frozenset(field_names + BASE_SANITIZE_FIELD_NAME)
+
+    def get_field_names(self):
+        return self._sanitize_field_names
+
+
+config_field_names_client = ConfigSanitizeFieldNames()

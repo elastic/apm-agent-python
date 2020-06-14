@@ -43,8 +43,9 @@ import warnings
 from copy import deepcopy
 
 import elasticapm
-from elasticapm.conf import Config, VersionedConfig, config_vars, constants
-from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAME, ERROR
+from elasticapm.conf import Config, VersionedConfig, constants
+from elasticapm.conf.config_vars import config_field_names_client
+from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
@@ -125,7 +126,7 @@ class Client(object):
                 new_factory = elastic_logging.log_record_factory(record_factory)
                 logging.setLogRecordFactory(new_factory)
 
-        config_vars.SANITIZE_FIELD_NAMES = frozenset(BASE_SANITIZE_FIELD_NAME + self.config.sanitize_field_names)
+        config_field_names_client.set_field_names(self.config.sanitize_field_names)
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
