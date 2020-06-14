@@ -33,14 +33,11 @@ import re
 import warnings
 from collections import defaultdict
 
+from elasticapm.conf import config_vars
 from elasticapm.conf.constants import ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
 from elasticapm.utils.stacks import get_lines_from_file
-
-SANITIZE_FIELD_NAMES = frozenset(
-    ["authorization", "password", "secret", "passwd", "token", "api_key", "access_token", "sessionid"]
-)
 
 SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
 
@@ -283,7 +280,7 @@ def _sanitize(key, value):
         return value
 
     key = key.lower()
-    for field in SANITIZE_FIELD_NAMES:
+    for field in config_vars.SANITIZE_FIELD_NAMES:
         if field in key:
             # store mask as a fixed length for security
             return MASK
