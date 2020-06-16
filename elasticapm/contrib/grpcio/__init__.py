@@ -37,11 +37,9 @@ import grpc
 import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
-from elasticapm.conf import constants, setup_logging
-from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
+from elasticapm.conf import setup_logging
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.traces import execution_context
-from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils import get_url_dict
@@ -182,7 +180,6 @@ class RequestHeaderValidatorInterceptor(grpc.ServerInterceptor):
     def request_started(self, handler_call_details):
         meta_data = handler_call_details.invocation_metadata[0]._asdict()
         trace_parent = TraceParent.from_headers(meta_data)
-        method = handler_call_details.method
         self.client.begin_transaction("request", trace_parent=trace_parent)
 #        elasticapm.set_context(self._get_data(handler_call_details), "request")
 
