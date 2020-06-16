@@ -37,7 +37,8 @@ import timeit
 import mock
 import pytest
 
-from elasticapm.transport.base import Transport, TransportException, TransportState
+from elasticapm.transport.base import Transport, TransportState
+from elasticapm.transport.exceptions import TransportException
 from elasticapm.utils import compat
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
@@ -86,7 +87,7 @@ def test_transport_state_set_success():
 @mock.patch("elasticapm.transport.base.Transport.send")
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
 def test_empty_queue_flush_is_not_sent(mock_send, elasticapm_client):
-    transport = Transport(client=elasticapm_client, metadata={"x": "y"})
+    transport = Transport(client=elasticapm_client)
     try:
         transport.start_thread()
         transport.flush()
@@ -98,7 +99,7 @@ def test_empty_queue_flush_is_not_sent(mock_send, elasticapm_client):
 @mock.patch("elasticapm.transport.base.Transport.send")
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
 def test_metadata_prepended(mock_send, elasticapm_client):
-    transport = Transport(client=elasticapm_client, metadata={"x": "y"}, compress_level=0)
+    transport = Transport(client=elasticapm_client, compress_level=0)
     transport.start_thread()
     transport.queue("error", {}, flush=True)
     transport.close()
@@ -116,7 +117,7 @@ def test_metadata_prepended(mock_send, elasticapm_client):
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "100ms"}], indirect=True)
 def test_flush_time(mock_send, caplog, elasticapm_client):
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(client=elasticapm_client, metadata={})
+        transport = Transport(client=elasticapm_client)
         transport.start_thread()
         # let first run finish
         time.sleep(0.2)
@@ -130,7 +131,7 @@ def test_flush_time(mock_send, caplog, elasticapm_client):
 def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
     elasticapm_client.config.update(version="1", api_request_time="1s")
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(client=elasticapm_client, metadata={})
+        transport = Transport(client=elasticapm_client)
         transport.start_thread()
         # let first run finish
         time.sleep(0.2)
@@ -139,7 +140,7 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
     assert mock_send.call_count == 0
     elasticapm_client.config.update(version="1", api_request_time="100ms")
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        transport = Transport(client=elasticapm_client, metadata={})
+        transport = Transport(client=elasticapm_client)
         transport.start_thread()
         # let first run finish
         time.sleep(0.2)
@@ -152,7 +153,7 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
 @mock.patch("elasticapm.transport.base.Transport._flush")
 def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
     elasticapm_client.config.update(version="1", api_request_size="100b")
-    transport = Transport(client=elasticapm_client, metadata={}, queue_chill_count=1)
+    transport = Transport(client=elasticapm_client, queue_chill_count=1)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
@@ -176,7 +177,7 @@ def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
 @mock.patch("elasticapm.transport.base.Transport._flush")
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_size": "100b"}], indirect=True)
 def test_flush_time_size(mock_flush, caplog, elasticapm_client):
-    transport = Transport(client=elasticapm_client, metadata={}, queue_chill_count=1)
+    transport = Transport(client=elasticapm_client, queue_chill_count=1)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
@@ -192,7 +193,7 @@ def test_flush_time_size(mock_flush, caplog, elasticapm_client):
 @mock.patch("elasticapm.transport.base.Transport.send")
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_size": "1000b"}], indirect=True)
 def test_forced_flush(mock_send, caplog, elasticapm_client):
-    transport = Transport(client=elasticapm_client, metadata={}, compress_level=0)
+    transport = Transport(client=elasticapm_client, compress_level=0)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
@@ -240,3 +241,12 @@ def test_compress_level_sanitization():
     assert DummyTransport(compress_level=None, url="", client=None)._compress_level == 0
     assert DummyTransport(compress_level=-1, url="", client=None)._compress_level == 0
     assert DummyTransport(compress_level=10, url="", client=None)._compress_level == 9
+
+
+@mock.patch("elasticapm.transport.base.Transport.send")
+def test_transport_metadata_pid_change(mock_send, elasticapm_client):
+    transport = Transport(client=elasticapm_client)
+    assert not transport._metadata
+    transport.start_thread()
+    assert transport._metadata
+    transport.close()
