@@ -45,13 +45,6 @@ from elasticapm.utils.threading import ThreadManager
 logger = get_logger("elasticapm.transport")
 
 
-class TransportException(Exception):
-    def __init__(self, message, data=None, print_trace=True):
-        super(TransportException, self).__init__(message)
-        self.data = data
-        self.print_trace = print_trace
-
-
 class Transport(ThreadManager):
     """
     All transport implementations need to subclass this class

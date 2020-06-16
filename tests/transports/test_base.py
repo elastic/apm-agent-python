@@ -37,7 +37,8 @@ import timeit
 import mock
 import pytest
 
-from elasticapm.transport.base import Transport, TransportException, TransportState
+from elasticapm.transport.base import Transport, TransportState
+from elasticapm.transport.exceptions import TransportException
 from elasticapm.utils import compat
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
