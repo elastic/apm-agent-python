@@ -47,7 +47,7 @@ from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
-from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -371,21 +371,21 @@ class Client(object):
         if provider is False:
             return {}
         if provider == "aws":
-            return elasticapm.utils.cloud.aws_metadata()
+            return cloud.aws_metadata()
         elif provider == "gcp":
-            return elasticapm.utils.cloud.gcp_metadata()
+            return cloud.gcp_metadata()
         elif provider == "azure":
-            return elasticapm.utils.cloud.azure_metadata()
+            return cloud.azure_metadata()
         else:
             # Trial and error
             data = {}
-            data = elasticapm.utils.cloud.aws_metadata()
+            data = cloud.aws_metadata()
             if data:
                 return data
-            data = elasticapm.utils.cloud.gcp_metadata()
+            data = cloud.gcp_metadata()
             if data:
                 return data
-            data = elasticapm.utils.cloud.azure_metadata()
+            data = cloud.azure_metadata()
             return data
 
     def _build_metadata(self):
