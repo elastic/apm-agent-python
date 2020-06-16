@@ -30,6 +30,19 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+* Collect cloud provider metadata {pull}826[#826]
+
+[float]
+===== Bug fixes
+
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
