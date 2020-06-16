@@ -30,6 +30,7 @@
 
 import json
 import os
+import socket
 
 import urllib3
 
@@ -43,6 +44,10 @@ def aws_metadata():
     http = urllib3.PoolManager()
 
     try:
+        # This will throw an error if the metadata server isn't available,
+        # and will be quiet in the logs, unlike urllib3
+        socket.create_connection(("169.254.169.254", 80), 0.1)
+
         ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
         token_url = "http://169.254.169.254/latest/api/token"
         token_request = http.request("PUT", token_url, headers=ttl_header, timeout=3.0)
@@ -54,6 +59,7 @@ def aws_metadata():
                 "http://169.254.169.254/latest/dynamic/instance-identity/document",
                 headers=aws_token_header,
                 timeout=3.0,
+                retries=False,
             ).data.decode("utf-8")
         )
 
@@ -81,6 +87,9 @@ def gcp_metadata():
     http = urllib3.PoolManager()
 
     try:
+        # This will throw an error if the metadata server isn't available,
+        # and will be quiet in the logs, unlike urllib3
+        socket.create_connection(("metadata.google.internal", 80), 0.1)
         ret["provider"] = "gcp"
 
         metadata = json.loads(
@@ -89,6 +98,7 @@ def gcp_metadata():
                 "http://metadata.google.internal/computeMetadata/v1/?recursive=true",
                 headers=headers,
                 timeout=3.0,
+                retries=False,
             ).data.decode("utf-8")
         )
 
@@ -115,6 +125,10 @@ def azure_metadata():
     http = urllib3.PoolManager()
 
     try:
+        # This will throw an error if the metadata server isn't available,
+        # and will be quiet in the logs, unlike urllib3
+        socket.create_connection(("169.254.169.254", 80), 0.1)
+
         # Can't use newest metadata service version, as it's not guaranteed
         # to be available in all regions
         metadata = json.loads(
@@ -123,6 +137,7 @@ def azure_metadata():
                 "http://169.254.169.254/metadata/instance/compute?api-version=2019-08-15",
                 headers=headers,
                 timeout=3.0,
+                retries=False,
             ).data.decode("utf-8")
         )
 
