@@ -120,7 +120,7 @@ def test_flush_time(mock_send, caplog, elasticapm_client):
         transport = Transport(client=elasticapm_client)
         transport.start_thread()
         # let first run finish
-        time.sleep(0.2)
+        time.sleep(0.3)
         transport.close()
     record = caplog.records[0]
     assert "due to time since last flush" in record.message
@@ -134,7 +134,7 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
         transport = Transport(client=elasticapm_client)
         transport.start_thread()
         # let first run finish
-        time.sleep(0.2)
+        time.sleep(0.3)
         transport.close()
     assert not caplog.records
     assert mock_send.call_count == 0
@@ -143,7 +143,7 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
         transport = Transport(client=elasticapm_client)
         transport.start_thread()
         # let first run finish
-        time.sleep(0.2)
+        time.sleep(0.3)
         transport.close()
     record = caplog.records[0]
     assert "due to time since last flush" in record.message
@@ -160,7 +160,7 @@ def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
             # we need to add lots of uncompressible data to fill up the gzip-internal buffer
             for i in range(12):
                 transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
-            transport._flushed.wait(timeout=0.1)
+            transport._flushed.wait(timeout=0.3)
         assert mock_flush.call_count == 1
         elasticapm_client.config.update(version="1", api_request_size="1mb")
         with caplog.at_level("DEBUG", "elasticapm.transport"):
@@ -184,7 +184,7 @@ def test_flush_time_size(mock_flush, caplog, elasticapm_client):
             # we need to add lots of uncompressible data to fill up the gzip-internal buffer
             for i in range(12):
                 transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
-            transport._flushed.wait(timeout=0.1)
+            transport._flushed.wait(timeout=0.3)
         assert mock_flush.call_count == 1
     finally:
         transport.close()
@@ -248,5 +248,7 @@ def test_transport_metadata_pid_change(mock_send, elasticapm_client):
     transport = Transport(client=elasticapm_client)
     assert not transport._metadata
     transport.start_thread()
+    # Wait for metadata to be generated
+    time.sleep(0.3)
     assert transport._metadata
     transport.close()

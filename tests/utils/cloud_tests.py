@@ -93,7 +93,7 @@ def test_aws_metadata(mock_socket, monkeypatch):
     }
 
 
-@mock.patch("socket.create_connection")
+@mock.patch("socket.getaddrinfo")
 def test_gcp_metadata(mock_socket, monkeypatch):
     class MockPoolManager:
         def request(self, *args, **kwargs):
