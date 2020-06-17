@@ -184,8 +184,9 @@ class RequestHeaderValidatorInterceptor(grpc.ServerInterceptor):
 #        elasticapm.set_context(self._get_data(handler_call_details), "request")
 
     def request_finished(self, result):
-        result_handler = self.config.get("RESULT_HANDLER", lambda x: bool(x) and "SUCC" or "FAIL")
-        elasticapm.set_transaction_result(result_handler(result.message), override=False)
+        result_handler = self.config.get("RESULT_HANDLER", lambda x: bool(x))
+        result = result_handler(result.message) and "SUCC" or "FAIL"
+        elasticapm.set_transaction_result(result, override=False)
         self.client.end_transaction()
 
     def intercept_service(self, continuation, handler_call_details):
