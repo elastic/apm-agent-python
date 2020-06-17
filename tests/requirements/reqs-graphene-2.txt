@@ -1,2 +1,2 @@
-graphene>2
+graphene>2,<3
 -r reqs-base.txt
