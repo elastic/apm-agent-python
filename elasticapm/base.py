@@ -370,11 +370,20 @@ class Client(object):
         if provider is False:
             return {}
         if provider == "aws":
-            return cloud.aws_metadata()
+            data = cloud.aws_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
         elif provider == "gcp":
-            return cloud.gcp_metadata()
+            data = cloud.gcp_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
         elif provider == "azure":
-            return cloud.azure_metadata()
+            data = cloud.azure_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
         else:
             # Trial and error
             data = {}
