@@ -102,8 +102,8 @@ def gcp_metadata():
             ).data.decode("utf-8")
         )
 
-        ret["instance"] = {"id": metadata["instance"]["id"], "name": metadata["instance"]["name"]}
-        ret["project"] = {"id": metadata["project"]["numericProjectId"], "name": metadata["project"]["projectId"]}
+        ret["instance"] = {"id": str(metadata["instance"]["id"]), "name": metadata["instance"]["name"]}
+        ret["project"] = {"id": str(metadata["project"]["numericProjectId"]), "name": metadata["project"]["projectId"]}
         ret["availability_zone"] = os.path.split(metadata["instance"]["zone"])[1]
         ret["region"] = ret["availability_zone"].rsplit("-", 1)[0]
         ret["machine"] = {"type": metadata["instance"]["machineType"]}
