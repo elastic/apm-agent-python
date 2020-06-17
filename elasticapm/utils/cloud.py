@@ -40,7 +40,6 @@ def aws_metadata():
     Fetch AWS metadata from the local metadata server. If metadata server is
     not found, return an empty dictionary
     """
-    ret = {}
     http = urllib3.PoolManager()
 
     try:
@@ -63,7 +62,7 @@ def aws_metadata():
             ).data.decode("utf-8")
         )
 
-        ret = {
+        return {
             "account": {"id": metadata["accountId"]},
             "instance": {"id": metadata["instanceId"]},
             "availability_zone": metadata["availabilityZone"],
@@ -71,10 +70,10 @@ def aws_metadata():
             "provider": "aws",
             "region": metadata["region"],
         }
+
     except Exception:
         # Not on an AWS box
         return {}
-    return ret
 
 
 def gcp_metadata():
@@ -82,7 +81,6 @@ def gcp_metadata():
     Fetch GCP metadata from the local metadata server. If metadata server is
     not found, return an empty dictionary
     """
-    ret = {}
     headers = {"Metadata-Flavor": "Google"}
     http = urllib3.PoolManager()
 
@@ -90,7 +88,6 @@ def gcp_metadata():
         # This will throw an error if the metadata server isn't available,
         # and will be quiet in the logs, unlike urllib3
         socket.getaddrinfo("metadata.google.internal", 80, 0, socket.SOCK_STREAM)
-        ret["provider"] = "gcp"
 
         metadata = json.loads(
             http.request(
@@ -102,17 +99,20 @@ def gcp_metadata():
             ).data.decode("utf-8")
         )
 
-        ret["instance"] = {"id": str(metadata["instance"]["id"]), "name": metadata["instance"]["name"]}
-        ret["project"] = {"id": str(metadata["project"]["numericProjectId"]), "name": metadata["project"]["projectId"]}
-        ret["availability_zone"] = os.path.split(metadata["instance"]["zone"])[1]
-        ret["region"] = ret["availability_zone"].rsplit("-", 1)[0]
-        ret["machine"] = {"type": metadata["instance"]["machineType"]}
+        availability_zone = os.path.split(metadata["instance"]["zone"])[1]
+
+        return {
+            "provider": "gcp",
+            "instance": {"id": str(metadata["instance"]["id"]), "name": metadata["instance"]["name"]},
+            "project": {"id": str(metadata["project"]["numericProjectId"]), "name": metadata["project"]["projectId"]},
+            "availability_zone": availability_zone,
+            "region": availability_zone.rsplit("-", 1)[0],
+            "machine": {"type": metadata["instance"]["machineType"]},
+        }
 
     except Exception:
         # Not on a gcp box
         return {}
-
-    return ret
 
 
 def azure_metadata():
@@ -120,7 +120,6 @@ def azure_metadata():
     Fetch Azure metadata from the local metadata server. If metadata server is
     not found, return an empty dictionary
     """
-    ret = {}
     headers = {"Metadata": "true"}
     http = urllib3.PoolManager()
 
@@ -153,9 +152,8 @@ def azure_metadata():
 
         if not ret["availability_zone"]:
             ret.pop("availability_zone")
+        return ret
 
     except Exception:
         # Not on an Azure box
         return {}
-
-    return ret
