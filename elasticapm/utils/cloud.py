@@ -89,7 +89,7 @@ def gcp_metadata():
     try:
         # This will throw an error if the metadata server isn't available,
         # and will be quiet in the logs, unlike urllib3
-        socket.create_connection(("metadata.google.internal", 80), 0.1)
+        socket.getaddrinfo("metadata.google.internal", 80, 0, socket.SOCK_STREAM)
         ret["provider"] = "gcp"
 
         metadata = json.loads(
