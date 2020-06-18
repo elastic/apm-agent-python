@@ -53,7 +53,7 @@ def interceptor(elasticapm_client):
     ELASTIC_APM_CONFIG = {
         "SERVICE_NAME": "grpcapp",
         "SECRET_TOKEN": "changeme",
-        "RESULT_HANDLER": lambda msg: "Jack" in msg
+        "RESULT_HANDLER": lambda result: "Jack" in result.message
     }
     return RequestHeaderValidatorInterceptor(
         config=ELASTIC_APM_CONFIG,
