@@ -8,7 +8,7 @@ flake8:
 	flake8
 
 test:
-	if [[ "$$PYTHON_VERSION" =~ ^(3.6|3.7|3.8|nightly|pypy3)$$ ]] ; then \
+	if [[ "$$PYTHON_VERSION" =~ ^(3.6|3.7|3.8|3.9|nightly|pypy3)$$ ]] ; then \
 		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT); \
 	elif [[ "$$PYTHON_VERSION" =~ ^3\.5$$ ]] ; then \
 		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/asyncio/*'; \
