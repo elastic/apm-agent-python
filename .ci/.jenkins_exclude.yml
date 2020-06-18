@@ -162,6 +162,15 @@ exclude:
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: boto3-1.0
+  # boto3 is currently not importable on Python 3.9, see https://github.com/boto/botocore/issues/2002
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.0
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.5
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.6
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-newest
   # opentracing
   - PYTHON_VERSION: python-3.3
     FRAMEWORK: opentracing-newest
