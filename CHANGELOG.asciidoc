@@ -18,10 +18,37 @@ endif::[]
 ===== Bug fixes
 ////
 
+//=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+//[float]
+//===== Features
+//
+//
+//[float]
+//===== Bug fixes
+//
+
 === Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+* Added graphql (graphene) support {pull}850[#850]
+
+[float]
+===== Bug fixes
+
+
+[[release-notes-5.x]]
+=== Python Agent version 5.x
+
+[[release-notes-5.7.0]]
+==== v5.7.0
+
 [float]
 ===== Features
 
@@ -36,9 +63,8 @@ endif::[]
 * Omit the "sync" property on spans by default {pull}854[#854]
 * Update the pid/ppid in transport metadata when they change {pull}825[#825]
 * Added better error handling around closing the transport {pull}838[#838]
+* Fixed an issue with the django admin command not detecting misconfigured server urls {pull}855[#855]
 
-[[release-notes-5.x]]
-=== Python Agent version 5.x
 
 [[release-notes-5.6.0]]
 ==== v5.6.0

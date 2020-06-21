@@ -31,7 +31,6 @@
 import sys
 
 from elasticapm.utils.module_import import import_string
-
 _cls_register = {
     "elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation",
     "elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation",
@@ -60,6 +59,8 @@ _cls_register = {
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation",
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation",
     "elasticapm.instrumentation.packages.urllib.UrllibInstrumentation",
+    "elasticapm.instrumentation.packages.graphql.GraphQLExecutorInstrumentation",
+    "elasticapm.instrumentation.packages.graphql.GraphQLBackendInstrumentation"
 }
 
 if sys.version_info >= (3, 5):
