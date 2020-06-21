@@ -118,7 +118,14 @@ class TraceParent(object):
         :return: a single string value or None
         """
         # this works for all known WSGI implementations
-        return headers.get(key) if isinstance(headers, dict) else None
+        if isinstance(headers, list):
+            return ",".join([
+                item[1]
+                for item in headers
+                if item[0] == key
+            ])
+        return headers.get(key)
+        
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
