@@ -125,7 +125,6 @@ class TraceParent(object):
                 if item[0] == key
             ])
         return headers.get(key)
-        
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
