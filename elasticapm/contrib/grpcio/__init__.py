@@ -134,14 +134,20 @@ class RequestHeaderValidatorInterceptor(grpc.ServerInterceptor):
         def wrap_method(fn):
             @wraps(fn)
             def _(*args, **kwargs):
-                execution_context.set_transaction(tx)
-                request = args[0]
-                elasticapm.set_context({
-                    "url": get_url_dict(method),
-                    "body": str(request),
-                    "method": "GRPC"
-                }, "request")
-                result = fn(*args, **kwargs)
+                try:
+                    execution_context.set_transaction(tx)
+                    request = args[0]
+                    elasticapm.set_context({
+                        "url": get_url_dict(method),
+                        "body": str(request),
+                        "method": "GRPC"
+                    }, "request")
+                    result = fn(*args, **kwargs)
+                except Exception:
+                    logger.error(
+                        "Faield to set context",
+                        exc_info=True
+                    )
                 self.request_finished(result)
                 return result
             return _
@@ -178,16 +184,27 @@ class RequestHeaderValidatorInterceptor(grpc.ServerInterceptor):
         return ret
 
     def request_started(self, handler_call_details):
-        meta_data = handler_call_details.invocation_metadata[0]._asdict()
-        trace_parent = TraceParent.from_headers(meta_data)
-        self.client.begin_transaction("request", trace_parent=trace_parent)
-#        elasticapm.set_context(self._get_data(handler_call_details), "request")
+        try:
+            meta_data = handler_call_details.invocation_metadata[0]._asdict()
+            trace_parent = TraceParent.from_headers(meta_data)
+            self.client.begin_transaction("request", trace_parent=trace_parent)
+            #        elasticapm.set_context(self._get_data(handler_call_details), "request")
+        except Exception:
+            logger.error("Exception durinng handle request", exc_info=True)
+
 
     def request_finished(self, result):
-        result_handler = self.config.get("RESULT_HANDLER", lambda x: bool(x))
-        result = result_handler(result) and "SUCC" or "FAIL"
-        elasticapm.set_transaction_result(result, override=False)
-        self.client.end_transaction()
+        try:
+            result_handler = self.config.get("RESULT_HANDLER", lambda x: bool(x))
+            result = result_handler(result) and "SUCC" or "FAIL"
+            elasticapm.set_transaction_result(result, override=False)
+            self.client.end_transaction()
+        except Exception:
+            logger.error("Exception durinng handle response", exc_info=True)
 
     def intercept_service(self, continuation, handler_call_details):
-        return self.with_transaction(handler_call_details, continuation)
+        try:
+            return self.with_transaction(handler_call_details, continuation)
+        except Exception:
+            logger.error("Exception during handle transaction", exc_info)
+            return continuation(handler_call_details)
