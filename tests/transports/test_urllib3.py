@@ -30,6 +30,7 @@
 
 
 import os
+import time
 
 import mock
 import pytest
@@ -145,6 +146,10 @@ def test_header_encodings(elasticapm_client):
     headers = {compat.text_type("X"): compat.text_type("V")}
     transport = Transport("http://localhost:9999", headers=headers, client=elasticapm_client)
     transport.start_thread()
+
+    # Need to get the cloud metadata calls done before we mock.patch urllib3
+    time.sleep(0.3)
+
     try:
         with mock.patch("elasticapm.transport.http.urllib3.PoolManager.urlopen") as mock_urlopen:
             mock_urlopen.return_value = mock.Mock(status=202)
