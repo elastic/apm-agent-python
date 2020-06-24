@@ -40,7 +40,7 @@ import pytest
 
 import elasticapm
 from elasticapm import Client, processors
-from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
+from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION, BASE_SANITIZE_FIELD_NAMES
 from elasticapm.utils import compat
 
 _base_expected_headers = {
@@ -154,12 +154,12 @@ def test_remove_http_request_body(http_test_data):
     assert "body" not in result["context"]["request"]
 
 
-def test_sanitize_http_request_cookies(http_test_data):
+def test_sanitize_http_request_cookies(elasticapm_client, http_test_data):
     http_test_data["context"]["request"]["headers"][
         "cookie"
     ] = "foo=bar; password=12345; the_secret=12345; csrftoken=abc"
 
-    result = processors.sanitize_http_request_cookies(None, http_test_data)
+    result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
 
     assert result["context"]["request"]["cookies"] == {
         "foo": "bar",
@@ -174,12 +174,12 @@ def test_sanitize_http_request_cookies(http_test_data):
     ] == "foo=bar; password={0}; the_secret={0}; csrftoken={0}".format(processors.MASK)
 
 
-def test_sanitize_http_response_cookies(http_test_data):
+def test_sanitize_http_response_cookies(elasticapm_client, http_test_data):
     http_test_data["context"]["response"]["headers"][
         "set-cookie"
     ] = "foo=bar; httponly; secure ; sessionid=bar; httponly; secure"
 
-    result = processors.sanitize_http_response_cookies(None, http_test_data)
+    result = processors.sanitize_http_response_cookies(elasticapm_client, http_test_data)
 
     assert (
         result["context"]["response"]["headers"]["set-cookie"]
@@ -190,20 +190,21 @@ def test_sanitize_http_response_cookies(http_test_data):
 @pytest.mark.parametrize(
     "elasticapm_client, expected",
     [
-        ({"sanitize_field_names": "some-value"}, {**_base_expected_headers, "some-value": processors.MASK}),
-        ({"sanitize_field_names": "some-"}, {**_base_expected_headers, "some-value": processors.MASK}),
-        ({"sanitize_field_names": "other-val"}, {**_base_expected_headers, "some-value": "some-secret-value"}),
+        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["some-value"]}, {"some-value": processors.MASK}),
+        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["some-"]}, {"some-value": processors.MASK}),
+        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["other-val"]}, {"some-value": "some-secret-value"}),
     ],
     indirect=["elasticapm_client"],
 )
 def test_sanitize_http_headers(elasticapm_client, expected, http_test_data):
-    result = processors.sanitize_http_headers(None, http_test_data)
+    result = processors.sanitize_http_headers(elasticapm_client, http_test_data)
+    expected.update(_base_expected_headers)
     assert result["context"]["request"]["headers"] == expected
     assert result["context"]["response"]["headers"] == expected
 
 
-def test_sanitize_http_wgi_env(http_test_data):
-    result = processors.sanitize_http_wsgi_env(None, http_test_data)
+def test_sanitize_http_wgi_env(elasticapm_client, http_test_data):
+    result = processors.sanitize_http_wsgi_env(elasticapm_client, http_test_data)
 
     assert result["context"]["request"]["env"] == {
         "foo": "bar",

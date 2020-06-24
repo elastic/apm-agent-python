@@ -44,7 +44,6 @@ from copy import deepcopy
 
 import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
-from elasticapm.conf.config_vars import config_field_names_client
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
@@ -126,7 +125,6 @@ class Client(object):
                 new_factory = elastic_logging.log_record_factory(record_factory)
                 logging.setLogRecordFactory(new_factory)
 
-        config_field_names_client.set_field_names(self.config.sanitize_field_names)
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",

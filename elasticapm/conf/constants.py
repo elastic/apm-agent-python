@@ -58,7 +58,7 @@ LABEL_RE = re.compile('[.*"]')
 
 HARDCODED_PROCESSORS = ["elasticapm.processors.add_context_lines_to_frames"]
 
-BASE_SANITIZE_FIELD_NAME = [
+BASE_SANITIZE_FIELD_NAMES = [
     "authorization",
     "password",
     "secret",
