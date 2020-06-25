@@ -84,7 +84,7 @@ def remove_stacktrace_locals(client, event):
 def sanitize_stacktrace_locals(client, event):
     """
     Sanitizes local variables in all frames
-    :param client: an ElasticAPM clientclear
+    :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
     """
@@ -271,7 +271,7 @@ def mark_in_app_frames(client, event):
 
 
 def _sanitize(key, value, **kwargs):
-    if kwargs:
+    if "sanitize_field_names" in kwargs:
         sanitize_field_names = frozenset(kwargs["sanitize_field_names"])
     else:
         sanitize_field_names = frozenset(BASE_SANITIZE_FIELD_NAMES)
