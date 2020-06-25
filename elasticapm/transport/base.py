@@ -172,7 +172,7 @@ class Transport(ThreadManager):
         # Run the data through processors
         for processor in self._processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
+                data = processor(self.client, data)
                 if not data:
                     logger.debug(
                         "Dropped event of type %s due to processor %s.%s",
