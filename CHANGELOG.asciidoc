@@ -42,6 +42,8 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fix header fetching for ASGI implementations {pull}856[#856]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
