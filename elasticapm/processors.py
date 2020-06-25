@@ -84,14 +84,14 @@ def remove_stacktrace_locals(client, event):
 def sanitize_stacktrace_locals(client, event):
     """
     Sanitizes local variables in all frames
-    :param client: an ElasticAPM client
+    :param client: an ElasticAPM clientclear
     :param event: a transaction or error event
     :return: The modified event
     """
 
     def func(frame):
         if "vars" in frame:
-            frame["vars"] = varmap(_sanitize, frame["vars"])
+            frame["vars"] = varmap(_sanitize, frame["vars"], sanitize_field_names=client.config.sanitize_field_names)
 
     return _process_stack_frames(event, func)
 

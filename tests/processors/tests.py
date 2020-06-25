@@ -40,7 +40,7 @@ import pytest
 
 import elasticapm
 from elasticapm import Client, processors
-from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION, BASE_SANITIZE_FIELD_NAMES
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat
 
 _base_expected_headers = {
@@ -94,7 +94,7 @@ def http_test_data():
     }
 
 
-def test_stacktrace():
+def test_stacktrace(elasticapm_client):
     data = {
         "exception": {
             "stacktrace": [
@@ -124,7 +124,7 @@ def test_stacktrace():
         }
     }
 
-    result = processors.sanitize_stacktrace_locals(None, data)
+    result = processors.sanitize_stacktrace_locals(elasticapm_client, data)
 
     assert "stacktrace" in result["exception"]
     for stacktrace in (
