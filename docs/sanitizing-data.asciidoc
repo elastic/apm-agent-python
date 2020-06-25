@@ -48,3 +48,28 @@ ELASTIC_APM = {
 ----
 
 NOTE: We recommend to use the above list of processors that sanitize passwords and secrets in different places of the event object.
+
+The default set of processors sanitize fields based on a set of defaults defined in `elasticapm.conf.constants`. This set can be configured with the `SANATIZE_FIELD_NAMES` configuration option. For example, if your application produces a sensitive field called `My-Sensitive-Field`, the default processors can be used to automatically sanitize this field. You can specify what fields to santize within default processors like this:
+
+[source,python]
+----
+ELASTIC_APM = {
+    'APP_NAME': '<APP-NAME>',
+    'SECRET_TOKEN': '<SECRET-TOKEN>',
+    'SANITIZE_FIELD_NAMES': (
+        'My-Sensitive-Field',
+        'authorization',
+        'password',
+        'secret',
+        'passwd',
+        'token',
+        'api_key',
+        'access_token',
+        'sessionid',
+    ),
+}
+----
+
+When choosing fields names to sanitize, you can specify values that will match certain wildcards. For example, passing `must-hide` as a field name to be sanitized will also sanitize all fields whose names match `\*must-hide*`.
+
+NOTE: We recommend to use the above list of fields to sanitize various parts of the event object in addition to your specified fields.
