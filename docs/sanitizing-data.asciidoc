@@ -70,6 +70,6 @@ ELASTIC_APM = {
 }
 ----
 
-When choosing fields names to sanitize, you can specify values that will match certain wildcards. For example, passing `must-hide` as a field name to be sanitized will also sanitize all fields whose names match `\*must-hide*`.
-
 NOTE: We recommend to use the above list of fields to sanitize various parts of the event object in addition to your specified fields.
+
+When choosing fields names to sanitize, you can specify values that will match certain wildcards. For example, passing `base` as a field name to be sanitized will also sanitize all fields whose names match the regex pattern `\*base*`.
