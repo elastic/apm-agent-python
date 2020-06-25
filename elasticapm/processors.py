@@ -117,7 +117,9 @@ def sanitize_http_request_cookies(client, event):
     # sanitize request.header.cookie string
     try:
         cookie_string = event["context"]["request"]["headers"]["cookie"]
-        event["context"]["request"]["headers"]["cookie"] = _sanitize_string(cookie_string, "; ", "=")
+        event["context"]["request"]["headers"]["cookie"] = _sanitize_string(
+            cookie_string, "; ", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
     return event
@@ -133,7 +135,9 @@ def sanitize_http_response_cookies(client, event):
     """
     try:
         cookie_string = event["context"]["response"]["headers"]["set-cookie"]
-        event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(cookie_string, ";", "=")
+        event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(
+            cookie_string, ";", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
     return event
@@ -199,7 +203,9 @@ def sanitize_http_request_querystring(client, event):
     except (KeyError, TypeError):
         return event
     if "=" in query_string:
-        sanitized_query_string = _sanitize_string(query_string, "&", "=")
+        sanitized_query_string = _sanitize_string(
+            query_string, "&", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
         full_url = event["context"]["request"]["url"]["full"]
         event["context"]["request"]["url"]["search"] = sanitized_query_string
         event["context"]["request"]["url"]["full"] = full_url.replace(query_string, sanitized_query_string)
@@ -221,7 +227,9 @@ def sanitize_http_request_body(client, event):
     except (KeyError, TypeError):
         return event
     if "=" in body:
-        sanitized_query_string = _sanitize_string(body, "&", "=")
+        sanitized_query_string = _sanitize_string(
+            body, "&", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
         event["context"]["request"]["body"] = sanitized_query_string
     return event
 
@@ -290,12 +298,13 @@ def _sanitize(key, value, **kwargs):
     return value
 
 
-def _sanitize_string(unsanitized, itemsep, kvsep):
+def _sanitize_string(unsanitized, itemsep, kvsep, sanitize_field_names=BASE_SANITIZE_FIELD_NAMES):
     """
     sanitizes a string that contains multiple key/value items
     :param unsanitized: the unsanitized string
     :param itemsep: string that separates items
     :param kvsep: string that separates key from value
+    :param sanitize_field_names: field names to pass to _sanitize
     :return: a sanitized string
     """
     sanitized = []
@@ -303,7 +312,7 @@ def _sanitize_string(unsanitized, itemsep, kvsep):
     for kv in kvs:
         kv = kv.split(kvsep)
         if len(kv) == 2:
-            sanitized.append((kv[0], _sanitize(kv[0], kv[1])))
+            sanitized.append((kv[0], _sanitize(kv[0], kv[1], sanitize_field_names=sanitize_field_names)))
         else:
             sanitized.append(kv)
     return itemsep.join(kvsep.join(kv) for kv in sanitized)
