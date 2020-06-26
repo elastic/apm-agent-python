@@ -312,7 +312,7 @@ pipeline {
   }
   post {
     cleanup {
-      notifyBuildResult(analyzeFlakey: true)
+      notifyBuildResult(analyzeFlakey: true, flakyReportIdx: "reporter-apm-agent-python-apm-agent-python-master")
     }
   }
 }
