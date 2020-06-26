@@ -38,12 +38,11 @@ import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.conf import constants
+from elasticapm.transport.exceptions import TransportException
 from elasticapm.transport.http import Transport
 from elasticapm.utils import compat
 
-1rom elasticapm.transport.exceptions import TransportException
-
-1ry:
+try:
     import urlparse
 except ImportError:
     from urllib import parse as urlparse
