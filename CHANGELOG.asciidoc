@@ -38,6 +38,7 @@ endif::[]
 ===== Features
 
 * Added graphql (graphene) support {pull}850[#850]
+* Collect cloud provider metadata {pull}826[#826]
 
 [float]
 ===== Bug fixes

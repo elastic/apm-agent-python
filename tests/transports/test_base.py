@@ -248,5 +248,6 @@ def test_transport_metadata_pid_change(mock_send, elasticapm_client):
     transport = Transport(client=elasticapm_client)
     assert not transport._metadata
     transport.start_thread()
+    time.sleep(0.2)
     assert transport._metadata
     transport.close()
