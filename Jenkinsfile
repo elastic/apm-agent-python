@@ -312,7 +312,7 @@ pipeline {
   }
   post {
     cleanup {
-      notifyBuildResult()
+      notifyBuildResult(analyzeFlakey: true)
     }
   }
 }
