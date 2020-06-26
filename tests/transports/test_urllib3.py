@@ -38,11 +38,12 @@ import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.conf import constants
-from elasticapm.transport.exceptions import TransportException
 from elasticapm.transport.http import Transport
 from elasticapm.utils import compat
 
-try:
+1rom elasticapm.transport.exceptions import TransportException
+
+1ry:
     import urlparse
 except ImportError:
     from urllib import parse as urlparse
@@ -146,10 +147,6 @@ def test_header_encodings(elasticapm_client):
     headers = {compat.text_type("X"): compat.text_type("V")}
     transport = Transport("http://localhost:9999", headers=headers, client=elasticapm_client)
     transport.start_thread()
-
-    # Need to get the cloud metadata calls done before we mock.patch urllib3
-    time.sleep(0.3)
-
     try:
         with mock.patch("elasticapm.transport.http.urllib3.PoolManager.urlopen") as mock_urlopen:
             mock_urlopen.return_value = mock.Mock(status=202)
