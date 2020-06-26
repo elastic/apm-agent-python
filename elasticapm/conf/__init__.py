@@ -35,6 +35,7 @@ import re
 import socket
 import threading
 
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES
 from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
@@ -286,6 +287,7 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
+    sanitize_field_names = _ListConfigValue("SANITIZE_FIELD_NAMES", default=BASE_SANITIZE_FIELD_NAMES)
     metrics_sets = _ListConfigValue(
         "METRICS_SETS",
         default=[
