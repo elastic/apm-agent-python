@@ -72,6 +72,7 @@ def test_timeout(mock_urlopen, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_http_error(waiting_httpserver, elasticapm_client):
     waiting_httpserver.serve_content(code=418, content="I'm a teapot")
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
@@ -159,6 +160,7 @@ def test_header_encodings(elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_verify_fails(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(waiting_httpsserver.url, client=elasticapm_client)
@@ -171,6 +173,7 @@ def test_ssl_verify_fails(waiting_httpsserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.filterwarnings("ignore:Unverified HTTPS")
 def test_ssl_verify_disable(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
@@ -183,6 +186,7 @@ def test_ssl_verify_disable(waiting_httpsserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_verify_disable_http(waiting_httpserver, elasticapm_client):
     """
     Make sure that ``assert_hostname`` isn't passed in for http requests, even
@@ -198,6 +202,7 @@ def test_ssl_verify_disable_http(waiting_httpserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning_http(waiting_httpserver, elasticapm_client):
     """
     Won't fail, as with the other cert pinning test, since certs aren't relevant
@@ -218,6 +223,7 @@ def test_ssl_cert_pinning_http(waiting_httpserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
     cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -235,6 +241,7 @@ def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning_fails(waiting_httpsserver, elasticapm_client):
     if compat.PY3:
         waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})

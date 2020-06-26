@@ -51,6 +51,12 @@ exclude:
     FRAMEWORK: celery-4-django-1.11
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: celery-4-flask-1.0
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: celery-4-django-2.0
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: celery-4-django-1.11
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: celery-4-flask-1.0
   # requests
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: requests-1.2
@@ -59,6 +65,8 @@ exclude:
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: python-3.8
+    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.9-rc
     FRAMEWORK: requests-1.2
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
@@ -71,29 +79,39 @@ exclude:
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.0
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.1
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.8
+    FRAMEWORK: pymongo-3.2
+  - PYTHON_VERSION: python-3.9-rc
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.8
+    FRAMEWORK: pymongo-3.3
+  - PYTHON_VERSION: python-3.9-rc
     FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: python-3.8
+    FRAMEWORK: pymongo-3.4
+  - PYTHON_VERSION: python-3.9-rc
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
@@ -105,6 +123,8 @@ exclude:
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: python-3.8
+    FRAMEWORK: memcached-1.51
+  - PYTHON_VERSION: python-3.9-rc
     FRAMEWORK: memcached-1.51
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: memcached-1.51
@@ -119,8 +139,12 @@ exclude:
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.8 # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
+  - PYTHON_VERSION: python-3.9-rc # currently fails with error on python 3.8 due to cython issues
+    FRAMEWORK: pymssql-newest
   # psycopg2
   - PYTHON_VERSION: python-3.8 # see https://github.com/psycopg/psycopg2/issues/858
+    FRAMEWORK: psycopg2-2.7
+  - PYTHON_VERSION: python-3.9-rc # see https://github.com/psycopg/psycopg2/issues/858
     FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-2
@@ -134,8 +158,19 @@ exclude:
     FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: boto3-1.0
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: boto3-1.0
+  # boto3 is currently not importable on Python 3.9, see https://github.com/boto/botocore/issues/2002
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.0
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.5
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-1.6
+  - PYTHON_VERSION: python-3.9-rc
+    FRAMEWORK: boto3-newest
   # opentracing
   - PYTHON_VERSION: python-3.3
     FRAMEWORK: opentracing-newest
@@ -152,6 +187,8 @@ exclude:
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: zerorpc-0.4
   - PYTHON_VERSION: python-3.8
+    FRAMEWORK: zerorpc-0.4
+  - PYTHON_VERSION: python-3.9-rc
     FRAMEWORK: zerorpc-0.4
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
