@@ -105,6 +105,10 @@ class Transport(ThreadManager):
             logger.debug("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
+        # Rebuild the metadata to capture new process information
+        if self.client:
+            self._metadata = self.client.build_metadata()
+
         buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
@@ -172,7 +176,7 @@ class Transport(ThreadManager):
         # Run the data through processors
         for processor in self._processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
+                data = processor(self.client, data)
                 if not data:
                     logger.debug(
                         "Dropped event of type %s due to processor %s.%s",
@@ -229,9 +233,6 @@ class Transport(ThreadManager):
     def start_thread(self, pid=None):
         super(Transport, self).start_thread(pid=pid)
         if (not self._thread or self.pid != self._thread.pid) and not self._closed:
-            # Rebuild the metadata to capture new process information
-            if self.client:
-                self._metadata = self.client.build_metadata()
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True

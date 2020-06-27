@@ -30,6 +30,22 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+* Added graphql (graphene) support {pull}850[#850]
+* Collect cloud provider metadata {pull}826[#826]
+
+[float]
+===== Bug fixes
+
+* Fix header fetching for ASGI implementations {pull}856[#856]
+
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
 

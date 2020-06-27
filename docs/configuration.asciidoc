@@ -118,7 +118,7 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 
 [options="header"]
 |============
-| Environment           | Django/Flask | Default 
+| Environment           | Django/Flask | Default
 | `ELASTIC_APM_ENABLED` | `ENABLED`    | `true`
 |============
 
@@ -134,7 +134,7 @@ When set to false, the agent will not collect any data, nor start any background
 
 [options="header"]
 |============
-| Environment             | Django/Flask   | Default 
+| Environment             | Django/Flask   | Default
 | `ELASTIC_APM_RECORDING` | `RECORDING`    | `false`
 |============
 
@@ -198,6 +198,23 @@ See {apm-app-ref}/filters.html#environment-selector[environment selector] in the
 
 NOTE: This feature is fully supported in the APM app in Kibana versions >= 7.2.
 You must use the query bar to filter for a specific environment in versions prior to 7.2.
+
+[float]
+[[config-cloud-provider]]
+==== `cloud_provider`
+
+[options="header"]
+|============
+| Environment                  | Django/Flask      | Default    | Example
+| `ELASTIC_APM_CLOUD_PROVIDER` | `CLOUD_PROVIDER`  | `None`     | `"aws"`
+|============
+
+This config value allows you to specify which cloud provider should be assumed
+for metadata collection. By default, the agent will attempt to detect the cloud
+provider or, if that fails, will use trial and error to collect the metadata.
+
+Valid options are `"aws"`, `"gcp"`, and `"azure"`. If this config value is set
+to `False`, then no cloud metadata will be collected.
 
 [float]
 [[config-secret-token]]
@@ -618,6 +635,28 @@ A list of processors to process transactions and errors.
 For more information, see <<sanitizing-data, Sanitizing Data>>.
 
 WARNING: We recommend to always include the default set of validators if you customize this setting.
+
+[float]
+[[config-sanitize-field-names]]
+==== `sanitize_field_names`
+
+[options="header"]
+|============
+| Environment              | Django/Flask | Default
+| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `['authorization',
+                                                                  'password',
+                                                                  'secret',
+                                                                  'passwd',
+                                                                  'token',
+                                                                  'api_key',
+                                                                  'access_token',
+                                                                  'sessionid']`
+|============
+
+A list of field names to mask when using processors.
+For more information, see <<sanitizing-data, Sanitizing Data>>.
+
+WARNING: We recommend to always include the default set of field names if you customize this setting.
 
 
 [float]

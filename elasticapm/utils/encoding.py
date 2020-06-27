@@ -179,7 +179,7 @@ def to_string(value):
         return to_unicode(value).encode("utf-8")
 
 
-def shorten(var, list_length=50, string_length=200, dict_length=50):
+def shorten(var, list_length=50, string_length=200, dict_length=50, **kwargs):
     """
     Shorten a given variable based on configurable maximum lengths, leaving
     breadcrumbs in the object to show that it was shortened.
