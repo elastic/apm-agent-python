@@ -1,6 +1,5 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
 #  Copyright (c) 2019, Elasticsearch BV
 #  All rights reserved.
 #
@@ -27,18 +26,19 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import os
 
-from concurrent import futures
-from elasticapm.contrib.grpcio import RequestHeaderValidatorInterceptor
 import pytest
+from concurrent import futures
 
-grpc = pytest.importorskip("grpc")  # isort:skip
-from tests.contrib.grpc import helloworld_pb2
-from tests.contrib.grpc.server import Greeter
-from tests.contrib.grpc import helloworld_pb2
-from tests.contrib.grpc import helloworld_pb2_grpc
+from elasticapm.conf.constants import TRANSACTION
+from elasticapm.traces import capture_span
+from tests.contrib.grpc import helloworld_pb2_grpc, helloworld_pb2
+
+grpc = pytest.importorskip("grpc")
 
 port = 8964
 
@@ -47,30 +47,11 @@ class Greeter(helloworld_pb2_grpc.GreeterServicer):
     def SayHello(self, request, context):
         return helloworld_pb2.HelloReply(message="Hello, %s!" % request.name)
 
-@pytest.fixture()
-def interceptor(elasticapm_client):
-    ELASTIC_APM_CONFIG = {
-        "SERVICE_NAME": "grpcapp",
-        "SECRET_TOKEN": "changeme",
-        "RESULT_HANDLER": lambda result: "Jack" in result.message
-    }
-    return RequestHeaderValidatorInterceptor(
-        config=ELASTIC_APM_CONFIG,
-        client=elasticapm_client
-    )
 
 @pytest.fixture()
-def apm_client(interceptor):
-    return interceptor.client
-
-
-@pytest.fixture()
-def grpc_server(request, interceptor):
+def grpc_server(request):
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
-        interceptors=(
-            interceptor,
-        )
     )
     helloworld_pb2_grpc.add_GreeterServicer_to_server(Greeter(), server)
     server.add_insecure_port(f"[::]:{port}")
@@ -78,21 +59,19 @@ def grpc_server(request, interceptor):
     request.addfinalizer(lambda : server.stop(None))
 
 
-def test_server(grpc_server, apm_client):
-    with grpc.insecure_channel(f"localhost:{port}") as channel:
-        stub = helloworld_pb2_grpc.GreeterStub(channel)
-        response = stub.SayHello(helloworld_pb2.HelloRequest(name="Jack"))
-    assert response.message == "Hello, Jack!"
-    assert len(apm_client.events) > 0
-    assert apm_client.events["transaction"][0]["name"] == "gRPC /helloworld.Greeter/SayHello"
-    assert apm_client.events["transaction"][0]["result"] == "SUCC"
-    txid = apm_client.events["transaction"][0]['id']
-
-
-def test_result_handler(grpc_server, apm_client):
-    with grpc.insecure_channel(f"localhost:{port}") as channel:
-        stub = helloworld_pb2_grpc.GreeterStub(channel)
-        response = stub.SayHello(helloworld_pb2.HelloRequest(name="Ryan"))
-    assert response.message == "Hello, Ryan!"
-    assert apm_client.events["transaction"][0]["name"] == "gRPC /helloworld.Greeter/SayHello"
-    assert apm_client.events["transaction"][0]["result"] == "FAIL"
+@pytest.mark.integrationtest
+def test_grpc(grpc_server, instrument, elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    with capture_span("test_grpc", "test"):
+        with grpc.insecure_channel(f"localhost:{port}") as channel:
+            stub = helloworld_pb2_grpc.GreeterStub(channel)
+            response = stub.SayHello(helloworld_pb2.HelloRequest(name="Ryan"))
+    elasticapm_client.end_transaction("")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    expected_signatures = {
+        'GRPC unary_unary >> /helloworld.Greeter/SayHello',
+        'test_grpc'
+    }
+    assert {t["name"] for t in spans} == expected_signatures
+    assert transactions[0]['name'] == 'GRPC /helloworld.Greeter/SayHello'

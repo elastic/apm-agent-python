@@ -188,7 +188,6 @@ class RequestHeaderValidatorInterceptor(grpc.ServerInterceptor):
             meta_data = handler_call_details.invocation_metadata[0]._asdict()
             trace_parent = TraceParent.from_headers(meta_data)
             self.client.begin_transaction("request", trace_parent=trace_parent)
-            #        elasticapm.set_context(self._get_data(handler_call_details), "request")
         except Exception:
             logger.error("Exception durinng handle request", exc_info=True)
 
