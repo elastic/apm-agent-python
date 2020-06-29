@@ -643,7 +643,14 @@ WARNING: We recommend always including the default set of validators if you cust
 [options="header"]
 |============
 | Environment                        | Django/Flask           | Default
-| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `['authorization', 'password', 'secret', 'passwd', 'token', 'api_key', 'access_token', 'sessionid']`
+| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `['authorization',
+                                                                  'password',
+                                                                  'secret',
+                                                                  'passwd',
+                                                                  'token',
+                                                                  'api_key',
+                                                                  'access_token',
+                                                                  'sessionid']`
 |============
 
 A list of field names to mask when using processors.
