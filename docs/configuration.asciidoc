@@ -634,7 +634,7 @@ to avoid stampedes of instances that start at the same time.
 A list of processors to process transactions and errors.
 For more information, see <<sanitizing-data, Sanitizing Data>>.
 
-WARNING: We recommend to always include the default set of validators if you customize this setting.
+WARNING: We recommend always including the default set of validators if you customize this setting.
 
 [float]
 [[config-sanitize-field-names]]
@@ -642,7 +642,7 @@ WARNING: We recommend to always include the default set of validators if you cus
 
 [options="header"]
 |============
-| Environment              | Django/Flask | Default
+| Environment                        | Django/Flask           | Default
 | `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `['authorization',
                                                                   'password',
                                                                   'secret',
@@ -656,7 +656,7 @@ WARNING: We recommend to always include the default set of validators if you cus
 A list of field names to mask when using processors.
 For more information, see <<sanitizing-data, Sanitizing Data>>.
 
-WARNING: We recommend to always include the default set of field names if you customize this setting.
+WARNING: We recommend always including the default set of field names if you customize this setting.
 
 
 [float]

@@ -39,6 +39,7 @@ endif::[]
 
 * Added graphql (graphene) support {pull}850[#850]
 * Collect cloud provider metadata {pull}826[#826]
+* Added `sanitize_field_names` config {pull}860[#860]
 
 [float]
 ===== Bug fixes
