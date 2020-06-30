@@ -367,7 +367,7 @@ class Client(object):
         """
         provider = self.config.cloud_provider
 
-        if provider is False:
+        if not provider:
             return {}
         if provider == "aws":
             data = cloud.aws_metadata()

@@ -206,7 +206,7 @@ You must use the query bar to filter for a specific environment in versions prio
 [options="header"]
 |============
 | Environment                  | Django/Flask      | Default    | Example
-| `ELASTIC_APM_CLOUD_PROVIDER` | `CLOUD_PROVIDER`  | `None`     | `"aws"`
+| `ELASTIC_APM_CLOUD_PROVIDER` | `CLOUD_PROVIDER`  | `True`     | `"aws"`
 |============
 
 This config value allows you to specify which cloud provider should be assumed
