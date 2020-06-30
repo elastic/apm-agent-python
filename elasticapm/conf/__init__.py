@@ -347,7 +347,7 @@ class Config(_ConfigBase):
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
     disable_log_record_factory = _BoolConfigValue("DISABLE_LOG_RECORD_FACTORY", default=False)
     use_elastic_traceparent_header = _BoolConfigValue("USE_ELASTIC_TRACEPARENT_HEADER", default=True)
-    cloud_provider = _ConfigValue("CLOUD_PROVIDER", default=None)
+    cloud_provider = _ConfigValue("CLOUD_PROVIDER", default=True)
 
     @property
     def is_recording(self):
