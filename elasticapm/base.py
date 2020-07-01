@@ -365,9 +365,9 @@ class Client(object):
         Detects if the app is running in a cloud provider and fetches relevant
         metadata from the cloud provider's metadata endpoint.
         """
-        provider = self.config.cloud_provider
+        provider = str(self.config.cloud_provider).lower()
 
-        if not provider:
+        if not provider or provider == "none" or provider == "false":
             return {}
         if provider == "aws":
             data = cloud.aws_metadata()
@@ -384,7 +384,7 @@ class Client(object):
             if not data:
                 self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
             return data
-        else:
+        elif provider == "auto" or provider == "true":
             # Trial and error
             data = {}
             data = cloud.aws_metadata()
@@ -395,6 +395,9 @@ class Client(object):
                 return data
             data = cloud.azure_metadata()
             return data
+        else:
+            self.logger.warning("Unknown value for CLOUD_PROVIDER, skipping cloud metadata: {}".format(provider))
+            return {}
 
     def build_metadata(self):
         data = {
