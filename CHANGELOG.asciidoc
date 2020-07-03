@@ -30,23 +30,24 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-5.x]]
+=== Python Agent version 5.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[[release-notes-5.8.0]]
+==== v5.8.0
+
 [float]
 ===== Features
 
 * Added graphql (graphene) support {pull}850[#850]
+* Collect cloud provider metadata {pull}826[#826]
+* Added `sanitize_field_names` config {pull}860[#860]
 
 [float]
 ===== Bug fixes
 
 * Fix header fetching for ASGI implementations {pull}856[#856]
 
-
-[[release-notes-5.x]]
-=== Python Agent version 5.x
 
 [[release-notes-5.7.0]]
 ==== v5.7.0

@@ -47,7 +47,7 @@ from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
-from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -360,12 +360,51 @@ class Client(object):
             system_data["kubernetes"] = k8s
         return system_data
 
+    def get_cloud_info(self):
+        """
+        Detects if the app is running in a cloud provider and fetches relevant
+        metadata from the cloud provider's metadata endpoint.
+        """
+        provider = self.config.cloud_provider
+
+        if not provider:
+            return {}
+        if provider == "aws":
+            data = cloud.aws_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
+        elif provider == "gcp":
+            data = cloud.gcp_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
+        elif provider == "azure":
+            data = cloud.azure_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
+        else:
+            # Trial and error
+            data = {}
+            data = cloud.aws_metadata()
+            if data:
+                return data
+            data = cloud.gcp_metadata()
+            if data:
+                return data
+            data = cloud.azure_metadata()
+            return data
+
     def build_metadata(self):
         data = {
             "service": self.get_service_info(),
             "process": self.get_process_info(),
             "system": self.get_system_info(),
+            "cloud": self.get_cloud_info(),
         }
+        if not data["cloud"]:
+            data.pop("cloud")
         if self.config.global_labels:
             data["labels"] = enforce_label_format(self.config.global_labels)
         return data
