@@ -27,7 +27,6 @@ pipeline {
     PIP_CACHE = "${env.WORKSPACE}/.cache"
   }
   options {
-    timeout(time: 1, unit: 'HOURS')
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
     timestamps()
     ansiColor('xterm')
@@ -47,9 +46,9 @@ pipeline {
   }
   stages {
     stage('Initializing'){
-      options { skipDefaultCheckout() }
-      environment {
-        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+      options {
+        skipDefaultCheckout()
+        timeout(time: 1, unit: 'HOURS')
       }
       stages {
         /**
@@ -80,6 +79,9 @@ pipeline {
               }
             }
           }
+          environment {
+            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+          }
           steps {
             withGithubNotify(context: 'Sanity checks', tab: 'tests') {
               deleteDir()
@@ -95,148 +97,148 @@ pipeline {
             }
           }
         }
-      }
-    }
-    /**
-    Execute unit tests.
-    */
-    stage('Test') {
-      options { skipDefaultCheckout() }
-      when {
-        beforeAgent true
-        allOf {
-          expression { return env.ONLY_DOCS == "false" }
-          expression { return params.tests_ci }
-        }
-      }
-      steps {
-        withGithubNotify(context: 'Test', tab: 'tests') {
-          deleteDir()
-          unstash "source"
-          dir("${BASE_DIR}"){
-            script {
-              // To enable the full test matrix upon GitHub PR comments
-              def frameworkFile = '.ci/.jenkins_framework.yml'
-              if (env.GITHUB_COMMENT?.contains('full tests')) {
-                log(level: 'INFO', text: 'Full test matrix has been enabled.')
-                frameworkFile = '.ci/.jenkins_framework_full.yml'
-              }
-              pythonTasksGen = new PythonParallelTaskGenerator(
-                xKey: 'PYTHON_VERSION',
-                yKey: 'FRAMEWORK',
-                xFile: ".ci/.jenkins_python.yml",
-                yFile: frameworkFile,
-                exclusionFile: ".ci/.jenkins_exclude.yml",
-                tag: "Python",
-                name: "Python",
-                steps: this
-              )
-              def mapParallelTasks = pythonTasksGen.generateParallelTests()
-
-              // Let's now enable the windows stages
-              readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-                def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
-                mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
-              }
-              parallel(mapParallelTasks)
+        /**
+        Execute unit tests.
+        */
+        stage('Test') {
+          options { skipDefaultCheckout() }
+          when {
+            beforeAgent true
+            allOf {
+              expression { return env.ONLY_DOCS == "false" }
+              expression { return params.tests_ci }
             }
           }
-        }
-      }
-      post {
-        always {
-          convergeCoverage()
-          generateResultsReport()
-        }
-      }
-    }
-    stage('Building packages') {
-      options { skipDefaultCheckout() }
-      environment {
-        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
-      }
-      when {
-        beforeAgent true
-        allOf {
-          expression { return env.ONLY_DOCS == "false" }
-          expression { return params.package_ci }
-        }
-      }
-      steps {
-        withGithubNotify(context: 'Building packages') {
-          deleteDir()
-          unstash 'source'
-          dir("${BASE_DIR}"){
-            sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-            sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-            sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
-          }
-          stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
-        }
-      }
-    }
-    stage('Integration Tests') {
-      agent none
-      when {
-        beforeAgent true
-        allOf {
-          expression { return env.ONLY_DOCS == "false" }
-          anyOf {
-            changeRequest()
-            expression { return !params.Run_As_Master_Branch }
-          }
-        }
-      }
-      steps {
-        build(job: env.ITS_PIPELINE, propagate: false, wait: false,
-              parameters: [string(name: 'INTEGRATION_TEST', value: 'Python'),
-                           string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT} --opbeans-python-agent-branch ${env.GIT_BASE_COMMIT}"),
-                           string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
-                           string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
-                           string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
-        githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
-      }
-    }
-    stage('Benchmarks') {
-      agent { label 'metal' }
-      options { skipDefaultCheckout() }
-      environment {
-        AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
-        LANG = 'C.UTF-8'
-        LC_ALL = "${env.LANG}"
-        PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
-      }
-      when {
-        beforeAgent true
-        allOf {
-          anyOf {
-            branch 'master'
-            expression { return params.Run_As_Master_Branch }
-            expression { return env.GITHUB_COMMENT?.contains('benchmark tests') }
-          }
-          expression { return params.bench_ci }
-        }
-      }
-      steps {
-        withGithubNotify(context: 'Benchmarks', tab: 'artifacts') {
-          dir(env.BUILD_NUMBER) {
-            deleteDir()
-            unstash 'source'
-            script {
-              dir(BASE_DIR){
-                sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
-                                             user_var: 'ES_USER', pass_var: 'ES_PASS') {
-                  sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+          steps {
+            withGithubNotify(context: 'Test', tab: 'tests') {
+              deleteDir()
+              unstash "source"
+              dir("${BASE_DIR}"){
+                script {
+                  // To enable the full test matrix upon GitHub PR comments
+                  def frameworkFile = '.ci/.jenkins_framework.yml'
+                  if (env.GITHUB_COMMENT?.contains('full tests')) {
+                    log(level: 'INFO', text: 'Full test matrix has been enabled.')
+                    frameworkFile = '.ci/.jenkins_framework_full.yml'
+                  }
+                  pythonTasksGen = new PythonParallelTaskGenerator(
+                    xKey: 'PYTHON_VERSION',
+                    yKey: 'FRAMEWORK',
+                    xFile: ".ci/.jenkins_python.yml",
+                    yFile: frameworkFile,
+                    exclusionFile: ".ci/.jenkins_exclude.yml",
+                    tag: "Python",
+                    name: "Python",
+                    steps: this
+                  )
+                  def mapParallelTasks = pythonTasksGen.generateParallelTests()
+
+                  // Let's now enable the windows stages
+                  readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+                    def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
+                    mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
+                  }
+                  parallel(mapParallelTasks)
                 }
               }
             }
           }
+          post {
+            always {
+              convergeCoverage()
+              generateResultsReport()
+            }
+          }
         }
-      }
-      post {
-        always {
-          catchError(message: 'deleteDir failed', buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-            deleteDir()
+        stage('Building packages') {
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+          }
+          when {
+            beforeAgent true
+            allOf {
+              expression { return env.ONLY_DOCS == "false" }
+              expression { return params.package_ci }
+            }
+          }
+          steps {
+            withGithubNotify(context: 'Building packages') {
+              deleteDir()
+              unstash 'source'
+              dir("${BASE_DIR}"){
+                sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+                sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+                sh script: 'cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+              }
+              stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
+            }
+          }
+        }
+        stage('Integration Tests') {
+          agent none
+          when {
+            beforeAgent true
+            allOf {
+              expression { return env.ONLY_DOCS == "false" }
+              anyOf {
+                changeRequest()
+                expression { return !params.Run_As_Master_Branch }
+              }
+            }
+          }
+          steps {
+            build(job: env.ITS_PIPELINE, propagate: false, wait: false,
+                  parameters: [string(name: 'INTEGRATION_TEST', value: 'Python'),
+                              string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT} --opbeans-python-agent-branch ${env.GIT_BASE_COMMIT}"),
+                              string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
+                              string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
+                              string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
+            githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
+          }
+        }
+        stage('Benchmarks') {
+          agent { label 'metal' }
+          options { skipDefaultCheckout() }
+          environment {
+            AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
+            LANG = 'C.UTF-8'
+            LC_ALL = "${env.LANG}"
+            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+          }
+          when {
+            beforeAgent true
+            allOf {
+              anyOf {
+                branch 'master'
+                expression { return params.Run_As_Master_Branch }
+                expression { return env.GITHUB_COMMENT?.contains('benchmark tests') }
+              }
+              expression { return params.bench_ci }
+            }
+          }
+          steps {
+            withGithubNotify(context: 'Benchmarks', tab: 'artifacts') {
+              dir(env.BUILD_NUMBER) {
+                deleteDir()
+                unstash 'source'
+                script {
+                  dir(BASE_DIR){
+                    sendBenchmarks.prepareAndRun(secret: env.BENCHMARK_SECRET, url_var: 'ES_URL',
+                                                user_var: 'ES_USER', pass_var: 'ES_PASS') {
+                      sh 'scripts/run-benchmarks.sh "${AGENT_WORKDIR}" "${ES_URL}" "${ES_USER}" "${ES_PASS}"'
+                    }
+                  }
+                }
+              }
+            }
+          }
+          post {
+            always {
+              catchError(message: 'deleteDir failed', buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                deleteDir()
+              }
+            }
           }
         }
       }
@@ -312,7 +314,7 @@ pipeline {
   }
   post {
     cleanup {
-      notifyBuildResult()
+      notifyBuildResult(analyzeFlakey: true, flakyReportIdx: "reporter-apm-agent-python-apm-agent-python-master")
     }
   }
 }
