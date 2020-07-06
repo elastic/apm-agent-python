@@ -98,7 +98,7 @@ class GraphQLBackendInstrumentation(AbstractInstrumentedModule):
     def get_graphql_tx_name(self, graphql_doc):
         op_def = [
             i for i in graphql_doc.definitions
-            if type(i).__name__=="OperationDefinition"
+            if type(i).__name__ == "OperationDefinition"
         ][0]
         op = op_def.operation
         fields = op_def.selection_set.selections
