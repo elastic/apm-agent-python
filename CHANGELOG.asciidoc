@@ -42,6 +42,7 @@ endif::[]
 ===== Bug fixes
 
 * Updated CLOUD_PROVIDER config to allow for new options defined in https://github.com/elastic/apm/issues/289[#289] {pull}878[#878]
+* Fixed a bug in AWS metadata collection on docker containers in AWS Elastic Beanstalk {pull}884[#884]
 
 
 [[release-notes-5.x]]
