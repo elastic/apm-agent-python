@@ -30,6 +30,20 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+
+[float]
+===== Bug fixes
+
+* Updated CLOUD_PROVIDER config to allow for new options defined in https://github.com/elastic/apm/issues/289[#289] {pull}878[#878]
+
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
