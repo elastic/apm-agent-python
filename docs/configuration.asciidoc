@@ -206,7 +206,7 @@ You must use the query bar to filter for a specific environment in versions prio
 [options="header"]
 |============
 | Environment                  | Django/Flask      | Default    | Example
-| `ELASTIC_APM_CLOUD_PROVIDER` | `CLOUD_PROVIDER`  | `True`     | `"aws"`
+| `ELASTIC_APM_CLOUD_PROVIDER` | `CLOUD_PROVIDER`  | `"auto"`     | `"aws"`
 |============
 
 This config value allows you to specify which cloud provider should be assumed
@@ -214,7 +214,7 @@ for metadata collection. By default, the agent will attempt to detect the cloud
 provider or, if that fails, will use trial and error to collect the metadata.
 
 Valid options are `"aws"`, `"gcp"`, and `"azure"`. If this config value is set
-to `False`, then no cloud metadata will be collected.
+to `"none"`, then no cloud metadata will be collected.
 
 [float]
 [[config-secret-token]]
