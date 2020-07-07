@@ -47,17 +47,20 @@ def aws_metadata():
         # and will be quiet in the logs, unlike urllib3
         socket.create_connection(("169.254.169.254", 80), 0.1)
 
-        ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
-        token_url = "http://169.254.169.254/latest/api/token"
-        token_request = http.request("PUT", token_url, headers=ttl_header, timeout=3.0)
-        token = token_request.data.decode("utf-8")
-        aws_token_header = {"X-aws-ec2-metadata-token": token} if token else {}
+        try:
+            ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
+            token_url = "http://169.254.169.254/latest/api/token"
+            token_request = http.request("PUT", token_url, headers=ttl_header, timeout=1.0, retries=False)
+            token = token_request.data.decode("utf-8")
+            aws_token_header = {"X-aws-ec2-metadata-token": token} if token else {}
+        except Exception:
+            aws_token_header = {}
         metadata = json.loads(
             http.request(
                 "GET",
                 "http://169.254.169.254/latest/dynamic/instance-identity/document",
                 headers=aws_token_header,
-                timeout=3.0,
+                timeout=1.0,
                 retries=False,
             ).data.decode("utf-8")
         )
@@ -94,7 +97,7 @@ def gcp_metadata():
                 "GET",
                 "http://metadata.google.internal/computeMetadata/v1/?recursive=true",
                 headers=headers,
-                timeout=3.0,
+                timeout=1.0,
                 retries=False,
             ).data.decode("utf-8")
         )
@@ -135,7 +138,7 @@ def azure_metadata():
                 "GET",
                 "http://169.254.169.254/metadata/instance/compute?api-version=2019-08-15",
                 headers=headers,
-                timeout=3.0,
+                timeout=1.0,
                 retries=False,
             ).data.decode("utf-8")
         )
