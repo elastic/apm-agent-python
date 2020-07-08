@@ -232,6 +232,7 @@ def test_empty_processor_list(elasticapm_client):
     assert elasticapm_client.processors == []
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.parametrize(
     "sending_elasticapm_client",
     [{"transport_class": "elasticapm.transport.http.Transport", "async_mode": False}],
