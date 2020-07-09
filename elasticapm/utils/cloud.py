@@ -48,6 +48,12 @@ def aws_metadata():
         socket.create_connection(("169.254.169.254", 80), 0.1)
 
         try:
+            # This whole block is almost unnecessary. IMDSv1 will be supported
+            # indefinitely, so the only time this block is needed is if a
+            # security-conscious user has set the metadata service to require
+            # IMDSv2. Thus, the very expansive try:except: coverage.
+
+            # TODO: should we have a config option to completely disable IMDSv2 to reduce overhead?
             ttl_header = {"X-aws-ec2-metadata-token-ttl-seconds": "300"}
             token_url = "http://169.254.169.254/latest/api/token"
             token_request = http.request("PUT", token_url, headers=ttl_header, timeout=1.0, retries=False)
