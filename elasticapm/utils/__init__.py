@@ -61,7 +61,10 @@ def varmap(func, var, context=None, name=None, **kwargs):
         return func(name, "<...>", **kwargs)
     context.add(objid)
     if isinstance(var, dict):
-        ret = func(name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var)), **kwargs)
+        # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
+        ret = func(
+            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
+        )
     elif isinstance(var, (list, tuple)):
         ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
     else:
