@@ -431,7 +431,7 @@ def generateStepForWindows(Map v = [:]){
           deleteDir()
           unstash 'source'
           dir("${BASE_DIR}"){
-            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}" ] ])
+            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}", exclude: 'rc'] ])
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
           }
