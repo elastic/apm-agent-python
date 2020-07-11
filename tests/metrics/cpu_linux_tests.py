@@ -90,6 +90,16 @@ TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES = "9223372036854771712"
 TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED = "7964778496"
 TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES = "964778496"
 
+TEMPLATE_CGROUP_MEM_STAT = """pgmajfault 0
+inactive_anon 0
+active_anon 778702848
+inactive_file 10407936
+active_file 0
+unevictable 0
+hierarchical_memory_limit 1073741824
+hierarchical_memsw_limit 2147483648
+"""
+
 
 @pytest.mark.parametrize("proc_stat_template", [TEMPLATE_PROC_STAT_DEBIAN, TEMPLATE_PROC_STAT_RHEL])
 def test_cpu_mem_from_proc(elasticapm_client, proc_stat_template, tmpdir):
@@ -209,6 +219,7 @@ def test_mem_from_cgroup1(elasticapm_client, tmpdir):
     proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
     cgroup_memory_limit = os.path.join(tmpdir.strpath, "memory", "memory.limit_in_bytes")
     cgroup_memory_usage = os.path.join(tmpdir.strpath, "memory", "memory.usage_in_bytes")
+    cgroup_memory_stat = os.path.join(tmpdir.strpath, "memory", "memory.stat")
     mountinfo = os.path.join(tmpdir.strpath, "mountinfo")
     procSelfCgroup = os.path.join(tmpdir.strpath, "cgroup")
     os.mkdir(os.path.join(tmpdir.strpath, "memory"))
@@ -220,6 +231,7 @@ def test_mem_from_cgroup1(elasticapm_client, tmpdir):
         (proc_meminfo, TEMPLATE_PROC_MEMINFO),
         (cgroup_memory_limit, TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED),
         (cgroup_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
         (procSelfCgroup, "9:memory:/slice"),
         (
             procSelfMount,
@@ -241,11 +253,15 @@ def test_mem_from_cgroup1(elasticapm_client, tmpdir):
 
     data = next(metricset.collect())
 
-    assert data["samples"]["system.memory.total"]["value"] == 7964778496
-    assert data["samples"]["system.memory.actual.free"]["value"] == 7000000000
+    assert data["samples"]["system.memory.total"]["value"] == 16552841216
+    assert data["samples"]["system.memory.actual.free"]["value"] == 6670774272
 
     assert data["samples"]["system.process.memory.rss.bytes"]["value"] == 47738880
     assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
+
+    assert data["samples"]["system.process.cgroup.memory.mem.limit.bytes"]["value"] == 7964778496
+    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 954370560
+    assert data["samples"]["system.process.cgroup.memory.stats.inactive_file.bytes"]["value"] == 10407936
 
 
 def test_mem_from_cgroup2(elasticapm_client, tmpdir):
@@ -254,6 +270,7 @@ def test_mem_from_cgroup2(elasticapm_client, tmpdir):
     proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
     cgroup2_memory_limit = os.path.join(tmpdir.strpath, "slice", "memory.max")
     cgroup2_memory_usage = os.path.join(tmpdir.strpath, "slice", "memory.current")
+    cgroup2_memory_stat = os.path.join(tmpdir.strpath, "slice", "memory.stat")
     cgroup2_path = tmpdir.strpath
     cgroup2_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
     mountinfo = os.path.join(tmpdir.strpath, "mountinfo")
@@ -267,6 +284,7 @@ def test_mem_from_cgroup2(elasticapm_client, tmpdir):
         (proc_meminfo, TEMPLATE_PROC_MEMINFO),
         (cgroup2_memory_limit, TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED),
         (cgroup2_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup2_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
         (cgroup2_self_cgroup, "9:memory:/slice"),
         (
             procSelfMount,
@@ -288,8 +306,12 @@ def test_mem_from_cgroup2(elasticapm_client, tmpdir):
 
     data = next(metricset.collect())
 
-    assert data["samples"]["system.memory.total"]["value"] == 7964778496
-    assert data["samples"]["system.memory.actual.free"]["value"] == 7000000000
+    assert data["samples"]["system.memory.total"]["value"] == 16552841216
+    assert data["samples"]["system.memory.actual.free"]["value"] == 6670774272
 
     assert data["samples"]["system.process.memory.rss.bytes"]["value"] == 47738880
     assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
+
+    assert data["samples"]["system.process.cgroup.memory.mem.limit.bytes"]["value"] == 7964778496
+    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 954370560
+    assert data["samples"]["system.process.cgroup.memory.stats.inactive_file.bytes"]["value"] == 10407936

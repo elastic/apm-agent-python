@@ -40,8 +40,10 @@ MEM_STATS = "/proc/meminfo"
 PROC_STATS = "/proc/self/stat"
 CGROUP1_MEMORY_LIMIT = "memory.limit_in_bytes"
 CGROUP1_MEMORY_USAGE = "memory.usage_in_bytes"
+CGROUP1_MEMORY_STAT = "memory.stat"
 CGROUP2_MEMORY_LIMIT = "memory.max"
 CGROUP2_MEMORY_USAGE = "memory.current"
+CGROUP2_MEMORY_STAT = "memory.stat"
 UNLIMIT = 0x7FFFFFFFFFFFF000
 PROC_SELF_CGROUP = "/proc/self/cgroup"
 PROC_SELF_MOUNTINFO = "/proc/self/mountinfo"
@@ -53,7 +55,7 @@ MEM_FIELDS = ("MemTotal", "MemAvailable", "MemFree", "Buffers", "Cached")
 whitespace_re = re.compile(r"\s+")
 
 MEMORY_CGROUP = re.compile(r"^\d+\:memory\:.*")
-CGROUP1_MOUNT_POINT = re.compile(r"^\d+? \d+? .+? .+? (.*?) .*cgroup.*cgroup.*memory.*")
+CGROUP1_MOUNT_POINT = re.compile(r"^\d+? \d+? .+? .+? (.*?) .*cgroup.*memory.*")
 CGROUP2_MOUNT_POINT = re.compile(r"^\d+? \d+? .+? .+? (.*?) .*cgroup2.*cgroup.*")
 
 if not os.path.exists(SYS_STATS):
@@ -125,6 +127,7 @@ class CPUMetricSet(MetricsSet):
                     return (
                         os.path.join(mountDiscovered, slicePath, CGROUP2_MEMORY_LIMIT),
                         os.path.join(mountDiscovered, slicePath, CGROUP2_MEMORY_USAGE),
+                        os.path.join(mountDiscovered, slicePath, CGROUP2_MEMORY_STAT),
                     )
         except Exception:
             pass
@@ -138,6 +141,7 @@ class CPUMetricSet(MetricsSet):
                     return (
                         os.path.join(mountDiscovered, CGROUP1_MEMORY_LIMIT),
                         os.path.join(mountDiscovered, CGROUP1_MEMORY_USAGE),
+                        os.path.join(mountDiscovered, CGROUP1_MEMORY_STAT),
                     )
         except Exception:
             pass
@@ -162,6 +166,13 @@ class CPUMetricSet(MetricsSet):
                 mem_free = sum(new.get(mem_field, 0) for mem_field in ("MemFree", "Buffers", "Cached"))
             self.gauge("system.memory.actual.free").val = mem_free
             self.gauge("system.memory.total").val = new["MemTotal"]
+
+            if "CgroupMemTotal" in new:
+                self.gauge("system.process.cgroup.memory.mem.limit.bytes").val = new["CgroupMemTotal"]
+            if "CGroupMemUsed" in new:
+                self.gauge("system.process.cgroup.memory.mem.usage.bytes").val = new["CGroupMemUsed"]
+            if "CGroupMemInactive" in new:
+                self.gauge("system.process.cgroup.memory.stats.inactive_file.bytes").val = new["CGroupMemInactive"]
 
             try:
                 cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
@@ -197,17 +208,24 @@ class CPUMetricSet(MetricsSet):
                     break
         if self.cgroupFiles is not None:
             with open(self.cgroupFiles[0], "r") as memfile:
-                stats["MemTotal"] = int(memfile.readline())
+                stats["CgroupMemTotal"] = int(memfile.readline())
             with open(self.cgroupFiles[1], "r") as memfile:
                 usage = int(memfile.readline())
-                stats["MemAvailable"] = stats["MemTotal"] - usage
-        else:
-            with open(self.memory_stats_file, "r") as memfile:
+                stats["CGroupMemUsed"] = usage
+            with open(self.cgroupFiles[2], "r") as memfile:
+                sum = 0
                 for line in memfile:
-                    metric_name = line.split(":")[0]
-                    if metric_name in MEM_FIELDS:
-                        value_in_bytes = int(whitespace_re.split(line)[1]) * 1024
-                        stats[metric_name] = value_in_bytes
+                    (metric_name, value) = line.split(" ")
+                    if metric_name == "inactive_file":
+                        sum = sum + int(value)
+                stats["CGroupMemUsed"] = stats["CGroupMemUsed"] - sum
+                stats["CGroupMemInactive"] = sum
+        with open(self.memory_stats_file, "r") as memfile:
+            for line in memfile:
+                metric_name = line.split(":")[0]
+                if metric_name in MEM_FIELDS:
+                    value_in_bytes = int(whitespace_re.split(line)[1]) * 1024
+                    stats[metric_name] = value_in_bytes
         return stats
 
     def read_process_stats(self):
