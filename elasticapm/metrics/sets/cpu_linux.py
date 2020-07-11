@@ -90,7 +90,7 @@ class CPUMetricSet(MetricsSet):
             lineCgroup = None
             with open(procSelfCgroup, "r") as procSelfCgroupFile:
                 for line in procSelfCgroupFile:
-                    if lineCgroup == None and line.startswith("0:"):
+                    if lineCgroup is None and line.startswith("0:"):
                         lineCgroup = line
                     if MEMORY_CGROUP.match(line):
                         lineCgroup = line
