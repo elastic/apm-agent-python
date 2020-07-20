@@ -33,7 +33,7 @@ from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstru
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
 
-class AioPGInstrumentation(AsyncAbstractInstrumentedModule):
+class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     """[summary].
 
     Args:
