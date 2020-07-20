@@ -72,7 +72,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
             "elasticapm.instrumentation.packages.asyncio.elasticsearch.AsyncElasticsearchInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
-            "elasticapm.instrumentation.packages.asyncio.aiopg.AsyncPGInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.asyncpg.AsyncPGInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
