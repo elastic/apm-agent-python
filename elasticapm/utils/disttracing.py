@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ctypes
+import re
 
 from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
@@ -37,7 +38,7 @@ logger = get_logger("elasticapm.utils")
 
 
 class TraceParent(object):
-    __slots__ = ("version", "trace_id", "span_id", "trace_options", "tracestate", "is_legacy")
+    __slots__ = ("version", "trace_id", "span_id", "trace_options", "tracestate", "tracestate_dict", "is_legacy")
 
     def __init__(self, version, trace_id, span_id, trace_options, tracestate=None, is_legacy=False):
         self.version = version
@@ -46,6 +47,7 @@ class TraceParent(object):
         self.trace_options = trace_options
         self.is_legacy = is_legacy
         self.tracestate = tracestate
+        self.tracestate_dict = self._parse_tracestate(tracestate)
 
     def copy_from(self, version=None, trace_id=None, span_id=None, trace_options=None, tracestate=None):
         return TraceParent(
@@ -119,12 +121,30 @@ class TraceParent(object):
         """
         # this works for all known WSGI implementations
         if isinstance(headers, list):
-            return ",".join([
-                item[1]
-                for item in headers
-                if item[0] == key
-            ])
+            return ",".join([item[1] for item in headers if item[0] == key])
         return headers.get(key)
+
+    def _parse_tracestate(self, tracestate):
+        """
+        Tracestate can contain data from any vendor, made distinct by vendor
+        keys. Vendors are comma-separated.
+
+            tracestate: elastic=key:value;key:value...,othervendor=<opaque>
+        """
+        if not tracestate:
+            return {}
+        if "elastic=" not in tracestate:
+            return {}
+
+        ret = {}
+        state = re.match(r"elastic=([^,]*)", tracestate).group(1).split(";")
+        for keyval in state:
+            if not keyval:
+                continue
+            key, _, val = keyval.partition(":")
+            ret[key] = val
+
+        return ret
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
