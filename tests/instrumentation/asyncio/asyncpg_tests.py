@@ -30,7 +30,7 @@
 
 import pytest  # isort:skip
 
-aiopg = pytest.importorskip("aiopg")  # isort:skip
+asyng = pytest.importorskip("asyncpg")  # isort:skip
 
 import os
 
@@ -44,7 +44,7 @@ except ImportError:
     # as of Jan 2018, psycopg2cffi doesn't have this module
     has_sql_module = False
 
-pytestmark = [pytest.mark.aiopg, pytest.mark.asyncio]
+pytestmark = [pytest.mark.asyncpg, pytest.mark.asyncio]
 
 if "POSTGRES_DB" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping aiopg tests, no POSTGRES_DB environment variable set"))
