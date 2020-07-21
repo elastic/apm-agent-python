@@ -187,3 +187,20 @@ def starmatch_to_regex(pattern):
         else:
             res.append(re.escape(c))
     return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)
+
+
+def significant_figures(number, digits):
+    """
+    Truncate a given number to <digits> length (excluding the decimal point).
+
+    Note that this will only truncate digits to the right of the decimal point.
+    We don't want to lose any of the most significant figures.
+
+    Returns a string.
+    """
+    ret = str(number)
+    left, _, right = ret.partition(".")
+    if len(left) >= digits or not right or not int(right):
+        return left
+    else:
+        return "{}.{}".format(left, right[: digits - len(left)])

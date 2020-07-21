@@ -39,6 +39,7 @@ from elasticapm.utils import (
     get_url_dict,
     read_pem_file,
     sanitize_url,
+    significant_figures,
     starmatch_to_regex,
     url_to_destination,
 )
@@ -239,3 +240,20 @@ def test_read_pem_file_chain():
     with open(os.path.join(os.path.dirname(__file__), "..", "ca", "chain.crt"), mode="rb") as f:
         result = read_pem_file(f)
         assert result.endswith(b"\xc8\xae")
+
+
+@pytest.mark.parametrize(
+    "number,digits,result",
+    [
+        (100000, 5, "100000"),
+        (1.11111111111111111, 5, "1.1111"),
+        (1.11, 5, "1.11"),
+        (5.0, 5, "5"),
+        (5, 5, "5"),
+        (76.923830261, 5, "76.923"),
+        (76.923830261, 1, "76"),
+        (76.923830261, 4, "76.92"),
+    ],
+)
+def test_significant_figures(number, digits, result):
+    assert significant_figures(number, digits) == result
