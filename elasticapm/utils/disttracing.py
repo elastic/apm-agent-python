@@ -127,7 +127,9 @@ class TraceParent(object):
     def _parse_tracestate(self, tracestate):
         """
         Tracestate can contain data from any vendor, made distinct by vendor
-        keys. Vendors are comma-separated.
+        keys. Vendors are comma-separated. The elastic tracestate data is
+        made up of key:value pairs, separated by semicolons. It is meant to
+        be parsed into a dict.
 
             tracestate: elastic=key:value;key:value...,othervendor=<opaque>
         """
