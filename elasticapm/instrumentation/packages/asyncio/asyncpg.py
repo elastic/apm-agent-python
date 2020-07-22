@@ -34,39 +34,12 @@ from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
 
 class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
-    """[summary].
-
-    Args:
-        AsyncAbstractInstrumentedModule ([type]): [description]
-
-    Raises:
-        AssertionError: [description]
-
-    Returns:
-        [type]: [description]
-    """
 
     name = "asyncpg"
 
     instrument_list = [("asyncpg.connection", "Connection._do_execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        """[summary]
-
-        Args:
-            module ([type]): [description]
-            method ([type]): [description]
-            wrapped ([type]): [description]
-            instance ([type]): [description]
-            args ([type]): [description]
-            kwargs ([type]): [description]
-
-        Raises:
-            AssertionError: [description]
-
-        Returns:
-            [type]: [description]
-        """
         if method == "Connection._do_execute":
             query = args[0] if len(args) else kwargs["query"]
             name = extract_signature(query)
