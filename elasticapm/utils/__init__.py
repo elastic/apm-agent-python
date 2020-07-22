@@ -203,4 +203,8 @@ def significant_figures(number, digits):
     if len(left) >= digits or not right or not int(right):
         return left
     else:
-        return "{}.{}".format(left, right[: digits - len(left)])
+        right, remainder = right[: digits - len(left)], right[digits - len(left) :]
+        # Round half away from zero
+        if remainder and int(remainder[0]) >= 5:
+            right = right[:-1] + str(int(right[-1]) + 1)
+        return "{}.{}".format(left, right)
