@@ -134,9 +134,7 @@ class BaseSpan(object):
 
 
 class Transaction(BaseSpan):
-    def __init__(
-        self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_weight=None
-    ):
+    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, weight=None):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         if start:
@@ -153,7 +151,7 @@ class Transaction(BaseSpan):
         self.context = {}
 
         self.is_sampled = is_sampled
-        self.sample_weight = sample_weight
+        self.weight = weight
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
@@ -315,6 +313,8 @@ class Transaction(BaseSpan):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self.weight is not None:
+            result["weight"] = self.weight
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
             # only set parent_id if this transaction isn't the root
@@ -427,6 +427,8 @@ class Span(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
         }
+        if self.transaction.weight is not None:
+            result["weight"] = self.transaction.weight
         if self.sync is not None:
             result["sync"] = self.sync
         if self.labels:
@@ -558,7 +560,7 @@ class Tracer(object):
                     else significant_figures(1.0 / self.config.transaction_sample_rate, 5)
                 )
         transaction = Transaction(
-            self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start, sample_weight=weight
+            self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start, weight=weight
         )
         if trace_parent is None:
             transaction.trace_parent = TraceParent(
@@ -567,7 +569,8 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
-            transaction.trace_parent.add_tracestate("w", weight)
+            if weight is not None:
+                transaction.trace_parent.add_tracestate("w", weight)
         execution_context.set_transaction(transaction)
         return transaction
 
