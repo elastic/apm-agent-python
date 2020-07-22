@@ -28,7 +28,7 @@ FRAMEWORK:
   - elasticsearch-7
   - cassandra-newest
   - psutil-newest
-  - eventlet-newest
+  #- eventlet-newest
   - gevent-newest
   - zerorpc-0.4
   - mysql_connector-newest
