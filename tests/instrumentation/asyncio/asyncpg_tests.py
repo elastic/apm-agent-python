@@ -30,7 +30,7 @@
 
 import pytest  # isort:skip
 
-asyng = pytest.importorskip("asyncpg")  # isort:skip
+asyncpg = pytest.importorskip("asyncpg")  # isort:skip
 
 import os
 
@@ -47,7 +47,7 @@ except ImportError:
 pytestmark = [pytest.mark.asyncpg, pytest.mark.asyncio]
 
 if "POSTGRES_DB" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping aiopg tests, no POSTGRES_DB environment variable set"))
+    pytestmark.append(pytest.mark.skip("Skipping asyncpg tests, no POSTGRES_DB environment variable set"))
 
 
 def dsn():
@@ -64,7 +64,7 @@ def dsn():
 
 @pytest.fixture()
 async def cursor(request):
-    conn = await aiopg.connect(dsn())
+    conn = await asyncpg.connect(dsn())
     cur = await conn.cursor()
 
     # we use a finalizer instead of yield, because Python 3.5 throws a syntax error, even if the test doesn't run
