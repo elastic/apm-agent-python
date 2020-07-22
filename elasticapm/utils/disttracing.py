@@ -32,6 +32,7 @@ import ctypes
 import re
 
 from elasticapm.conf import constants
+from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.utils")
@@ -147,6 +148,30 @@ class TraceParent(object):
             ret[key] = val
 
         return ret
+
+    def _set_tracestate(self):
+        elastic_state = "elastic={}".format(
+            ";".join(["{}:{}".format(k, v) for k, v in compat.iteritems(self.tracestate_dict)])
+        )
+        if not self.tracestate:
+            return elastic_state
+        else:
+            # Remove elastic=<stuff> from the tracestate, and add the new elastic state to the end
+            otherstate = re.sub(r"elastic=([^,]*)", "", self.tracestate)
+            if otherstate:
+                if otherstate[-1] == ",":
+                    return "{}{}".format(otherstate, elastic_state)
+                else:
+                    return "{},{}".format(otherstate, elastic_state)
+            else:
+                return elastic_state
+
+    def add_tracestate(self, key, val):
+        """
+        Add key/value pair to the tracestate
+        """
+        self.tracestate_dict[key] = val
+        self.tracestate = self._set_tracestate()
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):

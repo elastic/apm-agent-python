@@ -41,7 +41,7 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
-from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils import compat, encoding, get_name_from_func, significant_figures
 from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
@@ -134,7 +134,9 @@ class BaseSpan(object):
 
 
 class Transaction(BaseSpan):
-    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None):
+    def __init__(
+        self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_weight=None
+    ):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         if start:
@@ -151,6 +153,7 @@ class Transaction(BaseSpan):
         self.context = {}
 
         self.is_sampled = is_sampled
+        self.sample_weight = sample_weight
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
@@ -541,11 +544,22 @@ class Tracer(object):
         """
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
+            weight = trace_parent.tracestate_dict.get("w")
         else:
             is_sampled = (
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
             )
-        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start)
+            if not is_sampled:
+                weight = "0"
+            else:
+                weight = (
+                    None
+                    if self.config.transaction_sample_rate == 1.0
+                    else significant_figures(1.0 / self.config.transaction_sample_rate, 5)
+                )
+        transaction = Transaction(
+            self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start, sample_weight=weight
+        )
         if trace_parent is None:
             transaction.trace_parent = TraceParent(
                 constants.TRACE_CONTEXT_VERSION,
@@ -553,6 +567,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
+            transaction.trace_parent.add_tracestate("w", weight)
         execution_context.set_transaction(transaction)
         return transaction
 
