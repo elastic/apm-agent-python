@@ -114,25 +114,3 @@ async def test_composable_queries(instrument, cursor, elasticapm_client):
     span = spans[0]
     assert span["name"] == "SELECT FROM test"
     assert span["context"]["db"]["statement"] == baked_query
-
-
-async def test_callproc(instrument, cursor, elasticapm_client):
-    await cursor.execute(
-        """
-        CREATE OR REPLACE FUNCTION squareme(me INT)
-        RETURNS INTEGER
-        LANGUAGE SQL
-        AS $$
-            SELECT me*me;
-        $$;
-        """
-    )
-    elasticapm_client.begin_transaction("test")
-    await cursor.callproc("squareme", [2])
-    result = await cursor.fetchall()
-    assert result[0][0] == 4
-    elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.events[constants.TRANSACTION]
-    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
-    assert span["name"] == "squareme()"
-    assert span["action"] == "exec"
