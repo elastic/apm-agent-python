@@ -40,13 +40,10 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("asyncpg.connection", "Connection._do_execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        if method == "Connection._do_execute":
-            query = args[0] if len(args) else kwargs["query"]
-            name = extract_signature(query)
-            context = {"db": {"type": "sql", "statement": query}}
-            action = "query"
-        else:
-            raise AssertionError("call from uninstrumented method")
+        query = args[0] if len(args) else kwargs["query"]
+        name = extract_signature(query)
+        context = {"db": {"type": "sql", "statement": query}}
+        action = "query"
         async with async_capture_span(
             name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
         ):
