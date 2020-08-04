@@ -63,32 +63,31 @@ def dsn():
 
 
 @pytest.fixture()
-async def cursor(request):
+async def connection(request):
     conn = await asyncpg.connect(dsn())
-    cur = await conn.cursor()
 
     # we use a finalizer instead of yield, because Python 3.5 throws a syntax error, even if the test doesn't run
     def rollback():
-        cur.raw.execute("ROLLBACK")
-        cur.close()
+        conn.raw.execute("ROLLBACK")
         conn.close()
 
     request.addfinalizer(rollback)
-    await cur.execute(
+    await conn.execute(
         "BEGIN;"
         "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
         "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
     )
-    return cur
+    return conn
 
 
-async def test_select_sleep(instrument, cursor, elasticapm_client):
+async def test_select_sleep(instrument, connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    await cursor.execute("SELECT pg_sleep(0.1);")
+    await connection.execute("SELECT pg_sleep(0.1);")
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
+
     assert len(spans) == 1
     span = spans[0]
     assert 100 < span["duration"] < 110
@@ -97,20 +96,28 @@ async def test_select_sleep(instrument, cursor, elasticapm_client):
     assert span["subtype"] == "postgres"
     assert span["action"] == "query"
     assert span["sync"] == False
+    assert span["name"] == "SELECT FROM"
 
 
 @pytest.mark.skipif(not has_sql_module, reason="SQL module missing from psycopg2")
-async def test_composable_queries(instrument, cursor, elasticapm_client):
+async def test_composable_queries(instrument, connection, elasticapm_client):
     query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
         table=sql.Identifier("test"), row=sql.Identifier("name")
     )
     baked_query = query.as_string(cursor.raw)
+
     elasticapm_client.begin_transaction("test")
-    await cursor.execute(query)
+    await connection.execute(query)
     elasticapm_client.end_transaction("test", "OK")
+
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
+
     assert len(spans) == 1
     span = spans[0]
+    assert transaction["id"] == span["transaction_id"]
+    assert span["subtype"] == "postgres"
+    assert span["action"] == "query"
+    assert span["sync"] == False
     assert span["name"] == "SELECT FROM test"
     assert span["context"]["db"]["statement"] == baked_query
