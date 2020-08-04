@@ -28,22 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest  # isort:skip
-
-asyncpg = pytest.importorskip("asyncpg")  # isort:skip
-
 import os
+import pytest  # isort:skip
 
 from elasticapm.conf import constants
 
-try:
-    from psycopg2 import sql
-
-    has_sql_module = True
-except ImportError:
-    # as of Jan 2018, psycopg2cffi doesn't have this module
-    has_sql_module = False
-
+asyncpg = pytest.importorskip("asyncpg")  # isort:skip
 pytestmark = [pytest.mark.asyncpg, pytest.mark.asyncio]
 
 if "POSTGRES_DB" not in os.environ:
@@ -66,9 +56,10 @@ def dsn():
 async def connection(request):
     conn = await asyncpg.connect(dsn())
 
-    # we use a finalizer instead of yield, because Python 3.5 throws a syntax error, even if the test doesn't run
+    # we use a finalizer instead of yield, because Python 3.5 throws
+    # a syntax error, even if the test doesn't run
     def rollback():
-        conn.raw.execute("ROLLBACK")
+        conn.execute("ROLLBACK")
         conn.close()
 
     request.addfinalizer(rollback)
@@ -99,15 +90,9 @@ async def test_select_sleep(instrument, connection, elasticapm_client):
     assert span["name"] == "SELECT FROM"
 
 
-@pytest.mark.skipif(not has_sql_module, reason="SQL module missing from psycopg2")
 async def test_composable_queries(instrument, connection, elasticapm_client):
-    query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
-        table=sql.Identifier("test"), row=sql.Identifier("name")
-    )
-    baked_query = query.as_string(cursor.raw)
-
     elasticapm_client.begin_transaction("test")
-    await connection.execute(query)
+    await connection.execute("INSERT INTO test VALUES (4, 'four');")
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
@@ -120,4 +105,3 @@ async def test_composable_queries(instrument, connection, elasticapm_client):
     assert span["action"] == "query"
     assert span["sync"] == False
     assert span["name"] == "SELECT FROM test"
-    assert span["context"]["db"]["statement"] == baked_query
