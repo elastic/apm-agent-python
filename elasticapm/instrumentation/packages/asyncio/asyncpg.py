@@ -36,6 +36,11 @@ from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     name = "asyncpg"
 
+    """
+    We instrument the higher level Connection.execute and Connection.executemany
+    over Connection._do_execute as Connection.execute can call the Cython
+    BaseProtocol.query which is not instrumentable
+    """
     instrument_list = [
         ("asyncpg.connection", "Connection.execute"),
         ("asyncpg.connection", "Connection.executemany"),
