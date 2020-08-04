@@ -224,7 +224,8 @@ Library: `asyncpg` (`>=0.20.0`)
 
 Instrumented methods:
 
- * `async.connection.Connection._do_execute`
+ * `async.connection.Connection.execute`
+ * `async.connection.Connection.executemany`
 
 Collected trace data:
 

@@ -36,15 +36,14 @@ from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     name = "asyncpg"
 
-    instrument_list = [("asyncpg.connection", "Connection._execute")]
+    instrument_list = [
+        ("asyncpg.connection", "Connection.execute"),
+        ("asyncpg.connection", "Connection.executemany"),
+    ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        if method == "Connection._do_execute":
-            query = args[0] if len(args) else kwargs["query"]
-            query = _bake_sql(instance.raw, query)
-            name = extract_signature(query)
-            context = {"db": {"type": "sql", "statement": query}}
-            action = "query"
+        if method in ("Connection.execute", "Connection.executemany"):
+            context, action, name = _extract_data(args, kwargs)
         else:
             raise AssertionError("call from uninstrumented method")
         async with async_capture_span(
@@ -53,9 +52,9 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
             return await wrapped(*args, **kwargs)
 
 
-def _bake_sql(cursor, sql):
-    # if this is a Composable object, use its `as_string` method
-    # see http://initd.org/psycopg/docs/sql.html
-    if hasattr(sql, "as_string"):
-        return sql.as_string(cursor)
-    return sql
+def _extract_data(args, kwargs):
+    query = args[0] if len(args) else kwargs["query"]
+    context = {"db": {"type": "sql", "statement": query}}
+    action = "query"
+    name = extract_signature(query)
+    return context, action, name
