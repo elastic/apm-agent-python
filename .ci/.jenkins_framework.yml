@@ -36,6 +36,7 @@ FRAMEWORK:
   - mysqlclient-newest
   - aiohttp-newest
   - aiopg-newest
+  - asyncpg-newest
   - tornado-newest
   - starlette-newest
   - pymemcache-newest

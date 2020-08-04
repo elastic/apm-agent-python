@@ -217,6 +217,20 @@ Collected trace data:
  * parametrized SQL query
 
 [float]
+[[automatic-instrumentation-db-asynpg]]
+==== asynpg
+
+Library: `asyncpg` (`>=0.20.0`)
+
+Instrumented methods:
+
+ * `async.connection.Connection._do_execute`
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
 [[automatic-instrumentation-db-pyodbc]]
 ==== PyODBC
 
