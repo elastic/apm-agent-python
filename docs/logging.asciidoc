@@ -10,6 +10,19 @@ as well as http://www.structlog.org/en/stable/[`structlog`].
 * <<log-correlation-in-es>>
 
 [float]
+[[ecs-logging]]
+=== `ecs-logging`
+
+The easiest way to integrate your logs with APM is to use the
+https://github.com/elastic/ecs-logging-python[`ecs-logging`] library, which
+is also provided by Elastic. This library provides formatters for both `logging`
+and `structlog` which create ECS-compatible logs and will include the tracing
+information required for log correlation in kibana. Coupled with something like
+https://www.elastic.co/beats/filebeat[Filebeat], it is the easiest way to get
+logs into Elasticsearch.
+
+
+[float]
 [[logging-integrations]]
 === Logging integrations
 
