@@ -8,9 +8,9 @@ download_schema()
     for run in 1 2 3 4 5
     do
         if [ -x "$(command -v gtar)" ]; then
-            curl --silent --fail https://codeload.github.com/elastic/apm-server/tar.gz/${2} | gtar xzvf - --directory=${1} --strip-components=1 "*/docs/spec/*"
+            curl --silent --fail https://codeload.github.com/elastic/apm-server/tar.gz/${2} | gtar xzvf - --wildcards --directory=${1} --strip-components=1 "*/docs/spec/*"
         else
-            curl --silent --fail https://codeload.github.com/elastic/apm-server/tar.gz/${2} | tar xzvf - --directory=${1} --strip-components=1 "*/docs/spec/*"
+            curl --silent --fail https://codeload.github.com/elastic/apm-server/tar.gz/${2} | tar xzvf - --wildcards --directory=${1} --strip-components=1 "*/docs/spec/*"
         fi
         result=$?
         if [ $result -eq 0 ]; then break; fi
