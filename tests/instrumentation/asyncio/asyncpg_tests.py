@@ -32,6 +32,7 @@ import pytest  # isort:skip
 
 asyncpg = pytest.importorskip("asyncpg")  # isort:skip
 
+import asyncio
 import os
 
 from elasticapm.conf import constants
@@ -54,19 +55,16 @@ def dsn():
 async def connection(request):
     conn = await asyncpg.connect(dsn())
 
-    def rollback():
-        conn.execute("ROLLBACK")
-        conn.close()
-
-    request.addfinalizer(rollback)
-
     await conn.execute(
         "BEGIN;"
         "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
         "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
     )
 
-    return connection
+    yield conn
+
+    await conn.execute("ROLLBACK")
+    await conn.close()
 
 
 async def test_select_sleep(instrument, connection, elasticapm_client):
@@ -84,3 +82,21 @@ async def test_select_sleep(instrument, connection, elasticapm_client):
     assert span["subtype"] == "postgres"
     assert span["action"] == "query"
     assert span["sync"] == False
+    assert span["name"] == "SELECT FROM"
+
+
+async def test_executemany(instrument, connection, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    await connection.executemany("INSERT INTO test VALUES ($1, $2);", [(4, "four"), (5, "five")])
+    elasticapm_client.end_transaction("test")
+
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+
+    assert len(spans) == 1
+    span = spans[0]
+    assert transaction["id"] == span["transaction_id"]
+    assert span["subtype"] == "postgres"
+    assert span["action"] == "query"
+    assert span["sync"] == False
+    assert span["name"] == "INSERT INTO test"
