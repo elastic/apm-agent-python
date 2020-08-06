@@ -34,10 +34,19 @@ from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 
 
 class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
+    """
+    Implement asyncpg instrumentation with two methods Connection.execute
+    and Connection.executemany since Connection._do_execute is not called
+    given a prepared query is passed to a connection. As in:
+    https://github.com/MagicStack/asyncpg/blob/master/asyncpg/connection.py#L294-L297
+    """
 
     name = "asyncpg"
 
-    instrument_list = [("asyncpg.connection", "Connection._do_execute")]
+    instrument_list = [
+        ("asyncpg.connection", "Connection.execute"),
+        ("asyncpg.connection", "Connection.executemany"),
+    ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         query = args[0] if len(args) else kwargs["query"]

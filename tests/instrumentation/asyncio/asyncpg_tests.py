@@ -37,7 +37,11 @@ asyncpg = pytest.importorskip("asyncpg")  # isort:skip
 pytestmark = [pytest.mark.asyncpg, pytest.mark.asyncio]
 
 if "POSTGRES_DB" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping asyncpg tests, no POSTGRES_DB environment variable set"))
+    pytestmark.append(
+        pytest.mark.skip(
+            "Skipping asyncpg tests, no POSTGRES_DB environment variable set"
+        )
+    )
 
 
 def dsn():
@@ -71,7 +75,7 @@ async def connection(request):
     return conn
 
 
-async def test_select_sleep(instrument, connection, elasticapm_client):
+async def test_execute_with_sleep(instrument, connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
     await connection.execute("SELECT pg_sleep(0.1);")
     elasticapm_client.end_transaction("test", "OK")
@@ -90,9 +94,12 @@ async def test_select_sleep(instrument, connection, elasticapm_client):
     assert span["name"] == "SELECT FROM"
 
 
-async def test_composable_queries(instrument, connection, elasticapm_client):
+async def test_executemany(instrument, connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    await connection.execute("INSERT INTO test VALUES (4, 'four');")
+    await connection.executemany(
+        "INSERT INTO test VALUES ($1, $2, $3);",
+        [(1, "winter"), (2, "spring"), (3, "summer")],
+    )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
