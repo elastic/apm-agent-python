@@ -71,4 +71,5 @@ FRAMEWORK:
   - pymemcache-3.0
   - pymemcache-newest
   - graphene-2
+  - httpx-0.12
   - httpx-newest
