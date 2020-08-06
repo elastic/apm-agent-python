@@ -88,8 +88,7 @@ This can be quite a hassle, so we recommend to use our dockerized test setup.
 See [Running tests](https://www.elastic.co/guide/en/apm/agent/python/master/run-tests-locally.html) for detailed instructions.
 
 However, for running local unit tests, you can install the relevant
-[requirements
-files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
+[requirements files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
 and then run `py.test` from the project root.
 
 Pytest will automatically discover all the tests and skip the ones for which
