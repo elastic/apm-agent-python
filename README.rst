@@ -25,9 +25,12 @@ any Python application.
 
 Read the documentation_, including instructions on `running the tests locally`_.
 
+If you're interested in contributing, `start here!`
+
 .. _documentation: https://www.elastic.co/guide/en/apm/agent/python/current/index.html
 .. _`custom integrations`: https://www.elastic.co/blog/creating-custom-framework-integrations-with-the-elastic-apm-python-agent
 .. _`running the tests locally`: https://www.elastic.co/guide/en/apm/agent/python/current/run-tests-locally.html
+.. _`start here!`: https://github.com/elastic/apm-agent-python/blob/master/CONTRIBUTING.md
 
 License
 -------
