@@ -36,17 +36,17 @@ Once your changes are ready to submit for review:
 1. Code style
 
     This project uses several tools to maintain a consistent code style:
-    
+
      * the automatic code formatter [black](https://black.readthedocs.io/en/stable/)
      * sorting of imports via [isort](https://isort.readthedocs.io/en/latest/)
      * [flake8](http://flake8.pycqa.org/en/latest/)
      * License header check via custom script
-     
+
     The easiest way to make sure your pull request adheres to the the code style
     is to install [pre-commit](https://pre-commit.com/).
-    
+
         pip install pre-commit # or "brew install pre-commit" if you use Homebrew
-        
+
         pre-commit install
 
 1. Test your changes
@@ -87,6 +87,24 @@ you need to install several databases (Elasticsearch, PostgreSQL, MySQL, Cassand
 This can be quite a hassle, so we recommend to use our dockerized test setup.
 See [Running tests](https://www.elastic.co/guide/en/apm/agent/python/master/run-tests-locally.html) for detailed instructions.
 
+However, for running local unit tests, you can install the relevant
+[requirements
+files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
+and then run `py.test` from the project root.
+
+Pytest will automatically discover all the tests and skip the ones for which
+dependencies are not met.
+
+#### Pytest
+
+This project uses [pytest](https://docs.pytest.org/en/latest/) for all of its
+testing needs. Note that pytest can be a bit confusing at first, due to its
+dynamic discovery features. In particular,
+[fixtures](https://docs.pytest.org/en/stable/fixture.html) can be confusing
+and hard to discover, due to the fact that they do not need to be imported to
+be used. For example, whenever a test has `elasticapm_client` as an argument,
+that is a fixture which is defined
+[here](https://github.com/elastic/apm-agent-python/blob/ed4ce5fd5db3cc091a54d3328384fbce62635bbb/tests/fixtures.py#L150).
 
 ### Workflow
 
