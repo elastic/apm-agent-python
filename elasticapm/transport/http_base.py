@@ -42,7 +42,6 @@ class HTTPTransportBase(Transport):
         client,
         verify_server_cert=True,
         compress_level=5,
-        metadata=None,
         headers=None,
         timeout=None,
         server_cert=None,
@@ -62,7 +61,7 @@ class HTTPTransportBase(Transport):
         }
         base, sep, tail = self._url.rpartition(constants.EVENTS_API_PATH)
         self._config_url = "".join((base, constants.AGENT_CONFIG_PATH, tail))
-        super(HTTPTransportBase, self).__init__(client, metadata=metadata, compress_level=compress_level, **kwargs)
+        super(HTTPTransportBase, self).__init__(client, compress_level=compress_level, **kwargs)
 
     def send(self, data):
         """

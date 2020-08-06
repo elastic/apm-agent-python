@@ -32,17 +32,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-class InvalidScheme(ValueError):
-    """
-    Raised when a transport is constructed using a URI which is not
-    handled by the transport
-    """
-
-
-class DuplicateScheme(Exception):
-    """
-    Raised when registering a handler for a particular scheme which
-    is already registered
-    """
-
-    pass
+class TransportException(Exception):
+    def __init__(self, message, data=None, print_trace=True):
+        super(TransportException, self).__init__(message)
+        self.data = data
+        self.print_trace = print_trace

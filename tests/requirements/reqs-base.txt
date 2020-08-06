@@ -19,6 +19,7 @@ glob2==0.7
 parse==1.15.0
 parse-type==0.5.2
 pytest-bdd==3.2.1
+pytest-rerunfailures==8.0
 
 
 docutils==0.14
@@ -44,7 +45,7 @@ pep8
 pytz
 
 
-pytest-asyncio==0.10.0 ; python_version >= '3.5'
-asynctest==0.12.2 ; python_version >= '3.5'
+pytest-asyncio==0.10.0 ; python_version >= '3.7'
+asynctest==0.12.2 ; python_version >= '3.7'
 
 cachetools==2.0.1 ; python_version == '2.7'

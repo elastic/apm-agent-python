@@ -58,6 +58,17 @@ LABEL_RE = re.compile('[.*"]')
 
 HARDCODED_PROCESSORS = ["elasticapm.processors.add_context_lines_to_frames"]
 
+BASE_SANITIZE_FIELD_NAMES = [
+    "authorization",
+    "password",
+    "secret",
+    "passwd",
+    "token",
+    "api_key",
+    "access_token",
+    "sessionid",
+]
+
 try:
     # Python 2
     LABEL_TYPES = (bool, int, long, float, decimal.Decimal)

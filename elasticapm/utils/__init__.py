@@ -48,7 +48,7 @@ except ImportError:
 default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
 
 
-def varmap(func, var, context=None, name=None):
+def varmap(func, var, context=None, name=None, **kwargs):
     """
     Executes ``func(key_name, value)`` on all values,
     recursively discovering dict and list scoped
@@ -58,14 +58,17 @@ def varmap(func, var, context=None, name=None):
         context = set()
     objid = id(var)
     if objid in context:
-        return func(name, "<...>")
+        return func(name, "<...>", **kwargs)
     context.add(objid)
     if isinstance(var, dict):
-        ret = func(name, dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var)))
+        # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
+        ret = func(
+            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
+        )
     elif isinstance(var, (list, tuple)):
-        ret = func(name, [varmap(func, f, context, name) for f in var])
+        ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
     else:
-        ret = func(name, var)
+        ret = func(name, var, **kwargs)
     context.remove(objid)
     return ret
 

@@ -33,14 +33,10 @@ import re
 import warnings
 from collections import defaultdict
 
-from elasticapm.conf.constants import ERROR, MASK, SPAN, TRANSACTION
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text
 from elasticapm.utils.stacks import get_lines_from_file
-
-SANITIZE_FIELD_NAMES = frozenset(
-    ["authorization", "password", "secret", "passwd", "token", "api_key", "access_token", "sessionid"]
-)
 
 SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
 
@@ -48,7 +44,6 @@ SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card number
 def for_events(*events):
     """
     :param events: list of event types
-
     Only calls wrapped function if given event_type is in list of events
     """
     events = set(events)
@@ -64,7 +59,6 @@ def for_events(*events):
 def remove_http_request_body(client, event):
     """
     Removes request.body from context
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -78,7 +72,6 @@ def remove_http_request_body(client, event):
 def remove_stacktrace_locals(client, event):
     """
     Removes local variables from any frames.
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -91,7 +84,6 @@ def remove_stacktrace_locals(client, event):
 def sanitize_stacktrace_locals(client, event):
     """
     Sanitizes local variables in all frames
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -99,7 +91,7 @@ def sanitize_stacktrace_locals(client, event):
 
     def func(frame):
         if "vars" in frame:
-            frame["vars"] = varmap(_sanitize, frame["vars"])
+            frame["vars"] = varmap(_sanitize, frame["vars"], sanitize_field_names=client.config.sanitize_field_names)
 
     return _process_stack_frames(event, func)
 
@@ -108,7 +100,6 @@ def sanitize_stacktrace_locals(client, event):
 def sanitize_http_request_cookies(client, event):
     """
     Sanitizes http request cookies
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -117,14 +108,18 @@ def sanitize_http_request_cookies(client, event):
     # sanitize request.cookies dict
     try:
         cookies = event["context"]["request"]["cookies"]
-        event["context"]["request"]["cookies"] = varmap(_sanitize, cookies)
+        event["context"]["request"]["cookies"] = varmap(
+            _sanitize, cookies, sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
 
     # sanitize request.header.cookie string
     try:
         cookie_string = event["context"]["request"]["headers"]["cookie"]
-        event["context"]["request"]["headers"]["cookie"] = _sanitize_string(cookie_string, "; ", "=")
+        event["context"]["request"]["headers"]["cookie"] = _sanitize_string(
+            cookie_string, "; ", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
     return event
@@ -140,7 +135,9 @@ def sanitize_http_response_cookies(client, event):
     """
     try:
         cookie_string = event["context"]["response"]["headers"]["set-cookie"]
-        event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(cookie_string, ";", "=")
+        event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(
+            cookie_string, ";", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
     return event
@@ -150,7 +147,6 @@ def sanitize_http_response_cookies(client, event):
 def sanitize_http_headers(client, event):
     """
     Sanitizes http request/response headers
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -158,14 +154,18 @@ def sanitize_http_headers(client, event):
     # request headers
     try:
         headers = event["context"]["request"]["headers"]
-        event["context"]["request"]["headers"] = varmap(_sanitize, headers)
+        event["context"]["request"]["headers"] = varmap(
+            _sanitize, headers, sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
 
     # response headers
     try:
         headers = event["context"]["response"]["headers"]
-        event["context"]["response"]["headers"] = varmap(_sanitize, headers)
+        event["context"]["response"]["headers"] = varmap(
+            _sanitize, headers, sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
 
@@ -176,14 +176,15 @@ def sanitize_http_headers(client, event):
 def sanitize_http_wsgi_env(client, event):
     """
     Sanitizes WSGI environment variables
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
     """
     try:
         env = event["context"]["request"]["env"]
-        event["context"]["request"]["env"] = varmap(_sanitize, env)
+        event["context"]["request"]["env"] = varmap(
+            _sanitize, env, sanitize_field_names=client.config.sanitize_field_names
+        )
     except (KeyError, TypeError):
         pass
     return event
@@ -193,7 +194,6 @@ def sanitize_http_wsgi_env(client, event):
 def sanitize_http_request_querystring(client, event):
     """
     Sanitizes http request query string
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -203,7 +203,9 @@ def sanitize_http_request_querystring(client, event):
     except (KeyError, TypeError):
         return event
     if "=" in query_string:
-        sanitized_query_string = _sanitize_string(query_string, "&", "=")
+        sanitized_query_string = _sanitize_string(
+            query_string, "&", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
         full_url = event["context"]["request"]["url"]["full"]
         event["context"]["request"]["url"]["search"] = sanitized_query_string
         event["context"]["request"]["url"]["full"] = full_url.replace(query_string, sanitized_query_string)
@@ -216,7 +218,6 @@ def sanitize_http_request_body(client, event):
     Sanitizes http request body. This only works if the request body
     is a query-encoded string. Other types (e.g. JSON) are not handled by
     this sanitizer.
-
     :param client: an ElasticAPM client
     :param event: a transaction or error event
     :return: The modified event
@@ -226,7 +227,9 @@ def sanitize_http_request_body(client, event):
     except (KeyError, TypeError):
         return event
     if "=" in body:
-        sanitized_query_string = _sanitize_string(body, "&", "=")
+        sanitized_query_string = _sanitize_string(
+            body, "&", "=", sanitize_field_names=client.config.sanitize_field_names
+        )
         event["context"]["request"]["body"] = sanitized_query_string
     return event
 
@@ -267,7 +270,12 @@ def mark_in_app_frames(client, event):
     return event
 
 
-def _sanitize(key, value):
+def _sanitize(key, value, **kwargs):
+    if "sanitize_field_names" in kwargs:
+        sanitize_field_names = frozenset(kwargs["sanitize_field_names"])
+    else:
+        sanitize_field_names = frozenset(BASE_SANITIZE_FIELD_NAMES)
+
     if value is None:
         return
 
@@ -283,19 +291,20 @@ def _sanitize(key, value):
         return value
 
     key = key.lower()
-    for field in SANITIZE_FIELD_NAMES:
+    for field in sanitize_field_names:
         if field in key:
             # store mask as a fixed length for security
             return MASK
     return value
 
 
-def _sanitize_string(unsanitized, itemsep, kvsep):
+def _sanitize_string(unsanitized, itemsep, kvsep, sanitize_field_names=BASE_SANITIZE_FIELD_NAMES):
     """
     sanitizes a string that contains multiple key/value items
     :param unsanitized: the unsanitized string
     :param itemsep: string that separates items
     :param kvsep: string that separates key from value
+    :param sanitize_field_names: field names to pass to _sanitize
     :return: a sanitized string
     """
     sanitized = []
@@ -303,7 +312,7 @@ def _sanitize_string(unsanitized, itemsep, kvsep):
     for kv in kvs:
         kv = kv.split(kvsep)
         if len(kv) == 2:
-            sanitized.append((kv[0], _sanitize(kv[0], kv[1])))
+            sanitized.append((kv[0], _sanitize(kv[0], kv[1], sanitize_field_names=sanitize_field_names)))
         else:
             sanitized.append(kv)
     return itemsep.join(kvsep.join(kv) for kv in sanitized)

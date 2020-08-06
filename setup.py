@@ -125,6 +125,7 @@ tests_require = [
     "isort",
     "pytest-cache",
     "pytest-isort",
+    "graphene",
     "httpx",
 ]
 

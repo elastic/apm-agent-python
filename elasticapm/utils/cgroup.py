@@ -36,7 +36,7 @@ CGROUP_PATH = "/proc/self/cgroup"
 SYSTEMD_SCOPE_SUFFIX = ".scope"
 
 kubepods_regexp = re.compile(
-    r"(?:^/kubepods/[^/]+/pod([^/]+)$)|(?:^/kubepods\.slice/kubepods-[^/]+\.slice/kubepods-[^/]+-pod([^/]+)\.slice$)"
+    r"(?:^/kubepods[\S]*/pod([^/]+)$)|(?:^/kubepods\.slice/kubepods-[^/]+\.slice/kubepods-[^/]+-pod([^/]+)\.slice$)"
 )
 
 container_id_regexp = re.compile(

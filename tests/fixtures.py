@@ -155,6 +155,7 @@ def elasticapm_client(request):
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("metrics_interval", "0ms")
+    client_config.setdefault("cloud_provider", False)
     client = TempStoreClient(**client_config)
     yield client
     client.close()

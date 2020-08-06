@@ -1,2 +1,2 @@
-aiohttp==3.0.8
+graphene>2,<3
 -r reqs-base.txt
