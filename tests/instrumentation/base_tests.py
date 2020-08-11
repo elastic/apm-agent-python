@@ -38,7 +38,7 @@ import pytest
 
 import elasticapm
 from elasticapm.conf import constants
-from elasticapm.conf.constants import SPAN
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat, wrapt
 
@@ -193,3 +193,19 @@ def test_end_nonexisting_span(caplog, elasticapm_client):
     elasticapm_client.end_transaction("test", "")
     record = caplog.records[0]
     assert record.args == ("test_name", "test_type")
+
+
+def test_outcome_by_span_exception(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    try:
+        with elasticapm.capture_span("fail", "test_type"):
+            assert False
+    except AssertionError:
+        pass
+    with elasticapm.capture_span("success", "test_type"):
+        pass
+    elasticapm_client.end_transaction("test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert spans[0]["name"] == "fail" and spans[0]["outcome"] == "failure"
+    assert spans[1]["name"] == "success" and spans[1]["outcome"] == "success"

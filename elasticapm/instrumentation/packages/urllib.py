@@ -96,7 +96,12 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
             self._set_disttracing_headers(request_object, trace_parent, transaction)
-            return wrapped(*args, **kwargs)
+            response = wrapped(*args, **kwargs)
+            if response:
+                if span.context:
+                    span.context["http"]["status_code"] = response.status
+                span.set_success() if response.status < 400 else span.set_failure()
+            return response
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
         request_object = args[1] if len(args) > 1 else kwargs["req"]

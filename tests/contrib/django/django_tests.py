@@ -757,6 +757,28 @@ def test_transaction_metrics(django_elasticapm_client, client):
         assert transaction["duration"] > 0
         assert transaction["result"] == "HTTP 2xx"
         assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+        assert transaction["outcome"] == "success"
+
+
+def test_transaction_metrics_error(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 0
+        try:
+            client.get(reverse("elasticapm-http-error", args=(500,)))
+        except Exception:
+            pass
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+        transactions = django_elasticapm_client.events[TRANSACTION]
+
+        assert len(transactions) == 1
+        transaction = transactions[0]
+        assert transaction["duration"] > 0
+        assert transaction["result"] == "HTTP 5xx"
+        assert transaction["name"] == "GET tests.contrib.django.testapp.views.http_error"
+        assert transaction["outcome"] == "failure"
 
 
 def test_transaction_metrics_debug(django_elasticapm_client, client):

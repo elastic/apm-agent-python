@@ -88,6 +88,7 @@ class BaseSpan(object):
     def __init__(self, labels=None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
+        self.outcome = "unknown"
         if labels:
             self.label(**labels)
 
@@ -131,6 +132,12 @@ class BaseSpan(object):
         """
         for key in tags.keys():
             self.labels[LABEL_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
+
+    def set_success(self):
+        self.outcome = "success"
+
+    def set_failure(self):
+        self.outcome = "failure"
 
 
 class Transaction(BaseSpan):
@@ -176,6 +183,10 @@ class Transaction(BaseSpan):
                 reset_on_collect=True,
                 **{"transaction.name": self.name, "transaction.type": self.transaction_type}
             ).update(self.duration)
+        if self.outcome == "unknown" and self.context:
+            status_code = self.context.get("response", {}).get("status_code", None)
+            if isinstance(status_code, int):
+                self.outcome = "success" if status_code < 500 else "failure"
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -274,16 +285,21 @@ class Transaction(BaseSpan):
             start=start,
         )
 
-    def end_span(self, skip_frames=0, duration=None):
+    def end_span(self, skip_frames=0, duration=None, outcome=None):
         """
         End the currently active span
         :param skip_frames: numbers of frames to skip in the stack trace
         :param duration: override duration, mostly useful for testing
+        :param outcome: outcome of the span, either success, failure or unknown
         :return: the ended span
         """
         span = execution_context.get_span()
         if span is None:
             raise LookupError()
+
+        # only overwrite span outcome if it is still unknown
+        if span.outcome == "unknown":
+            span.outcome = outcome
 
         span.end(skip_frames=skip_frames, duration=duration)
         return span
@@ -309,6 +325,7 @@ class Transaction(BaseSpan):
             "duration": self.duration * 1000,  # milliseconds
             "result": encoding.keyword_field(str(self.result)),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
+            "outcome": self.outcome,
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
@@ -346,6 +363,7 @@ class Span(BaseSpan):
         "frames",
         "labels",
         "sync",
+        "outcome",
         "_child_durations",
     )
 
@@ -423,6 +441,7 @@ class Span(BaseSpan):
             "action": encoding.keyword_field(self.action),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
+            "outcome": self.outcome,
         }
         if self.sync is not None:
             result["sync"] = self.sync
@@ -511,6 +530,14 @@ class DroppedSpan(BaseSpan):
     @property
     def context(self):
         return None
+
+    @property
+    def outcome(self):
+        return "unknown"
+
+    @outcome.setter
+    def outcome(self, value):
+        return
 
 
 class Tracer(object):
@@ -663,7 +690,8 @@ class capture_span(object):
 
         if transaction and transaction.is_sampled:
             try:
-                span = transaction.end_span(self.skip_frames, duration=self.duration)
+                outcome = "failure" if exc_val else "success"
+                span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
                 if exc_val and not isinstance(span, DroppedSpan):
                     try:
                         exc_val._elastic_apm_span_id = span.id
