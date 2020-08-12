@@ -74,7 +74,7 @@ def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver
     assert trace_parent.trace_options.recorded
 
 
-def test_httpx_instrumentation_via_session(instrument, elasticapm_client, waiting_httpserver):
+def test_httpx_instrumentation_via_client(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
     elasticapm_client.begin_transaction("transaction.test")
