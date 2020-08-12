@@ -285,7 +285,7 @@ class Transaction(BaseSpan):
             start=start,
         )
 
-    def end_span(self, skip_frames=0, duration=None, outcome=None):
+    def end_span(self, skip_frames=0, duration=None, outcome="unknown"):
         """
         End the currently active span
         :param skip_frames: numbers of frames to skip in the stack trace
