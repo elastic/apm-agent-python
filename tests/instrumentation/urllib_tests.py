@@ -45,7 +45,7 @@ try:
     getresponse_method = "http.client.HTTPConnection.getresponse"
 except ImportError:
     from urllib2 import urlopen
-    from urllib2 import URLError
+    from urllib2 import URLError, HTTPError
 
     request_method = "httplib.HTTPConnection.request"
     getresponse_method = "httplib.HTTPConnection.getresponse"
