@@ -37,7 +37,7 @@ endif::[]
 [float]
 ===== Features
 
- * Add instrumentation support for https://github.com/encode/httpx[`httpx`] {pull}898[#898]
+ * Add instrumentation support for https://github.com/encode/httpx[`httpx`] and https://github.com/encode/httpcore[`httpcore`] {pull}898[#898]
 
 [float]
 ===== Bug fixes

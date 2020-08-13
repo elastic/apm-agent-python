@@ -63,6 +63,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.urllib.UrllibInstrumentation",
     "elasticapm.instrumentation.packages.graphql.GraphQLExecutorInstrumentation",
     "elasticapm.instrumentation.packages.graphql.GraphQLBackendInstrumentation",
+    "elasticapm.instrumentation.packages.httpcore.HTTPCoreInstrumentation",
 }
 
 if sys.version_info >= (3, 7):
@@ -77,6 +78,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.httpcore.HTTPCoreAsyncInstrumentation",
         ]
     )
 
