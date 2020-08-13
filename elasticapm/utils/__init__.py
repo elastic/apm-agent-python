@@ -142,7 +142,7 @@ def get_host_from_url(url):
 
 def url_to_destination(url, service_type="external"):
     parts = compat.urlparse.urlsplit(url)
-    hostname = parts.hostname
+    hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
     if "://[" in url:
         hostname = "[%s]" % hostname

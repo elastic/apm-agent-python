@@ -98,16 +98,24 @@ def test_httpx_instrumentation_via_client(instrument, elasticapm_client, waiting
 
 
 def test_httpx_instrumentation_malformed_empty(instrument, elasticapm_client):
+    try:
+        from httpx._exceptions import UnsupportedProtocol
+    except ImportError:
+        pytest.skip("Test requires HTTPX 0.14+")
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
-        with pytest.raises(InvalidURL):
+        with pytest.raises(UnsupportedProtocol):
             httpx.get("")
 
 
 def test_httpx_instrumentation_malformed_path(instrument, elasticapm_client):
+    try:
+        from httpx._exceptions import LocalProtocolError
+    except ImportError:
+        pytest.skip("Test requires HTTPX 0.14+")
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
-        with pytest.raises(InvalidURL):
+        with pytest.raises(LocalProtocolError):
             httpx.get("http://")
 
 

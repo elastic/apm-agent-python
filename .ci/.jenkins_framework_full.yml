@@ -72,4 +72,5 @@ FRAMEWORK:
   - pymemcache-newest
   - graphene-2
   - httpx-0.12
+  - httpx-0.13
   - httpx-newest
