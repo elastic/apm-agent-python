@@ -69,7 +69,7 @@ def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
 
-    # this should be the span id of `httpx`, not of urllib3
+    # this should be the span id of `httpx`, not of httpcore
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
 
@@ -92,7 +92,7 @@ def test_httpx_instrumentation_via_client(instrument, elasticapm_client, waiting
     trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
     assert trace_parent.trace_id == transactions[0]["trace_id"]
 
-    # this should be the span id of `httpx`, not of urllib3
+    # this should be the span id of `httpx`, not of httpcore
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
 
