@@ -111,4 +111,4 @@ async def test_executemany(instrument, connection, elasticapm_client):
     assert span["subtype"] == "postgres"
     assert span["action"] == "query"
     assert span["sync"] == False
-    assert span["name"] == "SELECT FROM test"
+    assert span["name"] == "INSERT INTO test"
