@@ -50,6 +50,8 @@ for m in ("multiprocessing", "billiard"):
     except ImportError:
         pass
 
+import ast
+import codecs
 import os
 import sys
 from distutils.command.build_ext import build_ext
@@ -105,7 +107,27 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-setup_kwargs = dict(cmdclass={"test": PyTest})
+def get_version():
+    """
+    Get version without importing from elasticapm. This avoids any side effects
+    from importing while installing and/or building the module
+
+    Once Python 3.8 is the lowest supported version, we could consider hardcoding
+    the version in setup.cfg instead. 3.8 comes with importlib.metadata, which makes
+    it trivial to find the version of a package, making it unnecessary to
+    have the version available in code.
+
+    :return: a string, indicating the version
+    """
+    version_file = codecs.open(os.path.join("elasticapm", "version.py"), encoding="utf-8")
+    for line in version_file:
+        if line.startswith("__version__"):
+            version_tuple = ast.literal_eval(line.split(" = ")[1])
+            return ".".join(map(str, version_tuple))
+    return "unknown"
+
+
+setup_kwargs = dict(cmdclass={"test": PyTest}, version=get_version())
 
 
 def run_setup(with_extensions):
