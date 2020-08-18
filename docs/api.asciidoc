@@ -234,6 +234,44 @@ elasticapm.set_transaction_result('SUCCESS')
  * `override`: if `True` (the default), overrides any previously set result.
     If `False`, only sets the result if the result hasn't already been set.
 
+[float]
+[[api-set-transaction-success]]
+==== `elasticapm.set_transaction_success()`
+
+Marks the current transaction as successful.
+This should only be called at the end of a transaction after the outcome is determined.
+For supported frameworks, the transaction outcome is set automatically if it has not been set yet. 
+
+This value is used for error rate calculations.
+
+Example:
+
+[source,python]
+----
+import elasticapm
+
+elasticapm.set_transaction_success()
+----
+
+[float]
+[[api-set-transaction-failure]]
+==== `elasticapm.set_transaction_failure()`
+
+Marks the current transaction as failed.
+This should only be called at the end of a transaction after the outcome is determined.
+For supported frameworks, the transaction outcome is set automatically if it has not been set yet. 
+
+This value is used for error rate calculations.
+
+Example:
+
+[source,python]
+----
+import elasticapm
+
+elasticapm.set_transaction_success()
+----
+
 
 [float]
 [[api-get-transaction-id]]

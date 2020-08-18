@@ -729,6 +729,13 @@ def tag(**tags):
 
 
 def set_transaction_name(name, override=True):
+    """
+    Sets the name of the transaction
+
+    :param name: the name of the transaction
+    :param override: if set to False, the name is only set if no name has been set before
+    :return: None
+    """
     transaction = execution_context.get_transaction()
     if not transaction:
         return
@@ -737,11 +744,50 @@ def set_transaction_name(name, override=True):
 
 
 def set_transaction_result(result, override=True):
+    """
+    Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
+    HTTP requests, or "success"/"fail" for background tasks.
+
+    :param name: the name of the transaction
+    :param override: if set to False, the name is only set if no name has been set before
+    :return: None
+    """
+
     transaction = execution_context.get_transaction()
     if not transaction:
         return
     if transaction.result is None or override:
         transaction.result = result
+
+
+def set_transaction_success():
+    """
+    Marks this transaction as successful. This should only be done at the end of a transaction
+    when the outcome is determined.
+
+    This value is used for error rate calculations.
+
+    :return: None
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        return
+    transaction.set_success()
+
+
+def set_transaction_failure():
+    """
+    Marks this transaction as failed. This should only be done at the end of a transaction
+    when the outcome is determined.
+
+    This value is used for error rate calculations.
+
+    :return: None
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        return
+    transaction.set_failure()
 
 
 def get_transaction_id():
