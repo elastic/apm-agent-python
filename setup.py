@@ -51,14 +51,17 @@ for m in ("multiprocessing", "billiard"):
         pass
 
 import ast
+import codecs
 import os
 import sys
-from codecs import open
 from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
-from setuptools import Extension, find_packages, setup
+import pkg_resources
+from setuptools import Extension, setup
 from setuptools.command.test import test as TestCommand
+
+pkg_resources.require("setuptools>=39.2")
 
 if sys.platform == "win32":
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
@@ -84,67 +87,6 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 
-def get_version():
-    """
-    Get version without importing from elasticapm. This avoids any side effects
-    from importing while installing and/or building the module
-    :return: a string, indicating the version
-    """
-    version_file = open(os.path.join("elasticapm", "version.py"), encoding="utf-8")
-    for line in version_file:
-        if line.startswith("__version__"):
-            version_tuple = ast.literal_eval(line.split(" = ")[1])
-            return ".".join(map(str, version_tuple))
-    return "unknown"
-
-
-tests_require = [
-    "py>=1.4.26",
-    "pytest>=2.6.4",
-    "pytest-django==2.8.0",
-    "pytest-capturelog>=0.7",
-    "blinker>=1.1",
-    "celery",
-    "django-celery",
-    "Flask>=0.8",
-    "starlette",
-    "logbook",
-    "mock",
-    "pep8",
-    "webob",
-    "pytz",
-    "redis",
-    "requests",
-    "jinja2",
-    "pytest-benchmark",
-    "urllib3-mock",
-    "Twisted",
-    # isort
-    "apipkg",
-    "execnet",
-    "isort",
-    "pytest-cache",
-    "pytest-isort",
-    "graphene"
-]
-
-if sys.version_info[0] == 2:
-    tests_require += ["unittest2", "python-memcached"]
-else:
-    tests_require += ["python3-memcached"]
-
-
-try:
-    import __pypy__
-except ImportError:
-    tests_require += ["psycopg2"]
-
-if sys.version_info >= (3, 5):
-    tests_require += ["aiohttp", "tornado", "starlette", "pytest-asyncio", "pytest-mock"]
-
-install_requires = ["urllib3", "certifi", "cachetools;python_version=='2.7'"]
-
-
 class PyTest(TestCommand):
     user_options = [("pytest-args=", "a", "Arguments to pass to py.test")]
 
@@ -165,47 +107,27 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-setup_kwargs = dict(
-    name="elastic-apm",
-    version=get_version(),
-    author="Elastic, Inc",
-    license="BSD",
-    url="https://github.com/elastic/apm-agent-python",
-    description="The official Python module for Elastic APM",
-    long_description=open(os.path.join(os.path.dirname(__file__), "README.rst"), encoding="utf-8").read(),
-    packages=find_packages(exclude=("tests",)),
-    zip_safe=False,
-    install_requires=install_requires,
-    tests_require=tests_require,
-    extras_require={
-        "tests": tests_require,
-        "flask": ["blinker"],
-        "aiohttp": ["aiohttp"],
-        "tornado": ["tornado"],
-        "starlette": ["starlette"],
-        "opentracing": ["opentracing>=2.0.0"],
-    },
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4",
-    cmdclass={"test": PyTest},
-    test_suite="tests",
-    include_package_data=True,
-    entry_points={"paste.filter_app_factory": ["elasticapm = elasticapm.contrib.paste:filter_factory"]},
-    classifiers=[
-        "Intended Audience :: Developers",
-        "Intended Audience :: System Administrators",
-        "Operating System :: OS Independent",
-        "Topic :: Software Development",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
-        "License :: OSI Approved :: BSD License",
-    ],
-)
+def get_version():
+    """
+    Get version without importing from elasticapm. This avoids any side effects
+    from importing while installing and/or building the module
+
+    Once Python 3.8 is the lowest supported version, we could consider hardcoding
+    the version in setup.cfg instead. 3.8 comes with importlib.metadata, which makes
+    it trivial to find the version of a package, making it unnecessary to
+    have the version available in code.
+
+    :return: a string, indicating the version
+    """
+    version_file = codecs.open(os.path.join("elasticapm", "version.py"), encoding="utf-8")
+    for line in version_file:
+        if line.startswith("__version__"):
+            version_tuple = ast.literal_eval(line.split(" = ")[1])
+            return ".".join(map(str, version_tuple))
+    return "unknown"
+
+
+setup_kwargs = dict(cmdclass={"test": PyTest}, version=get_version())
 
 
 def run_setup(with_extensions):
