@@ -235,14 +235,19 @@ elasticapm.set_transaction_result('SUCCESS')
     If `False`, only sets the result if the result hasn't already been set.
 
 [float]
-[[api-set-transaction-success]]
-==== `elasticapm.set_transaction_success()`
+[[api-set-transaction-outcome]]
+==== `elasticapm.set_transaction_outcome()`
 
-Marks the current transaction as successful.
+Sets the outcome of the transaction. The value can either be `"success"`, `"failure"` or `"unknown"`.
 This should only be called at the end of a transaction after the outcome is determined.
-For supported frameworks, the transaction outcome is set automatically if it has not been set yet. 
+For supported frameworks, the transaction outcome is set automatically if it has not been set yet.
 
-This value is used for error rate calculations.
+If your transaction results in an HTTP response, you can alternatively provide the HTTP status code.
+
+NOTE: While the `outcome` and `result` field look very similar, they serve different purposes.
+      While the `result` field can hold an arbitrary string value, `outcome` is limited to three different values,
+      `"success"`, `"failure"` and `"unknown"`.
+      This allows the APM app to perform error rate calculations on these values.
 
 Example:
 
@@ -250,28 +255,19 @@ Example:
 ----
 import elasticapm
 
-elasticapm.set_transaction_success()
+elasticapm.set_transaction_outcome("success")
+
+# Using an HTTP status code
+elasticapm.set_transaction_outcome(http_status_code=200)
+
+# Using predefined constants:
+
+from elasticapm.conf.constants import OUTCOME
+
+elasticapm.set_transaction_outcome(OUTCOME.SUCCESS)
+elasticapm.set_transaction_outcome(OUTCOME.FAILURE)
+elasticapm.set_transaction_outcome(OUTCOME.UNKNOWN)
 ----
-
-[float]
-[[api-set-transaction-failure]]
-==== `elasticapm.set_transaction_failure()`
-
-Marks the current transaction as failed.
-This should only be called at the end of a transaction after the outcome is determined.
-For supported frameworks, the transaction outcome is set automatically if it has not been set yet. 
-
-This value is used for error rate calculations.
-
-Example:
-
-[source,python]
-----
-import elasticapm
-
-elasticapm.set_transaction_success()
-----
-
 
 [float]
 [[api-get-transaction-id]]

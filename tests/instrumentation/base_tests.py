@@ -209,3 +209,26 @@ def test_outcome_by_span_exception(elasticapm_client):
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert spans[0]["name"] == "fail" and spans[0]["outcome"] == "failure"
     assert spans[1]["name"] == "success" and spans[1]["outcome"] == "success"
+
+
+@pytest.mark.parametrize(
+    "outcome,http_status_code,log_message,result",
+    [
+        (None, 200, None, "success"),
+        (None, 500, None, "failure"),
+        (None, "500", None, "failure"),
+        (None, "HTTP 500", "Invalid HTTP status 'HTTP 500' provided", "unknown"),
+        ("failure", 200, None, "failure"),  # explicit outcome has precedence
+        ("failed", None, "Invalid outcome 'failed' provided", "unknown"),
+    ],
+)
+def test_transaction_outcome(elasticapm_client, caplog, outcome, http_status_code, log_message, result):
+    transaction = elasticapm_client.begin_transaction("test")
+    with caplog.at_level(logging.INFO, "elasticapm.traces"):
+        elasticapm.set_transaction_outcome(outcome=outcome, http_status_code=http_status_code)
+    assert transaction.outcome == result
+    if log_message is None:
+        assert not caplog.records
+    else:
+        record = caplog.records[0]
+        assert log_message in record.getMessage()

@@ -59,6 +59,7 @@ def test_task_failure(flask_celery):
     assert transaction["name"] == "tests.contrib.celery.flask_tests.failing_task"
     assert transaction["type"] == "celery"
     assert transaction["result"] == "FAILURE"
+    assert transaction["outcome"] == "failure"
 
 
 def test_task_instrumentation(flask_celery):
@@ -76,3 +77,4 @@ def test_task_instrumentation(flask_celery):
     assert transaction["name"] == "tests.contrib.celery.flask_tests.successful_task"
     assert transaction["type"] == "celery"
     assert transaction["result"] == "SUCCESS"
+    assert transaction["outcome"] == "failure"

@@ -133,11 +133,13 @@ class ElasticAPM(BaseHTTPMiddleware):
 
         try:
             response = await call_next(request)
+            elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
         except Exception:
             await self.capture_exception(
                 context={"request": await get_data_from_request(request, self.client.config, constants.ERROR)}
             )
             elasticapm.set_transaction_result("HTTP 5xx", override=False)
+            elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE, override=False)
             elasticapm.set_context({"status_code": 500}, "response")
 
             raise

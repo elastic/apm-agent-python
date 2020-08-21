@@ -1562,3 +1562,33 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
         client.get("/no-error")
     transaction = django_elasticapm_client.events[TRANSACTION][0]
     assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+
+
+def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, client):
+    with override_settings(
+        TEMPLATES=[
+            {
+                "BACKEND": "django.template.backends.django.DjangoTemplates",
+                "DIRS": [BASE_TEMPLATE_DIR],
+                "OPTIONS": {
+                    "context_processors": [
+                        "django.contrib.auth.context_processors.auth",
+                        "elasticapm.contrib.django.context_processors.rum_tracing",
+                    ],
+                    "loaders": ["django.template.loaders.filesystem.Loader"],
+                    "debug": False,
+                },
+            }
+        ],
+        **middleware_setting(
+            django.VERSION,
+            [
+                "elasticapm.contrib.django.middleware.TracingMiddleware",
+                "tests.contrib.django.testapp.middleware.SetTransactionUnsampled",
+            ],
+        )
+    ):
+        client.get(reverse("elasticapm-no-error"))
+        transaction = django_elasticapm_client.events[TRANSACTION][0]
+        assert not transaction["sampled"]
+        assert transaction["outcome"] == "success"

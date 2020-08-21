@@ -168,6 +168,7 @@ def test_instrumentation(flask_apm_client):
     transaction = transactions[0]
     assert transaction["type"] == "request"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert "request" in transaction["context"]
     assert transaction["context"]["request"]["url"]["full"] == "http://localhost/users/"
     assert transaction["context"]["request"]["method"] == "POST"

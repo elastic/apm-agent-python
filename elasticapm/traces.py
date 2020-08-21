@@ -88,7 +88,7 @@ class BaseSpan(object):
     def __init__(self, labels=None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
-        self.outcome = "unknown"
+        self.outcome = None
         if labels:
             self.label(**labels)
 
@@ -183,10 +183,6 @@ class Transaction(BaseSpan):
                 reset_on_collect=True,
                 **{"transaction.name": self.name, "transaction.type": self.transaction_type}
             ).update(self.duration)
-        if self.outcome == "unknown" and self.context:
-            status_code = self.context.get("response", {}).get("status_code", None)
-            if isinstance(status_code, int):
-                self.outcome = "success" if status_code < 500 else "failure"
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -760,34 +756,37 @@ def set_transaction_result(result, override=True):
         transaction.result = result
 
 
-def set_transaction_success():
+def set_transaction_outcome(outcome=None, http_status_code=None, override=True):
     """
-    Marks this transaction as successful. This should only be done at the end of a transaction
-    when the outcome is determined.
+    Set the outcome of the transaction. This should only be done at the end of a transaction
+    after the outcome is determined.
 
-    This value is used for error rate calculations.
+    If an invalid outcome is provided, an INFO level log message will be issued.
+
+    :param outcome: the outcome of the transaction. Allowed values are "success", "failure", "unknown". None is
+                    allowed if a http_status_code is provided.
+    :param http_status_code: An integer value of the HTTP status code. If provided, the outcome will be determined
+                             based on the status code: Success if the status is lower than 500, failure otherwise.
+                             If both a valid outcome and an http_status_code is provided, the former is used
+    :param override: If set to False, the outcome will only be updated if its current value is None
 
     :return: None
     """
     transaction = execution_context.get_transaction()
     if not transaction:
         return
-    transaction.set_success()
-
-
-def set_transaction_failure():
-    """
-    Marks this transaction as failed. This should only be done at the end of a transaction
-    when the outcome is determined.
-
-    This value is used for error rate calculations.
-
-    :return: None
-    """
-    transaction = execution_context.get_transaction()
-    if not transaction:
-        return
-    transaction.set_failure()
+    if http_status_code and outcome not in constants.OUTCOME:
+        try:
+            http_status_code = int(http_status_code)
+            outcome = constants.OUTCOME.SUCCESS if http_status_code < 500 else constants.OUTCOME.FAILURE
+        except ValueError:
+            logger.info('Invalid HTTP status %r provided, outcome set to "unknown"', http_status_code)
+            outcome = constants.OUTCOME.UNKNOWN
+    elif outcome not in constants.OUTCOME:
+        logger.info('Invalid outcome %r provided, outcome set to "unknown"', outcome)
+        outcome = constants.OUTCOME.UNKNOWN
+    if outcome and (transaction.outcome is None or override):
+        transaction.outcome = outcome
 
 
 def get_transaction_id():

@@ -29,8 +29,10 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-from celery import signals
+from celery import signals, states
 
+import elasticapm
+from elasticapm.conf import constants
 from elasticapm.utils import get_name_from_func
 
 
@@ -61,7 +63,15 @@ def register_instrumentation(client):
 
     def end_transaction(task_id, task, *args, **kwargs):
         name = get_name_from_func(task)
-        client.end_transaction(name, kwargs.get("state", "None"))
+        state = kwargs.get("state", "None")
+        if state == states.SUCCESS:
+            outcome = constants.OUTCOME.SUCCESS
+        elif state in states.EXCEPTION_STATES:
+            outcome = constants.OUTCOME.FAILURE
+        else:
+            outcome = constants.OUTCOME.UNKNOWN
+        elasticapm.set_transaction_outcome(outcome)
+        client.end_transaction(name, state)
 
     dispatch_uid = "elasticapm-tracing-%s"
 
