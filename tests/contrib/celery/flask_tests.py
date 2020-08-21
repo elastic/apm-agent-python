@@ -77,4 +77,4 @@ def test_task_instrumentation(flask_celery):
     assert transaction["name"] == "tests.contrib.celery.flask_tests.successful_task"
     assert transaction["type"] == "celery"
     assert transaction["result"] == "SUCCESS"
-    assert transaction["outcome"] == "failure"
+    assert transaction["outcome"] == "success"

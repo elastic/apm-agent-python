@@ -294,7 +294,7 @@ class Transaction(BaseSpan):
             raise LookupError()
 
         # only overwrite span outcome if it is still unknown
-        if span.outcome == "unknown":
+        if not span.outcome or span.outcome == "unknown":
             span.outcome = outcome
 
         span.end(skip_frames=skip_frames, duration=duration)
