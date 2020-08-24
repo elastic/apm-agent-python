@@ -70,7 +70,7 @@ def register_instrumentation(client):
             outcome = constants.OUTCOME.FAILURE
         else:
             outcome = constants.OUTCOME.UNKNOWN
-        elasticapm.set_transaction_outcome(outcome)
+        elasticapm.set_transaction_outcome(outcome, override=False)
         client.end_transaction(name, state)
 
     dispatch_uid = "elasticapm-tracing-%s"
