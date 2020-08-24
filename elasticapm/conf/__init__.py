@@ -30,6 +30,7 @@
 
 
 import logging
+import math
 import os
 import re
 import socket
@@ -166,6 +167,22 @@ class UnitValidator(object):
         except KeyError:
             raise ConfigurationError("{} is not a supported unit".format(unit), field_name)
         return val
+
+
+class PrecisionValidator(object):
+    """
+    Forces a float value to `precision` digits of precision.
+
+    Rounds half away from zero.
+    """
+
+    def __init__(self, precision=0):
+        self.precision = precision
+
+    def __cal__(self, value, field_name):
+        value = float(value)
+        multiplier = 10 ** self.precision
+        return math.floor(value * multiplier + 0.5) / multiplier
 
 
 duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
@@ -306,7 +323,9 @@ class Config(_ConfigBase):
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
-    transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
+    transaction_sample_rate = _ConfigValue(
+        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(3)], default=1.0
+    )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
     span_frames_min_duration = _ConfigValue(
