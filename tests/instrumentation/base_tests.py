@@ -228,7 +228,21 @@ def test_transaction_outcome(elasticapm_client, caplog, outcome, http_status_cod
         elasticapm.set_transaction_outcome(outcome=outcome, http_status_code=http_status_code)
     assert transaction.outcome == result
     if log_message is None:
-        assert not caplog.records
+        assert not [True for record in caplog.records if record.name == "elasticapm.traces"]
     else:
         record = caplog.records[0]
         assert log_message in record.getMessage()
+
+
+def test_transaction_outcome_override(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE)
+
+    assert transaction.outcome == constants.OUTCOME.FAILURE
+
+    elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
+    # still a failure
+    assert transaction.outcome == constants.OUTCOME.FAILURE
+
+    elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=True)
+    assert transaction.outcome == constants.OUTCOME.SUCCESS
