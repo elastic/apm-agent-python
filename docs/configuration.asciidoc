@@ -675,6 +675,8 @@ By default, the agent will sample every transaction (e.g. request to your servic
 To reduce overhead and storage requirements, you can set the sample rate to a value between `0.0` and `1.0`.
 We still record overall time and the result for unsampled transactions, but no context information, labels, or spans.
 
+WARNING: This setting will be automatically rounded to 3 digits of precision.
+
 [float]
 [[config-include-paths]]
 ==== `include_paths`

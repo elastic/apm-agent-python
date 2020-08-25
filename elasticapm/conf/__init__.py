@@ -179,8 +179,11 @@ class PrecisionValidator(object):
     def __init__(self, precision=0):
         self.precision = precision
 
-    def __cal__(self, value, field_name):
-        value = float(value)
+    def __call__(self, value, field_name):
+        try:
+            value = float(value)
+        except ValueError:
+            raise ConfigurationError("{} is not a float".format(value), field_name)
         multiplier = 10 ** self.precision
         return math.floor(value * multiplier + 0.5) / multiplier
 
