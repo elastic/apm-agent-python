@@ -57,6 +57,7 @@ def test_failing_celery_task(django_elasticapm_client):
     assert transaction["name"] == "tests.contrib.django.testapp.tasks.failing_task"
     assert transaction["type"] == "celery"
     assert transaction["result"] == "FAILURE"
+    assert transaction["outcome"] == "failure"
 
 
 def test_successful_celery_task_instrumentation(django_elasticapm_client):
@@ -68,3 +69,4 @@ def test_successful_celery_task_instrumentation(django_elasticapm_client):
     assert transaction["name"] == "tests.contrib.django.testapp.tasks.successful_task"
     assert transaction["type"] == "celery"
     assert transaction["result"] == "SUCCESS"
+    assert transaction["outcome"] == "success"

@@ -49,6 +49,7 @@ urlpatterns = (
     url(r"^render-user-template$", views.render_user_view, name="render-user-template"),
     url(r"^no-error$", views.no_error, name="elasticapm-no-error"),
     url(r"^no-error-slash/$", views.no_error, name="elasticapm-no-error-slash"),
+    url(r"^http-error/(?P<status>[0-9]{3})$", views.http_error, name="elasticapm-http-error"),
     url(r"^logging$", views.logging_view, name="elasticapm-logging"),
     url(r"^ignored-exception/$", views.ignored_exception, name="elasticapm-ignored-exception"),
     url(r"^fake-login$", views.fake_login, name="elasticapm-fake-login"),

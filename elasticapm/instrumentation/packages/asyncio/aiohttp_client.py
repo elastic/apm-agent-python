@@ -69,7 +69,12 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
             headers = kwargs.get("headers") or {}
             self._set_disttracing_headers(headers, trace_parent, transaction)
             kwargs["headers"] = headers
-            return await wrapped(*args, **kwargs)
+            response = await wrapped(*args, **kwargs)
+            if response:
+                if span.context:
+                    span.context["http"]["status_code"] = response.status
+                span.set_success() if response.status < 400 else span.set_failure()
+            return response
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
         # since we don't have a span, we set the span id to the transaction id
