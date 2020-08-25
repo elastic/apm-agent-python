@@ -104,7 +104,14 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
                 self._set_disttracing_headers(headers, trace_parent, transaction)
-            return await wrapped(*args, **kwargs)
+            response = await wrapped(*args, **kwargs)
+            # response = (http_version, status_code, reason_phrase, headers, stream)
+            status_code = response[1]
+            if status_code:
+                if span.context:
+                    span.context["http"]["status_code"] = status_code
+                span.set_success() if status_code < 400 else span.set_failure()
+            return response
 
     def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
         # since we don't have a span, we set the span id to the transaction id

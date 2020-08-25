@@ -53,5 +53,10 @@ class HttpxAsyncClientInstrumentation(AsyncAbstractInstrumentedModule):
             span_subtype="http",
             extra={"http": {"url": url}, "destination": destination},
             leaf=True,
-        ):
-            return await wrapped(*args, **kwargs)
+        ) as span:
+            response = await wrapped(*args, **kwargs)
+            if response is not None:
+                if span.context:
+                    span.context["http"]["status_code"] = response.status_code
+                span.set_success() if response.status_code < 400 else span.set_failure()
+            return response
