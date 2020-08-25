@@ -134,7 +134,9 @@ class BaseSpan(object):
 
 
 class Transaction(BaseSpan):
-    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, weight=None):
+    def __init__(
+        self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_rate=None
+    ):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         if start:
@@ -151,7 +153,7 @@ class Transaction(BaseSpan):
         self.context = {}
 
         self.is_sampled = is_sampled
-        self.weight = weight
+        self.sample_rate = sample_rate
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
@@ -313,8 +315,8 @@ class Transaction(BaseSpan):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
-        if self.weight is not None:
-            result["weight"] = self.weight
+        if self.sample_rate is not None:
+            result["sample_rate"] = self.sample_rate
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
             # only set parent_id if this transaction isn't the root
@@ -427,8 +429,8 @@ class Span(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
         }
-        if self.transaction.weight is not None:
-            result["weight"] = self.transaction.weight
+        if self.transaction.sample_rate is not None:
+            result["sample_rate"] = self.transaction.sample_rate
         if self.sync is not None:
             result["sync"] = self.sync
         if self.labels:
@@ -546,20 +548,23 @@ class Tracer(object):
         """
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
-            weight = trace_parent.tracestate_dict.get("w")
+            sample_rate = trace_parent.tracestate_dict.get("s")
         else:
             is_sampled = (
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
             )
             if not is_sampled:
-                weight = "0"
+                sample_rate = 0
             else:
-                weight = (
-                    None if self.config.transaction_sample_rate == 1.0 else 1.0 / self.config.transaction_sample_rate
-                )
+                sample_rate = self.config.transaction_sample_rate
 
         transaction = Transaction(
-            self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start, weight=weight
+            self,
+            transaction_type,
+            trace_parent=trace_parent,
+            is_sampled=is_sampled,
+            start=start,
+            sample_rate=sample_rate,
         )
         if trace_parent is None:
             transaction.trace_parent = TraceParent(
@@ -568,8 +573,8 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
-            if weight is not None:
-                transaction.trace_parent.add_tracestate("w", weight)
+            if sample_rate is not None:
+                transaction.trace_parent.add_tracestate("s", sample_rate)
         execution_context.set_transaction(transaction)
         return transaction
 
