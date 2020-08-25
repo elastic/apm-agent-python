@@ -41,3 +41,4 @@ FRAMEWORK:
   - starlette-newest
   - pymemcache-newest
   - graphene-2
+  - httpx-newest
