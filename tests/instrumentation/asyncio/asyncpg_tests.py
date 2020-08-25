@@ -67,7 +67,7 @@ async def connection(request):
     )
     yield conn
 
-	await conn.execute("ROLLBACK")
+    await conn.execute("ROLLBACK")
     await conn.close()
 
 
