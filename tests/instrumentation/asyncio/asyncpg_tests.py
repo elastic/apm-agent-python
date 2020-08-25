@@ -93,7 +93,7 @@ async def test_execute_with_sleep(instrument, connection, elasticapm_client):
 async def test_executemany(instrument, connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
     await connection.executemany(
-        "INSERT INTO test VALUES ($1, $2);", [(1, "winter"), (2, "spring")]
+        "INSERT INTO test VALUES ($1, $2);", [(1, "uno"), (2, "due")]
     )
     elasticapm_client.end_transaction("test", "OK")
 
