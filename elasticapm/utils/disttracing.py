@@ -181,6 +181,8 @@ class TraceParent(object):
         within the valid range. Checking here means we never have to re-check
         a pair once set, which saves time in the _set_tracestate() function.
         """
+        key = str(key)
+        val = str(val)
         for bad in (":", ";", ",", "="):
             if bad in key or bad in val:
                 logger.debug("New tracestate key/val pair contains invalid character '{}', ignoring.".format(bad))
@@ -197,6 +199,8 @@ class TraceParent(object):
         except TraceStateFormatException:
             if oldval is not None:
                 self.tracestate_dict[key] = oldval
+            else:
+                self.tracestate_dict.pop(key)
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):

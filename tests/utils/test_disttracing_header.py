@@ -106,3 +106,36 @@ def test_tracestate_parsing_empty(state_header):
     trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
     assert trace_parent.tracestate == state_header
     assert not trace_parent.tracestate_dict
+
+
+def test_tracestate_adding_valid():
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    trace_parent.add_tracestate("x", "y")
+    assert trace_parent.tracestate_dict["x"] == "y"
+    assert len(trace_parent.tracestate_dict) == 3
+    trace_parent.add_tracestate("x", 1)
+    assert trace_parent.tracestate_dict["x"] == "1"
+
+
+@pytest.mark.parametrize("bad_char", ["\n", ":", ","])
+def test_tracestate_adding_invalid(bad_char):
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    trace_parent.add_tracestate("x", "y{}".format(bad_char))
+    assert len(trace_parent.tracestate_dict) == 2
+    assert "x" not in trace_parent.tracestate_dict
+    trace_parent.add_tracestate("x{}".format(bad_char), "y")
+    assert len(trace_parent.tracestate_dict) == 2
+    assert "x{}".format(bad_char) not in trace_parent.tracestate_dict
+
+
+def test_tracestate_length():
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    trace_parent.add_tracestate("x", "y" * 256)
+    assert len(trace_parent.tracestate_dict) == 2
+    assert "x" not in trace_parent.tracestate_dict

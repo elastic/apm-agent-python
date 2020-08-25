@@ -159,7 +159,7 @@ class Transaction(BaseSpan):
         self.dropped_spans = 0
         self.context = {}
 
-        self.is_sampled = is_sampled
+        self._is_sampled = is_sampled
         self.sample_rate = sample_rate
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
@@ -329,7 +329,7 @@ class Transaction(BaseSpan):
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
         if self.sample_rate is not None:
-            result["sample_rate"] = self.sample_rate
+            result["sample_rate"] = float(self.sample_rate) if self.sample_rate != "0" else 0
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
             # only set parent_id if this transaction isn't the root
@@ -344,6 +344,23 @@ class Transaction(BaseSpan):
         # TODO: and, if it has, exit without tracking.
         with self._span_timers_lock:
             self._span_timers[(span_type, span_subtype)].update(self_duration)
+
+    @property
+    def is_sampled(self):
+        return self._is_sampled
+
+    @is_sampled.setter
+    def is_sampled(self, is_sampled):
+        """
+        This should never be called in normal operation, but often is used
+        for testing. We just want to make sure our sample_rate comes out correctly
+        in tracestate if we set is_sampled to False.
+        """
+        self._is_sampled = is_sampled
+        if not is_sampled:
+            if self.sample_rate:
+                self.sample_rate = "0"
+                self.trace_parent.add_tracestate("s", self.sample_rate)
 
 
 class Span(BaseSpan):
@@ -445,7 +462,7 @@ class Span(BaseSpan):
             "outcome": self.outcome,
         }
         if self.transaction.sample_rate is not None:
-            result["sample_rate"] = self.transaction.sample_rate
+            result["sample_rate"] = float(self.transaction.sample_rate) if self.transaction.sample_rate != "0" else 0
         if self.sync is not None:
             result["sync"] = self.sync
         if self.labels:
@@ -577,9 +594,9 @@ class Tracer(object):
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
             )
             if not is_sampled:
-                sample_rate = 0
+                sample_rate = "0"
             else:
-                sample_rate = self.config.transaction_sample_rate
+                sample_rate = str(self.config.transaction_sample_rate)
 
         transaction = Transaction(
             self,
@@ -596,8 +613,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
-            if sample_rate is not None:
-                transaction.trace_parent.add_tracestate("s", sample_rate)
+            transaction.trace_parent.add_tracestate("s", sample_rate)
         execution_context.set_transaction(transaction)
         return transaction
 
