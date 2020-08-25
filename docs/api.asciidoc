@@ -240,12 +240,21 @@ elasticapm.set_transaction_result('SUCCESS')
 
 Sets the outcome of the transaction. The value can either be `"success"`, `"failure"` or `"unknown"`.
 This should only be called at the end of a transaction after the outcome is determined.
-For supported frameworks, the transaction outcome is set automatically if it has not been set yet.
+
+The `outcome` is used for error rate calculations.
+`success` denotes that a transaction has concluded successful, while `failure` indicates that the transaction failed
+to finish successfully.
+If the `outcome` is set to `unknown`, the transaction will not be included in error rate calculations.
+
+For supported web frameworks, the transaction outcome is set automatically if it has not been set yet, based on the
+HTTP status code.
+A status code below `500` is considered a `success`, while any value of `500` or higher is counted as a `failure`.
 
 If your transaction results in an HTTP response, you can alternatively provide the HTTP status code.
 
 NOTE: While the `outcome` and `result` field look very similar, they serve different purposes.
-      While the `result` field can hold an arbitrary string value, `outcome` is limited to three different values,
+      Other than the `result` field, which canhold an arbitrary string value,
+      `outcome` is limited to three different values,
       `"success"`, `"failure"` and `"unknown"`.
       This allows the APM app to perform error rate calculations on these values.
 
@@ -268,6 +277,12 @@ elasticapm.set_transaction_outcome(OUTCOME.SUCCESS)
 elasticapm.set_transaction_outcome(OUTCOME.FAILURE)
 elasticapm.set_transaction_outcome(OUTCOME.UNKNOWN)
 ----
+
+ * `outcome`: One of `"success"`, `"failure"` or `"unknown"`. Can be omitted if `http_status_code` is provided.
+ * `http_status_code`: if the transaction represents an HTTP response, its status code can be provided to determine the `outcome` automatically.
+ * `override`: if `True` (the default), any previously set `outcome` will be overriden. 
+               If `False`, the outcome will only be set if it was not set before.
+
 
 [float]
 [[api-get-transaction-id]]
