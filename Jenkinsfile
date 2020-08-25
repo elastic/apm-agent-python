@@ -295,6 +295,13 @@ pipeline {
           environment {
             REPO_NAME = "${OPBEANS_REPO}"
           }
+          when {
+            beforeInput true
+            anyOf {
+              tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
+              expression { return params.Run_As_Master_Branch }
+            }
+          }
           steps {
             deleteDir()
             dir("${OPBEANS_REPO}"){
