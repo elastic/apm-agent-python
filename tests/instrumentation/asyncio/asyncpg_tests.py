@@ -60,19 +60,15 @@ def dsn():
 async def connection(request):
     conn = await asyncpg.connect(dsn())
 
-    # we use a finalizer instead of yield, because Python 3.5 throws
-    # a syntax error, even if the test doesn't run
-    def rollback():
-        conn.execute("ROLLBACK")
-        conn.close()
-
-    request.addfinalizer(rollback)
     await conn.execute(
         "BEGIN;"
         "CREATE TABLE test(id int, name VARCHAR(5) NOT NULL);"
         "INSERT INTO test VALUES (1, 'one'), (2, 'two'), (3, 'three');"
     )
-    return conn
+    yield conn
+
+	await conn.execute("ROLLBACK")
+    await conn.close()
 
 
 async def test_execute_with_sleep(instrument, connection, elasticapm_client):
