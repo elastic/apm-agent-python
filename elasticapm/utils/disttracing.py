@@ -128,19 +128,19 @@ class TraceParent(object):
     def _parse_tracestate(self, tracestate):
         """
         Tracestate can contain data from any vendor, made distinct by vendor
-        keys. Vendors are comma-separated. The elastic tracestate data is
+        keys. Vendors are comma-separated. The elastic (es) tracestate data is
         made up of key:value pairs, separated by semicolons. It is meant to
         be parsed into a dict.
 
-            tracestate: elastic=key:value;key:value...,othervendor=<opaque>
+            tracestate: es=key:value;key:value...,othervendor=<opaque>
         """
         if not tracestate:
             return {}
-        if "elastic=" not in tracestate:
+        if "es=" not in tracestate:
             return {}
 
         ret = {}
-        state = re.match(r"elastic=([^,]*)", tracestate).group(1).split(";")
+        state = re.match(r"es=([^,]*)", tracestate).group(1).split(";")
         for keyval in state:
             if not keyval:
                 continue
@@ -150,14 +150,19 @@ class TraceParent(object):
         return ret
 
     def _set_tracestate(self):
-        elastic_state = "elastic={}".format(
-            ";".join(["{}:{}".format(k, v) for k, v in compat.iteritems(self.tracestate_dict)])
-        )
+        elastic_value = ";".join(["{}:{}".format(k, v) for k, v in compat.iteritems(self.tracestate_dict)])
+        # No character validation needed, as we validate in `add_tracestate`. Just validate length.
+        if len(elastic_value) > 256:
+            logger.debug("Modifications to TraceState would violate length limits, ignoring.")
+            raise TraceStateFormatException()
+        elastic_state = "es={}".format(elastic_value)
         if not self.tracestate:
             return elastic_state
         else:
-            # Remove elastic=<stuff> from the tracestate, and add the new elastic state to the end
-            otherstate = re.sub(r"elastic=([^,]*)", "", self.tracestate)
+            # Remove es=<stuff> from the tracestate, and add the new es state to the end
+            otherstate = re.sub(r"es=([^,]*),?", "", self.tracestate)
+            # No validation of `otherstate` required, since we're downstream. We only need to check `es=`
+            # since we introduced it, and that validation has already been done at this point.
             if otherstate:
                 if otherstate[-1] == ",":
                     return "{}{}".format(otherstate, elastic_state)
@@ -168,10 +173,30 @@ class TraceParent(object):
 
     def add_tracestate(self, key, val):
         """
-        Add key/value pair to the tracestate
+        Add key/value pair to the tracestate.
+
+        We do most of the validation for valid characters here. We have to make
+        sure none of the reserved separators for tracestate are used in our
+        key/value pairs, and we also need to check that all characters are
+        within the valid range. Checking here means we never have to re-check
+        a pair once set, which saves time in the _set_tracestate() function.
         """
+        for bad in (":", ";", ",", "="):
+            if bad in key or bad in val:
+                logger.debug("New tracestate key/val pair contains invalid character '{}', ignoring.".format(bad))
+                return
+        for c in key + val:
+            if ord(c) < 0x20 or ord(c) > 0x7E:
+                logger.debug("Modifications to TraceState would introduce invalid character '{}', ignoring.".format(c))
+                return
+
+        oldval = self.tracestate_dict.pop(key, None)
         self.tracestate_dict[key] = val
-        self.tracestate = self._set_tracestate()
+        try:
+            self.tracestate = self._set_tracestate()
+        except TraceStateFormatException:
+            if oldval is not None:
+                self.tracestate_dict[key] = oldval
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
@@ -202,3 +227,7 @@ def trace_parent_from_headers(headers):
     public API.
     """
     return TraceParent.from_headers(headers)
+
+
+class TraceStateFormatException(Exception):
+    pass
