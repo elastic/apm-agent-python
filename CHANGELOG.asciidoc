@@ -38,6 +38,7 @@ endif::[]
 ===== Features
 
  * Add instrumentation support for https://github.com/encode/httpx[`httpx`] and https://github.com/encode/httpcore[`httpcore`] {pull}898[#898]
+ * Implement "outcome" property for transactions and spans {pull}899[#899]
 
 [float]
 ===== Bug fixes
