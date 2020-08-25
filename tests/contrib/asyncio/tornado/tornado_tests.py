@@ -119,6 +119,7 @@ async def test_get(app, base_url, http_client):
 
     assert transaction["name"] == "GET HelloHandler"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
@@ -141,6 +142,7 @@ async def test_exception(app, base_url, http_client):
 
     assert transaction["name"] == "GET BoomHandler"
     assert transaction["result"] == "HTTP 5xx"
+    assert transaction["outcome"] == "failure"
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"

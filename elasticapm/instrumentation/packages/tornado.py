@@ -66,8 +66,10 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         elasticapm.set_context(
             lambda: get_data_from_response(instance, client.config, constants.TRANSACTION), "response"
         )
-        result = "HTTP {}xx".format(instance.get_status() // 100)
+        status = instance.get_status()
+        result = "HTTP {}xx".format(status // 100)
         elasticapm.set_transaction_result(result, override=False)
+        elasticapm.set_transaction_outcome(http_status_code=status)
         client.end_transaction()
 
         return ret
@@ -98,6 +100,7 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
         client.capture_exception(
             context={"request": get_data_from_request(instance, request, client.config, constants.ERROR)}
         )
+        elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE)
         if isinstance(e, HTTPError):
             elasticapm.set_transaction_result("HTTP {}xx".format(int(e.status_code / 100)), override=False)
             elasticapm.set_context({"status_code": e.status_code}, "response")

@@ -30,6 +30,7 @@
 
 import decimal
 import re
+from collections import namedtuple
 
 EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
@@ -68,6 +69,10 @@ BASE_SANITIZE_FIELD_NAMES = [
     "access_token",
     "sessionid",
 ]
+
+OUTCOME = namedtuple("OUTCOME", ["SUCCESS", "FAILURE", "UNKNOWN"])(
+    SUCCESS="success", FAILURE="failure", UNKNOWN="unknown"
+)
 
 try:
     # Python 2

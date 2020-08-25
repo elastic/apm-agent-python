@@ -39,13 +39,13 @@ from elasticapm.utils.disttracing import TraceParent
 
 try:
     from urllib.request import urlopen
-    from urllib.error import URLError
+    from urllib.error import URLError, HTTPError
 
     request_method = "http.client.HTTPConnection.request"
     getresponse_method = "http.client.HTTPConnection.getresponse"
 except ImportError:
     from urllib2 import urlopen
-    from urllib2 import URLError
+    from urllib2 import URLError, HTTPError
 
     request_method = "httplib.HTTPConnection.request"
     getresponse_method = "httplib.HTTPConnection.getresponse"
@@ -77,16 +77,46 @@ def test_urllib(instrument, elasticapm_client, waiting_httpserver):
     assert spans[0]["type"] == "external"
     assert spans[0]["subtype"] == "http"
     assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["context"]["http"]["status_code"] == 200
     assert spans[0]["context"]["destination"]["service"] == {
         "name": "http://127.0.0.1:%d" % parsed_url.port,
         "resource": "127.0.0.1:%d" % parsed_url.port,
         "type": "external",
     }
     assert spans[0]["parent_id"] == spans[1]["id"]
+    assert spans[0]["outcome"] == "success"
 
     assert spans[1]["name"] == "test_name"
     assert spans[1]["type"] == "test_type"
     assert spans[1]["parent_id"] == transactions[0]["id"]
+
+
+@pytest.mark.parametrize("status_code", [400, 500])
+def test_urllib_error(instrument, elasticapm_client, waiting_httpserver, status_code):
+    waiting_httpserver.serve_content("", code=status_code)
+    url = waiting_httpserver.url + "/hello_world"
+    parsed_url = urlparse.urlparse(url)
+    elasticapm_client.begin_transaction("transaction")
+    expected_sig = "GET {0}".format(parsed_url.netloc)
+    with capture_span("test_name", "test_type"):
+
+        url = "http://{0}/hello_world".format(parsed_url.netloc)
+        try:
+            r = urlopen(url)
+        except HTTPError:
+            pass
+
+    elasticapm_client.end_transaction("MyView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    assert spans[0]["name"] == expected_sig
+    assert spans[0]["type"] == "external"
+    assert spans[0]["subtype"] == "http"
+    assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["context"]["http"]["status_code"] == status_code
+    assert spans[0]["outcome"] == "failure"
 
 
 @mock.patch(request_method)

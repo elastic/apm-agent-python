@@ -195,8 +195,10 @@ class ElasticAPM(object):
             )
             if response.status_code:
                 result = "HTTP {}xx".format(response.status_code // 100)
+                elasticapm.set_transaction_outcome(http_status_code=response.status_code, override=False)
             else:
                 result = response.status
+                elasticapm.set_transaction_outcome(http_status_code=response.status, override=False)
             elasticapm.set_transaction_result(result, override=False)
             # Instead of calling end_transaction here, we defer the call until the response is closed.
             # This ensures that we capture things that happen until the WSGI server closes the response.
