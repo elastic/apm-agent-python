@@ -37,6 +37,14 @@ from elasticapm.utils.disttracing import TracingOptions
 
 
 class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
+    """
+    This instrumentation only exists to make sure we add distributed tracing
+    headers on our requests from `httpx`. `httpx` is the only place this library
+    is used, so no spans will actually be created (due to already being in
+    a leaf span). However, the rest of the logic was left in (much of this
+    mirrors the urllib3 instrumentation) in case that situation ever changes.
+    """
+
     name = "httpcore"
 
     instrument_list = [
@@ -89,8 +97,8 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
                 leaf_span = leaf_span.parent
 
             if headers is not None:
-                # It's possible that there are only dropped spans, e.g. if we started dropping spans.
-                # In this case, the transaction.id is used
+                # It's possible that there are only dropped spans, e.g. if we started dropping spans due to the
+                # transaction_max_spans limit. In this case, the transaction.id is used
                 parent_id = leaf_span.id if leaf_span else transaction.id
                 trace_parent = transaction.trace_parent.copy_from(
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
