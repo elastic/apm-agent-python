@@ -38,7 +38,7 @@ import pytest
 
 import elasticapm
 from elasticapm.conf import constants
-from elasticapm.conf.constants import SPAN
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat, wrapt
 
@@ -193,3 +193,56 @@ def test_end_nonexisting_span(caplog, elasticapm_client):
     elasticapm_client.end_transaction("test", "")
     record = caplog.records[0]
     assert record.args == ("test_name", "test_type")
+
+
+def test_outcome_by_span_exception(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    try:
+        with elasticapm.capture_span("fail", "test_type"):
+            assert False
+    except AssertionError:
+        pass
+    with elasticapm.capture_span("success", "test_type"):
+        pass
+    elasticapm_client.end_transaction("test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert spans[0]["name"] == "fail" and spans[0]["outcome"] == "failure"
+    assert spans[1]["name"] == "success" and spans[1]["outcome"] == "success"
+
+
+@pytest.mark.parametrize(
+    "outcome,http_status_code,log_message,result",
+    [
+        (None, 200, None, "success"),
+        (None, 500, None, "failure"),
+        (None, "500", None, "failure"),
+        (None, "HTTP 500", "Invalid HTTP status 'HTTP 500' provided", "unknown"),
+        ("failure", 200, None, "failure"),  # explicit outcome has precedence
+        ("failed", None, "Invalid outcome 'failed' provided", "unknown"),
+    ],
+)
+def test_transaction_outcome(elasticapm_client, caplog, outcome, http_status_code, log_message, result):
+    transaction = elasticapm_client.begin_transaction("test")
+    with caplog.at_level(logging.INFO, "elasticapm.traces"):
+        elasticapm.set_transaction_outcome(outcome=outcome, http_status_code=http_status_code)
+    assert transaction.outcome == result
+    if log_message is None:
+        assert not [True for record in caplog.records if record.name == "elasticapm.traces"]
+    else:
+        record = caplog.records[0]
+        assert log_message in record.getMessage()
+
+
+def test_transaction_outcome_override(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE)
+
+    assert transaction.outcome == constants.OUTCOME.FAILURE
+
+    elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
+    # still a failure
+    assert transaction.outcome == constants.OUTCOME.FAILURE
+
+    elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=True)
+    assert transaction.outcome == constants.OUTCOME.SUCCESS

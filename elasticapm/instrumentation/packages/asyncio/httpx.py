@@ -28,36 +28,33 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
+from elasticapm.contrib.asyncio.traces import async_capture_span
+from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+class HttpxAsyncClientInstrumentation(AsyncAbstractInstrumentedModule):
+    name = "httpx"
 
-    instrument_list = [("requests.sessions", "Session.send")]
+    instrument_list = [("httpx", "AsyncClient.send")]
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        request = kwargs.get("request", args[0])
 
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
+        request_method = request.method.upper()
+        url = str(request.url)
+        name = "{request_method} {host}".format(request_method=request_method, host=get_host_from_url(url))
+        url = sanitize_url(url)
         destination = url_to_destination(url)
 
-        with capture_span(
-            signature,
+        async with async_capture_span(
+            name,
             span_type="external",
             span_subtype="http",
             extra={"http": {"url": url}, "destination": destination},
             leaf=True,
         ) as span:
-            response = wrapped(*args, **kwargs)
-            # requests.Response objects are falsy if status code > 400, so we have to check for None instead
+            response = await wrapped(*args, **kwargs)
             if response is not None:
                 if span.context:
                     span.context["http"]["status_code"] = response.status_code

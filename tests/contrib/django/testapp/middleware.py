@@ -49,3 +49,12 @@ class BrokenResponseMiddleware(MiddlewareMixin):
 class BrokenViewMiddleware(MiddlewareMixin):
     def process_view(self, request, func, args, kwargs):
         raise ImportError("view")
+
+
+class SetTransactionUnsampled(MiddlewareMixin):
+    def process_request(self, request):
+        from elasticapm.traces import execution_context
+
+        transaction = execution_context.get_transaction()
+        if transaction:
+            transaction.is_sampled = False

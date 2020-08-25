@@ -33,31 +33,28 @@ from elasticapm.traces import capture_span
 from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
 
 
-class RequestsInstrumentation(AbstractInstrumentedModule):
-    name = "requests"
+class HttpxClientInstrumentation(AbstractInstrumentedModule):
+    name = "httpx"
 
-    instrument_list = [("requests.sessions", "Session.send")]
+    instrument_list = [("httpx", "Client.send")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        if "request" in kwargs:
-            request = kwargs["request"]
-        else:
-            request = args[0]
+        request = kwargs.get("request", args[0])
 
-        signature = request.method.upper()
-        signature += " " + get_host_from_url(request.url)
-        url = sanitize_url(request.url)
+        request_method = request.method.upper()
+        url = str(request.url)
+        name = "{request_method} {host}".format(request_method=request_method, host=get_host_from_url(url))
+        url = sanitize_url(url)
         destination = url_to_destination(url)
 
         with capture_span(
-            signature,
+            name,
             span_type="external",
             span_subtype="http",
             extra={"http": {"url": url}, "destination": destination},
             leaf=True,
         ) as span:
             response = wrapped(*args, **kwargs)
-            # requests.Response objects are falsy if status code > 400, so we have to check for None instead
             if response is not None:
                 if span.context:
                     span.context["http"]["status_code"] = response.status_code
