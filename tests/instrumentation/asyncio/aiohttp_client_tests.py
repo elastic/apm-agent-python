@@ -62,11 +62,44 @@ async def test_http_get(instrument, event_loop, elasticapm_client, waiting_https
     assert span["subtype"] == "http"
     assert span["sync"] is False
     assert span["context"]["http"]["url"] == waiting_httpserver.url
+    assert span["context"]["http"]["status_code"] == 204
     assert spans[0]["context"]["destination"]["service"] == {
         "name": "http://127.0.0.1:%d" % waiting_httpserver.server_address[1],
         "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
         "type": "external",
     }
+    assert spans[0]["outcome"] == "success"
+
+
+@pytest.mark.parametrize("status_code", [400, 500])
+async def test_http_get_error(instrument, event_loop, elasticapm_client, waiting_httpserver, status_code):
+    assert event_loop.is_running()
+    elasticapm_client.begin_transaction("test")
+    waiting_httpserver.serve_content("", code=status_code)
+    url = waiting_httpserver.url
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(waiting_httpserver.url) as resp:
+            status = resp.status
+            text = await resp.text()
+
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "GET %s:%s" % waiting_httpserver.server_address
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
+    assert span["sync"] is False
+    assert span["context"]["http"]["url"] == waiting_httpserver.url
+    assert span["context"]["http"]["status_code"] == status_code
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % waiting_httpserver.server_address[1],
+        "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
+        "type": "external",
+    }
+    assert spans[0]["outcome"] == "failure"
 
 
 @pytest.mark.parametrize(

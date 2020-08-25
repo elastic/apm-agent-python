@@ -72,6 +72,7 @@ def tracing_middleware(app):
         try:
             response = await handler(request)
             elasticapm.set_transaction_result("HTTP {}xx".format(response.status // 100), override=False)
+            elasticapm.set_transaction_outcome(http_status_code=response.status, override=False)
             elasticapm.set_context(
                 lambda: get_data_from_response(response, elasticapm_client.config, constants.TRANSACTION), "response"
             )
@@ -82,6 +83,7 @@ def tracing_middleware(app):
                     context={"request": get_data_from_request(request, elasticapm_client.config, constants.ERROR)}
                 )
                 elasticapm.set_transaction_result("HTTP 5xx", override=False)
+                elasticapm.set_transaction_outcome(http_status_code=500, override=False)
                 elasticapm.set_context({"status_code": 500}, "response")
                 # some exceptions are response-like, e.g. have headers and status code. Let's try and capture them
                 if isinstance(exc, (Response, HTTPException)):

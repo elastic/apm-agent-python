@@ -41,6 +41,7 @@ from elasticapm.traces import (  # noqa: F401
     set_context,
     set_custom_context,
     set_transaction_name,
+    set_transaction_outcome,
     set_transaction_result,
     set_user_context,
     tag,
