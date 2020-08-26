@@ -90,9 +90,16 @@ def test_trace_parent_wrong_format(caplog):
     assert_any_record_contains(caplog.records, "Invalid traceparent header format, value 00")
 
 
-def test_tracestate_parsing():
+@pytest.mark.parametrize(
+    "state_header",
+    [
+        "es=foo:bar;baz:qux,othervendor=<opaque>",
+        "snes=x:y,es=foo:bar;baz:qux,othervendor=<opaque>",
+        "othervendor=<opaque>,es=foo:bar;baz:qux",
+    ],
+)
+def test_tracestate_parsing(state_header):
     header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
-    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
     trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
     assert trace_parent.tracestate == state_header
     assert trace_parent.tracestate_dict["foo"] == "bar"
