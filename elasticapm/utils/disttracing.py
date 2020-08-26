@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ctypes
+import itertools
 import re
 
 from elasticapm.conf import constants
@@ -164,10 +165,7 @@ class TraceParent(object):
             # No validation of `otherstate` required, since we're downstream. We only need to check `es=`
             # since we introduced it, and that validation has already been done at this point.
             if otherstate:
-                if otherstate[-1] == ",":
-                    return "{}{}".format(otherstate, elastic_state)
-                else:
-                    return "{},{}".format(otherstate, elastic_state)
+                return "{},{}".format(otherstate.rstrip(","), elastic_state)
             else:
                 return elastic_state
 
@@ -187,7 +185,8 @@ class TraceParent(object):
             if bad in key or bad in val:
                 logger.debug("New tracestate key/val pair contains invalid character '{}', ignoring.".format(bad))
                 return
-        for c in key + val:
+        for c in itertools.chain(key, val):
+            # Tracestate spec only allows for characters between ASCII 0x20 and 0x7E
             if ord(c) < 0x20 or ord(c) > 0x7E:
                 logger.debug("Modifications to TraceState would introduce invalid character '{}', ignoring.".format(c))
                 return

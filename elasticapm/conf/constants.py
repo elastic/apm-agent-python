@@ -80,3 +80,5 @@ try:
 except NameError:
     # Python 3
     LABEL_TYPES = (bool, int, float, decimal.Decimal)
+
+TRACESTATE = namedtuple("TRACESTATE", ["SAMPLE_RATE"])(SAMPLE_RATE="s")

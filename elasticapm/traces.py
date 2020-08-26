@@ -329,7 +329,7 @@ class Transaction(BaseSpan):
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
         if self.sample_rate is not None:
-            result["sample_rate"] = float(self.sample_rate) if self.sample_rate != "0" else 0
+            result["sample_rate"] = float(self.sample_rate)
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
             # only set parent_id if this transaction isn't the root
@@ -360,7 +360,7 @@ class Transaction(BaseSpan):
         if not is_sampled:
             if self.sample_rate:
                 self.sample_rate = "0"
-                self.trace_parent.add_tracestate("s", self.sample_rate)
+                self.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, self.sample_rate)
 
 
 class Span(BaseSpan):
@@ -462,7 +462,7 @@ class Span(BaseSpan):
             "outcome": self.outcome,
         }
         if self.transaction.sample_rate is not None:
-            result["sample_rate"] = float(self.transaction.sample_rate) if self.transaction.sample_rate != "0" else 0
+            result["sample_rate"] = float(self.transaction.sample_rate)
         if self.sync is not None:
             result["sync"] = self.sync
         if self.labels:
@@ -588,7 +588,7 @@ class Tracer(object):
         """
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
-            sample_rate = trace_parent.tracestate_dict.get("s")
+            sample_rate = trace_parent.tracestate_dict.get(constants.TRACESTATE.SAMPLE_RATE)
         else:
             is_sampled = (
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
@@ -613,7 +613,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
-            transaction.trace_parent.add_tracestate("s", sample_rate)
+            transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
         execution_context.set_transaction(transaction)
         return transaction
 

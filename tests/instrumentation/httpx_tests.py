@@ -72,7 +72,7 @@ def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver
     )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `httpx`, not of httpcore
     assert trace_parent.span_id == spans[0]["id"]
@@ -100,7 +100,7 @@ def test_httpx_instrumentation_via_client(instrument, elasticapm_client, waiting
     )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `httpx`, not of httpcore
     assert trace_parent.span_id == spans[0]["id"]

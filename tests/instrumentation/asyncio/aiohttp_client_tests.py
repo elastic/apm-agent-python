@@ -131,7 +131,7 @@ async def test_trace_parent_propagation_sampled(instrument, event_loop, elastica
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     if elasticapm_client.config.use_elastic_traceparent_header:
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
@@ -168,7 +168,7 @@ async def test_trace_parent_propagation_sampled_headers_none(
     if sampled:
         assert trace_parent.span_id == spans[0]["id"]
     else:
-        assert trace_parent.tracestate_dict["s"] == "0"
+        assert trace_parent.tracestate_dict[constants.TRACESTATE.SAMPLE_RATE] == "0"
         assert trace_parent.span_id == transactions[0]["id"]
 
 
@@ -204,7 +204,7 @@ async def test_trace_parent_propagation_unsampled(instrument, event_loop, elasti
     assert trace_parent.span_id == transaction_object.id
     assert not trace_parent.trace_options.recorded
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     if elasticapm_client.config.use_elastic_traceparent_header:
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers

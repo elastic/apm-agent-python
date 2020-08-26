@@ -74,7 +74,7 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
     )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]
@@ -127,7 +127,7 @@ def test_requests_instrumentation_via_session(instrument, elasticapm_client, wai
     )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]
@@ -157,7 +157,7 @@ def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_cl
     )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     # Check that sample_rate was correctly placed in the tracestate
-    assert "s" in trace_parent.tracestate_dict
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]
