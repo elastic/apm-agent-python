@@ -175,8 +175,8 @@ class PrecisionValidator(object):
 
     Rounds half away from zero.
 
-    If `minimum` is provided, and the value rounds to 0, use the minimum
-    instead.
+    If `minimum` is provided, and the value rounds to 0 (but was not zero to
+    begin with), use the minimum instead.
     """
 
     def __init__(self, precision=0, minimum=None):
@@ -190,7 +190,7 @@ class PrecisionValidator(object):
             raise ConfigurationError("{} is not a float".format(value), field_name)
         multiplier = 10 ** self.precision
         rounded = math.floor(value * multiplier + 0.5) / multiplier
-        if rounded == 0 and self.minimum:
+        if rounded == 0 and self.minimum and value != 0:
             rounded = self.minimum
         return rounded
 
