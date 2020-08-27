@@ -183,8 +183,8 @@ class TraceParent(object):
         within the valid range. Checking here means we never have to re-check
         a pair once set, which saves time in the _set_tracestate() function.
         """
-        key = str(key)
-        val = str(val)
+        key = compat.text_type(key)
+        val = compat.text_type(val)
         for bad in (":", ";", ",", "="):
             if bad in key or bad in val:
                 logger.debug("New tracestate key/val pair contains invalid character '{}', ignoring.".format(bad))
