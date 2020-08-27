@@ -174,10 +174,14 @@ class PrecisionValidator(object):
     Forces a float value to `precision` digits of precision.
 
     Rounds half away from zero.
+
+    If `minimum` is provided, and the value rounds to 0, use the minimum
+    instead.
     """
 
-    def __init__(self, precision=0):
+    def __init__(self, precision=0, minimum=None):
         self.precision = precision
+        self.minimum = minimum
 
     def __call__(self, value, field_name):
         try:
@@ -185,7 +189,10 @@ class PrecisionValidator(object):
         except ValueError:
             raise ConfigurationError("{} is not a float".format(value), field_name)
         multiplier = 10 ** self.precision
-        return math.floor(value * multiplier + 0.5) / multiplier
+        rounded = math.floor(value * multiplier + 0.5) / multiplier
+        if rounded == 0 and self.minimum:
+            rounded = self.minimum
+        return rounded
 
 
 duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
@@ -327,7 +334,7 @@ class Config(_ConfigBase):
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue(
-        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(3)], default=1.0
+        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(3, 0.001)], default=1.0
     )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
