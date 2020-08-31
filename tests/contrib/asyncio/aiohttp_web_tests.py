@@ -86,6 +86,24 @@ async def test_get(aiohttp_client, aioeapm):
     assert span["name"] == "test"
 
 
+async def test_transaction_ignore_urls(aiohttp_client, aioeapm):
+    app = aioeapm.app
+    client = await aiohttp_client(app)
+    elasticapm_client = aioeapm.client
+    resp = await client.get("/")
+    assert resp.status == 200
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    elasticapm_client.config.update(1, transaction_ignore_urls="x")
+    resp = await client.get("/")
+    assert resp.status == 200
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 2
+    elasticapm_client.config.update(1, transaction_ignore_urls="*,x")
+    resp = await client.get("/")
+    assert resp.status == 200
+    # still only two transaction
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 2
+
+
 async def test_exception(aiohttp_client, aioeapm):
     app = aioeapm.app
     client = await aiohttp_client(app)

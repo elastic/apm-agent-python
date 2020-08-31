@@ -50,6 +50,10 @@ def tracing_middleware(app):
         elasticapm_client = app.get(CLIENT_KEY)
         if elasticapm_client:
             request[CLIENT_KEY] = elasticapm_client
+            if elasticapm_client.config.transaction_ignore_urls and elasticapm_client.tracer._should_ignore_url(
+                request.rel_url.path
+            ):
+                return await handler(request)
             trace_parent = AioHttpTraceParent.from_headers(request.headers)
             elasticapm_client.begin_transaction("request", trace_parent=trace_parent)
             resource = request.match_info.route.resource

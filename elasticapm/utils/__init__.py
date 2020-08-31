@@ -177,6 +177,12 @@ def read_pem_file(file_obj):
 
 
 def starmatch_to_regex(pattern):
+    options = re.DOTALL
+    # check if we are case sensitive
+    if pattern.startswith("(?-i)"):
+        pattern = pattern[5:]
+    else:
+        options |= re.IGNORECASE
     i, n = 0, len(pattern)
     res = []
     while i < n:
@@ -186,4 +192,4 @@ def starmatch_to_regex(pattern):
             res.append(".*")
         else:
             res.append(re.escape(c))
-    return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)
+    return re.compile(r"(?:%s)\Z" % "".join(res), options)

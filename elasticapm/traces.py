@@ -579,12 +579,6 @@ class Tracer(object):
         execution_context.set_transaction(transaction)
         return transaction
 
-    def _should_ignore(self, transaction_name):
-        for pattern in self._ignore_patterns:
-            if pattern.search(transaction_name):
-                return True
-        return False
-
     def end_transaction(self, result=None, transaction_name=None, duration=None):
         """
         End the current transaction and queue it for sending
@@ -604,6 +598,27 @@ class Tracer(object):
                 transaction.result = result
             self.queue_func(TRANSACTION, transaction.to_dict())
         return transaction
+
+    def abort_transaction(self):
+        """
+        Aborts transaction without queueing any data. This should happen as early as possible,
+        to avoid any spans of the aborted transaction to be queued.
+        :return: None
+        """
+
+        execution_context.get_transaction(clear=True)
+
+    def _should_ignore(self, transaction_name):
+        for pattern in self._ignore_patterns:
+            if pattern.search(transaction_name):
+                return True
+        return False
+
+    def _should_ignore_url(self, url):
+        for pattern in self._agent.config.transaction_ignore_urls:
+            if pattern.match(url):
+                return True
+        return False
 
 
 class capture_span(object):
