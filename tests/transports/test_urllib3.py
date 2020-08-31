@@ -27,8 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
+import logging
 import os
 
 import mock
@@ -40,6 +39,7 @@ from elasticapm.conf import constants
 from elasticapm.transport.exceptions import TransportException
 from elasticapm.transport.http import Transport
 from elasticapm.utils import compat
+from tests.utils import capture_from_logger
 
 try:
     import urlparse
@@ -298,11 +298,11 @@ def test_get_config(waiting_httpserver, elasticapm_client):
 def test_get_config_handle_exception(mock_urlopen, caplog, elasticapm_client):
     transport = Transport("http://example.com/" + constants.EVENTS_API_PATH, client=elasticapm_client)
     mock_urlopen.side_effect = urllib3.exceptions.RequestError(transport.http, "http://example.com/", "boom")
-    with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.transport.http") as records:
         version, data, max_age = transport.get_config("1", {})
     assert version == "1"
     assert max_age == 300
-    record = caplog.records[-1]
+    record = records[-1]
     assert "HTTP error" in record.msg
 
 
@@ -310,13 +310,13 @@ def test_get_config_cache_headers_304(waiting_httpserver, caplog, elasticapm_cli
     waiting_httpserver.serve_content(code=304, content=b"", headers={"Cache-Control": "max-age=5"})
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
-    with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.transport.http") as records:
         version, data, max_age = transport.get_config("1", {})
     assert waiting_httpserver.requests[0].headers["If-None-Match"] == "1"
     assert version == "1"
     assert data is None
     assert max_age == 5
-    record = caplog.records[-1]
+    record = records[-1]
     assert "Configuration unchanged" in record.msg
 
 
@@ -326,12 +326,12 @@ def test_get_config_bad_cache_control_header(waiting_httpserver, caplog, elastic
     )
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
-    with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.transport.http") as records:
         version, data, max_age = transport.get_config("1", {})
     assert version == "2"
     assert data == {"x": "y"}
     assert max_age == 300
-    record = caplog.records[-1]
+    record = records[-1]
     assert record.message == "Could not parse Cache-Control header: max-age=fifty"
 
 
@@ -339,10 +339,10 @@ def test_get_config_empty_response(waiting_httpserver, caplog, elasticapm_client
     waiting_httpserver.serve_content(code=200, content=b"", headers={"Cache-Control": "max-age=5"})
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
-    with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.transport.http") as records:
         version, data, max_age = transport.get_config("1", {})
     assert version == "1"
     assert data is None
     assert max_age == 5
-    record = caplog.records[-1]
+    record = records[-1]
     assert record.message == "APM Server answered with empty body and status code 200"

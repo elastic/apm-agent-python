@@ -38,6 +38,7 @@ import pytest
 from elasticapm.conf import constants
 from elasticapm.metrics.base_metrics import Counter, Gauge, MetricsRegistry, MetricsSet, NoopMetric, Timer
 from tests.fixtures import TempStoreClient
+from tests.utils import capture_from_logger
 
 
 class DummyMetricSet(MetricsSet):
@@ -128,7 +129,7 @@ def test_metrics_multithreaded(elasticapm_client):
 @mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)
 def test_metric_limit(caplog, elasticapm_client):
     m = MetricsSet(MetricsRegistry(elasticapm_client))
-    with caplog.at_level(logging.WARNING, logger="elasticapm.metrics"):
+    with capture_from_logger(caplog, logging.WARNING, logger="elasticapm.metrics") as records:
         for i in range(2):
             counter = m.counter("counter", some_label=i)
             gauge = m.gauge("gauge", some_label=i)
@@ -142,8 +143,8 @@ def test_metric_limit(caplog, elasticapm_client):
                 assert isinstance(gauge, NoopMetric)
                 assert isinstance(counter, NoopMetric)
 
-    assert len(caplog.records) == 1
-    record = caplog.records[0]
+    assert len(records) == 1
+    record = records[0]
     assert "The limit of 3 metricsets has been reached" in record.message
 
 

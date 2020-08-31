@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+import logging
 import os
 import platform
 import socket
@@ -51,7 +52,7 @@ from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTI
 from elasticapm.utils import compat, encoding
 from elasticapm.utils.disttracing import TraceParent
 from tests.fixtures import DummyTransport, TempStoreClient
-from tests.utils import assert_any_record_contains
+from tests.utils import assert_any_record_contains, capture_from_logger
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"environment": "production"}], indirect=True)
@@ -246,11 +247,11 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     should_try.return_value = True
 
     # test error
-    with caplog.at_level("ERROR", "elasticapm.transport"):
+    with capture_from_logger(caplog, logging.ERROR, "elasticapm.transport") as records:
         sending_elasticapm_client.capture_message("foo", handled=False)
     sending_elasticapm_client._transport.flush()
     assert sending_elasticapm_client._transport.state.did_fail()
-    assert_any_record_contains(caplog.records, "go away")
+    assert_any_record_contains(records, "go away")
 
     # test recovery
     sending_elasticapm_client.httpserver.code = 202
@@ -274,10 +275,10 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     )
     # test error
     http_send.side_effect = ValueError("oopsie")
-    with caplog.at_level("ERROR", "elasticapm.transport"):
+    with capture_from_logger(caplog, logging.ERROR, "elasticapm.transport") as records:
         client.capture_message("foo", handled=False)
     client._transport.flush()
-    record = caplog.records[0]
+    record = records[0]
     assert client._transport.state.did_fail()
     assert "oopsie" in record.message
 

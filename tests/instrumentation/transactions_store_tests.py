@@ -30,7 +30,6 @@
 
 import decimal
 import logging
-import time
 from collections import defaultdict
 
 import mock
@@ -40,6 +39,7 @@ import elasticapm
 from elasticapm.conf import Config
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
+from tests.utils import capture_from_logger
 
 
 @pytest.fixture()
@@ -229,9 +229,9 @@ def test_label_transaction():
 
 
 def test_label_while_no_transaction(caplog):
-    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
+    with capture_from_logger(caplog, logging.WARNING, "elasticapm.errors") as records:
         elasticapm.label(foo="bar")
-    record = caplog.records[0]
+    record = records[0]
     assert record.levelno == logging.WARNING
     assert "foo" in record.args
 
@@ -308,9 +308,9 @@ def test_tag_transaction():
 
 
 def test_tag_while_no_transaction(caplog):
-    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
+    with capture_from_logger(caplog, logging.WARNING, "elasticapm.errors") as records:
         elasticapm.tag(foo="bar")
-    record = caplog.records[0]
+    record = records[0]
     assert record.levelno == logging.WARNING
     assert "foo" in record.args
 

@@ -34,7 +34,6 @@ import pytest  # isort:skip
 
 django = pytest.importorskip("django")  # isort:skip
 
-
 import json
 import logging
 import os
@@ -67,6 +66,7 @@ from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
 from tests.contrib.django.testapp.views import IgnoredException, MyException
+from tests.utils import capture_from_logger
 from tests.utils.compat import middleware_setting
 
 try:
@@ -621,9 +621,9 @@ def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
         raise IOError("foobar")
 
     request.read = read
-    with caplog.at_level(logging.DEBUG):
+    with capture_from_logger(caplog, logging.DEBUG, "tests.contrib.django.fixtures.TempStoreClient") as records:
         django_elasticapm_client.get_data_from_request(request, constants.ERROR)
-    record = caplog.records[0]
+    record = records[0]
     assert record.message == "Can't capture request body: foobar"
 
 
@@ -934,18 +934,18 @@ def test_tracing_middleware_autoinsertion_tuple(middleware_attr):
 
 
 def test_tracing_middleware_autoinsertion_no_middleware_setting(caplog):
-    with caplog.at_level(logging.DEBUG, logger="elasticapm.traces"):
+    with capture_from_logger(caplog, logging.DEBUG, logger="elasticapm.traces") as records:
         ElasticAPMConfig.insert_middleware(object())
-    record = caplog.records[-1]
+    record = records[-1]
     assert "not autoinserting" in record.message
 
 
 @pytest.mark.parametrize("middleware_attr", ["MIDDLEWARE", "MIDDLEWARE_CLASSES"])
 def test_tracing_middleware_autoinsertion_wrong_type(middleware_attr, caplog):
     settings = mock.Mock(spec=[middleware_attr], **{middleware_attr: {"a", "b", "c"}})
-    with caplog.at_level(logging.DEBUG, logger="elasticapm.traces"):
+    with capture_from_logger(caplog, logging.DEBUG, logger="elasticapm.traces") as records:
         ElasticAPMConfig.insert_middleware(settings)
-    record = caplog.records[-1]
+    record = records[-1]
     assert "not of type list or tuple" in record.message
 
 

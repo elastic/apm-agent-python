@@ -27,7 +27,28 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import contextlib
 
 
 def assert_any_record_contains(records, message):
     assert any(message in record.message for record in records)
+
+
+@contextlib.contextmanager
+def capture_from_logger(caplog, level, logger):
+    """
+    Captures records from given logger *only*.
+
+    We use caplog.at_level to capture log messages, then filter out messages from other loggers.
+
+    The records will only be available after leaving the context manager
+
+    :param caplog: a pytest caplog fixture
+    :param level: the desired level
+    :param logger: the desired logger
+    :return:
+    """
+    container = []
+    with caplog.at_level(level, logger=logger):
+        yield container
+    container.extend(record for record in caplog.records if record.name == logger)

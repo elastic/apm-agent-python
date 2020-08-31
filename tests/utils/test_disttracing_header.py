@@ -30,10 +30,12 @@
 
 from __future__ import absolute_import
 
+import logging
+
 import pytest
 
 from elasticapm.utils.disttracing import TraceParent
-from tests.utils import assert_any_record_contains
+from tests.utils import assert_any_record_contains, capture_from_logger
 
 
 @pytest.mark.parametrize("tracing_bits,expected", [("00", {"recorded": 0}), ("01", {"recorded": 1})])
@@ -59,32 +61,32 @@ def test_trace_parent_to_str():
 
 def test_trace_parent_wrong_version(caplog):
     header = "xx-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
-    with caplog.at_level("DEBUG", "elasticapm.utils"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.utils") as records:
         trace_parent = TraceParent.from_string(header)
     assert trace_parent is None
-    assert_any_record_contains(caplog.records, "Invalid version field, value xx")
+    assert_any_record_contains(records, "Invalid version field, value xx")
 
 
 def test_trace_parent_wrong_version_255(caplog):
     """Version FF or 255 is explicitly forbidden"""
     header = "ff-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
-    with caplog.at_level("DEBUG", "elasticapm.utils"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.utils") as records:
         trace_parent = TraceParent.from_string(header)
     assert trace_parent is None
-    assert_any_record_contains(caplog.records, "Invalid version field, value 255")
+    assert_any_record_contains(records, "Invalid version field, value 255")
 
 
 def test_trace_parent_wrong_trace_options_field(caplog):
     header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-xx"
-    with caplog.at_level("DEBUG", "elasticapm.utils"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.utils") as records:
         trace_parent = TraceParent.from_string(header)
     assert trace_parent is None
-    assert_any_record_contains(caplog.records, "Invalid trace-options field, value xx")
+    assert_any_record_contains(records, "Invalid trace-options field, value xx")
 
 
 def test_trace_parent_wrong_format(caplog):
     header = "00"
-    with caplog.at_level("DEBUG", "elasticapm.utils"):
+    with capture_from_logger(caplog, logging.DEBUG, "elasticapm.utils") as records:
         trace_parent = TraceParent.from_string(header)
     assert trace_parent is None
-    assert_any_record_contains(caplog.records, "Invalid traceparent header format, value 00")
+    assert_any_record_contains(records, "Invalid traceparent header format, value 00")
