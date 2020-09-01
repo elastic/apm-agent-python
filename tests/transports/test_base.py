@@ -127,6 +127,7 @@ def test_flush_time(mock_send, caplog, elasticapm_client):
     assert mock_send.call_count == 0
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
     elasticapm_client.config.update(version="1", api_request_time="1s")
