@@ -53,10 +53,20 @@ class ConfigurationError(ValueError):
 
 
 class _ConfigValue(object):
-    def __init__(self, dict_key, env_key=None, type=compat.text_type, validators=None, default=None, required=False):
+    def __init__(
+        self,
+        dict_key,
+        env_key=None,
+        type=compat.text_type,
+        validators=None,
+        callbacks=None,
+        default=None,
+        required=False,
+    ):
         self.type = type
         self.dict_key = dict_key
         self.validators = validators
+        self.callbacks = callbacks
         self.default = default
         self.required = required
         if env_key is None:
@@ -71,6 +81,7 @@ class _ConfigValue(object):
 
     def __set__(self, instance, value):
         value = self._validate(instance, value)
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
@@ -89,6 +100,23 @@ class _ConfigValue(object):
         instance._errors.pop(self.dict_key, None)
         return value
 
+    def _callback_if_changed(self, instance, new_value):
+        """
+        If the value changed (checked against instance._values[self.dict_key]),
+        then run the callback function (if defined)
+        """
+        old_value = instance._values[self.dict_key]
+        if old_value != new_value and self.callbacks:
+            for callback in self.callbacks:
+                try:
+                    callback(self.dict_key, old_value, new_value)
+                except Exception as e:
+                    raise ConfigurationError(
+                        "Callback {} raised an exception when setting {} to {}: {}".format(
+                            callback, self.dict_key, new_value, e
+                        )
+                    )
+
 
 class _ListConfigValue(_ConfigValue):
     def __init__(self, dict_key, list_separator=",", **kwargs):
@@ -102,6 +130,7 @@ class _ListConfigValue(_ConfigValue):
             value = list(value)
         if value:
             value = [self.type(item) for item in value]
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
 
@@ -118,6 +147,7 @@ class _DictConfigValue(_ConfigValue):
         elif not isinstance(value, dict):
             # TODO: better error handling
             value = None
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
 
@@ -133,6 +163,7 @@ class _BoolConfigValue(_ConfigValue):
                 value = True
             elif value.lower() == self.false_string:
                 value = False
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = bool(value)
 
 
@@ -409,9 +440,10 @@ class VersionedConfig(ThreadManager):
         """
         Reset state to the original configuration
         """
-        with self._lock:
-            self._version = self._first_version
-            self._config = self._first_config
+        # We use an update rather than just overwriting the _config and _version
+        # to make sure any config values with callbacks are appropriately
+        # processed.
+        self.update(version=self._first_version, **self._first_config._values)
 
     @property
     def changed(self):
