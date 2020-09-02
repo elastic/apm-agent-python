@@ -461,7 +461,7 @@ def generateStepForWindows(Map v = [:]){
 def installPython(Map args = [:]){
   retryWithSleep(retries: 3, seconds: 3, backoff: true) {
     timeout(3) {
-      installTools([ [tool: "python${args.majorVersion}", version: "${args.version}", exclude: 'rc'] ])
+      installTools([ [tool: "python${args.majorVersion}", version: "${args.version}", exclude: 'rc', extraArgs: '--force'] ])
     }
   }
 }
