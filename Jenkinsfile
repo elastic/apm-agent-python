@@ -463,13 +463,17 @@ def convergeCoverage() {
   dir("${BASE_DIR}"){
     def matrixDump = pythonTasksGen.dumpMatrix("-")
     for(vector in matrixDump) {
-      unstash("coverage-${vector}")
+      catchError {
+        unstash("coverage-${vector}")
+      }
     }
     // Windows coverage converge
     readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-      unstash(
-        name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
-      )
+      catchError {
+        unstash(
+          name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+        )
+      }
     }
     sh('python3 -m coverage combine && python3 -m coverage xml')
     cobertura coberturaReportFile: 'coverage.xml'
