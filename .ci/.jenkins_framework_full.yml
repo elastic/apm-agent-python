@@ -65,9 +65,13 @@ FRAMEWORK:
   - aiohttp-4.0
   - aiohttp-newest
   - aiopg-newest
+  - asyncpg-newest
   - tornado-newest
   - starlette-0.13
   - starlette-newest
   - pymemcache-3.0
   - pymemcache-newest
   - graphene-2
+  - httpx-0.12
+  - httpx-0.13
+  - httpx-newest

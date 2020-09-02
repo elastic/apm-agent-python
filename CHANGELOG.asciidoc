@@ -30,6 +30,20 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+ * Add instrumentation support for https://github.com/encode/httpx[`httpx`] and https://github.com/encode/httpcore[`httpcore`] {pull}898[#898]
+ * Implement "outcome" property for transactions and spans {pull}899[#899]
+
+[float]
+===== Bug fixes
+
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
@@ -41,7 +55,7 @@ endif::[]
 
 * Updated CLOUD_PROVIDER config to allow for new options defined in https://github.com/elastic/apm/issues/289[#289] {pull}878[#878]
 * Fixed a bug in AWS metadata collection on docker containers in AWS Elastic Beanstalk {pull}884[#884]
-* Fixed a bug in local variable serialization that could occur in multi-threaded applications {pull}885[#885] 
+* Fixed a bug in local variable serialization that could occur in multi-threaded applications {pull}885[#885]
 
 [[release-notes-5.8.0]]
 ==== v5.8.0
