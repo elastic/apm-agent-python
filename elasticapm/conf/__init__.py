@@ -53,6 +53,37 @@ class ConfigurationError(ValueError):
 
 
 class _ConfigValue(object):
+    """
+    Base class for configuration values
+
+    dict_key
+        String representing the key used for this config value in dict configs.
+    env_key
+        String representing the key used in environment variables for this
+        config value. If not specified, will be set to `"ELASTIC_APM_" + dict_key`.
+    type
+        Type of value stored in this config value.
+    validators
+        List of validator classes. Must be callables, which will be called with
+        a value and the dict_key for the config value. The validator either
+        returns the validated value or raises a ConfigurationError if validation
+        fails.
+    callbacks
+        List of functions which will be called when the config value is updated.
+        The callbacks must match this signature: callback(dict_key, old_value, new_value)
+    default
+        The default for this config value if not user-configured.
+    required
+        Whether this config value is required. If a default is specified,
+        this is a redundant option (except to ensure that this config value
+        is specified if a default were ever to be removed).
+
+    Note that _ConfigValues and any inheriting classes must implement __set__
+    and __get__. The calling instance will always be a _ConfigBase descendant
+    and the __set__ and __get__ calls will access `instance._values[self.dict_key]`
+    to get and set values.
+    """
+
     def __init__(
         self,
         dict_key,
@@ -105,17 +136,22 @@ class _ConfigValue(object):
         If the value changed (checked against instance._values[self.dict_key]),
         then run the callback function (if defined)
         """
-        old_value = instance._values[self.dict_key]
-        if old_value != new_value and self.callbacks:
-            for callback in self.callbacks:
-                try:
-                    callback(self.dict_key, old_value, new_value)
-                except Exception as e:
-                    raise ConfigurationError(
-                        "Callback {} raised an exception when setting {} to {}: {}".format(
-                            callback, self.dict_key, new_value, e
-                        )
+        old_value = instance._values.get(self.dict_key, object())
+        if old_value != new_value:
+            self.call_callbacks(old_value, new_value)
+
+    def call_callbacks(self, old_value, new_value):
+        if not self.callbacks:
+            return
+        for callback in self.callbacks:
+            try:
+                callback(self.dict_key, old_value, new_value)
+            except Exception as e:
+                raise ConfigurationError(
+                    "Callback {} raised an exception when setting {} to {}: {}".format(
+                        callback, self.dict_key, new_value, e
                     )
+                )
 
 
 class _ListConfigValue(_ConfigValue):
@@ -240,6 +276,11 @@ class _ConfigBase(object):
     def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
         self._values = {}
         self._errors = {}
+        self._dict_key_lookup = {}
+        for field, config_value in self.__class__.__dict__.items():
+            if not isinstance(config_value, _ConfigValue):
+                continue
+            self._dict_key_lookup[config_value.dict_key] = config_value
         self.update(config_dict, env_dict, inline_dict)
 
     def update(self, config_dict=None, env_dict=None, inline_dict=None):
@@ -269,6 +310,15 @@ class _ConfigBase(object):
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
 
+    def call_callbacks(self, callbacks):
+        """
+        Call callbacks for config options matching list of tuples:
+
+        (dict_key, old_value, new_value)
+        """
+        for dict_key, old_value, new_value in callbacks:
+            self._dict_key_lookup[dict_key].call_callbacks(old_value, new_value)
+
     @property
     def values(self):
         return self._values
@@ -290,7 +340,7 @@ class Config(_ConfigBase):
     api_key = _ConfigValue("API_KEY")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
-    server_cert = _ConfigValue("SERVER_CERT", default=None, required=False, validators=[FileIsReadableValidator()])
+    server_cert = _ConfigValue("SERVER_CERT", default=None, validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
@@ -439,11 +489,22 @@ class VersionedConfig(ThreadManager):
     def reset(self):
         """
         Reset state to the original configuration
+
+        Note that because ConfigurationValues can have callbacks, we need to
+        note any differences becween the original configuration and the most
+        recent configuration and run any callbacks that might exist for those
+        values.
         """
-        # We use an update rather than just overwriting the _config and _version
-        # to make sure any config values with callbacks are appropriately
-        # processed.
-        self.update(version=self._first_version, **self._first_config._values)
+        callbacks = []
+        for key in compat.iterkeys(self._config.values):
+            if self._config.values[key] != self._first_config.values[key]:
+                callbacks.append((key, self._config.values[key], self._first_config.values[key]))
+
+        with self._lock:
+            self._version = self._first_version
+            self._config = self._first_config
+
+        self._config.call_callbacks(callbacks)
 
     @property
     def changed(self):
