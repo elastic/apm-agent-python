@@ -277,7 +277,7 @@ class _ConfigBase(object):
         self._values = {}
         self._errors = {}
         self._dict_key_lookup = {}
-        for field, config_value in self.__class__.__dict__.items():
+        for config_value in self.__class__.__dict__.values():
             if not isinstance(config_value, _ConfigValue):
                 continue
             self._dict_key_lookup[config_value.dict_key] = config_value
@@ -290,7 +290,7 @@ class _ConfigBase(object):
             env_dict = os.environ
         if inline_dict is None:
             inline_dict = {}
-        for field, config_value in self.__class__.__dict__.items():
+        for field, config_value in compat.iteritems(self.__class__.__dict__):
             if not isinstance(config_value, _ConfigValue):
                 continue
             new_value = self._NO_VALUE
