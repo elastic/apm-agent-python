@@ -614,12 +614,6 @@ class Tracer(object):
                 return True
         return False
 
-    def _should_ignore_url(self, url):
-        for pattern in self._agent.config.transaction_ignore_urls:
-            if pattern.match(url):
-                return True
-        return False
-
 
 class capture_span(object):
     __slots__ = (
