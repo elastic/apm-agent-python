@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import codecs
 import json
+import os
 
 import pytest
 
@@ -36,7 +37,10 @@ import pytest
 def pytest_generate_tests(metafunc):
     if "pattern" in metafunc.fixturenames and "text" in metafunc.fixturenames:
         params = []
-        with codecs.open("../../upstream/json-specs/wildcard_matcher_tests.json") as test_cases_file:
+        json_cases = os.path.join(
+            os.path.dirname(__file__), "..", "..", "upstream", "json-specs", "wildcard_matcher_tests.json"
+        )
+        with codecs.open(json_cases, encoding="utf8") as test_cases_file:
             test_cases = json.load(test_cases_file)
             for test_case, pattern_sets in test_cases.items():
                 for pattern, texts in pattern_sets.items():
