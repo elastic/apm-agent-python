@@ -399,8 +399,7 @@ def runScript(Map params = [:]){
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
   dir("${BASE_DIR}"){
-    retry(2){
-      sleep randomNumber(min:10, max: 30)
+    retryWithSleep(retries: 2, seconds: 5, backoff: true) {
       sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
     }
   }
@@ -438,7 +437,7 @@ def generateStepForWindows(Map v = [:]){
           deleteDir()
           unstash 'source'
           dir("${BASE_DIR}"){
-            installTools([ [tool: "python${majorVersion}", version: "${env.VERSION}", exclude: 'rc'] ])
+            installPython(version: env.VERSION, majorVersion: majorVersion)
             bat(label: 'Install tools', script: '.\\scripts\\install-tools.bat')
             bat(label: 'Run tests', script: '.\\scripts\\run-tests.bat')
           }
@@ -458,18 +457,31 @@ def generateStepForWindows(Map v = [:]){
   }
 }
 
+// This wrapper will install python in Windows, retrying up to 3 times and timeout after 3 minutes
+def installPython(Map args = [:]){
+  retryWithSleep(retries: 3, seconds: 3, backoff: true) {
+    timeout(3) {
+      installTools([ [tool: "python${args.majorVersion}", version: "${args.version}", exclude: 'rc', extraArgs: '--force'] ])
+    }
+  }
+}
+
 def convergeCoverage() {
   sh script: 'pip3 install --user coverage', label: 'Installing coverage'
   dir("${BASE_DIR}"){
     def matrixDump = pythonTasksGen.dumpMatrix("-")
     for(vector in matrixDump) {
-      unstash("coverage-${vector}")
+      catchError(buildResult: 'SUCCESS') {
+        unstash("coverage-${vector}")
+      }
     }
     // Windows coverage converge
     readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-      unstash(
-        name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
-      )
+      catchError(buildResult: 'SUCCESS') {
+        unstash(
+          name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+        )
+      }
     }
     sh('python3 -m coverage combine && python3 -m coverage xml')
     cobertura coberturaReportFile: 'coverage.xml'
