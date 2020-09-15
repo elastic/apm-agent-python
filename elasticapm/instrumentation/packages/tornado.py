@@ -52,25 +52,28 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 
         request = instance.request
-        trace_parent = TraceParent.from_headers(request.headers)
         client = instance.application.elasticapm_client
-        client.begin_transaction("request", trace_parent=trace_parent)
-        elasticapm.set_context(
-            lambda: get_data_from_request(instance, request, client.config, constants.TRANSACTION), "request"
-        )
-        # TODO: Can we somehow incorporate the routing rule itself here?
-        elasticapm.set_transaction_name("{} {}".format(request.method, type(instance).__name__), override=False)
+        should_ignore = client.should_ignore_url(request.path)
+        if not should_ignore:
+            trace_parent = TraceParent.from_headers(request.headers)
+            client.begin_transaction("request", trace_parent=trace_parent)
+            elasticapm.set_context(
+                lambda: get_data_from_request(instance, request, client.config, constants.TRANSACTION), "request"
+            )
+            # TODO: Can we somehow incorporate the routing rule itself here?
+            elasticapm.set_transaction_name("{} {}".format(request.method, type(instance).__name__), override=False)
 
         ret = await wrapped(*args, **kwargs)
 
-        elasticapm.set_context(
-            lambda: get_data_from_response(instance, client.config, constants.TRANSACTION), "response"
-        )
-        status = instance.get_status()
-        result = "HTTP {}xx".format(status // 100)
-        elasticapm.set_transaction_result(result, override=False)
-        elasticapm.set_transaction_outcome(http_status_code=status)
-        client.end_transaction()
+        if not should_ignore:
+            elasticapm.set_context(
+                lambda: get_data_from_response(instance, client.config, constants.TRANSACTION), "response"
+            )
+            status = instance.get_status()
+            result = "HTTP {}xx".format(status // 100)
+            elasticapm.set_transaction_result(result, override=False)
+            elasticapm.set_transaction_outcome(http_status_code=status)
+            client.end_transaction()
 
         return ret
 

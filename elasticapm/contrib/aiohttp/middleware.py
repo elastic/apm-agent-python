@@ -48,7 +48,7 @@ def tracing_middleware(app):
 
     async def handle_request(request, handler):
         elasticapm_client = app.get(CLIENT_KEY)
-        if elasticapm_client:
+        if elasticapm_client and not elasticapm_client.should_ignore_url(request.path):
             request[CLIENT_KEY] = elasticapm_client
             if elasticapm_client.config.transaction_ignore_urls and elasticapm_client.tracer._should_ignore_url(
                 request.rel_url.path
