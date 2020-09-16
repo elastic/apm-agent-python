@@ -42,6 +42,7 @@ from elasticapm.conf import (
     Config,
     ConfigurationError,
     FileIsReadableValidator,
+    PrecisionValidator,
     RegexValidator,
     _BoolConfigValue,
     _ConfigBase,
@@ -235,6 +236,16 @@ def test_duration_validation():
     assert c.minute == 17 * 1000 * 60
     assert c.wrong_pattern is None
     assert "WRONG_PATTERN" in c.errors
+
+
+def test_precision_validation():
+    class MyConfig(_ConfigBase):
+        sample_rate = _ConfigValue("SR", type=float, validators=[PrecisionValidator(4, 0.0001)])
+
+    c = MyConfig({"SR": "0.0000001"})
+    assert c.sample_rate == 0.0001
+    c = MyConfig({"SR": "0.555555"})
+    assert c.sample_rate == 0.5556
 
 
 def test_chained_validators():

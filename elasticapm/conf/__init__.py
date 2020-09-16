@@ -334,7 +334,7 @@ class Config(_ConfigBase):
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
     transaction_sample_rate = _ConfigValue(
-        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(3, 0.001)], default=1.0
+        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
