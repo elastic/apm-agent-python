@@ -309,6 +309,7 @@ def test_send(sending_elasticapm_client):
     # assert 250 < request.content_length < 400
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
 def test_send_not_enabled(sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send
