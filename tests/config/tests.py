@@ -301,3 +301,19 @@ def test_capture_body_mapping(val, expected):
 def test_is_recording(enabled, recording, is_recording):
     c = Config(inline_dict={"enabled": enabled, "recording": recording, "service_name": "foo"})
     assert c.is_recording is is_recording
+
+
+def test_callback():
+    test_var = None
+
+    def set_global(dict_key, old_value, new_value):
+        nonlocal test_var
+        test_var = new_value
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global])
+
+    c = MyConfig({"foo": "bar"})
+    assert test_var == "bar"
+    c.update({"foo": "baz"})
+    assert test_var == "baz"
