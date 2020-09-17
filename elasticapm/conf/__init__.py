@@ -136,7 +136,7 @@ class _ConfigValue(object):
         If the value changed (checked against instance._values[self.dict_key]),
         then run the callback function (if defined)
         """
-        old_value = instance._values.get(self.dict_key, object())
+        old_value = instance._values.get(self.dict_key, self.default)
         if old_value != new_value:
             self.call_callbacks(old_value, new_value)
 
