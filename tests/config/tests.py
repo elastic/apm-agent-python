@@ -307,6 +307,8 @@ def test_callback():
     test_var = {"foo": 0}
 
     def set_global(dict_key, old_value, new_value):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
         test_var[dict_key] += 1
 
     class MyConfig(_ConfigBase):
