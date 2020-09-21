@@ -255,6 +255,12 @@ class _ConfigBase(object):
     def errors(self):
         return self._errors
 
+    def copy(self):
+        c = self.__class__()
+        c._errors = {}
+        c.values = self.values.copy()
+        return c
+
 
 class Config(_ConfigBase):
     service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
@@ -398,8 +404,7 @@ class VersionedConfig(ThreadManager):
         :param config: a key/value map of new configuration
         :return: configuration errors, if any
         """
-        new_config = Config()
-        new_config.values = self._config.values.copy()
+        new_config = self._config.copy()
 
         # pass an empty env dict to ensure the environment doesn't get precedence
         new_config.update(inline_dict=config, env_dict={})
