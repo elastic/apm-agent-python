@@ -1319,12 +1319,13 @@ def test_test_exception(urlopen_mock):
 def test_test_exception_fails(django_elasticapm_client):
     stdout = compat.StringIO()
     with override_settings(
-        ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport"},
         **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
     ):
-        call_command("elasticapm", "test", stdout=stdout, stderr=stdout)
+        with mock.patch("elasticapm.transport.http.Transport.send") as send:
+            send.side_effect = Exception()
+            call_command("elasticapm", "test", stdout=stdout, stderr=stdout)
     output = stdout.getvalue()
-    assert "Oops" in output
+    assert "That didn't work" in output
 
 
 def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
