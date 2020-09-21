@@ -69,9 +69,9 @@ class _ConfigValue(object):
         else:
             return self.default
 
-    def __set__(self, instance, value):
-        value = self._validate(instance, value)
-        instance._values[self.dict_key] = value
+    def __set__(self, config_instance, value):
+        value = self._validate(config_instance, value)
+        config_instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
         if value is None and self.required:
@@ -237,6 +237,11 @@ class _ConfigBase(object):
                     setattr(self, field, new_value)
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
+            # if a field has not been provided by any config source, we have to check separately if it is required
+            if config_value.required and getattr(self, field) is None:
+                self._errors[config_value.dict_key] = "Configuration error: value for {} is required.".format(
+                    config_value.dict_key
+                )
 
     @property
     def values(self):
