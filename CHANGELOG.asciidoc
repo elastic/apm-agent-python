@@ -43,6 +43,8 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fix validation of config to properly require `required` config items. {pull}927[#927]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x

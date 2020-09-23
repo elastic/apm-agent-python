@@ -1313,18 +1313,18 @@ def test_test_exception(urlopen_mock):
     assert "Success! We tracked the error successfully!" in output
 
 
-@pytest.mark.parametrize(
-    "django_elasticapm_client", [{"transport_class": "elasticapm.transport.http.Transport"}], indirect=True
-)
-def test_test_exception_fails(django_elasticapm_client):
+@mock.patch("elasticapm.transport.http.Transport.send")
+def test_test_exception_fails(mock_send):
     stdout = compat.StringIO()
+    mock_send.side_effect = Exception("boom")
     with override_settings(
-        ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport"},
+        ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport", "SERVICE_NAME": "testapp"},
         **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
     ):
         call_command("elasticapm", "test", stdout=stdout, stderr=stdout)
     output = stdout.getvalue()
     assert "Oops" in output
+    assert "boom" in output
 
 
 def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
