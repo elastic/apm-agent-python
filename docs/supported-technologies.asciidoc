@@ -102,7 +102,7 @@ We support these Celery versions:
 * 3.x
 * 4.x
 
-Celery tasks will be recorded with Django and Flask only.
+Celery tasks will be recorded automatically with Django and Flask only.
 
 [float]
 [[automatic-instrumentation-db]]
