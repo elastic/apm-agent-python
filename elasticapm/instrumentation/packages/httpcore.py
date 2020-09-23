@@ -96,8 +96,14 @@ class HTTPCoreInstrumentation(AbstractInstrumentedModule):
                 )
                 self._set_disttracing_headers(headers, trace_parent, transaction)
             response = wrapped(*args, **kwargs)
-            # response = (http_version, status_code, reason_phrase, headers, stream)
-            status_code = response[1]
+            if len(response) > 4:
+                # httpcore < 0.11.0
+                # response = (http_version, status_code, reason_phrase, headers, stream)
+                status_code = response[1]
+            else:
+                # httpcore >= 0.11.0
+                # response = (status_code, headers, stream, ext)
+                status_code = response[0]
             if status_code:
                 if span.context:
                     span.context["http"]["status_code"] = status_code
