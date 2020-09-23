@@ -110,10 +110,10 @@ class _ConfigValue(object):
         else:
             return self.default
 
-    def __set__(self, instance, value):
-        value = self._validate(instance, value)
-        self._callback_if_changed(instance, value)
-        instance._values[self.dict_key] = value
+    def __set__(self, config_instance, value):
+        value = self._validate(config_instance, value)
+        self._callback_if_changed(config_instance, value)
+        config_instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
         if value is None and self.required:
@@ -309,6 +309,11 @@ class _ConfigBase(object):
                     setattr(self, field, new_value)
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
+            # if a field has not been provided by any config source, we have to check separately if it is required
+            if config_value.required and getattr(self, field) is None:
+                self._errors[config_value.dict_key] = "Configuration error: value for {} is required.".format(
+                    config_value.dict_key
+                )
 
     def call_callbacks(self, callbacks):
         """
@@ -330,6 +335,12 @@ class _ConfigBase(object):
     @property
     def errors(self):
         return self._errors
+
+    def copy(self):
+        c = self.__class__()
+        c._errors = {}
+        c.values = self.values.copy()
+        return c
 
 
 class Config(_ConfigBase):
@@ -474,8 +485,7 @@ class VersionedConfig(ThreadManager):
         :param config: a key/value map of new configuration
         :return: configuration errors, if any
         """
-        new_config = Config()
-        new_config.values = self._config.values.copy()
+        new_config = self._config.copy()
 
         # pass an empty env dict to ensure the environment doesn't get precedence
         new_config.update(inline_dict=config, env_dict={})

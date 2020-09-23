@@ -303,6 +303,20 @@ def test_is_recording(enabled, recording, is_recording):
     assert c.is_recording is is_recording
 
 
+def test_required_is_checked_if_field_not_provided():
+    class MyConfig(_ConfigBase):
+        this_one_is_required = _ConfigValue("this_one_is_required", type=int, required=True)
+        this_one_isnt = _ConfigValue("this_one_isnt", type=int, required=False)
+
+    assert MyConfig({"this_one_is_required": None}).errors
+    assert MyConfig({}).errors
+    assert MyConfig({"this_one_isnt": 1}).errors
+
+    c = MyConfig({"this_one_is_required": 1})
+    c.update({"this_one_isnt": 0})
+    assert not c.errors
+
+
 def test_callback():
     test_var = {"foo": 0}
 
