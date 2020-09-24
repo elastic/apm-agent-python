@@ -18,6 +18,6 @@ if "%ASYNCIO%" == "true" (
     call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest"
 )
 if "%ASYNCIO%" == "false" (
-    call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob="*\asyncio\*" %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest"
+    call %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob="*\asyncio*\*" %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest"
 )
 call %PYTHON%\python.exe setup.py bdist_wheel

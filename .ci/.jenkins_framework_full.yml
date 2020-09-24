@@ -74,4 +74,5 @@ FRAMEWORK:
   - graphene-2
   - httpx-0.12
   - httpx-0.13
+  - httpx-0.14
   - httpx-newest

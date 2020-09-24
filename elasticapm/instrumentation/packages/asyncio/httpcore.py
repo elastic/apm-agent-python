@@ -49,6 +49,7 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
 
     instrument_list = [
         ("httpcore._async.connection", "AsyncHTTPConnection.request"),
+        ("httpcore._async.connection", "AsyncHTTPConnection.arequest"),
     ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
@@ -105,8 +106,14 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
                 )
                 self._set_disttracing_headers(headers, trace_parent, transaction)
             response = await wrapped(*args, **kwargs)
-            # response = (http_version, status_code, reason_phrase, headers, stream)
-            status_code = response[1]
+            if len(response) > 4:
+                # httpcore < 0.11.0
+                # response = (http_version, status_code, reason_phrase, headers, stream)
+                status_code = response[1]
+            else:
+                # httpcore >= 0.11.0
+                # response = (status_code, headers, stream, ext)
+                status_code = response[0]
             if status_code:
                 if span.context:
                     span.context["http"]["status_code"] = status_code

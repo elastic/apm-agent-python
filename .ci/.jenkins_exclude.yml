@@ -287,16 +287,22 @@ exclude:
   - PYTHON_VERSION: pypy-2
     FRAMEWORK: httpx-0.13
   - PYTHON_VERSION: pypy-2
+    FRAMEWORK: httpx-0.14
+  - PYTHON_VERSION: pypy-2
     FRAMEWORK: httpx-newest
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: httpx-0.12
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: httpx-0.13
   - PYTHON_VERSION: python-2.7
+    FRAMEWORK: httpx-0.14
+  - PYTHON_VERSION: python-2.7
     FRAMEWORK: httpx-newest
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: httpx-0.12
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: httpx-0.13
+  - PYTHON_VERSION: python-3.5
+    FRAMEWORK: httpx-0.14
   - PYTHON_VERSION: python-3.5
     FRAMEWORK: httpx-newest
