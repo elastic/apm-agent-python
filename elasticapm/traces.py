@@ -599,15 +599,6 @@ class Tracer(object):
             self.queue_func(TRANSACTION, transaction.to_dict())
         return transaction
 
-    def abort_transaction(self):
-        """
-        Aborts transaction without queueing any data. This should happen as early as possible,
-        to avoid any spans of the aborted transaction to be queued.
-        :return: None
-        """
-
-        execution_context.get_transaction(clear=True)
-
     def _should_ignore(self, transaction_name):
         for pattern in self._ignore_patterns:
             if pattern.search(transaction_name):
