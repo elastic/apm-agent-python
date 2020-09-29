@@ -12,9 +12,9 @@ test:
 	if [[ "$$PYTHON_VERSION" =~ ^(3.7|3.8|3.9|nightly)$$ ]] ; then \
 		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT); \
 	elif [[ "$$PYTHON_VERSION" =~ ^(3.5|3.6|pypy3)$$ ]] ; then \
-		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/asyncio/*'; \
+		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/asyncio*/*'; \
 	else \
-		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/py3_*.py' --ignore-glob='*/asyncio/*'; \
+		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/py3_*.py' --ignore-glob='*/asyncio*/*'; \
 	fi
 
 coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg --cov-branch
