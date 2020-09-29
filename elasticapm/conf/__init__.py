@@ -501,7 +501,7 @@ class VersionedConfig(ThreadManager):
         Reset state to the original configuration
 
         Note that because ConfigurationValues can have callbacks, we need to
-        note any differences becween the original configuration and the most
+        note any differences between the original configuration and the most
         recent configuration and run any callbacks that might exist for those
         values.
         """

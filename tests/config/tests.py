@@ -43,6 +43,7 @@ from elasticapm.conf import (
     ConfigurationError,
     FileIsReadableValidator,
     RegexValidator,
+    VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
     _ConfigValue,
@@ -332,3 +333,22 @@ def test_callback():
     assert test_var["foo"] == 1
     c.update({"foo": "baz"})
     assert test_var["foo"] == 2
+
+
+def test_callback_reset():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global])
+
+    c = VersionedConfig(MyConfig({"foo": "bar"}), version=None)
+    assert test_var["foo"] == 1
+    c.update(version=2, **{"foo": "baz"})
+    assert test_var["foo"] == 2
+    c.reset()
+    assert test_var["foo"] == 3
