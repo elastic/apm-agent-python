@@ -81,12 +81,15 @@ Once your changes are ready to submit for review:
 
 To run local unit tests, you can install the relevant
 [requirements files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
-and then run `py.test` from the project root. (`py.test` is a binary script
-provided by `pytest`, one of the requirements that will be automatically
-installed.)
+and then run `make test` from the project root:
+
+    pip install -r tests/requirements/reqs-flask-1.1.txt
+    make update-json-schema
+    make test
 
 Pytest will automatically discover all the tests and skip the ones for which
-dependencies are not met.
+dependencies are not met. Note that `make update-json-schema` should only need
+to be run once.
 
 If you want to go above and beyond and run the full test suite,
 you need to install several databases (Elasticsearch, PostgreSQL, MySQL, Cassandra, Redis).
