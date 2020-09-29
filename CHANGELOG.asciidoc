@@ -37,6 +37,7 @@ endif::[]
 [float]
 ===== Features
 
+ * Add support for callbacks on config changes {pull}912[#912]
 
 [float]
 ===== Bug fixes
