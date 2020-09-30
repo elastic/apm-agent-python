@@ -109,7 +109,7 @@ def test_gcp_metadata(mock_socket, monkeypatch):
         "project": {"id": "513326162531", "name": "elastic-apm"},
         "availability_zone": "us-west3-a",
         "region": "us-west3",
-        "machine": {"type": "projects/513326162531/machineTypes/n1-standard-1"},
+        "machine": {"type": "n1-standard-1"},
     }
 
 

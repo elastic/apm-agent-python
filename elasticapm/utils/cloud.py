@@ -116,7 +116,7 @@ def gcp_metadata():
             "project": {"id": str(metadata["project"]["numericProjectId"]), "name": metadata["project"]["projectId"]},
             "availability_zone": availability_zone,
             "region": availability_zone.rsplit("-", 1)[0],
-            "machine": {"type": metadata["instance"]["machineType"]},
+            "machine": {"type": metadata["instance"]["machineType"].split("/")[-1]},
         }
 
     except Exception:
