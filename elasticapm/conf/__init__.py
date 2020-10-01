@@ -604,11 +604,9 @@ class VersionedConfig(ThreadManager):
             self._update_thread = None
 
 
-def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
+def setup_logging(handler):
     """
     Configures logging to pipe to Elastic APM.
-
-    - ``exclude`` is a list of loggers that shouldn't go to ElasticAPM.
 
     For a typical Python install:
 
@@ -623,6 +621,9 @@ def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
 
     Returns a boolean based on if logging was configured or not.
     """
+    # TODO We should probably revisit this. Does it make more sense as
+    # a method within the Client class? The Client object could easily
+    # pass itself into LoggingHandler and we could eliminate args altogether.
     logger = logging.getLogger()
     if handler.__class__ in map(type, logger.handlers):
         return False
