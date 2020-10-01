@@ -2,7 +2,7 @@ BUILD_DIR?=build
 SHELL := /bin/bash
 
 isort:
-	isort -rc -vb .
+	isort --vb .
 
 flake8:
 	flake8
