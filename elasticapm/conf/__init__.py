@@ -297,6 +297,38 @@ class FileIsReadableValidator(object):
         return value
 
 
+class ValidValuesValidator(object):
+    """
+    Validator which ensures that a given config value is chosen from a list
+    of valid options.
+    """
+
+    def __init__(self, valid_values, case_sensitive=False):
+        """
+        valid_values
+            List of valid values for the config value
+        case_sensitive
+            Whether to compare case when comparing a value to the valid list.
+            Defaults to False (case-insensitive)
+        """
+        self.case_sensitive = case_sensitive
+        if case_sensitive:
+            self.valid_values = {s: s for s in valid_values}
+        else:
+            self.valid_values = {s.lower(): s for s in valid_values}
+
+    def __call__(self, value, field_name):
+        if self.case_sensitive:
+            ret = self.valid_values.get(value)
+        else:
+            ret = self.valid_values.get(value.lower())
+        if ret is None:
+            raise ConfigurationError(
+                "{} is not in the list of valid values: {}".format(value, list(self.valid_values.values()))
+            )
+        return ret
+
+
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
