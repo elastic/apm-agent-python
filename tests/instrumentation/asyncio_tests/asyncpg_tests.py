@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+
 import pytest
 
 from elasticapm.conf import constants
@@ -37,11 +38,7 @@ asyncpg = pytest.importorskip("asyncpg")  # isort:skip
 pytestmark = [pytest.mark.asyncpg, pytest.mark.asyncio]
 
 if "POSTGRES_DB" not in os.environ:
-    pytestmark.append(
-        pytest.mark.skip(
-            "Skipping asyncpg tests, no POSTGRES_DB environment variable set"
-        )
-    )
+    pytestmark.append(pytest.mark.skip("Skipping asyncpg tests, no POSTGRES_DB environment variable set"))
 
 
 def dsn():
@@ -92,9 +89,7 @@ async def test_execute_with_sleep(instrument, connection, elasticapm_client):
 
 async def test_executemany(instrument, connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    await connection.executemany(
-        "INSERT INTO test VALUES ($1, $2);", [(1, "uno"), (2, "due")]
-    )
+    await connection.executemany("INSERT INTO test VALUES ($1, $2);", [(1, "uno"), (2, "due")])
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[constants.TRANSACTION][0]

@@ -54,10 +54,51 @@ class ConfigurationError(ValueError):
 
 
 class _ConfigValue(object):
-    def __init__(self, dict_key, env_key=None, type=compat.text_type, validators=None, default=None, required=False):
+    """
+    Base class for configuration values
+
+    dict_key
+        String representing the key used for this config value in dict configs.
+    env_key
+        String representing the key used in environment variables for this
+        config value. If not specified, will be set to `"ELASTIC_APM_" + dict_key`.
+    type
+        Type of value stored in this config value.
+    validators
+        List of validator classes. Must be callables, which will be called with
+        a value and the dict_key for the config value. The validator either
+        returns the validated value or raises a ConfigurationError if validation
+        fails.
+    callbacks
+        List of functions which will be called when the config value is updated.
+        The callbacks must match this signature: callback(dict_key, old_value, new_value)
+    default
+        The default for this config value if not user-configured.
+    required
+        Whether this config value is required. If a default is specified,
+        this is a redundant option (except to ensure that this config value
+        is specified if a default were ever to be removed).
+
+    Note that _ConfigValues and any inheriting classes must implement __set__
+    and __get__. The calling instance will always be a _ConfigBase descendant
+    and the __set__ and __get__ calls will access `instance._values[self.dict_key]`
+    to get and set values.
+    """
+
+    def __init__(
+        self,
+        dict_key,
+        env_key=None,
+        type=compat.text_type,
+        validators=None,
+        callbacks=None,
+        default=None,
+        required=False,
+    ):
         self.type = type
         self.dict_key = dict_key
         self.validators = validators
+        self.callbacks = callbacks
         self.default = default
         self.required = required
         if env_key is None:
@@ -72,6 +113,7 @@ class _ConfigValue(object):
 
     def __set__(self, config_instance, value):
         value = self._validate(config_instance, value)
+        self._callback_if_changed(config_instance, value)
         config_instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
@@ -90,6 +132,28 @@ class _ConfigValue(object):
         instance._errors.pop(self.dict_key, None)
         return value
 
+    def _callback_if_changed(self, instance, new_value):
+        """
+        If the value changed (checked against instance._values[self.dict_key]),
+        then run the callback function (if defined)
+        """
+        old_value = instance._values.get(self.dict_key, self.default)
+        if old_value != new_value:
+            self.call_callbacks(old_value, new_value)
+
+    def call_callbacks(self, old_value, new_value):
+        if not self.callbacks:
+            return
+        for callback in self.callbacks:
+            try:
+                callback(self.dict_key, old_value, new_value)
+            except Exception as e:
+                raise ConfigurationError(
+                    "Callback {} raised an exception when setting {} to {}: {}".format(
+                        callback, self.dict_key, new_value, e
+                    )
+                )
+
 
 class _ListConfigValue(_ConfigValue):
     def __init__(self, dict_key, list_separator=",", **kwargs):
@@ -103,6 +167,7 @@ class _ListConfigValue(_ConfigValue):
             value = list(value)
         if value:
             value = [self.type(item) for item in value]
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
 
@@ -119,6 +184,7 @@ class _DictConfigValue(_ConfigValue):
         elif not isinstance(value, dict):
             # TODO: better error handling
             value = None
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
 
@@ -134,6 +200,7 @@ class _BoolConfigValue(_ConfigValue):
                 value = True
             elif value.lower() == self.false_string:
                 value = False
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = bool(value)
 
 
@@ -236,6 +303,11 @@ class _ConfigBase(object):
     def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
         self._values = {}
         self._errors = {}
+        self._dict_key_lookup = {}
+        for config_value in self.__class__.__dict__.values():
+            if not isinstance(config_value, _ConfigValue):
+                continue
+            self._dict_key_lookup[config_value.dict_key] = config_value
         self.update(config_dict, env_dict, inline_dict)
 
     def update(self, config_dict=None, env_dict=None, inline_dict=None):
@@ -245,7 +317,7 @@ class _ConfigBase(object):
             env_dict = os.environ
         if inline_dict is None:
             inline_dict = {}
-        for field, config_value in self.__class__.__dict__.items():
+        for field, config_value in compat.iteritems(self.__class__.__dict__):
             if not isinstance(config_value, _ConfigValue):
                 continue
             new_value = self._NO_VALUE
@@ -269,6 +341,15 @@ class _ConfigBase(object):
                 self._errors[config_value.dict_key] = "Configuration error: value for {} is required.".format(
                     config_value.dict_key
                 )
+
+    def call_callbacks(self, callbacks):
+        """
+        Call callbacks for config options matching list of tuples:
+
+        (dict_key, old_value, new_value)
+        """
+        for dict_key, old_value, new_value in callbacks:
+            self._dict_key_lookup[dict_key].call_callbacks(old_value, new_value)
 
     @property
     def values(self):
@@ -297,7 +378,7 @@ class Config(_ConfigBase):
     api_key = _ConfigValue("API_KEY")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
-    server_cert = _ConfigValue("SERVER_CERT", default=None, required=False, validators=[FileIsReadableValidator()])
+    server_cert = _ConfigValue("SERVER_CERT", default=None, validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
@@ -447,10 +528,22 @@ class VersionedConfig(ThreadManager):
     def reset(self):
         """
         Reset state to the original configuration
+
+        Note that because ConfigurationValues can have callbacks, we need to
+        note any differences between the original configuration and the most
+        recent configuration and run any callbacks that might exist for those
+        values.
         """
+        callbacks = []
+        for key in compat.iterkeys(self._config.values):
+            if self._config.values[key] != self._first_config.values[key]:
+                callbacks.append((key, self._config.values[key], self._first_config.values[key]))
+
         with self._lock:
             self._version = self._first_version
             self._config = self._first_config
+
+        self._config.call_callbacks(callbacks)
 
     @property
     def changed(self):
