@@ -88,6 +88,7 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
 
         # Late import to avoid ImportErrors
         from tornado.web import Finish, HTTPError
+
         from elasticapm.contrib.tornado.utils import get_data_from_request
 
         e = args[0]

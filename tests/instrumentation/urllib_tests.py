@@ -38,14 +38,13 @@ from elasticapm.utils.compat import urlparse
 from elasticapm.utils.disttracing import TraceParent
 
 try:
+    from urllib.error import HTTPError, URLError
     from urllib.request import urlopen
-    from urllib.error import URLError, HTTPError
 
     request_method = "http.client.HTTPConnection.request"
     getresponse_method = "http.client.HTTPConnection.getresponse"
 except ImportError:
-    from urllib2 import urlopen
-    from urllib2 import URLError, HTTPError
+    from urllib2 import HTTPError, URLError, urlopen
 
     request_method = "httplib.HTTPConnection.request"
     getresponse_method = "httplib.HTTPConnection.getresponse"

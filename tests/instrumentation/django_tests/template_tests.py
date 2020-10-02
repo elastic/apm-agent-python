@@ -35,9 +35,8 @@ pytest.importorskip("django")  # isort:skip
 from os.path import join
 
 import django
-from django.test.utils import override_settings
-
 import pytest
+from django.test.utils import override_settings
 
 from elasticapm.conf.constants import TRANSACTION
 from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
