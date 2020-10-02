@@ -65,9 +65,14 @@ def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver
         "type": "external",
     }
 
-    assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    headers = waiting_httpserver.requests[0].headers
+    assert constants.TRACEPARENT_HEADER_NAME in headers
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `httpx`, not of httpcore
     assert trace_parent.span_id == spans[0]["id"]
@@ -88,9 +93,14 @@ def test_httpx_instrumentation_via_client(instrument, elasticapm_client, waiting
     assert spans[0]["name"].startswith("GET 127.0.0.1:")
     assert url == spans[0]["context"]["http"]["url"]
 
-    assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    headers = waiting_httpserver.requests[0].headers
+    assert constants.TRACEPARENT_HEADER_NAME in headers
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `httpx`, not of httpcore
     assert trace_parent.span_id == spans[0]["id"]

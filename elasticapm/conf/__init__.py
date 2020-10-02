@@ -30,6 +30,7 @@
 
 
 import logging
+import math
 import os
 import re
 import socket
@@ -235,6 +236,32 @@ class UnitValidator(object):
         return val
 
 
+class PrecisionValidator(object):
+    """
+    Forces a float value to `precision` digits of precision.
+
+    Rounds half away from zero.
+
+    If `minimum` is provided, and the value rounds to 0 (but was not zero to
+    begin with), use the minimum instead.
+    """
+
+    def __init__(self, precision=0, minimum=None):
+        self.precision = precision
+        self.minimum = minimum
+
+    def __call__(self, value, field_name):
+        try:
+            value = float(value)
+        except ValueError:
+            raise ConfigurationError("{} is not a float".format(value), field_name)
+        multiplier = 10 ** self.precision
+        rounded = math.floor(value * multiplier + 0.5) / multiplier
+        if rounded == 0 and self.minimum and value != 0:
+            rounded = self.minimum
+        return rounded
+
+
 duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
@@ -398,7 +425,9 @@ class Config(_ConfigBase):
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
-    transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
+    transaction_sample_rate = _ConfigValue(
+        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
+    )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
     span_frames_min_duration = _ConfigValue(

@@ -37,6 +37,7 @@ endif::[]
 [float]
 ===== Features
 
+ * Implement "sample_rate" property for transactions and spans, and propagate through tracestate {pull}891[#891]
  * Add support for callbacks on config changes {pull}912[#912]
 
 [float]
