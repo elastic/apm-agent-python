@@ -102,3 +102,40 @@ async def test_executemany(instrument, connection, elasticapm_client):
     assert span["action"] == "query"
     assert span["sync"] == False
     assert span["name"] == "INSERT INTO test"
+
+
+def _assert_fetch(result):
+    assert len(result) == 3
+    assert all(isinstance(val, asyncpg.Record) for val in result)
+
+
+def _assert_fetchval(result):
+    assert result == 1
+
+
+def _assert_fetchrow(result):
+    assert isinstance(result, asyncpg.Record)
+    assert result["id"] == 1
+
+
+@pytest.mark.usefixtures("instrument")
+@pytest.mark.parametrize(
+    "method,verify", [("fetch", _assert_fetch), ("fetchval", _assert_fetchval), ("fetchrow", _assert_fetchrow)]
+)
+async def test_fetch_methods(connection, elasticapm_client, method, verify):
+    elasticapm_client.begin_transaction("test")
+    result = await getattr(connection, method)("SELECT id FROM test;")
+    elasticapm_client.end_transaction("test", "OK")
+
+    verify(result)
+
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+
+    assert len(spans) == 1
+    span = spans[0]
+    assert transaction["id"] == span["transaction_id"]
+    assert span["subtype"] == "postgres"
+    assert span["action"] == "query"
+    assert span["sync"] is False
+    assert span["name"] == "SELECT FROM test"
