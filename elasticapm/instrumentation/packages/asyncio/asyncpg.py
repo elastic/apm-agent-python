@@ -46,6 +46,9 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [
         ("asyncpg.connection", "Connection.execute"),
         ("asyncpg.connection", "Connection.executemany"),
+        ("asyncpg.connection", "Connection.fetch"),
+        ("asyncpg.connection", "Connection.fetchval"),
+        ("asyncpg.connection", "Connection.fetchrow"),
     ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
