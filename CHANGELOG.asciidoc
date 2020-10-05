@@ -43,6 +43,8 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fix to collect the whole query body in `elasticsearch-py` {pull}940[#940]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x

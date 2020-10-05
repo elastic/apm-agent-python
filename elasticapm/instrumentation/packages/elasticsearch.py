@@ -70,8 +70,8 @@ class ElasticSearchConnectionMixin(object):
                 # 'q' is already encoded to a byte string at this point
                 # we assume utf8, which is the default
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
-            if isinstance(body, dict) and "query" in body:
-                query.append(json.dumps(body["query"], default=compat.text_type))
+            if body and isinstance(body, dict):
+                query.append(json.dumps(body, default=compat.text_type))
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
         elif api_method == "update":
