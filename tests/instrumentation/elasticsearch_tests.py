@@ -323,7 +323,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
         index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["text"]}
+    search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["text.keyword"]}
     result = elasticsearch.search(body=search_query, params=None)
     elasticapm_client.end_transaction("test", "OK")
 
@@ -338,7 +338,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["text"]}'
+    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["text.keyword"]}'
 
 
 @pytest.mark.integrationtest
