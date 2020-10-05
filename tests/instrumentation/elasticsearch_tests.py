@@ -338,7 +338,10 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '"sort": ["userid"]}, {"query": {"term": {"user": "kimchy"}}'
+    assert (
+        span["context"]["db"]["statement"] == '"sort": ["userid"]}, {"query": {"term": {"user": "kimchy"}}'
+        or span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
+    )
 
 
 @pytest.mark.integrationtest
