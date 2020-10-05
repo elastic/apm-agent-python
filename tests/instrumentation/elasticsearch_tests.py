@@ -328,7 +328,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
-    assert result["hits"]["hits"][0]["_source"] == {"user": "kimchy", "text": "hola"}
+    assert result["hits"]["hits"][0]["_source"] == {"user": "kimchy", "text": "hola", "userid": 1}
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
