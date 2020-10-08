@@ -9,7 +9,7 @@ To get you off the ground, we’ve prepared guides for setting up the Agent with
  * <<tornado-support,Tornado>>
  * <<starlette-support,Starlette/FastAPI>>
 
-For custom instrumentation, see the <<api>>.
+For custom instrumentation, see <<instrumenting-custom-code, Instrumenting Custom Code>>.
 
 include::./django.asciidoc[]
 
