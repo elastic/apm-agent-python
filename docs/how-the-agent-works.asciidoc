@@ -1,7 +1,7 @@
 [[how-the-agent-works]]
 === How the Agent works
 
-To gather APM events (called Transactions and Spans), errors and metrics,
+To gather APM events (called transactions and spans), errors and metrics,
 the Python agent instruments your application in a few different ways.
 These events, are then sent to the APM Server.
 The APM Server converts them to a format suitable for Elasticsearch, and sends them to an Elasticsearch cluster.
