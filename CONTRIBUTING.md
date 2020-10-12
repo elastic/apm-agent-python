@@ -7,8 +7,8 @@ from writing tutorials or blog posts,
 improving the documentation,
 submitting bug reports and feature requests or writing code.
 
-You can get in touch with us through [Discuss](https://discuss.elastic.co/c/apm),
-feedback and ideas are always welcome.
+You can get in touch with us through [Discuss](https://discuss.elastic.co/c/apm).
+Feedback and ideas are always welcome.
 
 Please note that this repository is covered by the [Elastic Community Code of Conduct](https://www.elastic.co/community/codeofconduct).
 
@@ -42,7 +42,7 @@ Once your changes are ready to submit for review:
      * [flake8](http://flake8.pycqa.org/en/latest/)
      * License header check via custom script
 
-    The easiest way to make sure your pull request adheres to the the code style
+    The easiest way to make sure your pull request adheres to the code style
     is to install [pre-commit](https://pre-commit.com/).
 
         pip install pre-commit # or "brew install pre-commit" if you use Homebrew
