@@ -72,6 +72,9 @@ class _ConfigValue(object):
     callbacks
         List of functions which will be called when the config value is updated.
         The callbacks must match this signature: callback(dict_key, old_value, new_value)
+    callbacks_on_default
+        Whether the callback should be called on config initialization if the
+        default value is used. Default: True
     default
         The default for this config value if not user-configured.
     required
@@ -92,6 +95,7 @@ class _ConfigValue(object):
         type=compat.text_type,
         validators=None,
         callbacks=None,
+        callbacks_on_default=True,
         default=None,
         required=False,
     ):
@@ -104,6 +108,7 @@ class _ConfigValue(object):
         if env_key is None:
             env_key = "ELASTIC_APM_" + dict_key
         self.env_key = env_key
+        self.callbacks_on_default = callbacks_on_default
 
     def __get__(self, instance, owner):
         if instance:
@@ -340,9 +345,9 @@ class _ConfigBase(object):
             if not isinstance(config_value, _ConfigValue):
                 continue
             self._dict_key_lookup[config_value.dict_key] = config_value
-        self.update(config_dict, env_dict, inline_dict)
+        self.update(config_dict, env_dict, inline_dict, initial=True)
 
-    def update(self, config_dict=None, env_dict=None, inline_dict=None):
+    def update(self, config_dict=None, env_dict=None, inline_dict=None, initial=False):
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
@@ -368,13 +373,16 @@ class _ConfigBase(object):
                     setattr(self, field, new_value)
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
+            # handle initial callbacks
+            if initial and config_value.callbacks_on_default and getattr(self, field) == config_value.default:
+                config_value.call_callbacks(self._NO_VALUE, config_value.default)
             # if a field has not been provided by any config source, we have to check separately if it is required
             if config_value.required and getattr(self, field) is None:
                 self._errors[config_value.dict_key] = "Configuration error: value for {} is required.".format(
                     config_value.dict_key
                 )
 
-    def call_callbacks(self, callbacks):
+    def call_all_callbacks(self, callbacks):
         """
         Call callbacks for config options matching list of tuples:
 
@@ -576,7 +584,7 @@ class VersionedConfig(ThreadManager):
             self._version = self._first_version
             self._config = self._first_config
 
-        self._config.call_callbacks(callbacks)
+        self._config.call_all_callbacks(callbacks)
 
     @property
     def changed(self):

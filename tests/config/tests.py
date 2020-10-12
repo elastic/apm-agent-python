@@ -347,6 +347,36 @@ def test_callback():
     assert test_var["foo"] == 2
 
 
+def test_callbacks_on_default():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 1
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 2
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 3
+
+    # Test without callback on default
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], callbacks_on_default=False, default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 3
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 4
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 5
+
+
 def test_callback_reset():
     test_var = {"foo": 0}
 
