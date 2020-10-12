@@ -334,6 +334,11 @@ class ValidValuesValidator(object):
         return ret
 
 
+def _log_level_callback(dict_key, old_value, new_value):
+    # TODO setup logging!
+    pass
+
+
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
@@ -510,6 +515,12 @@ class Config(_ConfigBase):
     use_elastic_traceparent_header = _BoolConfigValue("USE_ELASTIC_TRACEPARENT_HEADER", default=True)
     use_elastic_excepthook = _BoolConfigValue("USE_ELASTIC_EXCEPTHOOK", default=False)
     cloud_provider = _ConfigValue("CLOUD_PROVIDER", default=True)
+    log_level = _ConfigValue(
+        "LOG_LEVEL",
+        validators=[ValidValuesValidator(["trace", "debug", "info", "warning", "error", "critical", "off"])],
+        callbacks=[_log_level_callback],
+        default="info",
+    )
 
     @property
     def is_recording(self):
