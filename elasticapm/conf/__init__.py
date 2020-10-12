@@ -324,7 +324,7 @@ class ValidValuesValidator(object):
             ret = self.valid_values.get(value.lower())
         if ret is None:
             raise ConfigurationError(
-                "{} is not in the list of valid values: {}".format(value, list(self.valid_values.values()))
+                "{} is not in the list of valid values: {}".format(value, list(self.valid_values.values())), field_name
             )
         return ret
 
