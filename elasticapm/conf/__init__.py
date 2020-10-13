@@ -342,7 +342,23 @@ def _log_level_callback(dict_key, old_value, new_value):
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
-    def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
+    def __init__(self, config_dict=None, env_dict=None, inline_dict=None, copy=False):
+        """
+        config_dict
+            Configuration dict as is common for frameworks such as flask and django.
+            Keys match the _ConfigValue.dict_key (usually all caps)
+        env_dict
+            Environment variables dict. Keys match the _ConfigValue.env_key
+            (usually "ELASTIC_APM_" + dict_key)
+        inline_dict
+            Any config passed in as kwargs to the Client object. Typically
+            the keys match the names of the _ConfigValue variables in the Config
+            object.
+        copy
+            Whether this object is being created to copy an existing Config
+            object. If True, don't run the initial `update` (which would call
+            callbacks if present)
+        """
         self._values = {}
         self._errors = {}
         self._dict_key_lookup = {}
@@ -350,7 +366,8 @@ class _ConfigBase(object):
             if not isinstance(config_value, _ConfigValue):
                 continue
             self._dict_key_lookup[config_value.dict_key] = config_value
-        self.update(config_dict, env_dict, inline_dict, initial=True)
+        if not copy:
+            self.update(config_dict, env_dict, inline_dict, initial=True)
 
     def update(self, config_dict=None, env_dict=None, inline_dict=None, initial=False):
         if config_dict is None:
@@ -409,7 +426,7 @@ class _ConfigBase(object):
         return self._errors
 
     def copy(self):
-        c = self.__class__()
+        c = self.__class__(copy=True)
         c._errors = {}
         c.values = self.values.copy()
         return c
