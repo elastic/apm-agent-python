@@ -71,7 +71,16 @@ class _ConfigValue(object):
         fails.
     callbacks
         List of functions which will be called when the config value is updated.
-        The callbacks must match this signature: callback(dict_key, old_value, new_value)
+        The callbacks must match this signature:
+            callback(dict_key, old_value, new_value, config_instance)
+
+        Note that callbacks wait until the end of any given `update()` operation
+        and are called at this point. This, coupled with the fact that callbacks
+        receive the config instance, means that callbacks can utilize multiple
+        configuration values (such as is the case for logging). This is
+        complicated if more than one of the involved config values are
+        dynamic, as both would need callbacks and the callback would need to
+        be idempotent.
     callbacks_on_default
         Whether the callback should be called on config initialization if the
         default value is used. Default: True
@@ -144,14 +153,14 @@ class _ConfigValue(object):
         """
         old_value = instance._values.get(self.dict_key, self.default)
         if old_value != new_value:
-            self.call_callbacks(old_value, new_value)
+            instance.callbacks_queue.append((self.dict_key, old_value, new_value))
 
-    def call_callbacks(self, old_value, new_value):
+    def call_callbacks(self, old_value, new_value, config_instance):
         if not self.callbacks:
             return
         for callback in self.callbacks:
             try:
-                callback(self.dict_key, old_value, new_value)
+                callback(self.dict_key, old_value, new_value, config_instance)
             except Exception as e:
                 raise ConfigurationError(
                     "Callback {} raised an exception when setting {} to {}: {}".format(
@@ -334,7 +343,7 @@ class ValidValuesValidator(object):
         return ret
 
 
-def _log_level_callback(dict_key, old_value, new_value):
+def _log_level_callback(dict_key, old_value, new_value, config_instance):
     # TODO setup logging!
     pass
 
@@ -362,6 +371,7 @@ class _ConfigBase(object):
         self._values = {}
         self._errors = {}
         self._dict_key_lookup = {}
+        self.callbacks_queue = []
         for config_value in self.__class__.__dict__.values():
             if not isinstance(config_value, _ConfigValue):
                 continue
@@ -397,21 +407,23 @@ class _ConfigBase(object):
                     self._errors[e.field_name] = str(e)
             # handle initial callbacks
             if initial and config_value.callbacks_on_default and getattr(self, field) == config_value.default:
-                config_value.call_callbacks(self._NO_VALUE, config_value.default)
+                self.callbacks_queue.append((config_value.dict_key, self._NO_VALUE, config_value.default))
             # if a field has not been provided by any config source, we have to check separately if it is required
             if config_value.required and getattr(self, field) is None:
                 self._errors[config_value.dict_key] = "Configuration error: value for {} is required.".format(
                     config_value.dict_key
                 )
+        self.call_pending_callbacks()
 
-    def call_all_callbacks(self, callbacks):
+    def call_pending_callbacks(self):
         """
         Call callbacks for config options matching list of tuples:
 
         (dict_key, old_value, new_value)
         """
-        for dict_key, old_value, new_value in callbacks:
-            self._dict_key_lookup[dict_key].call_callbacks(old_value, new_value)
+        for dict_key, old_value, new_value in self.callbacks_queue:
+            self._dict_key_lookup[dict_key].call_callbacks(old_value, new_value, self)
+        self.callbacks_queue = []
 
     @property
     def values(self):
@@ -612,7 +624,8 @@ class VersionedConfig(ThreadManager):
             self._version = self._first_version
             self._config = self._first_config
 
-        self._config.call_all_callbacks(callbacks)
+        self._config.callbacks_queue.extend(callbacks)
+        self._config.call_pending_callbacks()
 
     @property
     def changed(self):

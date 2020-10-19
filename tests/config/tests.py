@@ -333,7 +333,7 @@ def test_required_is_checked_if_field_not_provided():
 def test_callback():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
@@ -350,7 +350,7 @@ def test_callback():
 def test_callbacks_on_default():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
@@ -380,7 +380,7 @@ def test_callbacks_on_default():
 def test_callback_reset():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
