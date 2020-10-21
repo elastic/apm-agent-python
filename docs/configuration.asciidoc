@@ -203,7 +203,7 @@ will do this for you) or set <<config-log_file>>.
 
 Enables the agent to log to a file. Disabled by default. The agent will log
 at the `logging.logLevel` configured with <<config-log_level>>. Use
-<<config-log_level_size>> to configure the max size of the log file. This log
+<<config-log_file_size>> to configure the max size of the log file. This log
 file will automatically rotate.
 
 [float]
