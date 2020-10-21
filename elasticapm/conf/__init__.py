@@ -46,6 +46,19 @@ __all__ = ("setup_logging", "Config")
 
 logger = get_logger("elasticapm.conf")
 
+logging.addLevelName(5, "TRACE")
+logging.TRACE = 5
+log_levels_map = {
+    "trace": logging.TRACE,
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+    "off": 1000,
+}
+logging_set_up = False
+
 
 class ConfigurationError(ValueError):
     def __init__(self, msg, field_name):
@@ -344,8 +357,16 @@ class ValidValuesValidator(object):
 
 
 def _log_level_callback(dict_key, old_value, new_value, config_instance):
-    # TODO setup logging!
-    pass
+    elasticapm_logger = logging.getLogger("elasticapm")
+    elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
+
+    global logging_set_up
+    if not logging_set_up and config_instance.log_file:
+        logging_set_up = True
+        filehandler = logging.handlers.RotatingFileHandler(
+            config_instance.log_file, maxBytes=config_instance.log_file_size, backupCount=1
+        )
+        elasticapm_logger.addHandler(filehandler)
 
 
 class _ConfigBase(object):
@@ -550,6 +571,8 @@ class Config(_ConfigBase):
         callbacks=[_log_level_callback],
         default="info",
     )
+    log_file = _ConfigValue("LOG_FILE", default="")
+    log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
 
     @property
     def is_recording(self):
