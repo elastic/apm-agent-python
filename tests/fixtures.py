@@ -150,13 +150,13 @@ class ValidatingWSGIApp(ContentServer):
 
 @pytest.fixture
 def mock_client_excepthook():
-    with mock.patch('tests.fixtures.TempStoreClient._excepthook') as m:
+    with mock.patch("tests.fixtures.TempStoreClient._excepthook") as m:
         yield m
 
 
 @pytest.fixture
 def mock_client_capture_exception():
-    with mock.patch('tests.fixtures.TempStoreClient.capture_exception') as m:
+    with mock.patch("tests.fixtures.TempStoreClient.capture_exception") as m:
         yield m
 
 
@@ -164,7 +164,7 @@ def mock_client_capture_exception():
 def original_exception_hook(request):
     mock_params = getattr(request, "param", {})
     original_excepthook = sys.excepthook
-    mck = mock.Mock(side_effect=mock_params.get('side_effect'))
+    mck = mock.Mock(side_effect=mock_params.get("side_effect"))
     sys.excepthook = mck
     yield mck
     sys.excepthook = original_excepthook
