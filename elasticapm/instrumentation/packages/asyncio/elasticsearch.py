@@ -36,10 +36,7 @@ from elasticapm.instrumentation.packages.elasticsearch import ElasticSearchConne
 class ElasticSearchAsyncConnection(ElasticSearchConnectionMixin, AsyncAbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
-    instrument_list = [
-        ("elasticsearch_async.connection", "AIOHttpConnection.perform_request"),
-        ("elasticsearch._async.http_aiohttp", "AIOHttpConnection.perform_request"),
-    ]
+    instrument_list = [("elasticsearch._async.http_aiohttp", "AIOHttpConnection.perform_request")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         signature = self.get_signature(args, kwargs)
