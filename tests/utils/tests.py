@@ -239,3 +239,10 @@ def test_read_pem_file_chain():
     with open(os.path.join(os.path.dirname(__file__), "..", "ca", "chain.crt"), mode="rb") as f:
         result = read_pem_file(f)
         assert result.endswith(b"\xc8\xae")
+
+
+def test_fails_on_windows_python_37():
+    import platform
+    import sys
+
+    assert not (platform.system() == "Windows" and sys.version_info[:2] == (3, 7))
