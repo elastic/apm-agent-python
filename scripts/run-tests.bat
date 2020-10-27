@@ -15,9 +15,9 @@ if "%VERSION%" == "2.7" set IGNORE_PYTHON3_WITH_PYTHON2=--ignore-glob="*\py3_*.p
 
 set PYTEST_JUNIT="--junitxml=.\tests\python-agent-junit.xml"
 if "%ASYNCIO%" == "true" (
-    %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest"
+    %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest" || exit /b
 )
 if "%ASYNCIO%" == "false" (
-    %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob="*\asyncio*\*" %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest"
+    %PYTHON%\python.exe -m pytest %PYTEST_JUNIT% --ignore-glob="*\asyncio*\*" %IGNORE_PYTHON3_WITH_PYTHON2% --cov --cov-context=test --cov-branch --cov-config=setup.cfg -m "not integrationtest" || exit /b
 )
 call %PYTHON%\python.exe setup.py bdist_wheel
