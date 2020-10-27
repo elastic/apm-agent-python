@@ -135,7 +135,7 @@ When set to false, the agent will not collect any data, nor start any background
 [options="header"]
 |============
 | Environment             | Django/Flask   | Default
-| `ELASTIC_APM_RECORDING` | `RECORDING`    | `false`
+| `ELASTIC_APM_RECORDING` | `RECORDING`    | `true`
 |============
 
 Enable or disable recording of events.
