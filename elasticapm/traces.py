@@ -88,6 +88,7 @@ class BaseSpan(object):
     def __init__(self, labels=None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
+        self.outcome = None
         if labels:
             self.label(**labels)
 
@@ -132,9 +133,17 @@ class BaseSpan(object):
         for key in tags.keys():
             self.labels[LABEL_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
+    def set_success(self):
+        self.outcome = "success"
+
+    def set_failure(self):
+        self.outcome = "failure"
+
 
 class Transaction(BaseSpan):
-    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None):
+    def __init__(
+        self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_rate=None
+    ):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         if start:
@@ -150,7 +159,8 @@ class Transaction(BaseSpan):
         self.dropped_spans = 0
         self.context = {}
 
-        self.is_sampled = is_sampled
+        self._is_sampled = is_sampled
+        self.sample_rate = sample_rate
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
@@ -274,16 +284,21 @@ class Transaction(BaseSpan):
             start=start,
         )
 
-    def end_span(self, skip_frames=0, duration=None):
+    def end_span(self, skip_frames=0, duration=None, outcome="unknown"):
         """
         End the currently active span
         :param skip_frames: numbers of frames to skip in the stack trace
         :param duration: override duration, mostly useful for testing
+        :param outcome: outcome of the span, either success, failure or unknown
         :return: the ended span
         """
         span = execution_context.get_span()
         if span is None:
             raise LookupError()
+
+        # only overwrite span outcome if it is still unknown
+        if not span.outcome or span.outcome == "unknown":
+            span.outcome = outcome
 
         span.end(skip_frames=skip_frames, duration=duration)
         return span
@@ -309,9 +324,12 @@ class Transaction(BaseSpan):
             "duration": self.duration * 1000,  # milliseconds
             "result": encoding.keyword_field(str(self.result)),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
+            "outcome": self.outcome,
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self.sample_rate is not None:
+            result["sample_rate"] = float(self.sample_rate)
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
             # only set parent_id if this transaction isn't the root
@@ -326,6 +344,23 @@ class Transaction(BaseSpan):
         # TODO: and, if it has, exit without tracking.
         with self._span_timers_lock:
             self._span_timers[(span_type, span_subtype)].update(self_duration)
+
+    @property
+    def is_sampled(self):
+        return self._is_sampled
+
+    @is_sampled.setter
+    def is_sampled(self, is_sampled):
+        """
+        This should never be called in normal operation, but often is used
+        for testing. We just want to make sure our sample_rate comes out correctly
+        in tracestate if we set is_sampled to False.
+        """
+        self._is_sampled = is_sampled
+        if not is_sampled:
+            if self.sample_rate:
+                self.sample_rate = "0"
+                self.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, self.sample_rate)
 
 
 class Span(BaseSpan):
@@ -346,6 +381,7 @@ class Span(BaseSpan):
         "frames",
         "labels",
         "sync",
+        "outcome",
         "_child_durations",
     )
 
@@ -423,7 +459,10 @@ class Span(BaseSpan):
             "action": encoding.keyword_field(self.action),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "duration": self.duration * 1000,  # milliseconds
+            "outcome": self.outcome,
         }
+        if self.transaction.sample_rate is not None:
+            result["sample_rate"] = float(self.transaction.sample_rate)
         if self.sync is not None:
             result["sync"] = self.sync
         if self.labels:
@@ -512,6 +551,14 @@ class DroppedSpan(BaseSpan):
     def context(self):
         return None
 
+    @property
+    def outcome(self):
+        return "unknown"
+
+    @outcome.setter
+    def outcome(self, value):
+        return
+
 
 class Tracer(object):
     def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent):
@@ -541,11 +588,24 @@ class Tracer(object):
         """
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
+            sample_rate = trace_parent.tracestate_dict.get(constants.TRACESTATE.SAMPLE_RATE)
         else:
             is_sampled = (
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
             )
-        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start)
+            if not is_sampled:
+                sample_rate = "0"
+            else:
+                sample_rate = str(self.config.transaction_sample_rate)
+
+        transaction = Transaction(
+            self,
+            transaction_type,
+            trace_parent=trace_parent,
+            is_sampled=is_sampled,
+            start=start,
+            sample_rate=sample_rate,
+        )
         if trace_parent is None:
             transaction.trace_parent = TraceParent(
                 constants.TRACE_CONTEXT_VERSION,
@@ -553,6 +613,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
+            transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
         execution_context.set_transaction(transaction)
         return transaction
 
@@ -663,7 +724,8 @@ class capture_span(object):
 
         if transaction and transaction.is_sampled:
             try:
-                span = transaction.end_span(self.skip_frames, duration=self.duration)
+                outcome = "failure" if exc_val else "success"
+                span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
                 if exc_val and not isinstance(span, DroppedSpan):
                     try:
                         exc_val._elastic_apm_span_id = span.id
@@ -701,6 +763,13 @@ def tag(**tags):
 
 
 def set_transaction_name(name, override=True):
+    """
+    Sets the name of the transaction
+
+    :param name: the name of the transaction
+    :param override: if set to False, the name is only set if no name has been set before
+    :return: None
+    """
     transaction = execution_context.get_transaction()
     if not transaction:
         return
@@ -709,11 +778,53 @@ def set_transaction_name(name, override=True):
 
 
 def set_transaction_result(result, override=True):
+    """
+    Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
+    HTTP requests, or "success"/"fail" for background tasks.
+
+    :param name: the name of the transaction
+    :param override: if set to False, the name is only set if no name has been set before
+    :return: None
+    """
+
     transaction = execution_context.get_transaction()
     if not transaction:
         return
     if transaction.result is None or override:
         transaction.result = result
+
+
+def set_transaction_outcome(outcome=None, http_status_code=None, override=True):
+    """
+    Set the outcome of the transaction. This should only be done at the end of a transaction
+    after the outcome is determined.
+
+    If an invalid outcome is provided, an INFO level log message will be issued.
+
+    :param outcome: the outcome of the transaction. Allowed values are "success", "failure", "unknown". None is
+                    allowed if a http_status_code is provided.
+    :param http_status_code: An integer value of the HTTP status code. If provided, the outcome will be determined
+                             based on the status code: Success if the status is lower than 500, failure otherwise.
+                             If both a valid outcome and an http_status_code is provided, the former is used
+    :param override: If set to False, the outcome will only be updated if its current value is None
+
+    :return: None
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction:
+        return
+    if http_status_code and outcome not in constants.OUTCOME:
+        try:
+            http_status_code = int(http_status_code)
+            outcome = constants.OUTCOME.SUCCESS if http_status_code < 500 else constants.OUTCOME.FAILURE
+        except ValueError:
+            logger.info('Invalid HTTP status %r provided, outcome set to "unknown"', http_status_code)
+            outcome = constants.OUTCOME.UNKNOWN
+    elif outcome not in constants.OUTCOME:
+        logger.info('Invalid outcome %r provided, outcome set to "unknown"', outcome)
+        outcome = constants.OUTCOME.UNKNOWN
+    if outcome and (transaction.outcome is None or override):
+        transaction.outcome = outcome
 
 
 def get_transaction_id():

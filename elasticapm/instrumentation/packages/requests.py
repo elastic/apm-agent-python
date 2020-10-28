@@ -55,5 +55,11 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
             span_subtype="http",
             extra={"http": {"url": url}, "destination": destination},
             leaf=True,
-        ):
-            return wrapped(*args, **kwargs)
+        ) as span:
+            response = wrapped(*args, **kwargs)
+            # requests.Response objects are falsy if status code > 400, so we have to check for None instead
+            if response is not None:
+                if span.context:
+                    span.context["http"]["status_code"] = response.status_code
+                span.set_success() if response.status_code < 400 else span.set_failure()
+            return response

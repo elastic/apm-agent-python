@@ -309,6 +309,7 @@ def test_send(sending_elasticapm_client):
     # assert 250 < request.content_length < 400
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
 def test_send_not_enabled(sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send
@@ -489,6 +490,7 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
     for transaction in transactions:
         assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
         assert transaction["sampled"] or not "context" in transaction
+        assert transaction["sample_rate"] == 0 if not transaction["sampled"] else transaction["sample_rate"] == 0.4
 
 
 def test_transaction_sample_rate_dynamic(elasticapm_client, not_so_random):
@@ -727,6 +729,30 @@ def test_trace_parent(elasticapm_client):
     data = transaction.to_dict()
     assert data["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert data["parent_id"] == "b7ad6b7169203331"
+
+
+def test_sample_rate_in_dict(elasticapm_client):
+    trace_parent = TraceParent.from_string(
+        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", tracestate_string="es=s:0.43"
+    )
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    with elasticapm.capture_span("x"):
+        pass
+    transaction = elasticapm_client.end_transaction("test", "OK")
+    data = transaction.to_dict()
+    assert data["sample_rate"] == 0.43
+    assert elasticapm_client.events[SPAN][0]["sample_rate"] == 0.43
+
+
+def test_sample_rate_undefined_by_parent(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    with elasticapm.capture_span("x"):
+        pass
+    transaction = elasticapm_client.end_transaction("test", "OK")
+    data = transaction.to_dict()
+    assert "sample_rate" not in data
+    assert "sample_rate" not in elasticapm_client.events[SPAN][0]
 
 
 def test_trace_parent_not_set(elasticapm_client):

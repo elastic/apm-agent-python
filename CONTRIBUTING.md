@@ -7,8 +7,8 @@ from writing tutorials or blog posts,
 improving the documentation,
 submitting bug reports and feature requests or writing code.
 
-You can get in touch with us through [Discuss](https://discuss.elastic.co/c/apm),
-feedback and ideas are always welcome.
+You can get in touch with us through [Discuss](https://discuss.elastic.co/c/apm).
+Feedback and ideas are always welcome.
 
 Please note that this repository is covered by the [Elastic Community Code of Conduct](https://www.elastic.co/community/codeofconduct).
 
@@ -42,7 +42,7 @@ Once your changes are ready to submit for review:
      * [flake8](http://flake8.pycqa.org/en/latest/)
      * License header check via custom script
 
-    The easiest way to make sure your pull request adheres to the the code style
+    The easiest way to make sure your pull request adheres to the code style
     is to install [pre-commit](https://pre-commit.com/).
 
         pip install pre-commit # or "brew install pre-commit" if you use Homebrew
@@ -52,18 +52,15 @@ Once your changes are ready to submit for review:
 1. Test your changes
 
     Run the test suite to make sure that nothing is broken.
-    See [testing](#testing) for details.
+    See [testing](#testing) for details. (Note, only unit tests are expected
+    to be run before submitting a PR.)
 
 1. Rebase your changes
 
     Update your local repository with the most recent code from the main repo,
     and rebase your branch on top of the latest master branch.
-    We prefer your initial changes to be squashed into a single commit.
-    Later,
-    if we ask you to make changes,
-    add them as separate commits.
-    This makes them easier to review.
-    As a final step before merging we will either ask you to squash all commits yourself or we'll do it for you.
+    When we merge your PR, we will squash all of your commits into a single
+    commit on the master branch.
 
 1. Submit a pull request
 
@@ -82,17 +79,23 @@ Once your changes are ready to submit for review:
 
 ### Testing
 
-To run the full test suite,
+To run local unit tests, you can install the relevant
+[requirements files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
+and then run `make test` from the project root:
+
+    pip install -r tests/requirements/reqs-flask-1.1.txt
+    make update-json-schema
+    make test
+
+Pytest will automatically discover all the tests and skip the ones for which
+dependencies are not met. Note that `make update-json-schema` should only need
+to be run once.
+
+If you want to go above and beyond and run the full test suite,
 you need to install several databases (Elasticsearch, PostgreSQL, MySQL, Cassandra, Redis).
 This can be quite a hassle, so we recommend to use our dockerized test setup.
 See [Running tests](https://www.elastic.co/guide/en/apm/agent/python/master/run-tests-locally.html) for detailed instructions.
 
-However, for running local unit tests, you can install the relevant
-[requirements files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
-and then run `py.test` from the project root.
-
-Pytest will automatically discover all the tests and skip the ones for which
-dependencies are not met.
 
 #### Pytest
 
