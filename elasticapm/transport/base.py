@@ -45,13 +45,6 @@ from elasticapm.utils.threading import ThreadManager
 logger = get_logger("elasticapm.transport")
 
 
-class TransportException(Exception):
-    def __init__(self, message, data=None, print_trace=True):
-        super(TransportException, self).__init__(message)
-        self.data = data
-        self.print_trace = print_trace
-
-
 class Transport(ThreadManager):
     """
     All transport implementations need to subclass this class
@@ -64,7 +57,6 @@ class Transport(ThreadManager):
     def __init__(
         self,
         client,
-        metadata=None,
         compress_level=5,
         json_serializer=json_encoder.dumps,
         queue_chill_count=500,
@@ -75,14 +67,13 @@ class Transport(ThreadManager):
         """
         Create a new Transport instance
 
-        :param metadata: Metadata object to prepend to every queue
         :param compress_level: GZip compress level. If zero, no GZip compression will be used
         :param json_serializer: serializer to use for JSON encoding
         :param kwargs:
         """
         self.client = client
         self.state = TransportState()
-        self._metadata = metadata if metadata is not None else {}
+        self._metadata = None
         self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
         self._queued_data = None
@@ -114,6 +105,10 @@ class Transport(ThreadManager):
             logger.debug("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
+        # Rebuild the metadata to capture new process information
+        if self.client:
+            self._metadata = self.client.build_metadata()
+
         buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
@@ -132,7 +127,13 @@ class Transport(ThreadManager):
 
             if event_type == "close":
                 if buffer_written:
-                    self._flush(buffer)
+                    try:
+                        self._flush(buffer)
+                    except Exception as exc:
+                        logger.error(
+                            "Exception occurred while flushing the buffer "
+                            "before closing the transport connection: {0}".format(exc)
+                        )
                 self._flushed.set()
                 return  # time to go home!
 
@@ -175,7 +176,7 @@ class Transport(ThreadManager):
         # Run the data through processors
         for processor in self._processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
+                data = processor(self.client, data)
                 if not data:
                     logger.debug(
                         "Dropped event of type %s due to processor %s.%s",
@@ -257,7 +258,7 @@ class Transport(ThreadManager):
         self._closed = True
         self.queue("close", None)
         if not self._flushed.wait(timeout=self._max_flush_time):
-            raise ValueError("close timed out")
+            logger.error("Closing the transport connection timed out.")
 
     stop_thread = close
 

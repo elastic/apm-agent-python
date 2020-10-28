@@ -18,6 +18,18 @@ endif::[]
 ===== Bug fixes
 ////
 
+//=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+//[float]
+//===== Features
+//
+//
+//[float]
+//===== Bug fixes
+//
+
 === Unreleased
 
 // Unreleased changes go here
@@ -25,11 +37,78 @@ endif::[]
 [float]
 ===== Features
 
- * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
+ * Implement "sample_rate" property for transactions and spans, and propagate through tracestate {pull}891[#891]
+ * Add support for callbacks on config changes {pull}912[#912]
+
+[float]
+===== Bug fixes
+
+* Fix to collect the whole query body in `elasticsearch-py` {pull}940[#940]
 
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
+
+[[release-notes-5.9.0]]
+==== v5.9.0
+
+[float]
+===== Features
+
+ * Add instrumentation support for https://github.com/encode/httpx[`httpx`] and https://github.com/encode/httpcore[`httpcore`] {pull}898[#898]
+ * Implement "outcome" property for transactions and spans {pull}899[#899]
+ * Add support for `asyncpg` {pull}889[#889]
+
+[float]
+===== Bug fixes
+
+* Fix validation of config to properly require `required` config items. {pull}927[#927]
+
+[[release-notes-5.8.1]]
+==== v5.8.1
+
+[float]
+===== Bug fixes
+
+* Updated CLOUD_PROVIDER config to allow for new options defined in https://github.com/elastic/apm/issues/289[#289] {pull}878[#878]
+* Fixed a bug in AWS metadata collection on docker containers in AWS Elastic Beanstalk {pull}884[#884]
+* Fixed a bug in local variable serialization that could occur in multi-threaded applications {pull}885[#885]
+
+[[release-notes-5.8.0]]
+==== v5.8.0
+
+[float]
+===== Features
+
+* Added graphql (graphene) support {pull}850[#850]
+* Collect cloud provider metadata {pull}826[#826]
+* Added `sanitize_field_names` config {pull}860[#860]
+
+[float]
+===== Bug fixes
+
+* Fix header fetching for ASGI implementations {pull}856[#856]
+
+
+[[release-notes-5.7.0]]
+==== v5.7.0
+
+[float]
+===== Features
+
+ * capture number of affected rows for INSERT/UPDATE/DELETE SQL queries {pull}614[#614]
+ * Added instrumentation for AsyncElasticsearch {pull}843[#843]
+
+[float]
+===== Bug fixes
+
+* Added error handling around frame processing in Django {pull}837[#837]
+* Limit SQL queries in context data to 10000 characters {pull}842[#842]
+* Omit the "sync" property on spans by default {pull}854[#854]
+* Update the pid/ppid in transport metadata when they change {pull}825[#825]
+* Added better error handling around closing the transport {pull}838[#838]
+* Fixed an issue with the django admin command not detecting misconfigured server urls {pull}855[#855]
+
 
 [[release-notes-5.6.0]]
 ==== v5.6.0

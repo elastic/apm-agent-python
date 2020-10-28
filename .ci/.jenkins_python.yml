@@ -4,5 +4,6 @@ PYTHON_VERSION:
   - python-3.6
   - python-3.7
   - python-3.8
+  - python-3.9-rc
   - pypy-2
   - pypy-3

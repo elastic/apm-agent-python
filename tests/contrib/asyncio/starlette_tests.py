@@ -86,6 +86,7 @@ def test_get(app, elasticapm_client):
 
     assert transaction["name"] == "GET /"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
@@ -119,6 +120,7 @@ def test_post(app, elasticapm_client):
 
     assert transaction["name"] == "POST /"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
@@ -149,6 +151,7 @@ def test_exception(app, elasticapm_client):
 
     assert transaction["name"] == "GET /raise-exception"
     assert transaction["result"] == "HTTP 5xx"
+    assert transaction["outcome"] == "failure"
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"

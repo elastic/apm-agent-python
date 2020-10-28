@@ -37,9 +37,9 @@ To initialize the agent for your application using environment variables:
 from starlette.applications import Starlette
 from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
 
-elasticapm = make_apm_client()
+apm = make_apm_client()
 app = Starlette()
-app.add_middleware(ElasticAPM, client=elasticapm)
+app.add_middleware(ElasticAPM, client=apm)
 ----
 
 To configure the agent using initialization arguments:
@@ -49,12 +49,12 @@ To configure the agent using initialization arguments:
 from starlette.applications import Starlette
 from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
 
-elasticapm = make_apm_client({
+apm = make_apm_client({
     'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
 })
 app = Starlette()
-app.add_middleware(ElasticAPM, client=elasticapm)
+app.add_middleware(ElasticAPM, client=apm)
 ----
 
 [float]
@@ -69,9 +69,9 @@ is almost exactly the same as with Starlette:
 from fastapi import FastAPI
 from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
 
-elasticapm = make_apm_client()
+apm = make_apm_client()
 app = FastAPI()
-app.add_middleware(ElasticAPM, client=elasticapm)
+app.add_middleware(ElasticAPM, client=apm)
 ----
 
 [float]
@@ -123,7 +123,7 @@ list of regular expressions which are matched against the transaction name:
 
 [source,python]
 ----
-elasticapm = make_apm_client({
+apm = make_apm_client({
     # ...
     'TRANSACTIONS_IGNORE_PATTERNS': ['^GET /secret', '/extra_secret']
     # ...

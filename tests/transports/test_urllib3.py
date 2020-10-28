@@ -37,7 +37,7 @@ import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.conf import constants
-from elasticapm.transport.base import TransportException
+from elasticapm.transport.exceptions import TransportException
 from elasticapm.transport.http import Transport
 from elasticapm.utils import compat
 
@@ -47,6 +47,7 @@ except ImportError:
     from urllib import parse as urlparse
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
@@ -71,6 +72,7 @@ def test_timeout(mock_urlopen, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_http_error(waiting_httpserver, elasticapm_client):
     waiting_httpserver.serve_content(code=418, content="I'm a teapot")
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
@@ -129,6 +131,12 @@ def test_no_proxy_host():
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
+def test_no_proxy_all():
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
+        transport = Transport("http://localhost:9999", client=None)
+        assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
+
+
 def test_header_encodings(elasticapm_client):
     """
     Tests that headers are encoded as bytestrings. If they aren't,
@@ -152,6 +160,7 @@ def test_header_encodings(elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_verify_fails(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(waiting_httpsserver.url, client=elasticapm_client)
@@ -164,6 +173,7 @@ def test_ssl_verify_fails(waiting_httpsserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.filterwarnings("ignore:Unverified HTTPS")
 def test_ssl_verify_disable(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
@@ -176,6 +186,7 @@ def test_ssl_verify_disable(waiting_httpsserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_verify_disable_http(waiting_httpserver, elasticapm_client):
     """
     Make sure that ``assert_hostname`` isn't passed in for http requests, even
@@ -191,6 +202,7 @@ def test_ssl_verify_disable_http(waiting_httpserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning_http(waiting_httpserver, elasticapm_client):
     """
     Won't fail, as with the other cert pinning test, since certs aren't relevant
@@ -211,6 +223,7 @@ def test_ssl_cert_pinning_http(waiting_httpserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
     cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -228,6 +241,7 @@ def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
         transport.close()
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning_fails(waiting_httpsserver, elasticapm_client):
     if compat.PY3:
         waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})

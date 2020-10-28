@@ -40,6 +40,7 @@ import logging
 import os
 from copy import deepcopy
 
+import mock
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.redirects.models import Redirect
@@ -53,8 +54,6 @@ from django.http.cookie import SimpleCookie
 from django.test.client import Client as _TestClient
 from django.test.client import ClientHandler as _TestClientHandler
 from django.test.utils import override_settings
-
-import mock
 
 from elasticapm.base import Client
 from elasticapm.conf import constants
@@ -757,6 +756,28 @@ def test_transaction_metrics(django_elasticapm_client, client):
         assert transaction["duration"] > 0
         assert transaction["result"] == "HTTP 2xx"
         assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+        assert transaction["outcome"] == "success"
+
+
+def test_transaction_metrics_error(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 0
+        try:
+            client.get(reverse("elasticapm-http-error", args=(500,)))
+        except Exception:
+            pass
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+        transactions = django_elasticapm_client.events[TRANSACTION]
+
+        assert len(transactions) == 1
+        transaction = transactions[0]
+        assert transaction["duration"] > 0
+        assert transaction["result"] == "HTTP 5xx"
+        assert transaction["name"] == "GET tests.contrib.django.testapp.views.http_error"
+        assert transaction["outcome"] == "failure"
 
 
 def test_transaction_metrics_debug(django_elasticapm_client, client):
@@ -1291,6 +1312,20 @@ def test_test_exception(urlopen_mock):
     assert "Success! We tracked the error successfully!" in output
 
 
+@mock.patch("elasticapm.transport.http.Transport.send")
+def test_test_exception_fails(mock_send):
+    stdout = compat.StringIO()
+    mock_send.side_effect = Exception("boom")
+    with override_settings(
+        ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport", "SERVICE_NAME": "testapp"},
+        **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        call_command("elasticapm", "test", stdout=stdout, stderr=stdout)
+    output = stdout.getvalue()
+    assert "Oops" in output
+    assert "boom" in output
+
+
 def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
     with override_settings(
         **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
@@ -1526,3 +1561,33 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
         client.get("/no-error")
     transaction = django_elasticapm_client.events[TRANSACTION][0]
     assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+
+
+def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, client):
+    with override_settings(
+        TEMPLATES=[
+            {
+                "BACKEND": "django.template.backends.django.DjangoTemplates",
+                "DIRS": [BASE_TEMPLATE_DIR],
+                "OPTIONS": {
+                    "context_processors": [
+                        "django.contrib.auth.context_processors.auth",
+                        "elasticapm.contrib.django.context_processors.rum_tracing",
+                    ],
+                    "loaders": ["django.template.loaders.filesystem.Loader"],
+                    "debug": False,
+                },
+            }
+        ],
+        **middleware_setting(
+            django.VERSION,
+            [
+                "elasticapm.contrib.django.middleware.TracingMiddleware",
+                "tests.contrib.django.testapp.middleware.SetTransactionUnsampled",
+            ],
+        )
+    ):
+        client.get(reverse("elasticapm-no-error"))
+        transaction = django_elasticapm_client.events[TRANSACTION][0]
+        assert not transaction["sampled"]
+        assert transaction["outcome"] == "success"

@@ -62,11 +62,44 @@ async def test_http_get(instrument, event_loop, elasticapm_client, waiting_https
     assert span["subtype"] == "http"
     assert span["sync"] is False
     assert span["context"]["http"]["url"] == waiting_httpserver.url
+    assert span["context"]["http"]["status_code"] == 204
     assert spans[0]["context"]["destination"]["service"] == {
         "name": "http://127.0.0.1:%d" % waiting_httpserver.server_address[1],
         "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
         "type": "external",
     }
+    assert spans[0]["outcome"] == "success"
+
+
+@pytest.mark.parametrize("status_code", [400, 500])
+async def test_http_get_error(instrument, event_loop, elasticapm_client, waiting_httpserver, status_code):
+    assert event_loop.is_running()
+    elasticapm_client.begin_transaction("test")
+    waiting_httpserver.serve_content("", code=status_code)
+    url = waiting_httpserver.url
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(waiting_httpserver.url) as resp:
+            status = resp.status
+            text = await resp.text()
+
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "GET %s:%s" % waiting_httpserver.server_address
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
+    assert span["sync"] is False
+    assert span["context"]["http"]["url"] == waiting_httpserver.url
+    assert span["context"]["http"]["status_code"] == status_code
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % waiting_httpserver.server_address[1],
+        "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
+        "type": "external",
+    }
+    assert spans[0]["outcome"] == "failure"
 
 
 @pytest.mark.parametrize(
@@ -91,10 +124,14 @@ async def test_trace_parent_propagation_sampled(instrument, event_loop, elastica
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers
-    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     if elasticapm_client.config.use_elastic_traceparent_header:
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
@@ -124,11 +161,14 @@ async def test_trace_parent_propagation_sampled_headers_none(
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers
-    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     if sampled:
         assert trace_parent.span_id == spans[0]["id"]
     else:
+        assert trace_parent.tracestate_dict[constants.TRACESTATE.SAMPLE_RATE] == "0"
         assert trace_parent.span_id == transactions[0]["id"]
 
 
@@ -157,10 +197,14 @@ async def test_trace_parent_propagation_unsampled(instrument, event_loop, elasti
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers
-    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == transaction_object.id
     assert not trace_parent.trace_options.recorded
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     if elasticapm_client.config.use_elastic_traceparent_header:
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
