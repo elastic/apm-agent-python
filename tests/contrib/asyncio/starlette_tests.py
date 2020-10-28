@@ -55,6 +55,11 @@ def app(elasticapm_client):
             pass
         return PlainTextResponse("ok")
 
+    @app.route("/hi/{name}", methods=["GET"])
+    async def hi_name(request):
+        name = request.path_params["name"]
+        return PlainTextResponse("Hi {}".format(name))
+
     @app.route("/raise-exception", methods=["GET", "POST"])
     async def raise_exception(request):
         raise ValueError()
@@ -210,3 +215,23 @@ def test_capture_headers_body_is_dynamic(app, elasticapm_client):
     assert elasticapm_client.events[constants.TRANSACTION][2]["context"]["request"]["body"] == "[REDACTED]"
     assert "headers" not in elasticapm_client.events[constants.ERROR][1]["context"]["request"]
     assert elasticapm_client.events[constants.ERROR][1]["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_transaction_name_is_route(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.get(
+        "/hi/shay",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["name"] == "GET /hi/{name}"
+    assert transaction["context"]["request"]["url"]["pathname"] == "/hi/shay"
