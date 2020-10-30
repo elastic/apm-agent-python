@@ -837,6 +837,16 @@ def get_transaction_id():
     return transaction.id
 
 
+def get_trace_parent_header():
+    """
+    Return the trace parent header for the current transaction.
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction or not transaction.trace_parent:
+        return
+    return transaction.trace_parent.to_string()
+
+
 def get_trace_id():
     """
     Returns the current trace ID
