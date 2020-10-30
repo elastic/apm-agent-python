@@ -192,9 +192,7 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
                 if result.timestamp_type == 0:
                     current_time_millis = int(round(time.time() * 1000))
                     age = current_time_millis - result.timestamp
-                    transaction.context = {
-                        "message": {"age": {"ms": age}, "queue": {"name": topic}}
-                    }
+                    transaction.context = {"message": {"age": {"ms": age}, "queue": {"name": topic}}}
                 if new_trace_id:
                     transaction.trace_parent = TraceParent.from_string(new_trace_id)
                 t_name = "Kafka record from " + topic
