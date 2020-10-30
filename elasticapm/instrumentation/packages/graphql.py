@@ -91,10 +91,15 @@ class GraphQLBackendInstrumentation(AbstractInstrumentedModule):
     ]
 
     def get_graphql_tx_name(self, graphql_doc):
-        op_def = [i for i in graphql_doc.definitions if type(i).__name__ == "OperationDefinition"][0]
+        try:
+            op_def = [i for i in graphql_doc.definitions if type(i).__name__ == "OperationDefinition"][0]
+        except KeyError:
+            return "GraphQL unknown operation"
+
         op = op_def.operation
+        name = op_def.name
         fields = op_def.selection_set.selections
-        return "GraphQL %s %s" % (op.upper(), "+".join([f.name.value for f in fields]))
+        return "GraphQL %s %s" % (op.upper(), name if name else "+".join([f.name.value for f in fields]))
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         graphql_document = wrapped(*args, **kwargs)
