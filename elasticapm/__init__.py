@@ -37,6 +37,7 @@ from elasticapm.traces import (  # noqa: F401
     get_span_id,
     get_trace_id,
     get_transaction_id,
+    get_trace_parent_header,
     label,
     set_context,
     set_custom_context,
