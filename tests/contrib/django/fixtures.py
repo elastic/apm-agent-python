@@ -28,9 +28,8 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from django.apps import apps
-
 import pytest
+from django.apps import apps
 
 from elasticapm.conf.constants import SPAN
 from elasticapm.contrib.django.apps import instrument, register_handlers

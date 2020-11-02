@@ -91,6 +91,9 @@ def pytest_configure(config):
             ELASTIC_APM={
                 "METRICS_INTERVAL": "0ms",
                 "TRANSPORT_CLASS": "tests.fixtures.DummyTransport",
+                "SERVICE_NAME": "testapp",
+                "CENTRAL_CONFIG": False,
+                "CLOUD_PROVIDER": False,
             },  # avoid autostarting the metrics collector thread
         )
         settings_dict.update(

@@ -320,15 +320,15 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
 @pytest.mark.integrationtest
 def test_search_body(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
+        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola", "userid": 1}, refresh=True
     )
     elasticapm_client.begin_transaction("test")
-    search_query = {"query": {"term": {"user": "kimchy"}}}
+    search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}
     result = elasticsearch.search(body=search_query, params=None)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
-    assert result["hits"]["hits"][0]["_source"] == {"user": "kimchy", "text": "hola"}
+    assert result["hits"]["hits"][0]["_source"] == {"user": "kimchy", "text": "hola", "userid": 1}
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
     span = spans[0]
@@ -338,7 +338,10 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
+    assert (
+        span["context"]["db"]["statement"] == '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
+        or span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
+    )
 
 
 @pytest.mark.integrationtest
@@ -390,7 +393,7 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == 'q=text:hola\n\n{"term": {"user": "kimchy"}}'
+    assert span["context"]["db"]["statement"] == 'q=text:hola\n\n{"query": {"term": {"user": "kimchy"}}}'
 
 
 @pytest.mark.integrationtest
@@ -416,7 +419,7 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
+    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
 
 
 @pytest.mark.integrationtest
@@ -483,7 +486,7 @@ def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"term": {"user": "kimchy"}}'
+    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
 
 
 @pytest.mark.integrationtest

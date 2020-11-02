@@ -61,7 +61,10 @@ def varmap(func, var, context=None, name=None, **kwargs):
         return func(name, "<...>", **kwargs)
     context.add(objid)
     if isinstance(var, dict):
-        ret = func(name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var)), **kwargs)
+        # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
+        ret = func(
+            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
+        )
     elif isinstance(var, (list, tuple)):
         ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
     else:
@@ -139,7 +142,7 @@ def get_host_from_url(url):
 
 def url_to_destination(url, service_type="external"):
     parts = compat.urlparse.urlsplit(url)
-    hostname = parts.hostname
+    hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
     if "://[" in url:
         hostname = "[%s]" % hostname

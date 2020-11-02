@@ -135,7 +135,7 @@ When set to false, the agent will not collect any data, nor start any background
 [options="header"]
 |============
 | Environment             | Django/Flask   | Default
-| `ELASTIC_APM_RECORDING` | `RECORDING`    | `false`
+| `ELASTIC_APM_RECORDING` | `RECORDING`    | `true`
 |============
 
 Enable or disable recording of events.
@@ -674,6 +674,8 @@ WARNING: We recommend always including the default set of field names if you cus
 By default, the agent will sample every transaction (e.g. request to your service).
 To reduce overhead and storage requirements, you can set the sample rate to a value between `0.0` and `1.0`.
 We still record overall time and the result for unsampled transactions, but no context information, labels, or spans.
+
+NOTE: This setting will be automatically rounded to 4 decimals of precision.
 
 [float]
 [[config-include-paths]]

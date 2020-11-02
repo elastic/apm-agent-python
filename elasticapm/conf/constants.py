@@ -30,6 +30,7 @@
 
 import decimal
 import re
+from collections import namedtuple
 
 EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
@@ -69,9 +70,15 @@ BASE_SANITIZE_FIELD_NAMES = [
     "sessionid",
 ]
 
+OUTCOME = namedtuple("OUTCOME", ["SUCCESS", "FAILURE", "UNKNOWN"])(
+    SUCCESS="success", FAILURE="failure", UNKNOWN="unknown"
+)
+
 try:
     # Python 2
     LABEL_TYPES = (bool, int, long, float, decimal.Decimal)
 except NameError:
     # Python 3
     LABEL_TYPES = (bool, int, float, decimal.Decimal)
+
+TRACESTATE = namedtuple("TRACESTATE", ["SAMPLE_RATE"])(SAMPLE_RATE="s")

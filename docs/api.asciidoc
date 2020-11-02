@@ -174,6 +174,16 @@ client.begin_transaction('processors', trace_parent=parent)
 
  * `headers`: (*required*) HTTP headers formed as a dictionary.
 
+[float]
+[[api-traceparent-get-header]]
+===== `elasticapm.get_trace_parent_header()`
+
+Return the string representation of the current transaction TraceParent object:
+
+[source,python]
+----
+elasticapm.get_trace_parent_header()
+----
 
 [float]
 [[api-other]]
@@ -233,6 +243,55 @@ elasticapm.set_transaction_result('SUCCESS')
  * `result`: (*required*) A string describing the result of the transaction, e.g. `HTTP 2xx` or `SUCCESS`
  * `override`: if `True` (the default), overrides any previously set result.
     If `False`, only sets the result if the result hasn't already been set.
+
+[float]
+[[api-set-transaction-outcome]]
+==== `elasticapm.set_transaction_outcome()`
+
+Sets the outcome of the transaction. The value can either be `"success"`, `"failure"` or `"unknown"`.
+This should only be called at the end of a transaction after the outcome is determined.
+
+The `outcome` is used for error rate calculations.
+`success` denotes that a transaction has concluded successful, while `failure` indicates that the transaction failed
+to finish successfully.
+If the `outcome` is set to `unknown`, the transaction will not be included in error rate calculations.
+
+For supported web frameworks, the transaction outcome is set automatically if it has not been set yet, based on the
+HTTP status code.
+A status code below `500` is considered a `success`, while any value of `500` or higher is counted as a `failure`.
+
+If your transaction results in an HTTP response, you can alternatively provide the HTTP status code.
+
+NOTE: While the `outcome` and `result` field look very similar, they serve different purposes.
+      Other than the `result` field, which canhold an arbitrary string value,
+      `outcome` is limited to three different values,
+      `"success"`, `"failure"` and `"unknown"`.
+      This allows the APM app to perform error rate calculations on these values.
+
+Example:
+
+[source,python]
+----
+import elasticapm
+
+elasticapm.set_transaction_outcome("success")
+
+# Using an HTTP status code
+elasticapm.set_transaction_outcome(http_status_code=200)
+
+# Using predefined constants:
+
+from elasticapm.conf.constants import OUTCOME
+
+elasticapm.set_transaction_outcome(OUTCOME.SUCCESS)
+elasticapm.set_transaction_outcome(OUTCOME.FAILURE)
+elasticapm.set_transaction_outcome(OUTCOME.UNKNOWN)
+----
+
+ * `outcome`: One of `"success"`, `"failure"` or `"unknown"`. Can be omitted if `http_status_code` is provided.
+ * `http_status_code`: if the transaction represents an HTTP response, its status code can be provided to determine the `outcome` automatically.
+ * `override`: if `True` (the default), any previously set `outcome` will be overriden.
+               If `False`, the outcome will only be set if it was not set before.
 
 
 [float]

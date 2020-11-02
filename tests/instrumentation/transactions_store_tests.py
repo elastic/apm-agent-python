@@ -40,6 +40,7 @@ import elasticapm
 from elasticapm.conf import Config
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.utils.disttracing import TraceParent
 
 
 @pytest.fixture()
@@ -201,6 +202,59 @@ def test_leaf_tracing(tracer):
 
     signatures = {"root", "child1-leaf"}
     assert {t["name"] for t in spans} == signatures
+
+
+def test_get_trace_parent_header(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    transaction = elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    assert transaction.trace_parent.to_string() == elasticapm.get_trace_parent_header()
+
+
+def test_get_transaction_id(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    assert transaction.id == elasticapm.get_transaction_id()
+
+
+def test_get_trace_id(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    assert trace_parent.trace_id == elasticapm.get_trace_id()
+
+
+def test_set_transaction_result(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_result("success")
+    assert "success" == transaction.result
+
+
+def test_set_transaction_outcome(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("failure")
+    assert "failure" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_50X_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code=500)
+    assert "failure" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_20X_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code=200)
+    assert "success" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_unknown_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code="a")
+    assert "unknown" == transaction.outcome
+
+
+def test_set_unknown_transaction_outcome(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything")
+    assert "unknown" == transaction.outcome
 
 
 def test_get_transaction():

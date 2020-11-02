@@ -76,6 +76,7 @@ async def test_get(aiohttp_client, aioeapm):
 
     assert transaction["name"] == "GET /"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
@@ -99,6 +100,7 @@ async def test_exception(aiohttp_client, aioeapm):
 
     assert transaction["name"] == "GET /boom"
     assert transaction["result"] == "HTTP 5xx"
+    assert transaction["outcome"] == "failure"
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"

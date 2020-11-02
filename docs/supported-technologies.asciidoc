@@ -90,6 +90,21 @@ be supported.
 The Python APM agent comes with automatic instrumentation of various 3rd party modules and standard library modules.
 
 [float]
+[[automatic-instrumentation-scheduling]]
+=== Scheduling
+
+[float]
+[[automatic-instrumentation-scheduling-celery]]
+===== Celery
+
+We support these Celery versions:
+
+* 3.x
+* 4.x
+
+Celery tasks will be recorded automatically with Django and Flask only.
+
+[float]
 [[automatic-instrumentation-db]]
 === Databases
 
@@ -217,6 +232,22 @@ Collected trace data:
  * parametrized SQL query
 
 [float]
+[[automatic-instrumentation-db-asyncg]]
+==== asyncpg
+
+Library: `asyncpg` (`>=0.20`)
+
+Instrumented methods:
+
+ * `asyncpg.connection.Connection.execute`
+ * `asyncpg.connection.Connection.executemany`
+
+
+Collected trace data:
+
+ * parametrized SQL query
+
+[float]
 [[automatic-instrumentation-db-pyodbc]]
 ==== PyODBC
 
@@ -326,6 +357,74 @@ Collected trace data:
     * CQL query
 
 [float]
+[[automatic-instrumentation-db-python-memcache]]
+==== Python Memcache
+
+Library: `memcache` (`>=1.51`)
+
+Instrumented methods:
+
+* `memcache.Client.add`
+* `memcache.Client.append`
+* `memcache.Client.cas`
+* `memcache.Client.decr`
+* `memcache.Client.delete`
+* `memcache.Client.delete_multi`
+* `memcache.Client.disconnect_all`
+* `memcache.Client.flush_all`
+* `memcache.Client.get`
+* `memcache.Client.get_multi`
+* `memcache.Client.get_slabs`
+* `memcache.Client.get_stats`
+* `memcache.Client.gets`
+* `memcache.Client.incr`
+* `memcache.Client.prepend`
+* `memcache.Client.replace`
+* `memcache.Client.set`
+* `memcache.Client.set_multi`
+* `memcache.Client.touch`
+
+Collected trace data:
+
+* Destination (address and port)
+
+[float]
+[[automatic-instrumentation-db-pymemcache]]
+==== pymemcache
+
+Library: `pymemcache` (`>=3.0`)
+
+Instrumented methods:
+
+* `pymemcache.client.base.Client.add`
+* `pymemcache.client.base.Client.append`
+* `pymemcache.client.base.Client.cas`
+* `pymemcache.client.base.Client.decr`
+* `pymemcache.client.base.Client.delete`
+* `pymemcache.client.base.Client.delete_many`
+* `pymemcache.client.base.Client.delete_multi`
+* `pymemcache.client.base.Client.flush_all`
+* `pymemcache.client.base.Client.get`
+* `pymemcache.client.base.Client.get_many`
+* `pymemcache.client.base.Client.get_multi`
+* `pymemcache.client.base.Client.gets`
+* `pymemcache.client.base.Client.gets_many`
+* `pymemcache.client.base.Client.incr`
+* `pymemcache.client.base.Client.prepend`
+* `pymemcache.client.base.Client.quit`
+* `pymemcache.client.base.Client.replace`
+* `pymemcache.client.base.Client.set`
+* `pymemcache.client.base.Client.set_many`
+* `pymemcache.client.base.Client.set_multi`
+* `pymemcache.client.base.Client.stats`
+* `pymemcache.client.base.Client.touch`
+
+Collected trace data:
+
+* Destination (address and port)
+
+
+[float]
 [[automatic-instrumentation-http]]
 === External HTTP requests
 
@@ -373,6 +472,32 @@ Collected trace data:
 Instrumented methods:
 
  * `requests.sessions.Session.send`
+
+Collected trace data:
+
+ * HTTP method
+ * requested URL
+
+[float]
+[[automatic-instrumentation-aiohttp-client]]
+==== AIOHTTP Client
+
+Instrumented methods:
+
+ * `aiohttp.client.ClientSession._request`
+
+Collected trace data:
+
+ * HTTP method
+ * requested URL
+
+[float]
+[[automatic-instrumentation-httpx]]
+==== httpx
+
+Instrumented methods:
+
+ * `httpx.Client.send
 
 Collected trace data:
 
