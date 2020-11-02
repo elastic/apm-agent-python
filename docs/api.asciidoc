@@ -175,7 +175,7 @@ client.begin_transaction('processors', trace_parent=parent)
  * `headers`: (*required*) HTTP headers formed as a dictionary.
 
 [float]
-[[api-traceparent-from-headers]]
+[[api-traceparent-get-header]]
 ===== `elasticapm.get_trace_parent_header()`
 
 Return the string representation of the current transaction TraceParent object:
@@ -290,7 +290,7 @@ elasticapm.set_transaction_outcome(OUTCOME.UNKNOWN)
 
  * `outcome`: One of `"success"`, `"failure"` or `"unknown"`. Can be omitted if `http_status_code` is provided.
  * `http_status_code`: if the transaction represents an HTTP response, its status code can be provided to determine the `outcome` automatically.
- * `override`: if `True` (the default), any previously set `outcome` will be overriden. 
+ * `override`: if `True` (the default), any previously set `outcome` will be overriden.
                If `False`, the outcome will only be set if it was not set before.
 
 
