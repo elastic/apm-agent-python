@@ -36,7 +36,7 @@ CGROUP_PATH = "/proc/self/cgroup"
 SYSTEMD_SCOPE_SUFFIX = ".scope"
 
 kubepods_regexp = re.compile(
-    r"(?:^/kubepods[\S]*/pod([^/]+)$)|(?:^/kubepods\.slice/kubepods-[^/]+\.slice/kubepods-[^/]+-pod([^/]+)\.slice$)"
+    r"(?:^/kubepods[\S]*/pod([^/]+)$)|(?:^/kubepods\.slice/(kubepods-[^/]+\.slice/)?kubepods[^/]*-pod([^/]+)\.slice$)"
 )
 
 container_id_regexp = re.compile(
@@ -97,9 +97,9 @@ def parse_cgroups(filehandle):
                 container_id = container_id.split("-", 1)[1]
         kubepods_match = kubepods_regexp.match(directory)
         if kubepods_match:
-            pod_id = kubepods_match.group(1)
+            pod_id = kubepods_match.group(1)  # if first part of kubepods_regexp matched
             if not pod_id:
-                pod_id = kubepods_match.group(2)
+                pod_id = kubepods_match.group(3)  # if second part of kubepods_regexp matched
                 if pod_id:
                     pod_id = pod_id.replace("_", "-")
             return {"container": {"id": container_id}, "kubernetes": {"pod": {"uid": pod_id}}}
