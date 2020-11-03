@@ -46,10 +46,8 @@ __all__ = ("setup_logging", "Config")
 
 logger = get_logger("elasticapm.conf")
 
-logging.addLevelName(5, "TRACE")
-logging.TRACE = 5
 log_levels_map = {
-    "trace": logging.TRACE,
+    "trace": 5,
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "warning": logging.WARNING,
