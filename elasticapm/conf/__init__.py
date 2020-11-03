@@ -682,7 +682,7 @@ class VersionedConfig(ThreadManager):
                 logger.error("Error applying new configuration: %s", repr(errors))
             else:
                 logger.info(
-                    "Applied new configuration: %s",
+                    "Applied new remote configuration: %s",
                     "; ".join(
                         "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
                     ),
