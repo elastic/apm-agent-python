@@ -53,20 +53,20 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
 
         if "ResolveInfo" == type(query).__name__:
             if str(query.return_type) in [
-                    'Boolean',
-                    'Context',
-                    'Date',
-                    'DateTime',
-                    'Decimal',
-                    'Dynamic',
-                    'Float',
-                    'ID',
-                    'Int',
-                    'String',
-                    'Time',
-                    'UUID',
-                    'Boolean',
-                    'String'
+                "Boolean",
+                "Context",
+                "Date",
+                "DateTime",
+                "Decimal",
+                "Dynamic",
+                "Float",
+                "ID",
+                "Int",
+                "String",
+                "Time",
+                "UUID",
+                "Boolean",
+                "String",
             ]:
                 return wrapped(*args, **kwargs)
 
@@ -78,12 +78,7 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         else:
             info = str(query)
 
-        with capture_span(
-                "%s.%s" % (name, info),
-                span_type="external",
-                span_subtype="graphql",
-                span_action="query"
-        ):
+        with capture_span("%s.%s" % (name, info), span_type="external", span_subtype="graphql", span_action="query"):
             return wrapped(*args, **kwargs)
 
 
@@ -96,9 +91,15 @@ class GraphQLBackendInstrumentation(AbstractInstrumentedModule):
     ]
 
     def get_graphql_tx_name(self, graphql_doc):
-        op = graphql_doc.definitions[0].operation
-        fields = graphql_doc.definitions[0].selection_set.selections
-        return "GraphQL %s %s" % (op.upper(), "+".join([f.name.value for f in fields]))
+        try:
+            op_def = [i for i in graphql_doc.definitions if type(i).__name__ == "OperationDefinition"][0]
+        except KeyError:
+            return "GraphQL unknown operation"
+
+        op = op_def.operation
+        name = op_def.name
+        fields = op_def.selection_set.selections
+        return "GraphQL %s %s" % (op.upper(), name if name else "+".join([f.name.value for f in fields]))
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         graphql_document = wrapped(*args, **kwargs)
