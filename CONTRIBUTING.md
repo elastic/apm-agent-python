@@ -124,9 +124,9 @@ In this example, we will create an instrumentation for the "foo" database, by in
 
        pytestmark = [pytest.mark.foo, pytest.mark.integrationtest]
 
-1. make sure to use `pytest.importskip` to import any dependencies that are only required by your tests:
+1. make sure to use `pytest.importorskip` to import any dependencies that are only required by your tests:
 
-       foodriver = pytest.importskip("foodriver")
+       foodriver = pytest.importorskip("foodriver")
 
 1. Create one or more requirements files in `tests/requirements` that list the dependencies that are to be installed specifically for your tests:
    To only test the newest version of the library, create a file `tests/requirements/reqs-foo-newest.txt` and add something like this to it:
