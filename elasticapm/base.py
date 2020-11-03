@@ -197,6 +197,9 @@ class Client(object):
             self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
+        if self.config.use_elastic_excepthook:
+            self.original_excepthook = sys.excepthook
+            sys.excepthook = self._excepthook
         if config.enabled:
             self.start_threads()
 
@@ -558,6 +561,15 @@ class Client(object):
             exclude_paths_re=self.exclude_paths_re,
             locals_processor_func=locals_processor_func,
         )
+
+    def _excepthook(self):
+        exec_info = sys.exc_info()
+        try:
+            self.original_excepthook(*exec_info)
+        except Exception:
+            self.capture_exception(handled=False)
+        finally:
+            self.capture_exception(exec_info, handled=False)
 
     def load_processors(self):
         """
