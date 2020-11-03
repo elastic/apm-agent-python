@@ -35,6 +35,7 @@ import os
 import random
 import socket
 import sys
+import tempfile
 import time
 import zlib
 from collections import defaultdict
@@ -181,6 +182,31 @@ def elasticapm_client(request):
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
+    client = TempStoreClient(**client_config)
+    yield client
+    client.close()
+    # clear any execution context that might linger around
+    sys.excepthook = original_exceptionhook
+    execution_context.set_transaction(None)
+    execution_context.set_span(None)
+
+
+@pytest.fixture()
+def elasticapm_client_log_file(request):
+    original_exceptionhook = sys.excepthook
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("service_name", "myapp")
+    client_config.setdefault("secret_token", "test_key")
+    client_config.setdefault("central_config", "false")
+    client_config.setdefault("include_paths", ("*/tests/*",))
+    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("metrics_interval", "0ms")
+    client_config.setdefault("cloud_provider", False)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.close()
+    client_config["log_file"] = tmp.name
+
     client = TempStoreClient(**client_config)
     yield client
     client.close()

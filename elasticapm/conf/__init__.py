@@ -55,7 +55,7 @@ log_levels_map = {
     "critical": logging.CRITICAL,
     "off": 1000,
 }
-logging_set_up = False
+logfile_set_up = False
 
 
 class ConfigurationError(ValueError):
@@ -358,9 +358,9 @@ def _log_level_callback(dict_key, old_value, new_value, config_instance):
     elasticapm_logger = logging.getLogger("elasticapm")
     elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
 
-    global logging_set_up
-    if not logging_set_up and config_instance.log_file:
-        logging_set_up = True
+    global logfile_set_up
+    if not logfile_set_up and config_instance.log_file:
+        logfile_set_up = True
         filehandler = logging.handlers.RotatingFileHandler(
             config_instance.log_file, maxBytes=config_instance.log_file_size, backupCount=1
         )
