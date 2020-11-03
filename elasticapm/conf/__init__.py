@@ -176,7 +176,8 @@ class _ConfigValue(object):
                 raise ConfigurationError(
                     "Callback {} raised an exception when setting {} to {}: {}".format(
                         callback, self.dict_key, new_value, e
-                    )
+                    ),
+                    self.dict_key,
                 )
 
 
