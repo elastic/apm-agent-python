@@ -31,6 +31,8 @@
 import codecs
 import gzip
 import json
+import logging
+import logging.handlers
 import os
 import random
 import socket
@@ -212,6 +214,10 @@ def elasticapm_client_log_file(request):
     client.close()
 
     # delete our tmpfile
+    logger = logging.getLogger("elasticapm")
+    for handler in logger.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            handler.close()
     os.unlink(tmp.name)
 
     # clear any execution context that might linger around
