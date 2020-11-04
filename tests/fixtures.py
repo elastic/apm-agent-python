@@ -210,6 +210,10 @@ def elasticapm_client_log_file(request):
     client = TempStoreClient(**client_config)
     yield client
     client.close()
+
+    # delete our tmpfile
+    os.unlink(tmp.name)
+
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)

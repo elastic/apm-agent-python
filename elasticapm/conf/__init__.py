@@ -324,16 +324,16 @@ class FileIsReadableValidator(object):
         return value
 
 
-class ValidValuesValidator(object):
+class EnumerationValidator(object):
     """
     Validator which ensures that a given config value is chosen from a list
-    of valid options.
+    of valid string options.
     """
 
     def __init__(self, valid_values, case_sensitive=False):
         """
         valid_values
-            List of valid values for the config value
+            List of valid string values for the config value
         case_sensitive
             Whether to compare case when comparing a value to the valid list.
             Defaults to False (case-insensitive)
@@ -567,7 +567,7 @@ class Config(_ConfigBase):
     cloud_provider = _ConfigValue("CLOUD_PROVIDER", default=True)
     log_level = _ConfigValue(
         "LOG_LEVEL",
-        validators=[ValidValuesValidator(["trace", "debug", "info", "warning", "error", "critical", "off"])],
+        validators=[EnumerationValidator(["trace", "debug", "info", "warning", "error", "critical", "off"])],
         callbacks=[_log_level_callback],
         default="info",
     )

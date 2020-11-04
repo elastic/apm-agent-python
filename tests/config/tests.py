@@ -41,10 +41,10 @@ import pytest
 from elasticapm.conf import (
     Config,
     ConfigurationError,
+    EnumerationValidator,
     FileIsReadableValidator,
     PrecisionValidator,
     RegexValidator,
-    ValidValuesValidator,
     VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
@@ -398,7 +398,7 @@ def test_callback_reset():
 
 def test_valid_values_validator():
     # Case sensitive
-    v = ValidValuesValidator(["foo", "Bar", "baz"], case_sensitive=False)
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=False)
     assert v("foo", "foo") == "foo"
     assert v("bar", "foo") == "Bar"
     assert v("BAZ", "foo") == "baz"
@@ -406,7 +406,7 @@ def test_valid_values_validator():
         v("foobar", "foo")
 
     # Case insensitive
-    v = ValidValuesValidator(["foo", "Bar", "baz"], case_sensitive=True)
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=True)
     assert v("foo", "foo") == "foo"
     with pytest.raises(ConfigurationError):
         v("bar", "foo")
