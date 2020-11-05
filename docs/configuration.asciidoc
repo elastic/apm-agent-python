@@ -170,7 +170,7 @@ The transport class to use when sending events to the APM Server.
 [options="header"]
 |============
 | Environment             | Django/Flask | Default
-| `ELASTIC_APM_LOG_LEVEL` | `LOG_LEVEL`  | `"info"`
+| `ELASTIC_APM_LOG_LEVEL` | `LOG_LEVEL`  |
 |============
 
 The `logging.logLevel` at which the `elasticapm` logger will log. Available
@@ -189,7 +189,8 @@ Options are case-insensitive.
 Note that this option doesn't do anything with logging handlers. In order
 for any logs to be visible, you must either configure a handler
 (https://docs.python.org/3/library/logging.html#logging.basicConfig[`logging.basicConfig`]
-will do this for you) or set <<config-log_file>>.
+will do this for you) or set <<config-log_file>>. This will also override
+any log level your app has set for the `elasticapm` logger.
 
 [float]
 [[config-log_file]]

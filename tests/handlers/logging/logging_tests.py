@@ -363,7 +363,7 @@ def test_logging_handler_no_client(recwarn):
 @pytest.mark.parametrize(
     "elasticapm_client,expected",
     [
-        ({}, logging.INFO),
+        ({}, logging.NOTSET),
         ({"log_level": "off"}, 1000),
         ({"log_level": "trace"}, 5),
         ({"log_level": "debug"}, logging.DEBUG),

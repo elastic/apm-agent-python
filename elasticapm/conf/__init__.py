@@ -358,7 +358,8 @@ class EnumerationValidator(object):
 
 def _log_level_callback(dict_key, old_value, new_value, config_instance):
     elasticapm_logger = logging.getLogger("elasticapm")
-    elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
+    if new_value:
+        elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
 
     global logfile_set_up
     if not logfile_set_up and config_instance.log_file:
@@ -569,7 +570,7 @@ class Config(_ConfigBase):
         "LOG_LEVEL",
         validators=[EnumerationValidator(["trace", "debug", "info", "warning", "error", "critical", "off"])],
         callbacks=[_log_level_callback],
-        default="info",
+        default=None,
     )
     log_file = _ConfigValue("LOG_FILE", default="")
     log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
