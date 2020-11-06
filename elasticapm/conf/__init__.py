@@ -52,6 +52,7 @@ log_levels_map = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "warning": logging.WARNING,
+    "warn": logging.WARNING,
     "error": logging.ERROR,
     "critical": logging.CRITICAL,
     "off": 1000,
@@ -572,7 +573,7 @@ class Config(_ConfigBase):
     cloud_provider = _ConfigValue("CLOUD_PROVIDER", default=True)
     log_level = _ConfigValue(
         "LOG_LEVEL",
-        validators=[EnumerationValidator(["trace", "debug", "info", "warning", "error", "critical", "off"])],
+        validators=[EnumerationValidator(["trace", "debug", "info", "warning", "warn", "error", "critical", "off"])],
         callbacks=[_log_level_callback],
     )
     log_file = _ConfigValue("LOG_FILE", default="")
