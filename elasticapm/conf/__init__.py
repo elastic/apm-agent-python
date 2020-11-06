@@ -358,8 +358,7 @@ class EnumerationValidator(object):
 
 def _log_level_callback(dict_key, old_value, new_value, config_instance):
     elasticapm_logger = logging.getLogger("elasticapm")
-    if new_value:
-        elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
+    elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
 
     global logfile_set_up
     if not logfile_set_up and config_instance.log_file:
