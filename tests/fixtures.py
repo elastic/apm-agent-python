@@ -204,6 +204,7 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
+    client_config.setdefault("log_level", "warning")
 
     tmp = tempfile.NamedTemporaryFile(delete=False)
     tmp.close()

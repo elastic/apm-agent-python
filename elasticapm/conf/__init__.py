@@ -428,7 +428,12 @@ class _ConfigBase(object):
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
             # handle initial callbacks
-            if initial and config_value.callbacks_on_default and getattr(self, field) == config_value.default:
+            if (
+                initial
+                and config_value.callbacks_on_default
+                and getattr(self, field) is not None
+                and getattr(self, field) == config_value.default
+            ):
                 self.callbacks_queue.append((config_value.dict_key, self._NO_VALUE, config_value.default))
             # if a field has not been provided by any config source, we have to check separately if it is required
             if config_value.required and getattr(self, field) is None:
@@ -468,13 +473,13 @@ class _ConfigBase(object):
 
 class Config(_ConfigBase):
     service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
-    service_node_name = _ConfigValue("SERVICE_NODE_NAME", default=None)
-    environment = _ConfigValue("ENVIRONMENT", default=None)
+    service_node_name = _ConfigValue("SERVICE_NODE_NAME")
+    environment = _ConfigValue("ENVIRONMENT")
     secret_token = _ConfigValue("SECRET_TOKEN")
     api_key = _ConfigValue("API_KEY")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
-    server_cert = _ConfigValue("SERVER_CERT", default=None, validators=[FileIsReadableValidator()])
+    server_cert = _ConfigValue("SERVER_CERT", validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
@@ -552,9 +557,9 @@ class Config(_ConfigBase):
     autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)
     transactions_ignore_patterns = _ListConfigValue("TRANSACTIONS_IGNORE_PATTERNS", default=[])
     service_version = _ConfigValue("SERVICE_VERSION")
-    framework_name = _ConfigValue("FRAMEWORK_NAME", default=None)
-    framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
-    global_labels = _DictConfigValue("GLOBAL_LABELS", default=None)
+    framework_name = _ConfigValue("FRAMEWORK_NAME")
+    framework_version = _ConfigValue("FRAMEWORK_VERSION")
+    global_labels = _DictConfigValue("GLOBAL_LABELS")
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
     enabled = _BoolConfigValue("ENABLED", default=True)
     recording = _BoolConfigValue("RECORDING", default=True)
@@ -570,7 +575,6 @@ class Config(_ConfigBase):
         "LOG_LEVEL",
         validators=[EnumerationValidator(["trace", "debug", "info", "warning", "error", "critical", "off"])],
         callbacks=[_log_level_callback],
-        default=None,
     )
     log_file = _ConfigValue("LOG_FILE", default="")
     log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
