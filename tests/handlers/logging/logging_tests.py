@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import logging.handlers
 import sys
 import warnings
 from logging import LogRecord
@@ -357,3 +358,31 @@ def test_logging_handler_no_client(recwarn):
         w = recwarn.pop(PendingDeprecationWarning)
         if "LoggingHandler requires a Client instance" in w.message.args[0]:
             return True
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({}, logging.NOTSET),
+        ({"log_level": "off"}, 1000),
+        ({"log_level": "trace"}, 5),
+        ({"log_level": "debug"}, logging.DEBUG),
+        ({"log_level": "info"}, logging.INFO),
+        ({"log_level": "WARNING"}, logging.WARNING),
+        ({"log_level": "errOr"}, logging.ERROR),
+        ({"log_level": "CRITICAL"}, logging.CRITICAL),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_log_level_config(elasticapm_client, expected):
+    logger = logging.getLogger("elasticapm")
+    assert logger.level == expected
+
+
+def test_log_file(elasticapm_client_log_file):
+    logger = logging.getLogger("elasticapm")
+    found = False
+    for handler in logger.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            found = True
+    assert found

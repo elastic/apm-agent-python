@@ -733,7 +733,7 @@ class capture_span(object):
                         # could happen if the exception has __slots__
                         pass
             except LookupError:
-                logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
 def label(**labels):
