@@ -35,7 +35,7 @@ from collections import defaultdict
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
-from elasticapm.utils.encoding import force_text
+from elasticapm.utils.encoding import force_text, keyword_field
 from elasticapm.utils.stacks import get_lines_from_file
 
 SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
@@ -207,8 +207,12 @@ def sanitize_http_request_querystring(client, event):
             query_string, "&", "=", sanitize_field_names=client.config.sanitize_field_names
         )
         full_url = event["context"]["request"]["url"]["full"]
-        event["context"]["request"]["url"]["search"] = sanitized_query_string
-        event["context"]["request"]["url"]["full"] = full_url.replace(query_string, sanitized_query_string)
+        # we need to pipe the sanitized string through encoding.keyword_field to ensure that the maximum
+        # length of keyword fields is still ensured.
+        event["context"]["request"]["url"]["search"] = keyword_field(sanitized_query_string)
+        event["context"]["request"]["url"]["full"] = keyword_field(
+            full_url.replace(query_string, sanitized_query_string)
+        )
     return event
 
 
