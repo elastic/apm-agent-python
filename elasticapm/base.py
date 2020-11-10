@@ -539,7 +539,7 @@ class Client(object):
                     exc_name = "%s.%s" % (exc_module, exc_type)
                 else:
                     exc_name = exc_type
-                self.logger.info("Ignored %s exception due to exception type filter", exc_name)
+                self.logger.debug("Ignored %s exception due to exception type filter", exc_name)
                 return True
         return False
 

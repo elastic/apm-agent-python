@@ -73,7 +73,7 @@ class async_capture_span(capture_span):
                         # could happen if the exception has __slots__
                         pass
             except LookupError:
-                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                error_logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
 async def set_context(data, key="custom"):

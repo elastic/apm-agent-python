@@ -108,6 +108,65 @@ be used. For example, whenever a test has `elasticapm_client` as an argument,
 that is a fixture which is defined
 [here](https://github.com/elastic/apm-agent-python/blob/ed4ce5fd5db3cc091a54d3328384fbce62635bbb/tests/fixtures.py#L150).
 
+#### Adding new instrumentations to the matrix build
+
+For tests that require external dependencies like databases, or for testing different versions of the same library,
+we use a matrix build that leverages Docker and docker-compose.
+
+The setup requires a little bit of boilerplate to get started.
+In this example, we will create an instrumentation for the "foo" database, by instrumenting its Python driver, `foodriver`.
+
+1. mark your tests with a pytest marker that describes the new instrumentation at the top of your tests file:
+
+       pytestmark = pytest.mark.foo
+
+   `pytestmark` can also be a list if you need to define more than one mark (e.g. to mark tests as integration tests):
+
+       pytestmark = [pytest.mark.foo, pytest.mark.integrationtest]
+
+1. make sure to use `pytest.importorskip` to import any dependencies that are only required by your tests:
+
+       foodriver = pytest.importorskip("foodriver")
+
+1. Create one or more requirements files in `tests/requirements` that list the dependencies that are to be installed specifically for your tests:
+   To only test the newest version of the library, create a file `tests/requirements/reqs-foo-newest.txt` and add something like this to it:
+
+       foodriver
+       -r reqs-base.txt
+
+   This tells the matrix runner to install the newest version of `foodriver`, as well as the base requirements needed to run the test suite.
+   To test more than one version of the library, create additional `reqs-foo-X.Y.txt` files with specific versions of your instrumented package.
+
+1. Create a file called `foo.sh` in `tests/scripts/envs/foo.sh`.
+   Here you can define environment variables that are required to run your tests.
+   As a minimum, you'll have to set the `PYTEST_MARKER` variable to the same value you used above for the pytest marker, e.g.
+
+       export PYTEST_MARKER="-m foo"
+
+1. Add entries in `.ci/jenkins_framework.yml` (for pull requests) and `.ci/jenkins_framework_full.yml` (for nightly builds).
+   Generally, we only test the newest version of an instrumentation with every pull request:
+
+       - foo-newest
+
+   To test other versions in the nightly build, add them to `.ci/jenkins_framework_full.yml`.
+
+1. OPTIONAL: If you need a real service to test against (e.g. an actual foo database), add an entry in `tests/docker-compose.yml` under `services`:
+
+         foo:
+            image: foobase:latest
+
+   You'll also have to add a `DOCKER_DEPS` environment variable to `tests/scripts/envs/foo.sh` which tells the matrix
+   to spin up the given docker-compose service before running your tests.
+   You may also need to add things like hostname configuration here.
+
+       DOCKER_DEPS="foo"
+       FOO_CONNECTION_URL="http://foo:4711"
+
+1. OPTIONAL: If your instrumented package does not support all Python versions we test with, you can exclude certain combinations by adding them to `.ci/jenkins_exclude.yml`:
+
+       - PYTHON_VERSION: python-3.5  # foo doesn't support Python 3.5
+         FRAMEWORK: foo-newest
+
 ### Workflow
 
 All feature development and most bug fixes hit the master branch first.
