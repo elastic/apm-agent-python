@@ -77,11 +77,12 @@ PY3 = sys.version_info[0] == 3
 
 
 if PY2:
-    import StringIO
+    from urllib import getproxies_environment, proxy_bypass_environment  # noqa F401
+
     import Queue as queue  # noqa F401
+    import StringIO
     import urlparse  # noqa F401
     from urllib2 import HTTPError  # noqa F401
-    from urllib import proxy_bypass_environment, getproxies_environment  # noqa F401
 
     StringIO = BytesIO = StringIO.StringIO
 
@@ -113,7 +114,7 @@ else:
     import queue  # noqa F401
     from urllib import parse as urlparse  # noqa F401
     from urllib.error import HTTPError  # noqa F401
-    from urllib.request import proxy_bypass_environment, getproxies_environment  # noqa F401
+    from urllib.request import getproxies_environment, proxy_bypass_environment  # noqa F401
 
     StringIO = io.StringIO
     BytesIO = io.BytesIO

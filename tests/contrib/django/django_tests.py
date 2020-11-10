@@ -40,6 +40,7 @@ import logging
 import os
 from copy import deepcopy
 
+import mock
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.redirects.models import Redirect
@@ -53,8 +54,6 @@ from django.http.cookie import SimpleCookie
 from django.test.client import Client as _TestClient
 from django.test.client import ClientHandler as _TestClientHandler
 from django.test.utils import override_settings
-
-import mock
 
 from elasticapm.base import Client
 from elasticapm.conf import constants

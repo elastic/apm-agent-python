@@ -196,7 +196,8 @@ def test_collect_source_errors(elasticapm_client):
     library_frame_context = elasticapm_client.config.source_lines_error_library_frames
     in_app_frame_context = elasticapm_client.config.source_lines_error_app_frames
     try:
-        import json, datetime
+        import datetime
+        import json
 
         json.dumps(datetime.datetime.now())
     except TypeError:

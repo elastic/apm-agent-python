@@ -157,7 +157,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     if hasattr(middleware_class, "process_response"):
                         wrapt.wrap_function_wrapper(middleware_class, "process_response", process_response_wrapper)
                 except ImportError:
-                    client.logger.info("Can't instrument middleware %s", middleware_path)
+                    client.logger.warning("Can't instrument middleware %s", middleware_path)
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._elasticapm_view_func = view_func

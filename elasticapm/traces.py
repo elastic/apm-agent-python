@@ -141,7 +141,9 @@ class BaseSpan(object):
 
 
 class Transaction(BaseSpan):
-    def __init__(self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None):
+    def __init__(
+        self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_rate=None
+    ):
         self.id = "%016x" % random.getrandbits(64)
         self.trace_parent = trace_parent
         if start:
@@ -157,7 +159,8 @@ class Transaction(BaseSpan):
         self.dropped_spans = 0
         self.context = {}
 
-        self.is_sampled = is_sampled
+        self._is_sampled = is_sampled
+        self.sample_rate = sample_rate
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
@@ -325,6 +328,8 @@ class Transaction(BaseSpan):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self.sample_rate is not None:
+            result["sample_rate"] = float(self.sample_rate)
         if self.trace_parent:
             result["trace_id"] = self.trace_parent.trace_id
             # only set parent_id if this transaction isn't the root
@@ -339,6 +344,23 @@ class Transaction(BaseSpan):
         # TODO: and, if it has, exit without tracking.
         with self._span_timers_lock:
             self._span_timers[(span_type, span_subtype)].update(self_duration)
+
+    @property
+    def is_sampled(self):
+        return self._is_sampled
+
+    @is_sampled.setter
+    def is_sampled(self, is_sampled):
+        """
+        This should never be called in normal operation, but often is used
+        for testing. We just want to make sure our sample_rate comes out correctly
+        in tracestate if we set is_sampled to False.
+        """
+        self._is_sampled = is_sampled
+        if not is_sampled:
+            if self.sample_rate:
+                self.sample_rate = "0"
+                self.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, self.sample_rate)
 
 
 class Span(BaseSpan):
@@ -439,6 +461,8 @@ class Span(BaseSpan):
             "duration": self.duration * 1000,  # milliseconds
             "outcome": self.outcome,
         }
+        if self.transaction.sample_rate is not None:
+            result["sample_rate"] = float(self.transaction.sample_rate)
         if self.sync is not None:
             result["sync"] = self.sync
         if self.labels:
@@ -564,11 +588,24 @@ class Tracer(object):
         """
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
+            sample_rate = trace_parent.tracestate_dict.get(constants.TRACESTATE.SAMPLE_RATE)
         else:
             is_sampled = (
                 self.config.transaction_sample_rate == 1.0 or self.config.transaction_sample_rate > random.random()
             )
-        transaction = Transaction(self, transaction_type, trace_parent=trace_parent, is_sampled=is_sampled, start=start)
+            if not is_sampled:
+                sample_rate = "0"
+            else:
+                sample_rate = str(self.config.transaction_sample_rate)
+
+        transaction = Transaction(
+            self,
+            transaction_type,
+            trace_parent=trace_parent,
+            is_sampled=is_sampled,
+            start=start,
+            sample_rate=sample_rate,
+        )
         if trace_parent is None:
             transaction.trace_parent = TraceParent(
                 constants.TRACE_CONTEXT_VERSION,
@@ -576,6 +613,7 @@ class Tracer(object):
                 transaction.id,
                 TracingOptions(recorded=is_sampled),
             )
+            transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
         execution_context.set_transaction(transaction)
         return transaction
 
@@ -695,7 +733,7 @@ class capture_span(object):
                         # could happen if the exception has __slots__
                         pass
             except LookupError:
-                logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
 def label(**labels):
@@ -797,6 +835,16 @@ def get_transaction_id():
     if not transaction:
         return
     return transaction.id
+
+
+def get_trace_parent_header():
+    """
+    Return the trace parent header for the current transaction.
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction or not transaction.trace_parent:
+        return
+    return transaction.trace_parent.to_string()
 
 
 def get_trace_id():

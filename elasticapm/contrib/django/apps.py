@@ -98,7 +98,8 @@ class ElasticAPMConfig(AppConfig):
 
 
 def register_handlers(client):
-    from django.core.signals import got_request_exception, request_started, request_finished
+    from django.core.signals import got_request_exception, request_finished, request_started
+
     from elasticapm.contrib.django.handlers import exception_handler
 
     # Connect to Django's internal signal handlers
@@ -120,6 +121,7 @@ def register_handlers(client):
     # If we can import celery, register ourselves as exception handler
     try:
         import celery  # noqa F401
+
         from elasticapm.contrib.celery import register_exception_tracking
 
         try:
@@ -167,6 +169,7 @@ def instrument(client):
     instrument()
     try:
         import celery  # noqa F401
+
         from elasticapm.contrib.celery import register_instrumentation
 
         register_instrumentation(client)

@@ -135,7 +135,7 @@ When set to false, the agent will not collect any data, nor start any background
 [options="header"]
 |============
 | Environment             | Django/Flask   | Default
-| `ELASTIC_APM_RECORDING` | `RECORDING`    | `false`
+| `ELASTIC_APM_RECORDING` | `RECORDING`    | `true`
 |============
 
 Enable or disable recording of events.
@@ -157,6 +157,73 @@ but the agent will continue to poll the server for configuration changes.
 
 The transport class to use when sending events to the APM Server.
 
+[float]
+[[logging-options]]
+=== Logging Options
+
+[float]
+[[config-log_level]]
+==== `log_level`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment             | Django/Flask | Default
+| `ELASTIC_APM_LOG_LEVEL` | `LOG_LEVEL`  |
+|============
+
+The `logging.logLevel` at which the `elasticapm` logger will log. Available
+options are:
+
+* `"off"` (sets `logging.logLevel` to 1000)
+* `"critical"`
+* `"error"`
+* `"warning"`
+* `"info"`
+* `"debug"`
+* `"trace"` (sets `logging.log_level` to 5)
+
+Options are case-insensitive.
+
+Note that this option doesn't do anything with logging handlers. In order
+for any logs to be visible, you must either configure a handler
+(https://docs.python.org/3/library/logging.html#logging.basicConfig[`logging.basicConfig`]
+will do this for you) or set <<config-log_file>>. This will also override
+any log level your app has set for the `elasticapm` logger.
+
+[float]
+[[config-log_file]]
+==== `log_file`
+
+[options="header"]
+|============
+| Environment             | Django/Flask | Default | Example
+| `ELASTIC_APM_LOG_FILE` | `LOG_FILE`    | `""`    | `"/var/log/elasticapm/log.txt"`
+|============
+
+Enables the agent to log to a file. Disabled by default. The agent will log
+at the `logging.logLevel` configured with <<config-log_level>>. Use
+<<config-log_file_size>> to configure the max size of the log file. This log
+file will automatically rotate.
+
+Note that setting <<config-log_level>> is required for this setting to do
+anything.
+
+[float]
+[[config-log_file_size]]
+==== `log_file_size`
+
+[options="header"]
+|============
+| Environment                 | Django/Flask    | Default     | Example
+| `ELASTIC_APM_LOG_FILE_SIZE` | `LOG_FILE_SIZE` | `"50mb"`    | `"100mb"`
+|============
+
+The size of the log file, if <<config-log_file>> is set.
+
+The agent always keeps one backup file when rotating, so the max space that
+the log files will consume is twice the value of this setting.
 
 [float]
 [[other-options]]
@@ -674,6 +741,8 @@ WARNING: We recommend always including the default set of field names if you cus
 By default, the agent will sample every transaction (e.g. request to your service).
 To reduce overhead and storage requirements, you can set the sample rate to a value between `0.0` and `1.0`.
 We still record overall time and the result for unsampled transactions, but no context information, labels, or spans.
+
+NOTE: This setting will be automatically rounded to 4 decimals of precision.
 
 [float]
 [[config-include-paths]]

@@ -41,8 +41,11 @@ import pytest
 from elasticapm.conf import (
     Config,
     ConfigurationError,
+    EnumerationValidator,
     FileIsReadableValidator,
+    PrecisionValidator,
     RegexValidator,
+    VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
     _ConfigValue,
@@ -237,6 +240,16 @@ def test_duration_validation():
     assert "WRONG_PATTERN" in c.errors
 
 
+def test_precision_validation():
+    class MyConfig(_ConfigBase):
+        sample_rate = _ConfigValue("SR", type=float, validators=[PrecisionValidator(4, 0.0001)])
+
+    c = MyConfig({"SR": "0.0000001"})
+    assert c.sample_rate == 0.0001
+    c = MyConfig({"SR": "0.555555"})
+    assert c.sample_rate == 0.5556
+
+
 def test_chained_validators():
     class MyConfig(_ConfigBase):
         chained = _ConfigValue("CHAIN", validators=[lambda val, field: val.upper(), lambda val, field: val * 2])
@@ -315,3 +328,90 @@ def test_required_is_checked_if_field_not_provided():
     c = MyConfig({"this_one_is_required": 1})
     c.update({"this_one_isnt": 0})
     assert not c.errors
+
+
+def test_callback():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global])
+
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 1
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 2
+
+
+def test_callbacks_on_default():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 1
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 2
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 3
+
+    # Test without callback on default
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], callbacks_on_default=False, default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 3
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 4
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 5
+
+
+def test_callback_reset():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global])
+
+    c = VersionedConfig(MyConfig({"foo": "bar"}), version=None)
+    assert test_var["foo"] == 1
+    c.update(version=2, **{"foo": "baz"})
+    assert test_var["foo"] == 2
+    c.reset()
+    assert test_var["foo"] == 3
+
+
+def test_valid_values_validator():
+    # Case sensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=False)
+    assert v("foo", "foo") == "foo"
+    assert v("bar", "foo") == "Bar"
+    assert v("BAZ", "foo") == "baz"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
+
+    # Case insensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=True)
+    assert v("foo", "foo") == "foo"
+    with pytest.raises(ConfigurationError):
+        v("bar", "foo")
+    with pytest.raises(ConfigurationError):
+        v("BAZ", "foo")
+    assert v("Bar", "foo") == "Bar"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
