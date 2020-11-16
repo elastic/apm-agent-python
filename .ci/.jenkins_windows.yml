@@ -18,6 +18,6 @@ windows:
   - VERSION: "3.8"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-  - VERSION: "3.9"
-    WEBFRAMEWORK: "none"
-    ASYNCIO: "true"
+#  - VERSION: "3.9"  # waiting for https://github.com/giampaolo/psutil/issues/1850
+#    WEBFRAMEWORK: "none"
+#    ASYNCIO: "true"
