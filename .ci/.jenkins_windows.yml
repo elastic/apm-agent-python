@@ -6,9 +6,6 @@
 #
 
 windows:
-  - VERSION: "2.7"
-    WEBFRAMEWORK: "none"
-    ASYNCIO: "false"
   - VERSION: "3.5"
     WEBFRAMEWORK: "none"
     ASYNCIO: "false"
@@ -19,5 +16,8 @@ windows:
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
   - VERSION: "3.8"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
+  - VERSION: "3.9"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
