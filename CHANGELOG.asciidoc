@@ -39,11 +39,14 @@ endif::[]
 
  * Implement "sample_rate" property for transactions and spans, and propagate through tracestate {pull}891[#891]
  * Add support for callbacks on config changes {pull}912[#912]
+ * Override `sys.excepthook` to catch all exceptions {pull}943[#943]
+ * Implement `log_level` config (supports central config) {pull}946[#946]
 
 [float]
 ===== Bug fixes
 
 * Fix to collect the whole query body in `elasticsearch-py` {pull}940[#940]
+* Fix for GraphQL transaction naming {pull}881[#881]
 
 
 [[release-notes-5.x]]

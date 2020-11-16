@@ -77,6 +77,13 @@ from elasticapm.utils import cgroup, compat
                 "kubernetes": {"pod": {"uid": "5eadac96-ab58-11ea-b82b-0242ac110009"}},
             },
         ),
+        (
+            "9:freezer:/kubepods.slice/kubepods-pod22949dce_fd8b_11ea_8ede_98f2b32c645c.slice/docker-b15a5bdedd2e7645c3be271364324321b908314e4c77857bbfd32a041148c07f.scope",
+            {
+                "container": {"id": "b15a5bdedd2e7645c3be271364324321b908314e4c77857bbfd32a041148c07f"},
+                "kubernetes": {"pod": {"uid": "22949dce-fd8b-11ea-8ede-98f2b32c645c"}},
+            },
+        ),
     ],
 )
 def test_cgroup_parsing(test_input, expected):
