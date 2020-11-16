@@ -107,6 +107,7 @@ def get_current_url(environ, root_only=False, strip_querystring=False, host_only
     :param root_only: set `True` if you only want the root URL.
     :param strip_querystring: set to `True` if you don't want the querystring.
     :param host_only: set to `True` if the host URL should be returned.
+    :param path_only: set to `True` if only the path should be returned.
     """
     if path_only:
         tmp = []
