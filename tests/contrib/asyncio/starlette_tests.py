@@ -64,6 +64,14 @@ def app(elasticapm_client):
     async def raise_exception(request):
         raise ValueError()
 
+    @app.route("/with/slash/", methods=["GET", "POST"])
+    async def with_slash(request):
+        return PlainTextResponse("ok")
+
+    @app.route("/without/slash", methods=["GET", "POST"])
+    async def without_slash(request):
+        return PlainTextResponse("ok")
+
     app.add_middleware(ElasticAPM, client=elasticapm_client)
 
     return app
@@ -220,14 +228,7 @@ def test_capture_headers_body_is_dynamic(app, elasticapm_client):
 def test_transaction_name_is_route(app, elasticapm_client):
     client = TestClient(app)
 
-    response = client.get(
-        "/hi/shay",
-        headers={
-            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
-            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
-            "REMOTE_ADDR": "127.0.0.1",
-        },
-    )
+    response = client.get("/hi/shay")
 
     assert response.status_code == 200
 
@@ -235,3 +236,14 @@ def test_transaction_name_is_route(app, elasticapm_client):
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     assert transaction["name"] == "GET /hi/{name}"
     assert transaction["context"]["request"]["url"]["pathname"] == "/hi/shay"
+
+
+def test_trailing_slash_redirect_detection(app, elasticapm_client):
+    client = TestClient(app)
+    response1 = client.get("/with/slash", allow_redirects=False)
+    response2 = client.get("/without/slash/", allow_redirects=False)
+    assert response1.status_code == 307
+    assert response2.status_code == 307
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 2
+    for transaction in elasticapm_client.events[constants.TRANSACTION]:
+        assert transaction["name"] == "GET redirect trailing slashes"

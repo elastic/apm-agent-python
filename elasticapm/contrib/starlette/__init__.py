@@ -196,13 +196,27 @@ class ElasticAPM(BaseHTTPMiddleware):
         elasticapm.set_transaction_result(result, override=False)
 
     def get_route_name(self, request: Request) -> str:
-        path = None
-        routes = request.scope["app"].routes
+        route_name = None
+        app = request.app
+        scope = request.scope
+        routes = app.routes
+
         for route in routes:
-            match, _ = route.matches(request.scope)
+            match, _ = route.matches(scope)
             if match == Match.FULL:
-                path = route.path
+                route_name = route.path
                 break
-            elif match == Match.PARTIAL and path is None:
-                path = route.path
-        return path
+            elif match == Match.PARTIAL and route_name is None:
+                route_name = route.path
+        # Starlette magically redirects requests if the path matches a route name with a trailing slash
+        # appended or removed. To not spam the transaction names list, we do the same here and put these
+        # redirects all in the same "redirect trailing slashes" transaction name
+        if not route_name and app.router.redirect_slashes and scope["path"] != "/":
+            redirect_scope = dict(scope)
+            redirect_scope["path"] = scope["path"][:-1] if scope["path"].endswith("/") else scope["path"] + "/"
+            for route in routes:
+                match, _ = route.matches(redirect_scope)
+                if match != Match.NONE:
+                    route_name = "redirect trailing slashes"
+                    break
+        return route_name
