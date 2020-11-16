@@ -64,9 +64,9 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "span.json")
+ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "span.json")
 METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
 
 assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
