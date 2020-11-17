@@ -617,12 +617,6 @@ class Tracer(object):
         execution_context.set_transaction(transaction)
         return transaction
 
-    def _should_ignore(self, transaction_name):
-        for pattern in self._ignore_patterns:
-            if pattern.search(transaction_name):
-                return True
-        return False
-
     def end_transaction(self, result=None, transaction_name=None, duration=None):
         """
         End the current transaction and queue it for sending
@@ -642,6 +636,12 @@ class Tracer(object):
                 transaction.result = result
             self.queue_func(TRANSACTION, transaction.to_dict())
         return transaction
+
+    def _should_ignore(self, transaction_name):
+        for pattern in self._ignore_patterns:
+            if pattern.search(transaction_name):
+                return True
+        return False
 
 
 class capture_span(object):
