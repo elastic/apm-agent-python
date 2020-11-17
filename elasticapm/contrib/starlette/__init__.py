@@ -213,10 +213,15 @@ class ElasticAPM(BaseHTTPMiddleware):
         # redirects all in the same "redirect trailing slashes" transaction name
         if not route_name and app.router.redirect_slashes and scope["path"] != "/":
             redirect_scope = dict(scope)
-            redirect_scope["path"] = scope["path"][:-1] if scope["path"].endswith("/") else scope["path"] + "/"
+            if scope["path"].endswith("/"):
+                redirect_scope["path"] = scope["path"][:-1]
+                trim = True
+            else:
+                redirect_scope["path"] = scope["path"] + "/"
+                trim = False
             for route in routes:
                 match, _ = route.matches(redirect_scope)
                 if match != Match.NONE:
-                    route_name = "redirect trailing slashes"
+                    route_name = route.path + "/" if trim else route.path[:-1]
                     break
         return route_name
