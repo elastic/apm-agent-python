@@ -1591,3 +1591,14 @@ def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, cli
         transaction = django_elasticapm_client.events[TRANSACTION][0]
         assert not transaction["sampled"]
         assert transaction["outcome"] == "success"
+
+
+def test_django_ignore_transaction_urls(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/no-error")
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+        django_elasticapm_client.config.update(1, transaction_ignore_urls="/no*")
+        client.get("/no-error")
+    assert len(django_elasticapm_client.events[TRANSACTION]) == 1

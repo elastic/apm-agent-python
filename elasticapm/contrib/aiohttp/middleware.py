@@ -48,7 +48,8 @@ def tracing_middleware(app):
 
     async def handle_request(request, handler):
         elasticapm_client = app.get(CLIENT_KEY)
-        if elasticapm_client:
+        should_trace = elasticapm_client and not elasticapm_client.should_ignore_url(request.path)
+        if should_trace:
             request[CLIENT_KEY] = elasticapm_client
             trace_parent = AioHttpTraceParent.from_headers(request.headers)
             elasticapm_client.begin_transaction("request", trace_parent=trace_parent)
@@ -71,11 +72,13 @@ def tracing_middleware(app):
 
         try:
             response = await handler(request)
-            elasticapm.set_transaction_result("HTTP {}xx".format(response.status // 100), override=False)
-            elasticapm.set_transaction_outcome(http_status_code=response.status, override=False)
-            elasticapm.set_context(
-                lambda: get_data_from_response(response, elasticapm_client.config, constants.TRANSACTION), "response"
-            )
+            if should_trace:
+                elasticapm.set_transaction_result("HTTP {}xx".format(response.status // 100), override=False)
+                elasticapm.set_transaction_outcome(http_status_code=response.status, override=False)
+                elasticapm.set_context(
+                    lambda: get_data_from_response(response, elasticapm_client.config, constants.TRANSACTION),
+                    "response",
+                )
             return response
         except Exception as exc:
             if elasticapm_client:
