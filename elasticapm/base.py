@@ -583,6 +583,13 @@ class Client(object):
         # setdefault has the nice property that it returns the value that it just set on the dict
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
+    def should_ignore_url(self, url):
+        if self.config.transaction_ignore_urls:
+            for pattern in self.config.transaction_ignore_urls:
+                if pattern.match(url):
+                    return True
+        return False
+
     def check_python_version(self):
         v = tuple(map(int, platform.python_version_tuple()[:2]))
         if v == (2, 7):

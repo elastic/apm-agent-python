@@ -60,6 +60,12 @@ def app(elasticapm_client):
         name = request.path_params["name"]
         return PlainTextResponse("Hi {}".format(name))
 
+    @app.route("/hello", methods=["GET", "POST"])
+    async def hello(request):
+        with async_capture_span("test"):
+            pass
+        return PlainTextResponse("ok")
+
     @app.route("/raise-exception", methods=["GET", "POST"])
     async def raise_exception(request):
         raise ValueError()
@@ -223,6 +229,16 @@ def test_capture_headers_body_is_dynamic(app, elasticapm_client):
     assert elasticapm_client.events[constants.TRANSACTION][2]["context"]["request"]["body"] == "[REDACTED]"
     assert "headers" not in elasticapm_client.events[constants.ERROR][1]["context"]["request"]
     assert elasticapm_client.events[constants.ERROR][1]["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_starlette_transaction_ignore_urls(app, elasticapm_client):
+    client = TestClient(app)
+    response = client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ello,/world")
+    response = client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
 
 
 def test_transaction_name_is_route(app, elasticapm_client):

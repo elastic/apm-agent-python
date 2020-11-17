@@ -556,6 +556,7 @@ class Config(_ConfigBase):
     instrument_django_middleware = _BoolConfigValue("INSTRUMENT_DJANGO_MIDDLEWARE", default=True)
     autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)
     transactions_ignore_patterns = _ListConfigValue("TRANSACTIONS_IGNORE_PATTERNS", default=[])
+    transaction_ignore_urls = _ListConfigValue("TRANSACTION_IGNORE_URLS", type=starmatch_to_regex, default=[])
     service_version = _ConfigValue("SERVICE_VERSION")
     framework_name = _ConfigValue("FRAMEWORK_NAME")
     framework_version = _ConfigValue("FRAMEWORK_VERSION")
