@@ -86,17 +86,45 @@ Active:          7682276 kB
 Inactive:        5468500 kB
 """
 
+TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES = "9223372036854771712"
+TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED = "7964778496"
+TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES = "964778496"
+
+TEMPLATE_CGROUP_MEM_STAT = """pgmajfault 0
+inactive_anon 0
+active_anon 778702848
+inactive_file 10407936
+active_file 0
+unevictable 0
+hierarchical_memory_limit 1073741824
+hierarchical_memsw_limit 2147483648
+"""
+
 
 @pytest.mark.parametrize("proc_stat_template", [TEMPLATE_PROC_STAT_DEBIAN, TEMPLATE_PROC_STAT_RHEL])
 def test_cpu_mem_from_proc(elasticapm_client, proc_stat_template, tmpdir):
     proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
     proc_stat = os.path.join(tmpdir.strpath, "stat")
     proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+    cgroup_memory_limit = os.path.join(tmpdir.strpath, "memory", "memory.limit_in_bytes")
+    cgroup_memory_usage = os.path.join(tmpdir.strpath, "memory", "memory.usage_in_bytes")
+    proc_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    os.mkdir(os.path.join(tmpdir.strpath, "memory"))
+    proc_self_mount = os.path.join(tmpdir.strpath, "mountinfo")
 
     for path, content in (
         (proc_stat, proc_stat_template.format(user=0, idle=0)),
         (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
         (proc_meminfo, TEMPLATE_PROC_MEMINFO),
+        (cgroup_memory_limit, TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES),
+        (cgroup_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (proc_self_cgroup, "9:memory:/slice"),
+        (
+            proc_self_mount,
+            "39 30 0:35 / "
+            + tmpdir.strpath
+            + "/memory rw,nosuid,nodev,noexec,relatime shared:10 - cgroup cgroup rw,seclabel,memory\n",
+        ),
     ):
         with open(path, mode="w") as f:
             f.write(content)
@@ -105,6 +133,8 @@ def test_cpu_mem_from_proc(elasticapm_client, proc_stat_template, tmpdir):
         sys_stats_file=proc_stat,
         process_stats_file=proc_stat_self,
         memory_stats_file=proc_meminfo,
+        proc_self_cgroup=proc_self_cgroup,
+        mount_info=proc_self_mount,
     )
 
     for path, content in (
@@ -180,3 +210,193 @@ def test_cpu_usage_when_cpu_total_is_zero(elasticapm_client, tmpdir):
     cpu_total_expected = 0
     assert data["samples"]["system.cpu.total.norm.pct"]["value"] == cpu_total_expected
     assert data["samples"]["system.process.cpu.total.norm.pct"]["value"] == cpu_total_expected
+
+
+def test_mem_from_cgroup1(elasticapm_client, tmpdir):
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+    cgroup_memory_limit = os.path.join(tmpdir.strpath, "memory", "memory.limit_in_bytes")
+    cgroup_memory_usage = os.path.join(tmpdir.strpath, "memory", "memory.usage_in_bytes")
+    cgroup_memory_stat = os.path.join(tmpdir.strpath, "memory", "memory.stat")
+    proc_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    os.mkdir(os.path.join(tmpdir.strpath, "memory"))
+    proc_self_mount = os.path.join(tmpdir.strpath, "mountinfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO),
+        (cgroup_memory_limit, TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED),
+        (cgroup_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
+        (proc_self_cgroup, "9:memory:/slice"),
+        (
+            proc_self_mount,
+            "39 30 0:35 / "
+            + tmpdir.strpath
+            + "/memory rw,nosuid,nodev,noexec,relatime shared:10 - cgroup cgroup rw,seclabel,memory\n",
+        ),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(elasticapm_client),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+        proc_self_cgroup=proc_self_cgroup,
+        mount_info=proc_self_mount,
+    )
+
+    data = next(metricset.collect())
+
+    assert data["samples"]["system.memory.total"]["value"] == 16552841216
+    assert data["samples"]["system.memory.actual.free"]["value"] == 6670774272
+
+    assert data["samples"]["system.process.memory.rss.bytes"]["value"] == 47738880
+    assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
+
+    assert data["samples"]["system.process.cgroup.memory.mem.limit.bytes"]["value"] == 7964778496
+    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 954370560
+    assert data["samples"]["system.process.cgroup.memory.stats.inactive_file.bytes"]["value"] == 10407936
+
+
+def test_mem_from_cgroup2(elasticapm_client, tmpdir):
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+    cgroup2_memory_limit = os.path.join(tmpdir.strpath, "slice", "memory.max")
+    cgroup2_memory_usage = os.path.join(tmpdir.strpath, "slice", "memory.current")
+    cgroup2_memory_stat = os.path.join(tmpdir.strpath, "slice", "memory.stat")
+    cgroup2_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    proc_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    os.mkdir(os.path.join(tmpdir.strpath, "slice"))
+    proc_self_mount = os.path.join(tmpdir.strpath, "mountinfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO),
+        (cgroup2_memory_limit, TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED),
+        (cgroup2_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup2_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
+        (cgroup2_self_cgroup, "9:memory:/slice"),
+        (
+            proc_self_mount,
+            "30 23 0:26 / "
+            + tmpdir.strpath
+            + " rw,nosuid,nodev,noexec,relatime shared:4 - cgroup2 cgroup rw,seclabel\n",
+        ),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(elasticapm_client),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+        proc_self_cgroup=proc_self_cgroup,
+        mount_info=proc_self_mount,
+    )
+
+    data = next(metricset.collect())
+
+    assert data["samples"]["system.memory.total"]["value"] == 16552841216
+    assert data["samples"]["system.memory.actual.free"]["value"] == 6670774272
+
+    assert data["samples"]["system.process.memory.rss.bytes"]["value"] == 47738880
+    assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
+
+    assert data["samples"]["system.process.cgroup.memory.mem.limit.bytes"]["value"] == 7964778496
+    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 954370560
+    assert data["samples"]["system.process.cgroup.memory.stats.inactive_file.bytes"]["value"] == 10407936
+
+
+def test_mem_from_cgroup1_max_handling(elasticapm_client, tmpdir):
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+    cgroup_memory_limit = os.path.join(tmpdir.strpath, "memory", "memory.limit_in_bytes")
+    cgroup_memory_usage = os.path.join(tmpdir.strpath, "memory", "memory.usage_in_bytes")
+    cgroup_memory_stat = os.path.join(tmpdir.strpath, "memory", "memory.stat")
+    proc_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    os.mkdir(os.path.join(tmpdir.strpath, "memory"))
+    proc_self_mount = os.path.join(tmpdir.strpath, "mountinfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO),
+        (cgroup_memory_limit, str(0x7FFFFFFFFFFFF000)),
+        (cgroup_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
+        (proc_self_cgroup, "9:memory:/slice"),
+        (
+            proc_self_mount,
+            "39 30 0:35 / "
+            + tmpdir.strpath
+            + "/memory rw,nosuid,nodev,noexec,relatime shared:10 - cgroup cgroup rw,seclabel,memory\n",
+        ),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(elasticapm_client),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+        proc_self_cgroup=proc_self_cgroup,
+        mount_info=proc_self_mount,
+    )
+
+    data = next(metricset.collect())
+
+    assert "system.process.cgroup.memory.mem.limit.bytes" not in data["samples"]
+    assert "system.process.cgroup.memory.mem.usage.bytes" not in data["samples"]
+    assert "system.process.cgroup.memory.stats.inactive_file.bytes" not in data["samples"]
+
+
+def test_mem_from_cgroup2_max_handling(elasticapm_client, tmpdir):
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+    cgroup2_memory_limit = os.path.join(tmpdir.strpath, "slice", "memory.max")
+    cgroup2_memory_usage = os.path.join(tmpdir.strpath, "slice", "memory.current")
+    cgroup2_memory_stat = os.path.join(tmpdir.strpath, "slice", "memory.stat")
+    cgroup2_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    proc_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    os.mkdir(os.path.join(tmpdir.strpath, "slice"))
+    proc_self_mount = os.path.join(tmpdir.strpath, "mountinfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO),
+        (cgroup2_memory_limit, "max"),
+        (cgroup2_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup2_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
+        (cgroup2_self_cgroup, "9:memory:/slice"),
+        (
+            proc_self_mount,
+            "30 23 0:26 / "
+            + tmpdir.strpath
+            + " rw,nosuid,nodev,noexec,relatime shared:4 - cgroup2 cgroup rw,seclabel\n",
+        ),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(elasticapm_client),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+        proc_self_cgroup=proc_self_cgroup,
+        mount_info=proc_self_mount,
+    )
+
+    data = next(metricset.collect())
+
+    assert "system.process.cgroup.memory.mem.limit.bytes" not in data["samples"]
+    assert "system.process.cgroup.memory.mem.usage.bytes" not in data["samples"]
+    assert "system.process.cgroup.memory.stats.inactive_file.bytes" not in data["samples"]
