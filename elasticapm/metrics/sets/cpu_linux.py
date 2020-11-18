@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import os
 import re
 import resource
@@ -61,6 +62,8 @@ CGROUP_V2_MOUNT_POINT = re.compile(r"^\d+? \d+? .+? .+? (.*?) .*cgroup2.*cgroup.
 if not os.path.exists(SYS_STATS):
     raise ImportError("This metric set is only available on Linux")
 
+logger = logging.getLogger("elasticapm.metrics.cpu_linux")
+
 
 class CPUMetricSet(MetricsSet):
     def __init__(
@@ -80,7 +83,10 @@ class CPUMetricSet(MetricsSet):
         self.memory_stats_file = memory_stats_file
         self._sys_clock_ticks = os.sysconf("SC_CLK_TCK")
         with self._read_data_lock:
-            self.cgroup_files = self.get_cgroup_file_paths(proc_self_cgroup, mount_info)
+            try:
+                self.cgroup_files = self.get_cgroup_file_paths(proc_self_cgroup, mount_info)
+            except Exception:
+                logger.debug("Reading/Parsing of cgroup memory files failed, skipping cgroup metrics", exc_info=True)
             self.previous.update(self.read_process_stats())
             self.previous.update(self.read_system_stats())
         super(CPUMetricSet, self).__init__(registry)
@@ -93,8 +99,8 @@ class CPUMetricSet(MetricsSet):
         :param mount_info: path to "mountinfo" file, usually proc/self/mountinfo
         :return: a 3-tuple of memory info files, or None
         """
+        line_cgroup = None
         try:
-            line_cgroup = None
             with open(proc_self_cgroup, "r") as proc_self_cgroup_file:
                 for line in proc_self_cgroup_file:
                     if line_cgroup is None and line.startswith("0:"):
@@ -102,36 +108,42 @@ class CPUMetricSet(MetricsSet):
                     if MEMORY_CGROUP.match(line):
                         line_cgroup = line
                         break
-            if line_cgroup is not None:
-                with open(mount_info, "r") as mount_info_file:
-                    for line in mount_info_file:
-                        # cgroup v2
-                        matcher = CGROUP_V2_MOUNT_POINT.match(line)
-                        if matcher is not None:
-                            files = self._get_cgroup_v2_file_paths(line_cgroup, matcher.group(1))
-                            if files:
-                                return files
-                        # cgroup v1
-                        matcher = CGROUP_V1_MOUNT_POINT.match(line)
-                        if matcher is not None:
-                            files = self._get_cgroup_v1_file_paths(matcher.group(1))
-                            if files:
-                                return files
-                # discovery of cgroup path failed, try with default path
-                files = self._get_cgroup_v2_file_paths(line_cgroup, SYS_FS_CGROUP)
-                if files:
-                    return files
-                files = self._get_cgroup_v1_file_paths(os.path.join(SYS_FS_CGROUP, "memory"))
-                if files:
-                    return files
-        except Exception:
-            pass
-        return None
+        except IOError:
+            logger.debug("Cannot read %s, skipping cgroup metrics", proc_self_cgroup, exc_info=True)
+            return
+        if line_cgroup is None:
+            return
+        try:
+            with open(mount_info, "r") as mount_info_file:
+                for line in mount_info_file:
+                    # cgroup v2
+                    matcher = CGROUP_V2_MOUNT_POINT.match(line)
+                    if matcher is not None:
+                        files = self._get_cgroup_v2_file_paths(line_cgroup, matcher.group(1))
+                        if files:
+                            return files
+                    # cgroup v1
+                    matcher = CGROUP_V1_MOUNT_POINT.match(line)
+                    if matcher is not None:
+                        files = self._get_cgroup_v1_file_paths(matcher.group(1))
+                        if files:
+                            return files
+        except IOError:
+            logger.debug("Cannot read %s, skipping cgroup metrics", mount_info, exc_info=True)
+            return
+        # discovery of cgroup path failed, try with default path
+        files = self._get_cgroup_v2_file_paths(line_cgroup, SYS_FS_CGROUP)
+        if files:
+            return files
+        files = self._get_cgroup_v1_file_paths(os.path.join(SYS_FS_CGROUP, "memory"))
+        if files:
+            return files
+        logger.debug("Location of cgroup files failed, skipping cgroup metrics")
 
     def _get_cgroup_v2_file_paths(self, line_cgroup, mount_discovered):
+        line_split = line_cgroup.strip().split(":")
+        slice_path = line_split[-1][1:]
         try:
-            line_split = line_cgroup.strip().split(":")
-            slice_path = line_split[-1][1:]
             with open(os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_LIMIT), "r") as memfile:
                 line_mem = memfile.readline().strip()
                 if line_mem != "max":
@@ -140,9 +152,8 @@ class CPUMetricSet(MetricsSet):
                         os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_USAGE),
                         os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_STAT),
                     )
-        except Exception:
+        except IOError:
             pass
-        return None
 
     def _get_cgroup_v1_file_paths(self, mount_discovered):
         try:
@@ -154,9 +165,8 @@ class CPUMetricSet(MetricsSet):
                         os.path.join(mount_discovered, CGROUP1_MEMORY_USAGE),
                         os.path.join(mount_discovered, CGROUP1_MEMORY_STAT),
                     )
-        except Exception:
+        except IOError:
             pass
-        return None
 
     def before_collect(self):
         new = self.read_process_stats()
