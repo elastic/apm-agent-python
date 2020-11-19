@@ -85,6 +85,7 @@ format: bytes
 The Resident Set Size. The amount of memory the process occupied in main memory (RAM).
 --
 
+[float]
 [[cpu-memory-cgroup-metricset]]
 ===== Linux’s cgroup metrics
 
