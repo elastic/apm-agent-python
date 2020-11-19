@@ -20,6 +20,9 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 
 This metric set collects various system metrics and metrics of the current process.
 
+NOTE: if you do *not* use Linux, you need to install https://pypi.org/project/psutil/[`psutil`] for this metric set.
+
+
 *`system.cpu.total.norm.pct`*::
 +
 --
@@ -62,7 +65,6 @@ format: bytes
 Actual free memory in bytes. 
 --
 
-
 *`system.process.memory.size`*::
 +
 --
@@ -73,8 +75,6 @@ format: bytes
 The total virtual memory the process has.
 --
 
-
-
 *`system.process.memory.rss.bytes`*::
 +
 --
@@ -82,10 +82,32 @@ type: long
 
 format: bytes
 
-he Resident Set Size. The amount of memory the process occupied in main memory (RAM).
+The Resident Set Size. The amount of memory the process occupied in main memory (RAM).
 --
 
-NOTE: if you do *not* use Linux, you need to install https://pypi.org/project/psutil/[`psutil`] for this metric set.
+[[cpu-memory-cgroup-metricset]]
+===== Linux’s cgroup metrics
+
+*`system.process.cgroup.memory.mem.limit.bytes`*::
++
+--
+type: long
+
+format: bytes
+
+Memory limit for current cgroup slice.
+--
+
+*`system.process.cgroup.memory.mem.usage.bytes`*::
++
+--
+type: long
+
+format: bytes
+
+Memory usage in current cgroup slice.
+--
+
 
 [float]
 [[transactions-metricset]]
