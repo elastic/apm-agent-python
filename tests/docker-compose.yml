@@ -3,7 +3,7 @@ version: '2.1'
 services:
   postgres:
     user: postgres
-    image: postgres:13.1
+    image: library/postgres:11.10  # PostgreSQL 12+ is not compatible with the odbc-postgresql package in our docker images
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_DB: 'elasticapm_test'
