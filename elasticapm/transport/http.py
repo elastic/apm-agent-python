@@ -31,6 +31,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import hashlib
+import json
 import re
 import ssl
 
@@ -155,8 +156,13 @@ class Transport(HTTPTransportBase):
         if not body:
             logger.debug("APM Server answered with empty body and status code %s", response.status)
             return current_version, None, max_age
-
-        return response.headers.get("Etag"), json_encoder.loads(body.decode("utf-8")), max_age
+        body = body.decode("utf-8")
+        try:
+            data = json_encoder.loads(body)
+            return response.headers.get("Etag"), data, max_age
+        except json.JSONDecodeError:
+            logger.warning("Failed decoding APM Server response as JSON: %s", body)
+            return current_version, None, max_age
 
     @property
     def cert_fingerprint(self):
