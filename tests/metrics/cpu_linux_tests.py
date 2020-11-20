@@ -258,8 +258,7 @@ def test_mem_from_cgroup1(elasticapm_client, tmpdir):
     assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
 
     assert data["samples"]["system.process.cgroup.memory.mem.limit.bytes"]["value"] == 7964778496
-    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 954370560
-    assert data["samples"]["system.process.cgroup.memory.stats.inactive_file.bytes"]["value"] == 10407936
+    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 964778496
 
 
 def test_mem_from_cgroup2(elasticapm_client, tmpdir):
@@ -309,8 +308,7 @@ def test_mem_from_cgroup2(elasticapm_client, tmpdir):
     assert data["samples"]["system.process.memory.size"]["value"] == 3686981632
 
     assert data["samples"]["system.process.cgroup.memory.mem.limit.bytes"]["value"] == 7964778496
-    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 954370560
-    assert data["samples"]["system.process.cgroup.memory.stats.inactive_file.bytes"]["value"] == 10407936
+    assert data["samples"]["system.process.cgroup.memory.mem.usage.bytes"]["value"] == 964778496
 
 
 def test_mem_from_cgroup1_max_handling(elasticapm_client, tmpdir):
@@ -354,7 +352,6 @@ def test_mem_from_cgroup1_max_handling(elasticapm_client, tmpdir):
 
     assert "system.process.cgroup.memory.mem.limit.bytes" not in data["samples"]
     assert "system.process.cgroup.memory.mem.usage.bytes" not in data["samples"]
-    assert "system.process.cgroup.memory.stats.inactive_file.bytes" not in data["samples"]
 
 
 def test_mem_from_cgroup2_max_handling(elasticapm_client, tmpdir):
@@ -399,4 +396,3 @@ def test_mem_from_cgroup2_max_handling(elasticapm_client, tmpdir):
 
     assert "system.process.cgroup.memory.mem.limit.bytes" not in data["samples"]
     assert "system.process.cgroup.memory.mem.usage.bytes" not in data["samples"]
-    assert "system.process.cgroup.memory.stats.inactive_file.bytes" not in data["samples"]

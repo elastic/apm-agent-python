@@ -33,6 +33,7 @@ import os
 import re
 import resource
 import threading
+from collections import namedtuple
 
 from elasticapm.metrics.base_metrics import MetricsSet
 
@@ -63,6 +64,8 @@ if not os.path.exists(SYS_STATS):
     raise ImportError("This metric set is only available on Linux")
 
 logger = logging.getLogger("elasticapm.metrics.cpu_linux")
+
+CGroupFiles = namedtuple("CGroupFiles", ("limit", "usage", "stat"))
 
 
 class CPUMetricSet(MetricsSet):
@@ -147,7 +150,7 @@ class CPUMetricSet(MetricsSet):
             with open(os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_LIMIT), "r") as memfile:
                 line_mem = memfile.readline().strip()
                 if line_mem != "max":
-                    return (
+                    return CGroupFiles(
                         os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_LIMIT),
                         os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_USAGE),
                         os.path.join(mount_discovered, slice_path, CGROUP2_MEMORY_STAT),
@@ -160,7 +163,7 @@ class CPUMetricSet(MetricsSet):
             with open(os.path.join(mount_discovered, CGROUP1_MEMORY_LIMIT), "r") as memfile:
                 mem_max = int(memfile.readline().strip())
                 if mem_max < UNLIMITED:
-                    return (
+                    return CGroupFiles(
                         os.path.join(mount_discovered, CGROUP1_MEMORY_LIMIT),
                         os.path.join(mount_discovered, CGROUP1_MEMORY_USAGE),
                         os.path.join(mount_discovered, CGROUP1_MEMORY_STAT),
@@ -192,8 +195,6 @@ class CPUMetricSet(MetricsSet):
                 self.gauge("system.process.cgroup.memory.mem.limit.bytes").val = new["cgroup_mem_total"]
             if "cgroup_mem_used" in new:
                 self.gauge("system.process.cgroup.memory.mem.usage.bytes").val = new["cgroup_mem_used"]
-            if "cgroup_mem_inactive" in new:
-                self.gauge("system.process.cgroup.memory.stats.inactive_file.bytes").val = new["cgroup_mem_inactive"]
 
             try:
                 cpu_process_percent = delta["proc_total_time"] / delta["cpu_total"]
@@ -228,19 +229,11 @@ class CPUMetricSet(MetricsSet):
                     stats["cpu_usage"] = stats["cpu_total"] - (f["idle"] + f["iowait"])
                     break
         if self.cgroup_files:
-            with open(self.cgroup_files[0], "r") as memfile:
+            with open(self.cgroup_files.limit, "r") as memfile:
                 stats["cgroup_mem_total"] = int(memfile.readline())
-            with open(self.cgroup_files[1], "r") as memfile:
+            with open(self.cgroup_files.usage, "r") as memfile:
                 usage = int(memfile.readline())
                 stats["cgroup_mem_used"] = usage
-            with open(self.cgroup_files[2], "r") as memfile:
-                sum = 0
-                for line in memfile:
-                    (metric_name, value) = line.split(" ")
-                    if metric_name == "inactive_file":
-                        sum = sum + int(value)
-                stats["cgroup_mem_used"] = stats["cgroup_mem_used"] - sum
-                stats["cgroup_mem_inactive"] = sum
         with open(self.memory_stats_file, "r") as memfile:
             for line in memfile:
                 metric_name = line.split(":")[0]
