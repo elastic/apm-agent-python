@@ -44,6 +44,8 @@ from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.starlette]
 
+starlette_version_tuple = tuple(map(int, starlette.__version__.split(".")[:3]))
+
 
 @pytest.fixture
 def app(elasticapm_client):
@@ -254,6 +256,7 @@ def test_transaction_name_is_route(app, elasticapm_client):
     assert transaction["context"]["request"]["url"]["pathname"] == "/hi/shay"
 
 
+@pytest.mark.skipif(starlette_version_tuple < (0, 14), reason="trailing slash behaviour new in 0.14")
 @pytest.mark.parametrize(
     "url,expected",
     (
