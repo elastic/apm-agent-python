@@ -52,7 +52,10 @@ from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent
 __all__ = ("VERSION", "Client")
 
 try:
-    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
+    try:
+        VERSION = __import__("importlib.metadata").metadata.version("elastic-apm")
+    except ImportError:
+        VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
 except Exception:
     VERSION = "unknown"
 
