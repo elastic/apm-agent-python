@@ -60,14 +60,31 @@ LABEL_RE = re.compile('[.*"]')
 HARDCODED_PROCESSORS = ["elasticapm.processors.add_context_lines_to_frames"]
 
 BASE_SANITIZE_FIELD_NAMES = [
-    "authorization",
+    re.compile("(?:password)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:passwd)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:pwd)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:secret)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:.*key)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:.*token.*)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:.*session.*)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:.*credit.*)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:.*card.*)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:authorization)\\Z", re.IGNORECASE | re.DOTALL),
+    re.compile("(?:set\\-cookie)\\Z", re.IGNORECASE | re.DOTALL),
+]
+
+BASE_SANITIZE_FIELD_NAMES_UNPROCESSED = [
     "password",
-    "secret",
     "passwd",
-    "token",
-    "api_key",
-    "access_token",
-    "sessionid",
+    "pwd",
+    "secret",
+    "*key",
+    "*token*",
+    "*session*",
+    "*credit*",
+    "*card*",
+    "authorization",
+    "set-cookie",
 ]
 
 OUTCOME = namedtuple("OUTCOME", ["SUCCESS", "FAILURE", "UNKNOWN"])(

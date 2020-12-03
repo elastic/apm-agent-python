@@ -276,9 +276,9 @@ def mark_in_app_frames(client, event):
 
 def _sanitize(key, value, **kwargs):
     if "sanitize_field_names" in kwargs:
-        sanitize_field_names = frozenset(kwargs["sanitize_field_names"])
+        sanitize_field_names = kwargs["sanitize_field_names"]
     else:
-        sanitize_field_names = frozenset(BASE_SANITIZE_FIELD_NAMES)
+        sanitize_field_names = BASE_SANITIZE_FIELD_NAMES
 
     if value is None:
         return
@@ -296,7 +296,7 @@ def _sanitize(key, value, **kwargs):
 
     key = key.lower()
     for field in sanitize_field_names:
-        if field in key:
+        if field.match(key.strip()):
             # store mask as a fixed length for security
             return MASK
     return value

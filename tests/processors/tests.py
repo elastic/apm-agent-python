@@ -40,7 +40,7 @@ import pytest
 
 import elasticapm
 from elasticapm import Client, processors
-from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, SPAN, TRANSACTION
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES_UNPROCESSED, ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat
 
 
@@ -49,33 +49,25 @@ def http_test_data():
     return {
         "context": {
             "request": {
-                "body": "foo=bar&password=123456&the_secret=abc&cc=1234567890098765&custom_field=123",
-                "env": {
-                    "foo": "bar",
-                    "password": "hello",
-                    "the_secret": "hello",
-                    "a_password_here": "hello",
-                    "custom_env": "bye",
-                },
+                "body": "foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
+                "env": {"foo": "bar", "password": "hello", "secret": "hello", "custom_env": "bye",},
                 "headers": {
                     "foo": "bar",
                     "password": "hello",
-                    "the_secret": "hello",
-                    "a_password_here": "hello",
+                    "secret": "hello",
                     "authorization": "bearer xyz",
                     "some-header": "some-secret-value",
                 },
                 "cookies": {
                     "foo": "bar",
                     "password": "topsecret",
-                    "the_secret": "topsecret",
+                    "secret": "topsecret",
                     "sessionid": "123",
-                    "a_password_here": "123456",
                     "custom-sensitive-cookie": "123",
                 },
                 "url": {
-                    "full": "http://example.com/bla?foo=bar&password=123456&the_secret=abc&cc=1234567890098765&custom_field=123",
-                    "search": "foo=bar&password=123456&the_secret=abc&cc=1234567890098765&custom_field=123",
+                    "full": "http://example.com/bla?foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
+                    "search": "foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
                 },
             },
             "response": {
@@ -83,8 +75,7 @@ def http_test_data():
                 "headers": {
                     "foo": "bar",
                     "password": "hello",
-                    "the_secret": "hello",
-                    "a_password_here": "hello",
+                    "secret": "hello",
                     "authorization": "bearer xyz",
                     "some-header": "some-secret-value",
                 },
@@ -96,7 +87,10 @@ def http_test_data():
 @pytest.mark.parametrize(
     "elasticapm_client, custom_field",
     [
-        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["sensitive-stacktrace-val"]}, processors.MASK),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["sensitive-stacktrace-val"]},
+            processors.MASK,
+        ),
         ({}, "bye"),
     ],
     indirect=["elasticapm_client"],
@@ -105,15 +99,7 @@ def test_stacktrace(elasticapm_client, custom_field):
     data = {
         "exception": {
             "stacktrace": [
-                {
-                    "vars": {
-                        "foo": "bar",
-                        "password": "hello",
-                        "the_secret": "hello",
-                        "a_password_here": "hello",
-                        "sensitive-stacktrace-val": "bye",
-                    }
-                }
+                {"vars": {"foo": "bar", "password": "hello", "secret": "hello", "sensitive-stacktrace-val": "bye",}}
             ],
             "cause": [
                 {
@@ -122,8 +108,7 @@ def test_stacktrace(elasticapm_client, custom_field):
                             "vars": {
                                 "foo": "bar",
                                 "password": "hello",
-                                "the_secret": "hello",
-                                "a_password_here": "hello",
+                                "secret": "hello",
                                 "sensitive-stacktrace-val": "bye",
                             }
                         }
@@ -135,8 +120,7 @@ def test_stacktrace(elasticapm_client, custom_field):
                                     "vars": {
                                         "foo": "bar",
                                         "password": "hello",
-                                        "the_secret": "hello",
-                                        "a_password_here": "hello",
+                                        "secret": "hello",
                                         "sensitive-stacktrace-val": "bye",
                                     }
                                 }
@@ -164,10 +148,8 @@ def test_stacktrace(elasticapm_client, custom_field):
         assert vars["foo"] == "bar"
         assert "password" in vars
         assert vars["password"] == processors.MASK
-        assert "the_secret" in vars
-        assert vars["the_secret"] == processors.MASK
-        assert "a_password_here" in vars
-        assert vars["a_password_here"] == processors.MASK
+        assert "secret" in vars
+        assert vars["secret"] == processors.MASK
         assert "sensitive-stacktrace-val" in vars
         assert vars["sensitive-stacktrace-val"] == custom_field
 
@@ -184,14 +166,24 @@ def test_remove_http_request_body(http_test_data):
     "elasticapm_client, custom_field, expected_header_cookies",
     [
         (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["custom-sensitive-cookie"]},
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive-cookie"]},
             {"custom-sensitive-cookie": processors.MASK},
-            "foo=bar; password={0}; the_secret={0}; csrftoken={0}; custom-sensitive-cookie={0}".format(processors.MASK),
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie={0}".format(processors.MASK),
         ),
         (
             {},
             {"custom-sensitive-cookie": "123"},
-            "foo=bar; password={0}; the_secret={0}; csrftoken={0}; custom-sensitive-cookie=123".format(processors.MASK),
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie=123".format(processors.MASK),
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive-*"]},
+            {"custom-sensitive-cookie": processors.MASK},
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie={0}".format(processors.MASK),
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive"]},
+            {"custom-sensitive-cookie": "123"},
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie=123".format(processors.MASK),
         ),
     ],
     indirect=["elasticapm_client"],
@@ -199,15 +191,14 @@ def test_remove_http_request_body(http_test_data):
 def test_sanitize_http_request_cookies(elasticapm_client, custom_field, expected_header_cookies, http_test_data):
     http_test_data["context"]["request"]["headers"][
         "cookie"
-    ] = "foo=bar; password=12345; the_secret=12345; csrftoken=abc; custom-sensitive-cookie=123"
+    ] = "foo=bar; password=12345; secret=12345; csrftoken=abc; custom-sensitive-cookie=123"
 
     result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
     expected = {
         "foo": "bar",
         "password": processors.MASK,
-        "the_secret": processors.MASK,
+        "secret": processors.MASK,
         "sessionid": processors.MASK,
-        "a_password_here": processors.MASK,
     }
 
     expected.update(custom_field)
@@ -221,7 +212,7 @@ def test_sanitize_http_request_cookies(elasticapm_client, custom_field, expected
     "elasticapm_client, expected_cookies",
     [
         (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["custom-sensitive-cookie"]},
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive-cookie"]},
             "foo=bar; httponly; secure ; sessionid={0}; httponly; secure; custom-sensitive-cookie={0}".format(
                 processors.MASK
             ),
@@ -248,10 +239,19 @@ def test_sanitize_http_response_cookies(elasticapm_client, expected_cookies, htt
 @pytest.mark.parametrize(
     "elasticapm_client, custom_header",
     [
-        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["some-header"]}, {"some-header": processors.MASK}),
-        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["some-"]}, {"some-header": processors.MASK}),
-        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["other-val"]}, {"some-header": "some-secret-value"}),
-        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["-"]}, {"some-header": processors.MASK}),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["some-header"]},
+            {"some-header": processors.MASK},
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["some-*"]},
+            {"some-header": processors.MASK},
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["other-val"]},
+            {"some-header": "some-secret-value"},
+        ),
+        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["*-*"]}, {"some-header": processors.MASK}),
     ],
     indirect=["elasticapm_client"],
 )
@@ -260,8 +260,7 @@ def test_sanitize_http_headers(elasticapm_client, custom_header, http_test_data)
     expected = {
         "foo": "bar",
         "password": processors.MASK,
-        "the_secret": processors.MASK,
-        "a_password_here": processors.MASK,
+        "secret": processors.MASK,
         "authorization": processors.MASK,
     }
     expected.update(custom_header)
@@ -272,7 +271,10 @@ def test_sanitize_http_headers(elasticapm_client, custom_header, http_test_data)
 @pytest.mark.parametrize(
     "elasticapm_client, custom_env",
     [
-        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["custom_env"]}, {"custom_env": processors.MASK}),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_env"]},
+            {"custom_env": processors.MASK},
+        ),
         ({}, {"custom_env": "bye"}),
     ],
     indirect=["elasticapm_client"],
@@ -282,8 +284,7 @@ def test_sanitize_http_wgi_env(elasticapm_client, custom_env, http_test_data):
     expected = {
         "foo": "bar",
         "password": processors.MASK,
-        "the_secret": processors.MASK,
-        "a_password_here": processors.MASK,
+        "secret": processors.MASK,
     }
     expected.update(custom_env)
     assert result["context"]["request"]["env"] == expected
@@ -293,10 +294,10 @@ def test_sanitize_http_wgi_env(elasticapm_client, custom_env, http_test_data):
     "elasticapm_client, expected",
     [
         (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["custom_field"]},
-            "foo=bar&password={0}&the_secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
+            "foo=bar&password={0}&secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
         ),
-        ({}, "foo=bar&password={0}&the_secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
+        ({}, "foo=bar&password={0}&secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
     ],
     indirect=["elasticapm_client"],
 )
@@ -320,10 +321,10 @@ def test_sanitize_http_query_string_max_length(elasticapm_client):
     "elasticapm_client, expected",
     [
         (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["custom_field"]},
-            "foo=bar&password={0}&the_secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
+            "foo=bar&password={0}&secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
         ),
-        ({}, "foo=bar&password={0}&the_secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
+        ({}, "foo=bar&password={0}&secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
     ],
     indirect=["elasticapm_client"],
 )
@@ -336,10 +337,10 @@ def test_post_as_string(elasticapm_client, expected, http_test_data):
     "elasticapm_client, expected",
     [
         (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES + ["custom_field"]},
-            "foo=bar&password={0}&the_secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
+            "foo=bar&password={0}&secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
         ),
-        ({}, "foo=bar&password={0}&the_secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
+        ({}, "foo=bar&password={0}&secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
     ],
     indirect=["elasticapm_client"],
 )
@@ -371,13 +372,7 @@ def test_non_utf8_encoding(elasticapm_client, http_test_data):
 
 
 def test_remove_stacktrace_locals():
-    data = {
-        "exception": {
-            "stacktrace": [
-                {"vars": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"}}
-            ]
-        }
-    }
+    data = {"exception": {"stacktrace": [{"vars": {"foo": "bar", "password": "hello", "secret": "hello"}}]}}
     result = processors.remove_stacktrace_locals(None, data)
 
     assert "stacktrace" in result["exception"]
