@@ -30,6 +30,25 @@ endif::[]
 //===== Bug fixes
 //
 
+[float]
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Breaking changes
+
+* Align `sanitize_field_names` config with the
+  https://github.com/elastic/apm/blob/3fa78e2a1eeea81c73c2e16e96dbf6b2e79f3c64/specs/agents/sanitization.md[cross-agent spec].
+  If you are using a non-default `sanitize_field_names`, surrounding each of your entries with stars (i.e. `\*secret\*`) will retain the old behavior. {pull}982[#982]
+
+[float]
+===== Features
+
+[float]
+===== Bug fixes
+
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
 
@@ -45,7 +64,7 @@ endif::[]
  * Implement `transaction_ignore_urls` config (supports central config) {pull}923[#923]
  * Add public API to retrieve trace parent header {pull}956[#956]
  * Added support for cgroup memory metrics {pull}846[#846]
- 
+
 
 [float]
 ===== Bug fixes
