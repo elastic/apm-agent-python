@@ -295,9 +295,9 @@ def test_sanitize_http_wgi_env(elasticapm_client, custom_env, http_test_data):
     [
         (
             {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
-            "foo=bar&password={0}&secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
+            "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field={0}".format(processors.MASK),
         ),
-        ({}, "foo=bar&password={0}&secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
+        ({}, "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field=123".format(processors.MASK)),
     ],
     indirect=["elasticapm_client"],
 )
@@ -322,9 +322,9 @@ def test_sanitize_http_query_string_max_length(elasticapm_client):
     [
         (
             {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
-            "foo=bar&password={0}&secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
+            "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field={0}".format(processors.MASK),
         ),
-        ({}, "foo=bar&password={0}&secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
+        ({}, "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field=123".format(processors.MASK)),
     ],
     indirect=["elasticapm_client"],
 )
@@ -338,25 +338,15 @@ def test_post_as_string(elasticapm_client, expected, http_test_data):
     [
         (
             {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
-            "foo=bar&password={0}&secret={0}&cc={0}&custom_field={0}".format(processors.MASK),
+            "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field={0}".format(processors.MASK),
         ),
-        ({}, "foo=bar&password={0}&secret={0}&cc={0}&custom_field=123".format(processors.MASK)),
+        ({}, "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field=123".format(processors.MASK)),
     ],
     indirect=["elasticapm_client"],
 )
 def test_querystring_as_string_with_partials(elasticapm_client, expected, http_test_data):
     result = processors.sanitize_http_request_querystring(elasticapm_client, http_test_data)
     assert result["context"]["request"]["url"]["search"] == expected
-
-
-def test_sanitize_credit_card():
-    result = processors._sanitize("foo", "4242424242424242")
-    assert result == processors.MASK
-
-
-def test_sanitize_credit_card_with_spaces():
-    result = processors._sanitize("foo", "4242 4242 4242 4242")
-    assert result == processors.MASK
 
 
 def test_sanitize_dict():

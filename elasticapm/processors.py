@@ -29,7 +29,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-import re
 import warnings
 from collections import defaultdict
 
@@ -37,8 +36,6 @@ from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, MASK, SP
 from elasticapm.utils import compat, varmap
 from elasticapm.utils.encoding import force_text, keyword_field
 from elasticapm.utils.stacks import get_lines_from_file
-
-SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
 
 
 def for_events(*events):
@@ -282,9 +279,6 @@ def _sanitize(key, value, **kwargs):
 
     if value is None:
         return
-
-    if isinstance(value, compat.string_types) and any(pattern.match(value) for pattern in SANITIZE_VALUE_PATTERNS):
-        return MASK
 
     if isinstance(value, dict):
         # varmap will call _sanitize on each k:v pair of the dict, so we don't
