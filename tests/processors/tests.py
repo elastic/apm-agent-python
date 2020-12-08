@@ -50,7 +50,12 @@ def http_test_data():
         "context": {
             "request": {
                 "body": "foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
-                "env": {"foo": "bar", "password": "hello", "secret": "hello", "custom_env": "bye",},
+                "env": {
+                    "foo": "bar",
+                    "password": "hello",
+                    "secret": "hello",
+                    "custom_env": "bye",
+                },
                 "headers": {
                     "foo": "bar",
                     "password": "hello",
@@ -101,7 +106,14 @@ def test_stacktrace(elasticapm_client, custom_field):
     data = {
         "exception": {
             "stacktrace": [
-                {"vars": {"foo": "bar", "password": "hello", "secret": "hello", "sensitive-stacktrace-val": "bye",}}
+                {
+                    "vars": {
+                        "foo": "bar",
+                        "password": "hello",
+                        "secret": "hello",
+                        "sensitive-stacktrace-val": "bye",
+                    }
+                }
             ],
             "cause": [
                 {
