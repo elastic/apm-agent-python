@@ -503,7 +503,6 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_response_cookies",
             "elasticapm.processors.sanitize_http_headers",
             "elasticapm.processors.sanitize_http_wsgi_env",
-            "elasticapm.processors.sanitize_http_request_querystring",
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )

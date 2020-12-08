@@ -44,6 +44,8 @@ endif::[]
   `\*secret\*`) will retain the old behavior. {pull}982[#982]
 * Remove credit card sanitization for field values. This improves performance, and the security value of this check was
   dubious anyway. {pull}982[#982]
+* Remove HTTP querystring sanitization. This improves performance, and is meant to standardize behavior across the
+  agents, as defined in https://github.com/elastic/apm/pull/334. {pull}982[#982]
 
 [float]
 ===== Features

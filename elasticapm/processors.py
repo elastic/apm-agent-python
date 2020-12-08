@@ -34,7 +34,7 @@ from collections import defaultdict
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
-from elasticapm.utils.encoding import force_text, keyword_field
+from elasticapm.utils.encoding import force_text
 from elasticapm.utils.stacks import get_lines_from_file
 
 
@@ -113,7 +113,7 @@ def sanitize_http_request_cookies(client, event):
 
     # sanitize request.header.cookie string
     try:
-        cookie_string = event["context"]["request"]["headers"]["cookie"]
+        cookie_string = force_text(event["context"]["request"]["headers"]["cookie"], errors="replace")
         event["context"]["request"]["headers"]["cookie"] = _sanitize_string(
             cookie_string, "; ", "=", sanitize_field_names=client.config.sanitize_field_names
         )
@@ -131,7 +131,7 @@ def sanitize_http_response_cookies(client, event):
     :return: The modified event
     """
     try:
-        cookie_string = event["context"]["response"]["headers"]["set-cookie"]
+        cookie_string = force_text(event["context"]["response"]["headers"]["set-cookie"], errors="replace")
         event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(
             cookie_string, ";", "=", sanitize_field_names=client.config.sanitize_field_names
         )
@@ -184,32 +184,6 @@ def sanitize_http_wsgi_env(client, event):
         )
     except (KeyError, TypeError):
         pass
-    return event
-
-
-@for_events(ERROR, TRANSACTION)
-def sanitize_http_request_querystring(client, event):
-    """
-    Sanitizes http request query string
-    :param client: an ElasticAPM client
-    :param event: a transaction or error event
-    :return: The modified event
-    """
-    try:
-        query_string = force_text(event["context"]["request"]["url"]["search"], errors="replace")
-    except (KeyError, TypeError):
-        return event
-    if "=" in query_string:
-        sanitized_query_string = _sanitize_string(
-            query_string, "&", "=", sanitize_field_names=client.config.sanitize_field_names
-        )
-        full_url = event["context"]["request"]["url"]["full"]
-        # we need to pipe the sanitized string through encoding.keyword_field to ensure that the maximum
-        # length of keyword fields is still ensured.
-        event["context"]["request"]["url"]["search"] = keyword_field(sanitized_query_string)
-        event["context"]["request"]["url"]["full"] = keyword_field(
-            full_url.replace(query_string, sanitized_query_string)
-        )
     return event
 
 

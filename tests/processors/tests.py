@@ -57,6 +57,7 @@ def http_test_data():
                     "secret": "hello",
                     "authorization": "bearer xyz",
                     "some-header": "some-secret-value",
+                    "cookie": "foo=bar; baz=foo",
                 },
                 "cookies": {
                     "foo": "bar",
@@ -78,6 +79,7 @@ def http_test_data():
                     "secret": "hello",
                     "authorization": "bearer xyz",
                     "some-header": "some-secret-value",
+                    "cookie": "foo=bar; baz=foo",
                 },
             },
         }
@@ -258,6 +260,7 @@ def test_sanitize_http_response_cookies(elasticapm_client, expected_cookies, htt
 def test_sanitize_http_headers(elasticapm_client, custom_header, http_test_data):
     result = processors.sanitize_http_headers(elasticapm_client, http_test_data)
     expected = {
+        "cookie": "foo=bar; baz=foo",
         "foo": "bar",
         "password": processors.MASK,
         "secret": processors.MASK,
@@ -301,52 +304,9 @@ def test_sanitize_http_wgi_env(elasticapm_client, custom_env, http_test_data):
     ],
     indirect=["elasticapm_client"],
 )
-def test_sanitize_http_query_string(elasticapm_client, expected, http_test_data):
-    result = processors.sanitize_http_request_querystring(elasticapm_client, http_test_data)
-    assert result["context"]["request"]["url"]["search"] == expected
-    assert result["context"]["request"]["url"]["full"].endswith(expected)
-
-
-def test_sanitize_http_query_string_max_length(elasticapm_client):
-    qs = "api_key=1&v=" + 1020 * "x"
-    data = {"context": {"request": {"url": {"full": "http://example.com/bla?" + qs, "search": qs}}}}
-    result = processors.sanitize_http_request_querystring(elasticapm_client, data)
-    for val in (result["context"]["request"]["url"]["search"], result["context"]["request"]["url"]["full"]):
-        assert "api_key=[REDACTED]" in val
-        assert len(val) == 1024
-        assert val.endswith(u"x…")
-
-
-@pytest.mark.parametrize(
-    "elasticapm_client, expected",
-    [
-        (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
-            "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field={0}".format(processors.MASK),
-        ),
-        ({}, "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field=123".format(processors.MASK)),
-    ],
-    indirect=["elasticapm_client"],
-)
 def test_post_as_string(elasticapm_client, expected, http_test_data):
     result = processors.sanitize_http_request_body(elasticapm_client, http_test_data)
     assert result["context"]["request"]["body"] == expected
-
-
-@pytest.mark.parametrize(
-    "elasticapm_client, expected",
-    [
-        (
-            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
-            "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field={0}".format(processors.MASK),
-        ),
-        ({}, "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field=123".format(processors.MASK)),
-    ],
-    indirect=["elasticapm_client"],
-)
-def test_querystring_as_string_with_partials(elasticapm_client, expected, http_test_data):
-    result = processors.sanitize_http_request_querystring(elasticapm_client, http_test_data)
-    assert result["context"]["request"]["url"]["search"] == expected
 
 
 def test_sanitize_dict():
@@ -356,9 +316,9 @@ def test_sanitize_dict():
 
 def test_non_utf8_encoding(elasticapm_client, http_test_data):
     broken = compat.b("broken=") + u"aéöüa".encode("latin-1")
-    http_test_data["context"]["request"]["url"]["search"] = broken
-    result = processors.sanitize_http_request_querystring(elasticapm_client, http_test_data)
-    assert result["context"]["request"]["url"]["search"] == u"broken=a\ufffd\ufffd\ufffda"
+    http_test_data["context"]["request"]["headers"]["cookie"] = broken
+    result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
+    assert result["context"]["request"]["headers"]["cookie"] == u"broken=a\ufffd\ufffd\ufffda"
 
 
 def test_remove_stacktrace_locals():
