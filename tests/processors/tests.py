@@ -312,7 +312,7 @@ def test_sanitize_http_query_string_max_length(elasticapm_client):
     data = {"context": {"request": {"url": {"full": "http://example.com/bla?" + qs, "search": qs}}}}
     result = processors.sanitize_http_request_querystring(elasticapm_client, data)
     for val in (result["context"]["request"]["url"]["search"], result["context"]["request"]["url"]["full"]):
-        assert "api_key=********" in val
+        assert "api_key=[REDACTED]" in val
         assert len(val) == 1024
         assert val.endswith(u"x…")
 
