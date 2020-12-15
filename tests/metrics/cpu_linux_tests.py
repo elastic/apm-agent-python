@@ -396,3 +396,54 @@ def test_mem_from_cgroup2_max_handling(elasticapm_client, tmpdir):
 
     assert "system.process.cgroup.memory.mem.limit.bytes" not in data["samples"]
     assert "system.process.cgroup.memory.mem.usage.bytes" not in data["samples"]
+
+
+def test_mem_from_cgroup_files_dont_exist(elasticapm_client, tmpdir):
+    # it appears that on Google App engine, there is a possibility of
+    # memory.limit_in_bytes existing while memory.usage_in_bytes does not.
+    # See https://github.com/elastic/apm-agent-python/issues/985
+    proc_stat_self = os.path.join(tmpdir.strpath, "self-stat")
+    proc_stat = os.path.join(tmpdir.strpath, "stat")
+    proc_meminfo = os.path.join(tmpdir.strpath, "meminfo")
+    cgroup_memory_limit = os.path.join(tmpdir.strpath, "memory", "memory.limit_in_bytes")
+    # intentionally commented out
+    # cgroup_memory_usage = os.path.join(tmpdir.strpath, "memory", "memory.usage_in_bytes")
+    cgroup_memory_stat = os.path.join(tmpdir.strpath, "memory", "memory.stat")
+    proc_self_cgroup = os.path.join(tmpdir.strpath, "cgroup")
+    os.mkdir(os.path.join(tmpdir.strpath, "memory"))
+    proc_self_mount = os.path.join(tmpdir.strpath, "mountinfo")
+
+    for path, content in (
+        (proc_stat, TEMPLATE_PROC_STAT_DEBIAN.format(user=0, idle=0)),
+        (proc_stat_self, TEMPLATE_PROC_STAT_SELF.format(utime=0, stime=0)),
+        (proc_meminfo, TEMPLATE_PROC_MEMINFO),
+        (cgroup_memory_limit, TEMPLATE_CGROUP_MEM_LIMIT_IN_BYTES_LIMITED),
+        # intentionally commented out
+        # (cgroup_memory_usage, TEMPLATE_CGROUP_MEM_USAGE_IN_BYTES),
+        (cgroup_memory_stat, TEMPLATE_CGROUP_MEM_STAT),
+        (proc_self_cgroup, "9:memory:/slice"),
+        (
+            proc_self_mount,
+            "39 30 0:35 / "
+            + tmpdir.strpath
+            + "/memory rw,nosuid,nodev,noexec,relatime shared:10 - cgroup cgroup rw,seclabel,memory\n",
+        ),
+    ):
+        with open(path, mode="w") as f:
+            f.write(content)
+    metricset = CPUMetricSet(
+        MetricsRegistry(elasticapm_client),
+        sys_stats_file=proc_stat,
+        process_stats_file=proc_stat_self,
+        memory_stats_file=proc_meminfo,
+        proc_self_cgroup=proc_self_cgroup,
+        mount_info=proc_self_mount,
+    )
+
+    assert metricset.cgroup_files.limit is not None
+    assert metricset.cgroup_files.usage is None
+
+    data = next(metricset.collect())
+
+    assert "system.process.cgroup.memory.mem.limit.bytes" in data["samples"]
+    assert "system.process.cgroup.memory.mem.usage.bytes" not in data["samples"]
