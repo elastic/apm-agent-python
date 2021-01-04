@@ -484,3 +484,24 @@ def test_psycopg2_rows_affected(instrument, postgres_connection, elasticapm_clie
 
         assert spans[3]["name"] == "DELETE FROM test"
         assert spans[3]["context"]["db"]["rows_affected"] == 1
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_client):
+    from psycopg2.extras import execute_values
+
+    cursor = postgres_connection.cursor()
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        query = "INSERT INTO test VALUES %s"
+        data = tuple((i, "xxxxx") for i in range(999))
+        # this creates a long (~14000 characters) query, encoded as byte string.
+        # This tests that we shorten already-encoded strings.
+        execute_values(cursor, query, data, page_size=1000)
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
+        assert spans[0]["name"] == "INSERT INTO test"
+        assert len(spans[0]["context"]["db"]["statement"]) == 10000, spans[0]["context"]["db"]["statement"]
