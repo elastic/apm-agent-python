@@ -6,9 +6,6 @@
 #
 
 windows:
-  - VERSION: "3.5"
-    WEBFRAMEWORK: "none"
-    ASYNCIO: "false"
   - VERSION: "3.6"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
@@ -18,6 +15,6 @@ windows:
   - VERSION: "3.8"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"
-#  - VERSION: "3.9"  # waiting for https://github.com/giampaolo/psutil/issues/1850
-#    WEBFRAMEWORK: "none"
-#    ASYNCIO: "true"
+  - VERSION: "3.9"  # waiting for https://github.com/giampaolo/psutil/issues/1850
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
