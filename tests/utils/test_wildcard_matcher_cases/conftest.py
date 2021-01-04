@@ -1,7 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2020, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,38 +26,26 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-import sys
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import codecs
+import json
+import os
 
-from elasticapm.base import Client
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import (  # noqa: F401
-    capture_span,
-    get_span_id,
-    get_trace_id,
-    get_transaction_id,
-    get_trace_parent_header,
-    label,
-    set_context,
-    set_custom_context,
-    set_transaction_name,
-    set_transaction_outcome,
-    set_transaction_result,
-    set_user_context,
-    tag,
-)
-from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
-
-__all__ = ("VERSION", "Client")
-
-try:
-    try:
-        VERSION = __import__("importlib.metadata").metadata.version("elastic-apm")
-    except ImportError:
-        VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
-except Exception:
-    VERSION = "unknown"
+import pytest
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+def pytest_generate_tests(metafunc):
+    if "pattern" in metafunc.fixturenames and "text" in metafunc.fixturenames:
+        params = []
+        json_cases = os.path.join(
+            os.path.dirname(__file__), "..", "..", "upstream", "json-specs", "wildcard_matcher_tests.json"
+        )
+        with codecs.open(json_cases, encoding="utf8") as test_cases_file:
+            test_cases = json.load(test_cases_file)
+            for test_case, pattern_sets in test_cases.items():
+                for pattern, texts in pattern_sets.items():
+                    for text, should_ignore in texts.items():
+                        params.append(
+                            pytest.param(pattern, text, should_ignore, id="{}-{}-{}".format(test_case, pattern, text))
+                        )
+            metafunc.parametrize("pattern,text,should_match", params)

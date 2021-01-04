@@ -35,6 +35,7 @@ import starlette
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.routing import Match
 from starlette.types import ASGIApp
 
 import elasticapm
@@ -174,11 +175,15 @@ class ElasticAPM(BaseHTTPMiddleware):
         Args:
             request (Request)
         """
-        trace_parent = TraceParent.from_headers(dict(request.headers))
-        self.client.begin_transaction("request", trace_parent=trace_parent)
+        if not self.client.should_ignore_url(request.url.path):
+            trace_parent = TraceParent.from_headers(dict(request.headers))
+            self.client.begin_transaction("request", trace_parent=trace_parent)
 
-        await set_context(lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request")
-        elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
+            await set_context(
+                lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request"
+            )
+            transaction_name = self.get_route_name(request) or request.url.path
+            elasticapm.set_transaction_name("{} {}".format(request.method, transaction_name), override=False)
 
     async def _request_finished(self, response: Response):
         """Captures the end of the request processing to APM.
@@ -192,3 +197,34 @@ class ElasticAPM(BaseHTTPMiddleware):
 
         result = "HTTP {}xx".format(response.status_code // 100)
         elasticapm.set_transaction_result(result, override=False)
+
+    def get_route_name(self, request: Request) -> str:
+        route_name = None
+        app = request.app
+        scope = request.scope
+        routes = app.routes
+
+        for route in routes:
+            match, _ = route.matches(scope)
+            if match == Match.FULL:
+                route_name = route.path
+                break
+            elif match == Match.PARTIAL and route_name is None:
+                route_name = route.path
+        # Starlette magically redirects requests if the path matches a route name with a trailing slash
+        # appended or removed. To not spam the transaction names list, we do the same here and put these
+        # redirects all in the same "redirect trailing slashes" transaction name
+        if not route_name and app.router.redirect_slashes and scope["path"] != "/":
+            redirect_scope = dict(scope)
+            if scope["path"].endswith("/"):
+                redirect_scope["path"] = scope["path"][:-1]
+                trim = True
+            else:
+                redirect_scope["path"] = scope["path"] + "/"
+                trim = False
+            for route in routes:
+                match, _ = route.matches(redirect_scope)
+                if match != Match.NONE:
+                    route_name = route.path + "/" if trim else route.path[:-1]
+                    break
+        return route_name

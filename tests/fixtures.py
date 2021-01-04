@@ -31,14 +31,19 @@
 import codecs
 import gzip
 import json
+import logging
+import logging.handlers
 import os
 import random
 import socket
+import sys
+import tempfile
 import time
 import zlib
 from collections import defaultdict
 
 import jsonschema
+import mock
 import pytest
 from pytest_localserver.http import ContentServer
 from werkzeug.wrappers import Request, Response
@@ -59,9 +64,9 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "span.json")
+ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "span.json")
 METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
 
 assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
@@ -146,8 +151,31 @@ class ValidatingWSGIApp(ContentServer):
         return response(environ, start_response)
 
 
+@pytest.fixture
+def mock_client_excepthook():
+    with mock.patch("tests.fixtures.TempStoreClient._excepthook") as m:
+        yield m
+
+
+@pytest.fixture
+def mock_client_capture_exception():
+    with mock.patch("tests.fixtures.TempStoreClient.capture_exception") as m:
+        yield m
+
+
+@pytest.fixture
+def original_exception_hook(request):
+    mock_params = getattr(request, "param", {})
+    original_excepthook = sys.excepthook
+    mck = mock.Mock(side_effect=mock_params.get("side_effect"))
+    sys.excepthook = mck
+    yield mck
+    sys.excepthook = original_excepthook
+
+
 @pytest.fixture()
 def elasticapm_client(request):
+    original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
@@ -160,6 +188,41 @@ def elasticapm_client(request):
     yield client
     client.close()
     # clear any execution context that might linger around
+    sys.excepthook = original_exceptionhook
+    execution_context.set_transaction(None)
+    execution_context.set_span(None)
+
+
+@pytest.fixture()
+def elasticapm_client_log_file(request):
+    original_exceptionhook = sys.excepthook
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("service_name", "myapp")
+    client_config.setdefault("secret_token", "test_key")
+    client_config.setdefault("central_config", "false")
+    client_config.setdefault("include_paths", ("*/tests/*",))
+    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("metrics_interval", "0ms")
+    client_config.setdefault("cloud_provider", False)
+    client_config.setdefault("log_level", "warning")
+
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.close()
+    client_config["log_file"] = tmp.name
+
+    client = TempStoreClient(**client_config)
+    yield client
+    client.close()
+
+    # delete our tmpfile
+    logger = logging.getLogger("elasticapm")
+    for handler in logger.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            handler.close()
+    os.unlink(tmp.name)
+
+    # clear any execution context that might linger around
+    sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.set_span(None)
 

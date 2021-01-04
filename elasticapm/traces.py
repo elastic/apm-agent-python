@@ -617,12 +617,6 @@ class Tracer(object):
         execution_context.set_transaction(transaction)
         return transaction
 
-    def _should_ignore(self, transaction_name):
-        for pattern in self._ignore_patterns:
-            if pattern.search(transaction_name):
-                return True
-        return False
-
     def end_transaction(self, result=None, transaction_name=None, duration=None):
         """
         End the current transaction and queue it for sending
@@ -642,6 +636,12 @@ class Tracer(object):
                 transaction.result = result
             self.queue_func(TRANSACTION, transaction.to_dict())
         return transaction
+
+    def _should_ignore(self, transaction_name):
+        for pattern in self._ignore_patterns:
+            if pattern.search(transaction_name):
+                return True
+        return False
 
 
 class capture_span(object):
@@ -733,7 +733,7 @@ class capture_span(object):
                         # could happen if the exception has __slots__
                         pass
             except LookupError:
-                logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
 def label(**labels):
@@ -835,6 +835,16 @@ def get_transaction_id():
     if not transaction:
         return
     return transaction.id
+
+
+def get_trace_parent_header():
+    """
+    Return the trace parent header for the current transaction.
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction or not transaction.trace_parent:
+        return
+    return transaction.trace_parent.to_string()
 
 
 def get_trace_id():

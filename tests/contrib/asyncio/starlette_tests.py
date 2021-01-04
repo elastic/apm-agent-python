@@ -44,6 +44,8 @@ from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.starlette]
 
+starlette_version_tuple = tuple(map(int, starlette.__version__.split(".")[:3]))
+
 
 @pytest.fixture
 def app(elasticapm_client):
@@ -55,9 +57,28 @@ def app(elasticapm_client):
             pass
         return PlainTextResponse("ok")
 
+    @app.route("/hi/{name}", methods=["GET"])
+    async def hi_name(request):
+        name = request.path_params["name"]
+        return PlainTextResponse("Hi {}".format(name))
+
+    @app.route("/hello", methods=["GET", "POST"])
+    async def hello(request):
+        with async_capture_span("test"):
+            pass
+        return PlainTextResponse("ok")
+
     @app.route("/raise-exception", methods=["GET", "POST"])
     async def raise_exception(request):
         raise ValueError()
+
+    @app.route("/hi/{name}/with/slash/", methods=["GET", "POST"])
+    async def with_slash(request):
+        return PlainTextResponse("Hi {}".format(request.path_params["name"]))
+
+    @app.route("/hi/{name}/without/slash", methods=["GET", "POST"])
+    async def without_slash(request):
+        return PlainTextResponse("Hi {}".format(request.path_params["name"]))
 
     app.add_middleware(ElasticAPM, client=elasticapm_client)
 
@@ -210,3 +231,43 @@ def test_capture_headers_body_is_dynamic(app, elasticapm_client):
     assert elasticapm_client.events[constants.TRANSACTION][2]["context"]["request"]["body"] == "[REDACTED]"
     assert "headers" not in elasticapm_client.events[constants.ERROR][1]["context"]["request"]
     assert elasticapm_client.events[constants.ERROR][1]["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_starlette_transaction_ignore_urls(app, elasticapm_client):
+    client = TestClient(app)
+    response = client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ello,/world")
+    response = client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+
+def test_transaction_name_is_route(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.get("/hi/shay")
+
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["name"] == "GET /hi/{name}"
+    assert transaction["context"]["request"]["url"]["pathname"] == "/hi/shay"
+
+
+@pytest.mark.skipif(starlette_version_tuple < (0, 14), reason="trailing slash behaviour new in 0.14")
+@pytest.mark.parametrize(
+    "url,expected",
+    (
+        ("/hi/shay/with/slash", "GET /hi/{name}/with/slash"),
+        ("/hi/shay/without/slash/", "GET /hi/{name}/without/slash/"),
+    ),
+)
+def test_trailing_slash_redirect_detection(app, elasticapm_client, url, expected):
+    client = TestClient(app)
+    response = client.get(url, allow_redirects=False)
+    assert response.status_code == 307
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    for transaction in elasticapm_client.events[constants.TRANSACTION]:
+        assert transaction["name"] == expected

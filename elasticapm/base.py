@@ -197,6 +197,9 @@ class Client(object):
             self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
+        if self.config.use_elastic_excepthook:
+            self.original_excepthook = sys.excepthook
+            sys.excepthook = self._excepthook
         if config.enabled:
             self.start_threads()
 
@@ -536,7 +539,7 @@ class Client(object):
                     exc_name = "%s.%s" % (exc_module, exc_type)
                 else:
                     exc_name = exc_type
-                self.logger.info("Ignored %s exception due to exception type filter", exc_name)
+                self.logger.debug("Ignored %s exception due to exception type filter", exc_name)
                 return True
         return False
 
@@ -559,6 +562,15 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
+    def _excepthook(self):
+        exec_info = sys.exc_info()
+        try:
+            self.original_excepthook(*exec_info)
+        except Exception:
+            self.capture_exception(handled=False)
+        finally:
+            self.capture_exception(exec_info, handled=False)
+
     def load_processors(self):
         """
         Loads processors from self.config.processors, as well as constants.HARDCODED_PROCESSORS.
@@ -570,6 +582,13 @@ class Client(object):
         seen = {}
         # setdefault has the nice property that it returns the value that it just set on the dict
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
+
+    def should_ignore_url(self, url):
+        if self.config.transaction_ignore_urls:
+            for pattern in self.config.transaction_ignore_urls:
+                if pattern.match(url):
+                    return True
+        return False
 
     def check_python_version(self):
         v = tuple(map(int, platform.python_version_tuple()[:2]))

@@ -240,3 +240,15 @@ async def test_no_elasticapm_client(app_no_client, base_url, http_client, elasti
     response = await http_client.fetch(base_url)
     assert response.code == 200
     elasticapm_client.end_transaction("test")
+
+
+@pytest.mark.gen_test
+async def test_tornado_transaction_ignore_urls(app, base_url, http_client):
+    elasticapm_client = app.elasticapm_client
+    response = await http_client.fetch(base_url + "/render")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ender,/bla")
+
+    response = await http_client.fetch(base_url + "/render")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1

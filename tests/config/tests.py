@@ -41,6 +41,7 @@ import pytest
 from elasticapm.conf import (
     Config,
     ConfigurationError,
+    EnumerationValidator,
     FileIsReadableValidator,
     PrecisionValidator,
     RegexValidator,
@@ -332,7 +333,7 @@ def test_required_is_checked_if_field_not_provided():
 def test_callback():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
@@ -346,10 +347,40 @@ def test_callback():
     assert test_var["foo"] == 2
 
 
+def test_callbacks_on_default():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 1
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 2
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 3
+
+    # Test without callback on default
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], callbacks_on_default=False, default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 3
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 4
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 5
+
+
 def test_callback_reset():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
@@ -363,3 +394,24 @@ def test_callback_reset():
     assert test_var["foo"] == 2
     c.reset()
     assert test_var["foo"] == 3
+
+
+def test_valid_values_validator():
+    # Case sensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=False)
+    assert v("foo", "foo") == "foo"
+    assert v("bar", "foo") == "Bar"
+    assert v("BAZ", "foo") == "baz"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
+
+    # Case insensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=True)
+    assert v("foo", "foo") == "foo"
+    with pytest.raises(ConfigurationError):
+        v("bar", "foo")
+    with pytest.raises(ConfigurationError):
+        v("BAZ", "foo")
+    assert v("Bar", "foo") == "Bar"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")

@@ -1,7 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2020, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,38 +26,12 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-import sys
-
-from elasticapm.base import Client
-from elasticapm.conf import setup_logging  # noqa: F401
-from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
-from elasticapm.traces import (  # noqa: F401
-    capture_span,
-    get_span_id,
-    get_trace_id,
-    get_transaction_id,
-    get_trace_parent_header,
-    label,
-    set_context,
-    set_custom_context,
-    set_transaction_name,
-    set_transaction_outcome,
-    set_transaction_result,
-    set_user_context,
-    tag,
-)
-from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
-
-__all__ = ("VERSION", "Client")
-
-try:
-    try:
-        VERSION = __import__("importlib.metadata").metadata.version("elastic-apm")
-    except ImportError:
-        VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
-except Exception:
-    VERSION = "unknown"
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from elasticapm.utils import starmatch_to_regex
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+def test_starmatch_to_regex(pattern, text, should_match):
+    # cases for this test are in tests/upstream/json-specs/wildcard_matcher_tests.json
+    # parametrization happens in tests.utils.test_wildcard_matcher_cases.conftest.pytest_generate_tests
+    regex = starmatch_to_regex(pattern)
+    assert bool(regex.match(text)) == should_match

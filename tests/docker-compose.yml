@@ -3,9 +3,7 @@ version: '2.1'
 services:
   postgres:
     user: postgres
-    image: postgres:9.6
-    ports:
-      - "5432:5432"
+    image: library/postgres:11.10  # PostgreSQL 12+ is not compatible with the odbc-postgresql package in our docker images
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_DB: 'elasticapm_test'
@@ -30,39 +28,27 @@ services:
     image: mongo:3.0
     volumes:
       - pymongodata30:/data/db
-    ports:
-      - "27017:27017"
 
   mongodb32:
     image: mongo:3.2
     volumes:
       - pymongodata32:/data/db
-    ports:
-      - "27017:27017"
 
   mongodb34:
     image: mongo:3.4
     volumes:
       - pymongodata34:/data/db
-    ports:
-      - "27017:27017"
 
   mongodb36:
     image: mongo:3.6
     volumes:
       - pymongodata36:/data/db
-    ports:
-      - "27017:27017"
 
   memcached:
     image: memcached
-    ports:
-      - "11211:11211"
 
   redis:
     image: redis
-    ports:
-      - "6379:6379"
 
   elasticsearch6:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
