@@ -32,12 +32,15 @@ import pytest  # isort:skip
 
 pytest.importorskip("elasticsearch")  # isort:skip
 
+import json
 import os
 
 from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import Elasticsearch
+from elasticsearch.serializer import JSONSerializer
 
 from elasticapm.conf.constants import TRANSACTION
+from elasticapm.utils import compat
 
 pytestmark = [pytest.mark.elasticsearch]
 
@@ -48,10 +51,39 @@ if "ES_URL" not in os.environ:
 document_type = "_doc" if ES_VERSION[0] >= 6 else "doc"
 
 
+class NumberObj:
+    def __init__(self, value):
+        self.value = value
+
+
+class SpecialEncoder(JSONSerializer):
+    def default(self, obj):
+        if isinstance(obj, NumberObj):
+            return obj.value
+        return JSONSerializer.default(self, obj)
+
+    def force_key_encoding(self, obj):
+        if isinstance(obj, dict):
+
+            def yield_key_value(d):
+                for key, value in compat.iteritems(d):
+                    try:
+                        yield self.default(key), self.force_key_encoding(value)
+                    except TypeError:
+                        yield key, self.force_key_encoding(value)
+
+            return dict(yield_key_value(obj))
+        else:
+            return obj
+
+    def dumps(self, obj):
+        return super(SpecialEncoder, self).dumps(self.force_key_encoding(obj))
+
+
 @pytest.fixture
 def elasticsearch(request):
     """Elasticsearch client fixture."""
-    client = Elasticsearch(hosts=os.environ["ES_URL"])
+    client = Elasticsearch(hosts=os.environ["ES_URL"], serializer=SpecialEncoder())
     try:
         yield client
     finally:
@@ -338,9 +370,10 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert (
-        span["context"]["db"]["statement"] == '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
-        or span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
+    ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
 
 
@@ -393,7 +426,7 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == 'q=text:hola\n\n{"query": {"term": {"user": "kimchy"}}}'
+    assert span["context"]["db"]["statement"].startswith('q=text:hola\n\n{"query":')
 
 
 @pytest.mark.integrationtest
@@ -419,7 +452,7 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query": {"term": {"user": "kimchy"}}}')
 
 
 @pytest.mark.integrationtest
@@ -486,7 +519,7 @@ def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query":{"term":{"user":"kimchy"}}}')
 
 
 @pytest.mark.integrationtest
@@ -528,3 +561,20 @@ def test_multiple_indexes_doctypes(instrument, elasticapm_client, elasticsearch)
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
+
+
+@pytest.mark.integrationtest
+def test_custom_serializer(instrument, elasticapm_client, elasticsearch):
+    if ES_VERSION[0] < 7:
+        elasticsearch.index("test-index", document_type, {"2": 1})
+    else:
+        elasticsearch.index(index="test-index", body={"2": 1})
+    elasticapm_client.begin_transaction("test")
+    search_query = {"query": {"term": {NumberObj(2): {"value": 1}}}}
+    result = elasticsearch.search(index="test-index", body=search_query, params=None)
+    elasticapm_client.end_transaction("test", "OK")
+
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    span = spans[0]
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query":{"term":{"2":{"value":1}}}}')

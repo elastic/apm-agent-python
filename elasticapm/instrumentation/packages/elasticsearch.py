@@ -42,6 +42,7 @@ logger = get_logger("elasticapm.instrument")
 
 API_METHOD_KEY_NAME = "__elastic_apm_api_method_name"
 BODY_REF_NAME = "__elastic_apm_body_ref"
+BODY_SERIALIZED_REF_NAME = "__elastic_apm_body_serialized_ref"
 
 
 class ElasticSearchConnectionMixin(object):
@@ -58,6 +59,7 @@ class ElasticSearchConnectionMixin(object):
         args_len = len(args)
         params = args[2] if args_len > 2 else kwargs.get("params")
         body = params.pop(BODY_REF_NAME, None) if params else None
+        body_serialized = params.pop(BODY_SERIALIZED_REF_NAME, None) if params else None
 
         api_method = params.pop(API_METHOD_KEY_NAME, None) if params else None
         context = {"db": {"type": "elasticsearch"}}
@@ -70,8 +72,13 @@ class ElasticSearchConnectionMixin(object):
                 # 'q' is already encoded to a byte string at this point
                 # we assume utf8, which is the default
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
-            if body and isinstance(body, dict):
-                query.append(json.dumps(body, default=compat.text_type))
+            if body_serialized:
+                query.append(body_serialized)
+            elif body and isinstance(body, dict):
+                try:
+                    query.append(json.dumps(body, default=compat.text_type))
+                except TypeError:
+                    pass
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
         elif api_method == "update":
@@ -135,10 +142,10 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
         super(ElasticsearchInstrumentation, self).instrument()
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        kwargs = self.inject_apm_params(method, kwargs)
+        kwargs = self.inject_apm_params(method, kwargs, instance)
         return wrapped(*args, **kwargs)
 
-    def inject_apm_params(self, method, kwargs):
+    def inject_apm_params(self, method, kwargs, instance):
         params = kwargs.pop("params", {})
 
         # make a copy of params in case the caller reuses them for some reason
@@ -149,6 +156,11 @@ class ElasticsearchInstrumentation(AbstractInstrumentedModule):
         # store a reference to the non-serialized body so we can use it in the connection layer
         body = kwargs.get("body")
         params[BODY_REF_NAME] = body
+        try:
+            if body:
+                params[BODY_SERIALIZED_REF_NAME] = instance.transport.serializer.dumps(body)
+        except Exception:
+            pass
         params[API_METHOD_KEY_NAME] = method_name
 
         kwargs["params"] = params

@@ -32,6 +32,7 @@ import pytest  # isort:skip
 
 pytest.importorskip("elasticsearch._async")  # isort:skip
 
+import json
 import os
 
 from elasticsearch import VERSION as ES_VERSION
@@ -145,9 +146,10 @@ async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert (
-        span["context"]["db"]["statement"] == '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
-        or span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
+    ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
     assert span["sync"] is False
 
@@ -171,7 +173,7 @@ async def test_count_body(instrument, elasticapm_client, async_elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query": {"term": {"user": "kimchy"}}}')
     assert span["sync"] is False
 
 
@@ -192,5 +194,5 @@ async def test_delete_by_query_body(instrument, elasticapm_client, async_elastic
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query":{"term":{"user":"kimchy"}}}')
     assert span["sync"] is False
