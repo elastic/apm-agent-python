@@ -12,7 +12,6 @@ call .\tests\scripts\download_json_schema.bat
 set COVERAGE_FILE=.coverage.%VERSION%.%WEBFRAMEWORK%
 set IGNORE_PYTHON3_WITH_PYTHON2=
 if "%VERSION%" == "2.7" set IGNORE_PYTHON3_WITH_PYTHON2=--ignore-glob="*\py3_*.py"
-call %PYTHON%\python.exe -m pip list
 
 set PYTEST_JUNIT="--junitxml=.\tests\python-agent-junit.xml"
 if "%ASYNCIO%" == "true" (
