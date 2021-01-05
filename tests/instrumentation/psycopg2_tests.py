@@ -42,12 +42,11 @@ psycopg2 = pytest.importorskip("psycopg2")
 
 
 try:
-    from psycopg2 import sql
+    from psycopg2 import compat
 
-    has_sql_module = True
+    is_cffi = True
 except ImportError:
-    # as of Jan 2018, psycopg2cffi doesn't have this module
-    has_sql_module = False
+    is_cffi = False
 
 try:
     import psycopg2.extensions
@@ -386,11 +385,13 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-@pytest.mark.skipif(not has_sql_module, reason="psycopg2.sql module missing")
+@pytest.mark.skipif(is_cffi, reason="psycopg2cffi does not have the sql module")
 def test_psycopg2_composable_query_works(instrument, postgres_connection, elasticapm_client):
     """
     Check that we parse queries that are psycopg2.sql.Composable correctly
     """
+    from psycopg2 import sql
+
     cursor = postgres_connection.cursor()
     query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
         table=sql.Identifier("test"), row=sql.Identifier("name")
@@ -488,6 +489,7 @@ def test_psycopg2_rows_affected(instrument, postgres_connection, elasticapm_clie
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+@pytest.mark.skipif(is_cffi, reason="psycopg2cffi doesn't have execute_values")
 def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_client):
     from psycopg2.extras import execute_values
 
