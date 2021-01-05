@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import absolute_import
 
 from elasticapm.instrumentation.packages.dbapi2 import (
     ConnectionProxy,
@@ -42,10 +43,15 @@ class PGCursorProxy(CursorProxy):
     provider_name = "postgresql"
 
     def _bake_sql(self, sql):
+        from psycopg2 import extensions as psycopg2_extensions
+
         # if this is a Composable object, use its `as_string` method
         # see http://initd.org/psycopg/docs/sql.html
         if hasattr(sql, "as_string"):
-            return sql.as_string(self.__wrapped__)
+            sql = sql.as_string(self.__wrapped__)
+        # if the sql string is already a byte string, we need to decode it using the connection encoding
+        if isinstance(sql, compat.binary_type):
+            sql = sql.decode(psycopg2_extensions.encodings[self.__wrapped__.connection.encoding])
         return sql
 
     def extract_signature(self, sql):
