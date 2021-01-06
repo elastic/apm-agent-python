@@ -68,5 +68,5 @@ class AsyncElasticsearchInstrumentation(ElasticsearchInstrumentation, AsyncAbstr
     ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        kwargs = self.inject_apm_params(method, kwargs, instance)
+        kwargs = self.inject_apm_params(method, kwargs)
         return await wrapped(*args, **kwargs)
