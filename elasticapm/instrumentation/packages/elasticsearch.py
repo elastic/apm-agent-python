@@ -72,7 +72,10 @@ class ElasticSearchConnectionMixin(object):
                 # we assume utf8, which is the default
                 query.append("q=" + params["q"].decode("utf-8", errors="replace"))
             if body_serialized:
-                query.append(body_serialized)
+                if isinstance(body_serialized, bytes):
+                    query.append(body_serialized.decode("utf-8", errors="replace"))
+                else:
+                    query.append(body_serialized)
             elif body and isinstance(body, dict):
                 try:
                     query.append(json.dumps(body, default=compat.text_type))
