@@ -16,6 +16,6 @@ docker run \
   -w /app \
   --rm lint_flake8 \
   /bin/bash \
-  -c "pip install --user -U pip==20.3.1
+  -c "pip install --user -U pip
       pip install --user -r tests/requirements/lint-flake8.txt --cache-dir ${docker_pip_cache}
       /home/user/.local/bin/flake8 elasticapm"
