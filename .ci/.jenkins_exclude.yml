@@ -217,6 +217,8 @@ exclude:
   # gevent
   - PYTHON_VERSION: pypy-2  # see https://github.com/gevent/gevent/issues/1380, fix will be in gevent 1.5
     FRAMEWORK: gevent-newest
+  - PYTHON_VERSION: python-3.10-rc  # causes issues with PosixPath.__enter__, unsure why
+    FRAMEWORK: gevent-newest
   # aiohttp client, only supported in Python 3.7+
   - PYTHON_VERSION: python-2.7
     FRAMEWORK: aiohttp-3.0
