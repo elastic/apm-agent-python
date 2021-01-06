@@ -16,6 +16,6 @@ docker run \
   -w /app \
   --rm python-linters \
   /bin/bash \
-  -c "pip install --user -U pip==20.3.1
+  -c "pip install --user -U pip
       pip install --user -U black --cache-dir ${docker_pip_cache}
       /home/user/.local/bin/black /app --diff --check"

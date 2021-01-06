@@ -32,7 +32,7 @@ COPY requirements/reqs-base.txt /
 RUN if command -v pypy3; then ln -s $(command -v pypy3) /usr/local/bin/python; elif command -v pypy; then ln -s $(command -v pypy) /usr/local/bin/python; fi
 
 # pre-install base requirements
-RUN python -m pip install --progress-bar off -U pip==20.3.1 && pip install --progress-bar off -r /reqs-base.txt
+RUN python -m pip install --progress-bar off -U pip && pip install --progress-bar off -r /reqs-base.txt
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
