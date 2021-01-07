@@ -115,7 +115,7 @@ class ElasticAPM(BaseHTTPMiddleware):
         """
         self.client = client
 
-        if self.client.config.instrument:
+        if self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrumentation.control.instrument()
 
         super().__init__(app)
