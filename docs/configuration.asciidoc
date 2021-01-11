@@ -836,11 +836,12 @@ This disables most of the tracing functionality, but can be useful to debug poss
 | `ELASTIC_APM_VERIFY_SERVER_CERT`  | `VERIFY_SERVER_CERT` | `True`
 |============
 
-By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM Server.
+By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM Server,
+using default certificates obtained by calling 
+https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_default_certs[`SSLContext.load_default_certs()`].
+
 Verification can be disabled by changing this setting to `False`.
 This setting is ignored when <<config-server-cert,`server_cert`>> is set.
-
-NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python 3.4.3+.
 
 [float]
 [[config-server-cert]]

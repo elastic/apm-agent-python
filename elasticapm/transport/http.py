@@ -35,7 +35,6 @@ import json
 import re
 import ssl
 
-import certifi
 import urllib3
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
@@ -51,7 +50,7 @@ class Transport(HTTPTransportBase):
     def __init__(self, url, *args, **kwargs):
         super(Transport, self).__init__(url, *args, **kwargs)
         url_parts = compat.urlparse.urlparse(url)
-        pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": certifi.where(), "block": True}
+        pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": None, "block": True}
         if self._server_cert and url_parts.scheme != "http":
             pool_kwargs.update(
                 {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}

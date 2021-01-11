@@ -27,8 +27,7 @@ pathlib==1.0.1
 py-cpuinfo==3.3.0
 statistics==1.0.3.5
 
-urllib3
-certifi
+urllib3>=1.25.3
 Jinja2
 Logbook
 MarkupSafe
