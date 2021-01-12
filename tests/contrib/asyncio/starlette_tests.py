@@ -32,14 +32,19 @@ import pytest  # isort:skip
 
 starlette = pytest.importorskip("starlette")  # isort:skip
 
+import types
+
 import mock
+import urllib3
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.testclient import TestClient
 
+import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.starlette import ElasticAPM
+from elasticapm.utils import wrapt
 from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.starlette]
@@ -82,7 +87,9 @@ def app(elasticapm_client):
 
     app.add_middleware(ElasticAPM, client=elasticapm_client)
 
-    return app
+    yield app
+
+    elasticapm.uninstrument()
 
 
 def test_get(app, elasticapm_client):
@@ -271,3 +278,12 @@ def test_trailing_slash_redirect_detection(app, elasticapm_client, url, expected
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     for transaction in elasticapm_client.events[constants.TRANSACTION]:
         assert transaction["name"] == expected
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"enabled": False},], indirect=True,
+)
+def test_enabled_instrumentation(app, elasticapm_client):
+    client = TestClient(app)
+
+    assert not isinstance(urllib3.connectionpool.HTTPConnectionPool.urlopen, wrapt.BoundFunctionWrapper)
