@@ -281,7 +281,11 @@ def test_trailing_slash_redirect_detection(app, elasticapm_client, url, expected
 
 
 @pytest.mark.parametrize(
-    "elasticapm_client", [{"enabled": False},], indirect=True,
+    "elasticapm_client",
+    [
+        {"enabled": False},
+    ],
+    indirect=True,
 )
 def test_enabled_instrumentation(app, elasticapm_client):
     client = TestClient(app)

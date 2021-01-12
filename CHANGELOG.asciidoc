@@ -44,6 +44,7 @@ endif::[]
 * Fix for custom serializers in elasticsearch-py {pull}998[#998]
 * Fix large query truncation in psycopg2 {pull}994[#994]
 * Fix memory metrics reporting when `memory.usage_in_bytes` is unavailable {pull}987[#987]
+* Fix for Starlette/FastAPI integration to properly obey `enabled` config {pull}1000[#1000]
 
 
 [[release-notes-5.x]]
