@@ -35,6 +35,7 @@ aiohttp = pytest.importorskip("aiohttp")  # isort:skip
 import mock
 from multidict import MultiDict
 
+import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp import ElasticAPM
@@ -60,6 +61,8 @@ def aioeapm(elasticapm_client):
     app.router.add_route("GET", "/boom", boom)
     apm = ElasticAPM(app, elasticapm_client)
     yield apm
+
+    elasticapm.uninstrument()
 
 
 async def test_get(aiohttp_client, aioeapm):
