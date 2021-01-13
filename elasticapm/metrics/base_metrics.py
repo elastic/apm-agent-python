@@ -305,6 +305,11 @@ class Counter(object):
         """Returns the current value of the counter"""
         return self._val
 
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val = value
+
 
 class Gauge(object):
     __slots__ = ("name", "_val", "reset_on_collect")
@@ -354,6 +359,11 @@ class Timer(object):
     def val(self):
         with self._lock:
             return self._val, self._count
+
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val, self._count = value
 
 
 class NoopMetric(object):
