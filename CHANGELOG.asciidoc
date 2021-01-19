@@ -42,6 +42,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix for potential `capture_body: error` hang in Starlette/FastAPI {pull}1038[#1038]
+* Fix a rare error around processing stack frames {pull}1012[#1012]
 
 
 [[release-notes-6.x]]
