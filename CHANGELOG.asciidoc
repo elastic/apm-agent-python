@@ -30,13 +30,13 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
-[float]
-===== Features
+[[release-notes-5.x]]
+=== Python Agent version 5.x
 
+
+[[release-notes-5.10.1]]
+==== v5.10.1
 
 [float]
 ===== Bug fixes
@@ -45,10 +45,6 @@ endif::[]
 * Fix large query truncation in psycopg2 {pull}994[#994]
 * Fix memory metrics reporting when `memory.usage_in_bytes` is unavailable {pull}987[#987]
 * Fix for Starlette/FastAPI integration to properly obey `enabled` config {pull}1000[#1000]
-
-
-[[release-notes-5.x]]
-=== Python Agent version 5.x
 
 [[release-notes-5.10.0]]
 ==== v5.10.0
