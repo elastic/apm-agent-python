@@ -328,7 +328,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     )
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}
-    result = elasticsearch.search(body=search_query, params=None)
+    result = elasticsearch.search(body=search_query)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -521,7 +521,7 @@ def test_custom_serializer(instrument, elasticapm_client, elasticsearch):
         elasticsearch.index(index="test-index", body={"2": 1})
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {NumberObj(2): {"value": 1}}}}
-    result = elasticsearch.search(index="test-index", body=search_query, params=None)
+    result = elasticsearch.search(index="test-index", body=search_query)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
