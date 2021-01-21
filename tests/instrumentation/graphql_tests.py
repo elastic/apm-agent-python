@@ -29,8 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import os
-
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
@@ -42,12 +40,8 @@ graphql = pytest.importorskip("graphql")
 pytestmark = pytest.mark.graphene
 
 
-class Query(graphene.ObjectType):
-    rand = graphene.String()
-
-
 class Success(graphene.ObjectType):
-    yeah = graphene.String()
+    yeah = graphene.String(required=True)
 
 
 class Error(graphene.ObjectType):
@@ -88,7 +82,9 @@ class Query(graphene.ObjectType):
         return Error(message="oops")
 
 
-@pytest.mark.skipif(not hasattr(graphql, "VERSION") or graphql.VERSION[0] >= 3, reason="Executor is reimplementated in graphql-core 3")
+@pytest.mark.skipif(
+    not hasattr(graphql, "VERSION") or graphql.VERSION[0] >= 3, reason="Executor is reimplementated in graphql-core 3"
+)
 @pytest.mark.integrationtest
 def test_create_post(instrument, elasticapm_client):
     query_string = """
@@ -112,16 +108,17 @@ def test_create_post(instrument, elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
-        "GraphQL.mutation __typename",
         "GraphQL.mutation createPost",
         "GraphQL.mutation result",
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
-    assert transactions[0]['name'] == 'GraphQL MUTATION createPost'
+    assert transactions[0]["name"] == "GraphQL MUTATION createPost"
 
 
-@pytest.mark.skipif(not hasattr(graphql, "VERSION") or graphql.VERSION[0] >= 3, reason="Executor is reimplementated in graphql-core 3")
+@pytest.mark.skipif(
+    not hasattr(graphql, "VERSION") or graphql.VERSION[0] >= 3, reason="Executor is reimplementated in graphql-core 3"
+)
 @pytest.mark.integrationtest
 def test_fetch_data(instrument, elasticapm_client):
     query_string = "{succ{yeah},err{__typename}}"
@@ -136,10 +133,9 @@ def test_fetch_data(instrument, elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     expected_signatures = {
-        "GraphQL.query __typename",
         "GraphQL.query err",
         "GraphQL.query succ",
         "test_graphene",
     }
     assert {t["name"] for t in spans} == expected_signatures
-    assert transactions[0]['name'] == 'GraphQL QUERY succ+err'
+    assert transactions[0]["name"] == "GraphQL QUERY succ+err"
