@@ -38,7 +38,7 @@ from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
 
-should_capture_body_re = re.compile("_((search|msearch)(/template)?|count)$")
+should_capture_body_re = re.compile("/(_search|_msearch|_count|_async_search|_sql|_eql)(/|$)")
 
 
 class ElasticSearchConnectionMixin(object):
