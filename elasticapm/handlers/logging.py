@@ -172,6 +172,7 @@ class LoggingFilter(logging.Filter):
     * elasticapm_transaction_id
     * elasticapm_trace_id
     * elasticapm_span_id
+    * elasticapm_service_name
 
     These attributes can then be incorporated into your handlers and formatters,
     so that you can tie log messages to transactions in elasticsearch.
@@ -226,7 +227,15 @@ def _add_attributes_to_log_record(record):
     span_id = span.id if span else None
     record.elasticapm_span_id = span_id
 
-    record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
+    service_name = transaction.tracer.config.service_name if transaction else None
+    record.elasticapm_service_name = service_name
+
+    record.elasticapm_labels = {
+        "transaction.id": transaction_id,
+        "trace.id": trace_id,
+        "span.id": span_id,
+        "service.name": service_name,
+    }
 
     return record
 
@@ -264,6 +273,7 @@ class Formatter(logging.Formatter):
             record.elasticapm_transaction_id = None
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
+            record.elasticapm_service_name = None
         return super(Formatter, self).format(record=record)
 
     def formatTime(self, record, datefmt=None):
@@ -271,4 +281,5 @@ class Formatter(logging.Formatter):
             record.elasticapm_transaction_id = None
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
+            record.elasticapm_service_name = None
         return super(Formatter, self).formatTime(record=record, datefmt=datefmt)
