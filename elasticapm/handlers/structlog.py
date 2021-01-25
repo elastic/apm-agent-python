@@ -53,6 +53,7 @@ def structlog_processor(logger, method_name, event_dict):
     transaction = execution_context.get_transaction()
     if transaction:
         event_dict["transaction.id"] = transaction.id
+        event_dict["service.name"] = transaction.tracer.config.service_name
     if transaction and transaction.trace_parent:
         event_dict["trace.id"] = transaction.trace_parent.trace_id
     span = execution_context.get_span()
