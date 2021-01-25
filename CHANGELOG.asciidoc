@@ -30,6 +30,19 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+
+[float]
+===== Bug fixes
+
+* Fix for GraphQL span spamming from scalar fields with required flag {pull}1015[#1015]
+
 
 [[release-notes-5.x]]
 === Python Agent version 5.x
