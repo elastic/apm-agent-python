@@ -36,8 +36,8 @@ from elasticapm.traces import (  # noqa: F401
     capture_span,
     get_span_id,
     get_trace_id,
-    get_transaction_id,
     get_trace_parent_header,
+    get_transaction_id,
     label,
     set_context,
     set_custom_context,
@@ -60,5 +60,7 @@ except Exception:
     VERSION = "unknown"
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+if sys.version_info <= (3, 5):
+    raise Exception("The agent requires python 3.6+")
+
+from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
