@@ -170,7 +170,7 @@ pipeline {
                 sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
                 sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
                 // skip pypy builds with CIBW_SKIP=pp*
-                sh script: 'CIBW_SKIP="pp*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+                sh script: 'CIBW_SKIP="pp* cp27* cp35*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
               }
               stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
             }

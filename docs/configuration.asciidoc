@@ -969,6 +969,19 @@ These headers (`traceparent` and `tracestate`) are defined in the https://www.w3
 
 Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
 
+[float]
+[[config-use-elastic-excepthook]]
+==== `use_elastic_excepthook`
+
+[options="header"]
+|============
+| Environment                          | Django/Flask             | Default
+| `ELASTIC_APM_USE_ELASTIC_EXCEPTHOOK` | `USE_ELASTIC_EXCEPTHOOK` | `False`
+|============
+
+If set to `True`, the agent will intercept the default `sys.excepthook`, which
+allows the agent to collect all uncaught exceptions.
+
 
 [float]
 [[config-django-specific]]
