@@ -35,6 +35,12 @@ endif::[]
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
 [float]
+===== Breaking changes
+
+* Python 2.7 and 3.5 support has been deprecated. The Python agent now requires Python 3.6+
+
+
+[float]
 ===== Features
 
 
