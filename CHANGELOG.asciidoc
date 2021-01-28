@@ -37,7 +37,8 @@ endif::[]
 [float]
 ===== Breaking changes
 
-* Python 2.7 and 3.5 support has been deprecated. The Python agent now requires Python 3.6+
+* Python 2.7 and 3.5 support has been deprecated. The Python agent now requires Python 3.6+ {pull}1021[#1021]
+* No longer collecting body for `elasticsearch-py` `update` and `delete_by_query` {pull}1013[#1013]
 
 
 [float]
