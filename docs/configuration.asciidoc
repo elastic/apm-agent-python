@@ -280,7 +280,7 @@ This config value allows you to specify which cloud provider should be assumed
 for metadata collection. By default, the agent will attempt to detect the cloud
 provider or, if that fails, will use trial and error to collect the metadata.
 
-Valid options are `"aws"`, `"gcp"`, and `"azure"`. If this config value is set
+Valid options are `"auto"`, `"aws"`, `"gcp"`, and `"azure"`. If this config value is set
 to `"none"`, then no cloud metadata will be collected.
 
 [float]
@@ -973,6 +973,19 @@ the agent sets a number of HTTP headers to outgoing requests made with <<automat
 These headers (`traceparent` and `tracestate`) are defined in the https://www.w3.org/TR/trace-context-1/[W3C Trace Context] specification.
 
 Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
+
+[float]
+[[config-use-elastic-excepthook]]
+==== `use_elastic_excepthook`
+
+[options="header"]
+|============
+| Environment                          | Django/Flask             | Default
+| `ELASTIC_APM_USE_ELASTIC_EXCEPTHOOK` | `USE_ELASTIC_EXCEPTHOOK` | `False`
+|============
+
+If set to `True`, the agent will intercept the default `sys.excepthook`, which
+allows the agent to collect all uncaught exceptions.
 
 
 [float]

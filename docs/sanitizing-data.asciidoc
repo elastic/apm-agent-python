@@ -48,7 +48,7 @@ ELASTIC_APM = {
 
 NOTE: We recommend to use the above list of processors that sanitize passwords and secrets in different places of the event object.
 
-The default set of processors sanitize fields based on a set of defaults defined in `elasticapm.conf.constants`. This set can be configured with the `SANATIZE_FIELD_NAMES` configuration option. For example, if your application produces a sensitive field called `My-Sensitive-Field`, the default processors can be used to automatically sanitize this field. You can specify what fields to santize within default processors like this:
+The default set of processors sanitize fields based on a set of defaults defined in `elasticapm.conf.constants`. This set can be configured with the `SANITIZE_FIELD_NAMES` configuration option. For example, if your application produces a sensitive field called `My-Sensitive-Field`, the default processors can be used to automatically sanitize this field. You can specify what fields to santize within default processors like this:
 
 [source,python]
 ----

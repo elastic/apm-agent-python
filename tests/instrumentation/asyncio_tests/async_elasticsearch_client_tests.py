@@ -32,6 +32,7 @@ import pytest  # isort:skip
 
 pytest.importorskip("elasticsearch._async")  # isort:skip
 
+import json
 import os
 
 from elasticsearch import VERSION as ES_VERSION
@@ -145,9 +146,10 @@ async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert (
-        span["context"]["db"]["statement"] == '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
-        or span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
+    ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
     assert span["sync"] is False
 
@@ -171,26 +173,5 @@ async def test_count_body(instrument, elasticapm_client, async_elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
-    assert span["sync"] is False
-
-
-async def test_delete_by_query_body(instrument, elasticapm_client, async_elasticsearch):
-    await async_elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
-    elasticapm_client.begin_transaction("test")
-    result = await async_elasticsearch.delete_by_query(index="tweets", body={"query": {"term": {"user": "kimchy"}}})
-    elasticapm_client.end_transaction("test", "OK")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.spans_for_transaction(transaction)
-
-    span = spans[0]
-    assert span["name"] == "ES POST /tweets/_delete_by_query"
-    assert span["type"] == "db"
-    assert span["subtype"] == "elasticsearch"
-    assert span["action"] == "query"
-    assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"query": {"term": {"user": "kimchy"}}}'
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query": {"term": {"user": "kimchy"}}}')
     assert span["sync"] is False

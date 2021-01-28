@@ -33,7 +33,6 @@ import os
 import re
 import resource
 import threading
-from collections import namedtuple
 
 from elasticapm.metrics.base_metrics import MetricsSet
 
@@ -65,7 +64,12 @@ if not os.path.exists(SYS_STATS):
 
 logger = logging.getLogger("elasticapm.metrics.cpu_linux")
 
-CGroupFiles = namedtuple("CGroupFiles", ("limit", "usage", "stat"))
+
+class CGroupFiles(object):
+    def __init__(self, limit, usage, stat):
+        self.limit = limit if os.access(limit, os.R_OK) else None
+        self.usage = usage if os.access(usage, os.R_OK) else None
+        self.stat = stat if os.access(stat, os.R_OK) else None
 
 
 class CPUMetricSet(MetricsSet):
@@ -229,11 +233,13 @@ class CPUMetricSet(MetricsSet):
                     stats["cpu_usage"] = stats["cpu_total"] - (f["idle"] + f["iowait"])
                     break
         if self.cgroup_files:
-            with open(self.cgroup_files.limit, "r") as memfile:
-                stats["cgroup_mem_total"] = int(memfile.readline())
-            with open(self.cgroup_files.usage, "r") as memfile:
-                usage = int(memfile.readline())
-                stats["cgroup_mem_used"] = usage
+            if self.cgroup_files.limit:
+                with open(self.cgroup_files.limit, "r") as memfile:
+                    stats["cgroup_mem_total"] = int(memfile.readline())
+            if self.cgroup_files.usage:
+                with open(self.cgroup_files.usage, "r") as memfile:
+                    usage = int(memfile.readline())
+                    stats["cgroup_mem_used"] = usage
         with open(self.memory_stats_file, "r") as memfile:
             for line in memfile:
                 metric_name = line.split(":")[0]

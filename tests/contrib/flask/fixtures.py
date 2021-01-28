@@ -100,6 +100,7 @@ def flask_apm_client(request, flask_app, elasticapm_client):
     try:
         yield client
     finally:
+        elasticapm.uninstrument()
         signals.request_started.disconnect(client.request_started)
         signals.request_finished.disconnect(client.request_finished)
         # remove logging handler if it was added
@@ -118,6 +119,7 @@ def sending_flask_apm_client(request, flask_app, sending_elasticapm_client):
     try:
         yield client
     finally:
+        elasticapm.uninstrument()
         signals.request_started.disconnect(client.request_started)
         signals.request_finished.disconnect(client.request_finished)
         # remove logging handler if it was added

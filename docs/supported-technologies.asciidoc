@@ -360,7 +360,7 @@ Collected trace data:
 [[automatic-instrumentation-db-python-memcache]]
 ==== Python Memcache
 
-Library: `memcache` (`>=1.51`)
+Library: `python-memcached` (`>=1.51`)
 
 Instrumented methods:
 

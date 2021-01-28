@@ -52,7 +52,7 @@ class GraphQLExecutorInstrumentation(AbstractInstrumentedModule):
         query = args[2]
 
         if "ResolveInfo" == type(query).__name__:
-            if str(query.return_type) in [
+            if str(query.return_type).rstrip("!") in [
                 "Boolean",
                 "Context",
                 "Date",
