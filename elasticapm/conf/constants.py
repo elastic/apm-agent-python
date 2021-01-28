@@ -32,6 +32,31 @@ import decimal
 import re
 from collections import namedtuple
 
+
+def _starmatch_to_regex(pattern):
+    """
+    This is a duplicate of starmatch_to_regex() in utils/__init__.py
+
+    Duplication to avoid circular imports
+    """
+    options = re.DOTALL
+    # check if we are case sensitive
+    if pattern.startswith("(?-i)"):
+        pattern = pattern[5:]
+    else:
+        options |= re.IGNORECASE
+    i, n = 0, len(pattern)
+    res = []
+    while i < n:
+        c = pattern[i]
+        i = i + 1
+        if c == "*":
+            res.append(".*")
+        else:
+            res.append(re.escape(c))
+    return re.compile(r"(?:%s)\Z" % "".join(res), options)
+
+
 EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
 
@@ -46,7 +71,7 @@ KEYWORD_MAX_LENGTH = 1024
 
 HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
 
-MASK = 8 * "*"
+MASK = "[REDACTED]"
 
 EXCEPTION_CHAIN_MAX_DEPTH = 50
 
@@ -59,16 +84,21 @@ LABEL_RE = re.compile('[.*"]')
 
 HARDCODED_PROCESSORS = ["elasticapm.processors.add_context_lines_to_frames"]
 
-BASE_SANITIZE_FIELD_NAMES = [
-    "authorization",
+BASE_SANITIZE_FIELD_NAMES_UNPROCESSED = [
     "password",
-    "secret",
     "passwd",
-    "token",
-    "api_key",
-    "access_token",
-    "sessionid",
+    "pwd",
+    "secret",
+    "*key",
+    "*token*",
+    "*session*",
+    "*credit*",
+    "*card*",
+    "authorization",
+    "set-cookie",
 ]
+
+BASE_SANITIZE_FIELD_NAMES = [_starmatch_to_regex(x) for x in BASE_SANITIZE_FIELD_NAMES_UNPROCESSED]
 
 OUTCOME = namedtuple("OUTCOME", ["SUCCESS", "FAILURE", "UNKNOWN"])(
     SUCCESS="success", FAILURE="failure", UNKNOWN="unknown"

@@ -30,6 +30,7 @@ endif::[]
 //===== Bug fixes
 //
 
+[float]
 === Unreleased
 
 // Unreleased changes go here
@@ -39,7 +40,14 @@ endif::[]
 
 * Python 2.7 and 3.5 support has been deprecated. The Python agent now requires Python 3.6+ {pull}1021[#1021]
 * No longer collecting body for `elasticsearch-py` `update` and `delete_by_query` {pull}1013[#1013]
-
+* Align `sanitize_field_names` config with the
+  https://github.com/elastic/apm/blob/3fa78e2a1eeea81c73c2e16e96dbf6b2e79f3c64/specs/agents/sanitization.md[cross-agent spec].
+  If you are using a non-default `sanitize_field_names`, surrounding each of your entries with stars (i.e.
+  `\*secret\*`) will retain the old behavior. {pull}982[#982]
+* Remove credit card sanitization for field values. This improves performance, and the security value of this check was
+  dubious anyway. {pull}982[#982]
+* Remove HTTP querystring sanitization. This improves performance, and is meant to standardize behavior across the
+  agents, as defined in https://github.com/elastic/apm/pull/334. {pull}982[#982]
 
 [float]
 ===== Features
@@ -49,7 +57,6 @@ endif::[]
 ===== Bug fixes
 
 * Fix for GraphQL span spamming from scalar fields with required flag {pull}1015[#1015]
-
 
 [[release-notes-5.x]]
 === Python Agent version 5.x

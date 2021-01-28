@@ -503,11 +503,12 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_response_cookies",
             "elasticapm.processors.sanitize_http_headers",
             "elasticapm.processors.sanitize_http_wsgi_env",
-            "elasticapm.processors.sanitize_http_request_querystring",
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
-    sanitize_field_names = _ListConfigValue("SANITIZE_FIELD_NAMES", default=BASE_SANITIZE_FIELD_NAMES)
+    sanitize_field_names = _ListConfigValue(
+        "SANITIZE_FIELD_NAMES", type=starmatch_to_regex, default=BASE_SANITIZE_FIELD_NAMES
+    )
     metrics_sets = _ListConfigValue(
         "METRICS_SETS",
         default=[

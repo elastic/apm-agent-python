@@ -694,7 +694,6 @@ to avoid stampedes of instances that start at the same time.
                                               'elasticapm.processors.sanitize_http_request_cookies',
                                               'elasticapm.processors.sanitize_http_headers',
                                               'elasticapm.processors.sanitize_http_wsgi_env',
-                                              'elasticapm.processors.sanitize_http_request_querystring',
                                               'elasticapm.processors.sanitize_http_request_body']`
 |============
 
@@ -707,23 +706,29 @@ WARNING: We recommend always including the default set of validators if you cust
 [[config-sanitize-field-names]]
 ==== `sanitize_field_names`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 [options="header"]
 |============
 | Environment                        | Django/Flask           | Default
-| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `['authorization',
-                                                                  'password',
-                                                                  'secret',
-                                                                  'passwd',
-                                                                  'token',
-                                                                  'api_key',
-                                                                  'access_token',
-                                                                  'sessionid']`
+| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `["password",
+                                                                  "passwd",
+                                                                  "pwd",
+                                                                  "secret",
+                                                                  "*key",
+                                                                  "*token*",
+                                                                  "*session*",
+                                                                  "*credit*",
+                                                                  "*card*",
+                                                                  "authorization",
+                                                                  "set-cookie"]`
 |============
 
-A list of field names to mask when using processors.
+A list of glob-matched field names to match and mask when using processors.
 For more information, see <<sanitizing-data, Sanitizing Data>>.
 
-WARNING: We recommend always including the default set of field names if you customize this setting.
+WARNING: We recommend always including the default set of field name matches
+if you customize this setting.
 
 
 [float]
