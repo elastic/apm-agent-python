@@ -33,13 +33,18 @@ The table below is a simplified description of this policy.
 
 ==== Python 2 no longer supported
 
-Please upgrade to python 3.6+ to continue to receive regular updates.
+Please upgrade to Python 3.6+ to continue to receive regular updates.
 
 ==== `SANITIZE_FIELD_NAMES` changes
 
 If you are using a non-default `sanitize_field_names` config, please note
-that your entries must be surrounded with stars (i.e. `*secret*`) in order to
+that your entries must be surrounded with stars (e.g. `*secret*`) in order to
 maintain previous behavior.
+
+==== Tags removed (in favor of labels)
+
+Tags were deprecated in the 5.x release (in favor of labels). They have now been
+removed.
 
 [[upgrading-5.x]]
 === Upgrading to version 5 of the agent
