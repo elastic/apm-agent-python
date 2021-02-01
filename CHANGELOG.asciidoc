@@ -30,11 +30,13 @@ endif::[]
 //===== Bug fixes
 //
 
-[float]
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+
+[[release-notes-6.0.0]]
+==== v6.0.0
+
 [float]
 ===== Breaking changes
 
@@ -43,15 +45,11 @@ endif::[]
 * Align `sanitize_field_names` config with the
   https://github.com/elastic/apm/blob/3fa78e2a1eeea81c73c2e16e96dbf6b2e79f3c64/specs/agents/sanitization.md[cross-agent spec].
   If you are using a non-default `sanitize_field_names`, surrounding each of your entries with stars (i.e.
-  `\*secret\*`) will retain the old behavior. {pull}982[#982]
+  `*secret*`) will retain the old behavior. {pull}982[#982]
 * Remove credit card sanitization for field values. This improves performance, and the security value of this check was
   dubious anyway. {pull}982[#982]
 * Remove HTTP querystring sanitization. This improves performance, and is meant to standardize behavior across the
   agents, as defined in https://github.com/elastic/apm/pull/334. {pull}982[#982]
-
-[float]
-===== Features
-
 
 [float]
 ===== Bug fixes

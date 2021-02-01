@@ -25,7 +25,21 @@ The table below is a simplified description of this policy.
 |3.x |2020-01-20 |4.0
 |4.x |2020-05-14 |5.0
 |5.x |2021-02-05 |6.0
+|6.x |2022-08-01 |7.0
 |====
+
+[[upgrading-6.x]]
+=== Upgrading to version 6 of the agent
+
+==== Python 2 no longer supported
+
+Please upgrade to python 3.6+ to continue to receive regular updates.
+
+==== `SANITIZE_FIELD_NAMES` changes
+
+If you are using a non-default `sanitize_field_names` config, please note
+that your entries must be surrounded with stars (i.e. `*secret*`) in order to
+maintain previous behavior.
 
 [[upgrading-5.x]]
 === Upgrading to version 5 of the agent
@@ -42,7 +56,7 @@ we renamed "tags" to "labels", and introduced limited support for typed labels.
 While tag values were only allowed to be strings, label values can be strings, booleans, or numerical.
 
 To benefit from this change, ensure that you run at least *APM Server 6.7*, and use `elasticapm.label()` instead of `elasticapm.tag()`.
-The `tag()` API will continue to work as before, but emit a `DeprecationWarning`. It will be removed in 6.0 of the agent. 
+The `tag()` API will continue to work as before, but emit a `DeprecationWarning`. It will be removed in 6.0 of the agent.
 
 [[upgrading-4.x]]
 === Upgrading to version 4 of the agent
