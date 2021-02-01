@@ -699,7 +699,7 @@ def test_transaction_keyword_truncation(elasticapm_client):
     assert len(expected) == KEYWORD_MAX_LENGTH
     assert expected[-1] != "x"
     elasticapm_client.begin_transaction(too_long)
-    elasticapm.tag(val=too_long)
+    elasticapm.label(val=too_long)
     elasticapm.set_user_context(username=too_long, email=too_long, user_id=too_long)
     with elasticapm.capture_span(name=too_long, span_type=too_long):
         pass

@@ -34,7 +34,6 @@ import re
 import threading
 import time
 import timeit
-import warnings
 from collections import defaultdict
 
 from elasticapm.conf import constants
@@ -42,11 +41,10 @@ from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func
-from elasticapm.utils.deprecation import deprecated
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
 
-__all__ = ("capture_span", "tag", "label", "set_transaction_name", "set_custom_context", "set_user_context")
+__all__ = ("capture_span", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
 error_logger = get_logger("elasticapm.errors")
 logger = get_logger("elasticapm.traces")
@@ -115,23 +113,6 @@ class BaseSpan(object):
         """
         labels = encoding.enforce_label_format(labels)
         self.labels.update(labels)
-
-    @deprecated("transaction/span.label()")
-    def tag(self, **tags):
-        """
-        This method is deprecated, please use "label()" instead.
-
-        Tag this span with one or multiple key/value tags. Both the values should be strings
-
-            span_obj.tag(key1="value1", key2="value2")
-
-        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
-
-        :param tags: key/value pairs of tags
-        :return: None
-        """
-        for key in tags.keys():
-            self.labels[LABEL_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
 
     def set_success(self):
         self.outcome = "success"
@@ -666,7 +647,6 @@ class capture_span(object):
         extra=None,
         skip_frames=0,
         leaf=False,
-        tags=None,
         labels=None,
         span_subtype=None,
         span_action=None,
@@ -681,14 +661,6 @@ class capture_span(object):
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
-        if tags and not labels:
-            warnings.warn(
-                'The tags argument to capture_span is deprecated, use "labels" instead',
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
-            labels = tags
-
         self.labels = labels
         self.start = start
         self.duration = duration
@@ -748,18 +720,6 @@ def label(**labels):
         error_logger.warning("Ignored labels %s. No transaction currently active.", ", ".join(labels.keys()))
     else:
         transaction.label(**labels)
-
-
-@deprecated("elasticapm.label")
-def tag(**tags):
-    """
-    Tags current transaction. Both key and value of the label should be strings.
-    """
-    transaction = execution_context.get_transaction()
-    if not transaction:
-        error_logger.warning("Ignored tags %s. No transaction currently active.", ", ".join(tags.keys()))
-    else:
-        transaction.tag(**tags)
 
 
 def set_transaction_name(name, override=True):
