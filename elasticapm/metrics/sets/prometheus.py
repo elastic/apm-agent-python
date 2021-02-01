@@ -45,15 +45,16 @@ class PrometheusMetrics(MetricsSet):
         for metric in self._prometheus_registry.collect():
             metric_type = self.METRIC_MAP.get(metric.type, None)
             if not metric_type:
-                return
+                continue
             metric_type(self, metric.name, metric.samples)
 
     def _prom_counter_handler(self, name, samples):
         # Counters can be converted 1:1 from Prometheus to our
-        # format. Each sample represents a distinct labelset for a
-        # given name
-        for sample in samples:
-            self.counter("prom." + name, **sample.labels).val = sample.value
+        # format. Each pair of samples represents a distinct labelset for a
+        # given name. The pair consists of the value, and a "created" timestamp.
+        # We only use the former.
+        for total_sample, _ in grouper(samples, 2):
+            self.counter("prom." + name, **total_sample.labels).val = total_sample.value
 
     def _prom_gauge_handler(self, name, samples):
         # Counters can be converted 1:1 from Prometheus to our
@@ -75,7 +76,7 @@ class PrometheusMetrics(MetricsSet):
 
 
 def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
+    """Collect data into fixed-length chunks or blocks"""
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
     return itertools.zip_longest(*args, fillvalue=fillvalue)
