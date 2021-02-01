@@ -42,3 +42,4 @@ FRAMEWORK:
   - pymemcache-newest
   - graphene-2
   - httpx-newest
+  - httplib2-newest
