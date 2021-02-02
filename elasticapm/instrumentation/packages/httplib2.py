@@ -43,7 +43,7 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
     # https://httplib2.readthedocs.io/en/latest/libhttplib2.html#httplib2.Http.request
     args_list = ("url", "method", "body", "headers")
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
+    def _ensure_headers_in_kwargs(self, args, kwargs):
         # strip out trailing None positional arguments
         if len(args) > 2:
             for _ in range(2, len(self.args_list)):
@@ -61,11 +61,13 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
             if arg in kwargs:
                 params[arg] = kwargs[arg]
 
-        if "headers" in params:
-            headers = params["headers"]
-        else:
-            headers = {}
-            kwargs["headers"] = headers
+        if "headers" not in params:
+            kwargs["headers"] = params["headers"] = {}
+
+        return args, kwargs, params
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        args, kwargs, params = self._ensure_headers_in_kwargs(args, kwargs)
 
         signature = params.get("method", "GET").upper()
         signature += " " + get_host_from_url(params["url"])
@@ -90,13 +92,22 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
             trace_parent = transaction.trace_parent.copy_from(
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
-            self._set_disttracing_headers(headers, trace_parent, transaction)
+            self._set_disttracing_headers(params["headers"], trace_parent, transaction)
 
             response, content = wrapped(*args, **kwargs)
             if span.context:
                 span.context["http"]["status_code"] = response.status
             span.set_success() if response.status < 400 else span.set_failure()
             return response, content
+
+    def mutate_unsampled_call_args(self, module, method, wrapped, instance, args, kwargs, transaction):
+        # since we don't have a span, we set the span id to the transaction id
+        trace_parent = transaction.trace_parent.copy_from(
+            span_id=transaction.id, trace_options=TracingOptions(recorded=False)
+        )
+        args, kwargs, params = self._ensure_headers_in_kwargs(args, kwargs)
+        self._set_disttracing_headers(params["headers"], trace_parent, transaction)
+        return args, kwargs
 
     def _set_disttracing_headers(self, headers, trace_parent, transaction):
         trace_parent_str = trace_parent.to_string()
