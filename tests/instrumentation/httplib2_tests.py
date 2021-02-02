@@ -43,13 +43,14 @@ from elasticapm.utils.disttracing import TraceParent
 pytestmark = pytest.mark.httplib2
 
 
-def test_httplib2_instrumentation(instrument, elasticapm_client, waiting_httpserver):
+@pytest.mark.parametrize("args", [(), ("GET",), ("GET", None, {}), ("GET", None, None)])
+def test_httplib2_instrumentation(instrument, elasticapm_client, waiting_httpserver, args):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
     parsed_url = compat.urlparse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
-        httplib2.Http().request(url)
+        httplib2.Http().request(url, *args)
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.events[TRANSACTION]

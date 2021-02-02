@@ -44,7 +44,14 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
     args_list = ("url", "method", "body", "headers")
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        # grab agrs passed in as positional
+        # strip out trailing None positional arguments
+        if len(args) > 2:
+            for _ in range(2, len(self.args_list)):
+                if args[-1] is not None:
+                    break
+                args = args[:-1]
+
+        # grab args passed in as positional
         params = dict(zip(self.args_list, args))
 
         # fall back to kwargs for args not supplied as positional
