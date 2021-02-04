@@ -217,7 +217,6 @@ class ElasticAPM(BaseHTTPMiddleware):
                 elif match == Match.PARTIAL and route_name is None:
                     route_name = route.path
 
-
         route_name = _get_route_name(scope, routes)
 
         # Starlette magically redirects requests if the path matches a route name with a trailing slash
