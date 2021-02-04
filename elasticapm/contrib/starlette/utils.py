@@ -121,7 +121,9 @@ async def set_body(request: Request, body: bytes):
 async def get_body(request: Request) -> str:
     """Gets body from the request.
 
-    todo: This is not very pretty however it is not usual to get request body out of the target method (business logic).
+    When we consume the body, we replace the streaming mechanism with
+    a mocked version -- this workaround came from
+    https://github.com/encode/starlette/issues/495#issuecomment-513138055
 
     Args:
         request (Request)
