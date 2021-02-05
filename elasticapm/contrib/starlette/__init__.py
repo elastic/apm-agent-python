@@ -211,7 +211,9 @@ class ElasticAPM(BaseHTTPMiddleware):
                     child_scope = {**scope, **child_scope}
                     if isinstance(route, Mount):
                         child_route_name = _get_route_name(child_scope, route.routes, route_name)
-                        if child_route_name:
+                        if child_route_name is None:
+                            route_name = None
+                        else:
                             route_name += child_route_name
                     return route_name
                 elif match == Match.PARTIAL and route_name is None:
@@ -230,9 +232,7 @@ class ElasticAPM(BaseHTTPMiddleware):
             else:
                 redirect_scope["path"] = scope["path"] + "/"
                 trim = False
-            for route in routes:
-                match, _ = route.matches(redirect_scope)
-                if match != Match.NONE:
-                    route_name = route.path + "/" if trim else route.path[:-1]
-                    break
+
+            route_name = _get_route_name(redirect_scope, routes)
+            route_name = route_name + "/" if trim else route_name[:-1]
         return route_name
