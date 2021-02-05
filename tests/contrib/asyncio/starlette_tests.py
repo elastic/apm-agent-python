@@ -281,6 +281,7 @@ def test_transaction_name_is_route(app, elasticapm_client):
     (
         ("/hi/shay/with/slash", "GET /hi/{name}/with/slash"),
         ("/hi/shay/without/slash/", "GET /hi/{name}/without/slash/"),
+        ("/sub/subsub/hihi/shay/", "GET /sub/subsub/hihi/{name}/"),
     ),
 )
 def test_trailing_slash_redirect_detection(app, elasticapm_client, url, expected):
