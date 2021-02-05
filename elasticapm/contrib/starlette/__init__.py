@@ -43,7 +43,7 @@ import elasticapm.instrumentation.control
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
-from elasticapm.contrib.starlette.utils import get_data_from_request, get_data_from_response
+from elasticapm.contrib.starlette.utils import get_body, get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
@@ -175,6 +175,14 @@ class ElasticAPM(BaseHTTPMiddleware):
         Args:
             request (Request)
         """
+        # When we consume the body, we replace the streaming mechanism with
+        # a mocked version -- this workaround came from
+        # https://github.com/encode/starlette/issues/495#issuecomment-513138055
+        # and we call the workaround here to make sure that regardless of
+        # `capture_body` settings, we will have access to the body if we need it.
+        if self.client.config.capture_body != "off":
+            await get_body(request)
+
         if not self.client.should_ignore_url(request.url.path):
             trace_parent = TraceParent.from_headers(dict(request.headers))
             self.client.begin_transaction("request", trace_parent=trace_parent)

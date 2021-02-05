@@ -75,6 +75,7 @@ def app(elasticapm_client):
 
     @app.route("/raise-exception", methods=["GET", "POST"])
     async def raise_exception(request):
+        await request.body()
         raise ValueError()
 
     @app.route("/hi/{name}/with/slash/", methods=["GET", "POST"])
@@ -291,3 +292,21 @@ def test_enabled_instrumentation(app, elasticapm_client):
     client = TestClient(app)
 
     assert not isinstance(urllib3.connectionpool.HTTPConnectionPool.urlopen, wrapt.BoundFunctionWrapper)
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {"capture_body": "error"},
+    ],
+    indirect=True,
+)
+def test_capture_body_error(app, elasticapm_client):
+    """
+    Context: https://github.com/elastic/apm-agent-python/issues/1032
+
+    Before the above issue was fixed, this test would hang
+    """
+    client = TestClient(app)
+    with pytest.raises(ValueError):
+        response = client.post("/raise-exception", data="[0, 1]")
