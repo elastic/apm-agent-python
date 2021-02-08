@@ -28,8 +28,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import json
-
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import Message
@@ -64,10 +62,6 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
             body = None
             try:
                 body = await get_body(request)
-                if request.headers.get("content-type") == "application/x-www-form-urlencoded":
-                    body = await query_params_to_dict(body)
-                else:
-                    body = json.loads(body)
             except Exception:
                 pass
             if body is not None:
