@@ -18,14 +18,10 @@ For other frameworks and custom Python code, the agent exposes a set of <<api,AP
 
 The following Python versions are supported:
 
- * 2.7
- * 3.5
  * 3.6
  * 3.7
  * 3.8
-
-WARNING: Python 2.7 reached End of Life on January 1, 2020.
-The Elastic APM agent will stop supporting Python 2.7 starting in 6.0.0.
+ * 3.9
 
 [float]
 [[supported-django]]
@@ -38,6 +34,7 @@ We support these Django versions:
  * 2.1
  * 2.2
  * 3.0
+ * 3.1
 
 For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
 
