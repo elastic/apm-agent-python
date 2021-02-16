@@ -25,6 +25,7 @@ pipeline {
     OPBEANS_REPO = 'opbeans-python'
     HOME = "${env.WORKSPACE}"
     PIP_CACHE = "${env.WORKSPACE}/.cache"
+    SLACK_CHANNEL = '#apm-agent-python'
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
@@ -262,9 +263,8 @@ pipeline {
       stages {
         stage('Notify') {
           steps {
-              emailext subject: '[apm-agent-python] Release ready to be pushed',
-                       to: "${NOTIFY_TO}",
-                       body: "Please go to ${env.BUILD_URL}input to approve or reject within 12 hours."
+            notifyStatus(slackStatus: 'warning', subject: "[${env.REPO}] Release ready to be pushed",
+                         body: "Please (<${env.BUILD_URL}input|approve>) it or reject within 12 hours.\n Changes: ${env.TAG_NAME}")
           }
         }
         stage('Release') {
@@ -289,6 +289,14 @@ pipeline {
               dir("${BASE_DIR}"){
                 releasePackages()
               }
+            }
+          }
+          post {
+            failure {
+              notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] Release *${env.TAG_NAME}* failed", body: "Build: (<${env.RUN_DISPLAY_URL}|here>)")
+            }
+            success {
+              notifyStatus(slackStatus: 'good', subject: "[${env.REPO}] Release *${env.TAG_NAME}* published", body: "Build: (<${env.RUN_DISPLAY_URL}|here>)\nRepo URL: ${env.REPO_URL?.trim()}")
             }
           }
         }
@@ -497,4 +505,13 @@ def generateResultsReport() {
     processor.processResults(mapResults)
     archiveArtifacts allowEmptyArchive: true, artifacts: 'results.json,results.html', defaultExcludes: false
   }
+}
+
+def notifyStatus(def args = [:]) {
+  releaseNotification(slackChannel: "${env.SLACK_CHANNEL}",
+                      slackColor: args.slackStatus,
+                      slackCredentialsId: 'jenkins-slack-integration-token',
+                      to: "${env.NOTIFY_TO}",
+                      subject: args.subject,
+                      body: args.body)
 }
