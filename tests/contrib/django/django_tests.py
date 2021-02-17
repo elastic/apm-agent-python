@@ -1181,16 +1181,6 @@ def test_subcommand_not_known(argv_mock):
     assert 'No such command "foo"' in output
 
 
-def test_settings_missing():
-    stdout = compat.StringIO()
-    with override_settings(ELASTIC_APM={}):
-        call_command("elasticapm", "check", stdout=stdout)
-    output = stdout.getvalue()
-    assert "Configuration errors detected" in output
-    assert "SERVICE_NAME not set" in output
-    assert "optional SECRET_TOKEN not set" in output
-
-
 def test_settings_missing_secret_token_no_https():
     stdout = compat.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://foo"}):
@@ -1255,7 +1245,6 @@ def test_settings_server_url_not_http_nor_https():
     with override_settings(ELASTIC_APM={"SERVER_URL": "xhttp://dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
-    assert "Configuration errors detected" in output
     assert "SERVER_URL has scheme xhttp and we require http or https" in output
 
 

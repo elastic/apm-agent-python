@@ -108,6 +108,8 @@ class Client(object):
             for msg in config.errors.values():
                 self.error_logger.error(msg)
             config.disable_send = True
+        if config.service_name == "python_service":
+            self.logger.warning("No custom SERVICE_NAME was set -- using non-descript default 'python_service'")
         self.config = VersionedConfig(config, version=None)
 
         # Insert the log_record_factory into the logging library
