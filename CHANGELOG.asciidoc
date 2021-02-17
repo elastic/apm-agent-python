@@ -42,6 +42,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix for potential `capture_body: error` hang in Starlette/FastAPI {pull}1038[#1038]
+* Fix for Starlette/FastAPI to correctly capture request bodies as strings {pull}1042[#1041]
 
 
 [[release-notes-6.x]]
