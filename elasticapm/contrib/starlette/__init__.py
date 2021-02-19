@@ -210,24 +210,7 @@ class ElasticAPM(BaseHTTPMiddleware):
         app = request.app
         scope = request.scope
         routes = app.routes
-
-        def _get_route_name(scope, routes, route_name=None):
-            for route in routes:
-                match, child_scope = route.matches(scope)
-                if match == Match.FULL:
-                    route_name = route.path
-                    child_scope = {**scope, **child_scope}
-                    if isinstance(route, Mount):
-                        child_route_name = _get_route_name(child_scope, route.routes, route_name)
-                        if child_route_name is None:
-                            route_name = None
-                        else:
-                            route_name += child_route_name
-                    return route_name
-                elif match == Match.PARTIAL and route_name is None:
-                    route_name = route.path
-
-        route_name = _get_route_name(scope, routes)
+        route_name = self._get_route_name(scope, routes)
 
         # Starlette magically redirects requests if the path matches a route name with a trailing slash
         # appended or removed. To not spam the transaction names list, we do the same here and put these
@@ -241,6 +224,22 @@ class ElasticAPM(BaseHTTPMiddleware):
                 redirect_scope["path"] = scope["path"] + "/"
                 trim = False
 
-            route_name = _get_route_name(redirect_scope, routes)
+            route_name = self._get_route_name(redirect_scope, routes)
             route_name = route_name + "/" if trim else route_name[:-1]
         return route_name
+
+    def _get_route_name(self, scope, routes, route_name=None):
+        for route in routes:
+            match, child_scope = route.matches(scope)
+            if match == Match.FULL:
+                route_name = route.path
+                child_scope = {**scope, **child_scope}
+                if isinstance(route, Mount):
+                    child_route_name = self._get_route_name(child_scope, route.routes, route_name)
+                    if child_route_name is None:
+                        route_name = None
+                    else:
+                        route_name += child_route_name
+                return route_name
+            elif match == Match.PARTIAL and route_name is None:
+                route_name = route.path
