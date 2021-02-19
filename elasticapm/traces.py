@@ -467,7 +467,7 @@ class Span(BaseSpan):
         tracer = self.transaction.tracer
         timestamp = _time_func()
         self.duration = duration if duration is not None else (timestamp - self.start_time)
-        if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration:
+        if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
             self.frames = None
