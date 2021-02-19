@@ -55,6 +55,10 @@ starlette_version_tuple = tuple(map(int, starlette.__version__.split(".")[:3]))
 @pytest.fixture
 def app(elasticapm_client):
     app = Starlette()
+    sub = Starlette()
+    subsub = Starlette()
+    app.mount("/sub", sub)
+    sub.mount("/subsub", subsub)
 
     @app.route("/", methods=["GET", "POST"])
     async def hi(request):
@@ -85,6 +89,14 @@ def app(elasticapm_client):
     @app.route("/hi/{name}/without/slash", methods=["GET", "POST"])
     async def without_slash(request):
         return PlainTextResponse("Hi {}".format(request.path_params["name"]))
+
+    @sub.route("/hi")
+    async def hi_from_sub(request):
+        return PlainTextResponse("sub")
+
+    @subsub.route("/hihi/{name}")
+    async def hi_from_sub(request):
+        return PlainTextResponse(request.path_params["name"])
 
     app.add_middleware(ElasticAPM, client=elasticapm_client)
 
@@ -270,6 +282,7 @@ def test_transaction_name_is_route(app, elasticapm_client):
     (
         ("/hi/shay/with/slash", "GET /hi/{name}/with/slash"),
         ("/hi/shay/without/slash/", "GET /hi/{name}/without/slash/"),
+        ("/sub/subsub/hihi/shay/", "GET /sub/subsub/hihi/{name}/"),
     ),
 )
 def test_trailing_slash_redirect_detection(app, elasticapm_client, url, expected):
@@ -292,6 +305,29 @@ def test_enabled_instrumentation(app, elasticapm_client):
     client = TestClient(app)
 
     assert not isinstance(urllib3.connectionpool.HTTPConnectionPool.urlopen, wrapt.BoundFunctionWrapper)
+
+
+def test_transaction_name_is_route_for_mounts(app, elasticapm_client):
+    """
+    Tests if recursive URL matching works when apps are mounted in other apps
+    """
+    client = TestClient(app)
+    response = client.get("/sub/hi")
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["name"] == "GET /sub/hi"
+    assert transaction["context"]["request"]["url"]["pathname"] == "/sub/hi"
+
+    response = client.get("/sub/subsub/hihi/shay")
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 2
+    transaction = elasticapm_client.events[constants.TRANSACTION][1]
+    assert transaction["name"] == "GET /sub/subsub/hihi/{name}"
+    assert transaction["context"]["request"]["url"]["pathname"] == "/sub/subsub/hihi/shay"
+
 
 
 @pytest.mark.parametrize(

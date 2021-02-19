@@ -44,6 +44,7 @@ endif::[]
 * Fix for potential `capture_body: error` hang in Starlette/FastAPI {pull}1038[#1038]
 * Fix a rare error around processing stack frames {pull}1012[#1012]
 * Fix for Starlette/FastAPI to correctly capture request bodies as strings {pull}1042[#1041]
+* Fix transaction names for Starlette Mount routes {pull}1037[#1037]
 
 
 [[release-notes-6.x]]
