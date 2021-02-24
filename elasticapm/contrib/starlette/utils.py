@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -107,6 +108,7 @@ async def set_body(request: Request, body: bytes):
     """
 
     async def receive() -> Message:
+        await asyncio.sleep(0)
         return {"type": "http.request", "body": body}
 
     request._receive = receive
