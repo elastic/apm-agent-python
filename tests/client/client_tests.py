@@ -885,3 +885,13 @@ def test_client_enabled(elasticapm_client):
         assert not elasticapm_client.config.is_recording
         for manager in elasticapm_client._thread_managers.values():
             assert not manager.is_started()
+
+
+def test_excepthook(elasticapm_client):
+    try:
+        raise Exception("hi!")
+    except Exception:
+        type_, value, traceback = sys.exc_info()
+        elasticapm_client._excepthook(type_, value, traceback)
+
+    assert elasticapm_client.events[ERROR]
