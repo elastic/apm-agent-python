@@ -37,6 +37,8 @@ endif::[]
 [float]
 ===== Features
 
+* Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
+
 
 [float]
 ===== Bug fixes
