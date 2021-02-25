@@ -28,9 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from collections import namedtuple
+
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
+
+HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype", "span_action", "destination"))
 
 
 class BotocoreInstrumentation(AbstractInstrumentedModule):
@@ -44,14 +48,58 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         else:
             operation_name = args[0]
 
-        target_endpoint = instance._endpoint.host
-        parsed_url = urlparse.urlparse(target_endpoint)
-        if "." in parsed_url.hostname:
-            service = parsed_url.hostname.split(".", 2)[0]
-        else:
-            service = parsed_url.hostname
+        service = instance._service_model.service_id
 
-        signature = "{}:{}".format(service, operation_name)
+        parsed_url = urlparse.urlparse(instance._endpoint.host)
+        destination = {
+            "address": parsed_url.hostname,
+            "port": parsed_url.port,
+            "cloud": {"region": instance.meta.region_name},
+        }
 
-        with capture_span(signature, "aws", leaf=True, span_subtype=service, span_action=operation_name):
+        handler_info = handlers.get(service, handlers["default"])(
+            operation_name, service, instance, args, kwargs, destination
+        )
+
+        with capture_span(
+            handler_info.signature,
+            span_type=handler_info.span_type,
+            leaf=True,
+            span_subtype=handler_info.span_subtype,
+            span_action=handler_info.span_action,
+            extra={"destination": handler_info.destination},
+        ):
             return wrapped(*args, **kwargs)
+
+
+def handle_s3(operation_name, service, instance, args, kwargs, destination):
+    span_type = "storage"
+    span_subtype = "s3"
+    span_action = operation_name
+    if len(args) > 1 and "Bucket" in args[1]:
+        bucket = args[1]["Bucket"]
+    else:
+        # TODO handle Access Points
+        bucket = ""
+    signature = f"S3 {operation_name} {bucket}"
+
+    destination["name"] = span_subtype
+    destination["resource"] = bucket
+    destination["service"] = {"type": span_type}
+
+    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+
+
+def handle_default(operation_name, service, instance, args, kwargs, destination):
+    span_type = "aws"
+    span_subtype = service.lower()
+    span_action = operation_name
+
+    signature = f"{service}:{operation_name}"
+    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+
+
+handlers = {
+    "S3": handle_s3,
+    "default": handle_default,
+}
