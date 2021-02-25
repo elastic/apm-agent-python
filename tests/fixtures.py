@@ -64,14 +64,10 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "span.json")
-METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
-
-assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
-    TRANSACTIONS_SCHEMA
-), 'JSON Schema files not found. Run "make update-json-schema" to download'
+ERRORS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "span.json")
+METADATA_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metadata.json")
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(

@@ -84,12 +84,10 @@ To run local unit tests, you can install the relevant
 and then run `make test` from the project root:
 
     pip install -r tests/requirements/reqs-flask-1.1.txt
-    make update-json-schema
     make test
 
 Pytest will automatically discover all the tests and skip the ones for which
-dependencies are not met. Note that `make update-json-schema` should only need
-to be run once.
+dependencies are not met.
 
 If you want to go above and beyond and run the full test suite,
 you need to install several databases (Elasticsearch, PostgreSQL, MySQL, Cassandra, Redis).
