@@ -37,6 +37,7 @@ from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
 
+from elasticapm import get_client as _get_client
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.django.utils import iterate_with_template_sources
@@ -49,10 +50,9 @@ __all__ = ("DjangoClient",)
 
 
 default_client_class = "elasticapm.contrib.django.DjangoClient"
-_client = (None, None)
 
 
-def get_client(client=None):
+def get_client():
     """
     Get an ElasticAPM client.
 
@@ -60,20 +60,16 @@ def get_client(client=None):
     :return:
     :rtype: elasticapm.base.Client
     """
-    global _client
+    if _get_client():
+        return _get_client()
 
-    tmp_client = client is not None
-    if not tmp_client:
-        config = getattr(django_settings, "ELASTIC_APM", {})
-        client = config.get("CLIENT", default_client_class)
-
-    if _client[0] != client:
-        client_class = import_string(client)
-        instance = client_class()
-        if not tmp_client:
-            _client = (client, instance)
-        return instance
-    return _client[1]
+    config = getattr(django_settings, "ELASTIC_APM", {})
+    client = config.get("CLIENT", default_client_class)
+    client_class = import_string(client)
+    instance = client_class()
+    # `instance` will already be in elasticapm.base.CLIENT_SINGLETON due to the
+    # `__init__()` for Client
+    return instance
 
 
 class DjangoClient(Client):
