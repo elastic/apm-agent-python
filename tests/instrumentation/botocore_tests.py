@@ -39,11 +39,18 @@ from elasticapm.utils.compat import urlparse
 boto3 = pytest.importorskip("boto3")
 
 
-pytestmark = pytest.mark.boto3
+pytestmark = [pytest.mark.boto3]
 
 os.environ["AWS_ACCESS_KEY_ID"] = "key"
 os.environ["AWS_SECRET_ACCESS_KEY"] = "secret"
 os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+LOCALSTACK_ENDPOINT = os.environ.get("AWS_URL", None)
+
+if not LOCALSTACK_ENDPOINT:
+    pytestmark.append(pytest.mark.skip("Skipping botocore tests, no AWS_URL environment variable set"))
+
+LOCALSTACK_ENDPOINT_URL = urlparse.urlparse(LOCALSTACK_ENDPOINT)
 
 
 @mock.patch("botocore.endpoint.Endpoint.make_request")
@@ -121,9 +128,7 @@ def test_nonstandard_endpoint_url(instrument, elasticapm_client):
 
 
 def test_s3(instrument, elasticapm_client):
-    endpoint = "http://localhost:4566"
-    endpoint_url = urlparse.urlparse(endpoint)
-    client = boto3.client("s3", endpoint_url="http://localhost:4566")
+    client = boto3.client("s3", endpoint_url=LOCALSTACK_ENDPOINT)
     elasticapm_client.begin_transaction("test")
     client.create_bucket(Bucket="xyz")
     client.put_object(Bucket="xyz", Key="abc", Body=b"foo")
@@ -134,8 +139,8 @@ def test_s3(instrument, elasticapm_client):
     for span in spans:
         assert span["type"] == "storage"
         assert span["subtype"] == "s3"
-        assert span["context"]["destination"]["address"] == endpoint_url.hostname
-        assert span["context"]["destination"]["port"] == endpoint_url.port
+        assert span["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
+        assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
         assert span["context"]["destination"]["name"] == "s3"
         assert span["context"]["destination"]["resource"] == "xyz"
