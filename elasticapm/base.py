@@ -303,6 +303,8 @@ class Client(object):
             with self._thread_starter_lock:
                 for _, manager in self._thread_managers.items():
                     manager.stop_thread()
+        global CLIENT_SINGLETON
+        CLIENT_SINGLETON = None
 
     def get_service_info(self):
         if self._service_info:
