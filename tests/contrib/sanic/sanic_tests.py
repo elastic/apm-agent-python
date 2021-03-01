@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2019, Elasticsearch BV
@@ -30,43 +28,42 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pytest  # isort:skip
 
-import importlib
-import sys
-from os.path import abspath, dirname
+sanic = pytest.importorskip("sanic")  # isort:skip
 
-try:
-    import eventlet
+from elasticapm.conf import constants
 
-    eventlet.monkey_patch()
-except ImportError:
-    pass
-
-try:
-    from psycopg2cffi import compat
-
-    compat.register()
-except ImportError:
-    pass
-
-where_am_i = dirname(abspath(__file__))
+pytestmark = [pytest.mark.sanic]  # isort:skip
 
 
-sys.path.insert(0, where_am_i)
+def test_get(sanic_app, elasticapm_client):
+    source_request, response = sanic_app.test_client.get(
+        "/",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )  # type: sanic.response.HttpResponse
 
-# don't run tests of dependencies that land in "build" and "src"
-collect_ignore = ["build", "src"]
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
 
-pytest_plugins = ["tests.fixtures"]
+    for field, value in {
+        "name": "GET_elastic-apm.default_route",
+        "result": "HTTP 2xx",
+        "outcome": "success",
+        "type": "request",
+    }.items():
+        assert transaction[field] == value
 
-for module, fixtures in {
-    "django": "tests.contrib.django.fixtures",
-    "flask": "tests.contrib.flask.fixtures",
-    "aiohttp": "aiohttp.pytest_plugin",
-    "sanic": "tests.contrib.sanic.fixtures",
-}.items():
-    try:
-        importlib.import_module(module)
-        pytest_plugins.append(fixtures)
-    except ImportError:
-        pass
+    assert transaction["span_count"]["started"] == 1
+    request = transaction["context"]["request"]
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": f"127.0.0.1:{source_request.port}", "encrypted": False}
+
+    assert span["name"] == "test"

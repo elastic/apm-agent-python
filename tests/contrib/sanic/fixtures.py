@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #  BSD 3-Clause License
 #
 #  Copyright (c) 2019, Elasticsearch BV
@@ -30,43 +28,41 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pytest  # isort:skip
 
-import importlib
-import sys
-from os.path import abspath, dirname
+sanic = pytest.importorskip("sanic")  # isort:skip
 
-try:
-    import eventlet
+import logging
+import time
 
-    eventlet.monkey_patch()
-except ImportError:
-    pass
+import pytest
+from sanic import Sanic
+from sanic.request import Request
+from sanic.response import HTTPResponse, json
+from sanic_testing import TestManager
 
-try:
-    from psycopg2cffi import compat
-
-    compat.register()
-except ImportError:
-    pass
-
-where_am_i = dirname(abspath(__file__))
+import elasticapm
+from elasticapm import async_capture_span
+from elasticapm.contrib.sanic import ElasticAPM
 
 
-sys.path.insert(0, where_am_i)
+@pytest.fixture()
+def sanic_app(elasticapm_client):
+    app = Sanic(name="elastic-apm")
+    ElasticAPM(app=app, client=elasticapm_client)
+    TestManager(app=app)
 
-# don't run tests of dependencies that land in "build" and "src"
-collect_ignore = ["build", "src"]
+    @app.route("/", methods=["GET", "POST"])
+    def default_route(request: Request):
+        with async_capture_span("test"):
+            pass
+        return json({"response": "ok"})
 
-pytest_plugins = ["tests.fixtures"]
+    @app.route("/greet/<name:str>")
+    async def greet_person(request: Request, name: str):
+        return json({"response": f"Hello {name}"})
 
-for module, fixtures in {
-    "django": "tests.contrib.django.fixtures",
-    "flask": "tests.contrib.flask.fixtures",
-    "aiohttp": "aiohttp.pytest_plugin",
-    "sanic": "tests.contrib.sanic.fixtures",
-}.items():
     try:
-        importlib.import_module(module)
-        pytest_plugins.append(fixtures)
-    except ImportError:
-        pass
+        yield app
+    finally:
+        elasticapm.uninstrument()

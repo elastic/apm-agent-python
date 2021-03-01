@@ -44,3 +44,4 @@ FRAMEWORK:
   - httpx-newest
   - httplib2-newest
   - prometheus_client-newest
+  - sanic-newest
