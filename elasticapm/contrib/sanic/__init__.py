@@ -38,15 +38,27 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
+from elasticapm import label
 from elasticapm import set_context as elastic_context
-from elasticapm import set_transaction_name, set_transaction_outcome, set_transaction_result
+from elasticapm import (
+    set_custom_context,
+    set_transaction_name,
+    set_transaction_outcome,
+    set_transaction_result,
+    set_user_context,
+)
 from elasticapm.base import Client
-from elasticapm.conf import constants, setup_logging
+from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.sanic.utils import get_request_info, get_response_info, make_client
-from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.instrumentation.control import instrument
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.logging import get_logger
+
+user_info_type = t.Tuple[t.Union[None, str], t.Union[None, str], t.Union[None, str]]
+label_info_type = t.Dict[str, t.Union[str, bool, int, float]]
+custom_info_type = t.Dict[str, t.Any]
+req_or_response_type = t.Union[Request, HTTPResponse]
 
 
 class ElasticAPM:
@@ -55,18 +67,30 @@ class ElasticAPM:
         app: Sanic,
         client: t.Union[None, Client] = None,
         client_cls: t.Type[Client] = Client,
-        log_level: int = 0,
         config: t.Union[None, t.Dict[str, t.Any]] = None,
         transaction_name_callback: t.Union[None, t.Callable[[Request], str]] = None,
+        user_context_callback: t.Union[None, t.Callable[[Request], t.Awaitable[user_info_type]]] = None,
+        custom_context_callback: t.Union[
+            None, t.Callable[[req_or_response_type], t.Awaitable[custom_info_type]]
+        ] = None,
+        label_info_callback: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[label_info_type]]] = None,
         **defaults,
     ) -> None:
         self._app = app  # type: Sanic
-        self._logging = log_level  # type: int
         self._client_cls = client_cls  # type: type
         self._client = client  # type: t.Union[None, Client]
-        self._logger = None
         self._skip_headers = defaults.pop("skip_headers", [])  # type: t.List[str]
         self._transaction_name_callback = transaction_name_callback  # type: t.Union[None, t.Callable[[Request], str]]
+        self._user_context_callback = (
+            user_context_callback
+        )  # type: t.Union[None, t.Callable[[Request], t.Awaitable[user_info_type]]]
+        self._custom_context_callback = (
+            custom_context_callback
+        )  # type: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[custom_info_type]]]
+        self._label_info_callback = (
+            label_info_callback
+        )  # type: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[label_info_type]]]
+        self._logger = get_logger("elasticapm.errors.client")
         self._init_app(config=config, **defaults)
 
     async def capture_exception(self, *args, **kwargs):
@@ -83,7 +107,6 @@ class ElasticAPM:
             cfg = config or self._app.config.get("ELASTIC_APM")
             self._client = make_client(config=cfg, client_cls=self._client_cls, **defaults)
 
-        setup_logging(LoggingHandler(client=self._client, level=10))
         self._setup_exception_manager()
 
         if self._client.config.instrument and self._client.config.enabled:
@@ -93,6 +116,10 @@ class ElasticAPM:
 
                 register_instrumentation(client=self._client)
             except ImportError:
+                self._logger.debug(
+                    "Failed to setup instrumentation. "
+                    "Please install requirements for elasticapm.contrib.celery if instrumentation is required"
+                )
                 pass
 
         self._setup_request_handler()
@@ -120,6 +147,17 @@ class ElasticAPM:
 
                 set_transaction_name(name, override=False)
 
+                if self._user_context_callback:
+                    name, email, uid = await self._user_context_callback(request)
+                    set_user_context(username=name, email=email, user_id=uid)
+
+                if self._custom_context_callback:
+                    set_custom_context(data=await self._custom_context_callback(request))
+
+                if self._label_info_callback:
+                    labels = await self._label_info_callback(request)
+                    label(**labels)
+
         # noinspection PyUnusedLocal
         @self._app.middleware("response")
         async def _instrument_response(request: Request, response: HTTPResponse):
@@ -133,7 +171,7 @@ class ElasticAPM:
             )
             result = f"HTTP {response.status // 100}xx"
             set_transaction_result(result=result, override=False)
-            set_transaction_outcome(outcome=constants.OUTCOME.SUCCESS, override=False)
+            set_transaction_outcome(http_status_code=response.status, override=False)
             elastic_context(data={"status_code": response.status}, key="response")
             self._client.end_transaction()
 
@@ -165,4 +203,8 @@ class ElasticAPM:
 
             register_exception_tracking(client=self._client)
         except ImportError:
+            self._logger.debug(
+                "Failed to setup Exception tracking. "
+                "Please install requirements for elasticapm.contrib.celery if exception tracking is required"
+            )
             pass

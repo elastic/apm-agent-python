@@ -31,6 +31,7 @@
 from typing import Dict, Iterable, List, Tuple, Union
 
 from sanic import __version__ as version
+from sanic.cookies import CookieJar
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
@@ -67,6 +68,7 @@ async def get_request_info(
             "encrypted": request.scheme in ["https", "wss"],
         },
         "cookies": request.cookies,
+        "http_version": request.version,
     }
     if config.capture_headers:
         result["headers"] = extract_header(entity=request, skip_headers=skip_headers)
@@ -91,7 +93,9 @@ async def get_response_info(
     skip_headers: Union[None, List[str]] = None,
 ) -> Dict[str, str]:
     result = {
-        "cookies": response.cookies,
+        "cookies": _transform_response_cookie(cookies=response.cookies),
+        "finished": True,
+        "headers_sent": True,
     }
     if isinstance(response.status, compat.integer_types):
         result["status_code"] = response.status
@@ -108,14 +112,9 @@ async def get_response_info(
 
 
 def _get_client_ip(request: Request) -> str:
-    x_forwarded_for = request.forwarded
-    if x_forwarded_for:
-        return x_forwarded_for.split(",")[0]
-    else:
-        if request.socket != (None, None):
-            return f"{request.socket[0]}:{request.socket[1]}"
-        elif request.ip and request.port:
-            return f"{request.ip}:{request.port}"
+    try:
+        return request.ip or request.socket[0] or request.remote_addr
+    except IndexError:
         return request.remote_addr
 
 
@@ -125,3 +124,7 @@ def make_client(config: dict, client_cls=Client, **defaults) -> Client:
         defaults["framework_version"] = version
 
     return client_cls(config, **defaults)
+
+
+def _transform_response_cookie(cookies: CookieJar) -> Dict[str, str]:
+    return {k: {"value": v.value, "path": v["path"]} for k, v in cookies.items()}

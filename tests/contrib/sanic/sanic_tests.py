@@ -64,6 +64,6 @@ def test_get(sanic_app, elasticapm_client):
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": f"127.0.0.1:{source_request.port}", "encrypted": False}
+    assert request["socket"] == {"remote_address": f"127.0.0.1", "encrypted": False}
 
     assert span["name"] == "test"
