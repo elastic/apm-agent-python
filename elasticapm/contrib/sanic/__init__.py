@@ -124,8 +124,9 @@ class ElasticAPM:
 
         self._setup_request_handler()
 
+    # noinspection PyMethodMayBeStatic
     def _default_transaction_name_generator(self, request: Request) -> str:
-        name = self._app.router.get(request=request)[-1]
+        name = request.endpoint
         return f"{request.method}_{name}"
 
     def _setup_request_handler(self):
@@ -140,13 +141,7 @@ class ElasticAPM:
                     ),
                     "request",
                 )
-                if self._transaction_name_callback:
-                    name = self._transaction_name_callback(request)
-                else:
-                    name = self._default_transaction_name_generator(request=request)
-
-                set_transaction_name(name, override=False)
-
+                self._setup_transaction_name(request=request)
                 if self._user_context_callback:
                     name, email, uid = await self._user_context_callback(request)
                     set_user_context(username=name, email=email, user_id=uid)
@@ -169,11 +164,20 @@ class ElasticAPM:
                 ),
                 "response",
             )
+            self._setup_transaction_name(request=request)
             result = f"HTTP {response.status // 100}xx"
             set_transaction_result(result=result, override=False)
             set_transaction_outcome(http_status_code=response.status, override=False)
             elastic_context(data={"status_code": response.status}, key="response")
             self._client.end_transaction()
+
+    def _setup_transaction_name(self, request: Request) -> None:
+        if self._transaction_name_callback:
+            name = self._transaction_name_callback(request)
+        else:
+            name = self._default_transaction_name_generator(request=request)
+        if name:
+            set_transaction_name(name, override=False)
 
     # noinspection PyBroadException
     def _setup_exception_manager(self):
@@ -193,6 +197,7 @@ class ElasticAPM:
                 custom={"app": self._app},
                 handled=False,
             )
+            self._setup_transaction_name(request=request)
             set_transaction_result(result="HTTP 5xx", override=False)
             set_transaction_outcome(outcome=constants.OUTCOME.FAILURE, override=False)
             elastic_context(data={"status_code": 500}, key="response")
