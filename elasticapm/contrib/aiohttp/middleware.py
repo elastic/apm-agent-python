@@ -32,6 +32,7 @@ import aiohttp
 from aiohttp.web import HTTPException, Response, middleware
 
 import elasticapm
+from elasticapm import get_client
 from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp.utils import get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
@@ -44,13 +45,10 @@ class AioHttpTraceParent(TraceParent):
 
 
 def tracing_middleware(app):
-    from elasticapm.contrib.aiohttp import CLIENT_KEY  # noqa
-
     async def handle_request(request, handler):
-        elasticapm_client = app.get(CLIENT_KEY)
+        elasticapm_client = get_client()
         should_trace = elasticapm_client and not elasticapm_client.should_ignore_url(request.path)
         if should_trace:
-            request[CLIENT_KEY] = elasticapm_client
             trace_parent = AioHttpTraceParent.from_headers(request.headers)
             elasticapm_client.begin_transaction("request", trace_parent=trace_parent)
             resource = request.match_info.route.resource
