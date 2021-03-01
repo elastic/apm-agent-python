@@ -54,6 +54,8 @@ from elasticapm.utils.module_import import import_string
 
 __all__ = ("Client",)
 
+CLIENT_SINGLETON = None
+
 
 class Client(object):
     """
@@ -205,6 +207,9 @@ class Client(object):
         if config.enabled:
             self.start_threads()
 
+        # Save this Client object as the global CLIENT_SINGLETON
+        set_client(self)
+
     def start_threads(self):
         with self._thread_starter_lock:
             current_pid = os.getpid()
@@ -298,6 +303,8 @@ class Client(object):
             with self._thread_starter_lock:
                 for _, manager in self._thread_managers.items():
                     manager.stop_thread()
+        global CLIENT_SINGLETON
+        CLIENT_SINGLETON = None
 
     def get_service_info(self):
         if self._service_info:
@@ -611,3 +618,15 @@ class DummyClient(Client):
 
     def send(self, url, **kwargs):
         return None
+
+
+def get_client():
+    return CLIENT_SINGLETON
+
+
+def set_client(client):
+    global CLIENT_SINGLETON
+    if CLIENT_SINGLETON:
+        logger = get_logger("elasticapm")
+        logger.debug("Client object is being set more than once")
+    CLIENT_SINGLETON = client
