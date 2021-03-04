@@ -391,8 +391,9 @@ def _auto_ecs_logging_callback(dict_key, old_value, new_value, config_instance):
 
         # Stdlib
         root_logger = logging.getLogger()
+        formatter = ecs_logging.StdlibFormatter()
         for handler in root_logger.handlers:
-            handler.setFormatter(ecs_logging.StdlibFormatter())
+            handler.setFormatter(formatter)
 
         # Structlog
         try:
