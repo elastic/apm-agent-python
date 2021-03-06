@@ -52,6 +52,7 @@ from elasticapm import (
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
+from elasticapm.contrib.sanic.patch import ElasticAPMPatchedErrorHandler
 from elasticapm.contrib.sanic.utils import SanicAPMConfig, get_request_info, get_response_info, make_client
 from elasticapm.instrumentation.control import instrument
 from elasticapm.utils.disttracing import TraceParent
@@ -303,15 +304,15 @@ class ElasticAPM:
         if name:
             set_transaction_name(name, override=False)
 
-    # noinspection PyBroadException
+    # noinspection PyBroadException,PyProtectedMember
     def _setup_exception_manager(self, entity: t.Union[Sanic, Blueprint, BlueprintGroup]):
         """
         Setup global exception handler where all unhandled exception can be caught and tracked to APM server
         :param entity: entity: Sanic APP or Blueprint or BlueprintGroup Kind of resource
         :return:
         """
+
         # noinspection PyUnusedLocal
-        @entity.exception(Exception)
         async def _handler(request: Request, exception: Exception):
             if not self._client:
                 return
@@ -330,6 +331,13 @@ class ElasticAPM:
             set_transaction_outcome(outcome=constants.OUTCOME.FAILURE, override=False)
             elastic_context(data={"status_code": 500}, key="response")
             self._client.end_transaction()
+
+        patched_client = ElasticAPMPatchedErrorHandler(apm_handler=_handler)
+        patched_client.handlers = self._app.error_handler.handlers
+        patched_client.cached_handlers = self._app.error_handler.cached_handlers
+        patched_client._missing = self._app.error_handler._missing
+
+        self._app.error_handler = patched_client
 
         try:
             from elasticapm.contrib.celery import register_exception_tracking

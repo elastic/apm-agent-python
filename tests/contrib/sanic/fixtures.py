@@ -37,6 +37,7 @@ import time
 
 import pytest
 from sanic import Sanic
+from sanic.blueprints import Blueprint
 from sanic.request import Request
 from sanic.response import HTTPResponse, json
 from sanic_testing import TestManager
@@ -46,11 +47,25 @@ from elasticapm import async_capture_span
 from elasticapm.contrib.sanic import ElasticAPM
 
 
+class CustomException(Exception):
+    pass
+
+
 @pytest.fixture()
 def sanic_app(elasticapm_client):
     app = Sanic(name="elastic-apm")
-    ElasticAPM(app=app, client=elasticapm_client)
+    apm = ElasticAPM(app=app, client=elasticapm_client)
     TestManager(app=app)
+
+    bp = Blueprint(name="test", url_prefix="/apm", version="v1")
+
+    @app.exception(Exception)
+    def handler(request, exception):
+        return json({"response": str(exception)}, 500)
+
+    @bp.post("/unhandled-exception")
+    async def raise_something(request):
+        raise CustomException("Unhandled")
 
     @app.route("/", methods=["GET", "POST"])
     def default_route(request: Request):
@@ -58,9 +73,19 @@ def sanic_app(elasticapm_client):
             pass
         return json({"response": "ok"})
 
-    @app.route("/greet/<name:str>")
+    @app.get("/greet/<name:str>")
     async def greet_person(request: Request, name: str):
         return json({"response": f"Hello {name}"})
+
+    @app.get("/capture-exception")
+    async def capture_exception(request):
+        try:
+            1 / 0
+        except ZeroDivisionError:
+            await apm.capture_exception()
+        return json({"response": "invalid"}, 500)
+
+    app.blueprint(blueprint=bp)
 
     try:
         yield app

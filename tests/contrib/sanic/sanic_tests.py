@@ -54,7 +54,7 @@ def test_get(sanic_app, elasticapm_client):
     span = spans[0]
 
     for field, value in {
-        "name": "GET_elastic-apm.default_route",
+        "name": "GET /",
         "result": "HTTP 2xx",
         "outcome": "success",
         "type": "request",
@@ -67,3 +67,45 @@ def test_get(sanic_app, elasticapm_client):
     assert request["socket"] == {"remote_address": f"127.0.0.1", "encrypted": False}
 
     assert span["name"] == "test"
+
+
+def test_capture_exception(sanic_app, elasticapm_client):
+    _, _ = sanic_app.test_client.get(
+        "/capture-exception",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
+
+    assert len(elasticapm_client.events[constants.ERROR]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+
+    for field, value in {
+        "name": "GET /capture-exception",
+        "result": "HTTP 5xx",
+        "outcome": "failure",
+        "type": "request",
+    }.items():
+        assert transaction[field] == value
+
+
+def test_unhandled_exception_capture(sanic_app, elasticapm_client):
+    _, resp = sanic_app.test_client.post(
+        "/v1/apm/unhandled-exception",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
+    assert len(elasticapm_client.events[constants.ERROR]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    for field, value in {
+        "name": "POST /v1/apm/unhandled-exception",
+        "result": "HTTP 5xx",
+        "outcome": "failure",
+        "type": "request",
+    }.items():
+        assert transaction[field] == value
