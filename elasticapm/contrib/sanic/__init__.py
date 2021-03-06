@@ -324,7 +324,7 @@ class ElasticAPM:
                         config=self._client.config, request=request, skip_headers=self._skip_headers
                     ),
                 },
-                handled=False,
+                handled=True,
             )
             self._setup_transaction_name(request=request)
             set_transaction_result(result="HTTP 5xx", override=False)
