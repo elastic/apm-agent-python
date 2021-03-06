@@ -134,10 +134,43 @@ apm = ElasticAPM(app=app, config={
 This would ignore any requests using the `GET /secret` route
 and any requests containing `/extra_secret`.
 
+[float]
+[[extended-sanic-usage]]
+==== Extended Sanic APM Client Usage
+
+Sanic's contributed APM client also provides a few extendable way to configure selective behaviors to enhance the
+information collected as part of the transactions being tracked by the APM.
+
+In order to enable this behavior, the APM Client middleware provides a few callback functions that you can leverage
+in order to simplify the process of generating additional contexts into the traces being collected.
+[cols="1,1,1,1"]
+|===
+| Callback Name | Callback Invocation Format | Expected Return Format | Is Async
+
+| transaction_name_callback
+| transaction_name_callback(request)
+| string
+| false
+
+| user_context_callback
+| user_context_callback(request)
+| (username_string, useremain_string, userid_string)
+| true
+
+| custom_context_callback
+| custom_context_callback(request) or custom_context_callback(response)
+| dict(str=str)
+| true
+
+| label_info_callback
+| label_info_callback()
+| dict(str=str)
+| true
+|===
 
 [float]
-[[supported-starlette-and-python-versions]]
-==== Supported Starlette and Python versions
+[[supported-stanic-and-python-versions]]
+==== Supported Sanic and Python versions
 
 A list of supported <<supported-sanic,Sanic>> and
 <<supported-python,Python>> versions can be found on our
