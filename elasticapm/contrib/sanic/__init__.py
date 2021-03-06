@@ -35,6 +35,8 @@ import sys
 import typing as t
 
 from sanic import Sanic
+from sanic.blueprint_group import BlueprintGroup
+from sanic.blueprints import Blueprint
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
@@ -50,7 +52,7 @@ from elasticapm import (
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
-from elasticapm.contrib.sanic.utils import get_request_info, get_response_info, make_client
+from elasticapm.contrib.sanic.utils import SanicAPMConfig, get_request_info, get_response_info, make_client
 from elasticapm.instrumentation.control import instrument
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
@@ -62,12 +64,50 @@ req_or_response_type = t.Union[Request, HTTPResponse]
 
 
 class ElasticAPM:
+    """
+    Sanic App Middleware for Elastic APM Capturing
+
+    >>> app = Sanic(name="elastic-apm-sample")
+
+    Pass the Sanic app and let the configuration be derived from it::
+
+    >>> apm = ElasticAPM(app=app)
+
+    Configure the APM Client Using Custom Configurations::
+
+    >>> apm = ElasticAPM(app=app, config={
+        "SERVICE_NAME": "elastic-apm-sample",
+        "SERVICE_VERSION": "v1.2.0",
+        "SERVER_URL": "http://eapm-server.somdomain.com:443",
+        "SECRET_TOKEN": "supersecrettokenstuff",
+    })
+
+    Pass a pre-build Clinet instance to the APM Middleware::
+
+    >>> apm = ElasticAPM(app=app, client=Client())
+
+    Pass arbitrary Server name and token to the client while initializing::
+
+    >>> apm = ElasticAPM(app=app, service_name="elastic-apm-sample", secret_token="supersecretthing")
+
+    Capture an Exception::
+
+    >>> try:
+    >>>     1 / 0
+    >>> except ZeroDivisionError:
+    >>>     apm.capture_exception()
+
+    Capture generic message::
+
+    >>> apm.capture_message("Some Nice message to be captured")
+    """
+
     def __init__(
         self,
         app: Sanic,
         client: t.Union[None, Client] = None,
         client_cls: t.Type[Client] = Client,
-        config: t.Union[None, t.Dict[str, t.Any]] = None,
+        config: t.Union[None, t.Dict[str, t.Any], t.Dict[bytes, t.Any]] = None,
         transaction_name_callback: t.Union[None, t.Callable[[Request], str]] = None,
         user_context_callback: t.Union[None, t.Callable[[Request], t.Awaitable[user_info_type]]] = None,
         custom_context_callback: t.Union[
@@ -76,10 +116,28 @@ class ElasticAPM:
         label_info_callback: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[label_info_type]]] = None,
         **defaults,
     ) -> None:
+        """
+        Initialize an instance of the ElasticAPM client that will be used to configure the reset of the Application
+        middleware
+
+        :param app: An instance of Sanic app server
+        :param client: An instance of Client if you want to leverage a custom APM client instance pre-created
+        :param client_cls: Base Instance of the Elastic Client to be used to setup the APM Middleware
+        :param config: Configuration values to be used for setting up the Elastic Client. This includes the APM server
+        :param transaction_name_callback: Callback method used to extract the transaction name. If nothing is provided
+            it will fallback to the default implementation provided by the middleware extension
+        :param user_context_callback: Callback method used to extract the user context information. Will be ignored
+            if one is not provided by the users while creating an instance of the ElasticAPM client
+        :param custom_context_callback: Callback method used to generate custom context information for the transaction
+        :param label_info_callback: Callback method used to generate custom labels/tags for the current transaction
+        :param defaults: Default configuration values to be used for settings up the APM client
+        """
         self._app = app  # type: Sanic
         self._client_cls = client_cls  # type: type
         self._client = client  # type: t.Union[None, Client]
         self._skip_headers = defaults.pop("skip_headers", [])  # type: t.List[str]
+        self._skip_init_middleware = defaults.pop("skip_init_middleware", False)  # type: bool
+        self._skip_init_exception_handler = defaults.pop("skip_init_exception_handler", False)  # type: bool
         self._transaction_name_callback = transaction_name_callback  # type: t.Union[None, t.Callable[[Request], str]]
         self._user_context_callback = (
             user_context_callback
@@ -91,23 +149,52 @@ class ElasticAPM:
             label_info_callback
         )  # type: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[label_info_type]]]
         self._logger = get_logger("elasticapm.errors.client")
-        self._init_app(config=config, **defaults)
+        self._client_config = {}  # type: t.Dict[str, str]
+        self._setup_client_config(config=config)
+        self._init_app()
 
-    async def capture_exception(self, *args, **kwargs):
+    async def capture_exception(self, exc_info=None, handled=True, **kwargs):
+        """
+        Capture a generic exception and traceback to be reported to the APM
+        :param exc_info: Exc info extracted from the traceback for the current exception
+        :param handled: Boolean indicator for if the exception is handled.
+        :param kwargs: additional context to be passed to the API client for capturing exception related information
+        :return: None
+        """
         assert self._client, "capture_exception called before application configuration is initialized"
-        return self._client.capture_exception(*args, **kwargs)
+        return self._client.capture_exception(exc_info=exc_info, handled=handled, **kwargs)
 
-    async def capture_message(self, *args, **kwargs):
+    async def capture_message(self, message=None, param_message=None, **kwargs):
+        """
+        Capture a generic message for the APM Client
+        :param message: Message information to be captured
+        :param param_message:
+        :param kwargs: additional context to be passed to the API client for capturing exception related information
+        :return:
+        """
         assert self._client, "capture_message called before application configuration is initialized"
-        return self._client.capture_message(*args, **kwargs)
+        return self._client.capture_message(message=message, param_message=param_message, **kwargs)
 
-    # noinspection PyBroadException
-    def _init_app(self, config: t.Union[None, t.Dict[str, t.Any]], **defaults) -> None:
+    def _setup_client_config(self, config: t.Union[None, t.Dict[str, t.Any], t.Dict[bytes, t.Any]] = None):
+        app_based_config = SanicAPMConfig(self._app)
+        if dict(app_based_config):
+            self._client_config = dict(app_based_config)
+
+        if config:
+            self._client_config.update(config)
+
+    # noinspection PyBroadException,PyUnresolvedReferences
+    def _init_app(self) -> None:
+        """
+        Initialize all the required middleware and other application infrastructure that will perform the necessary
+        capture of the APM instrumentation artifacts
+        :return: None
+        """
         if not self._client:
-            cfg = config or self._app.config.get("ELASTIC_APM")
-            self._client = make_client(config=cfg, client_cls=self._client_cls, **defaults)
+            self._client = make_client(config=self._client_config, client_cls=self._client_cls, **self._client_config)
 
-        self._setup_exception_manager()
+        if not self._skip_init_exception_handler:
+            self._setup_exception_manager(entity=self._app)
 
         if self._client.config.instrument and self._client.config.enabled:
             instrument()
@@ -122,15 +209,47 @@ class ElasticAPM:
                 )
                 pass
 
-        self._setup_request_handler()
+        if not self._skip_init_middleware:
+            self._setup_request_handler(entity=self._app)
 
     # noinspection PyMethodMayBeStatic
     def _default_transaction_name_generator(self, request: Request) -> str:
-        name = request.endpoint
-        return f"{request.method}_{name}"
+        """
+        Method used to extract the default transaction name. This is generated by joining the HTTP method and the
+        URL path used for invoking the API handler
+        :param request: Sanic HTTP Request object
+        :return: string containing the Transaction name
+        """
+        return f"{request.method} {request.path}"
 
-    def _setup_request_handler(self):
-        @self._app.middleware("request")
+    def setup_middleware(self, entity: t.Union[Blueprint, BlueprintGroup]):
+        """
+        Adhoc registration of the middlewares for Blueprint and BlueprintGroup if you don't want to instrument
+        your entire application. Only part of it can be done.
+        :param entity: Blueprint or BlueprintGroup Kind of resource
+        :return: None
+        """
+        self._setup_request_handler(entity=entity)
+
+    def setup_exception_handler(self, entity: t.Union[Blueprint, BlueprintGroup]):
+        """
+        Adhoc registration of the middlewares for Blueprint and BlueprintGroup if you don't want to instrument
+        your entire application. Only part of it can be done.
+        :param entity: Blueprint or BlueprintGroup Kind of resource
+        :return: None
+        """
+        self._setup_exception_manager(entity=entity)
+
+    def _setup_request_handler(self, entity: t.Union[Sanic, Blueprint, BlueprintGroup]) -> None:
+        """
+        This method is used to setup a series of Sanic Application level middleware so that they can be applied to all
+        the routes being registered under the app easily.
+
+        :param entity: entity: Sanic APP or Blueprint or BlueprintGroup Kind of resource
+        :return: None
+        """
+
+        @entity.middleware("request")
         async def _instrument_request(request: Request):
             if not self._client.should_ignore_url(url=request.path):
                 trace_parent = TraceParent.from_headers(headers=request.headers)
@@ -154,7 +273,7 @@ class ElasticAPM:
                     label(**labels)
 
         # noinspection PyUnusedLocal
-        @self._app.middleware("response")
+        @entity.middleware("response")
         async def _instrument_response(request: Request, response: HTTPResponse):
             await set_context(
                 lambda: get_response_info(
@@ -172,6 +291,11 @@ class ElasticAPM:
             self._client.end_transaction()
 
     def _setup_transaction_name(self, request: Request) -> None:
+        """
+        Method used to setup the transaction name using the provided callback or the default mode
+        :param request: Incoming HTTP Request entity
+        :return: None
+        """
         if self._transaction_name_callback:
             name = self._transaction_name_callback(request)
         else:
@@ -180,9 +304,14 @@ class ElasticAPM:
             set_transaction_name(name, override=False)
 
     # noinspection PyBroadException
-    def _setup_exception_manager(self):
+    def _setup_exception_manager(self, entity: t.Union[Sanic, Blueprint, BlueprintGroup]):
+        """
+        Setup global exception handler where all unhandled exception can be caught and tracked to APM server
+        :param entity: entity: Sanic APP or Blueprint or BlueprintGroup Kind of resource
+        :return:
+        """
         # noinspection PyUnusedLocal
-        @self._app.exception(Exception)
+        @entity.exception(Exception)
         async def _handler(request: Request, exception: Exception):
             if not self._client:
                 return
@@ -194,7 +323,6 @@ class ElasticAPM:
                         config=self._client.config, request=request, skip_headers=self._skip_headers
                     ),
                 },
-                custom={"app": self._app},
                 handled=False,
             )
             self._setup_transaction_name(request=request)

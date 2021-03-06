@@ -30,6 +30,7 @@
 
 from typing import Dict, Iterable, List, Tuple, Union
 
+from sanic import Sanic
 from sanic import __version__ as version
 from sanic.cookies import CookieJar
 from sanic.request import Request
@@ -40,13 +41,34 @@ from elasticapm.conf import Config, constants
 from elasticapm.utils import compat, get_url_dict
 
 
+class SanicAPMConfig(dict):
+    def __init__(self, app: Sanic):
+        super(SanicAPMConfig, self).__init__()
+        for _key, _v in app.config.items():
+            if _key.startswith("ELASTIC_APM_"):
+                self[_key.replace("ELASTIC_APM_", "")] = _v
+
+
 def get_env(request: Request) -> Iterable[Tuple[str, str]]:
+    """
+    Extract Server Environment Information from the current Request's context
+    :param request: Inbound HTTP Request
+    :return: A tuple containing the attribute and it's corresponding value for the current Application ENV
+    """
     for _attr in ("server_name", "server_port", "version"):
         if hasattr(request, _attr):
             yield _attr, getattr(request, _attr)
 
 
 def extract_header(entity: Union[Request, HTTPResponse], skip_headers: Union[None, List[str]]) -> Dict[str, str]:
+    """
+    Extract the necessary headers from the Incoming request. This method also provides a way to skip
+    certain headers from being included in the trace and they might contain sensitive information such
+    as the JWT Token and they might not always need to be tracked.
+    :param entity: HTTP Request or the HTTP Response Entity
+    :param skip_headers: A list of String indicating which headers to be skipped while extracting the headers
+    :return:
+    """
     header = dict(entity.headers)
     if skip_headers:
         for _header in skip_headers:
@@ -58,6 +80,14 @@ def extract_header(entity: Union[Request, HTTPResponse], skip_headers: Union[Non
 async def get_request_info(
     config: Config, request: Request, skip_headers: Union[None, List[str]] = None
 ) -> Dict[str, str]:
+    """
+    Generate a traceable context information from the inbound HTTP request
+
+    :param config: Application Configuration used to tune the way the data is captured
+    :param request: Inbound HTTP request
+    :param skip_headers: A list of String indicating which headers to be skipped while extracting the headers
+    :return: A dictionary containing the context information of the ongoing transaction
+    """
     env = dict(get_env(request=request))
     env.update(dict(request.app.config))
     result = {
@@ -92,6 +122,14 @@ async def get_response_info(
     response: HTTPResponse,
     skip_headers: Union[None, List[str]] = None,
 ) -> Dict[str, str]:
+    """
+    Generate a traceable context information from the inbound HTTP Response
+
+    :param config: Application Configuration used to tune the way the data is captured
+    :param response: outbound HTTP Response
+    :param skip_headers: A list of String indicating which headers to be skipped while extracting the headers
+    :return: A dictionary containing the context information of the ongoing transaction
+    """
     result = {
         "cookies": _transform_response_cookie(cookies=response.cookies),
         "finished": True,
@@ -112,6 +150,7 @@ async def get_response_info(
 
 
 def _get_client_ip(request: Request) -> str:
+    """Extract Client IP Address Information"""
     try:
         return request.ip or request.socket[0] or request.remote_addr
     except IndexError:
@@ -127,4 +166,5 @@ def make_client(config: dict, client_cls=Client, **defaults) -> Client:
 
 
 def _transform_response_cookie(cookies: CookieJar) -> Dict[str, str]:
+    """Transform the Sanic's CookieJar instance into a Normal dictionary to build the context"""
     return {k: {"value": v.value, "path": v["path"]} for k, v in cookies.items()}
