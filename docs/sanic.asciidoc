@@ -154,7 +154,7 @@ in order to simplify the process of generating additional contexts into the trac
 
 | user_context_callback
 | user_context_callback(request)
-| (username_string, useremain_string, userid_string)
+| (username_string, user_email_string, userid_string)
 | true
 
 | custom_context_callback
