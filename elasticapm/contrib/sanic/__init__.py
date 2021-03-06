@@ -195,7 +195,7 @@ class ElasticAPM:
             self._client = make_client(config=self._client_config, client_cls=self._client_cls, **self._client_config)
 
         if not self._skip_init_exception_handler:
-            self._setup_exception_manager(entity=self._app)
+            self._setup_exception_manager()
 
         if self._client.config.instrument and self._client.config.enabled:
             instrument()
@@ -231,15 +231,6 @@ class ElasticAPM:
         :return: None
         """
         self._setup_request_handler(entity=entity)
-
-    def setup_exception_handler(self, entity: t.Union[Blueprint, BlueprintGroup]):
-        """
-        Adhoc registration of the middlewares for Blueprint and BlueprintGroup if you don't want to instrument
-        your entire application. Only part of it can be done.
-        :param entity: Blueprint or BlueprintGroup Kind of resource
-        :return: None
-        """
-        self._setup_exception_manager(entity=entity)
 
     def _setup_request_handler(self, entity: t.Union[Sanic, Blueprint, BlueprintGroup]) -> None:
         """
@@ -305,10 +296,9 @@ class ElasticAPM:
             set_transaction_name(name, override=False)
 
     # noinspection PyBroadException,PyProtectedMember
-    def _setup_exception_manager(self, entity: t.Union[Sanic, Blueprint, BlueprintGroup]):
+    def _setup_exception_manager(self):
         """
         Setup global exception handler where all unhandled exception can be caught and tracked to APM server
-        :param entity: entity: Sanic APP or Blueprint or BlueprintGroup Kind of resource
         :return:
         """
 
