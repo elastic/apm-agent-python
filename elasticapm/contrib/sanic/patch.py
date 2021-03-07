@@ -43,9 +43,15 @@ class ElasticAPMPatchedErrorHandler(ErrorHandler):
     chain the exception down to the original handler so that we don't get in the way of standard exception handling.
     """
 
-    def __init__(self, apm_handler: t.Callable[[Request, Exception], t.Awaitable[None]]):
+    def __init__(self):
         super(ElasticAPMPatchedErrorHandler, self).__init__()
-        self._apm_handler = apm_handler
+        self._apm_handler = None  # type: t.Union[None, t.Callable[[Request, Exception], t.Awaitable[None]]]
+
+    def setup_apm_handler(
+        self, apm_handler: t.Union[None, t.Callable[[Request, Exception], t.Awaitable[None]]], force: bool = False
+    ):
+        if self._apm_handler is None or force:
+            self._apm_handler = apm_handler
 
     async def _patched_response(self, request, exception, default=False):
         await self._apm_handler(request, exception)

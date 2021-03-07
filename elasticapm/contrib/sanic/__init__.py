@@ -322,12 +322,15 @@ class ElasticAPM:
             elastic_context(data={"status_code": 500}, key="response")
             self._client.end_transaction()
 
-        patched_client = ElasticAPMPatchedErrorHandler(apm_handler=_handler)
-        patched_client.handlers = self._app.error_handler.handlers
-        patched_client.cached_handlers = self._app.error_handler.cached_handlers
-        patched_client._missing = self._app.error_handler._missing
-
-        self._app.error_handler = patched_client
+        if not isinstance(self._app.error_handler, ElasticAPMPatchedErrorHandler):
+            patched_client = ElasticAPMPatchedErrorHandler()
+            patched_client.setup_apm_handler(apm_handler=_handler)
+            patched_client.handlers = self._app.error_handler.handlers
+            patched_client.cached_handlers = self._app.error_handler.cached_handlers
+            patched_client._missing = self._app.error_handler._missing
+            self._app.error_handler = patched_client
+        else:
+            self._app.error_handler.setup_apm_handler(apm_handler=_handler)
 
         try:
             from elasticapm.contrib.celery import register_exception_tracking
