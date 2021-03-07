@@ -65,11 +65,6 @@ from elasticapm.instrumentation.control import instrument
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
-user_info_type = t.Tuple[t.Union[None, str], t.Union[None, str], t.Union[None, str]]
-label_info_type = t.Dict[str, t.Union[str, bool, int, float]]
-custom_info_type = t.Dict[str, t.Any]
-req_or_response_type = t.Union[Request, HTTPResponse]
-
 
 class ElasticAPM:
     """
