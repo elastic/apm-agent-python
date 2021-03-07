@@ -28,7 +28,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, List, Optional
 
 from sanic import Sanic
 from sanic import __version__ as version
@@ -38,6 +38,7 @@ from sanic.response import HTTPResponse
 
 from elasticapm.base import Client
 from elasticapm.conf import Config, constants
+from elasticapm.contrib.sanic.sanic_types import EnvInfoType, SanicRequestOrResponse
 from elasticapm.utils import compat, get_url_dict
 
 
@@ -49,7 +50,7 @@ class SanicAPMConfig(dict):
                 self[_key.replace("ELASTIC_APM_", "")] = _v
 
 
-def get_env(request: Request) -> Iterable[Tuple[str, str]]:
+def get_env(request: Request) -> EnvInfoType:
     """
     Extract Server Environment Information from the current Request's context
     :param request: Inbound HTTP Request
@@ -60,7 +61,7 @@ def get_env(request: Request) -> Iterable[Tuple[str, str]]:
             yield _attr, getattr(request, _attr)
 
 
-def extract_header(entity: Union[Request, HTTPResponse], skip_headers: Union[None, List[str]]) -> Dict[str, str]:
+def extract_header(entity: SanicRequestOrResponse, skip_headers: Optional[List[str]]) -> Dict[str, str]:
     """
     Extract the necessary headers from the Incoming request. This method also provides a way to skip
     certain headers from being included in the trace and they might contain sensitive information such
@@ -78,7 +79,7 @@ def extract_header(entity: Union[Request, HTTPResponse], skip_headers: Union[Non
 
 # noinspection PyBroadException
 async def get_request_info(
-    config: Config, request: Request, skip_headers: Union[None, List[str]] = None
+    config: Config, request: Request, skip_headers: Optional[List[str]] = None
 ) -> Dict[str, str]:
     """
     Generate a traceable context information from the inbound HTTP request
@@ -120,7 +121,7 @@ async def get_request_info(
 async def get_response_info(
     config: Config,
     response: HTTPResponse,
-    skip_headers: Union[None, List[str]] = None,
+    skip_headers: Optional[List[str]] = None,
 ) -> Dict[str, str]:
     """
     Generate a traceable context information from the inbound HTTP Response

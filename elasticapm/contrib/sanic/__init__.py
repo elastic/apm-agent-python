@@ -35,8 +35,6 @@ import sys
 import typing as t
 
 from sanic import Sanic
-from sanic.blueprint_group import BlueprintGroup
-from sanic.blueprints import Blueprint
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
@@ -53,6 +51,15 @@ from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.sanic.patch import ElasticAPMPatchedErrorHandler
+from elasticapm.contrib.sanic.sanic_types import (
+    AllMiddlewareGroup,
+    APMConfigType,
+    CustomContextCallbackType,
+    ExtendableMiddlewareGroup,
+    LabelInfoCallbackType,
+    TransactionNameCallbackType,
+    UserInfoCallbackType,
+)
 from elasticapm.contrib.sanic.utils import SanicAPMConfig, get_request_info, get_response_info, make_client
 from elasticapm.instrumentation.control import instrument
 from elasticapm.utils.disttracing import TraceParent
@@ -106,15 +113,13 @@ class ElasticAPM:
     def __init__(
         self,
         app: Sanic,
-        client: t.Union[None, Client] = None,
+        client: t.Optional[Client] = None,
         client_cls: t.Type[Client] = Client,
-        config: t.Union[None, t.Dict[str, t.Any], t.Dict[bytes, t.Any]] = None,
-        transaction_name_callback: t.Union[None, t.Callable[[Request], str]] = None,
-        user_context_callback: t.Union[None, t.Callable[[Request], t.Awaitable[user_info_type]]] = None,
-        custom_context_callback: t.Union[
-            None, t.Callable[[req_or_response_type], t.Awaitable[custom_info_type]]
-        ] = None,
-        label_info_callback: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[label_info_type]]] = None,
+        config: APMConfigType = None,
+        transaction_name_callback: TransactionNameCallbackType = None,
+        user_context_callback: UserInfoCallbackType = None,
+        custom_context_callback: CustomContextCallbackType = None,
+        label_info_callback: LabelInfoCallbackType = None,
         **defaults,
     ) -> None:
         """
@@ -139,16 +144,10 @@ class ElasticAPM:
         self._skip_headers = defaults.pop("skip_headers", [])  # type: t.List[str]
         self._skip_init_middleware = defaults.pop("skip_init_middleware", False)  # type: bool
         self._skip_init_exception_handler = defaults.pop("skip_init_exception_handler", False)  # type: bool
-        self._transaction_name_callback = transaction_name_callback  # type: t.Union[None, t.Callable[[Request], str]]
-        self._user_context_callback = (
-            user_context_callback
-        )  # type: t.Union[None, t.Callable[[Request], t.Awaitable[user_info_type]]]
-        self._custom_context_callback = (
-            custom_context_callback
-        )  # type: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[custom_info_type]]]
-        self._label_info_callback = (
-            label_info_callback
-        )  # type: t.Union[None, t.Callable[[req_or_response_type], t.Awaitable[label_info_type]]]
+        self._transaction_name_callback = transaction_name_callback  # type: TransactionNameCallbackType
+        self._user_context_callback = user_context_callback  # type: UserInfoCallbackType
+        self._custom_context_callback = custom_context_callback  # type: CustomContextCallbackType
+        self._label_info_callback = label_info_callback  # type: LabelInfoCallbackType
         self._logger = get_logger("elasticapm.errors.client")
         self._client_config = {}  # type: t.Dict[str, str]
         self._setup_client_config(config=config)
@@ -176,7 +175,7 @@ class ElasticAPM:
         assert self._client, "capture_message called before application configuration is initialized"
         return self._client.capture_message(message=message, param_message=param_message, **kwargs)
 
-    def _setup_client_config(self, config: t.Union[None, t.Dict[str, t.Any], t.Dict[bytes, t.Any]] = None):
+    def _setup_client_config(self, config: APMConfigType = None):
         app_based_config = SanicAPMConfig(self._app)
         if dict(app_based_config):
             self._client_config = dict(app_based_config)
@@ -223,7 +222,7 @@ class ElasticAPM:
         """
         return f"{request.method} {request.path}"
 
-    def setup_middleware(self, entity: t.Union[Blueprint, BlueprintGroup]):
+    def setup_middleware(self, entity: ExtendableMiddlewareGroup):
         """
         Adhoc registration of the middlewares for Blueprint and BlueprintGroup if you don't want to instrument
         your entire application. Only part of it can be done.
@@ -232,7 +231,7 @@ class ElasticAPM:
         """
         self._setup_request_handler(entity=entity)
 
-    def _setup_request_handler(self, entity: t.Union[Sanic, Blueprint, BlueprintGroup]) -> None:
+    def _setup_request_handler(self, entity: AllMiddlewareGroup) -> None:
         """
         This method is used to setup a series of Sanic Application level middleware so that they can be applied to all
         the routes being registered under the app easily.
@@ -303,7 +302,7 @@ class ElasticAPM:
         """
 
         # noinspection PyUnusedLocal
-        async def _handler(request: Request, exception: Exception):
+        async def _handler(request: Request, exception: BaseException):
             if not self._client:
                 return
 

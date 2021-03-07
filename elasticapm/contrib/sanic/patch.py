@@ -28,11 +28,11 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
-import typing as t
 from inspect import isawaitable, iscoroutinefunction
 
 from sanic.handlers import ErrorHandler
-from sanic.request import Request
+
+from elasticapm.contrib.sanic.sanic_types import ApmHandlerType
 
 
 class ElasticAPMPatchedErrorHandler(ErrorHandler):
@@ -45,11 +45,9 @@ class ElasticAPMPatchedErrorHandler(ErrorHandler):
 
     def __init__(self):
         super(ElasticAPMPatchedErrorHandler, self).__init__()
-        self._apm_handler = None  # type: t.Union[None, t.Callable[[Request, Exception], t.Awaitable[None]]]
+        self._apm_handler = None  # type: ApmHandlerType
 
-    def setup_apm_handler(
-        self, apm_handler: t.Union[None, t.Callable[[Request, Exception], t.Awaitable[None]]], force: bool = False
-    ):
+    def setup_apm_handler(self, apm_handler: ApmHandlerType, force: bool = False):
         if self._apm_handler is None or force:
             self._apm_handler = apm_handler
 
