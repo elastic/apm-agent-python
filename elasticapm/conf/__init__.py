@@ -367,7 +367,41 @@ def _log_level_callback(dict_key, old_value, new_value, config_instance):
         filehandler = logging.handlers.RotatingFileHandler(
             config_instance.log_file, maxBytes=config_instance.log_file_size, backupCount=1
         )
+        try:
+            import ecs_logging
+
+            filehandler.setFormatter(ecs_logging.StdlibFormatter())
+        except ImportError:
+            pass
         elasticapm_logger.addHandler(filehandler)
+
+
+def _auto_ecs_logging_callback(dict_key, old_value, new_value, config_instance):
+    """
+    If ecs_logging is installed and auto_ecs_logging is set to True, we should
+    set the ecs_logging.StdlibFormatter as the formatted for every handler in
+    the root logger, and set the default processor for structlog to the
+    ecs_logging.StructlogFormatter.
+    """
+    if new_value:
+        try:
+            import ecs_logging
+        except ImportError:
+            return
+
+        # Stdlib
+        root_logger = logging.getLogger()
+        formatter = ecs_logging.StdlibFormatter()
+        for handler in root_logger.handlers:
+            handler.setFormatter(formatter)
+
+        # Structlog
+        try:
+            import structlog
+
+            structlog.configure(processors=[ecs_logging.StructlogFormatter()])
+        except ImportError:
+            pass
 
 
 class _ConfigBase(object):
@@ -582,6 +616,7 @@ class Config(_ConfigBase):
     )
     log_file = _ConfigValue("LOG_FILE", default="")
     log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
+    auto_ecs_logging = _BoolConfigValue("AUTO_ECS_LOGGING", callbacks=[_auto_ecs_logging_callback], default=False)
 
     @property
     def is_recording(self):
