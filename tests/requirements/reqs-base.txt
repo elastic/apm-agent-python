@@ -46,6 +46,8 @@ mock
 msgpack-python
 pep8
 pytz
+ecs_logging
+structlog
 
 
 pytest-asyncio==0.14.0 ; python_version >= '3.7'
