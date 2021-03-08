@@ -52,7 +52,7 @@ class LoggingHandler(BaseLoggingHandler):
     @property
     def client(self):
         try:
-            app = apps.get_app_config("elasticapm.contrib.django")
+            app = apps.get_app_config("elasticapm")
             if not app.client:
                 logger.warning("Can't send log message to APM server, Django apps not initialized yet")
             return app.client

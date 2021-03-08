@@ -57,7 +57,7 @@ def django_elasticapm_client(request):
     client_config.setdefault("service_name", "app")
     client_config.setdefault("secret_token", "secret")
     client_config.setdefault("span_frames_min_duration", -1)
-    app = apps.get_app_config("elasticapm.contrib.django")
+    app = apps.get_app_config("elasticapm")
     old_client = app.client
     client = TempStoreClient(**client_config)
     register_handlers(client)
@@ -83,7 +83,7 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("secret_token", "secret")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
     client_config.setdefault("span_frames_min_duration", -1)
-    app = apps.get_app_config("elasticapm.contrib.django")
+    app = apps.get_app_config("elasticapm")
     old_client = app.client
     client = DjangoClient(**client_config)
     register_handlers(client)
