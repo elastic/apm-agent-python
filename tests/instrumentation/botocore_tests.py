@@ -47,10 +47,33 @@ os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
 LOCALSTACK_ENDPOINT = os.environ.get("AWS_URL", None)
 
+from boto3.dynamodb.types import TypeSerializer
+
+dynamodb_serializer = TypeSerializer()
+
 if not LOCALSTACK_ENDPOINT:
     pytestmark.append(pytest.mark.skip("Skipping botocore tests, no AWS_URL environment variable set"))
 
 LOCALSTACK_ENDPOINT_URL = urlparse.urlparse(LOCALSTACK_ENDPOINT)
+
+
+@pytest.fixture()
+def dynamodb():
+    db = boto3.client("dynamodb", endpoint_url="http://localhost:4566")
+    db.create_table(
+        TableName="Movies",
+        KeySchema=[
+            {"AttributeName": "year", "KeyType": "HASH"},  # Partition key
+            {"AttributeName": "title", "KeyType": "RANGE"},  # Sort key
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "year", "AttributeType": "N"},
+            {"AttributeName": "title", "AttributeType": "S"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+    )
+    yield db
+    db.delete_table(TableName="Movies")
 
 
 @mock.patch("botocore.endpoint.Endpoint.make_request")
@@ -151,3 +174,66 @@ def test_s3(instrument, elasticapm_client):
     assert spans[1]["action"] == "PutObject"
     assert spans[2]["name"] == "S3 ListObjects xyz"
     assert spans[2]["action"] == "ListObjects"
+
+
+def test_dynamodb(instrument, elasticapm_client, dynamodb):
+    elasticapm_client.begin_transaction("test")
+    response = dynamodb.put_item(
+        TableName="Movies",
+        Item={"title": dynamodb_serializer.serialize("Independence Day"), "year": dynamodb_serializer.serialize(1994)},
+    )
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    response = dynamodb.get_item(
+        TableName="Movies",
+        Key={
+            "title": {
+                "S": '"Independence Day"',
+            },
+            "year": {
+                "N": "1994",
+            },
+        },
+    )
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    response = dynamodb.delete_item(
+        TableName="Movies",
+        Key={
+            "title": {
+                "S": '"Independence Day"',
+            },
+            "year": {
+                "N": "1994",
+            },
+        },
+    )
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    elasticapm_client.end_transaction("test", "test")
+    spans = elasticapm_client.events[constants.SPAN]
+    for span in spans:
+        assert span["type"] == "db"
+        assert span["subtype"] == "dynamodb"
+        assert span["action"] == "query"
+        assert span["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
+        assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
+        assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+        assert span["context"]["destination"]["name"] == "dynamodb"
+        # assert span["context"]["destination"]["resource"] == "xyz"
+        # assert span["context"]["destination"]["service"]["type"] == "storage"
+    assert span[0]["name"] == "DynamoDB PutItem Movies"
+    assert span[1]["name"] == "DynamoDB GetItem Movies"
+    assert span[2]["name"] == "DynamoDB DeleteItem Movies"
+
+
+def test_sns(instrument, elasticapm_client):
+    sns = boto3.client("sns", endpoint_url=LOCALSTACK_ENDPOINT)
+    elasticapm_client.begin_transaction("test")
+    response = sns.create_topic(Name="mytopic")
+    topic_arn = response["TopicArn"]
+    response = sns.list_topics()
+    sns.publish(TopicArn=topic_arn, Subject="Saying", Message="this is my message to you-ou-ou")
+    elasticapm_client.end_transaction("test", "test")
+    spans = elasticapm_client.events[constants.SPAN]
+    pass

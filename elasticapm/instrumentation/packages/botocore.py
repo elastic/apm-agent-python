@@ -57,9 +57,9 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             "cloud": {"region": instance.meta.region_name},
         }
 
-        handler_info = handlers.get(service, handlers["default"])(
-            operation_name, service, instance, args, kwargs, destination
-        )
+        handler_info = handlers.get(service, False)(operation_name, service, instance, args, kwargs, destination)
+        if not handler_info:
+            handler_info = handle_default(operation_name, service, instance, args, kwargs, destination)
 
         with capture_span(
             handler_info.signature,
@@ -90,6 +90,44 @@ def handle_s3(operation_name, service, instance, args, kwargs, destination):
     return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
 
 
+def handle_dynamodb(operation_name, service, instance, args, kwargs, destination):
+    span_type = "db"
+    span_subtype = "dynamodb"
+    span_action = "query"
+    if len(args) > 1 and "TableName" in args[1]:
+        table = args[1]["TableName"]
+    else:
+        table = ""
+    signature = f"DynamoDB {operation_name} {table}".rstrip()
+
+    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+
+
+def handle_sns(operation_name, service, instance, args, kwargs, destination):
+    if operation_name != "Publish":
+        # only "publish" is handled specifically, other endpoints get the default treatment
+        return False
+    span_type = "messaging"
+    span_subtype = "sns"
+    span_action = "send"
+    if len(args) > 1:
+        if "Name" in args[1]:
+            topic_name = args[1]["Name"]
+        if "TopicArn" in args[1]:
+            topic_name = args[1]["TopicArn"].rsplit(":", maxsplit=1)[-1]
+    else:
+        topic_name = ""
+    signature = f"SNS {operation_name} {topic_name}".rstrip()
+    destination["name"] = span_subtype
+    destination["resource"] = f"{span_subtype}/{topic_name}" if topic_name else span_subtype
+    destination["type"] = span_type
+    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+
+
+def handle_sqs(operation_name, service, instance, args, kwargs, destination):
+    pass
+
+
 def handle_default(operation_name, service, instance, args, kwargs, destination):
     span_type = "aws"
     span_subtype = service.lower()
@@ -101,5 +139,7 @@ def handle_default(operation_name, service, instance, args, kwargs, destination)
 
 handlers = {
     "S3": handle_s3,
+    "DynamoDB": handle_dynamodb,
+    "SNS": handle_sns,
     "default": handle_default,
 }
