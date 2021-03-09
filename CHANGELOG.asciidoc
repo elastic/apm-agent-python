@@ -38,7 +38,7 @@ endif::[]
 ===== Features
 
 * Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
-* Add `auto_ecs_logging` config option {pull}1058[#1058]
+* Add `log_ecs_formatting` config option {pull}1058[#1058] {pull}1063[#1063]
 
 
 [float]

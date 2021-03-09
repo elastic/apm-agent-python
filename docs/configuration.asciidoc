@@ -219,17 +219,22 @@ The agent always keeps one backup file when rotating, so the max space that
 the log files will consume is twice the value of this setting.
 
 [float]
-[[config-auto_ecs_logging]]
-==== `auto_ecs_logging`
+[[config-log_ecs_formatting]]
+==== `log_ecs_formatting`
 
 [options="header"]
 |============
-| Environment                    | Django/Flask       | Default
-| `ELASTIC_APM_AUTO_ECS_LOGGING` | `AUTO_ECS_LOGGING` | `False`
+| Environment                      | Django/Flask         | Default
+| `ELASTIC_APM_LOG_ECS_FORMATTING` | `LOG_ECS_FORMATTING` | `"off"`
 |============
 
+Valid options:
+
+* `"off"`
+* `"on"`
+
 If https://github.com/elastic/ecs-logging-python[`ecs_logging`] is installed,
-setting this to `True` will cause the agent to automatically attempt to enable
+setting this to `"on"` will cause the agent to automatically attempt to enable
 ecs-formatted logging.
 
 For base `logging` from the standard library, the agent will get the root
@@ -241,7 +246,7 @@ with `ecs_logging.StructlogFormatter()`.
 
 Note that this is a very blunt instrument that could have unintended side effects.
 If problems arise, please apply these formatters manually and leave this setting
-as `False`. See the
+as `"off"`. See the
 https://www.elastic.co/guide/en/ecs-logging/python/current/installation.html[`ecs_logging` docs]
 for more information about using these formatters.
 
