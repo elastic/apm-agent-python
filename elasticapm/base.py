@@ -571,14 +571,13 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
-    def _excepthook(self):
-        exec_info = sys.exc_info()
+    def _excepthook(self, type_, value, traceback):
         try:
-            self.original_excepthook(*exec_info)
+            self.original_excepthook(type_, value, traceback)
         except Exception:
             self.capture_exception(handled=False)
         finally:
-            self.capture_exception(exec_info, handled=False)
+            self.capture_exception(exc_info=(type_, value, traceback), handled=False)
 
     def load_processors(self):
         """
