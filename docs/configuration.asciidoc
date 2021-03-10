@@ -231,10 +231,10 @@ the log files will consume is twice the value of this setting.
 Valid options:
 
 * `"off"`
-* `"on"`
+* `"override"`
 
 If https://github.com/elastic/ecs-logging-python[`ecs_logging`] is installed,
-setting this to `"on"` will cause the agent to automatically attempt to enable
+setting this to `"override"` will cause the agent to automatically attempt to enable
 ecs-formatted logging.
 
 For base `logging` from the standard library, the agent will get the root
