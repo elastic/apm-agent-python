@@ -684,7 +684,7 @@ class VersionedConfig(ThreadManager):
         """
         callbacks = []
         for key in compat.iterkeys(self._config.values):
-            if self._config.values[key] != self._first_config.values[key]:
+            if key in self._first_config.values and self._config.values[key] != self._first_config.values[key]:
                 callbacks.append((key, self._config.values[key], self._first_config.values[key]))
 
         with self._lock:
