@@ -36,17 +36,15 @@ from opentracing.tracer import ReferenceType
 from opentracing.tracer import Tracer as TracerBase
 
 import elasticapm
-from elasticapm import instrument, traces
+from elasticapm import get_client, instrument, traces
 from elasticapm.conf import constants
 from elasticapm.contrib.opentracing.span import OTSpan, OTSpanContext
 from elasticapm.utils import compat, disttracing
 
 
 class Tracer(TracerBase):
-    _elasticapm_client_class = elasticapm.Client
-
     def __init__(self, client_instance=None, config=None, scope_manager=None):
-        self._agent = client_instance or self._elasticapm_client_class(config=config)
+        self._agent = client_instance or get_client() or elasticapm.Client(config=config)
         if scope_manager and not isinstance(scope_manager, ThreadLocalScopeManager):
             warnings.warn(
                 "Currently, the Elastic APM opentracing bridge only supports the ThreadLocalScopeManager. "

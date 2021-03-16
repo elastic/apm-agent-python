@@ -24,7 +24,4 @@ coverage: test
 docs:
 	bash ./scripts/build_docs.sh apm-agent-python ./docs ${BUILD_DIR}
 
-update-json-schema:
-	bash ./tests/scripts/download_json_schema.sh
-
-.PHONY: isort flake8 test coverage docs update-json-schema
+.PHONY: isort flake8 test coverage docs

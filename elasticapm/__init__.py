@@ -29,7 +29,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 import sys
 
-from elasticapm.base import Client
+from elasticapm.base import Client, get_client  # noqa: F401
 from elasticapm.conf import setup_logging  # noqa: F401
 from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
 from elasticapm.traces import (  # noqa: F401
@@ -45,7 +45,6 @@ from elasticapm.traces import (  # noqa: F401
     set_transaction_outcome,
     set_transaction_result,
     set_user_context,
-    tag,
 )
 from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
 

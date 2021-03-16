@@ -1,7 +1,4 @@
 exclude:
-  # Django
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: django-1.11 # see https://code.djangoproject.com/ticket/28814
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released

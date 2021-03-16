@@ -30,11 +30,35 @@ endif::[]
 //===== Bug fixes
 //
 
-[float]
 === Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+* Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
+* Add `log_ecs_formatting` config option {pull}1058[#1058] {pull}1063[#1063]
+
+
+[float]
+===== Bug fixes
+
+* Fix for potential `capture_body: error` hang in Starlette/FastAPI {pull}1038[#1038]
+* Fix a rare error around processing stack frames {pull}1012[#1012]
+* Fix for Starlette/FastAPI to correctly capture request bodies as strings {pull}1042[#1041]
+* Fix transaction names for Starlette Mount routes {pull}1037[#1037]
+* Fix for elastic excepthook arguments {pull}1050[#1050]
+* Fix issue with remote configuration when resetting config values {pull}1068[#1068]
+
+
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+
+[[release-notes-6.0.0]]
+==== v6.0.0
+
 [float]
 ===== Breaking changes
 
@@ -42,16 +66,13 @@ endif::[]
 * No longer collecting body for `elasticsearch-py` `update` and `delete_by_query` {pull}1013[#1013]
 * Align `sanitize_field_names` config with the
   https://github.com/elastic/apm/blob/3fa78e2a1eeea81c73c2e16e96dbf6b2e79f3c64/specs/agents/sanitization.md[cross-agent spec].
-  If you are using a non-default `sanitize_field_names`, surrounding each of your entries with stars (i.e.
-  `\*secret\*`) will retain the old behavior. {pull}982[#982]
+  If you are using a non-default `sanitize_field_names`, surrounding each of your entries with stars (e.g.
+  `*secret*`) will retain the old behavior. {pull}982[#982]
 * Remove credit card sanitization for field values. This improves performance, and the security value of this check was
   dubious anyway. {pull}982[#982]
 * Remove HTTP querystring sanitization. This improves performance, and is meant to standardize behavior across the
   agents, as defined in https://github.com/elastic/apm/pull/334. {pull}982[#982]
-
-[float]
-===== Features
-
+* Remove `elasticapm.tag()` (deprecated since 5.0.0) {pull}1034[#1034]
 
 [float]
 ===== Bug fixes
