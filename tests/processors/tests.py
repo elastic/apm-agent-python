@@ -42,6 +42,7 @@ import elasticapm
 from elasticapm import Client, processors
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES_UNPROCESSED, ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat
+from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
@@ -436,9 +437,9 @@ def test_drop_events_in_processor(elasticapm_client, caplog):
     assert dropping_processor.call_count == 1
     assert shouldnt_be_called_processor.call_count == 0
     assert elasticapm_client._transport.events[SPAN][0] is None
-    record = caplog.records[0]
-    assert record.message == "Dropped event of type span due to processor mock.mock.dropper"
-    assert record.levelname == "DEBUG"
+    assert_any_record_contains(
+        caplog.records, "Dropped event of type span due to processor mock.mock.dropper", "elasticapm.transport"
+    )
 
 
 def test_context_lines_processor(elasticapm_client):

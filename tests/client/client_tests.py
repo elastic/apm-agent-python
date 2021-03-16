@@ -277,9 +277,8 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
     client._transport.flush()
-    record = caplog.records[0]
     assert client._transport.state.did_fail()
-    assert "oopsie" in record.message
+    assert_any_record_contains(caplog.records, "oopsie", "elasticapm.transport")
 
     # test recovery
     http_send.side_effect = None

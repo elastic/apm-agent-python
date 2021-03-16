@@ -1,0 +1,2 @@
+httplib2>=0.18
+-r reqs-base.txt

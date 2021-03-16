@@ -41,6 +41,7 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat, wrapt
+from tests.utils import assert_any_record_contains
 
 
 class Dummy(object):
@@ -77,8 +78,7 @@ def test_instrument_nonexisting_method_on_module():
 def test_instrument_nonexisting_method(caplog):
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         _TestInstrumentNonExistingMethod().instrument()
-    record = caplog.records[0]
-    assert "has no attribute" in record.message
+    assert_any_record_contains(caplog.records, "has no attribute", "elasticapm.instrument")
 
 
 def test_double_instrument(elasticapm_client):
@@ -130,17 +130,21 @@ def test_uninstrument_py3(caplog):
     instrumentation = _TestDummyInstrumentation()
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         instrumentation.instrument()
-    record = caplog.records[0]
-    assert "Instrumented" in record.message
-    assert record.args == ("test_dummy_instrument", "tests.instrumentation.base_tests.Dummy.dummy")
+    assert_any_record_contains(
+        caplog.records,
+        "Instrumented test_dummy_instrument, tests.instrumentation.base_tests.Dummy.dummy",
+        "elasticapm.instrument",
+    )
     assert Dummy.dummy is not original
     assert isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         instrumentation.uninstrument()
-    record = caplog.records[1]
-    assert "Uninstrumented" in record.message
-    assert record.args == ("test_dummy_instrument", "tests.instrumentation.base_tests.Dummy.dummy")
+    assert_any_record_contains(
+        caplog.records,
+        "Uninstrumented test_dummy_instrument, tests.instrumentation.base_tests.Dummy.dummy",
+        "elasticapm.instrument",
+    )
     assert Dummy.dummy is original
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
@@ -167,8 +171,7 @@ def test_skip_instrument_env_var(caplog):
         logging.DEBUG, "elasticapm.instrument"
     ):
         instrumentation.instrument()
-    record = caplog.records[0]
-    assert "Skipping" in record.message
+    assert_any_record_contains(caplog.records, "Skipping", "elasticapm.instrument")
     assert not instrumentation.instrumented
 
 
@@ -191,8 +194,9 @@ def test_end_nonexisting_span(caplog, elasticapm_client):
         with elasticapm.capture_span("test_name", "test_type"):
             t.is_sampled = True
     elasticapm_client.end_transaction("test", "")
-    record = caplog.records[0]
-    assert record.args == ("test_name", "test_type")
+    assert_any_record_contains(
+        caplog.records, "ended non-existing span test_name of type test_type", "elasticapm.traces"
+    )
 
 
 def test_outcome_by_span_exception(elasticapm_client):
@@ -230,8 +234,7 @@ def test_transaction_outcome(elasticapm_client, caplog, outcome, http_status_cod
     if log_message is None:
         assert not [True for record in caplog.records if record.name == "elasticapm.traces"]
     else:
-        record = caplog.records[0]
-        assert log_message in record.getMessage()
+        assert_any_record_contains(caplog.records, log_message, "elasticapm.traces")
 
 
 def test_transaction_outcome_override(elasticapm_client):
