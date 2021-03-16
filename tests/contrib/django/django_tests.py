@@ -32,6 +32,8 @@
 
 import pytest  # isort:skip
 
+from tests.utils import assert_any_record_contains
+
 django = pytest.importorskip("django")  # isort:skip
 
 
@@ -611,8 +613,7 @@ def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     request.read = read
     with caplog.at_level(logging.DEBUG):
         django_elasticapm_client.get_data_from_request(request, constants.ERROR)
-    record = caplog.records[0]
-    assert record.message == "Can't capture request body: foobar"
+    assert_any_record_contains(caplog.records, "Can't capture request body: foobar")
 
 
 @pytest.mark.skipif(django.VERSION < (1, 9), reason="get-raw-uri-not-available")
