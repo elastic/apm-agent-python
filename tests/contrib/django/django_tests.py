@@ -511,17 +511,6 @@ def test_response_error_id_middleware(django_elasticapm_client, client):
         assert event["id"] == headers["X-ElasticAPM-ErrorId"]
 
 
-def test_get_client(django_elasticapm_client):
-    with mock.patch.dict("os.environ", {"ELASTIC_APM_METRICS_INTERVAL": "0ms"}):
-        client2 = get_client("elasticapm.base.Client")
-        try:
-            assert get_client() is get_client()
-            assert client2.__class__ == Client
-        finally:
-            get_client().close()
-            client2.close()
-
-
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)
 def test_raw_post_data_partial_read(django_elasticapm_client):
     v = compat.b('{"foo": "bar"}')
@@ -1181,16 +1170,6 @@ def test_subcommand_not_known(argv_mock):
     assert 'No such command "foo"' in output
 
 
-def test_settings_missing():
-    stdout = compat.StringIO()
-    with override_settings(ELASTIC_APM={}):
-        call_command("elasticapm", "check", stdout=stdout)
-    output = stdout.getvalue()
-    assert "Configuration errors detected" in output
-    assert "SERVICE_NAME not set" in output
-    assert "optional SECRET_TOKEN not set" in output
-
-
 def test_settings_missing_secret_token_no_https():
     stdout = compat.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://foo"}):
@@ -1255,7 +1234,6 @@ def test_settings_server_url_not_http_nor_https():
     with override_settings(ELASTIC_APM={"SERVER_URL": "xhttp://dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
-    assert "Configuration errors detected" in output
     assert "SERVER_URL has scheme xhttp and we require http or https" in output
 
 

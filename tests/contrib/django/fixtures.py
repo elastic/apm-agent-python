@@ -31,6 +31,7 @@
 import pytest
 from django.apps import apps
 
+import elasticapm
 from elasticapm.conf.constants import SPAN
 from elasticapm.contrib.django.apps import instrument, register_handlers
 from elasticapm.contrib.django.client import DjangoClient
@@ -64,6 +65,7 @@ def django_elasticapm_client(request):
     app.client = client
     yield client
     client.close()
+    elasticapm.uninstrument()
 
     app.client = old_client
 
@@ -90,6 +92,7 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     client.httpserver = validating_httpserver
     yield client
     client.close()
+    elasticapm.uninstrument()
 
     app.client = old_client
 

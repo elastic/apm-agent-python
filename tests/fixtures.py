@@ -64,14 +64,10 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "span.json")
-METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
-
-assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
-    TRANSACTIONS_SCHEMA
-), 'JSON Schema files not found. Run "make update-json-schema" to download'
+ERRORS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "span.json")
+METADATA_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metadata.json")
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
@@ -206,6 +202,10 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("log_level", "warning")
 
+    root_logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    root_logger.addHandler(handler)
+
     tmp = tempfile.NamedTemporaryFile(delete=False)
     tmp.close()
     client_config["log_file"] = tmp.name
@@ -220,6 +220,9 @@ def elasticapm_client_log_file(request):
         if isinstance(handler, logging.handlers.RotatingFileHandler):
             handler.close()
     os.unlink(tmp.name)
+
+    # Remove our streamhandler
+    root_logger.removeHandler(handler)
 
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook

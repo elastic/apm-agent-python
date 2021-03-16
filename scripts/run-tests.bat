@@ -5,9 +5,6 @@
 :  - PYTHON: the python installation path.
 @echo off
 
-ECHO Download json schema dependencies
-call .\tests\scripts\download_json_schema.bat
-
 @echo on
 set COVERAGE_FILE=.coverage.%VERSION%.%WEBFRAMEWORK%
 set IGNORE_PYTHON3_WITH_PYTHON2=

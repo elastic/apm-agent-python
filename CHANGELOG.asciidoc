@@ -30,22 +30,82 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+* Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
+* Add `log_ecs_formatting` config option {pull}1058[#1058] {pull}1063[#1063]
+
+
+[float]
+===== Bug fixes
+
+* Fix for potential `capture_body: error` hang in Starlette/FastAPI {pull}1038[#1038]
+* Fix a rare error around processing stack frames {pull}1012[#1012]
+* Fix for Starlette/FastAPI to correctly capture request bodies as strings {pull}1042[#1041]
+* Fix transaction names for Starlette Mount routes {pull}1037[#1037]
+* Fix for elastic excepthook arguments {pull}1050[#1050]
+
+
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+
+[[release-notes-6.0.0]]
+==== v6.0.0
+
+[float]
+===== Breaking changes
+
+* Python 2.7 and 3.5 support has been deprecated. The Python agent now requires Python 3.6+ {pull}1021[#1021]
+* No longer collecting body for `elasticsearch-py` `update` and `delete_by_query` {pull}1013[#1013]
+* Align `sanitize_field_names` config with the
+  https://github.com/elastic/apm/blob/3fa78e2a1eeea81c73c2e16e96dbf6b2e79f3c64/specs/agents/sanitization.md[cross-agent spec].
+  If you are using a non-default `sanitize_field_names`, surrounding each of your entries with stars (e.g.
+  `*secret*`) will retain the old behavior. {pull}982[#982]
+* Remove credit card sanitization for field values. This improves performance, and the security value of this check was
+  dubious anyway. {pull}982[#982]
+* Remove HTTP querystring sanitization. This improves performance, and is meant to standardize behavior across the
+  agents, as defined in https://github.com/elastic/apm/pull/334. {pull}982[#982]
+* Remove `elasticapm.tag()` (deprecated since 5.0.0) {pull}1034[#1034]
+
+[float]
+===== Bug fixes
+
+* Fix for GraphQL span spamming from scalar fields with required flag {pull}1015[#1015]
+
 [[release-notes-5.x]]
 === Python Agent version 5.x
+
+
+[[release-notes-5.10.1]]
+==== v5.10.1
+
+[float]
+===== Bug fixes
+
+* Fix for custom serializers in elasticsearch-py {pull}998[#998]
+* Fix large query truncation in psycopg2 {pull}994[#994]
+* Fix memory metrics reporting when `memory.usage_in_bytes` is unavailable {pull}987[#987]
+* Fix for Starlette/FastAPI integration to properly obey `enabled` config {pull}1000[#1000]
 
 [[release-notes-5.10.0]]
 ==== v5.10.0
 [float]
 ===== Features
 
- * Implement "sample_rate" property for transactions and spans, and propagate through tracestate {pull}891[#891]
- * Add support for callbacks on config changes {pull}912[#912]
- * Override `sys.excepthook` to catch all exceptions {pull}943[#943]
- * Implement `log_level` config (supports central config) {pull}946[#946]
- * Implement `transaction_ignore_urls` config (supports central config) {pull}923[#923]
- * Add public API to retrieve trace parent header {pull}956[#956]
- * Added support for cgroup memory metrics {pull}846[#846]
- 
+* Implement "sample_rate" property for transactions and spans, and propagate through tracestate {pull}891[#891]
+* Add support for callbacks on config changes {pull}912[#912]
+* Override `sys.excepthook` to catch all exceptions {pull}943[#943]
+* Implement `log_level` config (supports central config) {pull}946[#946]
+* Implement `transaction_ignore_urls` config (supports central config) {pull}923[#923]
+* Add public API to retrieve trace parent header {pull}956[#956]
+* Added support for cgroup memory metrics {pull}846[#846]
+
 
 [float]
 ===== Bug fixes
@@ -62,9 +122,9 @@ endif::[]
 [float]
 ===== Features
 
- * Add instrumentation support for https://github.com/encode/httpx[`httpx`] and https://github.com/encode/httpcore[`httpcore`] {pull}898[#898]
- * Implement "outcome" property for transactions and spans {pull}899[#899]
- * Add support for `asyncpg` {pull}889[#889]
+* Add instrumentation support for https://github.com/encode/httpx[`httpx`] and https://github.com/encode/httpcore[`httpcore`] {pull}898[#898]
+* Implement "outcome" property for transactions and spans {pull}899[#899]
+* Add support for `asyncpg` {pull}889[#889]
 
 [float]
 ===== Bug fixes

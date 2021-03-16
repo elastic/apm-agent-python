@@ -235,3 +235,57 @@ def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
 
     assert "pass" not in span["context"]["http"]["url"]
+
+
+@pytest.mark.parametrize(
+    "is_sampled", [pytest.param(True, id="is_sampled-True"), pytest.param(False, id="is_sampled-False")]
+)
+@pytest.mark.parametrize(
+    "instance_headers",
+    [pytest.param(True, id="instance-headers-set"), pytest.param(False, id="instance-headers-not-set")],
+)
+@pytest.mark.parametrize(
+    "header_arg,header_kwarg",
+    [
+        pytest.param(True, False, id="args-set"),
+        pytest.param(False, True, id="kwargs-set"),
+        pytest.param(False, False, id="both-not-set"),
+    ],
+)
+def test_instance_headers_are_respected(
+    instrument, elasticapm_client, waiting_httpserver, is_sampled, instance_headers, header_arg, header_kwarg
+):
+    traceparent = TraceParent.from_string(
+        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", "foo=bar,baz=bazzinga"
+    )
+
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    parsed_url = urlparse.urlparse(url)
+    transaction_object = elasticapm_client.begin_transaction("transaction", trace_parent=traceparent)
+    transaction_object.is_sampled = is_sampled
+    pool = urllib3.HTTPConnectionPool(
+        parsed_url.hostname,
+        parsed_url.port,
+        maxsize=1,
+        block=True,
+        headers={"instance": "true"} if instance_headers else None,
+    )
+    if header_arg:
+        args = ("GET", url, None, {"args": "true"})
+    else:
+        args = ("GET", url)
+    if header_kwarg:
+        kwargs = {"headers": {"kwargs": "true"}}
+    else:
+        kwargs = {}
+    r = pool.urlopen(*args, **kwargs)
+    request_headers = waiting_httpserver.requests[0].headers
+    # all combinations should have the "traceparent" header
+    assert "traceparent" in request_headers, (instance_headers, header_arg, header_kwarg)
+    if header_arg:
+        assert "args" in request_headers
+    if header_kwarg:
+        assert "kwargs" in request_headers
+    if instance_headers and not (header_arg or header_kwarg):
+        assert "instance" in request_headers

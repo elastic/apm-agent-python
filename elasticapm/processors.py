@@ -29,16 +29,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
-import re
 import warnings
 from collections import defaultdict
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, MASK, SPAN, TRANSACTION
 from elasticapm.utils import compat, varmap
-from elasticapm.utils.encoding import force_text, keyword_field
+from elasticapm.utils.encoding import force_text
 from elasticapm.utils.stacks import get_lines_from_file
-
-SANITIZE_VALUE_PATTERNS = [re.compile(r"^[- \d]{16,19}$")]  # credit card numbers, with or without spacers
 
 
 def for_events(*events):
@@ -116,7 +113,7 @@ def sanitize_http_request_cookies(client, event):
 
     # sanitize request.header.cookie string
     try:
-        cookie_string = event["context"]["request"]["headers"]["cookie"]
+        cookie_string = force_text(event["context"]["request"]["headers"]["cookie"], errors="replace")
         event["context"]["request"]["headers"]["cookie"] = _sanitize_string(
             cookie_string, "; ", "=", sanitize_field_names=client.config.sanitize_field_names
         )
@@ -134,7 +131,7 @@ def sanitize_http_response_cookies(client, event):
     :return: The modified event
     """
     try:
-        cookie_string = event["context"]["response"]["headers"]["set-cookie"]
+        cookie_string = force_text(event["context"]["response"]["headers"]["set-cookie"], errors="replace")
         event["context"]["response"]["headers"]["set-cookie"] = _sanitize_string(
             cookie_string, ";", "=", sanitize_field_names=client.config.sanitize_field_names
         )
@@ -187,32 +184,6 @@ def sanitize_http_wsgi_env(client, event):
         )
     except (KeyError, TypeError):
         pass
-    return event
-
-
-@for_events(ERROR, TRANSACTION)
-def sanitize_http_request_querystring(client, event):
-    """
-    Sanitizes http request query string
-    :param client: an ElasticAPM client
-    :param event: a transaction or error event
-    :return: The modified event
-    """
-    try:
-        query_string = force_text(event["context"]["request"]["url"]["search"], errors="replace")
-    except (KeyError, TypeError):
-        return event
-    if "=" in query_string:
-        sanitized_query_string = _sanitize_string(
-            query_string, "&", "=", sanitize_field_names=client.config.sanitize_field_names
-        )
-        full_url = event["context"]["request"]["url"]["full"]
-        # we need to pipe the sanitized string through encoding.keyword_field to ensure that the maximum
-        # length of keyword fields is still ensured.
-        event["context"]["request"]["url"]["search"] = keyword_field(sanitized_query_string)
-        event["context"]["request"]["url"]["full"] = keyword_field(
-            full_url.replace(query_string, sanitized_query_string)
-        )
     return event
 
 
@@ -276,15 +247,12 @@ def mark_in_app_frames(client, event):
 
 def _sanitize(key, value, **kwargs):
     if "sanitize_field_names" in kwargs:
-        sanitize_field_names = frozenset(kwargs["sanitize_field_names"])
+        sanitize_field_names = kwargs["sanitize_field_names"]
     else:
-        sanitize_field_names = frozenset(BASE_SANITIZE_FIELD_NAMES)
+        sanitize_field_names = BASE_SANITIZE_FIELD_NAMES
 
     if value is None:
         return
-
-    if isinstance(value, compat.string_types) and any(pattern.match(value) for pattern in SANITIZE_VALUE_PATTERNS):
-        return MASK
 
     if isinstance(value, dict):
         # varmap will call _sanitize on each k:v pair of the dict, so we don't
@@ -296,7 +264,7 @@ def _sanitize(key, value, **kwargs):
 
     key = key.lower()
     for field in sanitize_field_names:
-        if field in key:
+        if field.match(key.strip()):
             # store mask as a fixed length for security
             return MASK
     return value
