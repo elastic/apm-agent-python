@@ -39,6 +39,7 @@ endif::[]
 
 * Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
 * Add `log_ecs_formatting` config option {pull}1058[#1058] {pull}1063[#1063]
+* Add instrumentation for httplib2 {pull}1031[#1031]
 
 
 [float]
