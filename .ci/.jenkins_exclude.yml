@@ -202,3 +202,5 @@ exclude:
     FRAMEWORK: asyncpg-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: asyncpg-newest
+  - PYTHON_VERSION: python-3.10-rc  # https://github.com/MagicStack/asyncpg/issues/699
+    FRAMEWORK: asyncpg-newest
