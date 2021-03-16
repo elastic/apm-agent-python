@@ -2,34 +2,15 @@ exclude:
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
-  # celery
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: celery-3-django-1.11 # see https://code.djangoproject.com/ticket/28814
-  # celery 4 doesn't currently work on Python 3.7, see https://github.com/celery/celery/issues/4500
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: celery-4-flask-1.0
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: celery-4-flask-1.0
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: celery-4-flask-1.0
+  # Python 3.10 removed a bunch of classes from collections, now in collections.abc
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: django-1.11
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: django-2.0
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: celery-4-django-2.0
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.10-rc
-    FRAMEWORK: celery-4-flask-1.0
   # requests
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: requests-1.2
