@@ -11,6 +11,12 @@ exclude:
     FRAMEWORK: celery-4-django-2.0
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: celery-4-django-1.11
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: celery-3-flask-1.0
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: celery-3-django-2.0
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: graphene-2
   # requests
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: requests-1.2
