@@ -26,7 +26,6 @@ parse-type==0.5.2
 toml==0.10.2
 iniconfig==1.1.1
 docutils==0.16
-pathlib==1.0.1
 py-cpuinfo==7.0.0
 statistics==1.0.3.5
 
