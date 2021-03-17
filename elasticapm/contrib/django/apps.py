@@ -54,7 +54,7 @@ TRACESTATE_HEADER_NAME_WSGI = "HTTP_" + constants.TRACESTATE_HEADER_NAME.upper()
 
 class ElasticAPMConfig(AppConfig):
     name = "elasticapm.contrib.django"
-    label = "elasticapm.contrib.django"
+    label = "elasticapm"
     verbose_name = "ElasticAPM"
 
     def __init__(self, *args, **kwargs):

@@ -122,8 +122,7 @@ def test_flush_time(mock_send, caplog, elasticapm_client):
         # let first run finish
         time.sleep(0.2)
         transport.close()
-    record = caplog.records[0]
-    assert "due to time since last flush" in record.message
+    assert_any_record_contains(caplog.records, "due to time since last flush", "elasticapm.transport")
     assert mock_send.call_count == 0
 
 
@@ -146,8 +145,7 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
         # let first run finish
         time.sleep(0.2)
         transport.close()
-    record = caplog.records[0]
-    assert "due to time since last flush" in record.message
+    assert_any_record_contains(caplog.records, "due to time since last flush", "elasticapm.transport")
     assert mock_send.call_count == 0
 
 

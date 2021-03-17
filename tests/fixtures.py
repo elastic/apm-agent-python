@@ -202,6 +202,10 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("log_level", "warning")
 
+    root_logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    root_logger.addHandler(handler)
+
     tmp = tempfile.NamedTemporaryFile(delete=False)
     tmp.close()
     client_config["log_file"] = tmp.name
@@ -216,6 +220,9 @@ def elasticapm_client_log_file(request):
         if isinstance(handler, logging.handlers.RotatingFileHandler):
             handler.close()
     os.unlink(tmp.name)
+
+    # Remove our streamhandler
+    root_logger.removeHandler(handler)
 
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook

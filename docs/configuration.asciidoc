@@ -200,6 +200,9 @@ file will automatically rotate.
 Note that setting <<config-log_level>> is required for this setting to do
 anything.
 
+If https://github.com/elastic/ecs-logging-python[`ecs_logging`] is installed,
+the logs will automatically be formatted as ecs-compatible json.
+
 [float]
 [[config-log_file_size]]
 ==== `log_file_size`
@@ -214,6 +217,41 @@ The size of the log file, if <<config-log_file>> is set.
 
 The agent always keeps one backup file when rotating, so the max space that
 the log files will consume is twice the value of this setting.
+
+[float]
+[[config-log_ecs_formatting]]
+==== `log_ecs_formatting`
+
+[options="header"]
+|============
+| Environment                      | Django/Flask         | Default
+| `ELASTIC_APM_LOG_ECS_FORMATTING` | `LOG_ECS_FORMATTING` | `"off"`
+|============
+
+Valid options:
+
+* `"off"`
+* `"override"`
+
+If https://github.com/elastic/ecs-logging-python[`ecs_logging`] is installed,
+setting this to `"override"` will cause the agent to automatically attempt to enable
+ecs-formatted logging.
+
+For base `logging` from the standard library, the agent will get the root
+logger, find any attached handlers, and for each, set the formatter to
+`ecs_logging.StdlibFormatter()`.
+
+If `structlog` is installed, the agent will override any configured processors
+with `ecs_logging.StructlogFormatter()`.
+
+Note that this is a very blunt instrument that could have unintended side effects.
+If problems arise, please apply these formatters manually and leave this setting
+as `"off"`. See the
+https://www.elastic.co/guide/en/ecs-logging/python/current/installation.html[`ecs_logging` docs]
+for more information about using these formatters.
+
+Also note that this setting does not facilitate shipping logs to Elasticsearch.
+We recommend https://www.elastic.co/beats/filebeat[Filebeat] for that purpose.
 
 [float]
 [[other-options]]
