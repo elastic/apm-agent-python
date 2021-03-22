@@ -52,6 +52,7 @@ endif::[]
 * Fix for elastic excepthook arguments {pull}1050[#1050]
 * Fix issue with remote configuration when resetting config values {pull}1068[#1068]
 * Use a label for the elasticapm Django app that is compatible with Django 3.2 validation {pull}1064[#1064]
+* Fix an issue with undefined routes in Starlette {pull}1076[#1076]
 
 
 [[release-notes-6.x]]
