@@ -14,7 +14,6 @@ trim_trailing_whitespace = false
 
 [Makefile]
 indent_style = tab
-indent_size = 4
 
 [Jenkinsfile]
 indent_size = 2
@@ -23,4 +22,7 @@ indent_size = 2
 indent_size = 2
 
 [*.feature]
+indent_size = 2
+
+[*.yml]
 indent_size = 2
