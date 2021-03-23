@@ -34,7 +34,7 @@ from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
 
-HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype", "span_action", "destination"))
+HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype", "span_action", "context"))
 
 
 class BotocoreInstrumentation(AbstractInstrumentedModule):
@@ -51,14 +51,20 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         service = instance._service_model.service_id
 
         parsed_url = urlparse.urlparse(instance._endpoint.host)
-        destination = {
-            "address": parsed_url.hostname,
-            "port": parsed_url.port,
-            "cloud": {"region": instance.meta.region_name},
+        context = {
+            "destination": {
+                "address": parsed_url.hostname,
+                "port": parsed_url.port,
+                "cloud": {"region": instance.meta.region_name},
+            }
         }
 
-        handler = handlers.get(service, handle_default)
-        handler_info = handler(operation_name, service, instance, args, kwargs, destination)
+        handler_info = None
+        handler = handlers.get(service, False)
+        if handler:
+            handler_info = handler(operation_name, service, instance, args, kwargs, context)
+        if not handler_info:
+            handler_info = handle_default(operation_name, service, instance, args, kwargs, context)
 
         with capture_span(
             handler_info.signature,
@@ -66,12 +72,12 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             leaf=True,
             span_subtype=handler_info.span_subtype,
             span_action=handler_info.span_action,
-            extra={"destination": handler_info.destination},
+            extra=handler_info.context,
         ):
             return wrapped(*args, **kwargs)
 
 
-def handle_s3(operation_name, service, instance, args, kwargs, destination):
+def handle_s3(operation_name, service, instance, args, kwargs, context):
     span_type = "storage"
     span_subtype = "s3"
     span_action = operation_name
@@ -82,14 +88,14 @@ def handle_s3(operation_name, service, instance, args, kwargs, destination):
         bucket = ""
     signature = f"S3 {operation_name} {bucket}"
 
-    destination["name"] = span_subtype
-    destination["resource"] = bucket
-    destination["service"] = {"type": span_type}
+    context["destination"]["name"] = span_subtype
+    context["destination"]["resource"] = bucket
+    context["destination"]["service"] = {"type": span_type}
 
-    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+    return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
-def handle_dynamodb(operation_name, service, instance, args, kwargs, destination):
+def handle_dynamodb(operation_name, service, instance, args, kwargs, context):
     span_type = "db"
     span_subtype = "dynamodb"
     span_action = "query"
@@ -99,10 +105,17 @@ def handle_dynamodb(operation_name, service, instance, args, kwargs, destination
         table = ""
     signature = f"DynamoDB {operation_name} {table}".rstrip()
 
-    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+    context["db"] = {"type": "dynamodb", "instance": instance.meta.region_name}
+    if operation_name == "Query" and len(args) > 1 and "KeyConditionExpression" in args[1]:
+        context["db"]["statement"] = args[1]["KeyConditionExpression"]
+
+    context["destination"]["name"] = span_subtype
+    context["destination"]["resource"] = table
+    context["destination"]["service"] = {"type": span_type}
+    return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
-def handle_sns(operation_name, service, instance, args, kwargs, destination):
+def handle_sns(operation_name, service, instance, args, kwargs, context):
     if operation_name != "Publish":
         # only "publish" is handled specifically, other endpoints get the default treatment
         return False
@@ -116,10 +129,10 @@ def handle_sns(operation_name, service, instance, args, kwargs, destination):
         if "TopicArn" in args[1]:
             topic_name = args[1]["TopicArn"].rsplit(":", maxsplit=1)[-1]
     signature = f"SNS {operation_name} {topic_name}".rstrip()
-    destination["name"] = span_subtype
-    destination["resource"] = f"{span_subtype}/{topic_name}" if topic_name else span_subtype
-    destination["type"] = span_type
-    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+    context["destination"]["name"] = span_subtype
+    context["destination"]["resource"] = f"{span_subtype}/{topic_name}" if topic_name else span_subtype
+    context["destination"]["type"] = span_type
+    return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
 def handle_sqs(operation_name, service, instance, args, kwargs, destination):
