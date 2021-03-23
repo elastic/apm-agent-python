@@ -21,6 +21,12 @@ exclude:
     FRAMEWORK: graphene-2
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: cassandra-3.4
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: pymongo-3.5
   # requests
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: requests-1.2
