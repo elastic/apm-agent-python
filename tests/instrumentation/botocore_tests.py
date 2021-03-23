@@ -59,7 +59,7 @@ LOCALSTACK_ENDPOINT_URL = urlparse.urlparse(LOCALSTACK_ENDPOINT)
 
 @pytest.fixture()
 def dynamodb():
-    db = boto3.client("dynamodb", endpoint_url="http://localhost:4566")
+    db = boto3.client("dynamodb", endpoint_url=LOCALSTACK_ENDPOINT)
     db.create_table(
         TableName="Movies",
         KeySchema=[
