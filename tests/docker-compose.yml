@@ -131,7 +131,7 @@ services:
     environment:
       - HOSTNAME=localstack
       - HOSTNAME_EXTERNAL=localstack
-      - SERVICES=sns,sqs,s3,dynamodb
+      - SERVICES=sns,sqs,s3,dynamodb,ec2
       - DEBUG=${DEBUG- }
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOST_TMP_FOLDER=${TMPDIR}

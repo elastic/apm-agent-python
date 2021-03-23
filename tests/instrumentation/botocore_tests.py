@@ -76,20 +76,14 @@ def dynamodb():
     db.delete_table(TableName="Movies")
 
 
-@mock.patch("botocore.endpoint.Endpoint.make_request")
-def test_botocore_instrumentation(mock_make_request, instrument, elasticapm_client):
-    mock_response = mock.Mock()
-    mock_response.status_code = 200
-    mock_make_request.return_value = (mock_response, {})
-
+def test_botocore_instrumentation(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
-    session = boto3.Session(aws_access_key_id="foo", aws_secret_access_key="bar", region_name="us-west-2")
-    ec2 = session.client("ec2")
+    ec2 = boto3.client("ec2", endpoint_url=LOCALSTACK_ENDPOINT)
     ec2.describe_instances()
     elasticapm_client.end_transaction("MyView")
     span = elasticapm_client.events[constants.SPAN][0]
 
-    assert span["name"] == "ec2:DescribeInstances"
+    assert span["name"] == "EC2:DescribeInstances"
     assert span["type"] == "aws"
     assert span["subtype"] == "ec2"
     assert span["action"] == "DescribeInstances"
@@ -236,4 +230,7 @@ def test_sns(instrument, elasticapm_client):
     sns.publish(TopicArn=topic_arn, Subject="Saying", Message="this is my message to you-ou-ou")
     elasticapm_client.end_transaction("test", "test")
     spans = elasticapm_client.events[constants.SPAN]
-    pass
+    assert spans[2]["name"] == "SNS Publish mytopic"
+    assert spans[2]["type"] == "messaging"
+    assert spans[2]["subtype"] == "sns"
+    assert spans[2]["action"] == "send"

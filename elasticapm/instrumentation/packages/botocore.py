@@ -57,9 +57,8 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             "cloud": {"region": instance.meta.region_name},
         }
 
-        handler_info = handlers.get(service, False)(operation_name, service, instance, args, kwargs, destination)
-        if not handler_info:
-            handler_info = handle_default(operation_name, service, instance, args, kwargs, destination)
+        handler = handlers.get(service, handle_default)
+        handler_info = handler(operation_name, service, instance, args, kwargs, destination)
 
         with capture_span(
             handler_info.signature,
@@ -110,13 +109,12 @@ def handle_sns(operation_name, service, instance, args, kwargs, destination):
     span_type = "messaging"
     span_subtype = "sns"
     span_action = "send"
+    topic_name = ""
     if len(args) > 1:
         if "Name" in args[1]:
             topic_name = args[1]["Name"]
         if "TopicArn" in args[1]:
             topic_name = args[1]["TopicArn"].rsplit(":", maxsplit=1)[-1]
-    else:
-        topic_name = ""
     signature = f"SNS {operation_name} {topic_name}".rstrip()
     destination["name"] = span_subtype
     destination["resource"] = f"{span_subtype}/{topic_name}" if topic_name else span_subtype
