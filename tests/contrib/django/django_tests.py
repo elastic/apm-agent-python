@@ -32,6 +32,8 @@
 
 import pytest  # isort:skip
 
+from tests.utils import assert_any_record_contains
+
 django = pytest.importorskip("django")  # isort:skip
 
 
@@ -511,17 +513,6 @@ def test_response_error_id_middleware(django_elasticapm_client, client):
         assert event["id"] == headers["X-ElasticAPM-ErrorId"]
 
 
-def test_get_client(django_elasticapm_client):
-    with mock.patch.dict("os.environ", {"ELASTIC_APM_METRICS_INTERVAL": "0ms"}):
-        client2 = get_client("elasticapm.base.Client")
-        try:
-            assert get_client() is get_client()
-            assert client2.__class__ == Client
-        finally:
-            get_client().close()
-            client2.close()
-
-
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)
 def test_raw_post_data_partial_read(django_elasticapm_client):
     v = compat.b('{"foo": "bar"}')
@@ -622,8 +613,7 @@ def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     request.read = read
     with caplog.at_level(logging.DEBUG):
         django_elasticapm_client.get_data_from_request(request, constants.ERROR)
-    record = caplog.records[0]
-    assert record.message == "Can't capture request body: foobar"
+    assert_any_record_contains(caplog.records, "Can't capture request body: foobar")
 
 
 @pytest.mark.skipif(django.VERSION < (1, 9), reason="get-raw-uri-not-available")

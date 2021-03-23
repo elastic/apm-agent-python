@@ -396,6 +396,19 @@ def test_callback_reset():
     assert test_var["foo"] == 3
 
 
+def test_reset_after_adding_config():
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo")
+        bar = _ConfigValue("bar")
+
+    c = VersionedConfig(MyConfig({"foo": "baz"}), version=1)
+
+    c.update(version=2, bar="bazzinga")
+
+    c.reset()
+    assert c.bar is None
+
+
 def test_valid_values_validator():
     # Case sensitive
     v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=False)
