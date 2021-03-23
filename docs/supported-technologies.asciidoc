@@ -516,13 +516,32 @@ Instrumented methods:
 
  * `botocore.client.BaseClient._make_api_call`
 
-Collected trace data:
+Collected trace data for all services:
 
  * AWS region (e.g. `eu-central-1`)
  * AWS service name (e.g. `s3`)
  * operation name (e.g. `ListBuckets`)
 
+Additionally, some services collect more specific data
 
+[float]
+[[automatic-instrumentation-s3]]
+===== S3
+
+ * Bucket name
+
+[float]
+[[automatic-instrumentation-dynamodb]]
+===== DynamoDB
+
+ * Table name
+ 
+ 
+[float]
+[[automatic-instrumentation-sns]]
+===== SNS
+
+ * Topic name
 
 [float]
 [[automatic-instrumentation-template-engines]]
