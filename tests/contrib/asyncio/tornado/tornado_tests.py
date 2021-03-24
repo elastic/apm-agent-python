@@ -36,6 +36,7 @@ import os
 
 import mock
 
+import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.tornado import ElasticAPM
@@ -72,7 +73,8 @@ def app(elasticapm_client):
         template_path=os.path.join(os.path.dirname(__file__), "templates"),
     )
     apm = ElasticAPM(app, elasticapm_client)
-    return app
+    yield app
+    elasticapm.uninstrument()
 
 
 @pytest.fixture

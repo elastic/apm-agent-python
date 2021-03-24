@@ -38,6 +38,7 @@ from flask import request, signals
 
 import elasticapm
 import elasticapm.instrumentation.control
+from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
@@ -48,17 +49,6 @@ from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.errors.client")
-
-
-def make_client(client_cls, app, **defaults):
-    config = app.config.get("ELASTIC_APM", {})
-
-    if "framework_name" not in defaults:
-        defaults["framework_name"] = "flask"
-        defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
-
-    client = client_cls(config, **defaults)
-    return client
 
 
 class ElasticAPM(object):
@@ -97,10 +87,18 @@ class ElasticAPM(object):
     def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults):
         self.app = app
         self.logging = logging
-        self.client_cls = client_cls
-        self.client = client
+        self.client = client or get_client()
 
         if app:
+            if not self.client:
+                config = app.config.get("ELASTIC_APM", {})
+
+                if "framework_name" not in defaults:
+                    defaults["framework_name"] = "flask"
+                    defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
+
+                self.client = client_cls(config, **defaults)
+
             self.init_app(app, **defaults)
 
     def handle_exception(self, *args, **kwargs):
@@ -125,8 +123,6 @@ class ElasticAPM(object):
 
     def init_app(self, app, **defaults):
         self.app = app
-        if not self.client:
-            self.client = make_client(self.client_cls, app, **defaults)
 
         # 0 is a valid log level (NOTSET), so we need to check explicitly for it
         if self.logging or self.logging is logging.NOTSET:

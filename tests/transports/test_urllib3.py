@@ -168,7 +168,7 @@ def test_ssl_verify_fails(waiting_httpsserver, elasticapm_client):
     try:
         with pytest.raises(TransportException) as exc_info:
             url = transport.send(compat.b("x"))
-        assert "CERTIFICATE_VERIFY_FAILED" in str(exc_info)
+        assert "certificate verify failed" in str(exc_info)
     finally:
         transport.close()
 

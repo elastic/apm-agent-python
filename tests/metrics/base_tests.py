@@ -37,7 +37,7 @@ import pytest
 
 from elasticapm.conf import constants
 from elasticapm.metrics.base_metrics import Counter, Gauge, MetricsRegistry, MetricsSet, NoopMetric, Timer
-from tests.fixtures import TempStoreClient
+from tests.utils import assert_any_record_contains
 
 
 class DummyMetricSet(MetricsSet):
@@ -141,10 +141,7 @@ def test_metric_limit(caplog, elasticapm_client):
                 assert isinstance(timer, NoopMetric)
                 assert isinstance(gauge, NoopMetric)
                 assert isinstance(counter, NoopMetric)
-
-    assert len(caplog.records) == 1
-    record = caplog.records[0]
-    assert "The limit of 3 metricsets has been reached" in record.message
+    assert_any_record_contains(caplog.records, "The limit of 3 metricsets has been reached", "elasticapm.metrics")
 
 
 def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):

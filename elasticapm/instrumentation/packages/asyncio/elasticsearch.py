@@ -30,7 +30,7 @@
 
 import elasticapm
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
-from elasticapm.instrumentation.packages.elasticsearch import ElasticSearchConnectionMixin, ElasticsearchInstrumentation
+from elasticapm.instrumentation.packages.elasticsearch import ElasticSearchConnectionMixin
 
 
 class ElasticSearchAsyncConnection(ElasticSearchConnectionMixin, AsyncAbstractInstrumentedModule):
@@ -55,18 +55,3 @@ class ElasticSearchAsyncConnection(ElasticSearchConnectionMixin, AsyncAbstractIn
             leaf=True,
         ):
             return await wrapped(*args, **kwargs)
-
-
-class AsyncElasticsearchInstrumentation(ElasticsearchInstrumentation, AsyncAbstractInstrumentedModule):
-    name = "elasticsearch"
-
-    instrument_list = [
-        ("elasticsearch._async.client", "AsyncElasticsearch.delete_by_query"),
-        ("elasticsearch._async.client", "AsyncElasticsearch.search"),
-        ("elasticsearch._async.client", "AsyncElasticsearch.count"),
-        ("elasticsearch._async.client", "AsyncElasticsearch.update"),
-    ]
-
-    async def call(self, module, method, wrapped, instance, args, kwargs):
-        kwargs = self.inject_apm_params(method, kwargs)
-        return await wrapped(*args, **kwargs)

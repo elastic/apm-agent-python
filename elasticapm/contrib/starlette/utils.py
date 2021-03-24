@@ -27,8 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import json
+import asyncio
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -64,10 +63,6 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
             body = None
             try:
                 body = await get_body(request)
-                if request.headers.get("content-type") == "application/x-www-form-urlencoded":
-                    body = await query_params_to_dict(body)
-                else:
-                    body = json.loads(body)
             except Exception:
                 pass
             if body is not None:
@@ -113,6 +108,7 @@ async def set_body(request: Request, body: bytes):
     """
 
     async def receive() -> Message:
+        await asyncio.sleep(0)
         return {"type": "http.request", "body": body}
 
     request._receive = receive
@@ -121,7 +117,9 @@ async def set_body(request: Request, body: bytes):
 async def get_body(request: Request) -> str:
     """Gets body from the request.
 
-    todo: This is not very pretty however it is not usual to get request body out of the target method (business logic).
+    When we consume the body, we replace the streaming mechanism with
+    a mocked version -- this workaround came from
+    https://github.com/encode/starlette/issues/495#issuecomment-513138055
 
     Args:
         request (Request)

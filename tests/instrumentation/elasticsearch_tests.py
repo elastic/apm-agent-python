@@ -295,34 +295,6 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
         assert "statement" not in span["context"]["db"]
 
 
-@pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
-@pytest.mark.integrationtest
-def test_update_script(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
-    elasticapm_client.begin_transaction("test")
-    r1 = elasticsearch.update(
-        index="tweets", id=1, doc_type=document_type, body={"script": "ctx._source.text = 'adios'"}, refresh=True
-    )
-    elasticapm_client.end_transaction("test", "OK")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    r2 = elasticsearch.get(index="tweets", doc_type=document_type, id=1)
-    assert r1["result"] == "updated"
-    assert r2["_source"] == {"user": "kimchy", "text": "adios"}
-    spans = elasticapm_client.spans_for_transaction(transaction)
-    assert len(spans) == 1
-
-    span = spans[0]
-    assert span["name"] == "ES POST /tweets/%s/1/_update" % document_type
-    assert span["type"] == "db"
-    assert span["subtype"] == "elasticsearch"
-    assert span["action"] == "query"
-    assert span["context"]["db"]["type"] == "elasticsearch"
-    assert span["context"]["db"]["statement"] == '{"script": "ctx._source.text = \'adios\'"}'
-
-
 @pytest.mark.integrationtest
 def test_update_document(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(
@@ -356,7 +328,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     )
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}
-    result = elasticsearch.search(body=search_query, params=None)
+    result = elasticsearch.search(body=search_query)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -500,28 +472,6 @@ def test_delete(instrument, elasticapm_client, elasticsearch):
     assert span["context"]["db"]["type"] == "elasticsearch"
 
 
-@pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
-@pytest.mark.integrationtest
-def test_delete_by_query_body(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
-    elasticapm_client.begin_transaction("test")
-    result = elasticsearch.delete_by_query(index="tweets", body={"query": {"term": {"user": "kimchy"}}})
-    elasticapm_client.end_transaction("test", "OK")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.spans_for_transaction(transaction)
-
-    span = spans[0]
-    assert span["name"] == "ES POST /tweets/_delete_by_query"
-    assert span["type"] == "db"
-    assert span["subtype"] == "elasticsearch"
-    assert span["action"] == "query"
-    assert span["context"]["db"]["type"] == "elasticsearch"
-    assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query":{"term":{"user":"kimchy"}}}')
-
-
 @pytest.mark.integrationtest
 def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(index="tweets", doc_type="users", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
@@ -571,7 +521,7 @@ def test_custom_serializer(instrument, elasticapm_client, elasticsearch):
         elasticsearch.index(index="test-index", body={"2": 1})
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {NumberObj(2): {"value": 1}}}}
-    result = elasticsearch.search(index="test-index", body=search_query, params=None)
+    result = elasticsearch.search(index="test-index", body=search_query)
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]

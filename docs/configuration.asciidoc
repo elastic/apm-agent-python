@@ -77,8 +77,8 @@ apm = ElasticAPM(app)
 ----
 
 [float]
-[[required-options]]
-=== Required options
+[[core-options]]
+=== Core options
 
 [float]
 [[config-service-name]]
@@ -86,14 +86,17 @@ apm = ElasticAPM(app)
 
 [options="header"]
 |============
-| Environment                | Django/Flask      | Default    | Example
-| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `None`     | `my-app`
+| Environment                | Django/Flask      | Default           | Example
+| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `python_service`  | `my-app`
 |============
 
 
 The name of your service.
 This is used to keep all the errors and transactions of your service together
 and is the primary filter in the Elastic APM user interface.
+
+While a default is provided, it is essential that you override this default
+with something more descriptive and unique across your infrastructure.
 
 NOTE: The service name must conform to this regular expression: `^[a-zA-Z0-9 _-]+$`.
 In less regexy terms:
@@ -143,19 +146,6 @@ If set to false, then the Python agent does not send any events to the Elastic A
 and instrumentation overhead is minimized,
 but the agent will continue to poll the server for configuration changes.
 
-
-[float]
-[[config-transport-class]]
-==== `transport_class`
-
-[options="header"]
-|============
-| Environment                   | Django/Flask      | Default
-| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http.Transport`
-|============
-
-
-The transport class to use when sending events to the APM Server.
 
 [float]
 [[logging-options]]
@@ -210,6 +200,9 @@ file will automatically rotate.
 Note that setting <<config-log_level>> is required for this setting to do
 anything.
 
+If https://github.com/elastic/ecs-logging-python[`ecs_logging`] is installed,
+the logs will automatically be formatted as ecs-compatible json.
+
 [float]
 [[config-log_file_size]]
 ==== `log_file_size`
@@ -226,8 +219,56 @@ The agent always keeps one backup file when rotating, so the max space that
 the log files will consume is twice the value of this setting.
 
 [float]
+[[config-log_ecs_formatting]]
+==== `log_ecs_formatting`
+
+[options="header"]
+|============
+| Environment                      | Django/Flask         | Default
+| `ELASTIC_APM_LOG_ECS_FORMATTING` | `LOG_ECS_FORMATTING` | `"off"`
+|============
+
+Valid options:
+
+* `"off"`
+* `"override"`
+
+If https://github.com/elastic/ecs-logging-python[`ecs_logging`] is installed,
+setting this to `"override"` will cause the agent to automatically attempt to enable
+ecs-formatted logging.
+
+For base `logging` from the standard library, the agent will get the root
+logger, find any attached handlers, and for each, set the formatter to
+`ecs_logging.StdlibFormatter()`.
+
+If `structlog` is installed, the agent will override any configured processors
+with `ecs_logging.StructlogFormatter()`.
+
+Note that this is a very blunt instrument that could have unintended side effects.
+If problems arise, please apply these formatters manually and leave this setting
+as `"off"`. See the
+https://www.elastic.co/guide/en/ecs-logging/python/current/installation.html[`ecs_logging` docs]
+for more information about using these formatters.
+
+Also note that this setting does not facilitate shipping logs to Elasticsearch.
+We recommend https://www.elastic.co/beats/filebeat[Filebeat] for that purpose.
+
+[float]
 [[other-options]]
 === Other options
+
+[float]
+[[config-transport-class]]
+==== `transport_class`
+
+[options="header"]
+|============
+| Environment                   | Django/Flask      | Default
+| `ELASTIC_APM_TRANSPORT_CLASS` | `TRANSPORT_CLASS` | `elasticapm.transport.http.Transport`
+|============
+
+
+The transport class to use when sending events to the APM Server.
 
 [float]
 [[config-service-node-name]]
@@ -694,7 +735,6 @@ to avoid stampedes of instances that start at the same time.
                                               'elasticapm.processors.sanitize_http_request_cookies',
                                               'elasticapm.processors.sanitize_http_headers',
                                               'elasticapm.processors.sanitize_http_wsgi_env',
-                                              'elasticapm.processors.sanitize_http_request_querystring',
                                               'elasticapm.processors.sanitize_http_request_body']`
 |============
 
@@ -707,23 +747,29 @@ WARNING: We recommend always including the default set of validators if you cust
 [[config-sanitize-field-names]]
 ==== `sanitize_field_names`
 
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 [options="header"]
 |============
 | Environment                        | Django/Flask           | Default
-| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `['authorization',
-                                                                  'password',
-                                                                  'secret',
-                                                                  'passwd',
-                                                                  'token',
-                                                                  'api_key',
-                                                                  'access_token',
-                                                                  'sessionid']`
+| `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `["password",
+                                                                  "passwd",
+                                                                  "pwd",
+                                                                  "secret",
+                                                                  "*key",
+                                                                  "*token*",
+                                                                  "*session*",
+                                                                  "*credit*",
+                                                                  "*card*",
+                                                                  "authorization",
+                                                                  "set-cookie"]`
 |============
 
-A list of field names to mask when using processors.
+A list of glob-matched field names to match and mask when using processors.
 For more information, see <<sanitizing-data, Sanitizing Data>>.
 
-WARNING: We recommend always including the default set of field names if you customize this setting.
+WARNING: We recommend always including the default set of field name matches
+if you customize this setting.
 
 
 [float]
@@ -968,6 +1014,19 @@ the agent sets a number of HTTP headers to outgoing requests made with <<automat
 These headers (`traceparent` and `tracestate`) are defined in the https://www.w3.org/TR/trace-context-1/[W3C Trace Context] specification.
 
 Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
+
+[float]
+[[config-use-elastic-excepthook]]
+==== `use_elastic_excepthook`
+
+[options="header"]
+|============
+| Environment                          | Django/Flask             | Default
+| `ELASTIC_APM_USE_ELASTIC_EXCEPTHOOK` | `USE_ELASTIC_EXCEPTHOOK` | `False`
+|============
+
+If set to `True`, the agent will intercept the default `sys.excepthook`, which
+allows the agent to collect all uncaught exceptions.
 
 
 [float]
