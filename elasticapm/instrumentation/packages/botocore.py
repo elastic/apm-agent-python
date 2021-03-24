@@ -36,6 +36,9 @@ from elasticapm.utils.compat import urlparse
 
 HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype", "span_action", "context"))
 
+# Used for boto3 < 1.7
+endpoint_to_service_id = {"SNS": "SNS", "S3": "S3", "DYNAMODB": "DynamoDB", "SQS": "SQS"}
+
 
 class BotocoreInstrumentation(AbstractInstrumentedModule):
     name = "botocore"
@@ -48,9 +51,14 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         else:
             operation_name = args[0]
 
-        service = instance._service_model.service_id
+        service_model = instance.meta.service_model
+        if hasattr(service_model, "service_id"):  # added in boto3 1.7
+            service = service_model.service_id
+        else:
+            service = service_model.service_name.upper()
+            service = endpoint_to_service_id.get(service, service)
 
-        parsed_url = urlparse.urlparse(instance._endpoint.host)
+        parsed_url = urlparse.urlparse(instance.meta.endpoint_url)
         context = {
             "destination": {
                 "address": parsed_url.hostname,
