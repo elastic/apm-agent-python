@@ -79,6 +79,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.httpcore.HTTPCoreAsyncInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.AioRedisInstrumentation"
         ]
     )
 
