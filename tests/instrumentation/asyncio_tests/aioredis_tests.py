@@ -49,7 +49,7 @@ if "REDIS_HOST" not in os.environ:
 async def redis_conn():
     _host = os.environ["REDIS_HOST"]
     _port = os.environ.get("REDIS_PORT", 6379)
-    conn = await aioredis.create_redis_pool(f'redis://{_host}:{_port}')
+    conn = await aioredis.create_redis_pool(f"redis://{_host}:{_port}")
 
     yield conn
 
