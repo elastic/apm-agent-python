@@ -70,7 +70,7 @@ class PrometheusMetrics(MetricsSet):
         # grouped into 3-pairs of (count, sum, creation_timestamp).
         # Each 3-pair represents a labelset.
         for count_sample, sum_sample, _ in grouper(samples, 3):
-            self.timer("prom." + name, count_sample.labels).val = sum_sample.value, count_sample.value
+            self.timer("prom." + name, **count_sample.labels).val = sum_sample.value, count_sample.value
 
     METRIC_MAP = {"counter": _prom_counter_handler, "gauge": _prom_gauge_handler, "summary": _prom_summary_handler}
 
