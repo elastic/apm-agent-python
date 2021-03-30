@@ -198,6 +198,8 @@ To use the Prometheus metric set, you have to enable it with the <<config-promet
 
 All metrics collected from `prometheus_client` are prefixed with `"prometheus.metrics."`. This can be changed using the <<config-prometheus_metrics_prefix, `prometheus_metrics_prefix`>> configuration option.
 
+[float]
+[[prometheus-metricset-beta]]
 ===== Beta limitations
  * The metrics format may change without backwards compatibility in future releases.
  * Histograms are currently not supported.
