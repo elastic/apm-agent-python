@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import platform
 
 import pytest
 
@@ -40,7 +41,8 @@ pytestmark = pytest.mark.prometheus_client
 
 prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
-prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
+if platform.python_implementation() == "CPython":
+    prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 
 
 def test_counter(elasticapm_client):
