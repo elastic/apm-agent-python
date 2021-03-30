@@ -28,22 +28,19 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import prometheus_client
 import pytest
-from prometheus_client import GC_COLLECTOR, PLATFORM_COLLECTOR, PROCESS_COLLECTOR, REGISTRY
+
+prometheus_client = pytest.importorskip("prometheus_client")
 
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.metrics.sets.prometheus import PrometheusMetrics
 
-# prometheus_client = pytest.importorskip("prometheus_client")
+pytestmark = pytest.mark.prometheus_client
 
 
-pytestmark = pytest.mark.prometheus
-
-
-REGISTRY.unregister(PROCESS_COLLECTOR)
-REGISTRY.unregister(PLATFORM_COLLECTOR)
-REGISTRY.unregister(GC_COLLECTOR)
+prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
+prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
+prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 
 
 def test_counter(elasticapm_client):
@@ -58,10 +55,10 @@ def test_counter(elasticapm_client):
     counter_with_labels.labels(alabel="foo", anotherlabel="baz").inc()
     data = list(metricset.collect())
     assert len(data) == 3
-    assert data[0]["samples"]["prom.a_bare_counter"]["value"] == 1.0
-    assert data[1]["samples"]["prom.counter_with_labels"]["value"] == 2.0
+    assert data[0]["samples"]["prometheus.metrics.a_bare_counter"]["value"] == 1.0
+    assert data[1]["samples"]["prometheus.metrics.counter_with_labels"]["value"] == 2.0
     assert data[1]["tags"] == {"alabel": "foo", "anotherlabel": "baz"}
-    assert data[2]["samples"]["prom.counter_with_labels"]["value"] == 1.0
+    assert data[2]["samples"]["prometheus.metrics.counter_with_labels"]["value"] == 1.0
     assert data[2]["tags"] == {"alabel": "bar", "anotherlabel": "bazzinga"}
 
 
@@ -75,10 +72,10 @@ def test_gauge(elasticapm_client):
     gauge_with_labels.labels(alabel="foo", anotherlabel="baz").set(2)
     data = list(metricset.collect())
     assert len(data) == 3
-    assert data[0]["samples"]["prom.a_bare_gauge"]["value"] == 5.0
-    assert data[1]["samples"]["prom.gauge_with_labels"]["value"] == 2.0
+    assert data[0]["samples"]["prometheus.metrics.a_bare_gauge"]["value"] == 5.0
+    assert data[1]["samples"]["prometheus.metrics.gauge_with_labels"]["value"] == 2.0
     assert data[1]["tags"] == {"alabel": "foo", "anotherlabel": "baz"}
-    assert data[2]["samples"]["prom.gauge_with_labels"]["value"] == 11.0
+    assert data[2]["samples"]["prometheus.metrics.gauge_with_labels"]["value"] == 11.0
     assert data[2]["tags"] == {"alabel": "bar", "anotherlabel": "bazzinga"}
 
 
@@ -97,11 +94,11 @@ def test_summary(elasticapm_client):
     data = list(metricset.collect())
 
     assert len(data) == 3
-    assert data[0]["samples"]["prom.a_bare_summary.count"]["value"] == 3.0
-    assert data[0]["samples"]["prom.a_bare_summary.sum"]["value"] == 21
-    assert data[1]["samples"]["prom.summary_with_labels.count"]["value"] == 2.0
-    assert data[1]["samples"]["prom.summary_with_labels.sum"]["value"] == 9.0
+    assert data[0]["samples"]["prometheus.metrics.a_bare_summary.count"]["value"] == 3.0
+    assert data[0]["samples"]["prometheus.metrics.a_bare_summary.sum"]["value"] == 21
+    assert data[1]["samples"]["prometheus.metrics.summary_with_labels.count"]["value"] == 2.0
+    assert data[1]["samples"]["prometheus.metrics.summary_with_labels.sum"]["value"] == 9.0
     assert data[1]["tags"] == {"alabel": "foo", "anotherlabel": "baz"}
-    assert data[2]["samples"]["prom.summary_with_labels.count"]["value"] == 1.0
-    assert data[2]["samples"]["prom.summary_with_labels.sum"]["value"] == 11.0
+    assert data[2]["samples"]["prometheus.metrics.summary_with_labels.count"]["value"] == 1.0
+    assert data[2]["samples"]["prometheus.metrics.summary_with_labels.sum"]["value"] == 11.0
     assert data[2]["tags"] == {"alabel": "bar", "anotherlabel": "bazzinga"}
