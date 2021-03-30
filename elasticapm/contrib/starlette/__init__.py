@@ -225,7 +225,8 @@ class ElasticAPM(BaseHTTPMiddleware):
                 trim = False
 
             route_name = self._get_route_name(redirect_scope, routes)
-            route_name = route_name + "/" if trim else route_name[:-1]
+            if route_name is not None:
+                route_name = route_name + "/" if trim else route_name[:-1]
         return route_name
 
     def _get_route_name(self, scope, routes, route_name=None):

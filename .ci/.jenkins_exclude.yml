@@ -12,11 +12,21 @@ exclude:
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: celery-4-django-1.11
   - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: celery-3-django-1.11
+  - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: celery-3-flask-1.0
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: celery-3-django-2.0
   - PYTHON_VERSION: python-3.10-rc
     FRAMEWORK: graphene-2
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: cassandra-3.4
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: pymongo-3.5
   # requests
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: requests-1.2
@@ -31,6 +41,8 @@ exclude:
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
   # pymongo
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: pymongo-2.9
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.7

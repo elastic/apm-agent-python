@@ -329,6 +329,27 @@ def test_transaction_name_is_route_for_mounts(app, elasticapm_client):
     assert transaction["context"]["request"]["url"]["pathname"] == "/sub/subsub/hihi/shay"
 
 
+def test_undefined_route(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.get("/undefined")
+
+    assert response.status_code == 404
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["name"] == "GET /undefined"
+
+
+def test_undefined_mounted_route(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.get("/sub/subsub/undefined")
+
+    assert response.status_code == 404
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["name"] == "GET /sub/subsub/undefined"
+
 
 @pytest.mark.parametrize(
     "elasticapm_client",
