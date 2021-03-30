@@ -54,14 +54,18 @@ class PrometheusMetrics(MetricsSet):
         # given name. The pair consists of the value, and a "created" timestamp.
         # We only use the former.
         for total_sample, _ in grouper(samples, 2):
-            self.counter("prom." + name, **total_sample.labels).val = total_sample.value
+            self.counter(
+                self._registry.client.config.prometheus_metrics_prefix + name, **total_sample.labels
+            ).val = total_sample.value
 
     def _prom_gauge_handler(self, name, samples):
         # Counters can be converted 1:1 from Prometheus to our
         # format. Each sample represents a distinct labelset for a
         # given name
         for sample in samples:
-            self.gauge("prom." + name, **sample.labels).val = sample.value
+            self.gauge(
+                self._registry.client.config.prometheus_metrics_prefix + name, **sample.labels
+            ).val = sample.value
 
     def _prom_summary_handler(self, name, samples):
         # Prometheus Summaries are analogous to our Timers, having
@@ -70,7 +74,10 @@ class PrometheusMetrics(MetricsSet):
         # grouped into 3-pairs of (count, sum, creation_timestamp).
         # Each 3-pair represents a labelset.
         for count_sample, sum_sample, _ in grouper(samples, 3):
-            self.timer("prom." + name, **count_sample.labels).val = sum_sample.value, count_sample.value
+            self.timer(self._registry.client.config.prometheus_metrics_prefix + name, **count_sample.labels).val = (
+                sum_sample.value,
+                count_sample.value,
+            )
 
     METRIC_MAP = {"counter": _prom_counter_handler, "gauge": _prom_gauge_handler, "summary": _prom_summary_handler}
 
