@@ -30,16 +30,20 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[[release-notes-6.1.0]]
+==== v6.1.0
+
 [float]
 ===== Features
 
 * Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
 * Add `log_ecs_formatting` config option {pull}1058[#1058] {pull}1063[#1063]
 * Add instrumentation for httplib2 {pull}1031[#1031]
+* Add better instrumentation for some AWS services (S3, SNS, DynamoDB) {pull}1054[#1054]
+* Added beta support for collecting metrics from prometheus_client {pull}1083[#1083]
 
 
 [float]
@@ -53,11 +57,6 @@ endif::[]
 * Fix issue with remote configuration when resetting config values {pull}1068[#1068]
 * Use a label for the elasticapm Django app that is compatible with Django 3.2 validation {pull}1064[#1064]
 * Fix an issue with undefined routes in Starlette {pull}1076[#1076]
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
-
 
 [[release-notes-6.0.0]]
 ==== v6.0.0
