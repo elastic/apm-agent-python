@@ -165,8 +165,9 @@ class Transaction(BaseSpan):
             self._transaction_metrics.timer(
                 "transaction.duration",
                 reset_on_collect=True,
+                unit="us",
                 **{"transaction.name": self.name, "transaction.type": self.transaction_type}
-            ).update(self.duration)
+            ).update(int(self.duration * 1000000))
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -176,15 +177,19 @@ class Transaction(BaseSpan):
                 }
                 if span_subtype:
                     labels["span.subtype"] = span_subtype
-                self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).update(*timer.val)
+                val = timer.val
+                self._breakdown.timer("span.self_time", reset_on_collect=True, unit="us", **labels).update(
+                    int(val[0] * 1000000), val[1]
+                )
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
                 self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
                 self._breakdown.timer(
                     "span.self_time",
                     reset_on_collect=True,
+                    unit="us",
                     **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
-                ).update(self.duration - self._child_durations.duration)
+                ).update(int((self.duration - self._child_durations.duration) * 1000000))
 
     def _begin_span(
         self,

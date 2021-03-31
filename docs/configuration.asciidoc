@@ -955,6 +955,38 @@ By setting this to `False`, tracking this metric is completely disabled, which c
 NOTE: This feature requires APM Server and Kibana >= 7.3.
 
 [float]
+[[config-prometheus_metrics]]
+==== `prometheus_metrics` (Beta)
+
+[options="header"]
+|============
+| Environment                        | Django/Flask         | Default
+| `ELASTIC_APM_PROMETHEUS_METRICS`   | `PROMETHEUS_METRICS` | `False`
+|============
+
+Enable/disable the tracking and collection of metrics from `prometheus_client`.
+
+See <<prometheus-metricset>> for more information.
+
+NOTE: This feature is currently in beta status.
+
+[float]
+[[config-prometheus_metrics_prefix]]
+==== `prometheus_metrics_prefix` (Beta)
+
+[options="header"]
+|============
+| Environment                               | Django/Flask        | Default
+| `ELASTIC_APM_PROMETHEUS_METRICS_PREFIX`   | `PROMETHEUS_METRICS_PREFIX` | `prometheus.metrics.`
+|============
+
+A prefix to prepend to Prometheus metrics names.
+
+See <<prometheus-metricset>> for more information.
+
+NOTE: This feature is currently in beta status.
+
+[float]
 [[config-central_config]]
 ==== `central_config`
 

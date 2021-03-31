@@ -43,3 +43,4 @@ FRAMEWORK:
   - graphene-2
   - httpx-newest
   - httplib2-newest
+  - prometheus_client-newest

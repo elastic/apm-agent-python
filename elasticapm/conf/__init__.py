@@ -559,6 +559,8 @@ class Config(_ConfigBase):
         default=30000,
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
+    prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
+    prometheus_metrics_prefix = _ConfigValue("PROMETHEUS_METRICS_PREFIX", default="prometheus.metrics.")
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
