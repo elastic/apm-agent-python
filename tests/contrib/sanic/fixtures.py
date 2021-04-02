@@ -77,6 +77,7 @@ def sanic_elastic_app(elasticapm_client):
         custom_context_callback=None,
         label_info_callback=None,
     ):
+        Sanic.test_mode = True
         args = {"name": "elastic-apm-test-app"}
         if error_handler:
             args["error_handler"] = error_handler

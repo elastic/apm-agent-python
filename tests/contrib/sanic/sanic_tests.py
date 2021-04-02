@@ -76,7 +76,8 @@ def test_get(url, transaction_name, span_count, custom_context, sanic_elastic_ap
     assert context == custom_context
 
 
-def test_capture_exception(sanic_app, elasticapm_client):
+def test_capture_exception(sanic_elastic_app, elasticapm_client):
+    sanic_app, apm = next(sanic_elastic_app(elastic_client=elasticapm_client))
     _, _ = sanic_app.test_client.get(
         "/capture-exception",
         headers={
