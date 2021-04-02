@@ -34,13 +34,14 @@ sanic = pytest.importorskip("sanic")  # isort:skip
 
 import logging
 import time
+import typing as t
 
 import pytest
 from sanic import Sanic
 from sanic.blueprints import Blueprint
+from sanic.handlers import ErrorHandler
 from sanic.request import Request
 from sanic.response import HTTPResponse, json
-from sanic_testing import TestManager
 
 import elasticapm
 from elasticapm import async_capture_span
@@ -51,10 +52,87 @@ class CustomException(Exception):
     pass
 
 
+class CustomErrorHandler(ErrorHandler):
+    def __init__(self):
+        super(CustomErrorHandler, self).__init__()
+
+    def default(self, request, exception):
+        return json({"source": "custom-handler-default"}, 500)
+
+
+@pytest.fixture()
+def sanic_app_with_error_handler(elasticapm_client):
+    app = Sanic(name="elastic-apm-custom-error", error_handler=CustomErrorHandler())
+    _ = ElasticAPM(app=app, client=elasticapm_client)
+    try:
+        from sanic_testing import TestManager
+
+        TestManager(app=app)
+    except ImportError:
+        from sanic.testing import SanicTestClient as TestManager
+
+    @app.exception(ValueError)
+    async def handle_value_error(request, exception):
+        return json({"source": "value-error-custom"}, status=500)
+
+    async def attribute_error_handler(request, expception):
+        return json({"source": "custom-handler"}, status=500)
+
+    app.error_handler.add(AttributeError, attribute_error_handler)
+
+    @app.get("/raise-exception")
+    async def raise_exception(request):
+        raise AttributeError
+
+    @app.get("/fallback-default-error")
+    async def raise_default_error(request):
+        raise CustomException
+
+    @app.get("/raise-value-error")
+    async def raise_value_error(request):
+        raise ValueError
+
+    try:
+        yield app
+    finally:
+        elasticapm.uninstrument()
+
+
+@pytest.fixture()
+def sanic_app_with_custom_config(request, temp_store_client):
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("service_name", "myapp")
+    client_config.setdefault("secret_token", "test_key")
+    client_config.setdefault("central_config", "false")
+    client_config.setdefault("include_paths", ("*/tests/*",))
+    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("metrics_interval", "0ms")
+    client_config.setdefault("cloud_provider", False)
+    client_config.setdefault("processors", ("elasticapm.processors.sanitize_http_headers"))
+    app = Sanic(name="elastic-apm-custom-cfg")
+    apm = ElasticAPM(app=app, client_cls=temp_store_client, config=client_config)
+
+    @app.get("/add-custom-headers")
+    async def custom_headers(request):
+        return json({"data": "message"}, headers={"sessionid": 1234555})
+
+    try:
+        yield app, apm
+    finally:
+        elasticapm.uninstrument()
+
+
 @pytest.fixture()
 def sanic_app(elasticapm_client):
     app = Sanic(name="elastic-apm")
     apm = ElasticAPM(app=app, client=elasticapm_client)
+    try:
+        from sanic_testing import TestManager
+
+        TestManager(app=app)
+    except ImportError:
+        from sanic.testing import SanicTestClient as TestManager
+
     TestManager(app=app)
 
     bp = Blueprint(name="test", url_prefix="/apm", version="v1")

@@ -28,7 +28,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
-from typing import Dict, List, Optional
+from typing import Dict
 
 from sanic import Sanic
 from sanic import __version__ as version
@@ -38,7 +38,7 @@ from sanic.response import HTTPResponse
 
 from elasticapm.base import Client
 from elasticapm.conf import Config, constants
-from elasticapm.contrib.sanic.sanic_types import EnvInfoType, SanicRequestOrResponse
+from elasticapm.contrib.sanic.sanic_types import EnvInfoType
 from elasticapm.utils import compat, get_url_dict
 
 
@@ -61,32 +61,13 @@ def get_env(request: Request) -> EnvInfoType:
             yield _attr, getattr(request, _attr)
 
 
-def extract_header(entity: SanicRequestOrResponse, skip_headers: Optional[List[str]]) -> Dict[str, str]:
-    """
-    Extract the necessary headers from the Incoming request. This method also provides a way to skip
-    certain headers from being included in the trace and they might contain sensitive information such
-    as the JWT Token and they might not always need to be tracked.
-    :param entity: HTTP Request or the HTTP Response Entity
-    :param skip_headers: A list of String indicating which headers to be skipped while extracting the headers
-    :return:
-    """
-    header = dict(entity.headers)
-    if skip_headers:
-        for _header in skip_headers:
-            _ = header.pop(_header, None)
-    return header
-
-
 # noinspection PyBroadException
-async def get_request_info(
-    config: Config, request: Request, skip_headers: Optional[List[str]] = None
-) -> Dict[str, str]:
+async def get_request_info(config: Config, request: Request) -> Dict[str, str]:
     """
     Generate a traceable context information from the inbound HTTP request
 
     :param config: Application Configuration used to tune the way the data is captured
     :param request: Inbound HTTP request
-    :param skip_headers: A list of String indicating which headers to be skipped while extracting the headers
     :return: A dictionary containing the context information of the ongoing transaction
     """
     env = dict(get_env(request=request))
@@ -102,7 +83,7 @@ async def get_request_info(
         "http_version": request.version,
     }
     if config.capture_headers:
-        result["headers"] = extract_header(entity=request, skip_headers=skip_headers)
+        result["headers"] = dict(request.headers)
 
     if request.method in constants.HTTP_WITH_BODY and config.capture_body:
         if request.content_type.startswith("multipart") or "octet-stream" in request.content_type:
@@ -118,17 +99,12 @@ async def get_request_info(
     return result
 
 
-async def get_response_info(
-    config: Config,
-    response: HTTPResponse,
-    skip_headers: Optional[List[str]] = None,
-) -> Dict[str, str]:
+async def get_response_info(config: Config, response: HTTPResponse) -> Dict[str, str]:
     """
     Generate a traceable context information from the inbound HTTP Response
 
     :param config: Application Configuration used to tune the way the data is captured
     :param response: outbound HTTP Response
-    :param skip_headers: A list of String indicating which headers to be skipped while extracting the headers
     :return: A dictionary containing the context information of the ongoing transaction
     """
     result = {
@@ -140,7 +116,7 @@ async def get_response_info(
         result["status_code"] = response.status
 
     if config.capture_headers:
-        result["headers"] = extract_header(entity=response, skip_headers=skip_headers)
+        result["headers"] = dict(response.headers)
 
     if config.capture_body and "octet-stream" not in response.content_type:
         result["body"] = response.body.decode("utf-8")
@@ -158,12 +134,12 @@ def _get_client_ip(request: Request) -> str:
         return request.remote_addr
 
 
-def make_client(config: dict, client_cls=Client, **defaults) -> Client:
+def make_client(client_cls=Client, **defaults) -> Client:
     if "framework_name" not in defaults:
         defaults["framework_name"] = "sanic"
         defaults["framework_version"] = version
 
-    return client_cls(config, **defaults)
+    return client_cls(**defaults)
 
 
 def _transform_response_cookie(cookies: CookieJar) -> Dict[str, str]:

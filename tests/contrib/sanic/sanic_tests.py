@@ -109,3 +109,41 @@ def test_unhandled_exception_capture(sanic_app, elasticapm_client):
         "type": "request",
     }.items():
         assert transaction[field] == value
+
+
+@pytest.mark.parametrize(
+    "url, expected_source",
+    [
+        ("/raise-exception", "custom-handler"),
+        ("/raise-value-error", "value-error-custom"),
+        ("/fallback-value-error", "custom-handler-default"),
+    ],
+)
+def test_client_with_custom_error_handler(url, expected_source, sanic_app_with_error_handler, elasticapm_client):
+    _, resp = sanic_app_with_error_handler.test_client.get(
+        url,
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
+    assert len(elasticapm_client.events[constants.ERROR]) == 1
+    assert resp.json["source"] == expected_source
+
+
+def test_header_field_sanitization(sanic_app_with_custom_config, elasticapm_client):
+    app, apm = sanic_app_with_custom_config
+    _, resp = app.test_client.get(
+        "/add-custom-headers",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+            "API_KEY": "some-random-api-key",
+        },
+    )
+    assert len(apm._client.events[constants.TRANSACTION]) == 1
+    transaction = apm._client.events[constants.TRANSACTION][0]
+    assert transaction["context"]["response"]["headers"]["sessionid"] == "[REDACTED]"
+    assert transaction["context"]["request"]["headers"]["api_key"] == "[REDACTED]"

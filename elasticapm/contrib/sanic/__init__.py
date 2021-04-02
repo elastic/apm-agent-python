@@ -136,7 +136,6 @@ class ElasticAPM:
         self._app = app  # type: Sanic
         self._client_cls = client_cls  # type: type
         self._client = client  # type: t.Union[None, Client]
-        self._skip_headers = defaults.pop("skip_headers", [])  # type: t.List[str]
         self._skip_init_middleware = defaults.pop("skip_init_middleware", False)  # type: bool
         self._skip_init_exception_handler = defaults.pop("skip_init_exception_handler", False)  # type: bool
         self._transaction_name_callback = transaction_name_callback  # type: TransactionNameCallbackType
@@ -215,7 +214,7 @@ class ElasticAPM:
         :param request: Sanic HTTP Request object
         :return: string containing the Transaction name
         """
-        return f"{request.method} {request.path}"
+        return f"{request.uri_template}"
 
     def setup_middleware(self, entity: ExtendableMiddlewareGroup):
         """
@@ -241,9 +240,7 @@ class ElasticAPM:
                 trace_parent = TraceParent.from_headers(headers=request.headers)
                 self._client.begin_transaction("request", trace_parent=trace_parent)
                 await set_context(
-                    lambda: get_request_info(
-                        config=self._client.config, request=request, skip_headers=self._skip_headers
-                    ),
+                    lambda: get_request_info(config=self._client.config, request=request),
                     "request",
                 )
                 self._setup_transaction_name(request=request)
@@ -265,7 +262,6 @@ class ElasticAPM:
                 lambda: get_response_info(
                     config=self._client.config,
                     response=response,
-                    skip_headers=self._skip_headers,
                 ),
                 "response",
             )
@@ -304,9 +300,7 @@ class ElasticAPM:
             self._client.capture_exception(
                 exc_info=sys.exc_info(),
                 context={
-                    "request": await get_request_info(
-                        config=self._client.config, request=request, skip_headers=self._skip_headers
-                    ),
+                    "request": await get_request_info(config=self._client.config, request=request),
                 },
                 handled=True,
             )
@@ -317,11 +311,8 @@ class ElasticAPM:
             self._client.end_transaction()
 
         if not isinstance(self._app.error_handler, ElasticAPMPatchedErrorHandler):
-            patched_client = ElasticAPMPatchedErrorHandler()
+            patched_client = ElasticAPMPatchedErrorHandler(current_handler=self._app.error_handler)
             patched_client.setup_apm_handler(apm_handler=_handler)
-            patched_client.handlers = self._app.error_handler.handlers
-            patched_client.cached_handlers = self._app.error_handler.cached_handlers
-            patched_client._missing = self._app.error_handler._missing
             self._app.error_handler = patched_client
         else:
             self._app.error_handler.setup_apm_handler(apm_handler=_handler)

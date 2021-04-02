@@ -54,7 +54,7 @@ CustomContextCallbackType = t.Optional[t.Callable[[SanicRequestOrResponse], t.Aw
 
 LabelInfoCallbackType = t.Optional[t.Callable[[SanicRequestOrResponse], t.Awaitable[LabelInfoType]]]
 
-APMConfigType = t.Optional[t.Dict[str, t.Any], t.Dict[bytes, t.Any]]
+APMConfigType = t.Optional[t.Union[t.Dict[str, t.Any], t.Dict[bytes, t.Any]]]
 
 ExtendableMiddlewareGroup = t.Union[Blueprint, BlueprintGroup]
 
