@@ -36,7 +36,7 @@ from sanic.blueprints import Blueprint
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
-UserInfoType = t.Tuple[t.Optional[str], t.Optional[str], t.Optional[str]]
+UserInfoType = t.Tuple[t.Optional[t.Any], t.Optional[t.Any], t.Optional[t.Any]]
 LabelInfoType = t.Dict[str, t.Union[str, bool, int, float]]
 CustomInfoType = t.Dict[str, t.Any]
 
