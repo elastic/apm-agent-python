@@ -30,16 +30,14 @@
 
 import pytest  # isort:skip
 
-redis = pytest.importorskip("aioredis")  # isort:skip
+aioredis = pytest.importorskip("aioredis")  # isort:skip
 
 import os
-
-import aioredis
 
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
 
-pytestmark = [pytest.mark.asyncio, pytest.mark.redis]
+pytestmark = [pytest.mark.asyncio, pytest.mark.aioredis]
 
 if "REDIS_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping redis tests, no REDIS_HOST environment variable set"))

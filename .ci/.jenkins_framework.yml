@@ -18,6 +18,8 @@ FRAMEWORK:
   - boto3-newest
   - pymongo-newest
   - redis-newest
+  - aioredis-newest
+  #- aioredis-2  # not supported yet
   - psycopg2-newest
   - pymssql-newest
   - pyodbc-newest

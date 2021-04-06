@@ -216,3 +216,9 @@ exclude:
     FRAMEWORK: asyncpg-newest
   - PYTHON_VERSION: python-3.10-rc  # https://github.com/MagicStack/asyncpg/issues/699
     FRAMEWORK: asyncpg-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
+    FRAMEWORK: aioredis-newest

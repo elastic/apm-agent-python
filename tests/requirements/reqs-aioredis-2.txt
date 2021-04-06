@@ -1,0 +1,2 @@
+aioredis>=2.0.0a1
+-r reqs-base.txt
