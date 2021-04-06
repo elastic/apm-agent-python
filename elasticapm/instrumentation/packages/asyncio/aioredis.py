@@ -46,7 +46,9 @@ class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with async_capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True) as span:
+        with async_capture_span(
+            wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
+        ) as span:
             span.context["destination"] = _get_destination_info(instance)
 
             return wrapped(*args, **kwargs)
@@ -60,7 +62,9 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with async_capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True) as span:
+        with async_capture_span(
+            wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
+        ) as span:
             span.context["destination"] = _get_destination_info(instance)
 
             return wrapped(*args, **kwargs)
