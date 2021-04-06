@@ -31,7 +31,8 @@
 from __future__ import absolute_import
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span, execution_context
+from elasticapm.traces import execution_context
+from elasticapm.contrib.asyncio.traces import async_capture_span
 
 
 class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
@@ -45,7 +46,7 @@ class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True) as span:
+        with async_capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True) as span:
             span.context["destination"] = _get_destination_info(instance)
 
             return wrapped(*args, **kwargs)
@@ -59,7 +60,7 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True) as span:
+        with async_capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True) as span:
             span.context["destination"] = _get_destination_info(instance)
 
             return wrapped(*args, **kwargs)
