@@ -220,10 +220,10 @@ async def test_capture_headers_body_is_dynamic(app, base_url, http_client):
     errors = elasticapm_client.events[constants.ERROR]
 
     assert "headers" in transactions[0]["context"]["request"]
-    assert transactions[0]["context"]["request"]["body"] == b"xyz"
+    assert transactions[0]["context"]["request"]["body"] == "xyz"
     assert "headers" in transactions[0]["context"]["response"]
     assert "headers" in errors[0]["context"]["request"]
-    assert errors[0]["context"]["request"]["body"] == b"xyz"
+    assert errors[0]["context"]["request"]["body"] == "xyz"
 
     assert "headers" not in transactions[2]["context"]["request"]
     assert "headers" not in transactions[2]["context"]["response"]
