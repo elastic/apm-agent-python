@@ -104,8 +104,8 @@ def test_s3(instrument, elasticapm_client):
         assert span["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
         assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
-        assert span["context"]["destination"]["name"] == "s3"
-        assert span["context"]["destination"]["resource"] == "xyz"
+        assert span["context"]["destination"]["service"]["name"] == "s3"
+        assert span["context"]["destination"]["service"]["resource"] == "xyz"
         assert span["context"]["destination"]["service"]["type"] == "storage"
     assert spans[0]["name"] == "S3 CreateBucket xyz"
     assert spans[0]["action"] == "CreateBucket"
@@ -162,9 +162,9 @@ def test_dynamodb(instrument, elasticapm_client, dynamodb):
         assert span["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
         assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
-        assert span["context"]["destination"]["name"] == "dynamodb"
-        # assert span["context"]["destination"]["resource"] == "xyz"
-        # assert span["context"]["destination"]["service"]["type"] == "storage"
+        assert span["context"]["destination"]["service"]["name"] == "dynamodb"
+        assert span["context"]["destination"]["service"]["resource"] == "Movies"
+        assert span["context"]["destination"]["service"]["type"] == "db"
     assert spans[0]["name"] == "DynamoDB PutItem Movies"
     assert spans[1]["name"] == "DynamoDB Query Movies"
     assert spans[1]["context"]["db"]["statement"] == "title = :v1 and #y = :v2"
@@ -184,3 +184,9 @@ def test_sns(instrument, elasticapm_client):
     assert spans[2]["type"] == "messaging"
     assert spans[2]["subtype"] == "sns"
     assert spans[2]["action"] == "send"
+    assert spans[2]["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
+    assert spans[2]["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
+    assert spans[2]["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert spans[2]["context"]["destination"]["service"]["name"] == "sns"
+    assert spans[2]["context"]["destination"]["service"]["resource"] == "sns/mytopic"
+    assert spans[2]["context"]["destination"]["service"]["type"] == "messaging"
