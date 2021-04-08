@@ -11,6 +11,7 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 * <<cpu-memory-metricset>>
 * <<transactions-metricset>>
 * <<breakdown-metricset>>
+* <<prometheus-metricset>>
 
 [float]
 [[cpu-memory-metricset]]
@@ -178,3 +179,28 @@ You can filter and group by these dimensions:
 * `span.subtype`: The sub-type of the span, for example `mysql` (optional)
 
 --
+[float]
+[[prometheus-metricset]]
+==== Prometheus metric set (beta)
+
+beta[]
+
+If you use https://github.com/prometheus/client_python[`prometheus_client`] to collect metrics, the agent can
+collect them as well and make them available in Elasticsearch.
+
+The following types of metrics are supported:
+
+ * Counters
+ * Gauges
+ * Summaries
+
+To use the Prometheus metric set, you have to enable it with the <<config-prometheus_metrics, `prometheus_metrics`>> configuration option.
+
+All metrics collected from `prometheus_client` are prefixed with `"prometheus.metrics."`. This can be changed using the <<config-prometheus_metrics_prefix, `prometheus_metrics_prefix`>> configuration option.
+
+[float]
+[[prometheus-metricset-beta]]
+===== Beta limitations
+ * The metrics format may change without backwards compatibility in future releases.
+ * Histograms are currently not supported.
+ 

@@ -96,9 +96,7 @@ def handle_s3(operation_name, service, instance, args, kwargs, context):
         bucket = ""
     signature = f"S3 {operation_name} {bucket}"
 
-    context["destination"]["name"] = span_subtype
-    context["destination"]["resource"] = bucket
-    context["destination"]["service"] = {"type": span_type}
+    context["destination"]["service"] = {"name": span_subtype, "resource": bucket, "type": span_type}
 
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
@@ -117,9 +115,7 @@ def handle_dynamodb(operation_name, service, instance, args, kwargs, context):
     if operation_name == "Query" and len(args) > 1 and "KeyConditionExpression" in args[1]:
         context["db"]["statement"] = args[1]["KeyConditionExpression"]
 
-    context["destination"]["name"] = span_subtype
-    context["destination"]["resource"] = table
-    context["destination"]["service"] = {"type": span_type}
+    context["destination"]["service"] = {"name": span_subtype, "resource": table, "type": span_type}
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
@@ -137,9 +133,11 @@ def handle_sns(operation_name, service, instance, args, kwargs, context):
         if "TopicArn" in args[1]:
             topic_name = args[1]["TopicArn"].rsplit(":", maxsplit=1)[-1]
     signature = f"SNS {operation_name} {topic_name}".rstrip()
-    context["destination"]["name"] = span_subtype
-    context["destination"]["resource"] = f"{span_subtype}/{topic_name}" if topic_name else span_subtype
-    context["destination"]["type"] = span_type
+    context["destination"]["service"] = {
+        "name": span_subtype,
+        "resource": f"{span_subtype}/{topic_name}" if topic_name else span_subtype,
+        "type": span_type,
+    }
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
@@ -151,6 +149,8 @@ def handle_default(operation_name, service, instance, args, kwargs, destination)
     span_type = "aws"
     span_subtype = service.lower()
     span_action = operation_name
+
+    destination["service"] = {"name": span_subtype, "resource": span_subtype, "type": span_type}
 
     signature = f"{service}:{operation_name}"
     return HandlerInfo(signature, span_type, span_subtype, span_action, destination)

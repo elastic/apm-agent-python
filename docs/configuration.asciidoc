@@ -420,6 +420,20 @@ Exceptions of these types will not be sent to the APM Server.
 
 
 [float]
+[[config-transaction-ignore-urls]]
+==== `transaction_ignore_urls`
+[options="header"]
+|============
+| Environment                           | Django/Flask              | Default  | Example
+| `ELASTIC_APM_TRANSACTION_IGNORE_URLS` | `TRANSACTION_IGNORE_URLS` | `[]`     | `['/api/ping', '/static/*']`
+| multiple values separated by commas, without spaces |||
+|============
+
+A list of URLs for which the agent should not capture any transaction data.
+
+Optionally, `*` can be used to match multiple URLs at once.
+
+[float]
 [[config-transactions-ignore-patterns]]
 ==== `transactions_ignore_patterns`
 [options="header"]
@@ -430,8 +444,11 @@ Exceptions of these types will not be sent to the APM Server.
 |============
 
 A list of regular expressions.
-Transactions that match any of the of the configured patterns will be ignored and not sent to the APM Server.
+Transactions with a name that matches any of the configured patterns will be ignored and not sent to the APM Server.
 
+NOTE: as the the name of the transaction can only be determined at the end of the transaction,
+the agent might still cause overhead for transactions ignored through this setting.
+If agent overhead is a concern, we recommend <<config-transaction-ignore-urls,`transaction_ignore_urls`>> instead.
 
 [float]
 [[config-server-timeout]]
@@ -953,6 +970,38 @@ Enable/disable the tracking and collection of breakdown metrics.
 By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
+
+[float]
+[[config-prometheus_metrics]]
+==== `prometheus_metrics` (Beta)
+
+[options="header"]
+|============
+| Environment                        | Django/Flask         | Default
+| `ELASTIC_APM_PROMETHEUS_METRICS`   | `PROMETHEUS_METRICS` | `False`
+|============
+
+Enable/disable the tracking and collection of metrics from `prometheus_client`.
+
+See <<prometheus-metricset>> for more information.
+
+NOTE: This feature is currently in beta status.
+
+[float]
+[[config-prometheus_metrics_prefix]]
+==== `prometheus_metrics_prefix` (Beta)
+
+[options="header"]
+|============
+| Environment                               | Django/Flask        | Default
+| `ELASTIC_APM_PROMETHEUS_METRICS_PREFIX`   | `PROMETHEUS_METRICS_PREFIX` | `prometheus.metrics.`
+|============
+
+A prefix to prepend to Prometheus metrics names.
+
+See <<prometheus-metricset>> for more information.
+
+NOTE: This feature is currently in beta status.
 
 [float]
 [[config-central_config]]

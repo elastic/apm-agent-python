@@ -30,16 +30,28 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[[release-notes-6.1.1]]
+==== v6.1.1 - 2021/04/08
+
+[float]
+===== Bug fixes
+
+ * fixed a validation issue with the newly introduced instrumentation for S3, SNS and DynamoDB {pull}1090[#1090]
+
+[[release-notes-6.1.0]]
+==== v6.1.0 - 2021/03/31
+
 [float]
 ===== Features
 
 * Add global access to Client singleton object at `elasticapm.get_client()` {pull}1043[#1043]
 * Add `log_ecs_formatting` config option {pull}1058[#1058] {pull}1063[#1063]
 * Add instrumentation for httplib2 {pull}1031[#1031]
+* Add better instrumentation for some AWS services (S3, SNS, DynamoDB) {pull}1054[#1054]
+* Added beta support for collecting metrics from prometheus_client {pull}1083[#1083]
 
 
 [float]
@@ -54,13 +66,8 @@ endif::[]
 * Use a label for the elasticapm Django app that is compatible with Django 3.2 validation {pull}1064[#1064]
 * Fix an issue with undefined routes in Starlette {pull}1076[#1076]
 
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
-
-
 [[release-notes-6.0.0]]
-==== v6.0.0
+==== v6.0.0 - 2021/02/01
 
 [float]
 ===== Breaking changes
@@ -87,7 +94,7 @@ endif::[]
 
 
 [[release-notes-5.10.1]]
-==== v5.10.1
+==== v5.10.1 - 2021/01/20
 
 [float]
 ===== Bug fixes
@@ -98,7 +105,7 @@ endif::[]
 * Fix for Starlette/FastAPI integration to properly obey `enabled` config {pull}1000[#1000]
 
 [[release-notes-5.10.0]]
-==== v5.10.0
+==== v5.10.0 - 2020/11/18
 [float]
 ===== Features
 
@@ -121,7 +128,7 @@ endif::[]
 * Updated Starlette integration to use the route as transaction name if possible {pull}957[#957]
 
 [[release-notes-5.9.0]]
-==== v5.9.0
+==== v5.9.0 - 2020/09/23
 
 [float]
 ===== Features
@@ -136,7 +143,7 @@ endif::[]
 * Fix validation of config to properly require `required` config items. {pull}927[#927]
 
 [[release-notes-5.8.1]]
-==== v5.8.1
+==== v5.8.1 - 2020/07/13
 
 [float]
 ===== Bug fixes
@@ -146,7 +153,7 @@ endif::[]
 * Fixed a bug in local variable serialization that could occur in multi-threaded applications {pull}885[#885]
 
 [[release-notes-5.8.0]]
-==== v5.8.0
+==== v5.8.0 - 2020/06/30
 
 [float]
 ===== Features
@@ -162,7 +169,7 @@ endif::[]
 
 
 [[release-notes-5.7.0]]
-==== v5.7.0
+==== v5.7.0 - 2020/06/11
 
 [float]
 ===== Features
@@ -182,7 +189,7 @@ endif::[]
 
 
 [[release-notes-5.6.0]]
-==== v5.6.0
+==== v5.6.0 - 2020/05/06
 
 [float]
 ===== New features
@@ -203,21 +210,21 @@ endif::[]
  * Python 2.7 suppot will be dropped in version 6.0 of the agent.
 
 [[release-notes-5.5.2]]
-==== v5.5.2
+==== v5.5.2 - 2020/03/20
 
 [float]
 ===== Bug fixes
 * Fixed an issue with Redis using unix domain sockets and destination information {pull}766[#766]
 
 [[release-notes-5.5.1]]
-==== v5.5.1
+==== v5.5.1 - 2020/03/19
 
 [float]
 ===== Bug fixes
 * Fixed Starlette middleware when capturing request body while the content-type header is absent {pull}763[#763]
 
 [[release-notes-5.5.0]]
-==== v5.5.0
+==== v5.5.0 - 2020/03/19
 
 [float]
 ===== Features
@@ -230,7 +237,7 @@ endif::[]
 
 
 [[release-notes-5.4.3]]
-==== v5.4.3
+==== v5.4.3 - 2020/02/27
 
 https://github.com/elastic/apm-agent-python/compare/v5.4.2\...v5.4.3[Check the diff]
 
@@ -240,7 +247,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.4.2\...v5.4.3[Check the d
  * fixed a bug in our aiohttp.client support if used with a yarl URL {pull}733[#733]
 
 [[release-notes-5.4.2]]
-==== v5.4.2
+==== v5.4.2 - 2020/02/18
 
 https://github.com/elastic/apm-agent-python/compare/v5.4.1\...v5.4.2[Check the diff]
 
@@ -250,7 +257,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.4.1\...v5.4.2[Check the d
  * fixed a bug in our celery implementation related to the threading refactor in 5.4.0 {pull}724[#724]
 
 [[release-notes-5.4.1]]
-==== v5.4.1
+==== v5.4.1 - 2020/02/18
 
 https://github.com/elastic/apm-agent-python/compare/v5.4.0\...v5.4.1[Check the diff]
 
@@ -260,7 +267,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.4.0\...v5.4.1[Check the d
  * fixed an issue with a DEBUG log message raising an error in some cases {pull}722[#722]
 
 [[release-notes-5.4.0]]
-==== v5.4.0
+==== v5.4.0 - 2020/02/17
 
 https://github.com/elastic/apm-agent-python/compare/v5.3.3\...v5.4.0[Check the diff]
 
@@ -299,7 +306,7 @@ of positional arguments being unsupported. {pull}697[#697]
 
 
 [[release-notes-5.3.3]]
-==== v5.3.3
+==== v5.3.3 - 2020/01/14
 
 https://github.com/elastic/apm-agent-python/compare/v5.3.2\...v5.3.3[Check the diff]
 
@@ -310,7 +317,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.2\...v5.3.3[Check the d
  * Fixed bug that would make the agent ignore the `hostname` configuration setting {pull}689[#689]
 
 [[release-notes-5.3.2]]
-==== v5.3.2
+==== v5.3.2 - 2019/11/25
 
 https://github.com/elastic/apm-agent-python/compare/v5.3.1\...v5.3.2[Check the diff]
 
@@ -320,7 +327,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.1\...v5.3.2[Check the d
  * Added support for IPv6 address format when parsing urls {pull}649[#649]
 
 [[release-notes-5.3.1]]
-==== v5.3.1
+==== v5.3.1 - 2019/11/18
 
 https://github.com/elastic/apm-agent-python/compare/v5.3.0\...v5.3.1[Check the diff]
 
@@ -330,7 +337,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.3.0\...v5.3.1[Check the d
 * Added support for shortening dicts in local variables {pull}638[#638]
 
 [[release-notes-5.3.0]]
-==== v5.3.0
+==== v5.3.0 - 2019/11/14
 
 https://github.com/elastic/apm-agent-python/compare/v5.2.3\...v5.3.0[Check the diff]
 
@@ -347,7 +354,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.3\...v5.3.0[Check the d
 * Fixed issue with transactions not being captured when errors occur in Flask {pull}635[#635]
 
 [[release-notes-5.2.3]]
-==== v5.2.3
+==== v5.2.3 - 2019/11/13
 
 https://github.com/elastic/apm-agent-python/compare/v5.2.2\...v5.2.3[Check the diff]
 
@@ -359,7 +366,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.2\...v5.2.3[Check the d
 * Fix pod ID for kubernetes when using the systemd cgroup driver {pull}631[#631]
 
 [[release-notes-5.2.2]]
-==== v5.2.2
+==== v5.2.2 - 2019/10/16
 
 https://github.com/elastic/apm-agent-python/compare/v5.2.1\...v5.2.2[Check the diff]
 
@@ -368,7 +375,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.1\...v5.2.2[Check the d
 * Fixed an issue where a `cpu_total` of `0` could cause an exception {pull}610[#610], {pull}611[#611]
 
 [[release-notes-5.2.1]]
-==== v5.2.1
+==== v5.2.1 - 2019/10/09
 
 https://github.com/elastic/apm-agent-python/compare/v5.2.0\...v5.2.1[Check the diff]
 
@@ -378,7 +385,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.2.0\...v5.2.1[Check the d
 * Fixed an issue with processors not being applied to chained exceptions {pull}604[#604]
 
 [[release-notes-5.2.0]]
-==== v5.2.0
+==== v5.2.0 - 2019/10/02
 
 https://github.com/elastic/apm-agent-python/compare/v5.1.2\...v5.2.0[Check the diff]
 
@@ -398,7 +405,7 @@ visualized in the APM UI. The UI component will be released in an upcoming Kiban
 * Drop events immediately if a processor returns a falsy value {pull}585[#585]
 
 [[release-notes-5.1.2]]
-==== v5.1.2
+==== v5.1.2 - 2019/09/04
 
 https://github.com/elastic/apm-agent-python/compare/v5.1.1\...v5.1.2[Check the diff]
 
@@ -410,7 +417,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.1.1\...v5.1.2[Check the d
 * Fixed to correctly check if gevent has patched threading.local {pull}579[#579]
 
 [[release-notes-5.1.1]]
-==== v5.1.1
+==== v5.1.1 - 2019/08/22
 
 https://github.com/elastic/apm-agent-python/compare/v5.1.0\...v5.1.1[Check the diff]
 
@@ -426,7 +433,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.1.0\...v5.1.1[Check the d
 * Added Python 3.8 RC to the test matrix {pull}565[#565]
 
 [[release-notes-5.1.0]]
-==== v5.1.0
+==== v5.1.0 - 2019/08/14
 
 https://github.com/elastic/apm-agent-python/compare/v5.0.0\...v5.1.0[Check the diff]
 
@@ -450,7 +457,7 @@ https://github.com/elastic/apm-agent-python/compare/v5.0.0\...v5.1.0[Check the d
 * Limited the amount of distinct metrics to 1000 {pull}540[#540], {pull}544[#544]
 
 [[release-notes-5.0.0]]
-==== v5.0.0
+==== v5.0.0 - 2019/07/31
 
 https://github.com/elastic/apm-agent-python/compare/v4.2.2\...v5.0.0[Check the diff]
 
@@ -476,7 +483,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.2.2\...v5.0.0[Check the d
 === Python Agent version 4.x
 
 [[release-notes-4.2.2]]
-==== v4.2.2
+==== v4.2.2 - 2019/04/10
 
 https://github.com/elastic/apm-agent-python/compare/v4.2.1\...v4.2.2[Check the diff]
 
@@ -487,7 +494,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.2.1\...v4.2.2[Check the d
 * Added license header check as pre-commit hook {pull}456[#456]
 
 [[release-notes-4.2.1]]
-==== v4.2.1
+==== v4.2.1 - 2019/03/22
 
 https://github.com/elastic/apm-agent-python/compare/v4.2.0\...v4.2.1[Check the diff]
 
@@ -495,7 +502,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.2.0\...v4.2.1[Check the d
 * Fixed incompatibility with eventlet introduced in 4.2.0 {pull}435[#435], {pull}436[#436]
 
 [[release-notes-4.2.0]]
-==== v4.2.0
+==== v4.2.0 - 2019/03/20
 
 https://github.com/elastic/apm-agent-python/compare/v4.1.0\...v4.2.0[Check the diff]
 
@@ -510,7 +517,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.1.0\...v4.2.0[Check the d
 * Added copyright header to all files, and a CI check {pull}429[#429]
 
 [[release-notes-4.1.0]]
-==== v4.1.0
+==== v4.1.0 - 2019/01/29
 
 https://github.com/elastic/apm-agent-python/compare/v4.0.3\...v4.1.0[Check the diff]
 
@@ -523,7 +530,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.0.3\...v4.1.0[Check the d
 * Added `capture_headers` config option {pull}392[#392]
 
 [[release-notes-4.0.3]]
-==== v4.0.3
+==== v4.0.3 - 2018/12/24
 
 https://github.com/elastic/apm-agent-python/compare/v4.0.2\...v4.0.3[Check the diff]
 
@@ -532,14 +539,14 @@ https://github.com/elastic/apm-agent-python/compare/v4.0.2\...v4.0.3[Check the d
 * Fixed an issue with psycopg2 and encoded strings {pull}366[#366]
 
 [[release-notes-4.0.2]]
-==== v4.0.2
+==== v4.0.2 - 2018/12/05
 
 https://github.com/elastic/apm-agent-python/compare/v4.0.1\...v4.0.2[Check the diff]
 
 * Fixed another issue in the new v2 transport {pull}351[#351]
 
 [[release-notes-4.0.1]]
-==== v4.0.1
+==== v4.0.1 - 2018/11/16
 
 https://github.com/elastic/apm-agent-python/compare/v4.0.0\...v4.0.1[Check the diff]
 
@@ -547,7 +554,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.0.0\...v4.0.1[Check the d
 * Fixed a multithreading issue that occurs when using threaded workers {pull}335[#335]
 
 [[release-notes-4.0.0]]
-==== v4.0.0
+==== v4.0.0 - 2018/11/14
 
 https://github.com/elastic/apm-agent-python/compare/v3.0.2\...v4.0.0[Check the diff]
 
@@ -571,7 +578,7 @@ current transaction and span. This is a necessary precursor for full asyncio sup
 === Python Agent version 3.x
 
 [[release-notes-3.0.2]]
-==== v3.0.2
+==== v3.0.2 - 2018/10/17
 
 https://github.com/elastic/apm-agent-python/compare/v3.0.1\...v3.0.2[Check the diff]
 
@@ -579,7 +586,7 @@ https://github.com/elastic/apm-agent-python/compare/v3.0.1\...v3.0.2[Check the d
 * Fixed a bug in Flask instrumentation that could appear together with FlaskAPI {pull}286[#286]
 
 [[release-notes-3.0.1]]
-==== v3.0.1
+==== v3.0.1 - 2018/08/30
 
 
 https://github.com/elastic/apm-agent-python/compare/v3.0.0\...v3.0.1[Check the diff]
@@ -592,7 +599,7 @@ HTTP headers are properly sanitized {pull}275[#275]
 * Fixed a race condition with managing the timer-send thread {pull}279[#279]
 
 [[release-notes-3.0.0]]
-==== v3.0.0
+==== v3.0.0 - 2018/07/20
 
 
 https://github.com/elastic/apm-agent-python/compare/v2.2.1\...v3.0.0[Check the diff]
@@ -609,7 +616,7 @@ from `-1` (always collect) to `5` (only collect for spans longer than 5 ms) {pul
 === Python Agent version 2.x
 
 [[release-notes-2.2.1]]
-==== v2.2.1
+==== v2.2.1 - 2018/06/13
 
 
 https://github.com/elastic/apm-agent-python/compare/v2.2.0\...v2.2.1[Check the diff]
@@ -617,7 +624,7 @@ https://github.com/elastic/apm-agent-python/compare/v2.2.0\...v2.2.1[Check the d
 - fixed an issue with Django Channels {pull}232[#232], {pull}233[#233]
 
 [[release-notes-2.2.0]]
-==== v2.2.0
+==== v2.2.0 - 2018/06/13
 
 
 https://github.com/elastic/apm-agent-python/compare/v2.1.1\...v2.2.0[Check the diff]
@@ -633,7 +640,7 @@ https://github.com/elastic/apm-agent-python/compare/v2.1.1\...v2.2.0[Check the d
 **NOTE**: This will be the last release with support for Python 3.3.
 
 [[release-notes-2.1.1]]
-==== v2.1.1
+==== v2.1.1 - 2018/04/09
 
 
 https://github.com/elastic/apm-agent-python/compare/v2.1.0\...v2.1.1[Check the diff]
@@ -642,7 +649,7 @@ https://github.com/elastic/apm-agent-python/compare/v2.1.0\...v2.1.1[Check the d
 - fix an encoding issue with log messages that are hit in rare cases {pull}188[#188], {pull}189[#189]
 
 [[release-notes-2.1.0]]
-==== v2.1.0
+==== v2.1.0 - 2018/03/19
 
 
 https://github.com/elastic/apm-agent-python/compare/v2.0.1\...v2.1.0[Check the diff]
@@ -656,7 +663,7 @@ https://github.com/elastic/apm-agent-python/compare/v2.0.1\...v2.1.0[Check the d
     - fix issue when message has `%` character, but no params {pull}175[#175]
 
 [[release-notes-2.0.1]]
-==== v2.0.1
+==== v2.0.1 - 2018/02/15
 
 
 https://github.com/elastic/apm-agent-python/compare/v2.0.0\...v2.0.1[Check the diff]
@@ -665,7 +672,7 @@ https://github.com/elastic/apm-agent-python/compare/v2.0.0\...v2.0.1[Check the d
 - Added truncation for fields that have a `maxLength` in the JSON Schema {pull}159[#159]
 
 [[release-notes-2.0.0]]
-==== v2.0.0
+==== v2.0.0 - 2018/02/06
 
 
 https://github.com/elastic/apm-agent-python/compare/v1.0.0\...v2.0.0[Check the diff]
@@ -700,7 +707,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...v2.0.0[Check the d
 === Python Agent version 1.x
 
 [[release-notes-1.0.0]]
-==== v1.0.0
+==== v1.0.0 - 2017/12/11
 
 
 https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...v1.0.0[Check the diff]
@@ -714,7 +721,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev3\...v1.0.0[Check 
 - BREAKING: several API changes to `capture_exception`, `capture_message`, and added documentation for these and other APIs {pull}112[#112]
 
 [[release-notes-1.0.0-dev3]]
-==== v1.0.0.dev3
+==== v1.0.0.dev3 - 2017/11/13
 
 
 https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2\...v1.0.0.dev2[Check the diff]
@@ -726,7 +733,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev2\...v1.0.0.dev2[C
 - added normalization of HTTP status codes into classes for the `transaction.result` field. A HTTP status of `200` will be turned into `HTTP 2xx`. The unchanged status code is still available in `context.response.status_code`. {pull}85[#85]
 
 [[release-notes-1.0.0-dev2]]
-==== v1.0.0.dev2
+==== v1.0.0.dev2 - 2017/09/29
 
 
 https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1\...v1.0.0.dev2[Check the diff]
@@ -737,7 +744,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev1\...v1.0.0.dev2[C
 - BREAKING: removed root trace. Due to historical reason, we used to create a "root trace" which was equivalent to the transaction. This is no longer necessary. #61
 
 [[release-notes-1.0.0-dev1]]
-==== v1.0.0.dev1
+==== v1.0.0.dev1 - 2017/09/18
 
 
 https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev0\...v1.0.0.dev1[Check the diff]
@@ -749,6 +756,6 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0.dev0\...v1.0.0.dev1[C
 - initial set of documentation
 
 [[release-notes-1.0.0-dev0]]
-==== v1.0.0.dev0
+==== v1.0.0.dev0 - 2017/08/17
 
 First release of the Python agent for Elastic APM

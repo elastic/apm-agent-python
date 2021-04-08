@@ -142,17 +142,18 @@ class MetricsSet(object):
         """
         return self._metric(self._gauges, Gauge, name, reset_on_collect, labels)
 
-    def timer(self, name, reset_on_collect=False, **labels):
+    def timer(self, name, reset_on_collect=False, unit=None, **labels):
         """
         Returns an existing or creates and returns a new timer
         :param name: name of the timer
         :param reset_on_collect: indicate if the timer should be reset to 0 when collecting
+        :param unit: Unit of the observed metric
         :param labels: a flat key/value map of labels
         :return: the timer object
         """
-        return self._metric(self._timers, Timer, name, reset_on_collect, labels)
+        return self._metric(self._timers, Timer, name, reset_on_collect, labels, unit)
 
-    def _metric(self, container, metric_class, name, reset_on_collect, labels):
+    def _metric(self, container, metric_class, name, reset_on_collect, labels, unit=None):
         """
         Returns an existing or creates and returns a metric
         :param container: the container for the metric
@@ -178,7 +179,7 @@ class MetricsSet(object):
                         )
                     metric = noop_metric
                 else:
-                    metric = metric_class(name, reset_on_collect=reset_on_collect)
+                    metric = metric_class(name, reset_on_collect=reset_on_collect, unit=unit)
                 container[key] = metric
             return container[key]
 
@@ -219,7 +220,10 @@ class MetricsSet(object):
                 if t is not noop_metric:
                     val, count = t.val
                     if val or not t.reset_on_collect:
-                        samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
+                        sum_name = ".sum"
+                        if t._unit:
+                            sum_name += "." + t._unit
+                        samples[labels].update({name + sum_name: {"value": val}})
                         samples[labels].update({name + ".count": {"value": count}})
                     if t.reset_on_collect:
                         t.reset()
@@ -260,11 +264,12 @@ class SpanBoundMetricSet(MetricsSet):
 class Counter(object):
     __slots__ = ("name", "_lock", "_initial_value", "_val", "reset_on_collect")
 
-    def __init__(self, name, initial_value=0, reset_on_collect=False):
+    def __init__(self, name, initial_value=0, reset_on_collect=False, unit=None):
         """
         Creates a new counter
         :param name: name of the counter
         :param initial_value: initial value of the counter, defaults to 0
+        :param unit: unit of the observed counter. Unused for counters
         """
         self.name = name
         self._lock = threading.Lock()
@@ -305,14 +310,20 @@ class Counter(object):
         """Returns the current value of the counter"""
         return self._val
 
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val = value
+
 
 class Gauge(object):
     __slots__ = ("name", "_val", "reset_on_collect")
 
-    def __init__(self, name, reset_on_collect=False):
+    def __init__(self, name, reset_on_collect=False, unit=None):
         """
         Creates a new gauge
         :param name: label of the gauge
+        :param unit of the observed gauge. Unused for gauges
         """
         self.name = name
         self._val = None
@@ -331,12 +342,13 @@ class Gauge(object):
 
 
 class Timer(object):
-    __slots__ = ("name", "_val", "_count", "_lock", "reset_on_collect")
+    __slots__ = ("name", "_val", "_count", "_lock", "_unit", "reset_on_collect")
 
-    def __init__(self, name=None, reset_on_collect=False):
+    def __init__(self, name=None, reset_on_collect=False, unit=None):
         self.name = name
         self._val = 0
         self._count = 0
+        self._unit = unit
         self._lock = threading.Lock()
         self.reset_on_collect = reset_on_collect
 
@@ -354,6 +366,11 @@ class Timer(object):
     def val(self):
         with self._lock:
             return self._val, self._count
+
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val, self._count = value
 
 
 class NoopMetric(object):
