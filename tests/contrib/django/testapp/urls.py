@@ -75,4 +75,7 @@ if django.VERSION >= (1, 8):
 if django.VERSION >= (2, 2):
     from django.urls import path
 
-    urlpatterns += (path("route/<int:id>/", views.no_error, name="route-view"),)
+    urlpatterns += (
+        path("route/<int:id>/", views.no_error, name="route-view"),
+        path("", views.no_error, name="home-view"),
+    )

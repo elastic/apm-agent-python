@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2021, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,5 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = (6, 1, 2)
-VERSION = ".".join(map(str, __version__))
+from __future__ import absolute_import
+
+import django
+
+from tests.contrib.django.testapp import views
+
+if django.VERSION >= (2, 2):
+    from django.urls import path
+
+    urlpatterns = (path("", views.no_error),)

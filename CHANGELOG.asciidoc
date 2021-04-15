@@ -33,6 +33,15 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.1.2]]
+==== 6.1.2 - 2021/04/14
+
+[float]
+===== Bug fixes
+
+ * fixed issue with empty transaction name for the root route with Django {pull}1095[#1095]
+ * fixed on-the-fly initialisation of Flask apps {pull}1099[#1099]
+
 [[release-notes-6.1.1]]
 ==== v6.1.1 - 2021/04/08
 
