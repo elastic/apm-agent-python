@@ -47,14 +47,15 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
         url = str(url)
         destination = url_to_destination(url)
 
-        signature = " ".join([method.upper(), get_host_from_url(url)])
+        host = get_host_from_url(url)
+        signature = " ".join([method.upper(), host])
         url = sanitize_url(url)
         transaction = execution_context.get_transaction()
 
         async with async_capture_span(
             signature,
             span_type="external",
-            span_subtype="http",
+            span_subtype=host,
             extra={"http": {"url": url}, "destination": destination},
             leaf=True,
         ) as span:
