@@ -217,8 +217,11 @@ class ElasticAPM:
         """
         url_template = request.path
         # Sanic's new router puts this into the request itself so that it can be accessed easily
-        if hasattr(request, "route"):
+        # On Exception with `NotFound` with new Sanic Router, the `route` object will be None
+        # This check is to enforce that limitation
+        if hasattr(request, "route") and request.route:
             url_template = request.route.path
+            url_template = f"/{url_template}" if not url_template.startswith("/") else url_template
         else:
             # Let us fallback to using old router model to extract the info
             try:
