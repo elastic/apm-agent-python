@@ -2,13 +2,14 @@
 # or manually
 FRAMEWORK:
   - none
-  - django-1.8
   - django-1.11
   - django-2.0
   - django-2.1
   - django-2.2
   - django-3.0
-#  - django-master
+  - django-3.1
+  - django-3.2
+    #  - django-master
   - flask-0.10
   - flask-0.11
   - flask-0.12
@@ -76,3 +77,4 @@ FRAMEWORK:
   - httpx-0.13
   - httpx-0.14
   - httpx-newest
+  - httplib2-newest

@@ -54,6 +54,8 @@ from elasticapm.utils.module_import import import_string
 
 __all__ = ("Client",)
 
+CLIENT_SINGLETON = None
+
 
 class Client(object):
     """
@@ -108,6 +110,8 @@ class Client(object):
             for msg in config.errors.values():
                 self.error_logger.error(msg)
             config.disable_send = True
+        if config.service_name == "python_service":
+            self.logger.warning("No custom SERVICE_NAME was set -- using non-descript default 'python_service'")
         self.config = VersionedConfig(config, version=None)
 
         # Insert the log_record_factory into the logging library
@@ -191,6 +195,8 @@ class Client(object):
             self._metrics.register(path)
         if self.config.breakdown_metrics:
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+        if self.config.prometheus_metrics:
+            self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
         self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
@@ -202,6 +208,9 @@ class Client(object):
             sys.excepthook = self._excepthook
         if config.enabled:
             self.start_threads()
+
+        # Save this Client object as the global CLIENT_SINGLETON
+        set_client(self)
 
     def start_threads(self):
         with self._thread_starter_lock:
@@ -296,6 +305,8 @@ class Client(object):
             with self._thread_starter_lock:
                 for _, manager in self._thread_managers.items():
                     manager.stop_thread()
+        global CLIENT_SINGLETON
+        CLIENT_SINGLETON = None
 
     def get_service_info(self):
         if self._service_info:
@@ -562,14 +573,13 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
-    def _excepthook(self):
-        exec_info = sys.exc_info()
+    def _excepthook(self, type_, value, traceback):
         try:
-            self.original_excepthook(*exec_info)
+            self.original_excepthook(type_, value, traceback)
         except Exception:
             self.capture_exception(handled=False)
         finally:
-            self.capture_exception(exec_info, handled=False)
+            self.capture_exception(exc_info=(type_, value, traceback), handled=False)
 
     def load_processors(self):
         """
@@ -609,3 +619,15 @@ class DummyClient(Client):
 
     def send(self, url, **kwargs):
         return None
+
+
+def get_client():
+    return CLIENT_SINGLETON
+
+
+def set_client(client):
+    global CLIENT_SINGLETON
+    if CLIENT_SINGLETON:
+        logger = get_logger("elasticapm")
+        logger.debug("Client object is being set more than once")
+    CLIENT_SINGLETON = client

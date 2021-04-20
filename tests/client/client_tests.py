@@ -277,9 +277,8 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
     client._transport.flush()
-    record = caplog.records[0]
     assert client._transport.state.did_fail()
-    assert "oopsie" in record.message
+    assert_any_record_contains(caplog.records, "oopsie", "elasticapm.transport")
 
     # test recovery
     http_send.side_effect = None
@@ -699,7 +698,7 @@ def test_transaction_keyword_truncation(elasticapm_client):
     assert len(expected) == KEYWORD_MAX_LENGTH
     assert expected[-1] != "x"
     elasticapm_client.begin_transaction(too_long)
-    elasticapm.tag(val=too_long)
+    elasticapm.label(val=too_long)
     elasticapm.set_user_context(username=too_long, email=too_long, user_id=too_long)
     with elasticapm.capture_span(name=too_long, span_type=too_long):
         pass
@@ -885,3 +884,13 @@ def test_client_enabled(elasticapm_client):
         assert not elasticapm_client.config.is_recording
         for manager in elasticapm_client._thread_managers.values():
             assert not manager.is_started()
+
+
+def test_excepthook(elasticapm_client):
+    try:
+        raise Exception("hi!")
+    except Exception:
+        type_, value, traceback = sys.exc_info()
+        elasticapm_client._excepthook(type_, value, traceback)
+
+    assert elasticapm_client.events[ERROR]

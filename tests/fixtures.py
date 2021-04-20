@@ -64,19 +64,18 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "span.json")
-METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
-
-assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
-    TRANSACTIONS_SCHEMA
-), 'JSON Schema files not found. Run "make update-json-schema" to download'
+ERRORS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "span.json")
+METRICSET_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metricset.json")
+METADATA_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metadata.json")
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
     TRANSACTIONS_SCHEMA, encoding="utf8"
 ) as transactions_json, codecs.open(SPAN_SCHEMA, encoding="utf8") as span_json, codecs.open(
+    METRICSET_SCHEMA, encoding="utf8"
+) as metricset_json, codecs.open(
     METADATA_SCHEMA, encoding="utf8"
 ) as metadata_json:
     VALIDATORS = {
@@ -97,6 +96,12 @@ with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
             json.load(span_json),
             resolver=jsonschema.RefResolver(
                 base_uri="file:" + pathname2url(SPAN_SCHEMA), referrer="file:" + pathname2url(SPAN_SCHEMA)
+            ),
+        ),
+        "metricset": jsonschema.Draft4Validator(
+            json.load(metricset_json),
+            resolver=jsonschema.RefResolver(
+                base_uri="file:" + pathname2url(METRICSET_SCHEMA), referrer="file:" + pathname2url(METRICSET_SCHEMA)
             ),
         ),
         "metadata": jsonschema.Draft4Validator(
@@ -191,6 +196,7 @@ def elasticapm_client(request):
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.set_span(None)
+    assert not client._transport.validation_errors
 
 
 @pytest.fixture()
@@ -206,6 +212,10 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("log_level", "warning")
 
+    root_logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    root_logger.addHandler(handler)
+
     tmp = tempfile.NamedTemporaryFile(delete=False)
     tmp.close()
     client_config["log_file"] = tmp.name
@@ -220,6 +230,9 @@ def elasticapm_client_log_file(request):
         if isinstance(handler, logging.handlers.RotatingFileHandler):
             handler.close()
     os.unlink(tmp.name)
+
+    # Remove our streamhandler
+    root_logger.removeHandler(handler)
 
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
@@ -292,12 +305,19 @@ class DummyTransport(HTTPTransportBase):
     def __init__(self, url, *args, **kwargs):
         super(DummyTransport, self).__init__(url, *args, **kwargs)
         self.events = defaultdict(list)
+        self.validation_errors = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
         self._flushed.clear()
         data = self._process_event(event_type, data)
         self.events[event_type].append(data)
         self._flushed.set()
+        if data is not None:
+            validator = VALIDATORS[event_type]
+            try:
+                validator.validate(data)
+            except jsonschema.ValidationError as e:
+                self.validation_errors[event_type].append(e.message)
 
     def start_thread(self, pid=None):
         # don't call the parent method, but the one from ThreadManager

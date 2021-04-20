@@ -21,8 +21,6 @@ else
     fi
 fi
 
-make update-json-schema
-
 if [[ -n $WAIT_FOR_HOST ]]
 then
     echo "Waiting for $WAIT_FOR_HOST:$WAIT_FOR_PORT"

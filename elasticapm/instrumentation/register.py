@@ -54,7 +54,6 @@ _cls_register = {
     "elasticapm.instrumentation.packages.sqlite.SQLiteInstrumentation",
     "elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation",
     "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation",
-    "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation",
     "elasticapm.instrumentation.packages.cassandra.CassandraInstrumentation",
     "elasticapm.instrumentation.packages.pymssql.PyMSSQLInstrumentation",
     "elasticapm.instrumentation.packages.pyodbc.PyODBCInstrumentation",
@@ -64,6 +63,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.graphql.GraphQLExecutorInstrumentation",
     "elasticapm.instrumentation.packages.graphql.GraphQLBackendInstrumentation",
     "elasticapm.instrumentation.packages.httpcore.HTTPCoreInstrumentation",
+    "elasticapm.instrumentation.packages.httplib2.Httplib2Instrumentation",
 }
 
 if sys.version_info >= (3, 7):
@@ -73,7 +73,6 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.httpx.HttpxAsyncClientInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
-            "elasticapm.instrumentation.packages.asyncio.elasticsearch.AsyncElasticsearchInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.asyncpg.AsyncPGInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",

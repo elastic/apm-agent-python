@@ -169,7 +169,9 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             if hasattr(response, "status_code"):
                 transaction_name = None
                 if self.client.config.django_transaction_name_from_route and hasattr(request.resolver_match, "route"):
-                    transaction_name = request.resolver_match.route
+                    r = request.resolver_match
+                    # if no route is defined (e.g. for the root URL), fall back on url_name and then function name
+                    transaction_name = r.route or r.url_name or get_name_from_func(r.func)
                 elif getattr(request, "_elasticapm_view_func", False):
                     transaction_name = get_name_from_func(request._elasticapm_view_func)
                 if transaction_name:

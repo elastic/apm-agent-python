@@ -34,7 +34,9 @@ import sys
 import warnings
 from logging import LogRecord
 
+import ecs_logging
 import pytest
+import structlog
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
@@ -394,3 +396,10 @@ def test_log_file(elasticapm_client_log_file):
         if isinstance(handler, logging.handlers.RotatingFileHandler):
             found = True
     assert found
+
+
+@pytest.mark.parametrize("elasticapm_client_log_file", [{"log_ecs_formatting": "override"}], indirect=True)
+def test_log_ecs_formatting(elasticapm_client_log_file):
+    logger = logging.getLogger()
+    assert isinstance(logger.handlers[0].formatter, ecs_logging.StdlibFormatter)
+    assert isinstance(structlog.get_config()["processors"][-1], ecs_logging.StructlogFormatter)

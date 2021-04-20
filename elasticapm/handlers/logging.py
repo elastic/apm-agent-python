@@ -36,6 +36,7 @@ import sys
 import traceback
 import warnings
 
+from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
 from elasticapm.utils import compat, wrapt
@@ -160,7 +161,7 @@ class LoggingHandler(logging.Handler):
             exception=exception,
             level=record.levelno,
             logger_name=record.name,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -227,14 +228,18 @@ def _add_attributes_to_log_record(record):
     span_id = span.id if span else None
     record.elasticapm_span_id = span_id
 
-    service_name = transaction.tracer.config.service_name if transaction else None
+    client = get_client()
+    service_name = client.config.service_name if client else None
     record.elasticapm_service_name = service_name
+    event_dataset = f"{client.config.service_name}.log" if client else None
+    record.elasticapm_event_dataset = event_dataset
 
     record.elasticapm_labels = {
         "transaction.id": transaction_id,
         "trace.id": trace_id,
         "span.id": span_id,
         "service.name": service_name,
+        "event.dataset": event_dataset,
     }
 
     return record
@@ -274,6 +279,7 @@ class Formatter(logging.Formatter):
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
             record.elasticapm_service_name = None
+            record.elasticapm_event_dataset = None
         return super(Formatter, self).format(record=record)
 
     def formatTime(self, record, datefmt=None):
@@ -282,4 +288,5 @@ class Formatter(logging.Formatter):
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
             record.elasticapm_service_name = None
+            record.elasticapm_event_dataset = None
         return super(Formatter, self).formatTime(record=record, datefmt=datefmt)

@@ -29,10 +29,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.middleware import ElasticAPM
 
 
 def filter_factory(app, global_conf, **kwargs):
-    client = Client(**kwargs)
+    client = get_client() or Client(**kwargs)
     return ElasticAPM(app, client)

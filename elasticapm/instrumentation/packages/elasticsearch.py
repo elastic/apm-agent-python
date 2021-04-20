@@ -30,18 +30,15 @@
 
 from __future__ import absolute_import
 
-import json
+import re
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
 
-
-API_METHOD_KEY_NAME = "__elastic_apm_api_method_name"
-BODY_REF_NAME = "__elastic_apm_body_ref"
+should_capture_body_re = re.compile("/(_search|_msearch|_count|_async_search|_sql|_eql)(/|$)")
 
 
 class ElasticSearchConnectionMixin(object):
@@ -56,13 +53,14 @@ class ElasticSearchConnectionMixin(object):
 
     def get_context(self, instance, args, kwargs):
         args_len = len(args)
+        url = args[1] if args_len > 1 else kwargs.get("url")
         params = args[2] if args_len > 2 else kwargs.get("params")
-        body = params.pop(BODY_REF_NAME, None) if params else None
         body_serialized = args[3] if args_len > 3 else kwargs.get("body")
 
-        api_method = params.pop(API_METHOD_KEY_NAME, None) if params else None
+        should_capture_body = bool(should_capture_body_re.search(url))
+
         context = {"db": {"type": "elasticsearch"}}
-        if api_method in self.query_methods:
+        if should_capture_body:
             query = []
             # using both q AND body is allowed in some API endpoints / ES versions,
             # but not in others. We simply capture both if they are there so the
@@ -76,17 +74,8 @@ class ElasticSearchConnectionMixin(object):
                     query.append(body_serialized.decode("utf-8", errors="replace"))
                 else:
                     query.append(body_serialized)
-            elif body and isinstance(body, dict):
-                try:
-                    query.append(json.dumps(body, default=compat.text_type))
-                except TypeError:
-                    pass
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
-        elif api_method == "update":
-            if isinstance(body, dict) and "script" in body:
-                # only get the `script` field from the body
-                context["db"]["statement"] = json.dumps({"script": body["script"]})
         context["destination"] = {
             "address": instance.host,
             "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
@@ -116,49 +105,3 @@ class ElasticsearchConnectionInstrumentation(ElasticSearchConnectionMixin, Abstr
             leaf=True,
         ):
             return wrapped(*args, **kwargs)
-
-
-class ElasticsearchInstrumentation(AbstractInstrumentedModule):
-    name = "elasticsearch"
-
-    instrument_list = [
-        ("elasticsearch.client", "Elasticsearch.delete_by_query"),
-        ("elasticsearch.client", "Elasticsearch.search"),
-        ("elasticsearch.client", "Elasticsearch.count"),
-        ("elasticsearch.client", "Elasticsearch.update"),
-    ]
-
-    def __init__(self):
-        super(ElasticsearchInstrumentation, self).__init__()
-        try:
-            from elasticsearch import VERSION
-
-            self.version = VERSION[0]
-        except ImportError:
-            self.version = None
-
-    def instrument(self):
-        if self.version and not 2 <= self.version < 8:
-            logger.debug("Instrumenting version %s of Elasticsearch is not supported by Elastic APM", self.version)
-            return
-        super(ElasticsearchInstrumentation, self).instrument()
-
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        kwargs = self.inject_apm_params(method, kwargs)
-        return wrapped(*args, **kwargs)
-
-    def inject_apm_params(self, method, kwargs):
-        params = kwargs.pop("params", {})
-
-        # make a copy of params in case the caller reuses them for some reason
-        params = params.copy() if params is not None else {}
-
-        method_name = method.partition(".")[-1]
-
-        # store a reference to the non-serialized body so we can use it in the connection layer
-        body = kwargs.get("body")
-        params[BODY_REF_NAME] = body
-        params[API_METHOD_KEY_NAME] = method_name
-
-        kwargs["params"] = params
-        return kwargs

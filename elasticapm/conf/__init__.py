@@ -367,7 +367,41 @@ def _log_level_callback(dict_key, old_value, new_value, config_instance):
         filehandler = logging.handlers.RotatingFileHandler(
             config_instance.log_file, maxBytes=config_instance.log_file_size, backupCount=1
         )
+        try:
+            import ecs_logging
+
+            filehandler.setFormatter(ecs_logging.StdlibFormatter())
+        except ImportError:
+            pass
         elasticapm_logger.addHandler(filehandler)
+
+
+def _log_ecs_formatting_callback(dict_key, old_value, new_value, config_instance):
+    """
+    If ecs_logging is installed and log_ecs_formatting is set to "override", we should
+    set the ecs_logging.StdlibFormatter as the formatted for every handler in
+    the root logger, and set the default processor for structlog to the
+    ecs_logging.StructlogFormatter.
+    """
+    if new_value.lower() == "override":
+        try:
+            import ecs_logging
+        except ImportError:
+            return
+
+        # Stdlib
+        root_logger = logging.getLogger()
+        formatter = ecs_logging.StdlibFormatter()
+        for handler in root_logger.handlers:
+            handler.setFormatter(formatter)
+
+        # Structlog
+        try:
+            import structlog
+
+            structlog.configure(processors=[ecs_logging.StructlogFormatter()])
+        except ImportError:
+            pass
 
 
 class _ConfigBase(object):
@@ -472,7 +506,9 @@ class _ConfigBase(object):
 
 
 class Config(_ConfigBase):
-    service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
+    service_name = _ConfigValue(
+        "SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], default="python_service", required=True
+    )
     service_node_name = _ConfigValue("SERVICE_NODE_NAME")
     environment = _ConfigValue("ENVIRONMENT")
     secret_token = _ConfigValue("SECRET_TOKEN")
@@ -503,11 +539,12 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_response_cookies",
             "elasticapm.processors.sanitize_http_headers",
             "elasticapm.processors.sanitize_http_wsgi_env",
-            "elasticapm.processors.sanitize_http_request_querystring",
             "elasticapm.processors.sanitize_http_request_body",
         ],
     )
-    sanitize_field_names = _ListConfigValue("SANITIZE_FIELD_NAMES", default=BASE_SANITIZE_FIELD_NAMES)
+    sanitize_field_names = _ListConfigValue(
+        "SANITIZE_FIELD_NAMES", type=starmatch_to_regex, default=BASE_SANITIZE_FIELD_NAMES
+    )
     metrics_sets = _ListConfigValue(
         "METRICS_SETS",
         default=[
@@ -522,6 +559,8 @@ class Config(_ConfigBase):
         default=30000,
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
+    prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
+    prometheus_metrics_prefix = _ConfigValue("PROMETHEUS_METRICS_PREFIX", default="prometheus.metrics.")
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
@@ -579,6 +618,12 @@ class Config(_ConfigBase):
     )
     log_file = _ConfigValue("LOG_FILE", default="")
     log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
+    log_ecs_formatting = _ConfigValue(
+        "LOG_ECS_FORMATTING",
+        validators=[EnumerationValidator(["off", "override"])],
+        callbacks=[_log_ecs_formatting_callback],
+        default="off",
+    )
 
     @property
     def is_recording(self):
@@ -646,7 +691,7 @@ class VersionedConfig(ThreadManager):
         """
         callbacks = []
         for key in compat.iterkeys(self._config.values):
-            if self._config.values[key] != self._first_config.values[key]:
+            if key in self._first_config.values and self._config.values[key] != self._first_config.values[key]:
                 callbacks.append((key, self._config.values[key], self._first_config.values[key]))
 
         with self._lock:

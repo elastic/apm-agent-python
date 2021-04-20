@@ -60,7 +60,7 @@ def get_data_from_request(request_handler, request, config, event_type):
             try:
                 body = tornado.escape.json_decode(request.body)
             except Exception:
-                body = request.body
+                body = str(request.body, errors="ignore")
 
             if body is not None:
                 result["body"] = body if config.capture_body in ("all", event_type) else "[REDACTED]"
