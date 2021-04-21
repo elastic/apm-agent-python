@@ -91,6 +91,7 @@ async def test_info(instrument, elasticapm_client, async_elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["sync"] is False
+    assert span["context"]["http"]["status_code"] == 200
 
 
 async def test_create(instrument, elasticapm_client, async_elasticsearch):
@@ -124,6 +125,7 @@ async def test_create(instrument, elasticapm_client, async_elasticsearch):
         assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
+        assert span["context"]["http"]["status_code"] == 201
 
 
 async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
@@ -152,6 +154,8 @@ async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
         '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
     assert span["sync"] is False
+    assert span["context"]["db"]["row_affected"] == 1
+    assert span["context"]["http"]["status_code"] == 200
 
 
 async def test_count_body(instrument, elasticapm_client, async_elasticsearch):
@@ -175,3 +179,4 @@ async def test_count_body(instrument, elasticapm_client, async_elasticsearch):
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query": {"term": {"user": "kimchy"}}}')
     assert span["sync"] is False
+    assert span["context"]["http"]["status_code"] == 200
