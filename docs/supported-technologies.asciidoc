@@ -111,8 +111,10 @@ Celery tasks will be recorded automatically with Django and Flask only.
 
 Instrumented methods:
 
+ * `elasticsearch.transport.Transport.perform_request`
  * `elasticsearch.connection.http_urllib3.Urllib3HttpConnection.perform_request`
  * `elasticsearch.connection.http_requests.RequestsHttpConnection.perform_request`
+ * `elasticsearch._async.transport.AsyncTransport.perform_request`
  * `elasticsearch_async.connection.AIOHttpConnection.perform_request`
 
 Additionally, the instrumentation wraps the following methods of the `Elasticsearch` client class:
@@ -126,6 +128,8 @@ Collected trace data:
 
  * the query string (if available)
  * the `query` element from the request body (if available)
+ * the response status code
+ * the count of affected rows (if available)
 
 We recommend using keyword arguments only with elasticsearch-py, as recommended by
 https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[the elasticsearch-py docs].
