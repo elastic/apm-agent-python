@@ -36,6 +36,10 @@ from django.conf import settings as django_settings
 from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
+try:
+    from rest_framework.request import Request
+except ImportError:
+    Request = HttpRequest
 
 from elasticapm import get_client as _get_client
 from elasticapm.base import Client
@@ -184,7 +188,7 @@ class DjangoClient(Client):
         else:
             context = kwargs["context"]
 
-        is_http_request = isinstance(request, HttpRequest)
+        is_http_request = isinstance(request, (HttpRequest, Request))
         if is_http_request:
             context["request"] = self.get_data_from_request(request, constants.ERROR)
             context["user"] = self.get_user_info(request)
