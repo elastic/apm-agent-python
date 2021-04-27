@@ -36,6 +36,7 @@ from django.conf import settings as django_settings
 from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
+
 try:
     from rest_framework.request import Request as DrfRequest
 except ImportError:
