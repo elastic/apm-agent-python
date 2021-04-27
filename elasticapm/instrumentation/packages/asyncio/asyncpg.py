@@ -31,6 +31,7 @@
 from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
+from elasticapm.utils import default_ports
 
 
 class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
@@ -56,6 +57,12 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
         name = extract_signature(query)
         context = {"db": {"type": "sql", "statement": query}}
         action = "query"
+        destination_info = {
+            "address": kwargs.get("host", "localhost"),
+            "port": int(kwargs.get("port", default_ports.get("postgresql"))),
+            "service": {"name": "postgres", "resource": "postgres", "type": "db"},
+        }
+        context["destination"] = destination_info
         async with async_capture_span(
             name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
         ):
