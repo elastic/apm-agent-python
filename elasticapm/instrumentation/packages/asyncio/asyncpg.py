@@ -62,7 +62,7 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
             "port": int(kwargs.get("port", default_ports.get("postgresql"))),
             "service": {"name": "postgres", "resource": "postgres", "type": "db"},
         }
-        context['destination'] = destination_info
+        context["destination"] = destination_info
         async with async_capture_span(
             name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
         ):
