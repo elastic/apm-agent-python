@@ -39,7 +39,7 @@ from django.http import HttpRequest
 try:
     from rest_framework.request import Request as DrfRequest
 except ImportError:
-    Request = HttpRequest
+    DrfRequest = HttpRequest
 
 from elasticapm import get_client as _get_client
 from elasticapm.base import Client
