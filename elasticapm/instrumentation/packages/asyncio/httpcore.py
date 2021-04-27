@@ -48,8 +48,9 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
     name = "httpcore"
 
     instrument_list = [
-        ("httpcore._async.connection", "AsyncHTTPConnection.request"),
-        ("httpcore._async.connection", "AsyncHTTPConnection.arequest"),
+        ("httpcore._async.connection", "AsyncHTTPConnection.request"),  # < httpcore 0.11
+        ("httpcore._async.connection", "AsyncHTTPConnection.arequest"),  # httcore 0.11 - 0.12
+        ("httpcore._async.connection", "AsyncHTTPConnection.handle_async_request"),  # >= httpcore 0.13
     ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):

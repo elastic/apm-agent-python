@@ -30,10 +30,7 @@
 
 import pytest  # isort:skip
 
-pytest.importorskip("httpx")  # isort:skip
-
-import httpx
-from httpx import InvalidURL
+httpx = pytest.importorskip("httpx")  # isort:skip
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
@@ -41,7 +38,7 @@ from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 
-pytestmark = pytest.mark.httpx
+pytestmark = [pytest.mark.httpx, pytest.mark.asyncio]
 
 
 async def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver):
@@ -122,13 +119,14 @@ async def test_httpx_instrumentation_malformed_empty(instrument, elasticapm_clie
 
 async def test_httpx_instrumentation_malformed_path(instrument, elasticapm_client):
     try:
-        from httpx._exceptions import LocalProtocolError
+        from httpx._exceptions import LocalProtocolError, UnsupportedProtocol
     except ImportError:
         pytest.skip("Test requires HTTPX 0.14+")
     elasticapm_client.begin_transaction("transaction.test")
     async with async_capture_span("test_request", "test"):
         async with httpx.AsyncClient() as client:
-            with pytest.raises(LocalProtocolError):
+            # raises UnsupportedProtocol since 0.18.0
+            with pytest.raises((LocalProtocolError, UnsupportedProtocol)):
                 await client.get("http://")
 
 
