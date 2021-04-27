@@ -188,7 +188,7 @@ class DjangoClient(Client):
         else:
             context = kwargs["context"]
 
-        is_http_request = isinstance(request, (HttpRequest, Request))
+        is_http_request = isinstance(request, (HttpRequest, DrfRequest))
         if is_http_request:
             context["request"] = self.get_data_from_request(request, constants.ERROR)
             context["user"] = self.get_user_info(request)
