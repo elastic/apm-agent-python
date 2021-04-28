@@ -164,5 +164,30 @@ def azure_metadata():
         return ret
 
     except Exception:
-        # Not on an Azure box
+        # Not on an Azure box, maybe an azure app service?
+        return azure_app_service_metadata()
+
+
+def azure_app_service_metadata():
+    ret = {"provider": "azure"}
+    website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
+    website_instance_id = os.environ.get("WEBSITE_INSTANCE_ID")
+    website_site_name = os.environ.get("WEBSITE_SITE_NAME")
+    website_resource_group = os.environ.get("WEBSITE_RESOURCE_GROUP")
+    if not all((website_owner_name, website_instance_id, website_site_name, website_resource_group)):
         return {}
+    # Format of website_owner_name: {subscription id}+{app service plan resource group}-{region}webspace{.*}
+    if "+" not in website_owner_name:
+        return {}
+    try:
+        account_id, website_owner_name = website_owner_name.split("+")
+        ret["account"] = {"id": account_id}
+        region, _ = website_owner_name.split("webspace")
+        ret["region"] = region.rsplit("-", 1)[1]
+    except Exception:
+        return {}
+
+    ret["instance"] = {"id": website_instance_id, "name": website_site_name}
+    ret["project"] = {"name": website_resource_group}
+
+    return ret

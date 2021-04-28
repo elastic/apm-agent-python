@@ -28,6 +28,8 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
+
 import mock
 import urllib3
 
@@ -131,3 +133,62 @@ def test_azure_metadata(mock_socket, monkeypatch):
         "provider": "azure",
         "region": "westus2",
     }
+
+
+def test_azure_app_service_metadata():
+    env_template = {
+        "WEBSITE_RESOURCE_GROUP": "resource_group",
+        "WEBSITE_SITE_NAME": "site_name",
+        "WEBSITE_INSTANCE_ID": "instance_id",
+    }
+    for owner_name in (
+        "f5940f10-2e30-3e4d-a259-63451ba6dae4+elastic-apm-AustraliaEastwebspace",
+        "f5940f10-2e30-3e4d-a259-63451ba6dae4+appsvc_linux_australiaeast-AustraliaEastwebspace-Linux",
+    ):
+        env = env_template.copy()
+        env["WEBSITE_OWNER_NAME"] = owner_name
+        with mock.patch.dict(os.environ, env):
+            metadata = elasticapm.utils.cloud.azure_app_service_metadata()
+            assert metadata == {
+                "account": {"id": "f5940f10-2e30-3e4d-a259-63451ba6dae4"},
+                "instance": {"id": "instance_id", "name": "site_name"},
+                "project": {"name": "resource_group"},
+                "provider": "azure",
+                "region": "AustraliaEast",
+            }
+
+
+def test_azure_app_service_metadata_wrong_format():
+    env = {
+        # the - before "elastic" is faulty
+        "WEBSITE_OWNER_NAME": "f5940f10-2e30-3e4d-a259-63451ba6dae4-elastic-apm-AustraliaEastwebspace",
+        "WEBSITE_RESOURCE_GROUP": "resource_group",
+        "WEBSITE_SITE_NAME": "site_name",
+        "WEBSITE_INSTANCE_ID": "instance_id",
+    }
+    with mock.patch.dict(os.environ, env):
+        metadata = elasticapm.utils.cloud.azure_app_service_metadata()
+        assert metadata == {}
+
+
+def test_azure_app_service_metadata_empty():
+    with mock.patch.dict(os.environ, {}):
+        metadata = elasticapm.utils.cloud.azure_app_service_metadata()
+        assert metadata == {}
+
+
+def test_azure_app_service_metadata_not_complete():
+    env_template = {
+        "WEBSITE_OWNER_NAME": "f5940f10-2e30-3e4d-a259-63451ba6dae4+elastic-apm-AustraliaEastwebspace",
+        "WEBSITE_RESOURCE_GROUP": "resource_group",
+        "WEBSITE_SITE_NAME": "site_name",
+        "WEBSITE_INSTANCE_ID": "instance_id",
+    }
+    for k in env_template.keys():
+        env = env_template.copy()
+        with mock.patch.dict(os.environ, env):
+            env[k] = ""
+            metadata = elasticapm.utils.cloud.azure_app_service_metadata()
+            assert metadata == {}
+            del env[k]
+            metadata = elasticapm.utils.cloud.azure_app_service_metadata()
