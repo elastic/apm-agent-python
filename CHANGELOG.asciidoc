@@ -33,6 +33,16 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.1.3]]
+==== 6.1.3 - 2021/04/28
+
+[float]
+===== Bug fixes
+ * added destination information to asyncpg instrumentation {pull}1115[#1115]
+ * fixed issue with collecting request meta data with Django REST Framework {pull}1117[#1117]
+ * fixed httpx instrumentation for newly released httpx 0.18.0 {pull}1118[#1118]
+
+
 [[release-notes-6.1.2]]
 ==== 6.1.2 - 2021/04/14
 
