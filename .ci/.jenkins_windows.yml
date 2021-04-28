@@ -6,12 +6,12 @@
 #
 
 windows:
-#  - VERSION: "3.6"
-#    WEBFRAMEWORK: "none"
-#    ASYNCIO: "true"
-#  - VERSION: "3.7"
-#    WEBFRAMEWORK: "none"
-#    ASYNCIO: "true"
+  - VERSION: "3.6"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
+  - VERSION: "3.7"
+    WEBFRAMEWORK: "none"
+    ASYNCIO: "true"
   - VERSION: "3.8"
     WEBFRAMEWORK: "none"
     ASYNCIO: "true"

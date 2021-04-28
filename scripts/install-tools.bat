@@ -8,11 +8,8 @@
 call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\vsdevcmd.bat" -arch=amd64
 
 : We need wheel installed to build wheels
-echo %cd%
 call %PYTHON%\python.exe -m venv "%cd%\venv"
-set VENV_PYTHON=%cd%\venv\bin\
-dir %VENV_PYTHON%
-echo %VENV_PYTHON%
+set VENV_PYTHON=%cd%\venv\Scripts\
 call %VENV_PYTHON%\python.exe -m pip install -U wheel pip setuptools
 call %VENV_PYTHON%\python.exe -m pip install -r tests\requirements\reqs-%WEBFRAMEWORK%.txt
 call %VENV_PYTHON%\python.exe -m pip install psutil

@@ -6,7 +6,7 @@
 @echo off
 
 @echo on
-set VENV_PYTHON=%cd%\venv\bin\
+set VENV_PYTHON=%cd%\venv\Scripts\
 
 set COVERAGE_FILE=.coverage.%VERSION%.%WEBFRAMEWORK%
 set IGNORE_PYTHON3_WITH_PYTHON2=
