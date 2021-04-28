@@ -187,8 +187,9 @@ def test_azure_app_service_metadata_not_complete():
     for k in env_template.keys():
         env = env_template.copy()
         with mock.patch.dict(os.environ, env):
-            env[k] = ""
+            os.environ[k] = ""
             metadata = elasticapm.utils.cloud.azure_app_service_metadata()
             assert metadata == {}
-            del env[k]
+            del os.environ[k]
             metadata = elasticapm.utils.cloud.azure_app_service_metadata()
+            assert metadata == {}
