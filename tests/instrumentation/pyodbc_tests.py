@@ -43,7 +43,7 @@ if "POSTGRES_DB" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping pyodbc tests, no POSTGRES_DB environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def pyodbc_postgres_connection(request):
     conn_str = ("DRIVER={PostgreSQL Unicode};" "DATABASE=%s;" "UID=%s;" "PASSWORD=%s;" "SERVER=%s;" "PORT=%s;") % (
         os.environ.get("POSTGRES_DB", "elasticapm_test"),
