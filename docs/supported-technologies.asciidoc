@@ -544,6 +544,12 @@ Additionally, some services collect more specific data
  * Topic name
 
 [float]
+[[automatic-instrumentation-sqs]]
+===== SQS
+
+ * Queue name
+
+[float]
 [[automatic-instrumentation-template-engines]]
 === Template Engines
 
