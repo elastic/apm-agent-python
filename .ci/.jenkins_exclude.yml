@@ -130,6 +130,8 @@ exclude:
     FRAMEWORK: psycopg2-2.7
   - PYTHON_VERSION: python-3.10-rc # see https://github.com/psycopg/psycopg2/issues/858
     FRAMEWORK: psycopg2-2.7
+  - PYTHON_VERSION: pypy-3  # async keyword clash in old version of psycopg2cffi
+    FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
@@ -224,3 +226,5 @@ exclude:
     FRAMEWORK: aioredis-newest
   - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
     FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: httpx-0.12
