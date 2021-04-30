@@ -49,10 +49,18 @@ class AioMySQLInstrumentation(AsyncAbstractInstrumentedModule):
             # causing an error to APM server.
             query = shorten(query, string_length=10000)
 
-            context = {"db": {"type": "sql", "statement": query}}
+            context = {
+                "db": {"type": "sql", "statement": query},
+                "destination": {
+                    "address": instance.connection.host,
+                    "port": instance.connection.port,
+                    "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+                },
+            }
             action = "query"
         else:
             raise AssertionError("call from uninstrumented method")
+
         async with async_capture_span(
             name, leaf=True, span_type="db", span_subtype="mysql", span_action=action, extra=context
         ):

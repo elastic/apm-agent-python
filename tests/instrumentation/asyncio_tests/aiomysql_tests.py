@@ -33,6 +33,7 @@ import os
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
+from elasticapm.utils import default_ports
 
 aiomysql = pytest.importorskip("aiomysql")
 
@@ -94,3 +95,8 @@ async def test_aiomysql_select(instrument, aiomysql_connection, elasticapm_clien
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["destination"] == {
+            "address": os.environ.get("MYSQL_HOST", "localhost"),
+            "port": default_ports.get("mysql"),
+            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+        }
