@@ -1,4 +1,6 @@
 exclude:
+  - PYTHON_VERSION: pypy-3  # pypy3 currently fails on CI, e.g. https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/detail/PR-1099/2/pipeline#step-3497-log-1
+    FRAMEWORK: none
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
@@ -128,6 +130,8 @@ exclude:
     FRAMEWORK: psycopg2-2.7
   - PYTHON_VERSION: python-3.10-rc # see https://github.com/psycopg/psycopg2/issues/858
     FRAMEWORK: psycopg2-2.7
+  - PYTHON_VERSION: pypy-3  # async keyword clash in old version of psycopg2cffi
+    FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
@@ -216,3 +220,18 @@ exclude:
     FRAMEWORK: asyncpg-newest
   - PYTHON_VERSION: python-3.10-rc  # https://github.com/MagicStack/asyncpg/issues/699
     FRAMEWORK: asyncpg-newest
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.10-rc
+    FRAMEWORK: httpx-0.12
+  # aiomysql
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiomysql-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiomysql-newest
+  - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
+    FRAMEWORK: aiomysql-newest

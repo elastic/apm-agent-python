@@ -31,39 +31,36 @@
 from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
-from elasticapm.utils import default_ports
+from elasticapm.utils.encoding import shorten
 
 
-class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
-    """
-    Implement asyncpg instrumentation with two methods Connection.execute
-    and Connection.executemany since Connection._do_execute is not called
-    given a prepared query is passed to a connection. As in:
-    https://github.com/MagicStack/asyncpg/blob/master/asyncpg/connection.py#L294-L297
-    """
+class AioMySQLInstrumentation(AsyncAbstractInstrumentedModule):
+    name = "aiomysql"
 
-    name = "asyncpg"
-
-    instrument_list = [
-        ("asyncpg.connection", "Connection.execute"),
-        ("asyncpg.connection", "Connection.executemany"),
-        ("asyncpg.connection", "Connection.fetch"),
-        ("asyncpg.connection", "Connection.fetchval"),
-        ("asyncpg.connection", "Connection.fetchrow"),
-    ]
+    instrument_list = [("aiomysql.cursors", "Cursor.execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        query = args[0] if len(args) else kwargs["query"]
-        name = extract_signature(query)
-        context = {"db": {"type": "sql", "statement": query}}
-        action = "query"
-        destination_info = {
-            "address": kwargs.get("host", "localhost"),
-            "port": int(kwargs.get("port", default_ports.get("postgresql"))),
-            "service": {"name": "postgres", "resource": "postgres", "type": "db"},
-        }
-        context["destination"] = destination_info
+        if method == "Cursor.execute":
+            query = args[0]
+            name = extract_signature(query)
+
+            # Truncate sql_string to 10000 characters to prevent large queries from
+            # causing an error to APM server.
+            query = shorten(query, string_length=10000)
+
+            context = {
+                "db": {"type": "sql", "statement": query},
+                "destination": {
+                    "address": instance.connection.host,
+                    "port": instance.connection.port,
+                    "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+                },
+            }
+            action = "query"
+        else:
+            raise AssertionError("call from uninstrumented method")
+
         async with async_capture_span(
-            name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
+            name, leaf=True, span_type="db", span_subtype="mysql", span_action=action, extra=context
         ):
             return await wrapped(*args, **kwargs)

@@ -1,7 +1,7 @@
 [[configuration]]
 == Configuration
 
-To adapt the Elastic APM agent to your needs, you can configure it using environment variables, or framework specific
+To adapt the Elastic APM agent to your needs, configure it using environment variables or framework-specific
 configuration.
 
 You can either configure the agent by setting environment variables:
@@ -30,10 +30,10 @@ The precedence is as follows:
 
  * <<config-central_config,Central configuration>>
 (supported options are marked with <<dynamic-configuration, image:./images/dynamic-config.svg[] >>)
- * environment variables
- * inline configuration
- * framework specific configuration
- * default value
+ * Environment variables
+ * Inline configuration
+ * Framework-specific configuration
+ * Default value
 
 [float]
 [[dynamic-configuration]]
@@ -44,7 +44,7 @@ when set from a supported source.
 
 The Python Agent supports {apm-app-ref}/agent-configuration.html[Central configuration],
 which allows you to fine-tune certain configurations from in the APM app.
-This feature is enabled in the Agent by default, with <<config-central_config>>.
+This feature is enabled in the Agent by default with <<config-central_config>>.
 
 [float]
 [[django-configuration]]
@@ -99,8 +99,7 @@ While a default is provided, it is essential that you override this default
 with something more descriptive and unique across your infrastructure.
 
 NOTE: The service name must conform to this regular expression: `^[a-zA-Z0-9 _-]+$`.
-In less regexy terms:
-Your service name must only contain characters from the ASCII alphabet, numbers, dashes, underscores and spaces.
+In other words, the service name must only contain characters from the ASCII alphabet, numbers, dashes, underscores, and spaces.
 
 [float]
 [[config-server-url]]
@@ -126,7 +125,7 @@ The URL must be fully qualified, including protocol (`http` or `https`) and port
 |============
 
 Enable or disable the agent.
-When set to false, the agent will not collect any data, nor start any background threads.
+When set to false, the agent will not collect any data or start any background threads.
 
 
 [float]
@@ -143,8 +142,7 @@ When set to false, the agent will not collect any data, nor start any background
 
 Enable or disable recording of events.
 If set to false, then the Python agent does not send any events to the Elastic APM server,
-and instrumentation overhead is minimized,
-but the agent will continue to poll the server for configuration changes.
+and instrumentation overhead is minimized. The agent will continue to poll the server for configuration changes.
 
 
 [float]
@@ -163,7 +161,7 @@ but the agent will continue to poll the server for configuration changes.
 | `ELASTIC_APM_LOG_LEVEL` | `LOG_LEVEL`  |
 |============
 
-The `logging.logLevel` at which the `elasticapm` logger will log. Available
+The `logging.logLevel` at which the `elasticapm` logger will log. The available
 options are:
 
 * `"off"` (sets `logging.logLevel` to 1000)
@@ -174,7 +172,7 @@ options are:
 * `"debug"`
 * `"trace"` (sets `logging.log_level` to 5)
 
-Options are case-insensitive.
+Options are case-insensitive
 
 Note that this option doesn't do anything with logging handlers. In order
 for any logs to be visible, you must either configure a handler
@@ -192,9 +190,9 @@ any log level your app has set for the `elasticapm` logger.
 | `ELASTIC_APM_LOG_FILE` | `LOG_FILE`    | `""`    | `"/var/log/elasticapm/log.txt"`
 |============
 
-Enables the agent to log to a file. Disabled by default. The agent will log
+This enables the agent to log to a file. This is disabled by default. The agent will log
 at the `logging.logLevel` configured with <<config-log_level>>. Use
-<<config-log_file_size>> to configure the max size of the log file. This log
+<<config-log_file_size>> to configure the maximum size of the log file. This log
 file will automatically rotate.
 
 Note that setting <<config-log_level>> is required for this setting to do
@@ -213,9 +211,9 @@ the logs will automatically be formatted as ecs-compatible json.
 | `ELASTIC_APM_LOG_FILE_SIZE` | `LOG_FILE_SIZE` | `"50mb"`    | `"100mb"`
 |============
 
-The size of the log file, if <<config-log_file>> is set.
+The size of the log file if <<config-log_file>> is set.
 
-The agent always keeps one backup file when rotating, so the max space that
+The agent always keeps one backup file when rotating, so the maximum space that
 the log files will consume is twice the value of this setting.
 
 [float]
@@ -280,12 +278,11 @@ The transport class to use when sending events to the APM Server.
 | `ELASTIC_APM_SERVICE_NODE_NAME` | `SERVICE_NODE_NAME`  | `None`     | `"redis1"`
 |============
 
-The name of the given service node. This is optional, and if omitted, the APM
-Server will fall back on `system.container.id` if available, and finally
+The name of the given service node. This is optional and if omitted, the APM
+Server will fall back on `system.container.id` if available, and 
 `host.name` if necessary.
 
-This option allows you to set the node name manually to ensure uniqueness and
-meaningfulness.
+This option allows you to set the node name manually to ensure it is unique and meaningful.
 
 [float]
 [[config-environment]]
@@ -336,14 +333,14 @@ to `"none"`, then no cloud metadata will be collected.
 
 This string is used to ensure that only your agents can send data to your APM Server.
 Both the agents and the APM Server have to be configured with the same secret token.
-One example to generate a secure secret token is:
+An example to generate a secure secret token is:
 
 [source,bash]
 ----
 python -c "import uuid; print(str(uuid.uuid4()))"
 ----
 
-WARNING: secret tokens only provide any security if your APM Server use TLS.
+WARNING: Secret tokens only provide any security if your APM Server uses TLS.
 
 [float]
 [[config-api-key]]
@@ -360,8 +357,7 @@ experimental::[]
 // TODO: add link to APM Server API Key docs once the docs are released
 
 This base64-encoded string is used to ensure that only your agents can send data to your APM Server.
-You must have created the API key using the APM Server command line tool. Please see the APM Server
-documentation for details on how to do that.
+The API key must be created using the {apm-server-ref-v}/api-key.html[APM server command-line tool].
 
 WARNING: API keys only provide any real security if your APM Server uses TLS.
 
@@ -375,8 +371,7 @@ WARNING: API keys only provide any real security if your APM Server uses TLS.
 |============
 
 A version string for the currently deployed version of the service.
-If you don't version your deployments,
-the recommended value for this field is the commit identifier of the deployed revision, e.g. the output of `git rev-parse HEAD`.
+If youre deploys are not versioned, the recommended value for this field is the commit identifier of the deployed revision, e.g. the output of `git rev-parse HEAD`.
 
 [float]
 [[config-framework-name]]
@@ -387,7 +382,7 @@ the recommended value for this field is the commit identifier of the deployed re
 | `ELASTIC_APM_FRAMEWORK_NAME` | `FRAMEWORK_NAME` | Depending on framework
 |============
 
-Name of the used framework.
+The name of the used framework.
 For Django and Flask, this defaults to `django` and `flask` respectively,
 otherwise, the default is `None`.
 
@@ -401,7 +396,7 @@ otherwise, the default is `None`.
 | `ELASTIC_APM_FRAMEWORK_VERSION` | `FRAMEWORK_VERSION` | Depending on framework
 |============
 
-Version number of the used framework.
+The version number of the used framework.
 For Django and Flask, this defaults to the used version of the framework,
 otherwise, the default is `None`.
 
@@ -420,6 +415,20 @@ Exceptions of these types will not be sent to the APM Server.
 
 
 [float]
+[[config-transaction-ignore-urls]]
+==== `transaction_ignore_urls`
+[options="header"]
+|============
+| Environment                           | Django/Flask              | Default  | Example
+| `ELASTIC_APM_TRANSACTION_IGNORE_URLS` | `TRANSACTION_IGNORE_URLS` | `[]`     | `['/api/ping', '/static/*']`
+| multiple values separated by commas, without spaces |||
+|============
+
+A list of URLs for which the agent should not capture any transaction data.
+
+Optionally, `*` can be used to match multiple URLs at once.
+
+[float]
 [[config-transactions-ignore-patterns]]
 ==== `transactions_ignore_patterns`
 [options="header"]
@@ -430,8 +439,11 @@ Exceptions of these types will not be sent to the APM Server.
 |============
 
 A list of regular expressions.
-Transactions that match any of the of the configured patterns will be ignored and not sent to the APM Server.
+Transactions with a name that matches any of the configured patterns will be ignored and not sent to the APM Server.
 
+NOTE: as the the name of the transaction can only be determined at the end of the transaction,
+the agent might still cause overhead for transactions ignored through this setting.
+If agent overhead is a concern, we recommend <<config-transaction-ignore-urls,`transaction_ignore_urls`>> instead.
 
 [float]
 [[config-server-timeout]]
@@ -501,7 +513,7 @@ Possible values: `errors`, `transactions`, `all`, `off`
 The Elastic APM Python agent can collect local variables for stack frames.
 By default, this is only done for errors.
 
-NOTE: collecting local variables has a non-trivial overhead.
+NOTE: Collecting local variables has a non-trivial overhead.
 Collecting local variables for transactions in production environments
 can have adverse effects for the performance of your service.
 
@@ -516,7 +528,7 @@ can have adverse effects for the performance of your service.
 |============
 
 When collecting local variables, they will be converted to strings.
-With this setting, you can limit the length of resulting string.
+This setting allows you to limit the length of the resulting string.
 
 
 [float]
@@ -528,7 +540,7 @@ With this setting, you can limit the length of resulting string.
 | `ELASTIC_APM_LOCAL_VAR_LIST_MAX_LENGTH` | `LOCAL_VAR_LIST_MAX_LENGTH` | `10`
 |============
 
-With this setting, you can limit the length of lists in local variables.
+This setting allows you to limit the length of lists in local variables.
 
 
 [float]
@@ -541,7 +553,7 @@ With this setting, you can limit the length of lists in local variables.
 | `ELASTIC_APM_LOCAL_VAR_DICT_MAX_LENGTH` | `LOCAL_VAR_DICT_MAX_LENGTH` | `10`
 |============
 
-With this setting, you can limit the length of dicts in local variables.
+This setting allows you to limit the length of dicts in local variables.
 
 
 [float]
@@ -567,7 +579,7 @@ With this setting, you can limit the length of dicts in local variables.
 |============
 
 By default, the APM agent collects source code snippets for errors.
-With the above settings, you can modify how many lines of source code is collected.
+This setting allows you to modify the number of lines of source code that are being collected.
 
 We differ between errors and spans, as well as library frames and app frames.
 
@@ -594,9 +606,9 @@ If the request has a body and this setting is disabled, the body will be shown a
 
 For requests with a content type of `multipart/form-data`,
 any uploaded files will be referenced in a special `_files` key.
-It contains the name of the field, and the name of the uploaded file, if provided.
+It contains the name of the field and the name of the uploaded file, if provided.
 
-WARNING: request bodies often contain sensitive values like passwords, credit card numbers etc.
+WARNING: Request bodies often contain sensitive values like passwords and credit card numbers.
 If your service handles data like this, we advise to only enable this feature with care.
 
 [float]
@@ -616,9 +628,8 @@ the Python agent can optionally capture the request and response headers.
 
 Possible values: `true`, `false`
 
-WARNING: request headers often contain sensitive values like session IDs, cookies etc.
-See our documentation on <<sanitizing-data, sanitizing data>> for more information on how to
-filter such data.
+WARNING: Request headers often contain sensitive values like session IDs and cookies.
+See <<sanitizing-data,sanitizing data>> for more information on how to filter out sensitive data.
 
 [float]
 [[config-transaction-max-spans]]
@@ -632,9 +643,9 @@ filter such data.
 | `ELASTIC_APM_TRANSACTION_MAX_SPANS` | `TRANSACTION_MAX_SPANS` | `500`
 |============
 
-Limits the amount of spans that are recorded per transaction.
+This limits the amount of spans that are recorded per transaction.
 This is helpful in cases where a transaction creates a very high amount of spans (e.g. thousands of SQL queries).
-Setting an upper limit will prevent overloading the agent and the APM Server with too much work for such edge cases.
+Setting an upper limit will prevent edge cases from overloading the agent and the APM Server.
 
 [float]
 [[config-stack-trace-limit]]
@@ -646,7 +657,7 @@ Setting an upper limit will prevent overloading the agent and the APM Server wit
 | `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
 |============
 
-Limits the number of frames captured for each stack trace.
+This limits the number of frames captured for each stack trace.
 
 Setting the limit to `0` will disable stack trace collection,
 while any positive integer value will be used as the maximum number of frames to collect.
@@ -690,7 +701,7 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 | `ELASTIC_APM_API_REQUEST_SIZE` | `API_REQUEST_SIZE` | `"768kb"`
 |============
 
-Maximum queue length of the request buffer before sending the request to the APM Server.
+The maximum queue length of the request buffer before sending the request to the APM Server.
 A lower value will increase the load on your APM Server,
 while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until data is indexed and searchable in Elasticsearch.
@@ -699,7 +710,7 @@ This setting is useful to limit memory consumption if you experience a sudden sp
 It has to be provided in *<<config-format-size, size format>>*.
 
 NOTE: Due to internal buffering of gzip, the actual request size can be a few kilobytes larger than the given limit.
-By default, the APM Server limits request payload size to 1 MByte.
+By default, the APM Server limits request payload size to `1 MByte`.
 
 [float]
 [[config-api-request-time]]
@@ -713,7 +724,7 @@ By default, the APM Server limits request payload size to 1 MByte.
 | `ELASTIC_APM_API_REQUEST_TIME` | `API_REQUEST_TIME` | `"10s"`
 |============
 
-Maximum queue time of the request buffer before sending the request to the APM Server.
+The maximum queue time of the request buffer before sending the request to the APM Server.
 A lower value will increase the load on your APM Server,
 while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until data is indexed and searchable in Elasticsearch.
@@ -784,8 +795,8 @@ if you customize this setting.
 | `ELASTIC_APM_TRANSACTION_SAMPLE_RATE` | `TRANSACTION_SAMPLE_RATE` | `1.0`
 |============
 
-By default, the agent will sample every transaction (e.g. request to your service).
-To reduce overhead and storage requirements, you can set the sample rate to a value between `0.0` and `1.0`.
+By default, the agent samples every transaction (e.g. request to your service).
+To reduce overhead and storage requirements, set the sample rate to a value between `0.0` and `1.0`.
 We still record overall time and the result for unsampled transactions, but no context information, labels, or spans.
 
 NOTE: This setting will be automatically rounded to 4 decimals of precision.
@@ -882,7 +893,7 @@ This disables most of the tracing functionality, but can be useful to debug poss
 | `ELASTIC_APM_VERIFY_SERVER_CERT`  | `VERIFY_SERVER_CERT` | `True`
 |============
 
-By default, the agent verifies the SSL certificate if you use an HTTPS connection to the APM Server.
+By default, the agent verifies the SSL certificate if an HTTPS connection to the APM Server is used.
 Verification can be disabled by changing this setting to `False`.
 This setting is ignored when <<config-server-cert,`server_cert`>> is set.
 
@@ -930,14 +941,14 @@ It has to be provided in *<<config-format-duration, duration format>>*.
 
 
 A comma-separated list of dotted metrics names that should not be sent to the APM Server.
-You can use `*` to match multiple metrics. As an example, to disable all CPU-related metrics,
-as well as the "total system memory" metric, you would set `disable_metrics` to:
+You can use `*` to match multiple metrics; for example, to disable all CPU-related metrics,
+as well as the "total system memory" metric, set `disable_metrics` to:
 
 ....
 "*.cpu.*,system.memory.total"
 ....
 
-NOTE: this setting only disables the *sending* of the given metrics, not collection.
+NOTE: This setting only disables the *sending* of the given metrics, not collection.
 
 [float]
 [[config-breakdown_metrics]]
@@ -949,10 +960,42 @@ NOTE: this setting only disables the *sending* of the given metrics, not collect
 | `ELASTIC_APM_BREAKDOWN_METRICS`   | `BREAKDOWN_METRICS` | `True`
 |============
 
-Enable/disable the tracking and collection of breakdown metrics.
-By setting this to `False`, tracking this metric is completely disabled, which can reduce the overhead of the agent.
+Enable or disable the tracking and collection of breakdown metrics.
+Setting this to `False` disables the tracking of breakdown metrics, which can reduce the overhead of the agent.
 
 NOTE: This feature requires APM Server and Kibana >= 7.3.
+
+[float]
+[[config-prometheus_metrics]]
+==== `prometheus_metrics` (Beta)
+
+[options="header"]
+|============
+| Environment                        | Django/Flask         | Default
+| `ELASTIC_APM_PROMETHEUS_METRICS`   | `PROMETHEUS_METRICS` | `False`
+|============
+
+Enable/disable the tracking and collection of metrics from `prometheus_client`.
+
+See <<prometheus-metricset>> for more information.
+
+NOTE: This feature is currently in beta status.
+
+[float]
+[[config-prometheus_metrics_prefix]]
+==== `prometheus_metrics_prefix` (Beta)
+
+[options="header"]
+|============
+| Environment                               | Django/Flask        | Default
+| `ELASTIC_APM_PROMETHEUS_METRICS_PREFIX`   | `PROMETHEUS_METRICS_PREFIX` | `prometheus.metrics.`
+|============
+
+A prefix to prepend to Prometheus metrics names.
+
+See <<prometheus-metricset>> for more information.
+
+NOTE: This feature is currently in beta status.
 
 [float]
 [[config-central_config]]
@@ -995,8 +1038,8 @@ NOTE: This feature requires APM Server >= 7.2.
 | `ELASTIC_APM_DISABLE_LOG_RECORD_FACTORY` | `DISABLE_LOG_RECORD_FACTORY` | `False`
 |============
 
-By default in python 3, the agent will install a <<logging,LogRecord factory>> that
-automatically adds tracing fields to your log records. You can disable this
+By default in python 3, the agent installs a <<logging,LogRecord factory>> that
+automatically adds tracing fields to your log records. Disable this
 behavior by setting this to `True`.
 
 [float]
@@ -1046,7 +1089,7 @@ allows the agent to collect all uncaught exceptions.
 
 By default, we use the function or class name of the view as the transaction name.
 Starting with Django 2.2, Django makes the route (e.g. `users/<int:user_id>/`) available on the `request.resolver_match` object.
-If you want to use the route instead of the view name as the transaction name, you can set this config option to `true`.
+If you want to use the route instead of the view name as the transaction name, set this config option to `true`.
 
 NOTE: in versions previous to Django 2.2, changing this setting will have no effect.
 
@@ -1075,7 +1118,7 @@ Some environment variables that are not specific to the APM agent can be used to
 [[config-generic-http-proxy]]
 ==== `HTTP_PROXY` and `HTTPS_PROXY`
 
-Using `HTTP_PROXY` and `HTTPS_PROXY`, the agent can be instructed to use a proxy to connect to the APM Server.
+By using `HTTP_PROXY` and `HTTPS_PROXY`, the agent can be instructed to use a proxy to connect to the APM Server.
 If both are set, `HTTPS_PROXY` takes precedence.
 
 NOTE: The environment variables are case-insensitive.
@@ -1103,7 +1146,7 @@ These need to be provided in a specific format.
 ==== Duration format
 
 The _duration_ format is used for options like timeouts.
-The unit is provided as suffix directly after the number, without and separation by whitespace.
+The unit is provided as a suffix directly after the number–without any separation by whitespace.
 
 *Example*: `5ms`
 
@@ -1130,4 +1173,4 @@ The unit is provided as suffix directly after the number, without and separation
  * `mb` (megabytes)
  * `gb` (gigabytes)
 
-NOTE: we use the power-of-two sizing convention, e.g. `1 kilobyte == 1024 bytes`
+NOTE: We use the power-of-two sizing convention, e.g. `1 kilobyte == 1024 bytes`

@@ -120,6 +120,10 @@ class BaseSpan(object):
     def set_failure(self):
         self.outcome = "failure"
 
+    @staticmethod
+    def get_dist_tracing_id():
+        return "%016x" % random.getrandbits(64)
+
 
 class Transaction(BaseSpan):
     def __init__(
@@ -132,7 +136,7 @@ class Transaction(BaseSpan):
         sample_rate=None,
         start_timestamp=None,
     ):
-        self.id = "%016x" % random.getrandbits(64)
+        self.id = self.get_dist_tracing_id()
         self.trace_parent = trace_parent
         if start:
             if start_timestamp is None:
@@ -175,8 +179,9 @@ class Transaction(BaseSpan):
             self._transaction_metrics.timer(
                 "transaction.duration",
                 reset_on_collect=True,
+                unit="us",
                 **{"transaction.name": self.name, "transaction.type": self.transaction_type}
-            ).update(self.duration)
+            ).update(int(self.duration * 1000000))
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -186,15 +191,19 @@ class Transaction(BaseSpan):
                 }
                 if span_subtype:
                     labels["span.subtype"] = span_subtype
-                self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).update(*timer.val)
+                val = timer.val
+                self._breakdown.timer("span.self_time", reset_on_collect=True, unit="us", **labels).update(
+                    int(val[0] * 1000000), val[1]
+                )
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
                 self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
                 self._breakdown.timer(
                     "span.self_time",
                     reset_on_collect=True,
+                    unit="us",
                     **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
-                ).update(self.duration - self._child_durations.duration)
+                ).update(int((self.duration - self._child_durations.duration) * 1000000))
 
     def _begin_span(
         self,
@@ -407,7 +416,7 @@ class Span(BaseSpan):
         :param start: timestamp, mostly useful for testing
         """
         self.start_time = start or _time_func()
-        self.id = "%016x" % random.getrandbits(64)
+        self.id = self.get_dist_tracing_id()
         self.transaction = transaction
         self.name = name
         self.context = context if context is not None else {}

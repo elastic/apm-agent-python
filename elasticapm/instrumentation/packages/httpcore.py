@@ -39,7 +39,8 @@ class HTTPCoreInstrumentation(AbstractInstrumentedModule):
     name = "httpcore"
 
     instrument_list = [
-        ("httpcore._sync.connection", "SyncHTTPConnection.request"),
+        ("httpcore._sync.connection", "SyncHTTPConnection.request"),  # < httpcore 0.13
+        ("httpcore._sync.connection", "SyncHTTPConnection.handle_request"),  # >= httpcore 0.13
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
