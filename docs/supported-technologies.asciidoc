@@ -198,6 +198,20 @@ Collected trace data:
  * parametrized SQL query
 
 [float]
+[[automatic-instrumentation-db-aiomysql]]
+==== aiomysql
+
+Library: `aiomysql`
+
+Instrumented methods:
+
+ * `aiomysql.cursors.Cursor.execute`
+
+Collected trace data:
+
+    * parametrized SQL query
+
+[float]
 [[automatic-instrumentation-db-postgres]]
 ==== PostgreSQL
 
