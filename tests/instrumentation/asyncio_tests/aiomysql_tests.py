@@ -44,7 +44,7 @@ if "MYSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping aiomysql tests, no MYSQL_HOST environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 async def aiomysql_connection(request, event_loop):
     assert event_loop.is_running()
     pool = await aiomysql.create_pool(

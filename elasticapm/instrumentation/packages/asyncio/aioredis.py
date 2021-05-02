@@ -30,9 +30,9 @@
 
 from __future__ import absolute_import
 
+from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import execution_context
-from elasticapm.contrib.asyncio.traces import async_capture_span
 
 
 class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):

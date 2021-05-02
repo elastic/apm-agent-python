@@ -29,10 +29,9 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm.contrib.asyncio.traces import async_capture_span
-from elasticapm.utils.encoding import shorten
-
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
+from elasticapm.utils.encoding import shorten
 
 
 class AioMySQLInstrumentation(AsyncAbstractInstrumentedModule):
