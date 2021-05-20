@@ -15,6 +15,7 @@ FRAMEWORK:
   - flask-0.12
   - flask-1.0
   - flask-1.1
+  - flask-2.0
   - celery-3-flask-1.0
   - celery-3-django-1.11
   - celery-3-django-2.0
