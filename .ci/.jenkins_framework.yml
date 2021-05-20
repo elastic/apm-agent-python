@@ -8,6 +8,7 @@ FRAMEWORK:
   - django-3.2
   - flask-0.12
   - flask-1.1
+  - flask-2.0
   - opentracing-newest
   - twisted-18
   - celery-3-flask-1.0
