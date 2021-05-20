@@ -45,7 +45,8 @@ def aws_metadata():
     try:
         # This will throw an error if the metadata server isn't available,
         # and will be quiet in the logs, unlike urllib3
-        socket.create_connection(("169.254.169.254", 80), 0.1)
+        with socket.create_connection(("169.254.169.254", 80), 0.1):
+            pass
 
         try:
             # This whole block is almost unnecessary. IMDSv1 will be supported
@@ -135,7 +136,8 @@ def azure_metadata():
     try:
         # This will throw an error if the metadata server isn't available,
         # and will be quiet in the logs, unlike urllib3
-        socket.create_connection(("169.254.169.254", 80), 0.1)
+        with socket.create_connection(("169.254.169.254", 80), 0.1):
+            pass
 
         # Can't use newest metadata service version, as it's not guaranteed
         # to be available in all regions
