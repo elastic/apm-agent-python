@@ -38,7 +38,8 @@ from elasticapm.traces import execution_context
 class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
     name = "aioredis"
 
-    instrument_list = [("aioredis.pool", "ConnectionsPool.execute")]
+    instrument_list = [("aioredis.pool", "ConnectionsPool.execute"),
+                       ("aioredis.pool", "ConnectionsPool.execute_pubsub")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) > 0:
@@ -73,7 +74,8 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
 class RedisConnectionInstrumentation(AbstractInstrumentedModule):
     name = "aioredis"
 
-    instrument_list = (("aioredis.connection", "RedisConnection.execute"),)
+    instrument_list = (("aioredis.connection", "RedisConnection.execute"),
+                       ("aioredis.pool", "ConnectionsPool.execute_pubsub"))
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()

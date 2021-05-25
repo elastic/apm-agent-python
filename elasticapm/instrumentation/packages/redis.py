@@ -53,7 +53,7 @@ class RedisInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule):
     name = "redis"
 
     # no need to instrument StrictRedis in redis-py >= 3.0
-    instrument_list_3 = [("redis.client", "Redis.execute_command")]
+    instrument_list_3 = [("redis.client", "Redis.execute_command"), ("redis.client", "PubSub.execute_command")]
     instrument_list = [("redis.client", "Redis.execute_command"), ("redis.client", "StrictRedis.execute_command")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
