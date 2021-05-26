@@ -182,16 +182,16 @@ class Transport(ThreadManager):
                         logger.debug(
                             "Dropped event of type %s due to processor %s.%s",
                             event_type,
-                            getattr(processor, "__module__"),
-                            getattr(processor, "__name__"),
+                            processor.__module__,
+                            processor.__name__,
                         )
                         return None
                 except Exception:
                     logger.warning(
                         "Dropped event of type %s due to exception in processor %s.%s",
                         event_type,
-                        getattr(processor, "__module__"),
-                        getattr(processor, "__name__"),
+                        processor.__module__,
+                        processor.__name__,
                         exc_info=True,
                     )
                     return None
