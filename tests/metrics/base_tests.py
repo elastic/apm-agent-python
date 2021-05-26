@@ -125,6 +125,24 @@ def test_metrics_multithreaded(elasticapm_client):
     assert metricset.counter("x").val == expected
 
 
+@pytest.mark.parametrize("sending_elasticapm_client", [{"metrics_interval": "30s"}], indirect=True)
+def test_metrics_flushed_on_shutdown(sending_elasticapm_client):
+    # this is ugly, we need an API for this at some point...
+    metricset = MetricsSet(sending_elasticapm_client._metrics)
+    sending_elasticapm_client._metrics._metricsets["foo"] = metricset
+    metricset.counter("x").inc()
+    sending_elasticapm_client.close()
+    assert sending_elasticapm_client.httpserver.payloads
+    for item in sending_elasticapm_client.httpserver.payloads[0]:
+        try:
+            assert item["metricset"]["samples"]["x"]["value"] == 1
+            break
+        except KeyError:
+            pass
+    else:
+        assert False, "no item found with matching dict path metricset.samples.x.value"
+
+
 @mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)
 def test_metric_limit(caplog, elasticapm_client):
     m = MetricsSet(MetricsRegistry(elasticapm_client))
