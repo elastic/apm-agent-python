@@ -176,13 +176,23 @@ class Transport(ThreadManager):
         # Run the data through processors
         for processor in self._processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self.client, data)
-                if not data:
-                    logger.debug(
-                        "Dropped event of type %s due to processor %s.%s",
+                try:
+                    data = processor(self.client, data)
+                    if not data:
+                        logger.debug(
+                            "Dropped event of type %s due to processor %s.%s",
+                            event_type,
+                            getattr(processor, "__module__"),
+                            getattr(processor, "__name__"),
+                        )
+                        return None
+                except Exception:
+                    logger.warning(
+                        "Dropped event of type %s due to exception in processor %s.%s",
                         event_type,
                         getattr(processor, "__module__"),
                         getattr(processor, "__name__"),
+                        exc_info=True,
                     )
                     return None
         return data
@@ -213,7 +223,6 @@ class Transport(ThreadManager):
     def _flush(self, buffer):
         """
         Flush the queue. This method should only be called from the event processing queue
-        :param sync: if true, flushes the queue synchronously in the current thread
         :return: None
         """
         if not self.state.should_try():
