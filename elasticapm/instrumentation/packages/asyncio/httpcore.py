@@ -49,7 +49,7 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
 
     instrument_list = [
         ("httpcore._async.connection", "AsyncHTTPConnection.request"),  # < httpcore 0.11
-        ("httpcore._async.connection", "AsyncHTTPConnection.arequest"),  # httcore 0.11 - 0.12
+        ("httpcore._async.connection", "AsyncHTTPConnection.arequest"),  # httpcore 0.11 - 0.12
         ("httpcore._async.connection", "AsyncHTTPConnection.handle_async_request"),  # >= httpcore 0.13
     ]
 
