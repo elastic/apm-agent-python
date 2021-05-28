@@ -41,8 +41,8 @@ FRAMEWORK:
   - pymongo-3.4
   - pymongo-3.5
   - pymongo-newest
-  - redis-2.8
-  - redis-2.9
+  - redis-3
+  - redis-2
   - redis-newest
   - psycopg2-2.7
   - psycopg2-newest
