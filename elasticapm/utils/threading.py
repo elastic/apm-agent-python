@@ -91,6 +91,7 @@ class IntervalTimer(threading.Thread):
 class ThreadManager(object):
     def __init__(self):
         self.pid = None
+        self.start_stop_order = 100
 
     def start_thread(self, pid=None):
         if not pid:

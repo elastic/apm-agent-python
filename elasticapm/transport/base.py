@@ -33,6 +33,7 @@
 import gzip
 import os
 import random
+import sys
 import threading
 import time
 import timeit
@@ -86,6 +87,7 @@ class Transport(ThreadManager):
         self._closed = False
         self._processors = processors if processors is not None else []
         super(Transport, self).__init__()
+        self.start_stop_order = sys.maxsize  # ensure that the transport thread is always started/stopped last
 
     @property
     def _max_flush_time(self):
