@@ -41,8 +41,8 @@ FRAMEWORK:
   - pymongo-3.4
   - pymongo-3.5
   - pymongo-newest
-  - redis-2.8
-  - redis-2.9
+  - redis-3
+  - redis-2
   - redis-newest
   - psycopg2-2.7
   - psycopg2-newest
@@ -74,7 +74,6 @@ FRAMEWORK:
   - pymemcache-3.0
   - pymemcache-newest
   - graphene-2
-  - httpx-0.12
   - httpx-0.13
   - httpx-0.14
   - httpx-newest

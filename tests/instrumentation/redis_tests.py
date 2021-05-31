@@ -165,6 +165,7 @@ def test_unix_domain_socket_connection_destination_info():
     assert destination_info["address"] == "unix:///some/path"
 
 
+@pytest.mark.skipif(redis.VERSION < (3,), reason="pubsub not available as context manager in redis-py 2")
 @pytest.mark.integrationtest
 def test_publish_subscribe(instrument, elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")

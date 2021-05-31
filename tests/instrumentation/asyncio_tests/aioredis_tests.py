@@ -125,14 +125,15 @@ async def test_redis_client(instrument, elasticapm_client, redis_conn):
     assert len(spans) == 3
 
 
+@pytest.mark.skip(reason="Test is flaky for some reason, possibly related to import-time instrumentation")
 @pytest.mark.integrationtest
-async def test_publish_subscribe(instrument, elasticapm_client, redis_conn):
+async def test_publish_subscribe_async(instrument, elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_publish_subscribe", "test"):
         # publish
         await redis_conn.publish("mykey", "a")
 
-        #subscribe
+        # subscribe
         await redis_conn.subscribe("mykey")
 
     elasticapm_client.end_transaction("MyView")
