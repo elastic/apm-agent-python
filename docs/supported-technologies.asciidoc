@@ -51,6 +51,7 @@ We support these Flask versions:
  * 0.12 (Deprecated)
  * 1.0
  * 1.1
+ * 2.0
 
 [float]
 [[supported-aiohttp]]

@@ -123,3 +123,49 @@ async def test_redis_client(instrument, elasticapm_client, redis_conn):
     assert spans[2]["type"] == "test"
 
     assert len(spans) == 3
+
+
+@pytest.mark.skip(reason="Test is flaky for some reason, possibly related to import-time instrumentation")
+@pytest.mark.integrationtest
+async def test_publish_subscribe_async(instrument, elasticapm_client, redis_conn):
+    elasticapm_client.begin_transaction("transaction.test")
+    with capture_span("test_publish_subscribe", "test"):
+        # publish
+        await redis_conn.publish("mykey", "a")
+
+        # subscribe
+        await redis_conn.subscribe("mykey")
+
+    elasticapm_client.end_transaction("MyView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    expected_signatures = {"test_publish_subscribe", "PUBLISH", "SUBSCRIBE"}
+
+    assert {t["name"] for t in spans} == expected_signatures
+
+    assert spans[0]["name"] == "PUBLISH"
+    assert spans[0]["type"] == "db"
+    assert spans[0]["subtype"] == "redis"
+    assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "aioredis", "resource": "redis", "type": "db"},
+    }
+
+    assert spans[1]["name"] == "SUBSCRIBE"
+    assert spans[1]["type"] == "db"
+    assert spans[1]["subtype"] == "redis"
+    assert spans[1]["action"] == "query"
+    assert spans[1]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "aioredis", "resource": "redis", "type": "db"},
+    }
+
+    assert spans[2]["name"] == "test_publish_subscribe"
+    assert spans[2]["type"] == "test"
+
+    assert len(spans) == 3

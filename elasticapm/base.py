@@ -213,11 +213,13 @@ class Client(object):
         set_client(self)
 
     def start_threads(self):
-        with self._thread_starter_lock:
-            current_pid = os.getpid()
-            if self._pid != current_pid:
+        current_pid = os.getpid()
+        if self._pid != current_pid:
+            with self._thread_starter_lock:
                 self.logger.debug("Detected PID change from %r to %r, starting threads", self._pid, current_pid)
-                for manager_type, manager in self._thread_managers.items():
+                for manager_type, manager in sorted(
+                    self._thread_managers.items(), key=lambda item: item[1].start_stop_order
+                ):
                     self.logger.debug("Starting %s thread", manager_type)
                     manager.start_thread(pid=current_pid)
                 self._pid = current_pid
@@ -308,7 +310,7 @@ class Client(object):
     def close(self):
         if self.config.enabled:
             with self._thread_starter_lock:
-                for _, manager in self._thread_managers.items():
+                for _, manager in sorted(self._thread_managers.items(), key=lambda item: item[1].start_stop_order):
                     manager.stop_thread()
         global CLIENT_SINGLETON
         CLIENT_SINGLETON = None

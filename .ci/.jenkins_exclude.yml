@@ -226,8 +226,6 @@ exclude:
     FRAMEWORK: aioredis-newest
   - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
     FRAMEWORK: aioredis-newest
-  - PYTHON_VERSION: python-3.10-rc
-    FRAMEWORK: httpx-0.12
   # aiomysql
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: aiomysql-newest
