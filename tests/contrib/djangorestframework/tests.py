@@ -47,7 +47,7 @@ def test_basic(django_elasticapm_client, client):
     ):
         try:
             client.cookies["bla"] = "blub"
-            resp = client.get("/test")
+            resp = client.get(reverse("test-view"))
             assert resp.data == [{"id": 1, "text": "foo"}, {"id": 2, "text": "bar"}]
         finally:
             del client.cookies["bla"]

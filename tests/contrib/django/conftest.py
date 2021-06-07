@@ -41,7 +41,11 @@ def pytest_configure(config):
         from django.conf import settings
     except ImportError:
         settings = None
-    if settings is not None and not settings.configured:
+    try:
+        import rest_framework
+    except ImportError:
+        rest_framework = None
+    if settings is not None and not settings.configured and rest_framework is None:
         import django
 
         settings_dict = dict(
