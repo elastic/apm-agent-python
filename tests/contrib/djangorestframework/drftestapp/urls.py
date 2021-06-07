@@ -34,7 +34,7 @@ import django
 from django.conf import settings
 from django.http import HttpResponse
 
-from tests.contrib.djangorestframework.testapp import views
+from tests.contrib.djangorestframework.drftestapp import views
 
 try:
     from django.conf.urls import re_path
