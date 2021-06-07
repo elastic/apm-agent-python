@@ -32,8 +32,6 @@
 
 import pytest  # isort:skip
 
-from tests.utils import assert_any_record_contains
-
 django = pytest.importorskip("django")  # isort:skip
 
 
@@ -68,6 +66,7 @@ from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
 from tests.contrib.django.testapp.views import IgnoredException, MyException
+from tests.utils import assert_any_record_contains
 from tests.utils.compat import middleware_setting
 
 try:
