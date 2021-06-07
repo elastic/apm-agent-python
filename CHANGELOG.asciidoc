@@ -33,6 +33,13 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.2.2]]
+==== 6.2.2 - 2021/06/07
+
+[float]
+===== Bug fixes
+ * Fix an attribute access bug introduced in 6.2.0 {pull}1149[#1149]
+
 [[release-notes-6.2.1]]
 ==== 6.2.1 - 2021/06/03
 
