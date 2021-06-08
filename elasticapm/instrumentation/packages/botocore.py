@@ -30,9 +30,14 @@
 
 from collections import namedtuple
 
+from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.compat import urlparse
+from elasticapm.utils.logging import get_logger
+
+logger = get_logger("elasticapm.instrument")
+
 
 HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype", "span_action", "context"))
 
@@ -81,7 +86,9 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             span_subtype=handler_info.span_subtype,
             span_action=handler_info.span_action,
             extra=handler_info.context,
-        ):
+        ) as span:
+            if service in span_modifiers:
+                span_modifiers[service](span, args, kwargs)
             return wrapped(*args, **kwargs)
 
 
@@ -141,8 +148,46 @@ def handle_sns(operation_name, service, instance, args, kwargs, context):
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
-def handle_sqs(operation_name, service, instance, args, kwargs, destination):
-    pass
+def handle_sqs(operation_name, service, instance, args, kwargs, context):
+    if operation_name not in ("SendMessage", "SendMessageBatch", "ReceiveMessage"):
+        # only "publish" is handled specifically, other endpoints get the default treatment
+        return False
+    span_type = "messaging"
+    span_subtype = "sqs"
+    span_action = "send" if operation_name in ("SendMessage", "SendMessageBatch") else "receive"
+    topic_name = ""
+    batch = "_BATCH" if operation_name == "SendMessageBatch" else ""
+    signature_type = "RECEIVE from" if span_action == "receive" else f"SEND{batch} to"
+
+    if len(args) > 1:
+        topic_name = args[1]["QueueUrl"].rsplit("/", maxsplit=1)[-1]
+    signature = f"SQS {signature_type} {topic_name}".rstrip() if topic_name else f"SQS {signature_type}"
+    context["destination"]["service"] = {
+        "name": span_subtype,
+        "resource": f"{span_subtype}/{topic_name}" if topic_name else span_subtype,
+        "type": span_type,
+    }
+    return HandlerInfo(signature, span_type, span_subtype, span_action, context)
+
+
+def modify_span_sqs(span, args, kwargs):
+    trace_parent = span.transaction.trace_parent.copy_from(span_id=span.id)
+    attributes = {constants.TRACEPARENT_HEADER_NAME: {"DataType": "String", "StringValue": trace_parent.to_string()}}
+    if trace_parent.tracestate:
+        attributes[constants.TRACESTATE_HEADER_NAME] = {"DataType": "String", "StringValue": trace_parent.tracestate}
+    if len(args) > 1:
+        attributes_count = len(attributes)
+        if "MessageAttributes" in args[1]:
+            messages = [args[1]]
+        # elif "Entries" in args[1]:
+        #     messages = args[1]["Entries"]
+        else:
+            messages = []
+        for message in messages:
+            if len(message["MessageAttributes"]) + attributes_count <= 10:
+                message["MessageAttributes"].update(attributes)
+            else:
+                logger.info("Not adding disttracing headers to message due to attribute limit reached")
 
 
 def handle_default(operation_name, service, instance, args, kwargs, destination):
@@ -160,5 +205,10 @@ handlers = {
     "S3": handle_s3,
     "DynamoDB": handle_dynamodb,
     "SNS": handle_sns,
+    "SQS": handle_sqs,
     "default": handle_default,
+}
+
+span_modifiers = {
+    "SQS": modify_span_sqs,
 }

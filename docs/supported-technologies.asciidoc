@@ -52,6 +52,7 @@ We support these Flask versions:
  * 0.12 (Deprecated)
  * 1.0
  * 1.1
+ * 2.0
 
 [float]
 [[supported-aiohttp]]
@@ -208,6 +209,20 @@ Collected trace data:
  * parametrized SQL query
 
 [float]
+[[automatic-instrumentation-db-aiomysql]]
+==== aiomysql
+
+Library: `aiomysql`
+
+Instrumented methods:
+
+ * `aiomysql.cursors.Cursor.execute`
+
+Collected trace data:
+
+    * parametrized SQL query
+
+[float]
 [[automatic-instrumentation-db-postgres]]
 ==== PostgreSQL
 
@@ -347,6 +362,22 @@ Collected trace data:
 
     * Redis command name
 
+
+[float]
+[[automatic-instrumentation-db-aioredis]]
+==== aioredis
+
+Library: `aioredis` (`<2.0`)
+
+Instrumented methods:
+
+ * `aioredis.pool.ConnectionsPool.execute`
+ * `aioredis.commands.transaction.Pipeline.execute`
+ * `aioredis.connection.RedisConnection.execute`
+
+Collected trace data:
+
+    * Redis command name
 
 [float]
 [[automatic-instrumentation-db-cassandra]]
@@ -552,6 +583,12 @@ Additionally, some services collect more specific data
 ===== SNS
 
  * Topic name
+
+[float]
+[[automatic-instrumentation-sqs]]
+===== SQS
+
+ * Queue name
 
 [float]
 [[automatic-instrumentation-template-engines]]

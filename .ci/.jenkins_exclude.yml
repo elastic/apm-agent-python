@@ -130,6 +130,8 @@ exclude:
     FRAMEWORK: psycopg2-2.7
   - PYTHON_VERSION: python-3.10-rc # see https://github.com/psycopg/psycopg2/issues/858
     FRAMEWORK: psycopg2-2.7
+  - PYTHON_VERSION: pypy-3  # async keyword clash in old version of psycopg2cffi
+    FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
@@ -223,3 +225,17 @@ exclude:
     FRAMEWORK: sanic-newest
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: sanic-20.12
+  - PYTHON_VERSION: pypy-3
+  # aioredis
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aioredis-newest
+  - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
+    FRAMEWORK: aioredis-newest
+  # aiomysql
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiomysql-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiomysql-newest
+  - PYTHON_VERSION: python-3.10-rc  # getting "loop argument must agree with lock" error
+    FRAMEWORK: aiomysql-newest
