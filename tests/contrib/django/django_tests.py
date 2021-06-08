@@ -1614,4 +1614,4 @@ def test_default_app_config_present_by_version():
     if django.VERSION < (3, 2):
         assert default_app_config_is_defined
     else:
-        assert default_app_config_is_defined
+        assert not default_app_config_is_defined
