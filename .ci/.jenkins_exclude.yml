@@ -225,6 +225,10 @@ exclude:
     FRAMEWORK: sanic-newest
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: sanic-20.12
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: sanic-20.12
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: sanic-newest
   - PYTHON_VERSION: pypy-3
   # aioredis
     FRAMEWORK: aioredis-newest
