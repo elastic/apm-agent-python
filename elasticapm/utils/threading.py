@@ -30,9 +30,12 @@
 
 from __future__ import absolute_import
 
+import logging
 import os
 import threading
 from timeit import default_timer
+
+logger = logging.getLogger("elasticapm.utils.threading")
 
 
 class IntervalTimer(threading.Thread):
@@ -77,11 +80,15 @@ class IntervalTimer(threading.Thread):
                 # we've been cancelled, time to go home
                 return
             start = default_timer()
-            rval = self._function(*self._args, **self._kwargs)
-            if self._evaluate_function_interval and isinstance(rval, (int, float)):
-                interval_override = rval
-            else:
-                interval_override = None
+            try:
+                rval = self._function(*self._args, **self._kwargs)
+                if self._evaluate_function_interval and isinstance(rval, (int, float)):
+                    interval_override = rval
+                else:
+                    interval_override = None
+            except Exception:
+                logger.error("Exception in interval timer function", exc_info=True)
+
             execution_time = default_timer() - start
 
     def cancel(self):
@@ -91,6 +98,7 @@ class IntervalTimer(threading.Thread):
 class ThreadManager(object):
     def __init__(self):
         self.pid = None
+        self.start_stop_order = 100
 
     def start_thread(self, pid=None):
         if not pid:

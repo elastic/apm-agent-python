@@ -33,6 +33,36 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.2.2]]
+==== 6.2.2 - 2021/06/07
+
+[float]
+===== Bug fixes
+ * Fix an attribute access bug introduced in 6.2.0 {pull}1149[#1149]
+
+[[release-notes-6.2.1]]
+==== 6.2.1 - 2021/06/03
+
+[float]
+===== Bug fixes
+ * catch and log exceptions in interval timer threads {pull}1145[#1145]
+
+[[release-notes-6.2.0]]
+==== 6.2.0 - 2021/05/31
+
+[float]
+===== Features
+ * Added support for aioredis 1.x {pull}1082[#2526]
+ * Added support for aiomysql {pull}1107[#1107]
+ * Added Redis pub/sub instrumentation {pull}1129[#1129]
+ * Added specific instrumentation for AWS SQS {pull}1123[#1123]
+
+[float]
+===== Bug fixes
+ * ensure metrics are flushed before agent shutdown {pull}1139[#1139]
+ * added safeguard for exceptions in processors {pull}1138[#1138]
+ * ensure sockets are closed which were opened for cloud environment detection {pull}1134[#1134]
+
 [[release-notes-6.1.3]]
 ==== 6.1.3 - 2021/04/28
 

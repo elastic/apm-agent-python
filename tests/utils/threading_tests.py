@@ -32,6 +32,7 @@ import time
 import mock
 
 from elasticapm.utils.threading import IntervalTimer
+from tests.utils import assert_any_record_contains
 
 
 def test_interval_timer():
@@ -75,3 +76,16 @@ def test_interval_timer_interval_override_non_number():
         timer.cancel()
     time.sleep(0.05)
     assert not timer.is_alive()
+
+
+def test_interval_timer_exception(caplog):
+    def my_func():
+        return 1 / 0
+
+    with caplog.at_level("ERROR", "elasticapm.utils.threading"):
+        timer = IntervalTimer(function=my_func, interval=0.1)
+        timer.start()
+        time.sleep(0.25)
+        assert timer.is_alive()
+    timer.cancel()
+    assert_any_record_contains(caplog.records, "Exception in interval timer function")

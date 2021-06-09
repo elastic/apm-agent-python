@@ -103,6 +103,8 @@ class MetricsRegistry(ThreadManager):
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
             self._collect_timer = None
+            # collect one last time
+            self.collect()
 
     @property
     def collect_interval(self):
