@@ -112,8 +112,10 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
         ) as span:
             result_data = wrapped(*args, **kwargs)
 
-            if isinstance(result_data, dict) and "hits" in result_data:
+            try:
                 span.context["db"]["row_affected"] = result_data["hits"]["total"]["value"]
+            except (KeyError, TypeError):
+                pass
 
             return result_data
 
