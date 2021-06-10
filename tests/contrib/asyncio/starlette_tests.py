@@ -30,6 +30,8 @@
 
 import pytest  # isort:skip
 
+from tests.fixtures import TempStoreClient
+
 starlette = pytest.importorskip("starlette")  # isort:skip
 
 import types
@@ -43,7 +45,7 @@ from starlette.testclient import TestClient
 import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
-from elasticapm.contrib.starlette import ElasticAPM
+from elasticapm.contrib.starlette import ElasticAPM, make_apm_client
 from elasticapm.utils import wrapt
 from elasticapm.utils.disttracing import TraceParent
 
@@ -367,3 +369,16 @@ def test_capture_body_error(app, elasticapm_client):
     client = TestClient(app)
     with pytest.raises(ValueError):
         response = client.post("/raise-exception", data="[0, 1]")
+
+
+def test_make_client_with_config():
+    c = make_apm_client(config={"SERVICE_NAME": "foo"}, client_cls=TempStoreClient)
+    c.close()
+    assert c.config.service_name == "foo"
+
+
+def test_make_client_without_config():
+    with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "foo"}):
+        c = make_apm_client(client_cls=TempStoreClient)
+        c.close()
+        assert c.config.service_name == "foo"
