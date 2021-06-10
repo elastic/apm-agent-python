@@ -31,6 +31,8 @@
 
 from __future__ import absolute_import
 
+from typing import Dict, Optional
+
 import starlette
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -50,7 +52,7 @@ from elasticapm.utils.logging import get_logger
 logger = get_logger("elasticapm.errors.client")
 
 
-def make_apm_client(config: dict, client_cls=Client, **defaults) -> Client:
+def make_apm_client(config: Optional[Dict] = None, client_cls=Client, **defaults) -> Client:
     """Builds ElasticAPM client.
 
     Args:
