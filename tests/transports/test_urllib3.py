@@ -31,6 +31,7 @@
 
 import os
 
+import certifi
 import mock
 import pytest
 import urllib3.poolmanager
@@ -346,3 +347,10 @@ def test_get_config_empty_response(waiting_httpserver, caplog, elasticapm_client
     assert max_age == 5
     record = caplog.records[-1]
     assert record.message == "APM Server answered with empty body and status code 200"
+
+
+def test_use_certifi(elasticapm_client):
+    transport = Transport("/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    assert transport.ca_certs == certifi.where()
+    elasticapm_client.config.update("2", use_certifi=False)
+    assert not transport.ca_certs

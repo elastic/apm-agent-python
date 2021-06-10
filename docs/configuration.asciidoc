@@ -914,6 +914,19 @@ just wish to pin the server certificate, you can specify the path to the PEM-enc
 certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
 
 [float]
+[[config-use-certifi]]
+==== `use_certifi`
+
+[options="header"]
+|============
+| Environment                | Django/Flask  | Default
+| `ELASTIC_APM_USE_CERTIFI`  | `USE_CERTIFI` | `True`
+|============
+
+By default, the Python Agent uses the https://pypi.org/project/certifi/[`certifi`] certificate store.
+To use Python's default mechanism for finding certificates, set this option to `False`.
+
+[float]
 [[config-metrics_interval]]
 ==== `metrics_interval`
 
@@ -1133,6 +1146,18 @@ or use `*` to match any host.
 
 This is useful if `HTTP_PROXY` / `HTTPS_PROXY` is set for other reasons than agent / APM Server communication.
 
+
+[float]
+[[config-ssl-cert-file]]
+==== `SSL_CERT_FILE` and `SSL_CERT_DIR`
+
+To tell the agent to use a different SSL certificate, you can use these environment variables.
+See also https://www.openssl.org/docs/manmaster/man7/openssl-env.html#SSL_CERT_DIR-SSL_CERT_FILE[OpenSSL docs].
+
+Please note that these variables may apply to other SSL/TLS communication in your service,
+not just related to the APM agent. 
+
+NOTE: These environment variables only take effect if <<config-use-certifi,`use_certifi`>> is set to `False`.
 
 [float]
 [[config-formats]]
