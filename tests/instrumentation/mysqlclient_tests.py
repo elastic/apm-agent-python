@@ -46,7 +46,7 @@ if "MYSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping mysqlclient tests, no MYSQL_HOST environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def mysqlclient_connection(request):
     conn = mysqldb.connect(
         host=os.environ.get("MYSQL_HOST", "localhost"),

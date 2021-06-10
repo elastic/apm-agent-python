@@ -1,2 +1,2 @@
-redis>=2.8,<2.9
+aioredis<2
 -r reqs-base.txt

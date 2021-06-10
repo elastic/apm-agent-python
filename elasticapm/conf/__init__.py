@@ -647,6 +647,7 @@ class VersionedConfig(ThreadManager):
         "transport",
         "_update_thread",
         "pid",
+        "start_stop_order",
     )
 
     def __init__(self, config_object, version, transport=None):

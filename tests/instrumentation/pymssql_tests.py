@@ -45,7 +45,7 @@ if "MSSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping MS-SQL tests, no MSSQL_HOST environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def pymssql_connection(request):
     conn = pymssql.connect(
         os.environ.get("MSSQL_HOST", "localhost"),

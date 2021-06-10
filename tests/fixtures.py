@@ -331,9 +331,9 @@ class DummyTransport(HTTPTransportBase):
 
 
 class TempStoreClient(Client):
-    def __init__(self, **inline):
+    def __init__(self, config=None, **inline):
         inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
-        super(TempStoreClient, self).__init__(**inline)
+        super(TempStoreClient, self).__init__(config, **inline)
 
     @property
     def events(self):
