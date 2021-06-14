@@ -124,7 +124,7 @@ def test_histogram(elasticapm_client):
     histo_with_labels.labels(alabel="foo", anotherlabel="baz").observe(100)
     histo_with_labels.labels(alabel="foo", anotherlabel="bazzinga").observe(1000)
     data = list(metricset.collect())
-    assert len(data) == 3
+    assert len(data) == 3, data
     assert data[0]["samples"]["prometheus.metrics.test"]["values"] == [1, 10, 100, float("inf")]
     assert data[0]["samples"]["prometheus.metrics.test"]["counts"] == [2, 1, 3, 1]
 
