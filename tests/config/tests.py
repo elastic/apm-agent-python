@@ -428,3 +428,13 @@ def test_valid_values_validator():
     assert v("Bar", "foo") == "Bar"
     with pytest.raises(ConfigurationError):
         v("foobar", "foo")
+
+
+def test_versioned_config_attribute_access(elasticapm_client):
+    # see https://github.com/elastic/apm-agent-python/issues/1147
+    val = elasticapm_client.config.start_stop_order
+    assert isinstance(val, int)
+    # update config to ensure start_stop_order isn't read from the proxied Config object
+    elasticapm_client.config.update("2", capture_body=True)
+    val = elasticapm_client.config.start_stop_order
+    assert isinstance(val, int)
