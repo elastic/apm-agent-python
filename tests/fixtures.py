@@ -67,12 +67,15 @@ cur_dir = os.path.dirname(os.path.realpath(__file__))
 ERRORS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "error.json")
 TRANSACTIONS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "transaction.json")
 SPAN_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "span.json")
+METRICSET_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metricset.json")
 METADATA_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metadata.json")
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
     TRANSACTIONS_SCHEMA, encoding="utf8"
 ) as transactions_json, codecs.open(SPAN_SCHEMA, encoding="utf8") as span_json, codecs.open(
+    METRICSET_SCHEMA, encoding="utf8"
+) as metricset_json, codecs.open(
     METADATA_SCHEMA, encoding="utf8"
 ) as metadata_json:
     VALIDATORS = {
@@ -93,6 +96,12 @@ with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
             json.load(span_json),
             resolver=jsonschema.RefResolver(
                 base_uri="file:" + pathname2url(SPAN_SCHEMA), referrer="file:" + pathname2url(SPAN_SCHEMA)
+            ),
+        ),
+        "metricset": jsonschema.Draft4Validator(
+            json.load(metricset_json),
+            resolver=jsonschema.RefResolver(
+                base_uri="file:" + pathname2url(METRICSET_SCHEMA), referrer="file:" + pathname2url(METRICSET_SCHEMA)
             ),
         ),
         "metadata": jsonschema.Draft4Validator(
@@ -187,6 +196,7 @@ def elasticapm_client(request):
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.set_span(None)
+    assert not client._transport.validation_errors
 
 
 @pytest.fixture()
@@ -295,12 +305,19 @@ class DummyTransport(HTTPTransportBase):
     def __init__(self, url, *args, **kwargs):
         super(DummyTransport, self).__init__(url, *args, **kwargs)
         self.events = defaultdict(list)
+        self.validation_errors = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
         self._flushed.clear()
         data = self._process_event(event_type, data)
         self.events[event_type].append(data)
         self._flushed.set()
+        if data is not None:
+            validator = VALIDATORS[event_type]
+            try:
+                validator.validate(data)
+            except jsonschema.ValidationError as e:
+                self.validation_errors[event_type].append(e.message)
 
     def start_thread(self, pid=None):
         # don't call the parent method, but the one from ThreadManager
@@ -314,9 +331,9 @@ class DummyTransport(HTTPTransportBase):
 
 
 class TempStoreClient(Client):
-    def __init__(self, **inline):
+    def __init__(self, config=None, **inline):
         inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
-        super(TempStoreClient, self).__init__(**inline)
+        super(TempStoreClient, self).__init__(config, **inline)
 
     @property
     def events(self):

@@ -30,73 +30,68 @@
 
 from __future__ import absolute_import
 
+from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span, execution_context
+from elasticapm.traces import execution_context
 
 
-class Redis3CheckMixin(object):
-    instrument_list_3 = []
-    instrument_list = []
+class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
+    name = "aioredis"
 
-    def get_instrument_list(self):
-        try:
-            from redis import VERSION
-
-            if VERSION[0] >= 3:
-                return self.instrument_list_3
-            return self.instrument_list
-        except ImportError:
-            return self.instrument_list
-
-
-class RedisInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule):
-    name = "redis"
-
-    # no need to instrument StrictRedis in redis-py >= 3.0
-    instrument_list_3 = [("redis.client", "Redis.execute_command"), ("redis.client", "PubSub.execute_command")]
-    instrument_list = [("redis.client", "Redis.execute_command"), ("redis.client", "StrictRedis.execute_command")]
+    instrument_list = [("aioredis.pool", "ConnectionsPool.execute"),
+                       ("aioredis.pool", "ConnectionsPool.execute_pubsub")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) > 0:
-            wrapped_name = str(args[0])
+            wrapped_name = args[0].decode()
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True):
+        with async_capture_span(
+            wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
+        ) as span:
+            span.context["destination"] = _get_destination_info(instance)
+
             return wrapped(*args, **kwargs)
 
 
-class RedisPipelineInstrumentation(Redis3CheckMixin, AbstractInstrumentedModule):
-    name = "redis"
+class RedisPipelineInstrumentation(AbstractInstrumentedModule):
+    name = "aioredis"
 
-    # BasePipeline has been renamed to Pipeline in redis-py 3
-    instrument_list_3 = [("redis.client", "Pipeline.execute")]
-    instrument_list = [("redis.client", "BasePipeline.execute")]
+    instrument_list = [("aioredis.commands.transaction", "Pipeline.execute")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
-        with capture_span(wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True):
+
+        with async_capture_span(
+            wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
+        ) as span:
+            span.context["destination"] = _get_destination_info(instance)
+
             return wrapped(*args, **kwargs)
 
 
 class RedisConnectionInstrumentation(AbstractInstrumentedModule):
-    name = "redis"
+    name = "aioredis"
 
-    instrument_list = (("redis.connection", "Connection.send_packed_command"),)
+    instrument_list = (("aioredis.connection", "RedisConnection.execute"),
+                       ("aioredis.pool", "ConnectionsPool.execute_pubsub"))
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
-        if span and span.subtype == "redis":
-            span.context["destination"] = get_destination_info(instance)
+        if span and span.subtype == "aioredis":
+            span.context["destination"] = _get_destination_info(instance)
         return wrapped(*args, **kwargs)
 
 
-def get_destination_info(connection):
-    destination_info = {"service": {"name": "redis", "resource": "redis", "type": "db"}}
-    if hasattr(connection, "port"):
-        destination_info["port"] = connection.port
-        destination_info["address"] = connection.host
-    elif hasattr(connection, "path"):
-        destination_info["port"] = None
-        destination_info["address"] = "unix://" + connection.path
+def _get_destination_info(connection):
+    destination_info = {"service": {"name": "aioredis", "resource": "redis", "type": "db"}}
+
+    if hasattr(connection, "_pool_or_conn"):
+        destination_info["port"] = connection._pool_or_conn.address[1]
+        destination_info["address"] = connection._pool_or_conn.address[0]
+    else:
+        destination_info["port"] = connection.address[1]
+        destination_info["address"] = connection.address[0]
+
     return destination_info

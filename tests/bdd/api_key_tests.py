@@ -40,7 +40,7 @@ version_counter = itertools.count(0)
 scenarios(os.path.join("features", "api_key.feature"))
 
 
-@given("an agent")
+@given("an agent", target_fixture="an_agent")
 def an_agent(elasticapm_client):
     return elasticapm_client
 

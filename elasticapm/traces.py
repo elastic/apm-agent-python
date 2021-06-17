@@ -120,12 +120,16 @@ class BaseSpan(object):
     def set_failure(self):
         self.outcome = "failure"
 
+    @staticmethod
+    def get_dist_tracing_id():
+        return "%016x" % random.getrandbits(64)
+
 
 class Transaction(BaseSpan):
     def __init__(
         self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_rate=None
     ):
-        self.id = "%016x" % random.getrandbits(64)
+        self.id = self.get_dist_tracing_id()
         self.trace_parent = trace_parent
         if start:
             self.timestamp = self.start_time = start
@@ -402,7 +406,7 @@ class Span(BaseSpan):
         :param start: timestamp, mostly useful for testing
         """
         self.start_time = start or _time_func()
-        self.id = "%016x" % random.getrandbits(64)
+        self.id = self.get_dist_tracing_id()
         self.transaction = transaction
         self.name = name
         self.context = context if context is not None else {}

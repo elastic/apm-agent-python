@@ -69,7 +69,7 @@ def connect_kwargs():
     }
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def postgres_connection(request):
     conn = psycopg2.connect(**connect_kwargs())
     cursor = conn.cursor()

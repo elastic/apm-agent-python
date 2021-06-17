@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2021, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,9 +27,14 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from django import VERSION as DJANGO_VERSION
 
-from elasticapm.contrib.django.client import *  # noqa E401
+from __future__ import absolute_import
 
-if DJANGO_VERSION < (3, 2):
-    default_app_config = "elasticapm.contrib.django.apps.ElasticAPMConfig"
+import django
+
+from tests.contrib.django.testapp import views
+
+if django.VERSION >= (2, 2):
+    from django.urls import path
+
+    urlpatterns = (path("", views.no_error),)

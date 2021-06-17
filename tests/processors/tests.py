@@ -356,6 +356,10 @@ def dummy_processor_no_events(client, data):
     return data
 
 
+def dummy_processor_failing(client, data):
+    raise ValueError("oops")
+
+
 @pytest.mark.parametrize(
     "elasticapm_client",
     [{"processors": "tests.processors.tests.dummy_processor,tests.processors.tests.dummy_processor_no_events"}],
@@ -428,17 +432,36 @@ def test_for_events_decorator():
 
 
 def test_drop_events_in_processor(elasticapm_client, caplog):
-    dropping_processor = mock.MagicMock(return_value=None, event_types=[SPAN], __name__="dropper")
+    dropping_processor = mock.MagicMock(return_value=None, event_types=[TRANSACTION], __name__="dropper")
     shouldnt_be_called_processor = mock.Mock(event_types=[])
 
     elasticapm_client._transport._processors = [dropping_processor, shouldnt_be_called_processor]
     with caplog.at_level(logging.DEBUG, logger="elasticapm.transport"):
-        elasticapm_client.queue(SPAN, {"some": "data"})
+        elasticapm_client.begin_transaction("test")
+        elasticapm_client.end_transaction("test", "FAIL")
     assert dropping_processor.call_count == 1
     assert shouldnt_be_called_processor.call_count == 0
-    assert elasticapm_client._transport.events[SPAN][0] is None
+    assert elasticapm_client._transport.events[TRANSACTION][0] is None
     assert_any_record_contains(
-        caplog.records, "Dropped event of type span due to processor mock.mock.dropper", "elasticapm.transport"
+        caplog.records, "Dropped event of type transaction due to processor mock.mock.dropper", "elasticapm.transport"
+    )
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"processors": "tests.processors.tests.dummy_processor,tests.processors.tests.dummy_processor_failing"}],
+    indirect=True,
+)
+def test_drop_events_in_failing_processor(elasticapm_client, caplog):
+
+    with caplog.at_level(logging.WARNING, logger="elasticapm.transport"):
+        elasticapm_client.begin_transaction("test")
+        elasticapm_client.end_transaction("test", "FAIL")
+    assert elasticapm_client._transport.events[TRANSACTION][0] is None
+    assert_any_record_contains(
+        caplog.records,
+        "Dropped event of type transaction due to exception in processor tests.processors.tests.dummy_processor_failing",
+        "elasticapm.transport",
     )
 
 

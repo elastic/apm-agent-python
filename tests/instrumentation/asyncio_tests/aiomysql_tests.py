@@ -33,44 +33,56 @@ import os
 import pytest
 
 from elasticapm.conf.constants import TRANSACTION
+from elasticapm.utils import default_ports
 
-pymysql = pytest.importorskip("pymysql")
+aiomysql = pytest.importorskip("aiomysql")
 
-pytestmark = [pytest.mark.pymysql]
+pytestmark = [pytest.mark.asyncio, pytest.mark.aiomysql]
 
 
 if "MYSQL_HOST" not in os.environ:
-    pytestmark.append(pytest.mark.skip("Skipping pymysql tests, no MYSQL_HOST environment variable set"))
+    pytestmark.append(pytest.mark.skip("Skipping aiomysql tests, no MYSQL_HOST environment variable set"))
 
 
 @pytest.fixture(scope="function")
-def pymysql_connection(request):
-    conn = pymysql.connect(
+async def aiomysql_connection(request, event_loop):
+    assert event_loop.is_running()
+    pool = await aiomysql.create_pool(
         host=os.environ.get("MYSQL_HOST", "localhost"),
         user=os.environ.get("MYSQL_USER", "eapm"),
         password=os.environ.get("MYSQL_PASSWORD", ""),
-        database=os.environ.get("MYSQL_DATABASE", "eapm_tests"),
+        db=os.environ.get("MYSQL_DATABASE", "eapm_tests"),
+        loop=event_loop,
     )
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE `test` (`id` INT, `name` VARCHAR(5))")
-    cursor.execute("INSERT INTO `test` (`id`, `name`) VALUES (1, 'one'), (2, 'two'), (3, 'three')")
-    row = cursor.fetchone()
-    print(row)
 
-    yield conn
+    try:
+        async with pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("CREATE TABLE `test` (`id` INT, `name` VARCHAR(5))")
+                await cursor.execute("INSERT INTO `test` (`id`, `name`) VALUES (1, 'one'), (2, 'two'), (3, 'three')")
 
-    cursor.execute("DROP TABLE `test`")
+            yield conn
+
+    finally:
+        # Drop the testing table and close the connection pool after testcase
+        async with pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("DROP TABLE `test`")
+
+        pool.close()
+        await pool.wait_closed()
 
 
 @pytest.mark.integrationtest
-def test_pymysql_select(instrument, pymysql_connection, elasticapm_client):
-    cursor = pymysql_connection.cursor()
-    query = "SELECT * FROM test WHERE name LIKE 't%' ORDER BY id"
-
+async def test_aiomysql_select(instrument, aiomysql_connection, elasticapm_client):
     try:
         elasticapm_client.begin_transaction("web.django")
-        cursor.execute(query)
-        assert cursor.fetchall() == ((2, "two"), (3, "three"))
+
+        async with aiomysql_connection.cursor() as cursor:
+            query = "SELECT * FROM test WHERE `name` LIKE 't%' ORDER BY id"
+            await cursor.execute(query)
+            assert await cursor.fetchall() == ((2, "two"), (3, "three"))
+
         elasticapm_client.end_transaction(None, "test-transaction")
     finally:
         transactions = elasticapm_client.events[TRANSACTION]
@@ -83,3 +95,8 @@ def test_pymysql_select(instrument, pymysql_connection, elasticapm_client):
         assert "db" in span["context"]
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["destination"] == {
+            "address": os.environ.get("MYSQL_HOST", "localhost"),
+            "port": default_ports.get("mysql"),
+            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+        }

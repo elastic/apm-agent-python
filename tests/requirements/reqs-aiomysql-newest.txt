@@ -1,2 +1,2 @@
-redis
+aiomysql
 -r reqs-base.txt

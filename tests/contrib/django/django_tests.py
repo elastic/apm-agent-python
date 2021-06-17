@@ -1531,6 +1531,29 @@ def test_transaction_name_from_route(client, django_elasticapm_client):
     assert transaction["name"] == "GET route/<int:id>/"
 
 
+@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route_empty_route(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET home-view"
+
+
+@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.urls("tests.contrib.django.testapp.nameless_route_urls")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route_empty_route_no_name(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+
+
 @pytest.mark.skipif(django.VERSION >= (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
 @pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
 def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, django_elasticapm_client):
@@ -1581,3 +1604,14 @@ def test_django_ignore_transaction_urls(client, django_elasticapm_client):
         django_elasticapm_client.config.update(1, transaction_ignore_urls="/no*")
         client.get("/no-error")
     assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+
+def test_default_app_config_present_by_version():
+    # The default_app_config attribute was deprecated in Django 3.2
+    import elasticapm.contrib.django
+
+    default_app_config_is_defined = hasattr(elasticapm.contrib.django, "default_app_config")
+    if django.VERSION < (3, 2):
+        assert default_app_config_is_defined
+    else:
+        assert not default_app_config_is_defined

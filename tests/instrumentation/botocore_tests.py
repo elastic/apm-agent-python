@@ -76,6 +76,17 @@ def dynamodb():
     db.delete_table(TableName="Movies")
 
 
+@pytest.fixture()
+def sqs_client_and_queue():
+    sqs = boto3.client("sqs", endpoint_url=LOCALSTACK_ENDPOINT)
+    response = sqs.create_queue(
+        QueueName="myqueue", Attributes={"DelaySeconds": "60", "MessageRetentionPeriod": "86400"}
+    )
+    queue_url = response["QueueUrl"]
+    yield sqs, queue_url
+    sqs.delete_queue(QueueUrl=queue_url)
+
+
 def test_botocore_instrumentation(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     ec2 = boto3.client("ec2", endpoint_url=LOCALSTACK_ENDPOINT)
@@ -104,8 +115,8 @@ def test_s3(instrument, elasticapm_client):
         assert span["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
         assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
-        assert span["context"]["destination"]["name"] == "s3"
-        assert span["context"]["destination"]["resource"] == "xyz"
+        assert span["context"]["destination"]["service"]["name"] == "s3"
+        assert span["context"]["destination"]["service"]["resource"] == "xyz"
         assert span["context"]["destination"]["service"]["type"] == "storage"
     assert spans[0]["name"] == "S3 CreateBucket xyz"
     assert spans[0]["action"] == "CreateBucket"
@@ -162,9 +173,9 @@ def test_dynamodb(instrument, elasticapm_client, dynamodb):
         assert span["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
         assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
-        assert span["context"]["destination"]["name"] == "dynamodb"
-        # assert span["context"]["destination"]["resource"] == "xyz"
-        # assert span["context"]["destination"]["service"]["type"] == "storage"
+        assert span["context"]["destination"]["service"]["name"] == "dynamodb"
+        assert span["context"]["destination"]["service"]["resource"] == "Movies"
+        assert span["context"]["destination"]["service"]["type"] == "db"
     assert spans[0]["name"] == "DynamoDB PutItem Movies"
     assert spans[1]["name"] == "DynamoDB Query Movies"
     assert spans[1]["context"]["db"]["statement"] == "title = :v1 and #y = :v2"
@@ -184,3 +195,86 @@ def test_sns(instrument, elasticapm_client):
     assert spans[2]["type"] == "messaging"
     assert spans[2]["subtype"] == "sns"
     assert spans[2]["action"] == "send"
+    assert spans[2]["context"]["destination"]["address"] == LOCALSTACK_ENDPOINT_URL.hostname
+    assert spans[2]["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
+    assert spans[2]["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert spans[2]["context"]["destination"]["service"]["name"] == "sns"
+    assert spans[2]["context"]["destination"]["service"]["resource"] == "sns/mytopic"
+    assert spans[2]["context"]["destination"]["service"]["type"] == "messaging"
+
+
+def test_sqs_send(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    elasticapm_client.begin_transaction("test")
+    sqs.send_message(
+        QueueUrl=queue_url,
+        MessageAttributes={
+            "Title": {"DataType": "String", "StringValue": "foo"},
+        },
+        MessageBody=("bar"),
+    )
+    elasticapm_client.end_transaction("test", "test")
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert span["name"] == "SQS SEND to myqueue"
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "sqs"
+    assert span["action"] == "send"
+    assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert span["context"]["destination"]["service"]["name"] == "sqs"
+    assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
+    assert span["context"]["destination"]["service"]["type"] == "messaging"
+
+
+def test_sqs_send_batch(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    elasticapm_client.begin_transaction("test")
+    response = sqs.send_message_batch(
+        QueueUrl=queue_url,
+        Entries=[
+            {
+                "Id": "foo",
+                "MessageBody": "foo",
+                "DelaySeconds": 123,
+                "MessageAttributes": {"string": {"StringValue": "foo", "DataType": "String"}},
+            },
+        ],
+    )
+    elasticapm_client.end_transaction("test", "test")
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert span["name"] == "SQS SEND_BATCH to myqueue"
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "sqs"
+    assert span["action"] == "send"
+    assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert span["context"]["destination"]["service"]["name"] == "sqs"
+    assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
+    assert span["context"]["destination"]["service"]["type"] == "messaging"
+
+
+def test_sqs_receive(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    sqs.send_message(
+        QueueUrl=queue_url,
+        MessageAttributes={
+            "Title": {"DataType": "String", "StringValue": "foo"},
+        },
+        MessageBody=("bar"),
+    )
+    elasticapm_client.begin_transaction("test")
+    response = sqs.receive_message(
+        QueueUrl=queue_url,
+        AttributeNames=["All"],
+        MessageAttributeNames=[
+            "All",
+        ],
+    )
+    elasticapm_client.end_transaction("test", "test")
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert span["name"] == "SQS RECEIVE from myqueue"
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "sqs"
+    assert span["action"] == "receive"
+    assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert span["context"]["destination"]["service"]["name"] == "sqs"
+    assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
+    assert span["context"]["destination"]["service"]["type"] == "messaging"
