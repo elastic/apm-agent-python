@@ -216,6 +216,9 @@ The size of the log file if <<config-log_file>> is set.
 The agent always keeps one backup file when rotating, so the maximum space that
 the log files will consume is twice the value of this setting.
 
+It has to be provided in *<<config-format-size, size format>>*, with a default
+unit of `mb`.
+
 [float]
 [[config-log_ecs_formatting]]
 ==== `log_ecs_formatting`
@@ -279,7 +282,7 @@ The transport class to use when sending events to the APM Server.
 |============
 
 The name of the given service node. This is optional and if omitted, the APM
-Server will fall back on `system.container.id` if available, and 
+Server will fall back on `system.container.id` if available, and
 `host.name` if necessary.
 
 This option allows you to set the node name manually to ensure it is unique and meaningful.
@@ -456,7 +459,8 @@ If agent overhead is a concern, we recommend <<config-transaction-ignore-urls,`t
 |============
 
 A timeout for requests to the APM Server.
-The setting has to be provided in *<<config-format-duration, duration format>>*.
+The setting has to be provided in *<<config-format-duration, duration format>>*,
+with a default duration unit of `s` for seconds.
 If a request to the APM Server takes longer than the configured timeout,
 the request is cancelled and the event (exception or transaction) is discarded.
 Set to `None` to disable timeouts.
@@ -687,7 +691,8 @@ with durations equal or longer than the given value.
 To disable stack trace collection for spans completely, set the value to `0`.
 
 Except for the special values `-1` and `0`,
-this setting has to be provided in *<<config-format-duration, duration format>>*.
+this setting has to be provided in *<<config-format-duration, duration format>>*,
+with a default unit of `ms` for milliseconds.
 
 [float]
 [[config-api-request-size]]
@@ -707,7 +712,8 @@ while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until data is indexed and searchable in Elasticsearch.
 
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
-It has to be provided in *<<config-format-size, size format>>*.
+It has to be provided in *<<config-format-size, size format>>*, with a default
+unit of `kb`.
 
 NOTE: Due to internal buffering of gzip, the actual request size can be a few kilobytes larger than the given limit.
 By default, the APM Server limits request payload size to `1 MByte`.
@@ -730,7 +736,8 @@ while a higher value can increase the memory pressure of your app.
 A higher value also impacts the time until data is indexed and searchable in Elasticsearch.
 
 This setting is useful to limit memory consumption if you experience a sudden spike of traffic.
-It has to be provided in *<<config-format-duration, duration format>>*.
+It has to be provided in *<<config-format-duration, duration format>>*, with a
+default unit of `ms` for milliseconds.
 
 NOTE: The actual time will vary between 90-110% of the given value,
 to avoid stampedes of instances that start at the same time.
@@ -927,7 +934,8 @@ certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
 The interval in which the agent collects metrics. A shorter interval increases the granularity of metrics,
 but also increases the overhead of the agent, as well as storage requirements.
 
-It has to be provided in *<<config-format-duration, duration format>>*.
+It has to be provided in *<<config-format-duration, duration format>>*, with a
+default unit of `s` for seconds.
 
 [float]
 [[config-disable_metrics]]

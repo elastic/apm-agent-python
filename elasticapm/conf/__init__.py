@@ -246,10 +246,11 @@ class RegexValidator(object):
 
 
 class UnitValidator(object):
-    def __init__(self, regex, verbose_pattern, unit_multipliers):
+    def __init__(self, regex, verbose_pattern, unit_multipliers, default_unit=None):
         self.regex = regex
         self.verbose_pattern = verbose_pattern
         self.unit_multipliers = unit_multipliers
+        self.default_unit = default_unit
 
     def __call__(self, value, field_name):
         value = compat.text_type(value)
@@ -258,7 +259,13 @@ class UnitValidator(object):
             raise ConfigurationError("{} does not match pattern {}".format(value, self.verbose_pattern), field_name)
         val, unit = match.groups()
         try:
-            val = int(val) * self.unit_multipliers[unit]
+            if not unit:
+                if self.default_unit:
+                    val = int(val) * self.unit_multipliers[self.default_unit]
+                else:
+                    raise ConfigurationError("No unit defined, and no default_unit defined", field_name)
+            else:
+                val = int(val) * self.unit_multipliers[unit]
         except KeyError:
             raise ConfigurationError("{} is not a supported unit".format(unit), field_name)
         return val
@@ -290,10 +297,17 @@ class PrecisionValidator(object):
         return rounded
 
 
-duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
-size_validator = UnitValidator(
-    r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
-)
+def duration_validator(default_unit="ms"):
+    return UnitValidator(r"^((?:-)?\d+)(ms|s|m|)$", r"\d+(ms|s|m|)", {"ms": 1, "s": 1000, "m": 60000}, default_unit)
+
+
+def size_validator(default_unit="b"):
+    return UnitValidator(
+        r"^(\d+)(b|kb|mb|gb|)$",
+        r"\d+(b|KB|MB|GB|)",
+        {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024},
+        default_unit,
+    )
 
 
 class ExcludeRangeValidator(object):
@@ -523,9 +537,7 @@ class Config(_ConfigBase):
     server_timeout = _ConfigValue(
         "SERVER_TIMEOUT",
         type=float,
-        validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 1000})
-        ],
+        validators=[duration_validator("s")],
         default=5,
     )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
@@ -555,7 +567,7 @@ class Config(_ConfigBase):
     metrics_interval = _ConfigValue(
         "METRICS_INTERVAL",
         type=int,
-        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
+        validators=[duration_validator("s"), ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
         default=30000,
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
@@ -563,8 +575,10 @@ class Config(_ConfigBase):
     prometheus_metrics_prefix = _ConfigValue("PROMETHEUS_METRICS_PREFIX", default="prometheus.metrics.")
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
-    api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
-    api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
+    api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator("kb")], default=768 * 1024)
+    api_request_time = _ConfigValue(
+        "API_REQUEST_TIME", type=int, validators=[duration_validator("ms")], default=10 * 1000
+    )
     transaction_sample_rate = _ConfigValue(
         "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
@@ -573,9 +587,7 @@ class Config(_ConfigBase):
     span_frames_min_duration = _ConfigValue(
         "SPAN_FRAMES_MIN_DURATION",
         default=5,
-        validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
-        ],
+        validators=[duration_validator("ms")],
         type=int,
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
@@ -617,7 +629,7 @@ class Config(_ConfigBase):
         callbacks=[_log_level_callback],
     )
     log_file = _ConfigValue("LOG_FILE", default="")
-    log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
+    log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator("mb")], type=int, default=50 * 1024 * 1024)
     log_ecs_formatting = _ConfigValue(
         "LOG_ECS_FORMATTING",
         validators=[EnumerationValidator(["off", "override"])],
