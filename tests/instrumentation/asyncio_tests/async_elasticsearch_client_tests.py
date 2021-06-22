@@ -154,7 +154,8 @@ async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
         '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
     assert span["sync"] is False
-    assert span["context"]["db"]["row_affected"] == 1
+    if ES_VERSION[0] >= 7:
+        assert span["context"]["db"]["rows_affected"] == 1
     assert span["context"]["http"]["status_code"] == 200
 
 

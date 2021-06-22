@@ -79,6 +79,6 @@ class ElasticsearchAsyncTransportInstrumentation(
             result_data = await wrapped(*args, **kwargs)
 
             if isinstance(result_data, dict) and "hits" in result_data:
-                span.context["db"]["row_affected"] = result_data["hits"]["total"]["value"]
+                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
 
             return result_data

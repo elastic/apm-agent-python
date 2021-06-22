@@ -113,7 +113,7 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
             result_data = wrapped(*args, **kwargs)
 
             try:
-                span.context["db"]["row_affected"] = result_data["hits"]["total"]["value"]
+                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
             except (KeyError, TypeError):
                 pass
 

@@ -356,7 +356,8 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
         '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
-    assert span["context"]["db"]["row_affected"] == 1
+    if ES_VERSION[0] >= 7:
+        assert span["context"]["db"]["rows_affected"] == 1
     assert span["context"]["http"]["status_code"] == 200
 
 
@@ -383,7 +384,8 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == "q=user:kimchy"
-    assert span["context"]["db"]["row_affected"] == 1
+    if ES_VERSION[0] >= 7:
+        assert span["context"]["db"]["rows_affected"] == 1
     assert span["context"]["http"]["status_code"] == 200
 
 
