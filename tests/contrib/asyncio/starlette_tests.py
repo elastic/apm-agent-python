@@ -204,7 +204,7 @@ def test_exception(app, elasticapm_client):
     assert len(elasticapm_client.events[constants.ERROR]) == 1
     error = elasticapm_client.events[constants.ERROR][0]
     assert error["transaction_id"] == transaction["id"]
-    assert error["exception"]["type"] == "ValueError"
+    assert error["exception"]["type"] == "CancelledError"
     assert error["context"]["request"] == transaction["context"]["request"]
 
 

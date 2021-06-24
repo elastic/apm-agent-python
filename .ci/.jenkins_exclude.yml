@@ -205,6 +205,10 @@ exclude:
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: starlette-0.13
   - PYTHON_VERSION: pypy-3
+    FRAMEWORK: starlette-0.14
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: starlette-0.14
+  - PYTHON_VERSION: pypy-3
     FRAMEWORK: starlette-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: starlette-newest
