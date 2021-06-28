@@ -70,7 +70,7 @@ FRAMEWORK:
   - asyncpg-newest
   - tornado-newest
   - starlette-0.13
-  - starlette-newest
+  # - starlette-newest # disabled for now, see https://github.com/elastic/apm-agent-python/issues/1172
   - pymemcache-3.0
   - pymemcache-newest
   - graphene-2
