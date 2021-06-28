@@ -33,6 +33,15 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.2.3]]
+==== 6.2.3 - 2021/06/28
+
+[float]
+===== Bug fixes
+ * suppress the default_app_config attribute in Django 3.2+ {pull}1155[#1155]
+ * bump log level for multiple set_client calls to WARNING {pull}1164[#1164]
+ * fix issue with adding disttracing to SQS messages when dropping spans {pull}1170[#1170]
+
 [[release-notes-6.2.2]]
 ==== 6.2.2 - 2021/06/07
 
