@@ -41,7 +41,7 @@ FRAMEWORK:
   - aiopg-newest
   - asyncpg-newest
   - tornado-newest
-  - starlette-newest
+  # - starlette-newest # disabled for now, see https://github.com/elastic/apm-agent-python/issues/1172
   - pymemcache-newest
   - graphene-2
   - httpx-newest
