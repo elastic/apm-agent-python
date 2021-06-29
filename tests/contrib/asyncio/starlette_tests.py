@@ -64,6 +64,7 @@ def app(elasticapm_client):
 
     @app.route("/", methods=["GET", "POST"])
     async def hi(request):
+        await request.body()
         with async_capture_span("test"):
             pass
         return PlainTextResponse("ok")
@@ -204,7 +205,7 @@ def test_exception(app, elasticapm_client):
     assert len(elasticapm_client.events[constants.ERROR]) == 1
     error = elasticapm_client.events[constants.ERROR][0]
     assert error["transaction_id"] == transaction["id"]
-    assert error["exception"]["type"] == "CancelledError"
+    assert error["exception"]["type"] == "ValueError"
     assert error["context"]["request"] == transaction["context"]["request"]
 
 
