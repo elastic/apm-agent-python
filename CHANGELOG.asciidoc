@@ -42,6 +42,7 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fix for Starlette 0.15.0 error collection {pull}1174[#1174]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
