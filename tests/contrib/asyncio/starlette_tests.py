@@ -28,18 +28,18 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import pytest  # isort:skip
 
 from tests.fixtures import TempStoreClient
 
 starlette = pytest.importorskip("starlette")  # isort:skip
 
-import types
-
 import mock
 import urllib3
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
+from starlette.staticfiles import StaticFiles
 from starlette.testclient import TestClient
 
 import elasticapm
@@ -52,6 +52,8 @@ from elasticapm.utils.disttracing import TraceParent
 pytestmark = [pytest.mark.starlette]
 
 starlette_version_tuple = tuple(map(int, starlette.__version__.split(".")[:3]))
+
+file_path, file_name = os.path.split(__file__)
 
 
 @pytest.fixture
@@ -369,6 +371,77 @@ def test_capture_body_error(app, elasticapm_client):
     client = TestClient(app)
     with pytest.raises(ValueError):
         response = client.post("/raise-exception", data="[0, 1]")
+
+
+@pytest.fixture
+def app_static_files_only(elasticapm_client):
+    app = Starlette()
+    app.add_middleware(ElasticAPM, client=elasticapm_client)
+    app.mount("/tmp", StaticFiles(directory=file_path), name="static")
+
+    yield app
+
+    elasticapm.uninstrument()
+
+
+def test_static_files_only(app_static_files_only, elasticapm_client):
+    client = TestClient(app_static_files_only)
+
+    response = client.get(
+        "/tmp/" + file_name,
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 0
+
+    assert transaction["name"] == "GET /tmp"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
+    assert transaction["type"] == "request"
+    assert transaction["span_count"]["started"] == 0
+    assert transaction["context"]["request"]["url"]["pathname"] == "/tmp/" + file_name
+    request = transaction["context"]["request"]
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+
+
+def test_static_files_only_file_notfound(app_static_files_only, elasticapm_client):
+    client = TestClient(app_static_files_only)
+
+    response = client.get(
+        "/tmp/whatever",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+    )
+
+    assert response.status_code == 404
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 0
+
+    assert transaction["name"] == "GET /tmp"
+    assert transaction["result"] == "HTTP 4xx"
+    assert transaction["outcome"] == "success"
+    assert transaction["type"] == "request"
+    assert transaction["span_count"]["started"] == 0
+    assert transaction["context"]["request"]["url"]["pathname"] == "/tmp/whatever"
+    request = transaction["context"]["request"]
+    assert request["method"] == "GET"
+    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
 
 
 def test_make_client_with_config():
