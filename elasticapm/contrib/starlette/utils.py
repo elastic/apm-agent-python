@@ -93,9 +93,6 @@ async def get_data_from_response(message: dict, config: Config, event_type: str)
         headers = Headers(raw=message["headers"])
         result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
 
-    if config.capture_body in ("all", event_type) and "body" in message:
-        result["body"] = message["body"].decode("utf-8")
-
     return result
 
 
