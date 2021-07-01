@@ -78,3 +78,4 @@ FRAMEWORK:
   - httpx-0.14
   - httpx-newest
   - httplib2-newest
+  - grpcio-newest
