@@ -30,6 +30,20 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+[float]
+===== Features
+
+* Add additional context information about elasticsearch client requests {pull}1108[#1108]
+
+[float]
+===== Bug fixes
+
+* Fix for Starlette static files {pull}1137[#1137]
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 

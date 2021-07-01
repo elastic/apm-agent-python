@@ -103,7 +103,7 @@ services:
       - pyesdata2:/usr/share/elasticsearch/data
 
   mssql:
-    image: microsoft/mssql-server-linux
+    image: mcr.microsoft.com/mssql/server
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Very(!)Secure
