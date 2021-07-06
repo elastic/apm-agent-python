@@ -38,6 +38,7 @@ endif::[]
 ===== Features
 
 * Add additional context information about elasticsearch client requests {pull}1108[#1108]
+* Add `use_certifi` config option to allow users to disable `certifi` {pull}1163[#1163]
 
 [float]
 ===== Bug fixes
