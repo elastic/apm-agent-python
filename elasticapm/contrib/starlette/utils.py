@@ -29,8 +29,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
 
+from starlette.datastructures import Headers
 from starlette.requests import Request
-from starlette.responses import Response
 from starlette.types import Message
 
 from elasticapm.conf import Config, constants
@@ -73,11 +73,11 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
     return result
 
 
-async def get_data_from_response(response: Response, config: Config, event_type: str) -> dict:
+async def get_data_from_response(message: dict, config: Config, event_type: str) -> dict:
     """Loads data from response for APM capturing.
 
     Args:
-        response (Response)
+        message (dict)
         config (Config)
         event_type (str)
 
@@ -86,15 +86,12 @@ async def get_data_from_response(response: Response, config: Config, event_type:
     """
     result = {}
 
-    if isinstance(getattr(response, "status_code", None), compat.integer_types):
-        result["status_code"] = response.status_code
+    if "status_code" in message:
+        result["status_code"] = message["status"]
 
-    if config.capture_headers and getattr(response, "headers", None):
-        headers = response.headers
+    if config.capture_headers and "headers" in message:
+        headers = Headers(raw=message["headers"])
         result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
-
-    if config.capture_body in ("all", event_type) and hasattr(response, "body"):
-        result["body"] = response.body.decode("utf-8")
 
     return result
 

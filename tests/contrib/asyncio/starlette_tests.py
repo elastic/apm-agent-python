@@ -66,6 +66,7 @@ def app(elasticapm_client):
 
     @app.route("/", methods=["GET", "POST"])
     async def hi(request):
+        await request.body()
         with async_capture_span("test"):
             pass
         return PlainTextResponse("ok")

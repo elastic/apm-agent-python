@@ -1,4 +1,4 @@
-starlette
+starlette>=0.15
 aiofiles
 requests
 flask
