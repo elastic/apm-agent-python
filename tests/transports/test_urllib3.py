@@ -31,6 +31,7 @@
 
 import os
 
+import certifi
 import mock
 import pytest
 import urllib3.poolmanager
@@ -100,40 +101,40 @@ def test_generic_error(mock_urlopen, elasticapm_client):
         transport.close()
 
 
-def test_http_proxy_environment_variable():
+def test_http_proxy_environment_variable(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTP_PROXY": "http://example.com"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.ProxyManager)
 
 
-def test_https_proxy_environment_variable():
+def test_https_proxy_environment_variable(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
-def test_https_proxy_environment_variable_is_preferred():
+def test_https_proxy_environment_variable_is_preferred(elasticapm_client):
     with mock.patch.dict("os.environ", {"https_proxy": "https://example.com", "HTTP_PROXY": "http://example.com"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
         assert transport.http.proxy.scheme == "https"
 
 
-def test_no_proxy_star():
+def test_no_proxy_star(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
-def test_no_proxy_host():
+def test_no_proxy_host(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "localhost"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
-def test_no_proxy_all():
+def test_no_proxy_all(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
@@ -270,8 +271,8 @@ def test_ssl_cert_pinning_fails(waiting_httpsserver, elasticapm_client):
     assert "Fingerprints did not match" in exc_info.value.args[0]
 
 
-def test_config_url():
-    transport = Transport("http://example.com/" + constants.EVENTS_API_PATH, client=None)
+def test_config_url(elasticapm_client):
+    transport = Transport("http://example.com/" + constants.EVENTS_API_PATH, client=elasticapm_client)
     assert transport._config_url == "http://example.com/" + constants.AGENT_CONFIG_PATH
 
 
@@ -346,3 +347,10 @@ def test_get_config_empty_response(waiting_httpserver, caplog, elasticapm_client
     assert max_age == 5
     record = caplog.records[-1]
     assert record.message == "APM Server answered with empty body and status code 200"
+
+
+def test_use_certifi(elasticapm_client):
+    transport = Transport("/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    assert transport.ca_certs == certifi.where()
+    elasticapm_client.config.update("2", use_certifi=False)
+    assert not transport.ca_certs
