@@ -28,12 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
 import pytest  # isort:skip
 
 from tests.fixtures import TempStoreClient
 
 starlette = pytest.importorskip("starlette")  # isort:skip
+
+import os
 
 import mock
 import urllib3
