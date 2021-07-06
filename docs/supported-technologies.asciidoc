@@ -345,7 +345,7 @@ Collected trace data:
 [[automatic-instrumentation-db-redis]]
 ==== Redis
 
-Library: `redis` (`>=2.8,<3.2.0`)
+Library: `redis` (`>=2.8`)
 
 Instrumented methods:
 
@@ -570,8 +570,8 @@ Additionally, some services collect more specific data
 ===== DynamoDB
 
  * Table name
- 
- 
+
+
 [float]
 [[automatic-instrumentation-sns]]
 ===== SNS
