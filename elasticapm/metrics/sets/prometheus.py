@@ -87,24 +87,33 @@ class PrometheusMetrics(MetricsSet):
         # After the le-samples, 3 more samples follow, with an overall
         # count, overall sum, and creation timestamp.
         sample_pos = 0
-        prev_val = 0
-        counts = []
-        values = []
         name = self._registry.client.config.prometheus_metrics_prefix + name
+        hist_samples = []
         while sample_pos < len(samples):
             sample = samples[sample_pos]
             if "le" in sample.labels:
-                values.append(float(sample.labels["le"]))
-                counts.append(sample.value - prev_val)
-                prev_val = sample.value
+                hist_samples.append((float(sample.labels["le"]), sample))
                 sample_pos += 1
-
             else:
                 # we reached the end of one set of buckets/values, this is the "count" sample
-                self.histogram(name, unit=unit, buckets=values, **sample.labels).val = counts
-                prev_val = 0
                 counts = []
                 values = []
+                prev_sample = None
+                prev_le = 0
+                for i, (le, hist_sample) in enumerate(hist_samples):
+                    if i == 0:
+                        val = le if le < 0 else le / 2.0
+                    elif le == float("+Inf"):
+                        val = prev_le
+                    else:
+                        val = prev_le + (le - prev_le) / 2.0
+                    values.append(val)
+                    counts.append(int(hist_sample.value - (prev_sample.value if prev_sample else 0)))
+                    prev_le = le
+                    prev_sample = hist_sample
+                self.histogram(name, unit=unit, buckets=values, **sample.labels).val = counts
+
+                hist_samples = []
                 sample_pos += 3  # skip sum/created samples
 
     METRIC_MAP = {

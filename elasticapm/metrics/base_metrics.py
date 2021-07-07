@@ -213,7 +213,7 @@ class MetricsSet(object):
                 if counter is not noop_metric:
                     val = counter.val
                     if val or not counter.reset_on_collect:
-                        samples[labels].update({name: {"value": val, "type": "counter"}})
+                        samples[labels].update({name: {"value": val}})
                     if counter.reset_on_collect:
                         counter.reset()
         if self._gauges:
@@ -404,8 +404,6 @@ class Histogram(BaseMetric):
     def __init__(self, name=None, reset_on_collect=False, unit=None, buckets=None):
         self._lock = threading.Lock()
         self._buckets = buckets or Histogram.DEFAULT_BUCKETS
-        if self._buckets[-1] < float("inf"):
-            self._buckets.append(float("inf"))
         self._counts = [0] * len(self._buckets)
         self._unit = unit
         super(Histogram, self).__init__(name, reset_on_collect=reset_on_collect)
