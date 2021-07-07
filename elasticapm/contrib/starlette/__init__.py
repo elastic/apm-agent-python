@@ -130,6 +130,9 @@ class ElasticAPM:
             receive: receive awaitable callable
             send: send awaitable callable
         """
+        # we only handle the http scope, raise an exception for anything else
+        # see https://www.uvicorn.org/#the-asgi-interface
+        assert scope["type"] == "http"
 
         @functools.wraps(send)
         async def wrapped_send(message):
