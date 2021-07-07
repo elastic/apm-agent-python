@@ -104,6 +104,12 @@ def app(elasticapm_client):
     async def hi_from_sub(request):
         return PlainTextResponse(request.path_params["name"])
 
+    @app.websocket_route("/ws")
+    async def ws(websocket):
+        await websocket.accept()
+        await websocket.send_text("Hello, world!")
+        await websocket.close()
+
     app.add_middleware(ElasticAPM, client=elasticapm_client)
 
     yield app
@@ -457,3 +463,12 @@ def test_make_client_without_config():
         c = make_apm_client(client_cls=TempStoreClient)
         c.close()
         assert c.config.service_name == "foo"
+
+
+def test_websocket(app, elasticapm_client):
+    client = TestClient(app)
+    with client.websocket_connect("/ws") as websocket:
+        data = websocket.receive_text()
+        assert data == "Hello, world!"
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 0
