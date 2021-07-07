@@ -133,6 +133,7 @@ class ElasticAPM:
         # we only handle the http scope, skip anything else.
         if scope["type"] != "http":
             await self.app(scope, receive, send)
+            return
 
         @functools.wraps(send)
         async def wrapped_send(message):
