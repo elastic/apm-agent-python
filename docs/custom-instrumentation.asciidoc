@@ -126,10 +126,7 @@ import elasticapm
 client = elasticapm.Client(service_name="foo", server_url="https://example.com:8200")
 
 # Retrieve the current TraceParent as a string, requires active transaction
-from elasticapm.traces import execution_context
-from elasticapm.utils.disttracing import TraceParent
-transaction = execution_context.get_transaction()
-traceparent_string = transaction.trace_parent.to_string()
+traceparent_string = elasticapm.get_trace_parent_header()
 
 # Create a TraceParent object from a string and use it for a new transaction
 parent = elasticapm.trace_parent_from_string(traceparent_string)
