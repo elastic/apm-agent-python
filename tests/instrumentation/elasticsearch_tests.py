@@ -39,6 +39,7 @@ from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import Elasticsearch
 from elasticsearch.serializer import JSONSerializer
 
+import elasticapm
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.utils import compat
 
@@ -550,3 +551,17 @@ def test_custom_serializer(instrument, elasticapm_client, elasticsearch):
     span = spans[0]
     assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query":{"term":{"2":{"value":1}}}}')
     assert span["context"]["http"]["status_code"] == 200
+
+
+@pytest.mark.integrationtest
+def test_dropped_span(instrument, elasticapm_client, elasticsearch):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", leaf=True):
+        elasticsearch.ping()
+    elasticapm_client.end_transaction("test", "OK")
+
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "test"
