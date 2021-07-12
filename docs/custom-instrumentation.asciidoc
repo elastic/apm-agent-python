@@ -104,3 +104,43 @@ Note that you don't need to do anything to send the data -- the `Client` object
 will handle that before the script exits. Additionally, the `Client` object should
 be treated as a singleton -- you should only create one instance and store/pass
 around that instance for all transaction handling.
+
+[float]
+[[instrumenting-custom-code-distributed-tracing]]
+==== Distributed Tracing
+
+When instrumenting custom code across multiple services, you should propagate
+the TraceParent where possible. This allows Elastic APM to bundle the various
+transactions into a single distributed trace. The Python Agent will
+automatically add TraceParent information to the headers of outgoing HTTP
+requests, which can then be used on the receiving end to add that TraceParent
+information to new manually-created transactions.
+
+Additionally, the Python Agent provides utilities for propagating the
+TraceParent in string format.
+
+[source,python]
+----
+import elasticapm
+
+client = elasticapm.Client(service_name="foo", server_url="https://example.com:8200")
+
+# Retrieve the current TraceParent as a string, requires active transaction
+from elasticapm.traces import execution_context
+from elasticapm.utils.disttracing import TraceParent
+transaction = execution_context.get_transaction()
+traceparent_string = transaction.trace_parent.to_string()
+
+# Create a TraceParent object from a string and use it for a new transaction
+parent = elasticapm.trace_parent_from_string(traceparent_string)
+client.begin_transaction(transaction_type="script", trace_parent=parent)
+# Do some work
+client.end_transaction(name=__name__, result="success")
+
+# Create a TraceParent object from a dictionary of headers, provided
+# automatically by the sending service if it is using an Elastic APM Agent.
+parent = elasticapm.trace_parent_from_headers(headers_dict)
+client.begin_transaction(transaction_type="script", trace_parent=parent)
+# Do some work
+client.end_transaction(name=__name__, result="success")
+----
