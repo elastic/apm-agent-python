@@ -34,7 +34,7 @@ import re
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import execution_context
+from elasticapm.traces import DroppedSpan, execution_context
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
@@ -52,6 +52,8 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
+        if isinstance(span, DroppedSpan):
+            return wrapped(*args, **kwargs)
 
         self._update_context_by_request_data(span.context, instance, args, kwargs)
 
