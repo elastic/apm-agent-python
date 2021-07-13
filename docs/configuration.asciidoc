@@ -226,6 +226,8 @@ the log files will consume is twice the value of this setting.
 | `ELASTIC_APM_LOG_ECS_FORMATTING` | `LOG_ECS_FORMATTING` | `"off"`
 |============
 
+experimental::[]
+
 Valid options:
 
 * `"off"`
@@ -279,7 +281,7 @@ The transport class to use when sending events to the APM Server.
 |============
 
 The name of the given service node. This is optional and if omitted, the APM
-Server will fall back on `system.container.id` if available, and 
+Server will fall back on `system.container.id` if available, and
 `host.name` if necessary.
 
 This option allows you to set the node name manually to ensure it is unique and meaningful.
@@ -1155,7 +1157,7 @@ To tell the agent to use a different SSL certificate, you can use these environm
 See also https://www.openssl.org/docs/manmaster/man7/openssl-env.html#SSL_CERT_DIR-SSL_CERT_FILE[OpenSSL docs].
 
 Please note that these variables may apply to other SSL/TLS communication in your service,
-not just related to the APM agent. 
+not just related to the APM agent.
 
 NOTE: These environment variables only take effect if <<config-use-certifi,`use_certifi`>> is set to `False`.
 
