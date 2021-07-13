@@ -197,7 +197,8 @@ class Client(object):
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         if self.config.prometheus_metrics:
             self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
-        self._thread_managers["metrics"] = self._metrics
+        if self.config.disable_metrics_thread:
+            self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
             self._thread_managers["config"] = self.config
@@ -633,23 +634,3 @@ def set_client(client):
         logger = get_logger("elasticapm")
         logger.warning("Client object is being set more than once", stack_info=True)
     CLIENT_SINGLETON = client
-
-
-class ServerlessClient(Client):
-    """
-    Custom client for serverless applications, where we don't want any
-    background threads and need to dump messages to logs rather than to the
-    APM server directly.
-    """
-
-    def __init__(self, config=None, **inline):
-        inline["transport_class"] = "elasticapm.transport.serverless.ServerlessTransport"
-        if isinstance(config, dict) and "transport_class" in config:
-            config.pop("transport_class")
-        super(ServerlessClient, self).__init__(config, **inline)
-
-    def start_threads(self):
-        """
-        No background threads for serverless
-        """
-        pass

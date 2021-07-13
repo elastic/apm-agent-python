@@ -34,10 +34,13 @@ import json
 import os
 
 import elasticapm
-from elasticapm.base import ServerlessClient
+from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
 from elasticapm.utils import compat, encoding, get_name_from_func
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.logging import get_logger
+
+logger = get_logger("elasticapm.serverless")
 
 
 class capture_serverless(object):
@@ -45,21 +48,27 @@ class capture_serverless(object):
     Context manager and decorator designed for instrumenting serverless
     functions.
 
-    Uses a logging-only version of the transport, and no background threads.
-    Begins and ends a single transaction.
+    Begins and ends a single transaction, waiting for the transport to flush
+    before returning from the wrapped function
     """
 
-    def __init__(self, **kwargs):
-        self.name = kwargs.get("name")
+    def __init__(self, name=None, **kwargs):
+        self.name = name
         self.event = {}
         self.context = {}
         self.response = None
 
+        # Disable all background threads except for transport
+        kwargs["disable_metrics_thread"] = True
+        kwargs["central_config"] = False
+
         if "framework_name" not in kwargs:
             kwargs["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
 
-        self.client = ServerlessClient(**kwargs)
-        if not self.client.config.debug and self.client.config.instrument:
+        self.client = get_client()
+        if not self.client:
+            self.client = Client(**kwargs)
+        if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrument()
 
     def __call__(self, func):
@@ -72,7 +81,7 @@ class capture_serverless(object):
                 self.event, self.context = args
             else:
                 self.event, self.context = {}, {}
-            if not self.client.config.debug and self.client.config.instrument:
+            if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
                 with self:
                     self.response = func(*args, **kwds)
                     return self.response
@@ -122,6 +131,10 @@ class capture_serverless(object):
                 result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
                 elasticapm.set_transaction_result(result, override=False)
         self.client.end_transaction()
+        try:
+            self.client._transport.flush()
+        except ValueError:
+            logger.warning("flush timed out")
 
 
 def get_data_from_request(event, capture_body=False, capture_headers=True):
