@@ -147,7 +147,7 @@ class Client(object):
             constants.EVENTS_API_PATH,
         )
         transport_class = import_string(self.config.transport_class)
-        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self._transport = transport_class(url=self._api_endpoint_url, client=self, **transport_kwargs)
         self.config.transport = self._transport
         self._thread_managers["transport"] = self._transport
 
@@ -633,3 +633,23 @@ def set_client(client):
         logger = get_logger("elasticapm")
         logger.warning("Client object is being set more than once", stack_info=True)
     CLIENT_SINGLETON = client
+
+
+class ServerlessClient(Client):
+    """
+    Custom client for serverless applications, where we don't want any
+    background threads and need to dump messages to logs rather than to the
+    APM server directly.
+    """
+
+    def __init__(self, config=None, **inline):
+        inline["transport_class"] = "elasticapm.transport.serverless.ServerlessTransport"
+        if isinstance(config, dict) and "transport_class" in config:
+            config.pop("transport_class")
+        super(ServerlessClient, self).__init__(config, **inline)
+
+    def start_threads(self):
+        """
+        No background threads for serverless
+        """
+        pass
