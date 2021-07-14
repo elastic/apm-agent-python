@@ -197,7 +197,7 @@ class Client(object):
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         if self.config.prometheus_metrics:
             self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
-        if self.config.disable_metrics_thread:
+        if not self.config.disable_metrics_thread:
             self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
