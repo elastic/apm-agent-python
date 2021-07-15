@@ -32,6 +32,7 @@ import base64
 import functools
 import json
 import os
+import time
 
 import elasticapm
 from elasticapm.base import Client, get_client
@@ -104,9 +105,11 @@ class capture_serverless(object):
             if COLD_START:
                 # TODO
                 COLD_START = False
-            start_time = self.event.get("requestContext", {}).get("requestTimeEpoch")
-            if start_time:
-                self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent, start=start_time)
+            self.start_time = self.event.get("requestContext", {}).get("requestTimeEpoch")
+            if self.start_time:
+                self.transaction = self.client.begin_transaction(
+                    "request", trace_parent=trace_parent, start=self.start_time
+                )
             else:
                 self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
@@ -142,7 +145,12 @@ class capture_serverless(object):
             if "statusCode" in self.response:
                 result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
                 elasticapm.set_transaction_result(result, override=False)
-        self.client.end_transaction()
+
+        if self.start_time:
+            self.client.end_transaction(duration=time.time() - self.start_time)
+        else:
+            self.client.end_transaction()
+
         try:
             self.client._transport.flush()
         except ValueError:
