@@ -61,6 +61,7 @@ class capture_serverless(object):
         # Disable all background threads except for transport
         kwargs["disable_metrics_thread"] = True
         kwargs["central_config"] = False
+        kwargs["cloud_provider"] = "none"
 
         if "framework_name" not in kwargs:
             kwargs["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
