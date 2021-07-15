@@ -42,6 +42,8 @@ from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.serverless")
 
+COLD_START = True
+
 
 class capture_serverless(object):
     """
@@ -84,7 +86,8 @@ class capture_serverless(object):
                 self.event, self.context = {}, {}
             if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
                 with self:
-                    self.response = func(*args, **kwds)
+                    with elasticapm.capture_span(self.name):
+                        self.response = func(*args, **kwds)
                     return self.response
             else:
                 return func(*args, **kwds)
@@ -97,7 +100,15 @@ class capture_serverless(object):
         """
         trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
         if "httpMethod" in self.event:
-            self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
+            global COLD_START
+            if COLD_START:
+                # TODO
+                COLD_START = False
+            start_time = self.event.get("requestContext", {}).get("requestTimeEpoch")
+            if start_time:
+                self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent, start=start_time)
+            else:
+                self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     self.event,
