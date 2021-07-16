@@ -132,7 +132,7 @@ class Transaction(BaseSpan):
         self.id = self.get_dist_tracing_id()
         self.trace_parent = trace_parent
         if start:
-            self.timestamp = self.start_time = start
+            self.timestamp, self.start_time = start, _time_func()
         else:
             self.timestamp, self.start_time = time.time(), _time_func()
         self.name = None
