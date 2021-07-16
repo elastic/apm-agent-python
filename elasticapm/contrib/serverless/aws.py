@@ -107,6 +107,7 @@ class capture_serverless(object):
                 COLD_START = False
             self.start_time = self.event.get("requestContext", {}).get("requestTimeEpoch")
             if self.start_time:
+                self.start_time = float(self.start_time) * 0.001
                 self.transaction = self.client.begin_transaction(
                     "request", trace_parent=trace_parent, start=self.start_time
                 )
