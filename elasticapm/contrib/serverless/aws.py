@@ -32,6 +32,7 @@ import base64
 import functools
 import json
 import os
+import time
 
 import elasticapm
 from elasticapm.base import Client, get_client
@@ -146,7 +147,10 @@ class capture_serverless(object):
                 result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
                 elasticapm.set_transaction_result(result, override=False)
 
-        self.client.end_transaction()
+        if self.start_time:
+            self.client.end_transaction(duration=time.time() - self.start_time)
+        else:
+            self.client.end_transaction()
 
         try:
             self.client._transport.flush()
