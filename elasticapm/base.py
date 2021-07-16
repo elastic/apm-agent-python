@@ -102,6 +102,7 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
+        self.server_version = None
 
         self.check_python_version()
 
