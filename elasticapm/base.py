@@ -102,7 +102,8 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
-        self.server_version = None
+        # setting server_version here is mainly used for testing
+        self.server_version = inline.pop("server_version", None)
 
         self.check_python_version()
 

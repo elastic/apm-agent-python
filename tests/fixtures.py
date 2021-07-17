@@ -292,6 +292,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("central_config", "false")
+    client_config.setdefault("server_version", (8, 0, 0))
     client = Client(**client_config)
     client.httpserver = validating_httpserver
     yield client
