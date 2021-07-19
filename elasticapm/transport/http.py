@@ -55,8 +55,7 @@ class Transport(HTTPTransportBase):
     def __init__(self, url, *args, **kwargs):
         super(Transport, self).__init__(url, *args, **kwargs)
         url_parts = compat.urlparse.urlparse(url)
-        ca_certs = certifi.where() if certifi else None
-        pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": ca_certs, "block": True}
+        pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": self.ca_certs, "block": True}
         if self._server_cert and url_parts.scheme != "http":
             pool_kwargs.update(
                 {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
@@ -183,6 +182,14 @@ class Transport(HTTPTransportBase):
     def auth_headers(self):
         headers = super(Transport, self).auth_headers
         return {k.encode("ascii"): v.encode("ascii") for k, v in compat.iteritems(headers)}
+
+    @property
+    def ca_certs(self):
+        """
+        Return location of certificate store. If it is available and not disabled via setting,
+        this will return the location of the certifi certificate store.
+        """
+        return certifi.where() if (certifi and self.client.config.use_certifi) else None
 
 
 # left for backwards compatibility

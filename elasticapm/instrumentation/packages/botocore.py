@@ -32,11 +32,13 @@ from collections import namedtuple
 
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span
+from elasticapm.traces import capture_span, execution_context
 from elasticapm.utils.compat import urlparse
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
+
+SQS_MAX_ATTRIBUTES = 10
 
 
 HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype", "span_action", "context"))
@@ -171,7 +173,12 @@ def handle_sqs(operation_name, service, instance, args, kwargs, context):
 
 
 def modify_span_sqs(span, args, kwargs):
-    trace_parent = span.transaction.trace_parent.copy_from(span_id=span.id)
+    if span.id:
+        trace_parent = span.transaction.trace_parent.copy_from(span_id=span.id)
+    else:
+        # this is a dropped span, use transaction id instead
+        transaction = execution_context.get_transaction()
+        trace_parent = transaction.trace_parent.copy_from(span_id=transaction.id)
     attributes = {constants.TRACEPARENT_HEADER_NAME: {"DataType": "String", "StringValue": trace_parent.to_string()}}
     if trace_parent.tracestate:
         attributes[constants.TRACESTATE_HEADER_NAME] = {"DataType": "String", "StringValue": trace_parent.tracestate}
@@ -179,12 +186,12 @@ def modify_span_sqs(span, args, kwargs):
         attributes_count = len(attributes)
         if "MessageAttributes" in args[1]:
             messages = [args[1]]
-        # elif "Entries" in args[1]:
-        #     messages = args[1]["Entries"]
+        elif "Entries" in args[1]:
+            messages = args[1]["Entries"]
         else:
             messages = []
         for message in messages:
-            if len(message["MessageAttributes"]) + attributes_count <= 10:
+            if len(message["MessageAttributes"]) + attributes_count <= SQS_MAX_ATTRIBUTES:
                 message["MessageAttributes"].update(attributes)
             else:
                 logger.info("Not adding disttracing headers to message due to attribute limit reached")

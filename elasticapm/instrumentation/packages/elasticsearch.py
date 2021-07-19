@@ -34,6 +34,7 @@ import re
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+from elasticapm.traces import DroppedSpan, execution_context
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
@@ -41,17 +42,28 @@ logger = get_logger("elasticapm.instrument")
 should_capture_body_re = re.compile("/(_search|_msearch|_count|_async_search|_sql|_eql)(/|$)")
 
 
-class ElasticSearchConnectionMixin(object):
-    query_methods = ("search", "count", "delete_by_query")
+class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
+    name = "elasticsearch_connection"
 
-    def get_signature(self, args, kwargs):
-        args_len = len(args)
-        http_method = args[0] if args_len else kwargs.get("method")
-        http_path = args[1] if args_len > 1 else kwargs.get("url")
+    instrument_list = [
+        ("elasticsearch.connection.http_urllib3", "Urllib3HttpConnection.perform_request"),
+        ("elasticsearch.connection.http_requests", "RequestsHttpConnection.perform_request"),
+    ]
 
-        return "ES %s %s" % (http_method, http_path)
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        span = execution_context.get_span()
+        if isinstance(span, DroppedSpan):
+            return wrapped(*args, **kwargs)
 
-    def get_context(self, instance, args, kwargs):
+        self._update_context_by_request_data(span.context, instance, args, kwargs)
+
+        status_code, headers, raw_data = wrapped(*args, **kwargs)
+
+        span.context["http"] = {"status_code": status_code}
+
+        return status_code, headers, raw_data
+
+    def _update_context_by_request_data(self, context, instance, args, kwargs):
         args_len = len(args)
         url = args[1] if args_len > 1 else kwargs.get("url")
         params = args[2] if args_len > 2 else kwargs.get("params")
@@ -59,7 +71,7 @@ class ElasticSearchConnectionMixin(object):
 
         should_capture_body = bool(should_capture_body_re.search(url))
 
-        context = {"db": {"type": "elasticsearch"}}
+        context["db"] = {"type": "elasticsearch"}
         if should_capture_body:
             query = []
             # using both q AND body is allowed in some API endpoints / ES versions,
@@ -76,32 +88,42 @@ class ElasticSearchConnectionMixin(object):
                     query.append(body_serialized)
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
+
         context["destination"] = {
             "address": instance.host,
             "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
         }
-        return context
 
 
-class ElasticsearchConnectionInstrumentation(ElasticSearchConnectionMixin, AbstractInstrumentedModule):
+class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
     instrument_list = [
-        ("elasticsearch.connection.http_urllib3", "Urllib3HttpConnection.perform_request"),
-        ("elasticsearch.connection.http_requests", "RequestsHttpConnection.perform_request"),
+        ("elasticsearch.transport", "Transport.perform_request"),
     ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        signature = self.get_signature(args, kwargs)
-        context = self.get_context(instance, args, kwargs)
-
         with elasticapm.capture_span(
-            signature,
+            self._get_signature(args, kwargs),
             span_type="db",
             span_subtype="elasticsearch",
             span_action="query",
-            extra=context,
+            extra={},
             skip_frames=2,
             leaf=True,
-        ):
-            return wrapped(*args, **kwargs)
+        ) as span:
+            result_data = wrapped(*args, **kwargs)
+
+            try:
+                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
+            except (KeyError, TypeError):
+                pass
+
+            return result_data
+
+    def _get_signature(self, args, kwargs):
+        args_len = len(args)
+        http_method = args[0] if args_len else kwargs.get("method")
+        http_path = args[1] if args_len > 1 else kwargs.get("url")
+
+        return "ES %s %s" % (http_method, http_path)

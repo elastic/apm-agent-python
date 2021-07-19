@@ -39,6 +39,7 @@ from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import Elasticsearch
 from elasticsearch.serializer import JSONSerializer
 
+import elasticapm
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.utils import compat
 
@@ -108,6 +109,7 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
         "address": os.environ["ES_URL"],
         "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
     }
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -125,6 +127,7 @@ def test_info(instrument, elasticapm_client, elasticsearch):
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -157,6 +160,7 @@ def test_create(instrument, elasticapm_client, elasticsearch):
         assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
+        assert span["context"]["http"]["status_code"] == 201
 
 
 @pytest.mark.integrationtest
@@ -183,6 +187,7 @@ def test_index(instrument, elasticapm_client, elasticsearch):
         assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
+        assert span["context"]["http"]["status_code"] == 201
 
 
 @pytest.mark.integrationtest
@@ -204,6 +209,7 @@ def test_exists(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.skipif(ES_VERSION[0] < 5, reason="unsupported method")
@@ -232,6 +238,7 @@ def test_exists_source(instrument, elasticapm_client, elasticsearch):
         assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
+        assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -263,6 +270,7 @@ def test_get(instrument, elasticapm_client, elasticsearch):
         assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
+        assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -293,6 +301,7 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
         assert span["action"] == "query"
         assert span["context"]["db"]["type"] == "elasticsearch"
         assert "statement" not in span["context"]["db"]
+        assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -319,6 +328,7 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert "statement" not in span["context"]["db"]
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -347,6 +357,9 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
         '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
+    if ES_VERSION[0] >= 7:
+        assert span["context"]["db"]["rows_affected"] == 1
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -372,6 +385,9 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == "q=user:kimchy"
+    if ES_VERSION[0] >= 7:
+        assert span["context"]["db"]["rows_affected"] == 1
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -399,6 +415,7 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"].startswith('q=text:hola\n\n{"query":')
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -425,6 +442,7 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query": {"term": {"user": "kimchy"}}}')
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -450,6 +468,7 @@ def test_count_querystring(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == "q=user:kimchy"
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -470,6 +489,7 @@ def test_delete(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -491,6 +511,7 @@ def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.skipif(ES_VERSION[0] >= 7, reason="doc_type unsupported")
@@ -511,6 +532,7 @@ def test_multiple_indexes_doctypes(instrument, elasticapm_client, elasticsearch)
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
+    assert span["context"]["http"]["status_code"] == 200
 
 
 @pytest.mark.integrationtest
@@ -528,3 +550,18 @@ def test_custom_serializer(instrument, elasticapm_client, elasticsearch):
     spans = elasticapm_client.spans_for_transaction(transaction)
     span = spans[0]
     assert json.loads(span["context"]["db"]["statement"]) == json.loads('{"query":{"term":{"2":{"value":1}}}}')
+    assert span["context"]["http"]["status_code"] == 200
+
+
+@pytest.mark.integrationtest
+def test_dropped_span(instrument, elasticapm_client, elasticsearch):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", leaf=True):
+        elasticsearch.ping()
+    elasticapm_client.end_transaction("test", "OK")
+
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "test"

@@ -636,5 +636,5 @@ def set_client(client):
     global CLIENT_SINGLETON
     if CLIENT_SINGLETON:
         logger = get_logger("elasticapm")
-        logger.debug("Client object is being set more than once", stack_info=True)
+        logger.warning("Client object is being set more than once", stack_info=True)
     CLIENT_SINGLETON = client

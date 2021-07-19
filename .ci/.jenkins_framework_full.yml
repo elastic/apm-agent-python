@@ -70,6 +70,7 @@ FRAMEWORK:
   - asyncpg-newest
   - tornado-newest
   - starlette-0.13
+  - starlette-0.14
   - starlette-newest
   - pymemcache-3.0
   - pymemcache-newest
