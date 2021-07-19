@@ -33,6 +33,14 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.3.3]]
+==== 6.3.3 - 2021-07-14
+
+[float]
+===== Bug fixes
+
+* ensure that the elasticsearch instrumentation handles DroppedSpans correctly {pull}1190[#1190]
+
 [[release-notes-6.3.2]]
 ==== 6.3.2 - 2021-07-07
 
