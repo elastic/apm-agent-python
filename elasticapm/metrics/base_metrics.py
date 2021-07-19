@@ -241,7 +241,30 @@ class MetricsSet(object):
                 if histo is not noop_metric:
                     counts = histo.val
                     if counts or not histo.reset_on_collect:
-                        samples[labels].update({name: {"counts": counts, "values": histo.buckets, "type": "histogram"}})
+                        # For the bucket values, we follow the approach described by Prometheus's
+                        # histogram_quantile function
+                        # (https://prometheus.io/docs/prometheus/latest/querying/functions/#histogram_quantile)
+                        # to achieve consistent percentile aggregation results:
+                        #
+                        # "The histogram_quantile() function interpolates quantile values by assuming a linear
+                        # distribution within a bucket. (...) If a quantile is located in the highest bucket,
+                        # the upper bound of the second highest bucket is returned. A lower limit of the lowest
+                        # bucket is assumed to be 0 if the upper bound of that bucket is greater than 0. In that
+                        # case, the usual linear interpolation is applied within that bucket. Otherwise, the upper
+                        # bound of the lowest bucket is returned for quantiles located in the lowest bucket."
+                        bucket_midpoints = []
+                        for i, bucket_le in enumerate(histo.buckets):
+                            if i == 0:
+                                if bucket_le > 0:
+                                    bucket_le /= 2.0
+                            elif i == len(histo.buckets) - 1:
+                                bucket_le = histo.buckets[i - 1]
+                            else:
+                                bucket_le = histo.buckets[i - 1] + (bucket_le - histo.buckets[i - 1]) / 2.0
+                            bucket_midpoints.append(bucket_le)
+                        samples[labels].update(
+                            {name: {"counts": counts, "values": bucket_midpoints, "type": "histogram"}}
+                        )
                     if histo.reset_on_collect:
                         histo.reset()
 
@@ -404,6 +427,8 @@ class Histogram(BaseMetric):
     def __init__(self, name=None, reset_on_collect=False, unit=None, buckets=None):
         self._lock = threading.Lock()
         self._buckets = buckets or Histogram.DEFAULT_BUCKETS
+        if self._buckets[-1] != float("inf"):
+            self._buckets.append(float("inf"))
         self._counts = [0] * len(self._buckets)
         self._unit = unit
         super(Histogram, self).__init__(name, reset_on_collect=reset_on_collect)

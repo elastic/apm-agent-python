@@ -90,7 +90,6 @@ def test_metrics_histogram(elasticapm_client):
     metricset = MetricsSet(MetricsRegistry(elasticapm_client))
     hist = metricset.histogram("x", buckets=[1, 10, 100])
     assert len(hist.buckets) == 4
-    assert hist.buckets[3] == float("inf")
 
     hist.update(0.3)
     hist.update(1)
@@ -103,7 +102,7 @@ def test_metrics_histogram(elasticapm_client):
     assert len(data) == 1
     d = data[0]
     assert d["samples"]["x"]["counts"] == [2, 1, 2, 1]
-    assert d["samples"]["x"]["values"] == [1, 10, 100, float("inf")]
+    assert d["samples"]["x"]["values"] == [0.5, 5.5, 55.0, 100]
 
 
 def test_metrics_labels(elasticapm_client):
