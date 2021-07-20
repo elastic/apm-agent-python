@@ -168,6 +168,29 @@ class Transport(HTTPTransportBase):
             logger.warning("Failed decoding APM Server response as JSON: %s", body)
             return current_version, None, max_age
 
+    def _process_queue(self):
+        if not self.client.server_version:
+            self.fetch_server_info()
+        super()._process_queue()
+
+    def fetch_server_info(self):
+        headers = self._headers.copy() if self._headers else {}
+        headers.update(self.auth_headers)
+        headers["accept"] = "text/plain"
+        try:
+            response = self.http.urlopen("GET", self._server_info_url, headers=headers, timeout=self._timeout)
+            body = response.data
+            data = json_encoder.loads(body.decode("utf8"))
+            version = data["version"]
+            logger.info("Fetched APM Server version %s", version)
+            self.client.server_version = version_string_to_tuple(version)
+        except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
+            logger.warning("HTTP error while fetching server information: %s", str(e))
+        except json.JSONDecodeError as e:
+            logger.warning("JSON decoding error while fetching server information: %s", str(e))
+        except KeyError:
+            logger.warning("No version key found in server response: %s", response.data)
+
     @property
     def cert_fingerprint(self):
         if self._server_cert:
@@ -190,6 +213,13 @@ class Transport(HTTPTransportBase):
         this will return the location of the certifi certificate store.
         """
         return certifi.where() if (certifi and self.client.config.use_certifi) else None
+
+
+def version_string_to_tuple(version):
+    if version:
+        version_parts = re.split(r"[.\-]", version)
+        return tuple(int(p) if p.isdigit() else p for p in version_parts)
+    return ()
 
 
 # left for backwards compatibility
