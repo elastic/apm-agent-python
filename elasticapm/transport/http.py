@@ -176,7 +176,7 @@ class Transport(HTTPTransportBase):
     def fetch_server_info(self):
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        headers["accept"] = "application/json"
+        headers["accept"] = "text/plain"
         try:
             response = self.http.urlopen("GET", self._server_info_url, headers=headers, timeout=self._timeout)
             body = response.data
