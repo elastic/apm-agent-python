@@ -64,9 +64,7 @@ class capture_serverless(object):
         kwargs["disable_metrics_thread"] = True
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
-
-        if "framework_name" not in kwargs:
-            kwargs["framework_name"] = os.environ.get("AWS_EXECUTION_ENV", "AWS_Lambda_python")
+        kwargs["framework_name"] = "AWS Lambda"
 
         self.client = get_client()
         if not self.client:
@@ -99,12 +97,13 @@ class capture_serverless(object):
         Transaction setup
         """
         trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
+
+        global COLD_START
+        cold_start = COLD_START
+        COLD_START = False
+
         if "httpMethod" in self.event:
-            global COLD_START
-            if COLD_START:
-                # TODO
-                COLD_START = False
-            self.start_time = self.event.get("requestContext", {}).get("requestTimeEpoch")
+            self.start_time = self.event["requestContext"].get("requestTimeEpoch")
             if self.start_time:
                 self.start_time = float(self.start_time) * 0.001
                 self.transaction = self.client.begin_transaction(
@@ -127,8 +126,21 @@ class capture_serverless(object):
             else:
                 elasticapm.set_transaction_name(self.name, override=False)
         else:
-            self.transaction = self.client.begin_transaction("function", trace_parent=trace_parent)
+            self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_transaction_name(os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name), override=False)
+
+        elasticapm.set_context(
+            lambda: get_faas_data(
+                self.event,
+                self.context,
+                cold_start,
+            ),
+            "faas",
+        )
+        elasticapm.set_context({"runtime": {"name": os.environ.get("AWS_EXECUTION_ENV")}}, "service")
+        elasticapm.set_context(
+            {"provider": "aws", "region": os.environ.get("AWS_REGION"), "service": {"name": "lambda"}}, "cloud"
+        )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
@@ -228,3 +240,32 @@ def get_url_dict(event):
     if query:
         url_dict["search"] = encoding.keyword_field(query)
     return url_dict
+
+
+def get_faas_data(event, context, coldstart):
+    """
+    Compile the faas context using the event and context
+    """
+    faas = {}
+    faas["coldstart"] = coldstart
+    faas["id"] = context.invokedFunctionArn  # TODO remove alias suffix
+    faas["execution"] = context.awsRequestId
+    faas["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    faas["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
+    faas["instance"] = {"id": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}  # TODO double check in final spec
+
+    faas["trigger"] = {}
+    faas["trigger"]["type"] = "other"
+
+    # Trigger type
+    if "httpMethod" in event:
+        faas["trigger"]["type"] = "http"
+        faas["trigger"]["id"] = event["requestContext"]["apiId"]
+        faas["trigger"]["name"] = "{} {}/{}".format(
+            event["httpMethod"], event["requestContext"]["resourcePath"], event["requestContext"]["stage"]
+        )
+        faas["trigger"]["account"] = {"id": event["requestContext"]["accountId"]}
+        faas["trigger"]["version"] = "2.0" if event["requestContext"].get("requestTimeEpoch") else "1.0"
+        faas["trigger"]["request_id"] = event["requestContext"]["requestId"]
+
+    return faas
