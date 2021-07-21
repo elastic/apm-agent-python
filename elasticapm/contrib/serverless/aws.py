@@ -248,8 +248,8 @@ def get_faas_data(event, context, coldstart):
     """
     faas = {}
     faas["coldstart"] = coldstart
-    faas["id"] = context.invokedFunctionArn  # TODO remove alias suffix
-    faas["execution"] = context.awsRequestId
+    faas["id"] = context.invoked_function_arn  # TODO remove alias suffix
+    faas["execution"] = context.aws_request_id
     faas["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
     faas["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
     faas["instance"] = {"id": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}  # TODO double check in final spec
@@ -267,5 +267,6 @@ def get_faas_data(event, context, coldstart):
         faas["trigger"]["account"] = {"id": event["requestContext"]["accountId"]}
         faas["trigger"]["version"] = "2.0" if event["requestContext"].get("requestTimeEpoch") else "1.0"
         faas["trigger"]["request_id"] = event["requestContext"]["requestId"]
+    # TODO sns/sqs/s3
 
     return faas
