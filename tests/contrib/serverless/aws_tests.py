@@ -38,8 +38,29 @@ from elasticapm.contrib.serverless.aws import capture_serverless, get_data_from_
 
 
 @pytest.fixture
-def event():
-    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_test_data.json")
+def event_api():
+    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_api_test_data.json")
+    with open(aws_data_file) as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def event_s3():
+    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_s3_test_data.json")
+    with open(aws_data_file) as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def event_sqs():
+    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_sqs_test_data.json")
+    with open(aws_data_file) as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def event_sns():
+    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_sns_test_data.json")
     with open(aws_data_file) as f:
         return json.load(f)
 
@@ -59,14 +80,14 @@ class SampleContext:
         self.aws_request_id = "12345"
 
 
-def test_request_data(event):
-    data = get_data_from_request(event, capture_body=True, capture_headers=True)
+def test_request_data(event_api):
+    data = get_data_from_request(event_api, capture_body=True, capture_headers=True)
 
     assert data["method"] == "GET"
     assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
     assert data["headers"]["Host"] == "02plqthge2.execute-api.us-east-1.amazonaws.com"
 
-    data = get_data_from_request(event, capture_body=False, capture_headers=False)
+    data = get_data_from_request(event_api, capture_body=False, capture_headers=False)
 
     assert data["method"] == "GET"
     assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
@@ -91,19 +112,19 @@ def test_response_data():
     assert not data
 
 
-def test_capture_serverless(event, context, elasticapm_client):
+def test_capture_serverless(event_api, context, elasticapm_client):
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     capture_object = capture_serverless()
-    capture_object.event = event
+    capture_object.event = event_api
     capture_object.name = "GET"
 
     @capture_serverless()
     def test_func(event, context):
         return {"statusCode": 200, "headers": {"foo": "bar"}}
 
-    test_func(event, context)
+    test_func(event_api, context)
 
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
