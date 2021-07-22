@@ -61,7 +61,7 @@ class capture_serverless(object):
         self.response = None
 
         # Disable all background threads except for transport
-        kwargs["disable_metrics_thread"] = True
+        kwargs["metrics_interval"] = 0
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"

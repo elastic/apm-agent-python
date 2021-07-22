@@ -31,6 +31,7 @@ import sys
 
 from elasticapm.base import Client, get_client  # noqa: F401
 from elasticapm.conf import setup_logging  # noqa: F401
+from elasticapm.contrib.serverless import capture_serverless  # noqa: F401
 from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
 from elasticapm.traces import (  # noqa: F401
     capture_span,
