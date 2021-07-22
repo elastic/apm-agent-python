@@ -163,7 +163,9 @@ class capture_serverless(object):
         self.client.end_transaction()
 
         try:
+            print("flushing elasticapm")
             self.client._transport.flush()
+            print("done flushing elasticapm")
         except ValueError:
             logger.warning("flush timed out")
 
