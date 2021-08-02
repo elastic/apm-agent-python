@@ -28,10 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import sys
 import time
 
 CLOCK_DIFF = None
+CLOCK_DIFF_UPDATED = 0
+logger = logging.getLogger("elasticapm.utils.time")
 
 
 def time_to_perf_counter(timestamp):
@@ -46,8 +49,7 @@ def time_to_perf_counter(timestamp):
     guaranteed), if a system clock is changed, this function could become
     very inaccurate.
     """
-    global CLOCK_DIFF
-    if CLOCK_DIFF is None:
+    if _clock_diff_stale():
         _calculate_clock_diff()
 
     return timestamp + CLOCK_DIFF
@@ -64,6 +66,7 @@ def _calculate_clock_diff():
     approximate equivalent `time.perf_counter()`
     """
     global CLOCK_DIFF
+    global CLOCK_DIFF_UPDATED
     best_tolerance = sys.float_info.max
     for _ in range(10):
         time1 = time.time()
@@ -76,6 +79,24 @@ def _calculate_clock_diff():
         if tolerance < best_tolerance:
             best_tolerance = tolerance
             CLOCK_DIFF = perftime - timetime
+            CLOCK_DIFF_UPDATED = time.time()
 
         if tolerance < 0.00001:  # try to get the two time.time() calls within 20 microseconds
             break
+
+    if best_tolerance >= 0.00001:
+        logger.warning(
+            "Clock diff calculator only reached a tolerance of {}. Some "
+            "timestamps may be inaccurate as a result.".format(best_tolerance)
+        )
+
+
+def _clock_diff_stale():
+    """
+    Checks if the last CLOCK_DIFF we calculated is older than five minutes old.
+    If so, we should recalculate.
+    """
+    # Should we make the stale time configurable?
+    if time.time() - CLOCK_DIFF_UPDATED > 300:
+        return True
+    return False
