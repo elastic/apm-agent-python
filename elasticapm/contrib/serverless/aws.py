@@ -86,8 +86,7 @@ class capture_serverless(object):
                 self.event, self.context = {}, {}
             if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
                 with self:
-                    with elasticapm.capture_span(self.name):
-                        self.response = func(*args, **kwds)
+                    self.response = func(*args, **kwds)
                     return self.response
             else:
                 return func(*args, **kwds)
@@ -107,12 +106,8 @@ class capture_serverless(object):
         if "httpMethod" in self.event:
             self.start_time = self.event["requestContext"].get("requestTimeEpoch")
             if self.start_time:
-                self.start_time = float(self.start_time) * 0.001
-                self.transaction = self.client.begin_transaction(
-                    "request", trace_parent=trace_parent, start=self.start_time
-                )
-            else:
-                self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
+                self.start_time = float(self.start_time) * 0.001  # Epoch in seconds
+            self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     self.event,
