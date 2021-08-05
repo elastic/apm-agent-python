@@ -103,11 +103,11 @@ class capture_serverless(object):
         cold_start = COLD_START
         COLD_START = False
 
-        if "httpMethod" in self.event:
-            self.start_time = self.event["requestContext"].get("requestTimeEpoch")
-            if self.start_time:
-                self.start_time = float(self.start_time) * 0.001  # Epoch in seconds
-            self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
+        self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
+        self.source = "other"
+
+        if "httpMethod" in self.event:  # API Gateway
+            self.source = "api"
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     self.event,
@@ -122,8 +122,18 @@ class capture_serverless(object):
                 )
             else:
                 elasticapm.set_transaction_name(self.name, override=False)
-        else:
-            self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
+        elif "Records" in self.event and len(self.event["Records"]) == 1:
+            record = self.event["Records"][0]
+            if record.get("eventSource") == "aws:s3":  # S3
+                self.source = "s3"
+                elasticapm.set_transaction_name("{} {}".format(record["eventName"], record["s3"]["bucket"]["name"]))
+            elif record.get("EventSource") == "aws:sns":  # SNS
+                self.source = "sns"
+                elasticapm.set_transaction_name("RECEIVE {}".format(record["Sns"]["TopicArn"].split(":")[5]))
+            elif record.get("eventSource") == "aws:sqs":  # SQS
+                self.source = "sqs"
+                elasticapm.set_transaction_name("RECEIVE {}".format(record["eventSourceARN"].split(":")[5]))
+        else:  # Other
             elasticapm.set_transaction_name(os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name), override=False)
 
         elasticapm.set_context(
