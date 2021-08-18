@@ -43,6 +43,8 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fixed cookie sanitization when Cookie is capitalized {pull}1301[#1301]
+
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
