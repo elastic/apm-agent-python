@@ -3,11 +3,13 @@ repos:
     rev: 5.7.0
     hooks:
     -   id: isort
--   repo: https://github.com/ambv/black
-    rev: 20.8b1
+-   repo: local
     hooks:
     -   id: black
-        language_version: python3
+        name: black
+        entry: black --check
+        language: system
+        types: [python]
 -   repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
