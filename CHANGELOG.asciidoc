@@ -30,6 +30,20 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[float]
+===== Features
+
+* Renamed the experimental `log_ecs_formatting` config to `log_ecs_reformatting`
+
+
+[float]
+===== Bug fixes
+
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 

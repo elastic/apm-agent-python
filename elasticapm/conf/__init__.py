@@ -376,9 +376,9 @@ def _log_level_callback(dict_key, old_value, new_value, config_instance):
         elasticapm_logger.addHandler(filehandler)
 
 
-def _log_ecs_formatting_callback(dict_key, old_value, new_value, config_instance):
+def _log_ecs_reformatting_callback(dict_key, old_value, new_value, config_instance):
     """
-    If ecs_logging is installed and log_ecs_formatting is set to "override", we should
+    If ecs_logging is installed and log_ecs_reformatting is set to "override", we should
     set the ecs_logging.StdlibFormatter as the formatted for every handler in
     the root logger, and set the default processor for structlog to the
     ecs_logging.StructlogFormatter.
@@ -619,10 +619,10 @@ class Config(_ConfigBase):
     )
     log_file = _ConfigValue("LOG_FILE", default="")
     log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
-    log_ecs_formatting = _ConfigValue(
-        "LOG_ECS_FORMATTING",
+    log_ecs_reformatting = _ConfigValue(
+        "LOG_ECS_REFORMATTING",
         validators=[EnumerationValidator(["off", "override"])],
-        callbacks=[_log_ecs_formatting_callback],
+        callbacks=[_log_ecs_reformatting_callback],
         default="off",
     )
 
