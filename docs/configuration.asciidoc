@@ -217,13 +217,13 @@ The agent always keeps one backup file when rotating, so the maximum space that
 the log files will consume is twice the value of this setting.
 
 [float]
-[[config-log_ecs_formatting]]
-==== `log_ecs_formatting`
+[[config-log_ecs_reformatting]]
+==== `log_ecs_reformatting`
 
 [options="header"]
 |============
-| Environment                      | Django/Flask         | Default
-| `ELASTIC_APM_LOG_ECS_FORMATTING` | `LOG_ECS_FORMATTING` | `"off"`
+| Environment                        | Django/Flask           | Default
+| `ELASTIC_APM_LOG_ECS_REFORMATTING` | `LOG_ECS_REFORMATTING` | `"off"`
 |============
 
 experimental::[]
