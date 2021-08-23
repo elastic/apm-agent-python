@@ -43,6 +43,7 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fix a bug with exception capturing for bad UUIDs {pull}1304[#1304]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
