@@ -222,6 +222,25 @@ def test_sanitize_http_request_cookies(elasticapm_client, custom_field, expected
 
     assert result["context"]["request"]["headers"]["cookie"] == expected_header_cookies
 
+    http_test_data["context"]["request"]["headers"].pop("cookie")
+    http_test_data["context"]["request"]["headers"][
+        "Cookie"
+    ] = "foo=bar; password=12345; secret=12345; csrftoken=abc; custom-sensitive-cookie=123"
+
+    result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
+    expected = {
+        "foo": "bar",
+        "password": processors.MASK,
+        "secret": processors.MASK,
+        "sessionid": processors.MASK,
+    }
+
+    expected.update(custom_field)
+
+    assert result["context"]["request"]["cookies"] == expected
+
+    assert result["context"]["request"]["headers"]["Cookie"] == expected_header_cookies
+
 
 @pytest.mark.parametrize(
     "elasticapm_client, expected_cookies",

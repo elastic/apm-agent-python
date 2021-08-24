@@ -118,7 +118,14 @@ def sanitize_http_request_cookies(client, event):
             cookie_string, "; ", "=", sanitize_field_names=client.config.sanitize_field_names
         )
     except (KeyError, TypeError):
-        pass
+        try:
+            # Sometimes it's Cookie, not cookie
+            cookie_string = force_text(event["context"]["request"]["headers"]["Cookie"], errors="replace")
+            event["context"]["request"]["headers"]["Cookie"] = _sanitize_string(
+                cookie_string, "; ", "=", sanitize_field_names=client.config.sanitize_field_names
+            )
+        except (KeyError, TypeError):
+            pass
     return event
 
 
