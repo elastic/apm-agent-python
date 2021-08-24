@@ -385,3 +385,15 @@ def test_stack_trace_limit(elasticapm_client):
     exception = elasticapm_client.events[ERROR][-1]
     frames = exception["exception"]["stacktrace"]
     assert len(frames) == 0
+
+
+def test_fail_on_uuid_raise(elasticapm_client):
+    def generate_uuid():
+        from uuid import UUID
+
+        return UUID("INVALID")
+
+    try:
+        generate_uuid()
+    except Exception:
+        elasticapm_client.capture_exception()
