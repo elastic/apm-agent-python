@@ -129,7 +129,10 @@ def transform(value, stack=None, context=None):
 
             ret = value_type(transform_rec(o) for o in value)
     elif isinstance(value, uuid.UUID):
-        ret = repr(value)
+        try:
+            ret = repr(value)
+        except AttributeError:
+            ret = None
     elif isinstance(value, dict):
         ret = dict((to_unicode(k), transform_rec(v)) for k, v in compat.iteritems(value))
     elif isinstance(value, compat.text_type):

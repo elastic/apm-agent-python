@@ -30,6 +30,24 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[float]
+===== Features
+
+* Rename the experimental `log_ecs_formatting` config to `log_ecs_reformatting` {pull}1300[#1300]
+
+
+[float]
+===== Bug fixes
+
+* Fixed cookie sanitization when Cookie is capitalized {pull}1301[#1301]
+* Fix a bug with exception capturing for bad UUIDs {pull}1304[#1304]
+* Fix potential errors in json serialization {pull}1203[#1203]
+
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
