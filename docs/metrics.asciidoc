@@ -193,6 +193,7 @@ The following types of metrics are supported:
  * Counters
  * Gauges
  * Summaries
+ * Histograms (requires APM Server / Elasticsearch / Kibana 7.14+)
 
 To use the Prometheus metric set, you have to enable it with the <<config-prometheus_metrics, `prometheus_metrics`>> configuration option.
 
@@ -202,5 +203,3 @@ All metrics collected from `prometheus_client` are prefixed with `"prometheus.me
 [[prometheus-metricset-beta]]
 ===== Beta limitations
  * The metrics format may change without backwards compatibility in future releases.
- * Histograms are currently not supported.
- 
