@@ -46,6 +46,7 @@ endif::[]
 * Fixed cookie sanitization when Cookie is capitalized {pull}1301[#1301]
 * Fix a bug with exception capturing for bad UUIDs {pull}1304[#1304]
 * Fix potential errors in json serialization {pull}1203[#1203]
+* Fix an issue with certain aioredis commands {pull}1308[#1308]
 
 
 [[release-notes-6.x]]
