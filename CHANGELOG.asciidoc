@@ -38,7 +38,7 @@ endif::[]
 ===== Features
 
 * Rename the experimental `log_ecs_formatting` config to `log_ecs_reformatting` {pull}1300[#1300]
-
+* Add support for Prometheus histograms {pull}1165[#1165]
 
 [float]
 ===== Bug fixes
