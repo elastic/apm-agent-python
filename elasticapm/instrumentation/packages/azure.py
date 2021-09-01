@@ -84,6 +84,9 @@ class AzureInstrumentation(AbstractInstrumentedModule):
 
 
 def handle_azureblob(request, parsed_url, service, service_type, context):
+    """
+    Returns the correct HandlerInfo for Azure Blob Storage operations
+    """
     account_name = parsed_url.hostname.split(".")[0]
     context["destination"]["service"] = {
         "name": service,
@@ -91,11 +94,12 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
         "type": service_type,
     }
     method = request.method
+    headers = request.headers
     query_params = urlparse.parse_qs(parsed_url.query)
     blob = parsed_url.path
 
     # TODO encode table from spec to decide signature
-    operation_name = "Download"
+    operation_name = "Unknown"
     if method.lower() == "delete":
         operation_name = "Delete"
     elif method.lower() == "get":
@@ -106,6 +110,86 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
                 operation_name = "GetAcl"
             elif query_params.get("comp") == "list":
                 operation_name = "ListBlobs"
+        elif query_params.get("comp") == "metadata":
+            operation_name = "GetMetadata"
+        elif query_params.get("comp") == "list":
+            operation_name = "ListContainers"
+        elif query_params.get("comp") == "tags":
+            operation_name = "GetTags"
+            if query_params.get("where"):
+                operation_name = "FindTags"
+        elif query_params.get("comp") == "blocklist":
+            operation_name = "GetBlockList"
+        elif query_params.get("comp") == "pagelist":
+            operation_name = "GetPageRanges"
+        elif query_params.get("comp") == "stats":
+            operation_name = "Stats"
+        elif query_params.get("comp") == "blobs":
+            operation_name = "FilterBlobs"
+    elif method.lower() == "head":
+        operation_name = "GetProperties"
+        if query_params.get("restype") == "container" and query_params.get("comp") == "metadata":
+            operation_name = "GetMetadata"
+        elif query_params.get("restype") == "container" and query_params.get("comp") == "acl":
+            operation_name = "GetAcl"
+    elif method.lower() == "post":
+        if query_params.get("comp") == "batch":
+            operation_name = "Batch"
+        elif query_params.get("comp") == "query":
+            operation_name = "Query"
+        elif query_params.get("comp") == "userdelegationkey":
+            operation_name = "GetUserDelegationKey"
+    elif method.lower() == "put":
+        operation_name = "Create"
+        if "x-ms-copy-source" in headers:
+            operation_name = "Copy"
+            # These are repetitive and unnecessary, but included in case the table at
+            # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
+            # changes in the future
+            if query_params.get("comp") == "block":
+                operation_name = "Copy"
+            elif query_params.get("comp") == "page":
+                operation_name = "Copy"
+            elif query_params.get("comp") == "incrementalcopy":
+                operation_name = "Copy"
+            elif query_params.get("comp") == "appendblock":
+                operation_name = "Copy"
+        elif "x-ms-blob-type" in headers:
+            operation_name = "Upload"
+        elif "x-ms-page-write" in headers and query_params.get("comp") == "page":
+            operation_name = "Clear"
+        elif query_params.get("comp") == "copy":
+            operation_name = "Abort"
+        elif query_params.get("comp") == "block":
+            operation_name = "Upload"
+        elif query_params.get("comp") == "blocklist":
+            operation_name = "Upload"
+        elif query_params.get("comp") == "page":
+            operation_name = "Upload"
+        elif query_params.get("comp") == "appendblock":
+            operation_name = "Upload"
+        elif query_params.get("comp") == "metadata":
+            operation_name = "SetMetadata"
+        elif query_params.get("restype") == "container" and query_params.get("comp") == "acl":
+            operation_name = "SetAcl"
+        elif query_params.get("comp") == "properties":
+            operation_name = "SetProperties"
+        elif query_params.get("comp") == "lease":
+            operation_name = "Lease"
+        elif query_params.get("comp") == "snapshot":
+            operation_name = "Snapshot"
+        elif query_params.get("comp") == "undelete":
+            operation_name = "Undelete"
+        elif query_params.get("comp") == "tags":
+            operation_name = "SetTags"
+        elif query_params.get("comp") == "tier":
+            operation_name = "SetTier"
+        elif query_params.get("comp") == "expiry":
+            operation_name = "SetExpiry"
+        elif query_params.get("comp") == "seal":
+            operation_name = "Seal"
+        elif query_params.get("comp") == "rename":
+            operation_name = "Rename"
 
     signature = "AzureBlob {} {}".format(operation_name, blob)
 
