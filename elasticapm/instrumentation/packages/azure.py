@@ -85,7 +85,7 @@ class AzureInstrumentation(AbstractInstrumentedModule):
 
 def handle_azureblob(request, parsed_url, service, service_type, context):
     """
-    Returns the correct HandlerInfo for Azure Blob Storage operations
+    Returns the HandlerInfo for Azure Blob Storage operations
     """
     account_name = parsed_url.hostname.split(".")[0]
     context["destination"]["service"] = {
