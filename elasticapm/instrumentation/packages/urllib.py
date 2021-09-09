@@ -96,6 +96,8 @@ class UrllibInstrumentation(AbstractInstrumentedModule):
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
             self._set_disttracing_headers(request_object, trace_parent, transaction)
+            if leaf_span:
+                leaf_span.dist_tracing_propagated = True
             response = wrapped(*args, **kwargs)
             if response:
                 status = getattr(response, "status", None) or response.getcode()  # Python 2 compat

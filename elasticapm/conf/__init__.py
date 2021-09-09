@@ -579,6 +579,18 @@ class Config(_ConfigBase):
         ],
         type=int,
     )
+    span_compression_exact_match_max_duration = _ConfigValue(
+        "span_compression_exact_match_max_duration",
+        default=5,
+        validators=[duration_validator],
+        type=int,
+    )
+    span_compression_same_kind_max_duration = _ConfigValue(
+        "span_compression_exact_match_max_duration",
+        default=5,
+        validators=[duration_validator],
+        type=int,
+    )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)
     source_lines_error_library_frames = _ConfigValue("SOURCE_LINES_ERROR_LIBRARY_FRAMES", type=int, default=5)
