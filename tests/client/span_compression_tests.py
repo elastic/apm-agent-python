@@ -158,3 +158,65 @@ def test_exact_match_after_same_kind(elasticapm_client):
     span = spans[0]
     assert span["composite"]["compression_strategy"] == "same_kind"
     assert span["composite"]["count"] == 3
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"span_compression_same_kind_max_duration": "5ms", "span_compression_exact_match_max_duration": "5ms"}],
+    indirect=True,
+)
+def test_nested_spans(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", "x.y.z") as span1:
+        with elasticapm.capture_span(
+            "test1",
+            span_type="a",
+            span_subtype="b",
+            span_action="c",
+            leaf=True,
+            duration=2,
+            extra={"destination": {"service": {"resource": "x"}}},
+        ) as span2:
+            pass
+        with elasticapm.capture_span(
+            "test2",
+            span_type="a",
+            span_subtype="b",
+            span_action="c",
+            leaf=True,
+            duration=2,
+            extra={"destination": {"service": {"resource": "x"}}},
+        ) as span3:
+            pass
+        assert span1.compression_buffer is span2
+        assert span2.composite
+    # assert transaction.compression_buffer is span1
+    # assert not span1.compression_buffer
+    elasticapm_client.end_transaction("test")
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 2
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"span_compression_same_kind_max_duration": "5ms", "span_compression_exact_match_max_duration": "5ms"}],
+    indirect=True,
+)
+def test_buffer_is_reported_if_next_child_ineligible(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", "x.y.z") as span1:
+        with elasticapm.capture_span(
+            "test",
+            "x.y.z",
+            leaf=True,
+            duration=2,
+            extra={"destination": {"service": {"resource": "x"}}},
+        ) as span2:
+            pass
+        assert span1.compression_buffer is span2
+        with elasticapm.capture_span("test", "x.y.z") as span3:
+            pass
+        assert span1.compression_buffer is None
+    elasticapm_client.end_transaction("test")
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 3

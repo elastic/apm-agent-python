@@ -102,19 +102,19 @@ class BaseSpan(object):
         with self.compression_buffer_lock:
             if not child.is_compression_eligible():
                 if self.compression_buffer:
-                    self.tracer.queue_func(SPAN, self.compression_buffer.to_dict())
+                    self.compression_buffer.report()
                     self.compression_buffer = None
-                self.tracer.queue_func(SPAN, child.to_dict())
-                return
-            if self.compression_buffer is None:
+                child.report()
+            elif self.compression_buffer is None:
                 self.compression_buffer = child
-                return
-            if not self.compression_buffer.try_to_compress(child):
-                self.tracer.queue_func(SPAN, self.compression_buffer.to_dict())
+            elif not self.compression_buffer.try_to_compress(child):
+                self.compression_buffer.report()
                 self.compression_buffer = child
 
     def end(self, skip_frames: int = 0, duration: Optional[int] = None):
-        raise NotImplementedError()
+        if self.compression_buffer:
+            self.compression_buffer.report()
+            self.compression_buffer = None
 
     def to_dict(self) -> dict:
         raise NotImplementedError()
@@ -194,9 +194,8 @@ class Transaction(BaseSpan):
         super(Transaction, self).__init__()
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
+        super().end(skip_frames, duration)
         self.duration = duration if duration is not None else (_time_func() - self.start_time)
-        if self.compression_buffer:
-            self.tracer.queue_func(SPAN, self.compression_buffer.to_dict())
         if self._transaction_metrics:
             self._transaction_metrics.timer(
                 "transaction.duration",
@@ -549,6 +548,7 @@ class Span(BaseSpan):
         :param duration: override duration, mostly useful for testing
         :return: None
         """
+        super().end(skip_frames, duration)
         tracer = self.transaction.tracer
         timestamp = _time_func()
         self.duration = duration if duration is not None else (timestamp - self.start_time)
@@ -565,6 +565,9 @@ class Span(BaseSpan):
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
         p.child_ended(self)
+
+    def report(self) -> None:
+        self.tracer.queue_func(SPAN, self.to_dict())
 
     def try_to_compress(self, sibling: SpanType) -> bool:
         compression_strategy = (
