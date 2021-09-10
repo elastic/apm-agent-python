@@ -476,13 +476,21 @@ class Span(BaseSpan):
         super(Span, self).__init__(labels=labels)
 
     def to_dict(self) -> dict:
+        if (
+            self.composite
+            and self.composite["compression_strategy"] == "same_kind"
+            and nested_key(self.context, "destination", "service", "resource")
+        ):
+            name = "Calls to " + self.context["destination"]["service"]["resource"]
+        else:
+            name = self.name
         result = {
             "id": self.id,
             "transaction_id": self.transaction.id,
             "trace_id": self.transaction.trace_parent.trace_id,
             # use either the explicitly set parent_span_id, or the id of the parent, or finally the transaction id
             "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
-            "name": encoding.keyword_field(self.name),
+            "name": encoding.keyword_field(name),
             "type": encoding.keyword_field(self.type),
             "subtype": encoding.keyword_field(self.subtype),
             "action": encoding.keyword_field(self.action),
@@ -559,49 +567,50 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def try_to_compress(self, sibling: SpanType) -> bool:
-        is_composite = self.composite is not None
-        can_be_compressed = (
-            self._try_to_compress_composite(sibling) if is_composite else self._try_to_compress_regular(sibling)
+        compression_strategy = (
+            self._try_to_compress_composite(sibling) if self.composite else self._try_to_compress_regular(sibling)
         )
-        if not can_be_compressed:
+        if not compression_strategy:
             return False
 
-        if not is_composite:
-            self.composite["count"] = 1
-            self.composite["sum"] = self.duration
+        if not self.composite:
+            self.composite = {"compression_strategy": compression_strategy, "count": 1, "sum": self.duration}
         self.composite["count"] += 1
         self.composite["sum"] += sibling.duration
         return True
 
-    def _try_to_compress_composite(self, sibling: SpanType) -> bool:
+    def _try_to_compress_composite(self, sibling: SpanType) -> Optional[str]:
         if self.composite["compression_strategy"] == "exact_match":
             return (
-                self.is_exact_match(sibling)
-                and sibling.duration <= self.transaction.tracer.config.span_compression_exact_match_max_duration
+                "exact_match"
+                if (
+                    self.is_exact_match(sibling)
+                    and sibling.duration <= self.transaction.tracer.config.span_compression_exact_match_max_duration
+                )
+                else None
             )
         elif self.composite["compression_strategy"] == "same_kind":
             return (
-                self.is_same_kind(sibling)
-                and sibling.duration <= self.transaction.tracer.config.span_compression_same_kind_max_duration
+                "same_kind"
+                if (
+                    self.is_same_kind(sibling)
+                    and sibling.duration <= self.transaction.tracer.config.span_compression_same_kind_max_duration
+                )
+                else None
             )
-        # can't handle other compression strategies
-        return False
 
-    def _try_to_compress_regular(self, sibling: SpanType) -> bool:
+    def _try_to_compress_regular(self, sibling: SpanType) -> Optional[str]:
         if not self.is_same_kind(sibling):
-            return False
+            return None
         if self.name == sibling.name:
             max_duration = self.transaction.tracer.config.span_compression_exact_match_max_duration
             if self.duration <= max_duration and sibling.duration <= max_duration:
-                self.composite = {"compression_strategy": "exact_match"}
-                return True
-            return False
+                return "exact_match"
+            return None
         max_duration = self.transaction.tracer.config.span_compression_same_kind_max_duration
         if self.duration <= max_duration and sibling.duration <= max_duration:
-            self.composite = {"compression_strategy": "same_kind"}
-            self.name = "Calls to " + self.context["destination"]["service"]["resource"]
-            return True
-        return False
+            return "same_kind"
+        return None
 
     def update_context(self, key, data):
         """
