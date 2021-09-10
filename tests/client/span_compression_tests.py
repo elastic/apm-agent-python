@@ -27,11 +27,17 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import pytest
 
 import elasticapm
 from elasticapm.conf.constants import SPAN
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"span_compression_same_kind_max_duration": "5ms", "span_compression_exact_match_max_duration": "5ms"}],
+    indirect=True,
+)
 def test_exact_match(elasticapm_client):
     transaction = elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span(
@@ -65,6 +71,11 @@ def test_exact_match(elasticapm_client):
     assert span["composite"]["compression_strategy"] == "exact_match"
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"span_compression_same_kind_max_duration": "5ms", "span_compression_exact_match_max_duration": "5ms"}],
+    indirect=True,
+)
 def test_same_kind(elasticapm_client):
     transaction = elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span(
@@ -101,6 +112,11 @@ def test_same_kind(elasticapm_client):
     assert span["composite"]["compression_strategy"] == "same_kind"
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"span_compression_same_kind_max_duration": "5ms", "span_compression_exact_match_max_duration": "5ms"}],
+    indirect=True,
+)
 def test_exact_match_after_same_kind(elasticapm_client):
     # if a span that is an exact match is attempted to be compressed with a same_kind composite, it stays same_kind
     transaction = elasticapm_client.begin_transaction("test")
