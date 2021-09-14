@@ -38,11 +38,11 @@ class AsyncAbstractInstrumentedModule(AbstractInstrumentedModule):
         raise NotImplementedError()
 
 
-class RunInExecutorInstrumentation(AsyncAbstractInstrumentedModule):
+class RunInExecutorInstrumentation(AbstractInstrumentedModule):
     name = "executor"
     instrument_list = [("asyncio.base_events", "BaseEventLoop.run_in_executor")]
 
-    async def call(self, module, method, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         func = args[1]
         transaction = execution_context.get_transaction()
         span = execution_context.get_span()

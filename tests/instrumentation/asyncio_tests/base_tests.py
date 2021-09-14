@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import threading
 from asyncio import tasks
 from concurrent import futures
 
@@ -72,7 +73,7 @@ async def test_threadpool_executor(instrument, event_loop, elasticapm_client):
     elasticapm_client.begin_transaction("foo")
 
     def myfunc(a, b):
-        with elasticapm.capture_span("nothing"):
+        with elasticapm.capture_span("nothing", extra={"thread_id": threading.get_ident()}):
             pass
 
     await event_loop.run_in_executor(executor, myfunc, 1, 2)
@@ -80,3 +81,5 @@ async def test_threadpool_executor(instrument, event_loop, elasticapm_client):
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
     assert len(spans) == 1
+    assert spans[0]["name"] == "nothing"
+    assert spans[0]["context"]["thread_id"] != threading.get_ident()
