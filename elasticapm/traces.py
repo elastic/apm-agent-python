@@ -160,7 +160,15 @@ class Transaction(BaseSpan):
         sample_rate: Optional[float] = None,
     ):
         self.id = self.get_dist_tracing_id()
-        self.trace_parent = trace_parent
+        if not trace_parent:
+            trace_parent = TraceParent(
+                constants.TRACE_CONTEXT_VERSION,
+                "%032x" % random.getrandbits(128),
+                self.id,
+                TracingOptions(recorded=is_sampled),
+            )
+
+        self.trace_parent: TraceParent = trace_parent
         if start:
             self.timestamp = self.start_time = start
         else:
@@ -739,12 +747,6 @@ class Tracer(object):
             sample_rate=sample_rate,
         )
         if trace_parent is None:
-            transaction.trace_parent = TraceParent(
-                constants.TRACE_CONTEXT_VERSION,
-                "%032x" % random.getrandbits(128),
-                transaction.id,
-                TracingOptions(recorded=is_sampled),
-            )
             transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
         execution_context.set_transaction(transaction)
         return transaction
