@@ -35,7 +35,7 @@ import threading
 import time
 import timeit
 from collections import defaultdict
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
@@ -55,7 +55,7 @@ _time_func = timeit.default_timer
 
 execution_context = init_execution_context()
 
-SpanType = Union["Span", "BaseSpan"]
+SpanType = Union["Span", "DroppedSpan"]
 
 
 class ChildDuration(object):
@@ -64,7 +64,7 @@ class ChildDuration(object):
     def __init__(self, obj: "BaseSpan"):
         self.obj = obj
         self._nesting_level: int = 0
-        self._start: Optional[float] = None
+        self._start: float = 0
         self._duration: float = 0
         self._lock = threading.Lock()
 
@@ -111,7 +111,7 @@ class BaseSpan(object):
                 self.compression_buffer.report()
                 self.compression_buffer = child
 
-    def end(self, skip_frames: int = 0, duration: Optional[int] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         if self.compression_buffer:
             self.compression_buffer.report()
             self.compression_buffer = None
@@ -166,18 +166,18 @@ class Transaction(BaseSpan):
         else:
             self.timestamp, self.start_time = time.time(), _time_func()
         self.name: Optional[str] = None
-        self.duration: Optional[float] = None
+        self.duration: float = 0
         self.result: Optional[str] = None
         self.transaction_type = transaction_type
         self._tracer = tracer
 
         self.dropped_spans: int = 0
-        self.context = {}
+        self.context: Dict[str, Any] = {}
 
         self._is_sampled = is_sampled
         self.sample_rate = sample_rate
         self._span_counter: int = 0
-        self._span_timers = defaultdict(Timer)
+        self._span_timers: Dict[Tuple[str, str], Timer] = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
         try:
             self._breakdown = self.tracer._agent._metrics.get_metricset(
@@ -452,13 +452,13 @@ class Span(BaseSpan):
         # start time and transaction start time. In this respect, the span timestamp is guaranteed to grow
         # monotonically with respect to the transaction timestamp
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
-        self.duration = None
+        self.duration: float = 0
         self.parent = parent
         self.parent_span_id = parent_span_id
         self.frames = None
         self.sync = sync
         self.dist_tracing_propagated = False
-        self.composite: Union[dict, None] = None
+        self.composite: Dict[str, Any] = {}
         if span_subtype is None and "." in span_type:
             # old style dottet type, let's split it up
             type_bits = span_type.split(".")
@@ -540,7 +540,7 @@ class Span(BaseSpan):
     def is_compression_eligible(self) -> bool:
         return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
 
-    def end(self, skip_frames: int = 0, duration: Optional[int] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         """
         End this span and queue it for sending.
 
@@ -601,6 +601,7 @@ class Span(BaseSpan):
                 )
                 else None
             )
+        return None
 
     def _try_to_compress_regular(self, sibling: SpanType) -> Optional[str]:
         if not self.is_same_kind(sibling):
@@ -635,16 +636,17 @@ class Span(BaseSpan):
 
 
 class DroppedSpan(BaseSpan):
-    __slots__ = ("leaf", "parent", "id", "dist_tracing_propagated")
+    __slots__ = ("leaf", "parent", "id", "dist_tracing_propagated", "outcome")
 
     def __init__(self, parent, leaf=False):
         self.parent = parent
         self.leaf = leaf
         self.id = None
         self.dist_tracing_propagated = False
+        self.outcome = constants.OUTCOME.UNKNOWN
         super(DroppedSpan, self).__init__()
 
-    def end(self, skip_frames=0, duration=None):
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         execution_context.set_span(self.parent)
 
     def child_started(self, timestamp):
@@ -655,6 +657,23 @@ class DroppedSpan(BaseSpan):
 
     def update_context(self, key, data):
         pass
+
+    def report(self):
+        pass
+
+    def try_to_compress(self, sibling: SpanType) -> bool:
+        return False
+
+    def is_compression_eligible(self) -> bool:
+        return False
+
+    @property
+    def name(self):
+        return "DroppedSpan"
+
+    @property
+    def duration(self):
+        return 0
 
     @property
     def type(self):
@@ -671,14 +690,6 @@ class DroppedSpan(BaseSpan):
     @property
     def context(self):
         return None
-
-    @property
-    def outcome(self):
-        return "unknown"
-
-    @outcome.setter
-    def outcome(self, value):
-        return
 
 
 class Tracer(object):
@@ -830,6 +841,7 @@ class capture_span(object):
                 start=self.start,
                 sync=self.sync,
             )
+        return None
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         transaction = execution_context.get_transaction()
