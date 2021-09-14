@@ -361,7 +361,7 @@ def test_formatter():
 def test_logging_handler_no_client(recwarn):
     # In 6.0, this should be changed to expect a ValueError instead of a log
     warnings.simplefilter("always")
-    LoggingHandler()
+    LoggingHandler(transport_class="tests.fixtures.DummyTransport")
     while True:
         # If we never find our desired warning this will eventually throw an
         # AssertionError
