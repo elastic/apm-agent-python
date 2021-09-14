@@ -1,0 +1,2 @@
+redis<4
+-r reqs-base.txt

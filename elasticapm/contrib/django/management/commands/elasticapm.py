@@ -31,6 +31,7 @@
 
 from __future__ import absolute_import
 
+import logging
 import sys
 
 from django.conf import settings
@@ -132,6 +133,19 @@ class Command(BaseCommand):
     def handle_test(self, command, **options):
         """Send a test error to APM Server"""
         # can't be async for testing
+
+        class LogCaptureHandler(logging.Handler):
+            def __init__(self, level=logging.NOTSET):
+                self.logs = []
+                super(LogCaptureHandler, self).__init__(level)
+
+            def handle(self, record):
+                self.logs.append(record)
+
+        handler = LogCaptureHandler()
+        logger = logging.getLogger("elasticapm.transport")
+        logger.addHandler(handler)
+
         config = {"async_mode": False}
         for key in ("service_name", "secret_token"):
             if options.get(key):
@@ -150,13 +164,17 @@ class Command(BaseCommand):
             raise TestException("Hi there!")
         except TestException:
             client.capture_exception()
-            if not client.error_logger.errors:
-                self.write(
-                    "Success! We tracked the error successfully! You should be"
-                    " able to see it in a few seconds at the above URL"
-                )
-        finally:
-            client.close()
+        client.close()
+        if not handler.logs:
+            self.write(
+                "Success! We tracked the error successfully! \n"
+                "You should see it in the APM app in Kibana momentarily. \n"
+                'Look for "TestException: Hi there!" in the Errors tab of the %s app' % client.config.service_name
+            )
+        else:
+            self.write("Oops. That didn't work. The following error occured: \n\n", red)
+            for entry in handler.logs:
+                self.write(entry.getMessage(), red)
 
     def handle_check(self, command, **options):
         """Check your settings for common misconfigurations"""

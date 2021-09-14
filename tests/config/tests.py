@@ -41,13 +41,17 @@ import pytest
 from elasticapm.conf import (
     Config,
     ConfigurationError,
+    EnumerationValidator,
     FileIsReadableValidator,
+    PrecisionValidator,
     RegexValidator,
+    VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
     _ConfigValue,
     _DictConfigValue,
     _ListConfigValue,
+    constants,
     duration_validator,
     setup_logging,
     size_validator,
@@ -236,6 +240,16 @@ def test_duration_validation():
     assert "WRONG_PATTERN" in c.errors
 
 
+def test_precision_validation():
+    class MyConfig(_ConfigBase):
+        sample_rate = _ConfigValue("SR", type=float, validators=[PrecisionValidator(4, 0.0001)])
+
+    c = MyConfig({"SR": "0.0000001"})
+    assert c.sample_rate == 0.0001
+    c = MyConfig({"SR": "0.555555"})
+    assert c.sample_rate == 0.5556
+
+
 def test_chained_validators():
     class MyConfig(_ConfigBase):
         chained = _ConfigValue("CHAIN", validators=[lambda val, field: val.upper(), lambda val, field: val * 2])
@@ -282,3 +296,145 @@ def test_validate_catches_type_errors():
 
     c = MyConfig({"anint": "x"})
     assert "invalid literal" in c.errors["anint"]
+
+
+@pytest.mark.parametrize(
+    "val,expected",
+    [("transactions", constants.TRANSACTION), ("errors", constants.ERROR), ("all", "all"), ("off", "off")],
+)
+def test_capture_body_mapping(val, expected):
+    c = Config(inline_dict={"capture_body": val})
+    assert c.capture_body == expected
+
+
+@pytest.mark.parametrize(
+    "enabled,recording,is_recording",
+    [(True, True, True), (True, False, False), (False, True, False), (False, False, False)],
+)
+def test_is_recording(enabled, recording, is_recording):
+    c = Config(inline_dict={"enabled": enabled, "recording": recording, "service_name": "foo"})
+    assert c.is_recording is is_recording
+
+
+def test_required_is_checked_if_field_not_provided():
+    class MyConfig(_ConfigBase):
+        this_one_is_required = _ConfigValue("this_one_is_required", type=int, required=True)
+        this_one_isnt = _ConfigValue("this_one_isnt", type=int, required=False)
+
+    assert MyConfig({"this_one_is_required": None}).errors
+    assert MyConfig({}).errors
+    assert MyConfig({"this_one_isnt": 1}).errors
+
+    c = MyConfig({"this_one_is_required": 1})
+    c.update({"this_one_isnt": 0})
+    assert not c.errors
+
+
+def test_callback():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global])
+
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 1
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 2
+
+
+def test_callbacks_on_default():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 1
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 2
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 3
+
+    # Test without callback on default
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], callbacks_on_default=False, default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 3
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 4
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 5
+
+
+def test_callback_reset():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global])
+
+    c = VersionedConfig(MyConfig({"foo": "bar"}), version=None)
+    assert test_var["foo"] == 1
+    c.update(version=2, **{"foo": "baz"})
+    assert test_var["foo"] == 2
+    c.reset()
+    assert test_var["foo"] == 3
+
+
+def test_reset_after_adding_config():
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo")
+        bar = _ConfigValue("bar")
+
+    c = VersionedConfig(MyConfig({"foo": "baz"}), version=1)
+
+    c.update(version=2, bar="bazzinga")
+
+    c.reset()
+    assert c.bar is None
+
+
+def test_valid_values_validator():
+    # Case sensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=False)
+    assert v("foo", "foo") == "foo"
+    assert v("bar", "foo") == "Bar"
+    assert v("BAZ", "foo") == "baz"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
+
+    # Case insensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=True)
+    assert v("foo", "foo") == "foo"
+    with pytest.raises(ConfigurationError):
+        v("bar", "foo")
+    with pytest.raises(ConfigurationError):
+        v("BAZ", "foo")
+    assert v("Bar", "foo") == "Bar"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
+
+
+def test_versioned_config_attribute_access(elasticapm_client):
+    # see https://github.com/elastic/apm-agent-python/issues/1147
+    val = elasticapm_client.config.start_stop_order
+    assert isinstance(val, int)
+    # update config to ensure start_stop_order isn't read from the proxied Config object
+    elasticapm_client.config.update("2", capture_body=True)
+    val = elasticapm_client.config.start_stop_order
+    assert isinstance(val, int)

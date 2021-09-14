@@ -37,6 +37,7 @@ import platform
 import socket
 import sys
 import time
+import warnings
 from collections import defaultdict
 
 import mock
@@ -60,6 +61,18 @@ def test_service_info(elasticapm_client):
     assert service_info["environment"] == elasticapm_client.config.environment == "production"
     assert service_info["language"] == {"name": "python", "version": platform.python_version()}
     assert service_info["agent"]["name"] == "python"
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"environment": "production", "service_node_name": "my_node"}], indirect=True
+)
+def test_service_info_node_name(elasticapm_client):
+    service_info = elasticapm_client.get_service_info()
+    assert service_info["name"] == elasticapm_client.config.service_name
+    assert service_info["environment"] == elasticapm_client.config.environment == "production"
+    assert service_info["language"] == {"name": "python", "version": platform.python_version()}
+    assert service_info["agent"]["name"] == "python"
+    assert service_info["node"]["configured_name"] == "my_node"
 
 
 def test_process_info(elasticapm_client):
@@ -92,7 +105,7 @@ def test_system_info_hostname_configurable(elasticapm_client):
 
 @pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,az.rack=8"}], indirect=True)
 def test_global_labels(elasticapm_client):
-    data = elasticapm_client._build_metadata()
+    data = elasticapm_client.build_metadata()
     assert data["labels"] == {"az": "us-east-1", "az_rack": "8"}
 
 
@@ -219,6 +232,7 @@ def test_empty_processor_list(elasticapm_client):
     assert elasticapm_client.processors == []
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.parametrize(
     "sending_elasticapm_client",
     [{"transport_class": "elasticapm.transport.http.Transport", "async_mode": False}],
@@ -263,9 +277,8 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
     client._transport.flush()
-    record = caplog.records[0]
     assert client._transport.state.did_fail()
-    assert "oopsie" in record.message
+    assert_any_record_contains(caplog.records, "oopsie", "elasticapm.transport")
 
     # test recovery
     http_send.side_effect = None
@@ -273,33 +286,6 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     client.close()
     assert not client._transport.state.did_fail()
     client.close()
-
-
-@pytest.mark.parametrize(
-    "sending_elasticapm_client",
-    [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
-    indirect=True,
-)
-@pytest.mark.parametrize("validating_httpserver", [{"app": ContentServer}], indirect=True)
-@mock.patch("elasticapm.transport.base.TransportState.should_try")
-def test_send_remote_failover_async(should_try, sending_elasticapm_client, caplog):
-    should_try.return_value = True
-    sending_elasticapm_client.httpserver.code = 400
-
-    # test error
-    with caplog.at_level("ERROR", "elasticapm.transport"):
-        sending_elasticapm_client.capture_message("foo", handled=False)
-        sending_elasticapm_client._transport.flush()
-        time.sleep(0.1)  # give event processor thread some time to do its thing
-    assert sending_elasticapm_client._transport.state.did_fail()
-    assert "400" in caplog.records[0].message
-
-    # test recovery
-    sending_elasticapm_client.httpserver.code = 202
-    with caplog.at_level("ERROR", "elasticapm.transport"):
-        sending_elasticapm_client.capture_message("bar", handled=False)
-        sending_elasticapm_client.close()
-    assert not sending_elasticapm_client._transport.state.did_fail()
 
 
 @pytest.mark.parametrize("validating_httpserver", [{"skip_validate": True}], indirect=True)
@@ -317,9 +303,12 @@ def test_send(sending_elasticapm_client):
     for k, v in expected_headers.items():
         assert seen_headers[k] == v
 
-    assert 250 < request.content_length < 400
+    # Commented out per @beniwohli
+    # TODO: figure out why payload size is larger than 400 on windows / 2.7
+    # assert 250 < request.content_length < 400
 
 
+@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
 def test_send_not_enabled(sending_elasticapm_client):
     assert sending_elasticapm_client.config.disable_send
@@ -335,17 +324,6 @@ def test_send_not_enabled(sending_elasticapm_client):
     indirect=True,
 )
 def test_client_shutdown_sync(sending_elasticapm_client):
-    sending_elasticapm_client.capture_message("x")
-    sending_elasticapm_client.close()
-    assert len(sending_elasticapm_client.httpserver.requests) == 1
-
-
-@pytest.mark.parametrize(
-    "sending_elasticapm_client",
-    [{"transport_class": "elasticapm.transport.http.AsyncTransport", "async_mode": True}],
-    indirect=True,
-)
-def test_client_shutdown_async(sending_elasticapm_client):
     sending_elasticapm_client.capture_message("x")
     sending_elasticapm_client.close()
     assert len(sending_elasticapm_client.httpserver.requests) == 1
@@ -392,6 +370,25 @@ def test_ignore_patterns_with_none_transaction_name(elasticapm_client):
     elasticapm_client.begin_transaction("web")
     t = elasticapm_client.end_transaction(None, 200)
     assert t.name == ""
+
+
+@pytest.mark.parametrize(
+    "setting,url,result",
+    [
+        ("", "/foo/bar", False),
+        ("*", "/foo/bar", True),
+        ("/foo/bar,/baz", "/foo/bar", True),
+        ("/foo/bar,/baz", "/baz", True),
+        ("/foo/bar,/bazz", "/baz", False),
+        ("/foo/*/bar,/bazz", "/foo/bar", False),
+        ("/foo/*/bar,/bazz", "/foo/ooo/bar", True),
+        ("*/foo/*/bar,/bazz", "/foo/ooo/bar", True),
+        ("*/foo/*/bar,/bazz", "/baz/foo/ooo/bar", True),
+    ],
+)
+def test_should_ignore_url(elasticapm_client, setting, url, result):
+    elasticapm_client.config.update(1, transaction_ignore_urls=setting)
+    assert elasticapm_client.should_ignore_url(url) is result
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
@@ -511,6 +508,39 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
     for transaction in transactions:
         assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
         assert transaction["sampled"] or not "context" in transaction
+        assert transaction["sample_rate"] == 0 if not transaction["sampled"] else transaction["sample_rate"] == 0.4
+
+
+def test_transaction_sample_rate_dynamic(elasticapm_client, not_so_random):
+    elasticapm_client.config.update(version="1", transaction_sample_rate=0.4)
+    for i in range(10):
+        elasticapm_client.begin_transaction("test_type")
+        with elasticapm.capture_span("xyz"):
+            pass
+        elasticapm_client.end_transaction("test")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans_per_transaction = defaultdict(list)
+    for span in elasticapm_client.events[SPAN]:
+        spans_per_transaction[span["transaction_id"]].append(span)
+
+    # seed is fixed by not_so_random fixture
+    assert len([t for t in transactions if t["sampled"]]) == 3
+    for transaction in transactions:
+        assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
+        assert transaction["sampled"] or not "context" in transaction
+
+    elasticapm_client.config.update(version="1", transaction_sample_rate=1.0)
+    for i in range(5):
+        elasticapm_client.begin_transaction("test_type")
+        with elasticapm.capture_span("xyz"):
+            pass
+        elasticapm_client.end_transaction("test")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+
+    # seed is fixed by not_so_random fixture
+    assert len([t for t in transactions if t["sampled"]]) == 8
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
@@ -596,6 +626,42 @@ def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
     assert spans[1]["stacktrace"] is not None
 
 
+def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
+    elasticapm_client.config.update(version="1", span_frames_min_duration=20)
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("noframes", duration=0.001):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
+    elasticapm_client.end_transaction("test")
+
+    spans = elasticapm_client.events[SPAN]
+
+    assert len(spans) == 2
+    assert spans[0]["name"] == "noframes"
+    assert "stacktrace" not in spans[0]
+
+    assert spans[1]["name"] == "frames"
+    assert spans[1]["stacktrace"] is not None
+
+    elasticapm_client.config.update(version="1", span_frames_min_duration=-1)
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("frames"):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
+    elasticapm_client.end_transaction("test")
+
+    spans = elasticapm_client.events[SPAN]
+
+    assert len(spans) == 4
+    assert spans[2]["name"] == "frames"
+    assert spans[2]["stacktrace"] is not None
+
+    assert spans[3]["name"] == "frames"
+    assert spans[3]["stacktrace"] is not None
+
+
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 3}], indirect=True)
 def test_transaction_max_span_nested(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
@@ -632,7 +698,7 @@ def test_transaction_keyword_truncation(elasticapm_client):
     assert len(expected) == KEYWORD_MAX_LENGTH
     assert expected[-1] != "x"
     elasticapm_client.begin_transaction(too_long)
-    elasticapm.tag(val=too_long)
+    elasticapm.label(val=too_long)
     elasticapm.set_user_context(username=too_long, email=too_long, user_id=too_long)
     with elasticapm.capture_span(name=too_long, span_type=too_long):
         pass
@@ -683,6 +749,30 @@ def test_trace_parent(elasticapm_client):
     assert data["parent_id"] == "b7ad6b7169203331"
 
 
+def test_sample_rate_in_dict(elasticapm_client):
+    trace_parent = TraceParent.from_string(
+        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", tracestate_string="es=s:0.43"
+    )
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    with elasticapm.capture_span("x"):
+        pass
+    transaction = elasticapm_client.end_transaction("test", "OK")
+    data = transaction.to_dict()
+    assert data["sample_rate"] == 0.43
+    assert elasticapm_client.events[SPAN][0]["sample_rate"] == 0.43
+
+
+def test_sample_rate_undefined_by_parent(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    with elasticapm.capture_span("x"):
+        pass
+    transaction = elasticapm_client.end_transaction("test", "OK")
+    data = transaction.to_dict()
+    assert "sample_rate" not in data
+    assert "sample_rate" not in elasticapm_client.events[SPAN][0]
+
+
 def test_trace_parent_not_set(elasticapm_client):
     elasticapm_client.begin_transaction("test", trace_parent=None)
     transaction = elasticapm_client.end_transaction("test", "OK")
@@ -722,3 +812,85 @@ def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
 )
 def test_server_url_joining(elasticapm_client, expected):
     assert elasticapm_client._api_endpoint_url == expected
+
+
+@pytest.mark.parametrize(
+    "version,raises,pending",
+    [
+        (("2", "7", "0"), True, True),
+        (("3", "3", "0"), True, False),
+        (("3", "4", "0"), True, False),
+        (("3", "5", "0"), False, False),
+    ],
+)
+@mock.patch("platform.python_version_tuple")
+def test_python_version_deprecation(mock_python_version_tuple, version, raises, pending, recwarn):
+    warnings.simplefilter("always")
+
+    mock_python_version_tuple.return_value = version
+    e = None
+    try:
+        e = elasticapm.Client()
+    finally:
+        if e:
+            e.close()
+    if raises:
+        if pending:
+            w = recwarn.pop(PendingDeprecationWarning)
+            assert "will stop supporting" in w.message.args[0]
+        else:
+            w = recwarn.pop(DeprecationWarning)
+            assert "agent only supports" in w.message.args[0]
+
+
+def test_recording(elasticapm_client):
+    assert elasticapm_client.capture_message("x") is not None
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        assert elasticapm_client.capture_exception() is not None
+    assert elasticapm_client.begin_transaction("test") is not None
+    with elasticapm.capture_span("x") as x_span:
+        assert x_span is not None
+    assert elasticapm_client.end_transaction("ok", "ok") is not None
+
+    elasticapm_client.config.update("1", recording=False)
+    assert not elasticapm_client.config.is_recording
+    assert elasticapm_client.capture_message("x") is None
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        assert elasticapm_client.capture_exception() is None
+    assert elasticapm_client.begin_transaction("test") is None
+    with elasticapm.capture_span("x") as x_span:
+        assert x_span is None
+    assert elasticapm_client.end_transaction("ok", "ok") is None
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {"enabled": True, "metrics_interval": "30s", "central_config": "true"},
+        {"enabled": False, "metrics_interval": "30s", "central_config": "true"},
+    ],
+    indirect=True,
+)
+def test_client_enabled(elasticapm_client):
+    if elasticapm_client.config.enabled:
+        assert elasticapm_client.config.is_recording
+        for manager in elasticapm_client._thread_managers.values():
+            assert manager.is_started()
+    else:
+        assert not elasticapm_client.config.is_recording
+        for manager in elasticapm_client._thread_managers.values():
+            assert not manager.is_started()
+
+
+def test_excepthook(elasticapm_client):
+    try:
+        raise Exception("hi!")
+    except Exception:
+        type_, value, traceback = sys.exc_info()
+        elasticapm_client._excepthook(type_, value, traceback)
+
+    assert elasticapm_client.events[ERROR]

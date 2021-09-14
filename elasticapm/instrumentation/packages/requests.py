@@ -30,7 +30,7 @@
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url
+from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
 
 
 class RequestsInstrumentation(AbstractInstrumentedModule):
@@ -47,8 +47,19 @@ class RequestsInstrumentation(AbstractInstrumentedModule):
         signature = request.method.upper()
         signature += " " + get_host_from_url(request.url)
         url = sanitize_url(request.url)
+        destination = url_to_destination(url)
 
         with capture_span(
-            signature, span_type="external", span_subtype="http", extra={"http": {"url": url}}, leaf=True
-        ):
-            return wrapped(*args, **kwargs)
+            signature,
+            span_type="external",
+            span_subtype="http",
+            extra={"http": {"url": url}, "destination": destination},
+            leaf=True,
+        ) as span:
+            response = wrapped(*args, **kwargs)
+            # requests.Response objects are falsy if status code > 400, so we have to check for None instead
+            if response is not None:
+                if span.context:
+                    span.context["http"]["status_code"] = response.status_code
+                span.set_success() if response.status_code < 400 else span.set_failure()
+            return response

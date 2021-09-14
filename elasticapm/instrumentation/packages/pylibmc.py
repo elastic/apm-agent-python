@@ -31,6 +31,11 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
 
+try:
+    from functools import lru_cache
+except ImportError:
+    from cachetools.func import lru_cache
+
 
 class PyLibMcInstrumentation(AbstractInstrumentedModule):
     name = "pylibmc"
@@ -56,5 +61,31 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
-        with capture_span(wrapped_name, span_type="cache", span_subtype="memcached", span_action="query"):
+        address, port = get_address_port_from_instance(instance)
+        destination = {
+            "address": address,
+            "port": port,
+            "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
+        }
+        with capture_span(
+            wrapped_name,
+            span_type="cache",
+            span_subtype="memcached",
+            span_action="query",
+            extra={"destination": destination},
+        ):
             return wrapped(*args, **kwargs)
+
+
+@lru_cache(10)
+def get_address_port_from_instance(instance):
+    address, port = None, None
+    if instance.addresses:
+        first_address = instance.addresses[0]
+        if ":" in first_address:
+            address, port = first_address.split(":", 1)
+            try:
+                port = int(port)
+            except ValueError:
+                port = None
+    return address, port

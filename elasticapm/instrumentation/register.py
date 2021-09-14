@@ -34,6 +34,7 @@ from elasticapm.utils.module_import import import_string
 
 _cls_register = {
     "elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation",
+    "elasticapm.instrumentation.packages.httpx.HttpxClientInstrumentation",
     "elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2ExtensionsInstrumentation",
@@ -45,31 +46,46 @@ _cls_register = {
     "elasticapm.instrumentation.packages.pymongo.PyMongoBulkInstrumentation",
     "elasticapm.instrumentation.packages.pymongo.PyMongoCursorInstrumentation",
     "elasticapm.instrumentation.packages.python_memcached.PythonMemcachedInstrumentation",
+    "elasticapm.instrumentation.packages.pymemcache.PyMemcacheInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisInstrumentation",
     "elasticapm.instrumentation.packages.redis.RedisPipelineInstrumentation",
+    "elasticapm.instrumentation.packages.redis.RedisConnectionInstrumentation",
     "elasticapm.instrumentation.packages.requests.RequestsInstrumentation",
     "elasticapm.instrumentation.packages.sqlite.SQLiteInstrumentation",
     "elasticapm.instrumentation.packages.urllib3.Urllib3Instrumentation",
     "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchConnectionInstrumentation",
-    "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchInstrumentation",
+    "elasticapm.instrumentation.packages.elasticsearch.ElasticsearchTransportInstrumentation",
     "elasticapm.instrumentation.packages.cassandra.CassandraInstrumentation",
     "elasticapm.instrumentation.packages.pymssql.PyMSSQLInstrumentation",
     "elasticapm.instrumentation.packages.pyodbc.PyODBCInstrumentation",
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateInstrumentation",
     "elasticapm.instrumentation.packages.django.template.DjangoTemplateSourceInstrumentation",
     "elasticapm.instrumentation.packages.urllib.UrllibInstrumentation",
+    "elasticapm.instrumentation.packages.graphql.GraphQLExecutorInstrumentation",
+    "elasticapm.instrumentation.packages.graphql.GraphQLBackendInstrumentation",
+    "elasticapm.instrumentation.packages.httpcore.HTTPCoreInstrumentation",
+    "elasticapm.instrumentation.packages.httplib2.Httplib2Instrumentation",
 }
 
-if sys.version_info >= (3, 5):
+if sys.version_info >= (3, 7):
     _cls_register.update(
         [
             "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.httpx.HttpxAsyncClientInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
+            "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticsearchAsyncTransportInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.asyncpg.AsyncPGInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.base.RunInExecutorInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.httpcore.HTTPCoreAsyncInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionPoolInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.RedisPipelineInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiomysql.AioMySQLInstrumentation",
         ]
     )
 

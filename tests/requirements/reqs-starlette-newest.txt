@@ -1,0 +1,5 @@
+starlette>=0.15
+aiofiles
+requests
+flask
+-r reqs-base.txt

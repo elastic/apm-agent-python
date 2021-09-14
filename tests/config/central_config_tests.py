@@ -31,15 +31,13 @@
 import mock
 import pytest
 
-from elasticapm.conf import update_config
-
 
 @mock.patch("tests.fixtures.DummyTransport.get_config")
 def test_update_config(mock_get_config, elasticapm_client):
     assert elasticapm_client.config.transaction_sample_rate == 1.0
     assert elasticapm_client.config.config_version is None
     mock_get_config.return_value = 2, {"transaction_sample_rate": 0.1}, 30
-    update_config(elasticapm_client)
+    elasticapm_client.config.update_config()
     assert elasticapm_client.config.transaction_sample_rate == 0.1
     assert elasticapm_client.config.config_version == 2
 
@@ -50,7 +48,7 @@ def test_environment_doesnt_override_central_config(mock_get_config, elasticapm_
     assert elasticapm_client.config.config_version is None
     mock_get_config.return_value = 2, {"transaction_sample_rate": 0.1}, 30
     with mock.patch.dict("os.environ", {"ELASTIC_APM_TRANSACTION_SAMPLE_RATE": "0.5"}):
-        update_config(elasticapm_client)
+        elasticapm_client.config.update_config()
     assert elasticapm_client.config.transaction_sample_rate == 0.1
     assert elasticapm_client.config.config_version == 2
 
@@ -62,11 +60,11 @@ def test_reset_to_original(mock_get_config, elasticapm_client):
     assert elasticapm_client.config.config_version is None
     assert not elasticapm_client.config.changed
     mock_get_config.return_value = 2, {"transaction_sample_rate": 0.1}, 30
-    update_config(elasticapm_client)
+    elasticapm_client.config.update_config()
     assert elasticapm_client.config.changed
     assert elasticapm_client.config.transaction_sample_rate == 0.1
     mock_get_config.return_value = 3, {}, 30
-    update_config(elasticapm_client)
+    elasticapm_client.config.update_config()
     assert not elasticapm_client.config.changed
     assert elasticapm_client.config.transaction_sample_rate == 0.9
 
@@ -78,11 +76,11 @@ def test_no_reset_if_version_matches(mock_get_config, elasticapm_client):
     assert elasticapm_client.config.config_version is None
     assert not elasticapm_client.config.changed
     mock_get_config.return_value = 2, {"transaction_sample_rate": 0.1}, 30
-    update_config(elasticapm_client)
+    elasticapm_client.config.update_config()
     assert elasticapm_client.config.changed
     assert elasticapm_client.config.transaction_sample_rate == 0.1
     mock_get_config.return_value = 2, {}, 30
-    update_config(elasticapm_client)
+    elasticapm_client.config.update_config()
     assert elasticapm_client.config.changed
     assert elasticapm_client.config.config_version == 2
 
@@ -97,6 +95,6 @@ def test_erroneous_config_is_ignored(mock_get_config, elasticapm_client):
     assert elasticapm_client.config.transaction_sample_rate == 1.0
     assert elasticapm_client.config.config_version is None
     mock_get_config.return_value = 2, {"transaction_sample_rate": "x"}, 30
-    update_config(elasticapm_client)
+    elasticapm_client.config.update_config()
     assert elasticapm_client.config.transaction_sample_rate == 1.0
     assert elasticapm_client.config.config_version == None

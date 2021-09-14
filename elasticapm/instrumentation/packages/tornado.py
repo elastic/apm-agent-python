@@ -31,6 +31,7 @@
 Instrumentation for Tornado
 """
 import elasticapm
+from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.disttracing import TraceParent
@@ -42,33 +43,37 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("tornado.web", "RequestHandler._execute")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
+        if not hasattr(instance.application, "elasticapm_client"):
+            # If tornado was instrumented but not as the main framework
+            # (i.e. in Flower), we should skip it.
+            return await wrapped(*args, **kwargs)
+
         # Late import to avoid ImportErrors
         from elasticapm.contrib.tornado.utils import get_data_from_request, get_data_from_response
 
         request = instance.request
-        trace_parent = TraceParent.from_headers(request.headers)
         client = instance.application.elasticapm_client
-        client.begin_transaction("request", trace_parent=trace_parent)
-        elasticapm.set_context(
-            lambda: get_data_from_request(
-                instance,
-                request,
-                capture_body=client.config.capture_body in ("transactions", "all"),
-                capture_headers=client.config.capture_headers,
-            ),
-            "request",
-        )
-        # TODO: Can we somehow incorporate the routing rule itself here?
-        elasticapm.set_transaction_name("{} {}".format(request.method, type(instance).__name__), override=False)
+        should_ignore = client.should_ignore_url(request.path)
+        if not should_ignore:
+            trace_parent = TraceParent.from_headers(request.headers)
+            client.begin_transaction("request", trace_parent=trace_parent)
+            elasticapm.set_context(
+                lambda: get_data_from_request(instance, request, client.config, constants.TRANSACTION), "request"
+            )
+            # TODO: Can we somehow incorporate the routing rule itself here?
+            elasticapm.set_transaction_name("{} {}".format(request.method, type(instance).__name__), override=False)
 
         ret = await wrapped(*args, **kwargs)
 
-        elasticapm.set_context(
-            lambda: get_data_from_response(instance, capture_headers=client.config.capture_headers), "response"
-        )
-        result = "HTTP {}xx".format(instance.get_status() // 100)
-        elasticapm.set_transaction_result(result, override=False)
-        client.end_transaction()
+        if not should_ignore:
+            elasticapm.set_context(
+                lambda: get_data_from_response(instance, client.config, constants.TRANSACTION), "response"
+            )
+            status = instance.get_status()
+            result = "HTTP {}xx".format(status // 100)
+            elasticapm.set_transaction_result(result, override=False)
+            elasticapm.set_transaction_outcome(http_status_code=status)
+            client.end_transaction()
 
         return ret
 
@@ -79,9 +84,14 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("tornado.web", "RequestHandler._handle_request_exception")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
+        if not hasattr(instance.application, "elasticapm_client"):
+            # If tornado was instrumented but not as the main framework
+            # (i.e. in Flower), we should skip it.
+            return wrapped(*args, **kwargs)
 
         # Late import to avoid ImportErrors
         from tornado.web import Finish, HTTPError
+
         from elasticapm.contrib.tornado.utils import get_data_from_request
 
         e = args[0]
@@ -92,12 +102,9 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
         client = instance.application.elasticapm_client
         request = instance.request
         client.capture_exception(
-            context={
-                "request": get_data_from_request(
-                    instance, request, capture_body=client.config.capture_body in ("all", "errors")
-                )
-            }
+            context={"request": get_data_from_request(instance, request, client.config, constants.ERROR)}
         )
+        elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE)
         if isinstance(e, HTTPError):
             elasticapm.set_transaction_result("HTTP {}xx".format(int(e.status_code / 100)), override=False)
             elasticapm.set_context({"status_code": e.status_code}, "response")

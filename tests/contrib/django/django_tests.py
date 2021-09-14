@@ -32,6 +32,8 @@
 
 import pytest  # isort:skip
 
+from tests.utils import assert_any_record_contains
+
 django = pytest.importorskip("django")  # isort:skip
 
 
@@ -40,6 +42,7 @@ import logging
 import os
 from copy import deepcopy
 
+import mock
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.redirects.models import Redirect
@@ -53,8 +56,6 @@ from django.http.cookie import SimpleCookie
 from django.test.client import Client as _TestClient
 from django.test.client import ClientHandler as _TestClientHandler
 from django.test.utils import override_settings
-
-import mock
 
 from elasticapm.base import Client
 from elasticapm.conf import constants
@@ -512,17 +513,6 @@ def test_response_error_id_middleware(django_elasticapm_client, client):
         assert event["id"] == headers["X-ElasticAPM-ErrorId"]
 
 
-def test_get_client(django_elasticapm_client):
-    with mock.patch.dict("os.environ", {"ELASTIC_APM_METRICS_INTERVAL": "0ms"}):
-        client2 = get_client("elasticapm.base.Client")
-        try:
-            assert get_client() is get_client()
-            assert client2.__class__ == Client
-        finally:
-            get_client().close()
-            client2.close()
-
-
 @pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)
 def test_raw_post_data_partial_read(django_elasticapm_client):
     v = compat.b('{"foo": "bar"}')
@@ -575,7 +565,7 @@ def test_post_data(django_elasticapm_client):
     assert "request" in event["context"]
     request = event["context"]["request"]
     assert request["method"] == "POST"
-    if django_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert request["body"] == {"x": "1", "y": ["2", "3"]}
     else:
         assert request["body"] == "[REDACTED]"
@@ -607,12 +597,13 @@ def test_post_raw_data(django_elasticapm_client):
     assert "request" in event["context"]
     request = event["context"]["request"]
     assert request["method"] == "POST"
-    if django_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert request["body"] == compat.b("foobar")
     else:
         assert request["body"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize("django_elasticapm_client", [{"capture_body": "errors"}], indirect=True)
 def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     request = rf.post("/test", data="{}", content_type="application/json")
 
@@ -621,9 +612,8 @@ def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
 
     request.read = read
     with caplog.at_level(logging.DEBUG):
-        django_elasticapm_client.get_data_from_request(request, capture_body=True)
-    record = caplog.records[0]
-    assert record.message == "Can't capture request body: foobar"
+        django_elasticapm_client.get_data_from_request(request, constants.ERROR)
+    assert_any_record_contains(caplog.records, "Can't capture request body: foobar")
 
 
 @pytest.mark.skipif(django.VERSION < (1, 9), reason="get-raw-uri-not-available")
@@ -692,7 +682,7 @@ def test_request_capture(django_elasticapm_client):
     assert "request" in event["context"]
     request = event["context"]["request"]
     assert request["method"] == "POST"
-    if django_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert request["body"] == "<unavailable>"
     else:
         assert request["body"] == "[REDACTED]"
@@ -756,6 +746,28 @@ def test_transaction_metrics(django_elasticapm_client, client):
         assert transaction["duration"] > 0
         assert transaction["result"] == "HTTP 2xx"
         assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+        assert transaction["outcome"] == "success"
+
+
+def test_transaction_metrics_error(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 0
+        try:
+            client.get(reverse("elasticapm-http-error", args=(500,)))
+        except Exception:
+            pass
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+        transactions = django_elasticapm_client.events[TRANSACTION]
+
+        assert len(transactions) == 1
+        transaction = transactions[0]
+        assert transaction["duration"] > 0
+        assert transaction["result"] == "HTTP 5xx"
+        assert transaction["name"] == "GET tests.contrib.django.testapp.views.http_error"
+        assert transaction["outcome"] == "failure"
 
 
 def test_transaction_metrics_debug(django_elasticapm_client, client):
@@ -1159,16 +1171,6 @@ def test_subcommand_not_known(argv_mock):
     assert 'No such command "foo"' in output
 
 
-def test_settings_missing():
-    stdout = compat.StringIO()
-    with override_settings(ELASTIC_APM={}):
-        call_command("elasticapm", "check", stdout=stdout)
-    output = stdout.getvalue()
-    assert "Configuration errors detected" in output
-    assert "SERVICE_NAME not set" in output
-    assert "optional SECRET_TOKEN not set" in output
-
-
 def test_settings_missing_secret_token_no_https():
     stdout = compat.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://foo"}):
@@ -1233,7 +1235,6 @@ def test_settings_server_url_not_http_nor_https():
     with override_settings(ELASTIC_APM={"SERVER_URL": "xhttp://dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
-    assert "Configuration errors detected" in output
     assert "SERVER_URL has scheme xhttp and we require http or https" in output
 
 
@@ -1290,6 +1291,20 @@ def test_test_exception(urlopen_mock):
     assert "Success! We tracked the error successfully!" in output
 
 
+@mock.patch("elasticapm.transport.http.Transport.send")
+def test_test_exception_fails(mock_send):
+    stdout = compat.StringIO()
+    mock_send.side_effect = Exception("boom")
+    with override_settings(
+        ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport", "SERVICE_NAME": "testapp"},
+        **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        call_command("elasticapm", "test", stdout=stdout, stderr=stdout)
+    output = stdout.getvalue()
+    assert "Oops" in output
+    assert "boom" in output
+
+
 def test_tracing_middleware_uses_test_client(client, django_elasticapm_client):
     with override_settings(
         **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
@@ -1309,7 +1324,7 @@ def test_capture_post_errors_dict(client, django_elasticapm_client):
     with pytest.raises(MyException):
         client.post(reverse("elasticapm-raise-exc"), {"username": "john", "password": "smith"})
     error = django_elasticapm_client.events[ERROR][0]
-    if django_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert error["context"]["request"]["body"] == {"username": "john", "password": "smith"}
     else:
         assert error["context"]["request"]["body"] == "[REDACTED]"
@@ -1347,6 +1362,38 @@ def test_capture_body_config_is_dynamic_for_transactions(client, django_elastica
     assert transaction["context"]["request"]["body"] == "[REDACTED]"
 
 
+def test_capture_headers_config_is_dynamic_for_errors(client, django_elasticapm_client):
+    django_elasticapm_client.config.update(version="1", capture_headers=True)
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"))
+    error = django_elasticapm_client.events[ERROR][0]
+    assert error["context"]["request"]["headers"]
+
+    django_elasticapm_client.config.update(version="1", capture_headers=False)
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"))
+    error = django_elasticapm_client.events[ERROR][1]
+    assert "headers" not in error["context"]["request"]
+
+
+def test_capture_headers_config_is_dynamic_for_transactions(client, django_elasticapm_client):
+    django_elasticapm_client.config.update(version="1", capture_headers=True)
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-no-error"))
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["headers"]
+
+    django_elasticapm_client.config.update(version="1", capture_headers=False)
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.post(reverse("elasticapm-no-error"))
+    transaction = django_elasticapm_client.events[TRANSACTION][1]
+    assert "headers" not in transaction["context"]["request"]
+
+
 @pytest.mark.parametrize(
     "django_elasticapm_client",
     [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],
@@ -1360,7 +1407,7 @@ def test_capture_post_errors_multivalue_dict(client, django_elasticapm_client):
             content_type="application/x-www-form-urlencoded",
         )
     error = django_elasticapm_client.events[ERROR][0]
-    if django_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert error["context"]["request"]["body"] == {"key": ["value1", "value2", "value3"], "test": "test"}
     else:
         assert error["context"]["request"]["body"] == "[REDACTED]"
@@ -1379,7 +1426,7 @@ def test_capture_post_errors_raw(client, django_sending_elasticapm_client):
         )
     django_sending_elasticapm_client.close()
     error = django_sending_elasticapm_client.httpserver.payloads[0][1]["error"]
-    if django_sending_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_sending_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert error["context"]["request"]["body"] == '{"a": "b"}'
     else:
         assert error["context"]["request"]["body"] == "[REDACTED]"
@@ -1394,8 +1441,10 @@ def test_capture_empty_body(client, django_elasticapm_client):
     with pytest.raises(MyException):
         client.post(reverse("elasticapm-raise-exc"), data={})
     error = django_elasticapm_client.events[ERROR][0]
-    # body should be empty no matter if we capture it or not
-    assert error["context"]["request"]["body"] == {}
+    if django_elasticapm_client.config.capture_body not in ("error", "all"):
+        assert error["context"]["request"]["body"] == "[REDACTED]"
+    else:
+        assert error["context"]["request"]["body"] == {}
 
 
 @pytest.mark.parametrize(
@@ -1409,7 +1458,7 @@ def test_capture_files(client, django_elasticapm_client):
             reverse("elasticapm-raise-exc"), data={"a": "b", "f1": compat.BytesIO(100 * compat.b("1")), "f2": f}
         )
     error = django_elasticapm_client.events[ERROR][0]
-    if django_elasticapm_client.config.capture_body in ("errors", "all"):
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert error["context"]["request"]["body"] == {"a": "b", "_files": {"f1": "f1", "f2": "django_tests.py"}}
     else:
         assert error["context"]["request"]["body"] == "[REDACTED]"
@@ -1482,6 +1531,29 @@ def test_transaction_name_from_route(client, django_elasticapm_client):
     assert transaction["name"] == "GET route/<int:id>/"
 
 
+@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route_empty_route(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET home-view"
+
+
+@pytest.mark.skipif(django.VERSION < (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
+@pytest.mark.urls("tests.contrib.django.testapp.nameless_route_urls")
+@pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
+def test_transaction_name_from_route_empty_route_no_name(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/")
+    transaction = django_elasticapm_client.events[TRANSACTION][0]
+    assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+
+
 @pytest.mark.skipif(django.VERSION >= (2, 2), reason="ResolverMatch.route attribute is new in Django 2.2")
 @pytest.mark.parametrize("django_elasticapm_client", [{"django_transaction_name_from_route": "true"}], indirect=True)
 def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, django_elasticapm_client):
@@ -1491,3 +1563,55 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
         client.get("/no-error")
     transaction = django_elasticapm_client.events[TRANSACTION][0]
     assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
+
+
+def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, client):
+    with override_settings(
+        TEMPLATES=[
+            {
+                "BACKEND": "django.template.backends.django.DjangoTemplates",
+                "DIRS": [BASE_TEMPLATE_DIR],
+                "OPTIONS": {
+                    "context_processors": [
+                        "django.contrib.auth.context_processors.auth",
+                        "elasticapm.contrib.django.context_processors.rum_tracing",
+                    ],
+                    "loaders": ["django.template.loaders.filesystem.Loader"],
+                    "debug": False,
+                },
+            }
+        ],
+        **middleware_setting(
+            django.VERSION,
+            [
+                "elasticapm.contrib.django.middleware.TracingMiddleware",
+                "tests.contrib.django.testapp.middleware.SetTransactionUnsampled",
+            ],
+        )
+    ):
+        client.get(reverse("elasticapm-no-error"))
+        transaction = django_elasticapm_client.events[TRANSACTION][0]
+        assert not transaction["sampled"]
+        assert transaction["outcome"] == "success"
+
+
+def test_django_ignore_transaction_urls(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get("/no-error")
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+        django_elasticapm_client.config.update(1, transaction_ignore_urls="/no*")
+        client.get("/no-error")
+    assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+
+def test_default_app_config_present_by_version():
+    # The default_app_config attribute was deprecated in Django 3.2
+    import elasticapm.contrib.django
+
+    default_app_config_is_defined = hasattr(elasticapm.contrib.django, "default_app_config")
+    if django.VERSION < (3, 2):
+        assert default_app_config_is_defined
+    else:
+        assert not default_app_config_is_defined

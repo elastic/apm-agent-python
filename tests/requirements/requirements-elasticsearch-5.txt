@@ -1,2 +1,0 @@
-elasticsearch>=5.0,<6.0
--r requirements-base.txt

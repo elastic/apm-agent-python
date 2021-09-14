@@ -31,25 +31,28 @@
 
 from __future__ import absolute_import
 
+import asyncio
+import functools
+from typing import Dict, Optional
+
 import starlette
-from starlette.types import ASGIApp
 from starlette.requests import Request
-from starlette.responses import Response
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.routing import Match, Mount
+from starlette.types import ASGIApp, Message
 
 import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm.base import Client
-from elasticapm.contrib.starlette.utils import get_data_from_request, get_data_from_response
+from elasticapm.conf import constants
+from elasticapm.contrib.asyncio.traces import set_context
+from elasticapm.contrib.starlette.utils import get_body, get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
-from elasticapm.contrib.asyncio.traces import set_context
-
 
 logger = get_logger("elasticapm.errors.client")
 
 
-def make_apm_client(config: dict, client_cls=Client, **defaults) -> Client:
+def make_apm_client(config: Optional[Dict] = None, client_cls=Client, **defaults) -> Client:
     """Builds ElasticAPM client.
 
     Args:
@@ -67,11 +70,11 @@ def make_apm_client(config: dict, client_cls=Client, **defaults) -> Client:
     return client_cls(config, **defaults)
 
 
-class ElasticAPM(BaseHTTPMiddleware):
+class ElasticAPM:
     """
     Starlette / FastAPI middleware for Elastic APM capturing.
 
-    >>> elasticapm = make_apm_client({
+    >>> apm = make_apm_client({
         >>> 'SERVICE_NAME': 'myapp',
         >>> 'DEBUG': True,
         >>> 'SERVER_URL': 'http://localhost:8200',
@@ -79,19 +82,15 @@ class ElasticAPM(BaseHTTPMiddleware):
         >>> 'CAPTURE_BODY': 'all'
     >>> })
 
-    >>> app.add_middleware(ElasticAPM, client=elasticapm)
+    >>> app.add_middleware(ElasticAPM, client=apm)
 
     Pass an arbitrary APP_NAME and SECRET_TOKEN::
 
     >>> elasticapm = ElasticAPM(app, service_name='myapp', secret_token='asdasdasd')
 
-    Pass an explicit client::
+    Pass an explicit client (don't pass in additional options in this case)::
 
     >>> elasticapm = ElasticAPM(app, client=client)
-
-    Automatically configure logging::
-
-    >>> elasticapm = ElasticAPM(app, logging=True)
 
     Capture an exception::
 
@@ -105,43 +104,85 @@ class ElasticAPM(BaseHTTPMiddleware):
     >>> elasticapm.capture_message('hello, world!')
     """
 
-    def __init__(self, app: ASGIApp, client: Client):
+    def __init__(self, app: ASGIApp, client: Optional[Client], **kwargs):
         """
 
         Args:
             app (ASGIApp): Starlette app
             client (Client): ElasticAPM Client
         """
-        self.client = client
+        if client:
+            self.client = client
+        else:
+            self.client = make_apm_client(**kwargs)
 
-        super().__init__(app)
+        if self.client.config.instrument and self.client.config.enabled:
+            elasticapm.instrumentation.control.instrument()
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        """Processes the whole request APM capturing.
+        # If we ever make this a general-use ASGI middleware we should use
+        # `asgiref.conpatibility.guarantee_single_callable(app)` here
+        self.app = app
 
-        Args:
-            request (Request)
-            call_next (RequestResponseEndpoint): Next request process in Starlette.
-
-        Returns:
-            Response
+    async def __call__(self, scope, receive, send):
         """
+        Args:
+            scope: ASGI scope dictionary
+            receive: receive awaitable callable
+            send: send awaitable callable
+        """
+        # we only handle the http scope, skip anything else.
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        @functools.wraps(send)
+        async def wrapped_send(message):
+            if message.get("type") == "http.response.start":
+                await set_context(
+                    lambda: get_data_from_response(message, self.client.config, constants.TRANSACTION), "response"
+                )
+                result = "HTTP {}xx".format(message["status"] // 100)
+                elasticapm.set_transaction_result(result, override=False)
+            await send(message)
+
+        # When we consume the body from receive, we replace the streaming
+        # mechanism with a mocked version -- this workaround came from
+        # https://github.com/encode/starlette/issues/495#issuecomment-513138055
+        body = b""
+        while True:
+            message = await receive()
+            if not message:
+                break
+            if message["type"] == "http.request":
+                b = message.get("body", b"")
+                if b:
+                    body += b
+                if not message.get("more_body", False):
+                    break
+            if message["type"] == "http.disconnect":
+                break
+
+        async def _receive() -> Message:
+            await asyncio.sleep(0)
+            return {"type": "http.request", "body": body}
+
+        request = Request(scope, receive=_receive)
         await self._request_started(request)
 
         try:
-            response = await call_next(request)
+            await self.app(scope, _receive, wrapped_send)
+            elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
         except Exception:
-            await self.capture_exception()
+            await self.capture_exception(
+                context={"request": await get_data_from_request(request, self.client.config, constants.ERROR)}
+            )
             elasticapm.set_transaction_result("HTTP 5xx", override=False)
+            elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE, override=False)
             elasticapm.set_context({"status_code": 500}, "response")
 
             raise
-        else:
-            await self._request_finished(response)
         finally:
             self.client.end_transaction()
-
-        return response
 
     async def capture_exception(self, *args, **kwargs):
         """Captures your exception.
@@ -167,29 +208,59 @@ class ElasticAPM(BaseHTTPMiddleware):
         Args:
             request (Request)
         """
-        trace_parent = TraceParent.from_headers(dict(request.headers))
-        self.client.begin_transaction("request", trace_parent=trace_parent)
+        # When we consume the body, we replace the streaming mechanism with
+        # a mocked version -- this workaround came from
+        # https://github.com/encode/starlette/issues/495#issuecomment-513138055
+        # and we call the workaround here to make sure that regardless of
+        # `capture_body` settings, we will have access to the body if we need it.
+        if self.client.config.capture_body != "off":
+            await get_body(request)
 
-        await set_context(
-            lambda: get_data_from_request(
-                request,
-                capture_body=self.client.config.capture_body in ("transactions", "all"),
-                capture_headers=self.client.config.capture_headers,
-            ),
-            "request"
-        )
-        elasticapm.set_transaction_name("{} {}".format(request.method, request.url.path), override=False)
+        if not self.client.should_ignore_url(request.url.path):
+            trace_parent = TraceParent.from_headers(dict(request.headers))
+            self.client.begin_transaction("request", trace_parent=trace_parent)
 
-    async def _request_finished(self, response: Response):
-        """Captures the end of the request processing to APM.
+            await set_context(
+                lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request"
+            )
+            transaction_name = self.get_route_name(request) or request.url.path
+            elasticapm.set_transaction_name("{} {}".format(request.method, transaction_name), override=False)
 
-        Args:
-            response (Response)
-        """
-        await set_context(
-            lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers),
-            "response"
-        )
+    def get_route_name(self, request: Request) -> str:
+        app = request.app
+        scope = request.scope
+        routes = app.routes
+        route_name = self._get_route_name(scope, routes)
 
-        result = "HTTP {}xx".format(response.status_code // 100)
-        elasticapm.set_transaction_result(result, override=False)
+        # Starlette magically redirects requests if the path matches a route name with a trailing slash
+        # appended or removed. To not spam the transaction names list, we do the same here and put these
+        # redirects all in the same "redirect trailing slashes" transaction name
+        if not route_name and app.router.redirect_slashes and scope["path"] != "/":
+            redirect_scope = dict(scope)
+            if scope["path"].endswith("/"):
+                redirect_scope["path"] = scope["path"][:-1]
+                trim = True
+            else:
+                redirect_scope["path"] = scope["path"] + "/"
+                trim = False
+
+            route_name = self._get_route_name(redirect_scope, routes)
+            if route_name is not None:
+                route_name = route_name + "/" if trim else route_name[:-1]
+        return route_name
+
+    def _get_route_name(self, scope, routes, route_name=None):
+        for route in routes:
+            match, child_scope = route.matches(scope)
+            if match == Match.FULL:
+                route_name = route.path
+                child_scope = {**scope, **child_scope}
+                if isinstance(route, Mount) and route.routes:
+                    child_route_name = self._get_route_name(child_scope, route.routes, route_name)
+                    if child_route_name is None:
+                        route_name = None
+                    else:
+                        route_name += child_route_name
+                return route_name
+            elif match == Match.PARTIAL and route_name is None:
+                route_name = route.path

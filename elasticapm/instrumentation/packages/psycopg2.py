@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import absolute_import
 
 from elasticapm.instrumentation.packages.dbapi2 import (
     ConnectionProxy,
@@ -35,31 +36,36 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     extract_signature,
 )
 from elasticapm.traces import capture_span
-from elasticapm.utils import default_ports
+from elasticapm.utils import compat, default_ports
 
 
 class PGCursorProxy(CursorProxy):
     provider_name = "postgresql"
 
     def _bake_sql(self, sql):
+        from psycopg2 import extensions as psycopg2_extensions
+
         # if this is a Composable object, use its `as_string` method
         # see http://initd.org/psycopg/docs/sql.html
         if hasattr(sql, "as_string"):
-            return sql.as_string(self.__wrapped__)
+            sql = sql.as_string(self.__wrapped__)
+        # if the sql string is already a byte string, we need to decode it using the connection encoding
+        if isinstance(sql, compat.binary_type):
+            sql = sql.decode(psycopg2_extensions.encodings[self.__wrapped__.connection.encoding])
         return sql
 
     def extract_signature(self, sql):
         return extract_signature(sql)
 
     def __enter__(self):
-        return PGCursorProxy(self.__wrapped__.__enter__())
+        return PGCursorProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
 
 class PGConnectionProxy(ConnectionProxy):
     cursor_proxy = PGCursorProxy
 
     def __enter__(self):
-        return PGConnectionProxy(self.__wrapped__.__enter__())
+        return PGConnectionProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
 
 class Psycopg2Instrumentation(DbApi2Instrumentation):
@@ -72,19 +78,30 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
 
         host = kwargs.get("host")
         if host:
-            signature += " " + str(host)
+            signature += " " + compat.text_type(host)
 
             port = kwargs.get("port")
             if port:
                 port = str(port)
                 if int(port) != default_ports.get("postgresql"):
-                    signature += ":" + port
+                    host += ":" + port
+            signature += " " + compat.text_type(host)
         else:
             # Parse connection string and extract host/port
             pass
-
-        with capture_span(signature, span_type="db", span_subtype="postgresql", span_action="connect"):
-            return PGConnectionProxy(wrapped(*args, **kwargs))
+        destination_info = {
+            "address": kwargs.get("host", "localhost"),
+            "port": int(kwargs.get("port", default_ports.get("postgresql"))),
+            "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+        }
+        with capture_span(
+            signature,
+            span_type="db",
+            span_subtype="postgresql",
+            span_action="connect",
+            extra={"destination": destination_info},
+        ):
+            return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
 
 
 class Psycopg2ExtensionsInstrumentation(DbApi2Instrumentation):

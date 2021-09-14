@@ -37,6 +37,7 @@ import sys
 import mock
 from opentracing import Format
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.contrib.opentracing import Tracer
 from elasticapm.contrib.opentracing.span import OTSpanContext
@@ -55,6 +56,7 @@ except ImportError:
 @pytest.fixture()
 def tracer(elasticapm_client):
     yield Tracer(client_instance=elasticapm_client)
+    elasticapm.uninstrument()
 
 
 def test_tracer_with_instantiated_client(elasticapm_client):

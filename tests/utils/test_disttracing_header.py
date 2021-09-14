@@ -88,3 +88,73 @@ def test_trace_parent_wrong_format(caplog):
         trace_parent = TraceParent.from_string(header)
     assert trace_parent is None
     assert_any_record_contains(caplog.records, "Invalid traceparent header format, value 00")
+
+
+@pytest.mark.parametrize(
+    "state_header",
+    [
+        "es=foo:bar;baz:qux,othervendor=<opaque>",
+        "snes=x:y,es=foo:bar;baz:qux,othervendor=<opaque>",
+        "othervendor=<opaque>,es=foo:bar;baz:qux",
+    ],
+)
+def test_tracestate_parsing(state_header):
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    assert trace_parent.tracestate == state_header
+    assert trace_parent.tracestate_dict["foo"] == "bar"
+    assert trace_parent.tracestate_dict["baz"] == "qux"
+    assert len(trace_parent.tracestate_dict) == 2
+
+
+@pytest.mark.parametrize("state_header", ["es=,othervendor=<opaque>", "foo=bar,baz=qux", ""])
+def test_tracestate_parsing_empty(state_header):
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    assert trace_parent.tracestate == state_header
+    assert not trace_parent.tracestate_dict
+
+
+def test_tracestate_adding_valid():
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    trace_parent.add_tracestate("x", "y")
+    assert trace_parent.tracestate_dict["x"] == "y"
+    assert len(trace_parent.tracestate_dict) == 3
+    trace_parent.add_tracestate("x", 1)
+    assert trace_parent.tracestate_dict["x"] == "1"
+
+
+@pytest.mark.parametrize("bad_char", ["\n", ":", ","])
+def test_tracestate_adding_invalid(bad_char):
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    trace_parent.add_tracestate("x", "y{}".format(bad_char))
+    assert len(trace_parent.tracestate_dict) == 2
+    assert "x" not in trace_parent.tracestate_dict
+    trace_parent.add_tracestate("x{}".format(bad_char), "y")
+    assert len(trace_parent.tracestate_dict) == 2
+    assert "x{}".format(bad_char) not in trace_parent.tracestate_dict
+
+
+def test_tracestate_length():
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    state_header = "es=foo:bar;baz:qux,othervendor=<opaque>"
+    trace_parent = TraceParent.from_string(header, tracestate_string=state_header)
+    trace_parent.add_tracestate("x", "y" * 256)
+    assert len(trace_parent.tracestate_dict) == 2
+    assert "x" not in trace_parent.tracestate_dict
+
+
+def test_traceparent_from_header():
+    header = "00-0000651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    legacy_header = "00-1111651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    tp1 = TraceParent.from_headers({"traceparent": header})
+    tp2 = TraceParent.from_headers({"elastic-apm-traceparent": legacy_header})
+    tp3 = TraceParent.from_headers({"traceparent": header, "elastic-apm-traceparent": legacy_header})
+    assert tp1.to_string() == header
+    assert tp2.to_string() == legacy_header
+    # traceparent has precedence over elastic-apm-traceparent
+    assert tp3.to_string() == header

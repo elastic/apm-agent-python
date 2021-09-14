@@ -1,2 +1,0 @@
-cassandra-driver>=3.14.0
--r requirements-base.txt

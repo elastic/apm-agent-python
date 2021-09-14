@@ -55,6 +55,13 @@ def no_error(request, id=None):
     return resp
 
 
+def http_error(request, status=None):
+    if status:
+        status = int(status)
+    resp = HttpResponse(status=status)
+    return resp
+
+
 def fake_login(request):
     return HttpResponse("")
 

@@ -1,0 +1,2 @@
+pylibmc>=1.5.2
+-r reqs-base.txt

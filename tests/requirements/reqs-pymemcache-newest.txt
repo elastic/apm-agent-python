@@ -1,0 +1,2 @@
+pymemcache>=3.1.0
+-r reqs-base.txt

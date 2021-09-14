@@ -71,3 +71,8 @@ def test_bytes():
 def test_decimal():
     res = decimal.Decimal("1.0")
     assert json.dumps(res) == "1.0"
+
+
+def test_unsupported():
+    res = object()
+    assert json.dumps(res).startswith('"<object object at')

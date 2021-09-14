@@ -45,10 +45,10 @@ except ImportError:
     partial_types = (partial,)
 
 
-default_ports = {"https": 443, "http": 80, "postgresql": 5432}
+default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
 
 
-def varmap(func, var, context=None, name=None):
+def varmap(func, var, context=None, name=None, **kwargs):
     """
     Executes ``func(key_name, value)`` on all values,
     recursively discovering dict and list scoped
@@ -58,14 +58,17 @@ def varmap(func, var, context=None, name=None):
         context = set()
     objid = id(var)
     if objid in context:
-        return func(name, "<...>")
+        return func(name, "<...>", **kwargs)
     context.add(objid)
     if isinstance(var, dict):
-        ret = func(name, dict((k, varmap(func, v, context, k)) for k, v in compat.iteritems(var)))
+        # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
+        ret = func(
+            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
+        )
     elif isinstance(var, (list, tuple)):
-        ret = func(name, [varmap(func, f, context, name) for f in var])
+        ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
     else:
-        ret = func(name, var)
+        ret = func(name, var, **kwargs)
     context.remove(objid)
     return ret
 
@@ -137,18 +140,49 @@ def get_host_from_url(url):
     return host
 
 
+def url_to_destination(url, service_type="external"):
+    parts = compat.urlparse.urlsplit(url)
+    hostname = parts.hostname if parts.hostname else ""
+    # preserve brackets for IPv6 URLs
+    if "://[" in url:
+        hostname = "[%s]" % hostname
+    try:
+        port = parts.port
+    except ValueError:
+        # Malformed port, just use None rather than raising an exception
+        port = None
+    default_port = default_ports.get(parts.scheme, None)
+    name = "%s://%s" % (parts.scheme, hostname)
+    resource = hostname
+    if not port and parts.scheme in default_ports:
+        port = default_ports[parts.scheme]
+    if port:
+        if port != default_port:
+            name += ":%d" % port
+        resource += ":%d" % port
+    return {"service": {"name": name, "resource": resource, "type": service_type}}
+
+
 def read_pem_file(file_obj):
     cert = b""
     for line in file_obj:
         if line.startswith(b"-----BEGIN CERTIFICATE-----"):
             break
+    # scan until we find the first END CERTIFICATE marker
     for line in file_obj:
-        if not line.startswith(b"-----END CERTIFICATE-----"):
-            cert += line.strip()
+        if line.startswith(b"-----END CERTIFICATE-----"):
+            break
+        cert += line.strip()
     return base64.b64decode(cert)
 
 
 def starmatch_to_regex(pattern):
+    options = re.DOTALL
+    # check if we are case sensitive
+    if pattern.startswith("(?-i)"):
+        pattern = pattern[5:]
+    else:
+        options |= re.IGNORECASE
     i, n = 0, len(pattern)
     res = []
     while i < n:
@@ -158,4 +192,4 @@ def starmatch_to_regex(pattern):
             res.append(".*")
         else:
             res.append(re.escape(c))
-    return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)
+    return re.compile(r"(?:%s)\Z" % "".join(res), options)

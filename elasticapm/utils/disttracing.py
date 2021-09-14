@@ -29,15 +29,18 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ctypes
+import itertools
+import re
 
 from elasticapm.conf import constants
+from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.utils")
 
 
 class TraceParent(object):
-    __slots__ = ("version", "trace_id", "span_id", "trace_options", "tracestate", "is_legacy")
+    __slots__ = ("version", "trace_id", "span_id", "trace_options", "tracestate", "tracestate_dict", "is_legacy")
 
     def __init__(self, version, trace_id, span_id, trace_options, tracestate=None, is_legacy=False):
         self.version = version
@@ -46,6 +49,7 @@ class TraceParent(object):
         self.trace_options = trace_options
         self.is_legacy = is_legacy
         self.tracestate = tracestate
+        self.tracestate_dict = self._parse_tracestate(tracestate)
 
     def copy_from(self, version=None, trace_id=None, span_id=None, trace_options=None, tracestate=None):
         return TraceParent(
@@ -118,7 +122,88 @@ class TraceParent(object):
         :return: a single string value or None
         """
         # this works for all known WSGI implementations
+        if isinstance(headers, list):
+            return ",".join([item[1] for item in headers if item[0] == key])
         return headers.get(key)
+
+    def _parse_tracestate(self, tracestate):
+        """
+        Tracestate can contain data from any vendor, made distinct by vendor
+        keys. Vendors are comma-separated. The elastic (es) tracestate data is
+        made up of key:value pairs, separated by semicolons. It is meant to
+        be parsed into a dict.
+
+            tracestate: es=key:value;key:value...,othervendor=<opaque>
+        """
+        if not tracestate:
+            return {}
+        if "es=" not in tracestate:
+            return {}
+
+        ret = {}
+        try:
+            state = re.search(r"(?:,|^)es=([^,]*)", tracestate).group(1).split(";")
+        except IndexError:
+            return {}
+        for keyval in state:
+            if not keyval:
+                continue
+            key, _, val = keyval.partition(":")
+            ret[key] = val
+
+        return ret
+
+    def _set_tracestate(self):
+        elastic_value = ";".join(["{}:{}".format(k, v) for k, v in compat.iteritems(self.tracestate_dict)])
+        # No character validation needed, as we validate in `add_tracestate`. Just validate length.
+        if len(elastic_value) > 256:
+            logger.debug("Modifications to TraceState would violate length limits, ignoring.")
+            raise TraceStateFormatException()
+        elastic_state = "es={}".format(elastic_value)
+        if not self.tracestate:
+            return elastic_state
+        else:
+            # Remove es=<stuff> from the tracestate, and add the new es state to the end
+            otherstate = re.sub(r"(?:,|^)es=([^,]*)", "", self.tracestate)
+            otherstate = otherstate.lstrip(",")
+            # No validation of `otherstate` required, since we're downstream. We only need to check `es=`
+            # since we introduced it, and that validation has already been done at this point.
+            if otherstate:
+                return "{},{}".format(otherstate.rstrip(","), elastic_state)
+            else:
+                return elastic_state
+
+    def add_tracestate(self, key, val):
+        """
+        Add key/value pair to the tracestate.
+
+        We do most of the validation for valid characters here. We have to make
+        sure none of the reserved separators for tracestate are used in our
+        key/value pairs, and we also need to check that all characters are
+        within the valid range. Checking here means we never have to re-check
+        a pair once set, which saves time in the _set_tracestate() function.
+        """
+        key = compat.text_type(key)
+        val = compat.text_type(val)
+        for bad in (":", ";", ",", "="):
+            if bad in key or bad in val:
+                logger.debug("New tracestate key/val pair contains invalid character '{}', ignoring.".format(bad))
+                return
+        for c in itertools.chain(key, val):
+            # Tracestate spec only allows for characters between ASCII 0x20 and 0x7E
+            if ord(c) < 0x20 or ord(c) > 0x7E:
+                logger.debug("Modifications to TraceState would introduce invalid character '{}', ignoring.".format(c))
+                return
+
+        oldval = self.tracestate_dict.pop(key, None)
+        self.tracestate_dict[key] = val
+        try:
+            self.tracestate = self._set_tracestate()
+        except TraceStateFormatException:
+            if oldval is not None:
+                self.tracestate_dict[key] = oldval
+            else:
+                self.tracestate_dict.pop(key)
 
 
 class TracingOptions_bits(ctypes.LittleEndianStructure):
@@ -133,3 +218,23 @@ class TracingOptions(ctypes.Union):
         super(TracingOptions, self).__init__()
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+
+def trace_parent_from_string(traceparent_string, tracestate_string=None, is_legacy=False):
+    """
+    This is a wrapper function so we can add traceparent generation to the
+    public API.
+    """
+    return TraceParent.from_string(traceparent_string, tracestate_string=tracestate_string, is_legacy=is_legacy)
+
+
+def trace_parent_from_headers(headers):
+    """
+    This is a wrapper function so we can add traceparent generation to the
+    public API.
+    """
+    return TraceParent.from_headers(headers)
+
+
+class TraceStateFormatException(Exception):
+    pass

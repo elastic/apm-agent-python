@@ -40,6 +40,8 @@ import elasticapm
 from elasticapm.conf import Config
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.utils.disttracing import TraceParent
+from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
@@ -203,6 +205,59 @@ def test_leaf_tracing(tracer):
     assert {t["name"] for t in spans} == signatures
 
 
+def test_get_trace_parent_header(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    transaction = elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    assert transaction.trace_parent.to_string() == elasticapm.get_trace_parent_header()
+
+
+def test_get_transaction_id(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    assert transaction.id == elasticapm.get_transaction_id()
+
+
+def test_get_trace_id(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    assert trace_parent.trace_id == elasticapm.get_trace_id()
+
+
+def test_set_transaction_result(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_result("success")
+    assert "success" == transaction.result
+
+
+def test_set_transaction_outcome(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("failure")
+    assert "failure" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_50X_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code=500)
+    assert "failure" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_20X_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code=200)
+    assert "success" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_unknown_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code="a")
+    assert "unknown" == transaction.outcome
+
+
+def test_set_unknown_transaction_outcome(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything")
+    assert "unknown" == transaction.outcome
+
+
 def test_get_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
     t = requests_store.begin_transaction("test")
@@ -231,9 +286,7 @@ def test_label_transaction():
 def test_label_while_no_transaction(caplog):
     with caplog.at_level(logging.WARNING, "elasticapm.errors"):
         elasticapm.label(foo="bar")
-    record = caplog.records[0]
-    assert record.levelno == logging.WARNING
-    assert "foo" in record.args
+    assert_any_record_contains(caplog.records, "foo", "elasticapm.errors")
 
 
 def test_label_with_allowed_non_string_value():
@@ -280,73 +333,6 @@ def test_labels_dedot(elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
-
-
-### TESTING DEPRECATED TAGGING START ###
-
-
-def test_tagging_is_deprecated(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    with pytest.warns(DeprecationWarning, match="Call to deprecated function tag. Use elasticapm.label instead"):
-        elasticapm.tag(foo="bar")
-    elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert transactions[0]["context"]["tags"] == {"foo": "bar"}
-
-
-def test_tag_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
-    elasticapm.tag(foo="bar")
-    transaction.tag(baz="bazzinga")
-    requests_store.end_transaction(200, "test")
-
-    assert transaction.labels == {"foo": "bar", "baz": "bazzinga"}
-    transaction_dict = transaction.to_dict()
-    assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
-
-
-def test_tag_while_no_transaction(caplog):
-    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
-        elasticapm.tag(foo="bar")
-    record = caplog.records[0]
-    assert record.levelno == logging.WARNING
-    assert "foo" in record.args
-
-
-def test_tag_with_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, config=Config(), agent=None)
-    t = requests_store.begin_transaction("test")
-    elasticapm.tag(foo=1)
-    requests_store.end_transaction(200, "test")
-    assert t.labels == {"foo": "1"}
-
-
-def test_tags_merge(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    elasticapm.tag(foo=1, bar="baz")
-    elasticapm.tag(bar=3, boo="biz")
-    elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert transactions[0]["context"]["tags"] == {"foo": "1", "bar": "3", "boo": "biz"}
-
-
-def test_tags_dedot(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    elasticapm.tag(**{"d.o.t": "dot"})
-    elasticapm.tag(**{"s*t*a*r": "star"})
-    elasticapm.tag(**{'q"u"o"t"e': "quote"})
-
-    elasticapm_client.end_transaction("test_name", 200)
-
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
-
-
-### TESTING DEPRECATED TAGGING END ###
 
 
 def test_dedot_is_not_run_when_unsampled(elasticapm_client):
@@ -488,15 +474,26 @@ def test_dotted_span_type_conversion(elasticapm_client):
 def test_span_labelling(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span("test", labels={"foo": "bar", "ba.z": "baz.zinga"}) as span:
-        span.tag(lorem="ipsum")
+        span.label(lorem="ipsum")
     elasticapm_client.end_transaction("test", "OK")
     span = elasticapm_client.events[SPAN][0]
     assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga", "lorem": "ipsum"}
 
 
-def test_span_tagging_raises_deprecation_warning(elasticapm_client):
+def test_span_sync(elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    with pytest.warns(DeprecationWarning, match="The tags argument to capture_span is deprecated"):
-        with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:
-            span.tag(lorem="ipsum")
+    with capture_span("foo", "type", sync=True):
+        with capture_span("bar", "type", sync=False):
+            with capture_span("baz", "type"):
+                pass
     elasticapm_client.end_transaction("test", "OK")
+    spans = elasticapm_client.events[SPAN]
+
+    assert spans[0]["name"] == "baz"
+    assert "sync" not in spans[0]
+
+    assert spans[1]["name"] == "bar"
+    assert not spans[1]["sync"]
+
+    assert spans[2]["name"] == "foo"
+    assert spans[2]["sync"]

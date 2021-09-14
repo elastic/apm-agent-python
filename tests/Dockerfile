@@ -2,13 +2,13 @@ ARG PYTHON_IMAGE
 FROM ${PYTHON_IMAGE}
 
 RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
-                                                            ca-certificates \
-                                                            curl \
-                                                            netcat \
-                                                            odbc-postgresql \
-                                                            unixodbc-dev \
-                                                            freetds-dev \
-                                                            libmemcached-dev &&\
+    ca-certificates \
+    curl \
+    netcat \
+    odbc-postgresql \
+    unixodbc-dev \
+    freetds-dev \
+    libmemcached-dev &&\
     rm -rf /var/lib/apt/lists/*
 
 # connection to ha.pool.sks-keyservers.net fails sometimes, so let's retry with couple different servers
@@ -26,13 +26,13 @@ RUN curl -o /usr/local/bin/gosu -sSL "https://github.com/tianon/gosu/releases/do
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-COPY requirements/requirements-base.txt /
+COPY requirements/reqs-base.txt /
 
 # if we're in a pypy image, link pypy/pypy3 to /usr/local/bin/python
 RUN if command -v pypy3; then ln -s $(command -v pypy3) /usr/local/bin/python; elif command -v pypy; then ln -s $(command -v pypy) /usr/local/bin/python; fi
 
 # pre-install base requirements
-RUN python -m pip install --progress-bar off -U pip && pip install --progress-bar off -r /requirements-base.txt
+RUN python -m pip install --progress-bar off -U pip && pip install --progress-bar off -r /reqs-base.txt
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

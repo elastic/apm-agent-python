@@ -37,8 +37,8 @@ from elasticapm.utils.logging import get_logger
 
 try:
     # opentracing-python 2.1+
-    from opentracing import tags
     from opentracing import logs as ot_logs
+    from opentracing import tags
 except ImportError:
     # opentracing-python <2.1
     from opentracing.ext import tags

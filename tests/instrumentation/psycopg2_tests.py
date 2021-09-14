@@ -36,17 +36,17 @@ import pytest
 
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm.utils import default_ports
 
 psycopg2 = pytest.importorskip("psycopg2")
 
 
 try:
-    from psycopg2 import sql
+    from psycopg2 import compat
 
-    has_sql_module = True
+    is_cffi = True
 except ImportError:
-    # as of Jan 2018, psycopg2cffi doesn't have this module
-    has_sql_module = False
+    is_cffi = False
 
 try:
     import psycopg2.extensions
@@ -63,12 +63,13 @@ def connect_kwargs():
     return {
         "database": os.environ.get("POSTGRES_DB", "elasticapm_test"),
         "user": os.environ.get("POSTGRES_USER", "postgres"),
+        "password": os.environ.get("POSTGRES_PASSWORD", "postgres"),
         "host": os.environ.get("POSTGRES_HOST", None),
         "port": os.environ.get("POSTGRES_PORT", None),
     }
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def postgres_connection(request):
     conn = psycopg2.connect(**connect_kwargs())
     cursor = conn.cursor()
@@ -264,6 +265,22 @@ def test_fully_qualified_table_name():
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_destination(instrument, postgres_connection, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    cursor = postgres_connection.cursor()
+    cursor.execute("SELECT 1")
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("POSTGRES_HOST", None),
+        "port": default_ports["postgresql"],
+        "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+    }
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_register_type(instrument, postgres_connection, elasticapm_client):
     import psycopg2.extras
 
@@ -368,11 +385,13 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-@pytest.mark.skipif(not has_sql_module, reason="psycopg2.sql module missing")
+@pytest.mark.skipif(is_cffi, reason="psycopg2cffi does not have the sql module")
 def test_psycopg2_composable_query_works(instrument, postgres_connection, elasticapm_client):
     """
     Check that we parse queries that are psycopg2.sql.Composable correctly
     """
+    from psycopg2 import sql
+
     cursor = postgres_connection.cursor()
     query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
         table=sql.Identifier("test"), row=sql.Identifier("name")
@@ -438,3 +457,53 @@ def test_psycopg_context_manager(instrument, elasticapm_client):
 
     assert spans[1]["subtype"] == "postgresql"
     assert spans[1]["action"] == "query"
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_psycopg2_rows_affected(instrument, postgres_connection, elasticapm_client):
+    cursor = postgres_connection.cursor()
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        cursor.execute("INSERT INTO test VALUES (4, 'four')")
+        cursor.execute("SELECT * FROM test")
+        cursor.execute("UPDATE test SET name = 'five' WHERE  id = 4")
+        cursor.execute("DELETE FROM test WHERE  id = 4")
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+        assert spans[0]["name"] == "INSERT INTO test"
+        assert spans[0]["context"]["db"]["rows_affected"] == 1
+
+        assert spans[1]["name"] == "SELECT FROM test"
+        assert "rows_affected" not in spans[1]["context"]["db"]
+
+        assert spans[2]["name"] == "UPDATE test"
+        assert spans[2]["context"]["db"]["rows_affected"] == 1
+
+        assert spans[3]["name"] == "DELETE FROM test"
+        assert spans[3]["context"]["db"]["rows_affected"] == 1
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+@pytest.mark.skipif(is_cffi, reason="psycopg2cffi doesn't have execute_values")
+def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_client):
+    from psycopg2.extras import execute_values
+
+    cursor = postgres_connection.cursor()
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        query = "INSERT INTO test VALUES %s"
+        data = tuple((i, "xxxxx") for i in range(999))
+        # this creates a long (~14000 characters) query, encoded as byte string.
+        # This tests that we shorten already-encoded strings.
+        execute_values(cursor, query, data, page_size=1000)
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
+        assert spans[0]["name"] == "INSERT INTO test"
+        assert len(spans[0]["context"]["db"]["statement"]) == 10000, spans[0]["context"]["db"]["statement"]

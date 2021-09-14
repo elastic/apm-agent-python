@@ -1,4 +1,0 @@
-starlette
-requests
-flask
--r requirements-base.txt

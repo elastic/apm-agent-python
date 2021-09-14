@@ -1,2 +1,0 @@
-pylibmc>=1.5.2
--r requirements-base.txt

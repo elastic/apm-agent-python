@@ -34,6 +34,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     DbApi2Instrumentation,
     extract_signature,
 )
+from elasticapm.utils import default_ports
 
 
 class PyMSSQLCursorProxy(CursorProxy):
@@ -53,4 +54,25 @@ class PyMSSQLInstrumentation(DbApi2Instrumentation):
     instrument_list = [("pymssql", "connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        return PyMSSQLConnectionProxy(wrapped(*args, **kwargs))
+        host, port = get_host_port(args, kwargs)
+        destination_info = {
+            "address": host,
+            "port": port,
+            "service": {"name": "mssql", "resource": "mssql", "type": "db"},
+        }
+        return PyMSSQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
+
+
+def get_host_port(args, kwargs):
+    host = args[0] if args else kwargs.get("server")
+    port = None
+    if not host:
+        host = kwargs.get("host", "localhost")
+        for sep in (",", ":"):
+            if sep in host:
+                host, port = host.rsplit(sep, 1)
+                port = int(port)
+                break
+    if not port:
+        port = int(kwargs.get("port", default_ports.get("mssql")))
+    return host, port

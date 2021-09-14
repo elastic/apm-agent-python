@@ -11,6 +11,7 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 * <<cpu-memory-metricset>>
 * <<transactions-metricset>>
 * <<breakdown-metricset>>
+* <<prometheus-metricset>>
 
 [float]
 [[cpu-memory-metricset]]
@@ -19,6 +20,9 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 `elasticapm.metrics.sets.cpu.CPUMetricSet`
 
 This metric set collects various system metrics and metrics of the current process.
+
+NOTE: if you do *not* use Linux, you need to install https://pypi.org/project/psutil/[`psutil`] for this metric set.
+
 
 *`system.cpu.total.norm.pct`*::
 +
@@ -62,7 +66,6 @@ format: bytes
 Actual free memory in bytes. 
 --
 
-
 *`system.process.memory.size`*::
 +
 --
@@ -73,8 +76,6 @@ format: bytes
 The total virtual memory the process has.
 --
 
-
-
 *`system.process.memory.rss.bytes`*::
 +
 --
@@ -82,10 +83,33 @@ type: long
 
 format: bytes
 
-he Resident Set Size. The amount of memory the process occupied in main memory (RAM).
+The Resident Set Size. The amount of memory the process occupied in main memory (RAM).
 --
 
-NOTE: if you do *not* use Linux, you need to install https://pypi.org/project/psutil/[`psutil`] for this metric set.
+[float]
+[[cpu-memory-cgroup-metricset]]
+===== Linux’s cgroup metrics
+
+*`system.process.cgroup.memory.mem.limit.bytes`*::
++
+--
+type: long
+
+format: bytes
+
+Memory limit for current cgroup slice.
+--
+
+*`system.process.cgroup.memory.mem.usage.bytes`*::
++
+--
+type: long
+
+format: bytes
+
+Memory usage in current cgroup slice.
+--
+
 
 [float]
 [[transactions-metricset]]
@@ -155,3 +179,27 @@ You can filter and group by these dimensions:
 * `span.subtype`: The sub-type of the span, for example `mysql` (optional)
 
 --
+[float]
+[[prometheus-metricset]]
+==== Prometheus metric set (beta)
+
+beta[]
+
+If you use https://github.com/prometheus/client_python[`prometheus_client`] to collect metrics, the agent can
+collect them as well and make them available in Elasticsearch.
+
+The following types of metrics are supported:
+
+ * Counters
+ * Gauges
+ * Summaries
+ * Histograms (requires APM Server / Elasticsearch / Kibana 7.14+)
+
+To use the Prometheus metric set, you have to enable it with the <<config-prometheus_metrics, `prometheus_metrics`>> configuration option.
+
+All metrics collected from `prometheus_client` are prefixed with `"prometheus.metrics."`. This can be changed using the <<config-prometheus_metrics_prefix, `prometheus_metrics_prefix`>> configuration option.
+
+[float]
+[[prometheus-metricset-beta]]
+===== Beta limitations
+ * The metrics format may change without backwards compatibility in future releases.

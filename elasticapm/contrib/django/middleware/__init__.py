@@ -38,6 +38,7 @@ from django.apps import apps
 from django.conf import settings as django_settings
 
 import elasticapm
+from elasticapm.conf import constants
 from elasticapm.contrib.django.client import client, get_client
 from elasticapm.utils import build_name_with_http_method_prefix, get_name_from_func, wrapt
 
@@ -66,7 +67,7 @@ class ElasticAPMClientMiddlewareMixin(object):
     @property
     def client(self):
         try:
-            app = apps.get_app_config("elasticapm.contrib.django")
+            app = apps.get_app_config("elasticapm")
             return app.client
         except LookupError:
             return get_client()
@@ -156,7 +157,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     if hasattr(middleware_class, "process_response"):
                         wrapt.wrap_function_wrapper(middleware_class, "process_response", process_response_wrapper)
                 except ImportError:
-                    client.logger.info("Can't instrument middleware %s", middleware_path)
+                    client.logger.warning("Can't instrument middleware %s", middleware_path)
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         request._elasticapm_view_func = view_func
@@ -168,7 +169,9 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
             if hasattr(response, "status_code"):
                 transaction_name = None
                 if self.client.config.django_transaction_name_from_route and hasattr(request.resolver_match, "route"):
-                    transaction_name = request.resolver_match.route
+                    r = request.resolver_match
+                    # if no route is defined (e.g. for the root URL), fall back on url_name and then function name
+                    transaction_name = r.route or r.url_name or get_name_from_func(r.func)
                 elif getattr(request, "_elasticapm_view_func", False):
                     transaction_name = get_name_from_func(request._elasticapm_view_func)
                 if transaction_name:
@@ -176,14 +179,14 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                     elasticapm.set_transaction_name(transaction_name, override=False)
 
                 elasticapm.set_context(
-                    lambda: self.client.get_data_from_request(
-                        request, capture_body=self.client.config.capture_body in ("all", "transactions")
-                    ),
-                    "request",
+                    lambda: self.client.get_data_from_request(request, constants.TRANSACTION), "request"
                 )
-                elasticapm.set_context(lambda: self.client.get_data_from_response(response), "response")
+                elasticapm.set_context(
+                    lambda: self.client.get_data_from_response(response, constants.TRANSACTION), "response"
+                )
                 elasticapm.set_context(lambda: self.client.get_user_info(request), "user")
                 elasticapm.set_transaction_result("HTTP {}xx".format(response.status_code // 100), override=False)
+                elasticapm.set_transaction_outcome(http_status_code=response.status_code, override=False)
         except Exception:
             self.client.error_logger.error("Exception during timing of request", exc_info=True)
         return response

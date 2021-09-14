@@ -1,0 +1,2 @@
+python-memcached>=1.59
+-r reqs-base.txt

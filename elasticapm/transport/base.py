@@ -31,27 +31,22 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import os
 import random
+import sys
 import threading
 import time
 import timeit
 from collections import defaultdict
 
-from elasticapm.contrib.async_worker import AsyncWorker
-from elasticapm.utils import compat, is_master_process, json_encoder
+from elasticapm.utils import compat, json_encoder
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.threading import ThreadManager
 
 logger = get_logger("elasticapm.transport")
 
 
-class TransportException(Exception):
-    def __init__(self, message, data=None, print_trace=True):
-        super(TransportException, self).__init__(message)
-        self.data = data
-        self.print_trace = print_trace
-
-
-class Transport(object):
+class Transport(ThreadManager):
     """
     All transport implementations need to subclass this class
 
@@ -62,11 +57,9 @@ class Transport(object):
 
     def __init__(
         self,
-        metadata=None,
+        client,
         compress_level=5,
         json_serializer=json_encoder.dumps,
-        max_flush_time=None,
-        max_buffer_size=None,
         queue_chill_count=500,
         queue_chill_time=1.0,
         processors=None,
@@ -75,34 +68,34 @@ class Transport(object):
         """
         Create a new Transport instance
 
-        :param metadata: Metadata object to prepend to every queue
         :param compress_level: GZip compress level. If zero, no GZip compression will be used
         :param json_serializer: serializer to use for JSON encoding
-        :param max_flush_time: Maximum time between flushes in seconds
-        :param max_buffer_size: Maximum size of buffer before flush
         :param kwargs:
         """
+        self.client = client
         self.state = TransportState()
-        self._metadata = metadata if metadata is not None else {}
+        self._metadata = None
         self._compress_level = min(9, max(0, compress_level if compress_level is not None else 0))
         self._json_serializer = json_serializer
-        self._max_flush_time = max_flush_time
-        self._max_buffer_size = max_buffer_size
         self._queued_data = None
         self._event_queue = self._init_event_queue(chill_until=queue_chill_count, max_chill_time=queue_chill_time)
         self._is_chilled_queue = isinstance(self._event_queue, ChilledQueue)
-        self._event_process_thread = None
+        self._thread = None
         self._last_flush = timeit.default_timer()
         self._counts = defaultdict(int)
         self._flushed = threading.Event()
         self._closed = False
         self._processors = processors if processors is not None else []
-        # only start the event processing thread if we are not in a uwsgi master process
-        if not is_master_process():
-            self._start_event_processor()
-        else:
-            # if we _are_ in a uwsgi master process, use the postfork mixup to start the thread after the fork
-            compat.postfork(lambda: self._start_event_processor())
+        super(Transport, self).__init__()
+        self.start_stop_order = sys.maxsize  # ensure that the transport thread is always started/stopped last
+
+    @property
+    def _max_flush_time(self):
+        return self.client.config.api_request_time / 1000.0 if self.client else None
+
+    @property
+    def _max_buffer_size(self):
+        return self.client.config.api_request_size if self.client else None
 
     def queue(self, event_type, data, flush=False):
         try:
@@ -114,6 +107,10 @@ class Transport(object):
             logger.debug("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
+        # Rebuild the metadata to capture new process information
+        if self.client:
+            self._metadata = self.client.build_metadata()
+
         buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
@@ -132,7 +129,13 @@ class Transport(object):
 
             if event_type == "close":
                 if buffer_written:
-                    self._flush(buffer)
+                    try:
+                        self._flush(buffer)
+                    except Exception as exc:
+                        logger.error(
+                            "Exception occurred while flushing the buffer "
+                            "before closing the transport connection: {0}".format(exc)
+                        )
                 self._flushed.set()
                 return  # time to go home!
 
@@ -175,13 +178,23 @@ class Transport(object):
         # Run the data through processors
         for processor in self._processors:
             if not hasattr(processor, "event_types") or event_type in processor.event_types:
-                data = processor(self, data)
-                if not data:
-                    logger.debug(
-                        "Dropped event of type %s due to processor %s.%s",
+                try:
+                    data = processor(self.client, data)
+                    if not data:
+                        logger.debug(
+                            "Dropped event of type %s due to processor %s.%s",
+                            event_type,
+                            processor.__module__,
+                            processor.__name__,
+                        )
+                        return None
+                except Exception:
+                    logger.warning(
+                        "Dropped event of type %s due to exception in processor %s.%s",
                         event_type,
-                        getattr(processor, "__module__"),
-                        getattr(processor, "__name__"),
+                        processor.__module__,
+                        processor.__name__,
+                        exc_info=True,
                     )
                     return None
         return data
@@ -212,7 +225,6 @@ class Transport(object):
     def _flush(self, buffer):
         """
         Flush the queue. This method should only be called from the event processing queue
-        :param sync: if true, flushes the queue synchronously in the current thread
         :return: None
         """
         if not self.state.should_try():
@@ -229,14 +241,14 @@ class Transport(object):
             except Exception as e:
                 self.handle_transport_fail(e)
 
-    def _start_event_processor(self):
-        if (not self._event_process_thread or not self._event_process_thread.is_alive()) and not self._closed:
+    def start_thread(self, pid=None):
+        super(Transport, self).start_thread(pid=pid)
+        if (not self._thread or self.pid != self._thread.pid) and not self._closed:
             try:
-                self._event_process_thread = threading.Thread(
-                    target=self._process_queue, name="eapm event processor thread"
-                )
-                self._event_process_thread.daemon = True
-                self._event_process_thread.start()
+                self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
+                self._thread.daemon = True
+                self._thread.pid = self.pid
+                self._thread.start()
             except RuntimeError:
                 pass
 
@@ -252,12 +264,14 @@ class Transport(object):
         Cleans up resources and closes connection
         :return:
         """
-        if self._closed:
+        if self._closed or (not self._thread or self._thread.pid != os.getpid()):
             return
         self._closed = True
         self.queue("close", None)
         if not self._flushed.wait(timeout=self._max_flush_time):
-            raise ValueError("close timed out")
+            logger.error("Closing the transport connection timed out.")
+
+    stop_thread = close
 
     def flush(self):
         """
@@ -284,34 +298,8 @@ class Transport(object):
         self.state.set_fail()
 
 
-class AsyncTransport(Transport):
-    async_mode = True
-    sync_transport = Transport
-
-    def __init__(self, *args, **kwargs):
-        super(AsyncTransport, self).__init__(*args, **kwargs)
-        self._worker = None
-
-    @property
-    def worker(self):
-        if not self._worker or not self._worker.is_alive():
-            self._worker = AsyncWorker()
-        return self._worker
-
-    def send_sync(self, data=None):
-        try:
-            self.sync_transport.send(self, data)
-            self.handle_transport_success()
-        except Exception as e:
-            self.handle_transport_fail(exception=e)
-
-    def send_async(self, data):
-        self.worker.queue(self.send_sync, {"data": data})
-
-    def close(self):
-        super(AsyncTransport, self).close()
-        if self._worker:
-            self._worker.main_thread_terminated()
+# left for backwards compatibility
+AsyncTransport = Transport
 
 
 class TransportState(object):

@@ -34,7 +34,9 @@ from __future__ import absolute_import
 import logging
 import sys
 import traceback
+import warnings
 
+from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
 from elasticapm.utils import compat, wrapt
@@ -44,22 +46,27 @@ from elasticapm.utils.stacks import iter_stack_frames
 
 class LoggingHandler(logging.Handler):
     def __init__(self, *args, **kwargs):
-        client = kwargs.pop("client_cls", Client)
-        if len(args) == 1:
+        self.client = None
+        if "client" in kwargs:
+            self.client = kwargs.pop("client")
+        elif len(args) > 0:
             arg = args[0]
-            args = args[1:]
             if isinstance(arg, Client):
                 self.client = arg
-            else:
-                raise ValueError(
-                    "The first argument to %s must be a Client instance, "
-                    "got %r instead." % (self.__class__.__name__, arg)
-                )
-        elif "client" in kwargs:
-            self.client = kwargs.pop("client")
-        else:
-            self.client = client(*args, **kwargs)
 
+        if not self.client:
+            client_cls = kwargs.pop("client_cls", None)
+            if client_cls:
+                self.client = client_cls(*args, **kwargs)
+            else:
+                # In 6.0, this should raise a ValueError
+                warnings.warn(
+                    "LoggingHandler requires a Client instance. No Client was "
+                    "received. This will result in an error starting in v6.0 "
+                    "of the agent",
+                    PendingDeprecationWarning,
+                )
+                self.client = Client(*args, **kwargs)
         logging.Handler.__init__(self, level=kwargs.get("level", logging.NOTSET))
 
     def emit(self, record):
@@ -154,7 +161,7 @@ class LoggingHandler(logging.Handler):
             exception=exception,
             level=record.levelno,
             logger_name=record.name,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -166,6 +173,7 @@ class LoggingFilter(logging.Filter):
     * elasticapm_transaction_id
     * elasticapm_trace_id
     * elasticapm_span_id
+    * elasticapm_service_name
 
     These attributes can then be incorporated into your handlers and formatters,
     so that you can tie log messages to transactions in elasticsearch.
@@ -220,7 +228,19 @@ def _add_attributes_to_log_record(record):
     span_id = span.id if span else None
     record.elasticapm_span_id = span_id
 
-    record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
+    client = get_client()
+    service_name = client.config.service_name if client else None
+    record.elasticapm_service_name = service_name
+    event_dataset = f"{client.config.service_name}" if client else None
+    record.elasticapm_event_dataset = event_dataset
+
+    record.elasticapm_labels = {
+        "transaction.id": transaction_id,
+        "trace.id": trace_id,
+        "span.id": span_id,
+        "service.name": service_name,
+        "event.dataset": event_dataset,
+    }
 
     return record
 
@@ -258,6 +278,8 @@ class Formatter(logging.Formatter):
             record.elasticapm_transaction_id = None
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
+            record.elasticapm_service_name = None
+            record.elasticapm_event_dataset = None
         return super(Formatter, self).format(record=record)
 
     def formatTime(self, record, datefmt=None):
@@ -265,4 +287,6 @@ class Formatter(logging.Formatter):
             record.elasticapm_transaction_id = None
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
+            record.elasticapm_service_name = None
+            record.elasticapm_event_dataset = None
         return super(Formatter, self).formatTime(record=record, datefmt=datefmt)

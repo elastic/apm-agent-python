@@ -27,17 +27,21 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from typing import Union
 
+from aiohttp.web import HTTPException, Request, Response
+
+from elasticapm.conf import Config
 from elasticapm.utils import compat, get_url_dict
 
 
-def get_data_from_request(request, capture_body=False, capture_headers=True):
+def get_data_from_request(request: Request, config: Config, event_type: str):
     result = {
         "method": request.method,
         "socket": {"remote_address": request.remote, "encrypted": request.secure},
         "cookies": dict(request.cookies),
     }
-    if capture_headers:
+    if config.capture_headers:
         result["headers"] = dict(request.headers)
 
     # TODO: capture body
@@ -46,13 +50,12 @@ def get_data_from_request(request, capture_body=False, capture_headers=True):
     return result
 
 
-def get_data_from_response(response, capture_headers=True):
+def get_data_from_response(response: Union[HTTPException, Response], config: Config, event_type: str):
     result = {}
-
-    if isinstance(getattr(response, "status", None), compat.integer_types):
-        result["status_code"] = response.status
-
-    if capture_headers and getattr(response, "headers", None):
+    status = getattr(response, "status", getattr(response, "status_code", None))
+    if isinstance(status, compat.integer_types):
+        result["status_code"] = status
+    if config.capture_headers and getattr(response, "headers", None):
         headers = response.headers
         result["headers"] = {key: ";".join(headers.getall(key)) for key in compat.iterkeys(headers)}
     return result

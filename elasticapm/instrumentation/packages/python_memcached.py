@@ -64,6 +64,15 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         name = self.get_wrapped_name(wrapped, instance, method)
-
-        with capture_span(name, span_type="cache", span_subtype="memcached", span_action="query"):
+        address, port = None, None
+        if instance.servers:
+            address, port = instance.servers[0].address
+        destination = {
+            "address": address,
+            "port": port,
+            "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
+        }
+        with capture_span(
+            name, span_type="cache", span_subtype="memcached", span_action="query", extra={"destination": destination}
+        ):
             return wrapped(*args, **kwargs)

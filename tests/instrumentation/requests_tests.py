@@ -38,6 +38,7 @@ from requests.exceptions import InvalidURL, MissingSchema
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
+from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = pytest.mark.requests
@@ -46,6 +47,7 @@ pytestmark = pytest.mark.requests
 def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
+    parsed_url = compat.urlparse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         requests.get(url, allow_redirects=False)
@@ -57,14 +59,51 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
     assert spans[0]["type"] == "external"
     assert spans[0]["subtype"] == "http"
     assert url == spans[0]["context"]["http"]["url"]
+    assert 200 == spans[0]["context"]["http"]["status_code"]
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "resource": "127.0.0.1:%d" % parsed_url.port,
+        "type": "external",
+    }
+    assert spans[0]["outcome"] == "success"
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME],
+        tracestate_string=waiting_httpserver.requests[0].headers[constants.TRACESTATE_HEADER_NAME],
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
+
+
+@pytest.mark.parametrize("status_code", [400, 500])
+def test_requests_instrumentation_error(instrument, elasticapm_client, waiting_httpserver, status_code):
+    waiting_httpserver.serve_content("", code=status_code)
+    url = waiting_httpserver.url + "/hello_world"
+    parsed_url = compat.urlparse.urlparse(url)
+    elasticapm_client.begin_transaction("transaction.test")
+    with capture_span("test_request", "test"):
+        requests.get(url, allow_redirects=False)
+    elasticapm_client.end_transaction("MyView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert spans[0]["name"].startswith("GET 127.0.0.1:")
+    assert spans[0]["type"] == "external"
+    assert spans[0]["subtype"] == "http"
+    assert url == spans[0]["context"]["http"]["url"]
+    assert status_code == spans[0]["context"]["http"]["status_code"]
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "resource": "127.0.0.1:%d" % parsed_url.port,
+        "type": "external",
+    }
+    assert spans[0]["outcome"] == "failure"
 
 
 def test_requests_instrumentation_via_session(instrument, elasticapm_client, waiting_httpserver):
@@ -82,8 +121,13 @@ def test_requests_instrumentation_via_session(instrument, elasticapm_client, wai
     assert url == spans[0]["context"]["http"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME],
+        tracestate_string=waiting_httpserver.requests[0].headers[constants.TRACESTATE_HEADER_NAME],
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]
@@ -107,8 +151,13 @@ def test_requests_instrumentation_via_prepared_request(instrument, elasticapm_cl
     assert url == spans[0]["context"]["http"]["url"]
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
-    trace_parent = TraceParent.from_string(waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        waiting_httpserver.requests[0].headers[constants.TRACEPARENT_HEADER_NAME],
+        tracestate_string=waiting_httpserver.requests[0].headers[constants.TRACESTATE_HEADER_NAME],
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     # this should be the span id of `requests`, not of urllib3
     assert trace_parent.span_id == spans[0]["id"]

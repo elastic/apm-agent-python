@@ -1,2 +1,0 @@
-redis>=2.8,<2.9
--r requirements-base.txt

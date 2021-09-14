@@ -136,7 +136,7 @@ def test_message_event(elasticapm_client):
 def test_param_message_event(elasticapm_client):
     elasticapm_client.capture("Message", param_message={"message": "test %s %d", "params": ("x", 1)})
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "test x 1"
     assert event["log"]["param_message"] == "test %s %d"
@@ -145,7 +145,7 @@ def test_param_message_event(elasticapm_client):
 def test_message_with_percent(elasticapm_client):
     elasticapm_client.capture("Message", message="This works 100% of the time")
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["message"] == "This works 100% of the time"
     assert event["log"]["param_message"] == "This works 100% of the time"
@@ -154,7 +154,7 @@ def test_message_with_percent(elasticapm_client):
 def test_logger(elasticapm_client):
     elasticapm_client.capture("Message", message="test", logger_name="test")
 
-    assert len(elasticapm_client.events) == 1
+    assert len(elasticapm_client.events[ERROR]) == 1
     event = elasticapm_client.events[ERROR][0]
     assert event["log"]["logger_name"] == "test"
     assert "timestamp" in event
@@ -196,7 +196,8 @@ def test_collect_source_errors(elasticapm_client):
     library_frame_context = elasticapm_client.config.source_lines_error_library_frames
     in_app_frame_context = elasticapm_client.config.source_lines_error_app_frames
     try:
-        import json, datetime
+        import datetime
+        import json
 
         json.dumps(datetime.datetime.now())
     except TypeError:
@@ -303,7 +304,7 @@ def test_transaction_data_is_attached_to_errors_exc_handled_outside_span(elastic
 
 def test_transaction_context_is_used_in_errors(elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    elasticapm.tag(foo="baz")
+    elasticapm.label(foo="baz")
     elasticapm.set_custom_context({"a": "b"})
     elasticapm.set_user_context(username="foo", email="foo@example.com", user_id=42)
     elasticapm_client.capture_message("x", custom={"foo": "bar"})
@@ -384,3 +385,15 @@ def test_stack_trace_limit(elasticapm_client):
     exception = elasticapm_client.events[ERROR][-1]
     frames = exception["exception"]["stacktrace"]
     assert len(frames) == 0
+
+
+def test_fail_on_uuid_raise(elasticapm_client):
+    def generate_uuid():
+        from uuid import UUID
+
+        return UUID("INVALID")
+
+    try:
+        generate_uuid()
+    except Exception:
+        elasticapm_client.capture_exception()

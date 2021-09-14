@@ -132,7 +132,7 @@ def test_post(flask_apm_client):
     assert request["url"]["full"] == "http://localhost/an-error/?biz=baz"
     assert request["url"]["search"] == "?biz=baz"
     assert request["method"] == "POST"
-    if flask_apm_client.client.config.capture_body in ("errors", "all"):
+    if flask_apm_client.client.config.capture_body in (constants.ERROR, "all"):
         assert request["body"] == {"foo": "bar"}
     else:
         assert request["body"] == "[REDACTED]"
@@ -168,10 +168,11 @@ def test_instrumentation(flask_apm_client):
     transaction = transactions[0]
     assert transaction["type"] == "request"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert "request" in transaction["context"]
     assert transaction["context"]["request"]["url"]["full"] == "http://localhost/users/"
     assert transaction["context"]["request"]["method"] == "POST"
-    if flask_apm_client.client.config.capture_body in ("transactions", "all"):
+    if flask_apm_client.client.config.capture_body in (constants.TRANSACTION, "all"):
         assert transaction["context"]["request"]["body"] == {"foo": "bar"}
     else:
         assert transaction["context"]["request"]["body"] == "[REDACTED]"
@@ -287,7 +288,7 @@ def test_post_files(flask_apm_client):
     assert len(flask_apm_client.client.events[ERROR]) == 1
 
     event = flask_apm_client.client.events[ERROR][0]
-    if flask_apm_client.client.config.capture_body in ("errors", "all"):
+    if flask_apm_client.client.config.capture_body in (constants.ERROR, "all"):
         assert event["context"]["request"]["body"] == {
             "foo": ["bar", "baz"],
             "_files": {"f1": "bla", "f2": ["flask_tests.py", "blub"]},
@@ -314,14 +315,42 @@ def test_capture_body_config_is_dynamic_for_transactions(flask_apm_client):
     flask_apm_client.client.config.update(version="1", capture_body="all")
     resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
     resp.close()
-    error = flask_apm_client.client.events[TRANSACTION][0]
-    assert error["context"]["request"]["body"] == {"foo": "bar"}
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["body"] == {"foo": "bar"}
 
     flask_apm_client.client.config.update(version="2", capture_body="off")
     resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
     resp.close()
-    error = flask_apm_client.client.events[TRANSACTION][1]
-    assert error["context"]["request"]["body"] == "[REDACTED]"
+    transaction = flask_apm_client.client.events[TRANSACTION][1]
+    assert transaction["context"]["request"]["body"] == "[REDACTED]"
+
+
+def test_capture_headers_config_is_dynamic_for_errors(flask_apm_client):
+    flask_apm_client.client.config.update(version="1", capture_headers=True)
+    resp = flask_apm_client.app.test_client().post("/an-error/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[ERROR][0]
+    assert error["context"]["request"]["headers"]
+
+    flask_apm_client.client.config.update(version="2", capture_headers=False)
+    resp = flask_apm_client.app.test_client().post("/an-error/", data={"foo": "bar"})
+    resp.close()
+    error = flask_apm_client.client.events[ERROR][1]
+    assert "headers" not in error["context"]["request"]
+
+
+def test_capture_headers_config_is_dynamic_for_transactions(flask_apm_client):
+    flask_apm_client.client.config.update(version="1", capture_headers=True)
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
+    transaction = flask_apm_client.client.events[TRANSACTION][0]
+    assert transaction["context"]["request"]["headers"]
+
+    flask_apm_client.client.config.update(version="2", capture_headers=False)
+    resp = flask_apm_client.app.test_client().post("/users/", data={"foo": "bar"})
+    resp.close()
+    transaction = flask_apm_client.client.events[TRANSACTION][1]
+    assert "headers" not in transaction["context"]["request"]
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"capture_body": "transactions"}], indirect=True)
@@ -426,3 +455,14 @@ def test_logging_by_level(flask_apm_client):
     assert len(flask_apm_client.client.events[ERROR]) == 1
     error = flask_apm_client.client.events[ERROR][0]
     assert error["log"]["level"] == "error"
+
+
+def test_flask_transaction_ignore_urls(flask_apm_client):
+    resp = flask_apm_client.app.test_client().get("/users/")
+    resp.close()
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 1
+
+    flask_apm_client.client.config.update(version=1, transaction_ignore_urls="/user*")
+    resp = flask_apm_client.app.test_client().get("/users/")
+    resp.close()
+    assert len(flask_apm_client.client.events[TRANSACTION]) == 1

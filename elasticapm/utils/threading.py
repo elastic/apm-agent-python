@@ -30,8 +30,12 @@
 
 from __future__ import absolute_import
 
+import logging
+import os
 import threading
 from timeit import default_timer
+
+logger = logging.getLogger("elasticapm.utils.threading")
 
 
 class IntervalTimer(threading.Thread):
@@ -47,7 +51,7 @@ class IntervalTimer(threading.Thread):
         """
 
         :param function: the function to run
-        :param interval: the interval in-between invocations of the function
+        :param interval: the interval in-between invocations of the function, in milliseconds
         :param name: name of the thread
         :param args: arguments to call the function with
         :param kwargs: keyword arguments to call the function with
@@ -76,12 +80,35 @@ class IntervalTimer(threading.Thread):
                 # we've been cancelled, time to go home
                 return
             start = default_timer()
-            rval = self._function(*self._args, **self._kwargs)
-            if self._evaluate_function_interval and isinstance(rval, (int, float)):
-                interval_override = rval
-            else:
-                interval_override = None
+            try:
+                rval = self._function(*self._args, **self._kwargs)
+                if self._evaluate_function_interval and isinstance(rval, (int, float)):
+                    interval_override = rval
+                else:
+                    interval_override = None
+            except Exception:
+                logger.error("Exception in interval timer function", exc_info=True)
+
             execution_time = default_timer() - start
 
     def cancel(self):
         self._interval_done.set()
+
+
+class ThreadManager(object):
+    def __init__(self):
+        self.pid = None
+        self.start_stop_order = 100
+
+    def start_thread(self, pid=None):
+        if not pid:
+            pid = os.getpid()
+        self.pid = pid
+
+    def stop_thread(self):
+        raise NotImplementedError()
+
+    def is_started(self, current_pid=None):
+        if not current_pid:
+            current_pid = os.getpid()
+        return self.pid == current_pid

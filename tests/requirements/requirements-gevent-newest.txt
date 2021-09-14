@@ -1,2 +1,0 @@
-gevent
--r requirements-base.txt

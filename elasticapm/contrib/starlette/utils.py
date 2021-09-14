@@ -27,75 +27,71 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 
-import json
-
+from starlette.datastructures import Headers
 from starlette.requests import Request
 from starlette.types import Message
-from starlette.responses import Response
 
-from elasticapm.conf import constants
+from elasticapm.conf import Config, constants
 from elasticapm.utils import compat, get_url_dict
 
 
-async def get_data_from_request(request: Request, capture_body=False, capture_headers=True) -> dict:
+async def get_data_from_request(request: Request, config: Config, event_type: str) -> dict:
     """Loads data from incoming request for APM capturing.
 
     Args:
         request (Request)
-        capture_body (bool): Loads also request body if True
-        capture_headers (bool): Loads also request headers if True
+        config (Config)
+        event_type (str)
 
     Returns:
         dict
     """
     result = {
         "method": request.method,
-        "socket": {
-            "remote_address": _get_client_ip(request),
-            "encrypted": request.url.is_secure
-        },
+        "socket": {"remote_address": _get_client_ip(request), "encrypted": request.url.is_secure},
         "cookies": request.cookies,
     }
-    if capture_headers:
+    if config.capture_headers:
         result["headers"] = dict(request.headers)
 
     if request.method in constants.HTTP_WITH_BODY:
-        body = await get_body(request)
-        if request.headers['content-type'] == "application/x-www-form-urlencoded":
-            body = await query_params_to_dict(body)
+        if config.capture_body not in ("all", event_type):
+            result["body"] = "[REDACTED]"
         else:
-            body = json.loads(body)
-        if body is not None:
-            result["body"] = body if capture_body else "[REDACTED]"
+            body = None
+            try:
+                body = await get_body(request)
+            except Exception:
+                pass
+            if body is not None:
+                result["body"] = body
 
     result["url"] = get_url_dict(str(request.url))
 
     return result
 
 
-async def get_data_from_response(response: Response, capture_body=False, capture_headers=True) -> dict:
+async def get_data_from_response(message: dict, config: Config, event_type: str) -> dict:
     """Loads data from response for APM capturing.
 
     Args:
-        response (Response)
-        capture_body (bool): Loads also response body if True
-        capture_headers (bool): Loads also response HTTP headers if True
+        message (dict)
+        config (Config)
+        event_type (str)
 
     Returns:
         dict
     """
     result = {}
 
-    if isinstance(getattr(response, "status_code", None), compat.integer_types):
-        result["status_code"] = response.status_code
+    if "status_code" in message:
+        result["status_code"] = message["status"]
 
-    if capture_headers and getattr(response, "headers", None):
-        headers = response.headers
+    if config.capture_headers and "headers" in message:
+        headers = Headers(raw=message["headers"])
         result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
-
-    if capture_body:
-        result["body"] = response.body.decode("utf-8")
 
     return result
 
@@ -107,7 +103,9 @@ async def set_body(request: Request, body: bytes):
         request (Request)
         body (bytes)
     """
+
     async def receive() -> Message:
+        await asyncio.sleep(0)
         return {"type": "http.request", "body": body}
 
     request._receive = receive
@@ -116,7 +114,9 @@ async def set_body(request: Request, body: bytes):
 async def get_body(request: Request) -> str:
     """Gets body from the request.
 
-    todo: This is not very pretty however it is not usual to get request body out of the target method (business logic).
+    When we consume the body, we replace the streaming mechanism with
+    a mocked version -- this workaround came from
+    https://github.com/encode/starlette/issues/495#issuecomment-513138055
 
     Args:
         request (Request)
@@ -155,9 +155,9 @@ async def query_params_to_dict(query_params: str) -> dict:
 
 
 def _get_client_ip(request: Request):
-    x_forwarded_for = request.headers.get('HTTP_X_FORWARDED_FOR')
+    x_forwarded_for = request.headers.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
+        ip = x_forwarded_for.split(",")[0]
     else:
-        ip = request.headers.get('REMOTE_ADDR')
+        ip = request.headers.get("REMOTE_ADDR")
     return ip

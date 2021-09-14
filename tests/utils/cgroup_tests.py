@@ -63,6 +63,27 @@ from elasticapm.utils import cgroup, compat
             "1:name=systemd:/system.slice/garden.service/garden/70eb4ce5-a065-4401-6990-88ed",
             {"container": {"id": "70eb4ce5-a065-4401-6990-88ed"}},
         ),
+        (
+            "12:pids:/kubepods/kubepods/besteffort/pod0e886e9a-3879-45f9-b44d-86ef9df03224/244a65edefdffe31685c42317c9054e71dc1193048cf9459e2a4dd35cbc1dba4",
+            {
+                "container": {"id": "244a65edefdffe31685c42317c9054e71dc1193048cf9459e2a4dd35cbc1dba4"},
+                "kubernetes": {"pod": {"uid": "0e886e9a-3879-45f9-b44d-86ef9df03224"}},
+            },
+        ),
+        (
+            "10:cpuset:/kubepods/pod5eadac96-ab58-11ea-b82b-0242ac110009/7fe41c8a2d1da09420117894f11dd91f6c3a44dfeb7d125dc594bd53468861df",
+            {
+                "container": {"id": "7fe41c8a2d1da09420117894f11dd91f6c3a44dfeb7d125dc594bd53468861df"},
+                "kubernetes": {"pod": {"uid": "5eadac96-ab58-11ea-b82b-0242ac110009"}},
+            },
+        ),
+        (
+            "9:freezer:/kubepods.slice/kubepods-pod22949dce_fd8b_11ea_8ede_98f2b32c645c.slice/docker-b15a5bdedd2e7645c3be271364324321b908314e4c77857bbfd32a041148c07f.scope",
+            {
+                "container": {"id": "b15a5bdedd2e7645c3be271364324321b908314e4c77857bbfd32a041148c07f"},
+                "kubernetes": {"pod": {"uid": "22949dce-fd8b-11ea-8ede-98f2b32c645c"}},
+            },
+        ),
     ],
 )
 def test_cgroup_parsing(test_input, expected):

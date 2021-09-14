@@ -37,9 +37,11 @@ import mock
 import pytest
 
 import elasticapm
-from elasticapm.conf.constants import SPAN
+from elasticapm.conf import constants
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.utils import compat, wrapt
+from tests.utils import assert_any_record_contains
 
 
 class Dummy(object):
@@ -65,7 +67,8 @@ class _TestDummyInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         kwargs = kwargs or {}
         kwargs["call_args"] = (module, method)
-        return wrapped(*args, **kwargs)
+        with elasticapm.capture_span("dummy"):
+            return wrapped(*args, **kwargs)
 
 
 def test_instrument_nonexisting_method_on_module():
@@ -75,8 +78,26 @@ def test_instrument_nonexisting_method_on_module():
 def test_instrument_nonexisting_method(caplog):
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         _TestInstrumentNonExistingMethod().instrument()
-    record = caplog.records[0]
-    assert "has no attribute" in record.message
+    assert_any_record_contains(caplog.records, "has no attribute", "elasticapm.instrument")
+
+
+def test_double_instrument(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    inst = _TestDummyInstrumentation()
+    try:
+        inst.instrument()
+        assert hasattr(Dummy.dummy, "_self_wrapper")
+        Dummy().dummy()
+        elasticapm_client.end_transaction()
+        assert len(elasticapm_client.spans_for_transaction(elasticapm_client.events[constants.TRANSACTION][0])) == 1
+        inst.instrumented = False
+        inst.instrument()
+        elasticapm_client.begin_transaction("test")
+        Dummy().dummy()
+        elasticapm_client.end_transaction()
+        assert len(elasticapm_client.spans_for_transaction(elasticapm_client.events[constants.TRANSACTION][1])) == 1
+    finally:
+        inst.uninstrument()
 
 
 @pytest.mark.skipif(compat.PY3, reason="different object model")
@@ -109,17 +130,21 @@ def test_uninstrument_py3(caplog):
     instrumentation = _TestDummyInstrumentation()
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         instrumentation.instrument()
-    record = caplog.records[0]
-    assert "Instrumented" in record.message
-    assert record.args == ("test_dummy_instrument", "tests.instrumentation.base_tests.Dummy.dummy")
+    assert_any_record_contains(
+        caplog.records,
+        "Instrumented test_dummy_instrument, tests.instrumentation.base_tests.Dummy.dummy",
+        "elasticapm.instrument",
+    )
     assert Dummy.dummy is not original
     assert isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         instrumentation.uninstrument()
-    record = caplog.records[1]
-    assert "Uninstrumented" in record.message
-    assert record.args == ("test_dummy_instrument", "tests.instrumentation.base_tests.Dummy.dummy")
+    assert_any_record_contains(
+        caplog.records,
+        "Uninstrumented test_dummy_instrument, tests.instrumentation.base_tests.Dummy.dummy",
+        "elasticapm.instrument",
+    )
     assert Dummy.dummy is original
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 
@@ -146,8 +171,7 @@ def test_skip_instrument_env_var(caplog):
         logging.DEBUG, "elasticapm.instrument"
     ):
         instrumentation.instrument()
-    record = caplog.records[0]
-    assert "Skipping" in record.message
+    assert_any_record_contains(caplog.records, "Skipping", "elasticapm.instrument")
     assert not instrumentation.instrumented
 
 
@@ -162,7 +186,7 @@ def test_skip_ignored_frames(elasticapm_client):
 
 
 def test_end_nonexisting_span(caplog, elasticapm_client):
-    with caplog.at_level(logging.INFO, "elasticapm.traces"):
+    with caplog.at_level(logging.DEBUG, "elasticapm.traces"):
         t = elasticapm_client.begin_transaction("test")
         # we're purposefully creating a case where we don't begin a span
         # and then try to end the non-existing span
@@ -170,5 +194,58 @@ def test_end_nonexisting_span(caplog, elasticapm_client):
         with elasticapm.capture_span("test_name", "test_type"):
             t.is_sampled = True
     elasticapm_client.end_transaction("test", "")
-    record = caplog.records[0]
-    assert record.args == ("test_name", "test_type")
+    assert_any_record_contains(
+        caplog.records, "ended non-existing span test_name of type test_type", "elasticapm.traces"
+    )
+
+
+def test_outcome_by_span_exception(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    try:
+        with elasticapm.capture_span("fail", "test_type"):
+            assert False
+    except AssertionError:
+        pass
+    with elasticapm.capture_span("success", "test_type"):
+        pass
+    elasticapm_client.end_transaction("test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert spans[0]["name"] == "fail" and spans[0]["outcome"] == "failure"
+    assert spans[1]["name"] == "success" and spans[1]["outcome"] == "success"
+
+
+@pytest.mark.parametrize(
+    "outcome,http_status_code,log_message,result",
+    [
+        (None, 200, None, "success"),
+        (None, 500, None, "failure"),
+        (None, "500", None, "failure"),
+        (None, "HTTP 500", "Invalid HTTP status 'HTTP 500' provided", "unknown"),
+        ("failure", 200, None, "failure"),  # explicit outcome has precedence
+        ("failed", None, "Invalid outcome 'failed' provided", "unknown"),
+    ],
+)
+def test_transaction_outcome(elasticapm_client, caplog, outcome, http_status_code, log_message, result):
+    transaction = elasticapm_client.begin_transaction("test")
+    with caplog.at_level(logging.INFO, "elasticapm.traces"):
+        elasticapm.set_transaction_outcome(outcome=outcome, http_status_code=http_status_code)
+    assert transaction.outcome == result
+    if log_message is None:
+        assert not [True for record in caplog.records if record.name == "elasticapm.traces"]
+    else:
+        assert_any_record_contains(caplog.records, log_message, "elasticapm.traces")
+
+
+def test_transaction_outcome_override(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome(constants.OUTCOME.FAILURE)
+
+    assert transaction.outcome == constants.OUTCOME.FAILURE
+
+    elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
+    # still a failure
+    assert transaction.outcome == constants.OUTCOME.FAILURE
+
+    elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=True)
+    assert transaction.outcome == constants.OUTCOME.SUCCESS

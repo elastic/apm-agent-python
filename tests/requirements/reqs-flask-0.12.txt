@@ -1,0 +1,2 @@
+Flask>=0.12,<0.13
+-r reqs-base.txt

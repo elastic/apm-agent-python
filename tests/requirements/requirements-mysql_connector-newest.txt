@@ -1,2 +1,0 @@
-mysql-connector-python
--r requirements-base.txt

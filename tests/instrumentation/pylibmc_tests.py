@@ -46,8 +46,8 @@ if "MEMCACHED_HOST" not in os.environ:
 @pytest.mark.integrationtest
 def test_pylibmc(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
+    host = os.environ.get("MEMCACHED_HOST", "localhost")
     with capture_span("test_memcached", "test"):
-        host = os.environ.get("MEMCACHED_HOST", "localhost")
         conn = pylibmc.Client([host + ":11211"])
         conn.set("mykey", "a")
         assert "a" == conn.get("mykey")
@@ -72,6 +72,11 @@ def test_pylibmc(instrument, elasticapm_client):
     assert spans[1]["subtype"] == "memcached"
     assert spans[1]["action"] == "query"
     assert spans[1]["parent_id"] == spans[3]["id"]
+    assert spans[1]["context"]["destination"] == {
+        "address": host,
+        "port": 11211,
+        "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
+    }
 
     assert spans[2]["name"] == "Client.get_multi"
     assert spans[2]["type"] == "cache"

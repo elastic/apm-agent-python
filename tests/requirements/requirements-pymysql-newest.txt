@@ -1,2 +1,0 @@
-pymysql
--r requirements-base.txt

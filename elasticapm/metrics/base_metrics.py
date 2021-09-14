@@ -33,38 +33,29 @@ import time
 from collections import defaultdict
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, is_master_process
+from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
+from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
 logger = get_logger("elasticapm.metrics")
 
 DISTINCT_LABEL_LIMIT = 1000
 
 
-class MetricsRegistry(object):
-    def __init__(self, collect_interval, queue_func, tags=None, ignore_patterns=None):
+class MetricsRegistry(ThreadManager):
+    def __init__(self, client, tags=None):
         """
         Creates a new metric registry
 
-        :param collect_interval: the interval to collect metrics from registered metric sets
-        :param queue_func: the function to call with the collected metrics
+        :param client: client instance
         :param tags:
         """
-        self._collect_interval = collect_interval
-        self._queue_func = queue_func
+        self.client = client
         self._metricsets = {}
         self._tags = tags or {}
         self._collect_timer = None
-        self._ignore_patterns = ignore_patterns or ()
-        if self._collect_interval:
-            # we only start the thread if we are not in a uwsgi master process
-            if not is_master_process():
-                self._start_collect_timer()
-            else:
-                # If we _are_ in a uwsgi master process, we use the postfork hook to start the thread after the fork
-                compat.postfork(lambda: self._start_collect_timer())
+        super(MetricsRegistry, self).__init__()
 
     def register(self, class_path):
         """
@@ -91,22 +82,37 @@ class MetricsRegistry(object):
         Collect metrics from all registered metric sets and queues them for sending
         :return:
         """
-        logger.debug("Collecting metrics")
+        if self.client.config.is_recording:
+            logger.debug("Collecting metrics")
 
-        for name, metricset in compat.iteritems(self._metricsets):
-            for data in metricset.collect():
-                self._queue_func(constants.METRICSET, data)
+            for _, metricset in compat.iteritems(self._metricsets):
+                for data in metricset.collect():
+                    self.client.queue(constants.METRICSET, data)
 
-    def _start_collect_timer(self, timeout=None):
-        timeout = timeout or self._collect_interval
-        self._collect_timer = IntervalTimer(self.collect, timeout, name="eapm metrics collect timer", daemon=True)
-        logger.debug("Starting metrics collect timer")
-        self._collect_timer.start()
+    def start_thread(self, pid=None):
+        super(MetricsRegistry, self).start_thread(pid=pid)
+        if self.client.config.metrics_interval:
+            self._collect_timer = IntervalTimer(
+                self.collect, self.collect_interval, name="eapm metrics collect timer", daemon=True
+            )
+            logger.debug("Starting metrics collect timer")
+            self._collect_timer.start()
 
-    def _stop_collect_timer(self):
-        if self._collect_timer:
+    def stop_thread(self):
+        if self._collect_timer and self._collect_timer.is_alive():
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
+            self._collect_timer = None
+            # collect one last time
+            self.collect()
+
+    @property
+    def collect_interval(self):
+        return self.client.config.metrics_interval / 1000.0
+
+    @property
+    def ignore_patterns(self):
+        return self.client.config.disable_metrics or []
 
 
 class MetricsSet(object):
@@ -115,6 +121,7 @@ class MetricsSet(object):
         self._counters = {}
         self._gauges = {}
         self._timers = {}
+        self._histograms = {}
         self._registry = registry
         self._label_limit_logged = False
 
@@ -138,17 +145,21 @@ class MetricsSet(object):
         """
         return self._metric(self._gauges, Gauge, name, reset_on_collect, labels)
 
-    def timer(self, name, reset_on_collect=False, **labels):
+    def timer(self, name, reset_on_collect=False, unit=None, **labels):
         """
         Returns an existing or creates and returns a new timer
         :param name: name of the timer
         :param reset_on_collect: indicate if the timer should be reset to 0 when collecting
+        :param unit: Unit of the observed metric
         :param labels: a flat key/value map of labels
         :return: the timer object
         """
-        return self._metric(self._timers, Timer, name, reset_on_collect, labels)
+        return self._metric(self._timers, Timer, name, reset_on_collect, labels, unit)
 
-    def _metric(self, container, metric_class, name, reset_on_collect, labels):
+    def histogram(self, name, reset_on_collect=False, unit=None, buckets=None, **labels):
+        return self._metric(self._histograms, Histogram, name, reset_on_collect, labels, unit, buckets=buckets)
+
+    def _metric(self, container, metric_class, name, reset_on_collect, labels, unit=None, **kwargs):
         """
         Returns an existing or creates and returns a metric
         :param container: the container for the metric
@@ -163,11 +174,12 @@ class MetricsSet(object):
         key = (name, labels)
         with self._lock:
             if key not in container:
-                if self._registry._ignore_patterns and any(
-                    pattern.match(name) for pattern in self._registry._ignore_patterns
-                ):
+                if any(pattern.match(name) for pattern in self._registry.ignore_patterns):
                     metric = noop_metric
-                elif len(self._gauges) + len(self._counters) + len(self._timers) >= DISTINCT_LABEL_LIMIT:
+                elif (
+                    len(self._gauges) + len(self._counters) + len(self._timers) + len(self._histograms)
+                    >= DISTINCT_LABEL_LIMIT
+                ):
                     if not self._label_limit_logged:
                         self._label_limit_logged = True
                         logger.warning(
@@ -176,7 +188,7 @@ class MetricsSet(object):
                         )
                     metric = noop_metric
                 else:
-                    metric = metric_class(name, reset_on_collect=reset_on_collect)
+                    metric = metric_class(name, reset_on_collect=reset_on_collect, unit=unit, **kwargs)
                 container[key] = metric
             return container[key]
 
@@ -196,30 +208,66 @@ class MetricsSet(object):
         timestamp = int(time.time() * 1000000)
         samples = defaultdict(dict)
         if self._counters:
-            for (name, labels), c in compat.iteritems(self._counters):
-                if c is not noop_metric:
-                    val = c.val
-                    if val or not c.reset_on_collect:
+            # iterate over a copy of the dict to avoid threading issues, see #717
+            for (name, labels), counter in compat.iteritems(self._counters.copy()):
+                if counter is not noop_metric:
+                    val = counter.val
+                    if val or not counter.reset_on_collect:
                         samples[labels].update({name: {"value": val}})
-                    if c.reset_on_collect:
-                        c.reset()
+                    if counter.reset_on_collect:
+                        counter.reset()
         if self._gauges:
-            for (name, labels), g in compat.iteritems(self._gauges):
-                if g is not noop_metric:
-                    val = g.val
-                    if val or not g.reset_on_collect:
-                        samples[labels].update({name: {"value": val}})
-                    if g.reset_on_collect:
-                        g.reset()
+            for (name, labels), gauge in compat.iteritems(self._gauges.copy()):
+                if gauge is not noop_metric:
+                    val = gauge.val
+                    if val or not gauge.reset_on_collect:
+                        samples[labels].update({name: {"value": val, "type": "gauge"}})
+                    if gauge.reset_on_collect:
+                        gauge.reset()
         if self._timers:
-            for (name, labels), t in compat.iteritems(self._timers):
-                if t is not noop_metric:
-                    val, count = t.val
-                    if val or not t.reset_on_collect:
-                        samples[labels].update({name + ".sum.us": {"value": int(val * 1000000)}})
+            for (name, labels), timer in compat.iteritems(self._timers.copy()):
+                if timer is not noop_metric:
+                    val, count = timer.val
+                    if val or not timer.reset_on_collect:
+                        sum_name = ".sum"
+                        if timer._unit:
+                            sum_name += "." + timer._unit
+                        samples[labels].update({name + sum_name: {"value": val}})
                         samples[labels].update({name + ".count": {"value": count}})
-                    if t.reset_on_collect:
-                        t.reset()
+                    if timer.reset_on_collect:
+                        timer.reset()
+        if self._histograms:
+            for (name, labels), histo in compat.iteritems(self._histograms.copy()):
+                if histo is not noop_metric:
+                    counts = histo.val
+                    if counts or not histo.reset_on_collect:
+                        # For the bucket values, we follow the approach described by Prometheus's
+                        # histogram_quantile function
+                        # (https://prometheus.io/docs/prometheus/latest/querying/functions/#histogram_quantile)
+                        # to achieve consistent percentile aggregation results:
+                        #
+                        # "The histogram_quantile() function interpolates quantile values by assuming a linear
+                        # distribution within a bucket. (...) If a quantile is located in the highest bucket,
+                        # the upper bound of the second highest bucket is returned. A lower limit of the lowest
+                        # bucket is assumed to be 0 if the upper bound of that bucket is greater than 0. In that
+                        # case, the usual linear interpolation is applied within that bucket. Otherwise, the upper
+                        # bound of the lowest bucket is returned for quantiles located in the lowest bucket."
+                        bucket_midpoints = []
+                        for i, bucket_le in enumerate(histo.buckets):
+                            if i == 0:
+                                if bucket_le > 0:
+                                    bucket_le /= 2.0
+                            elif i == len(histo.buckets) - 1:
+                                bucket_le = histo.buckets[i - 1]
+                            else:
+                                bucket_le = histo.buckets[i - 1] + (bucket_le - histo.buckets[i - 1]) / 2.0
+                            bucket_midpoints.append(bucket_le)
+                        samples[labels].update(
+                            {name: {"counts": counts, "values": bucket_midpoints, "type": "histogram"}}
+                        )
+                    if histo.reset_on_collect:
+                        histo.reset()
+
         if samples:
             for labels, sample in compat.iteritems(samples):
                 result = {"samples": sample, "timestamp": timestamp}
@@ -254,19 +302,27 @@ class SpanBoundMetricSet(MetricsSet):
         return data
 
 
-class Counter(object):
-    __slots__ = ("name", "_lock", "_initial_value", "_val", "reset_on_collect")
+class BaseMetric(object):
+    __slots__ = ("name", "reset_on_collect")
 
-    def __init__(self, name, initial_value=0, reset_on_collect=False):
+    def __init__(self, name, reset_on_collect=False, **kwargs):
+        self.name = name
+        self.reset_on_collect = reset_on_collect
+
+
+class Counter(BaseMetric):
+    __slots__ = BaseMetric.__slots__ + ("_lock", "_initial_value", "_val")
+
+    def __init__(self, name, initial_value=0, reset_on_collect=False, unit=None):
         """
         Creates a new counter
         :param name: name of the counter
         :param initial_value: initial value of the counter, defaults to 0
+        :param unit: unit of the observed counter. Unused for counters
         """
-        self.name = name
         self._lock = threading.Lock()
         self._val = self._initial_value = initial_value
-        self.reset_on_collect = reset_on_collect
+        super(Counter, self).__init__(name, reset_on_collect=reset_on_collect)
 
     def inc(self, delta=1):
         """
@@ -302,18 +358,23 @@ class Counter(object):
         """Returns the current value of the counter"""
         return self._val
 
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val = value
 
-class Gauge(object):
-    __slots__ = ("name", "_val", "reset_on_collect")
 
-    def __init__(self, name, reset_on_collect=False):
+class Gauge(BaseMetric):
+    __slots__ = BaseMetric.__slots__ + ("_val",)
+
+    def __init__(self, name, reset_on_collect=False, unit=None):
         """
         Creates a new gauge
         :param name: label of the gauge
+        :param unit of the observed gauge. Unused for gauges
         """
-        self.name = name
         self._val = None
-        self.reset_on_collect = reset_on_collect
+        super(Gauge, self).__init__(name, reset_on_collect=reset_on_collect)
 
     @property
     def val(self):
@@ -327,15 +388,15 @@ class Gauge(object):
         self._val = 0
 
 
-class Timer(object):
-    __slots__ = ("name", "_val", "_count", "_lock", "reset_on_collect")
+class Timer(BaseMetric):
+    __slots__ = BaseMetric.__slots__ + ("_val", "_count", "_lock", "_unit")
 
-    def __init__(self, name=None, reset_on_collect=False):
-        self.name = name
+    def __init__(self, name=None, reset_on_collect=False, unit=None):
         self._val = 0
         self._count = 0
+        self._unit = unit
         self._lock = threading.Lock()
-        self.reset_on_collect = reset_on_collect
+        super(Timer, self).__init__(name, reset_on_collect=reset_on_collect)
 
     def update(self, duration, count=1):
         with self._lock:
@@ -351,6 +412,51 @@ class Timer(object):
     def val(self):
         with self._lock:
             return self._val, self._count
+
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._val, self._count = value
+
+
+class Histogram(BaseMetric):
+    DEFAULT_BUCKETS = (0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, float("inf"))
+
+    __slots__ = BaseMetric.__slots__ + ("_lock", "_buckets", "_counts", "_lock", "_unit")
+
+    def __init__(self, name=None, reset_on_collect=False, unit=None, buckets=None):
+        self._lock = threading.Lock()
+        self._buckets = buckets or Histogram.DEFAULT_BUCKETS
+        if self._buckets[-1] != float("inf"):
+            self._buckets.append(float("inf"))
+        self._counts = [0] * len(self._buckets)
+        self._unit = unit
+        super(Histogram, self).__init__(name, reset_on_collect=reset_on_collect)
+
+    def update(self, value, count=1):
+        pos = 0
+        while value > self._buckets[pos]:
+            pos += 1
+        with self._lock:
+            self._counts[pos] += count
+
+    @property
+    def val(self):
+        with self._lock:
+            return self._counts
+
+    @val.setter
+    def val(self, value):
+        with self._lock:
+            self._counts = value
+
+    @property
+    def buckets(self):
+        return self._buckets
+
+    def reset(self):
+        with self._lock:
+            self._counts = [0] * len(self._buckets)
 
 
 class NoopMetric(object):

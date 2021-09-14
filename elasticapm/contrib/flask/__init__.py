@@ -31,13 +31,16 @@
 
 from __future__ import absolute_import
 
+import logging
+
 import flask
 from flask import request, signals
 
 import elasticapm
 import elasticapm.instrumentation.control
+from elasticapm import get_client
 from elasticapm.base import Client
-from elasticapm.conf import setup_logging
+from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
 from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.traces import execution_context
@@ -46,17 +49,6 @@ from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.errors.client")
-
-
-def make_client(client_cls, app, **defaults):
-    config = app.config.get("ELASTIC_APM", {})
-
-    if "framework_name" not in defaults:
-        defaults["framework_name"] = "flask"
-        defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
-
-    client = client_cls(config, **defaults)
-    return client
 
 
 class ElasticAPM(object):
@@ -95,8 +87,8 @@ class ElasticAPM(object):
     def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults):
         self.app = app
         self.logging = logging
+        self.client = client or get_client()
         self.client_cls = client_cls
-        self.client = client
 
         if app:
             self.init_app(app, **defaults)
@@ -110,13 +102,7 @@ class ElasticAPM(object):
 
         self.client.capture_exception(
             exc_info=kwargs.get("exc_info"),
-            context={
-                "request": get_data_from_request(
-                    request,
-                    capture_body=self.client.config.capture_body in ("errors", "all"),
-                    capture_headers=self.client.config.capture_headers,
-                )
-            },
+            context={"request": get_data_from_request(request, self.client.config, constants.ERROR)},
             custom={"app": self.app},
             handled=False,
         )
@@ -130,10 +116,16 @@ class ElasticAPM(object):
     def init_app(self, app, **defaults):
         self.app = app
         if not self.client:
-            self.client = make_client(self.client_cls, app, **defaults)
+            config = self.app.config.get("ELASTIC_APM", {})
+
+            if "framework_name" not in defaults:
+                defaults["framework_name"] = "flask"
+                defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
+
+            self.client = self.client_cls(config, **defaults)
 
         # 0 is a valid log level (NOTSET), so we need to check explicitly for it
-        if self.logging or self.logging is 0:  # noqa F632
+        if self.logging or self.logging is logging.NOTSET:
             if self.logging is not True:
                 kwargs = {"level": self.logging}
             else:
@@ -150,7 +142,7 @@ class ElasticAPM(object):
             pass
 
         # Instrument to get spans
-        if self.client.config.instrument:
+        if self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrumentation.control.instrument()
 
             signals.request_started.connect(self.request_started, sender=app)
@@ -182,16 +174,11 @@ class ElasticAPM(object):
             return {}
 
     def request_started(self, app):
-        if not self.app.debug or self.client.config.debug:
+        if (not self.app.debug or self.client.config.debug) and not self.client.should_ignore_url(request.path):
             trace_parent = TraceParent.from_headers(request.headers)
             self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
-                lambda: get_data_from_request(
-                    request,
-                    capture_body=self.client.config.capture_body in ("transactions", "all"),
-                    capture_headers=self.client.config.capture_headers,
-                ),
-                "request",
+                lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request"
             )
             rule = request.url_rule.rule if request.url_rule is not None else ""
             rule = build_name_with_http_method_prefix(rule, request)
@@ -200,12 +187,14 @@ class ElasticAPM(object):
     def request_finished(self, app, response):
         if not self.app.debug or self.client.config.debug:
             elasticapm.set_context(
-                lambda: get_data_from_response(response, capture_headers=self.client.config.capture_headers), "response"
+                lambda: get_data_from_response(response, self.client.config, constants.TRANSACTION), "response"
             )
             if response.status_code:
                 result = "HTTP {}xx".format(response.status_code // 100)
+                elasticapm.set_transaction_outcome(http_status_code=response.status_code, override=False)
             else:
                 result = response.status
+                elasticapm.set_transaction_outcome(http_status_code=response.status, override=False)
             elasticapm.set_transaction_result(result, override=False)
             # Instead of calling end_transaction here, we defer the call until the response is closed.
             # This ensures that we capture things that happen until the WSGI server closes the response.

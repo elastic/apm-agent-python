@@ -30,17 +30,34 @@
 
 
 import logging
+import logging.handlers
+import math
 import os
 import re
 import socket
 import threading
 
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES
 from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
 __all__ = ("setup_logging", "Config")
 
+
 logger = get_logger("elasticapm.conf")
+
+log_levels_map = {
+    "trace": 5,
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "warn": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+    "off": 1000,
+}
+logfile_set_up = False
 
 
 class ConfigurationError(ValueError):
@@ -50,15 +67,70 @@ class ConfigurationError(ValueError):
 
 
 class _ConfigValue(object):
-    def __init__(self, dict_key, env_key=None, type=compat.text_type, validators=None, default=None, required=False):
+    """
+    Base class for configuration values
+
+    dict_key
+        String representing the key used for this config value in dict configs.
+    env_key
+        String representing the key used in environment variables for this
+        config value. If not specified, will be set to `"ELASTIC_APM_" + dict_key`.
+    type
+        Type of value stored in this config value.
+    validators
+        List of validator classes. Must be callables, which will be called with
+        a value and the dict_key for the config value. The validator either
+        returns the validated value or raises a ConfigurationError if validation
+        fails.
+    callbacks
+        List of functions which will be called when the config value is updated.
+        The callbacks must match this signature:
+            callback(dict_key, old_value, new_value, config_instance)
+
+        Note that callbacks wait until the end of any given `update()` operation
+        and are called at this point. This, coupled with the fact that callbacks
+        receive the config instance, means that callbacks can utilize multiple
+        configuration values (such as is the case for logging). This is
+        complicated if more than one of the involved config values are
+        dynamic, as both would need callbacks and the callback would need to
+        be idempotent.
+    callbacks_on_default
+        Whether the callback should be called on config initialization if the
+        default value is used. Default: True
+    default
+        The default for this config value if not user-configured.
+    required
+        Whether this config value is required. If a default is specified,
+        this is a redundant option (except to ensure that this config value
+        is specified if a default were ever to be removed).
+
+    Note that _ConfigValues and any inheriting classes must implement __set__
+    and __get__. The calling instance will always be a _ConfigBase descendant
+    and the __set__ and __get__ calls will access `instance._values[self.dict_key]`
+    to get and set values.
+    """
+
+    def __init__(
+        self,
+        dict_key,
+        env_key=None,
+        type=compat.text_type,
+        validators=None,
+        callbacks=None,
+        callbacks_on_default=True,
+        default=None,
+        required=False,
+    ):
         self.type = type
         self.dict_key = dict_key
         self.validators = validators
+        self.callbacks = callbacks
         self.default = default
         self.required = required
         if env_key is None:
             env_key = "ELASTIC_APM_" + dict_key
         self.env_key = env_key
+        self.callbacks_on_default = callbacks_on_default
 
     def __get__(self, instance, owner):
         if instance:
@@ -66,9 +138,10 @@ class _ConfigValue(object):
         else:
             return self.default
 
-    def __set__(self, instance, value):
-        value = self._validate(instance, value)
-        instance._values[self.dict_key] = value
+    def __set__(self, config_instance, value):
+        value = self._validate(config_instance, value)
+        self._callback_if_changed(config_instance, value)
+        config_instance._values[self.dict_key] = value
 
     def _validate(self, instance, value):
         if value is None and self.required:
@@ -86,6 +159,29 @@ class _ConfigValue(object):
         instance._errors.pop(self.dict_key, None)
         return value
 
+    def _callback_if_changed(self, instance, new_value):
+        """
+        If the value changed (checked against instance._values[self.dict_key]),
+        then run the callback function (if defined)
+        """
+        old_value = instance._values.get(self.dict_key, self.default)
+        if old_value != new_value:
+            instance.callbacks_queue.append((self.dict_key, old_value, new_value))
+
+    def call_callbacks(self, old_value, new_value, config_instance):
+        if not self.callbacks:
+            return
+        for callback in self.callbacks:
+            try:
+                callback(self.dict_key, old_value, new_value, config_instance)
+            except Exception as e:
+                raise ConfigurationError(
+                    "Callback {} raised an exception when setting {} to {}: {}".format(
+                        callback, self.dict_key, new_value, e
+                    ),
+                    self.dict_key,
+                )
+
 
 class _ListConfigValue(_ConfigValue):
     def __init__(self, dict_key, list_separator=",", **kwargs):
@@ -99,6 +195,7 @@ class _ListConfigValue(_ConfigValue):
             value = list(value)
         if value:
             value = [self.type(item) for item in value]
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
 
@@ -115,6 +212,7 @@ class _DictConfigValue(_ConfigValue):
         elif not isinstance(value, dict):
             # TODO: better error handling
             value = None
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = value
 
 
@@ -130,6 +228,7 @@ class _BoolConfigValue(_ConfigValue):
                 value = True
             elif value.lower() == self.false_string:
                 value = False
+        self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = bool(value)
 
 
@@ -163,6 +262,32 @@ class UnitValidator(object):
         except KeyError:
             raise ConfigurationError("{} is not a supported unit".format(unit), field_name)
         return val
+
+
+class PrecisionValidator(object):
+    """
+    Forces a float value to `precision` digits of precision.
+
+    Rounds half away from zero.
+
+    If `minimum` is provided, and the value rounds to 0 (but was not zero to
+    begin with), use the minimum instead.
+    """
+
+    def __init__(self, precision=0, minimum=None):
+        self.precision = precision
+        self.minimum = minimum
+
+    def __call__(self, value, field_name):
+        try:
+            value = float(value)
+        except ValueError:
+            raise ConfigurationError("{} is not a float".format(value), field_name)
+        multiplier = 10 ** self.precision
+        rounded = math.floor(value * multiplier + 0.5) / multiplier
+        if rounded == 0 and self.minimum and value != 0:
+            rounded = self.minimum
+        return rounded
 
 
 duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
@@ -200,22 +325,124 @@ class FileIsReadableValidator(object):
         return value
 
 
+class EnumerationValidator(object):
+    """
+    Validator which ensures that a given config value is chosen from a list
+    of valid string options.
+    """
+
+    def __init__(self, valid_values, case_sensitive=False):
+        """
+        valid_values
+            List of valid string values for the config value
+        case_sensitive
+            Whether to compare case when comparing a value to the valid list.
+            Defaults to False (case-insensitive)
+        """
+        self.case_sensitive = case_sensitive
+        if case_sensitive:
+            self.valid_values = {s: s for s in valid_values}
+        else:
+            self.valid_values = {s.lower(): s for s in valid_values}
+
+    def __call__(self, value, field_name):
+        if self.case_sensitive:
+            ret = self.valid_values.get(value)
+        else:
+            ret = self.valid_values.get(value.lower())
+        if ret is None:
+            raise ConfigurationError(
+                "{} is not in the list of valid values: {}".format(value, list(self.valid_values.values())), field_name
+            )
+        return ret
+
+
+def _log_level_callback(dict_key, old_value, new_value, config_instance):
+    elasticapm_logger = logging.getLogger("elasticapm")
+    elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
+
+    global logfile_set_up
+    if not logfile_set_up and config_instance.log_file:
+        logfile_set_up = True
+        filehandler = logging.handlers.RotatingFileHandler(
+            config_instance.log_file, maxBytes=config_instance.log_file_size, backupCount=1
+        )
+        try:
+            import ecs_logging
+
+            filehandler.setFormatter(ecs_logging.StdlibFormatter())
+        except ImportError:
+            pass
+        elasticapm_logger.addHandler(filehandler)
+
+
+def _log_ecs_reformatting_callback(dict_key, old_value, new_value, config_instance):
+    """
+    If ecs_logging is installed and log_ecs_reformatting is set to "override", we should
+    set the ecs_logging.StdlibFormatter as the formatted for every handler in
+    the root logger, and set the default processor for structlog to the
+    ecs_logging.StructlogFormatter.
+    """
+    if new_value.lower() == "override":
+        try:
+            import ecs_logging
+        except ImportError:
+            return
+
+        # Stdlib
+        root_logger = logging.getLogger()
+        formatter = ecs_logging.StdlibFormatter()
+        for handler in root_logger.handlers:
+            handler.setFormatter(formatter)
+
+        # Structlog
+        try:
+            import structlog
+
+            structlog.configure(processors=[ecs_logging.StructlogFormatter()])
+        except ImportError:
+            pass
+
+
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
-    def __init__(self, config_dict=None, env_dict=None, inline_dict=None):
+    def __init__(self, config_dict=None, env_dict=None, inline_dict=None, copy=False):
+        """
+        config_dict
+            Configuration dict as is common for frameworks such as flask and django.
+            Keys match the _ConfigValue.dict_key (usually all caps)
+        env_dict
+            Environment variables dict. Keys match the _ConfigValue.env_key
+            (usually "ELASTIC_APM_" + dict_key)
+        inline_dict
+            Any config passed in as kwargs to the Client object. Typically
+            the keys match the names of the _ConfigValue variables in the Config
+            object.
+        copy
+            Whether this object is being created to copy an existing Config
+            object. If True, don't run the initial `update` (which would call
+            callbacks if present)
+        """
         self._values = {}
         self._errors = {}
-        self.update(config_dict, env_dict, inline_dict)
+        self._dict_key_lookup = {}
+        self.callbacks_queue = []
+        for config_value in self.__class__.__dict__.values():
+            if not isinstance(config_value, _ConfigValue):
+                continue
+            self._dict_key_lookup[config_value.dict_key] = config_value
+        if not copy:
+            self.update(config_dict, env_dict, inline_dict, initial=True)
 
-    def update(self, config_dict=None, env_dict=None, inline_dict=None):
+    def update(self, config_dict=None, env_dict=None, inline_dict=None, initial=False):
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
             env_dict = os.environ
         if inline_dict is None:
             inline_dict = {}
-        for field, config_value in self.__class__.__dict__.items():
+        for field, config_value in compat.iteritems(self.__class__.__dict__):
             if not isinstance(config_value, _ConfigValue):
                 continue
             new_value = self._NO_VALUE
@@ -234,6 +461,30 @@ class _ConfigBase(object):
                     setattr(self, field, new_value)
                 except ConfigurationError as e:
                     self._errors[e.field_name] = str(e)
+            # handle initial callbacks
+            if (
+                initial
+                and config_value.callbacks_on_default
+                and getattr(self, field) is not None
+                and getattr(self, field) == config_value.default
+            ):
+                self.callbacks_queue.append((config_value.dict_key, self._NO_VALUE, config_value.default))
+            # if a field has not been provided by any config source, we have to check separately if it is required
+            if config_value.required and getattr(self, field) is None:
+                self._errors[config_value.dict_key] = "Configuration error: value for {} is required.".format(
+                    config_value.dict_key
+                )
+        self.call_pending_callbacks()
+
+    def call_pending_callbacks(self):
+        """
+        Call callbacks for config options matching list of tuples:
+
+        (dict_key, old_value, new_value)
+        """
+        for dict_key, old_value, new_value in self.callbacks_queue:
+            self._dict_key_lookup[dict_key].call_callbacks(old_value, new_value, self)
+        self.callbacks_queue = []
 
     @property
     def values(self):
@@ -247,15 +498,26 @@ class _ConfigBase(object):
     def errors(self):
         return self._errors
 
+    def copy(self):
+        c = self.__class__(copy=True)
+        c._errors = {}
+        c.values = self.values.copy()
+        return c
+
 
 class Config(_ConfigBase):
-    service_name = _ConfigValue("SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], required=True)
-    environment = _ConfigValue("ENVIRONMENT", default=None)
+    service_name = _ConfigValue(
+        "SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], default="python_service", required=True
+    )
+    service_node_name = _ConfigValue("SERVICE_NODE_NAME")
+    environment = _ConfigValue("ENVIRONMENT")
     secret_token = _ConfigValue("SECRET_TOKEN")
+    api_key = _ConfigValue("API_KEY")
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
-    server_cert = _ConfigValue("SERVER_CERT", default=None, required=False, validators=[FileIsReadableValidator()])
+    server_cert = _ConfigValue("SERVER_CERT", validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
+    use_certifi = _BoolConfigValue("USE_CERTIFI", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
     filter_exception_types = _ListConfigValue("FILTER_EXCEPTION_TYPES")
@@ -269,7 +531,7 @@ class Config(_ConfigBase):
     )
     hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
     auto_log_stacks = _BoolConfigValue("AUTO_LOG_STACKS", default=True)
-    transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.AsyncTransport", required=True)
+    transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.Transport", required=True)
     processors = _ListConfigValue(
         "PROCESSORS",
         default=[
@@ -278,9 +540,11 @@ class Config(_ConfigBase):
             "elasticapm.processors.sanitize_http_response_cookies",
             "elasticapm.processors.sanitize_http_headers",
             "elasticapm.processors.sanitize_http_wsgi_env",
-            "elasticapm.processors.sanitize_http_request_querystring",
             "elasticapm.processors.sanitize_http_request_body",
         ],
+    )
+    sanitize_field_names = _ListConfigValue(
+        "SANITIZE_FIELD_NAMES", type=starmatch_to_regex, default=BASE_SANITIZE_FIELD_NAMES
     )
     metrics_sets = _ListConfigValue(
         "METRICS_SETS",
@@ -296,11 +560,15 @@ class Config(_ConfigBase):
         default=30000,
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
+    prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
+    prometheus_metrics_prefix = _ConfigValue("PROMETHEUS_METRICS_PREFIX", default="prometheus.metrics.")
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
-    api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=750 * 1024)
+    api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
     api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
-    transaction_sample_rate = _ConfigValue("TRANSACTION_SAMPLE_RATE", type=float, default=1.0)
+    transaction_sample_rate = _ConfigValue(
+        "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
+    )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
     span_frames_min_duration = _ConfigValue(
@@ -319,32 +587,71 @@ class Config(_ConfigBase):
     local_var_max_length = _ConfigValue("LOCAL_VAR_MAX_LENGTH", type=int, default=200)
     local_var_list_max_length = _ConfigValue("LOCAL_VAR_LIST_MAX_LENGTH", type=int, default=10)
     local_var_dict_max_length = _ConfigValue("LOCAL_VAR_DICT_MAX_LENGTH", type=int, default=10)
-    capture_body = _ConfigValue("CAPTURE_BODY", default="off")
+    capture_body = _ConfigValue(
+        "CAPTURE_BODY",
+        default="off",
+        validators=[lambda val, _: {"errors": "error", "transactions": "transaction"}.get(val, val)],
+    )
     async_mode = _BoolConfigValue("ASYNC_MODE", default=True)
     instrument_django_middleware = _BoolConfigValue("INSTRUMENT_DJANGO_MIDDLEWARE", default=True)
     autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)
     transactions_ignore_patterns = _ListConfigValue("TRANSACTIONS_IGNORE_PATTERNS", default=[])
+    transaction_ignore_urls = _ListConfigValue("TRANSACTION_IGNORE_URLS", type=starmatch_to_regex, default=[])
     service_version = _ConfigValue("SERVICE_VERSION")
-    framework_name = _ConfigValue("FRAMEWORK_NAME", default=None)
-    framework_version = _ConfigValue("FRAMEWORK_VERSION", default=None)
-    global_labels = _DictConfigValue("GLOBAL_LABELS", default=None)
+    framework_name = _ConfigValue("FRAMEWORK_NAME")
+    framework_version = _ConfigValue("FRAMEWORK_VERSION")
+    global_labels = _DictConfigValue("GLOBAL_LABELS")
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
+    enabled = _BoolConfigValue("ENABLED", default=True)
+    recording = _BoolConfigValue("RECORDING", default=True)
     instrument = _BoolConfigValue("INSTRUMENT", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
     disable_log_record_factory = _BoolConfigValue("DISABLE_LOG_RECORD_FACTORY", default=False)
     use_elastic_traceparent_header = _BoolConfigValue("USE_ELASTIC_TRACEPARENT_HEADER", default=True)
+    use_elastic_excepthook = _BoolConfigValue("USE_ELASTIC_EXCEPTHOOK", default=False)
+    cloud_provider = _ConfigValue("CLOUD_PROVIDER", default=True)
+    log_level = _ConfigValue(
+        "LOG_LEVEL",
+        validators=[EnumerationValidator(["trace", "debug", "info", "warning", "warn", "error", "critical", "off"])],
+        callbacks=[_log_level_callback],
+    )
+    log_file = _ConfigValue("LOG_FILE", default="")
+    log_file_size = _ConfigValue("LOG_FILE_SIZE", validators=[size_validator], type=int, default=50 * 1024 * 1024)
+    log_ecs_reformatting = _ConfigValue(
+        "LOG_ECS_REFORMATTING",
+        validators=[EnumerationValidator(["off", "override"])],
+        callbacks=[_log_ecs_reformatting_callback],
+        default="off",
+    )
+
+    @property
+    def is_recording(self):
+        if not self.enabled:
+            return False
+        else:
+            return self.recording
 
 
-class VersionedConfig(object):
+class VersionedConfig(ThreadManager):
     """
     A thin layer around Config that provides versioning
     """
 
-    __slots__ = ("_config", "_version", "_first_config", "_first_version", "_lock")
+    __slots__ = (
+        "_config",
+        "_version",
+        "_first_config",
+        "_first_version",
+        "_lock",
+        "transport",
+        "_update_thread",
+        "pid",
+        "start_stop_order",
+    )
 
-    def __init__(self, config_object, version):
+    def __init__(self, config_object, version, transport=None):
         """
         Create a new VersionedConfig with an initial Config object
         :param config_object: the initial Config object
@@ -352,7 +659,10 @@ class VersionedConfig(object):
         """
         self._config = self._first_config = config_object
         self._version = self._first_version = version
+        self.transport = transport
         self._lock = threading.Lock()
+        self._update_thread = None
+        super(VersionedConfig, self).__init__()
 
     def update(self, version, **config):
         """
@@ -361,8 +671,7 @@ class VersionedConfig(object):
         :param config: a key/value map of new configuration
         :return: configuration errors, if any
         """
-        new_config = Config()
-        new_config.values = self._config.values.copy()
+        new_config = self._config.copy()
 
         # pass an empty env dict to ensure the environment doesn't get precedence
         new_config.update(inline_dict=config, env_dict={})
@@ -376,10 +685,23 @@ class VersionedConfig(object):
     def reset(self):
         """
         Reset state to the original configuration
+
+        Note that because ConfigurationValues can have callbacks, we need to
+        note any differences between the original configuration and the most
+        recent configuration and run any callbacks that might exist for those
+        values.
         """
+        callbacks = []
+        for key in compat.iterkeys(self._config.values):
+            if key in self._first_config.values and self._config.values[key] != self._first_config.values[key]:
+                callbacks.append((key, self._config.values[key], self._first_config.values[key]))
+
         with self._lock:
             self._version = self._first_version
             self._config = self._first_config
+
+        self._config.callbacks_queue.extend(callbacks)
+        self._config.call_pending_callbacks()
 
     @property
     def changed(self):
@@ -398,39 +720,50 @@ class VersionedConfig(object):
     def config_version(self):
         return self._version
 
+    def update_config(self):
+        if not self.transport:
+            logger.warning("No transport set for config updates, skipping")
+            return
+        logger.debug("Checking for new config...")
+        keys = {"service": {"name": self.service_name}}
+        if self.environment:
+            keys["service"]["environment"] = self.environment
+        new_version, new_config, next_run = self.transport.get_config(self.config_version, keys)
+        if new_version and new_config:
+            errors = self.update(new_version, **new_config)
+            if errors:
+                logger.error("Error applying new configuration: %s", repr(errors))
+            else:
+                logger.info(
+                    "Applied new remote configuration: %s",
+                    "; ".join(
+                        "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
+                    ),
+                )
+        elif new_version == self.config_version:
+            logger.debug("Remote config unchanged")
+        elif not new_config and self.changed:
+            logger.debug("Remote config disappeared, resetting to original")
+            self.reset()
 
-def update_config(agent):
-    logger.debug("Checking for new config...")
-    transport = agent._transport
-    keys = {"service": {"name": agent.config.service_name}}
-    if agent.config.environment:
-        keys["service"]["environment"] = agent.config.environment
-    new_version, new_config, next_run = transport.get_config(agent.config.config_version, keys)
-    if new_version and new_config:
-        errors = agent.config.update(new_version, **new_config)
-        if errors:
-            logger.error("Error applying new configuration: %s", repr(errors))
-        else:
-            logger.info(
-                "Applied new configuration: %s",
-                "; ".join(
-                    "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
-                ),
-            )
-    elif new_version == agent.config.config_version:
-        logger.debug("Remote config unchanged")
-    elif not new_config and agent.config.changed:
-        logger.debug("Remote config disappeared, resetting to original")
-        agent.config.reset()
+        return next_run
 
-    return next_run
+    def start_thread(self, pid=None):
+        self._update_thread = IntervalTimer(
+            self.update_config, 1, "eapm conf updater", daemon=True, evaluate_function_interval=True
+        )
+        self._update_thread.start()
+        super(VersionedConfig, self).start_thread(pid=pid)
+
+    def stop_thread(self):
+        if self._update_thread:
+            self._update_thread.cancel()
+            self._update_thread = None
 
 
-def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
+def setup_logging(handler):
     """
     Configures logging to pipe to Elastic APM.
-
-    - ``exclude`` is a list of loggers that shouldn't go to ElasticAPM.
 
     For a typical Python install:
 
@@ -445,6 +778,9 @@ def setup_logging(handler, exclude=("gunicorn", "south", "elasticapm.errors")):
 
     Returns a boolean based on if logging was configured or not.
     """
+    # TODO We should probably revisit this. Does it make more sense as
+    # a method within the Client class? The Client object could easily
+    # pass itself into LoggingHandler and we could eliminate args altogether.
     logger = logging.getLogger()
     if handler.__class__ in map(type, logger.handlers):
         return False

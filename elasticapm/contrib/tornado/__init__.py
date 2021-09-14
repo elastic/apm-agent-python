@@ -34,8 +34,9 @@ Note that transaction creation is actually done in the tornado
 instrumentation. This module only creates the client for later use by the
 that instrumentation, and triggers the global instrumentation itself.
 """
-import elasticapm
 import tornado
+
+import elasticapm
 from elasticapm import Client
 
 
@@ -62,5 +63,9 @@ class ElasticAPM:
         app.elasticapm_client = client
 
         # Don't instrument if debug=True in tornado, unless client.config.debug is True
-        if (not self.app.settings.get("debug") or client.config.debug) and client.config.instrument:
+        if (
+            (not self.app.settings.get("debug") or client.config.debug)
+            and client.config.instrument
+            and client.config.enabled
+        ):
             elasticapm.instrument()

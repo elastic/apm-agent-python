@@ -132,11 +132,14 @@ apm.capture_message('hello, world!')
 
 [float]
 [[flask-logging]]
-==== Logging
+==== Shipping Logs to Elasticsearch
 
-Passing `logging=LEVEL` to the ElasticAPM constructor will make the agent automatically log all log messages from Python's built-in `logging` module,
-with the given level or higher.
-`LEVEL` has to be one of the levels defined in the https://docs.python.org/3/library/logging.html#logging-levels[`logging`] module.
+Enable automatic log shipping by passing `logging=LEVEL` to the ElasticAPM
+constructor. The agent will then ship all log messages with the given
+log-level or higher, from Python's built-in `logging` module to
+Elasticsearch. `LEVEL` must be one of the levels defined in the
+https://docs.python.org/3/library/logging.html#logging-levels[`logging`]
+module.
 
 [source,python]
 ----
@@ -147,7 +150,8 @@ from elasticapm.contrib.flask import ElasticAPM
 apm = ElasticAPM(app, logging=logging.ERROR)
 ----
 
-To log all messages independent of log levels to Elastic APM, pass `logging=True` to the constructor:
+To ship all log messages independent of log levels to Elastic APM, pass
+`logging=True` to the constructor:
 
 [source,python]
 ----
@@ -162,6 +166,9 @@ For shipping of less urgent logs, we recommend to use {filebeat-ref}[filebeat].
 
 For fine-grained control, you can initialize a logging handler and add it,
 just as you would with any other handler.
+
+For information on how to increase the log verbosity from the APM agent, see
+<<agent-logging,troubleshooting agent logging>>.
 
 [source,python]
 ----
@@ -279,4 +286,4 @@ See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
 [[supported-flask-and-python-versions]]
 ==== Supported Flask and Python versions
 
-A list of supported <<supported-flask,Flask>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  
+A list of supported <<supported-flask,Flask>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.

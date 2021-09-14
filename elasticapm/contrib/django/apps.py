@@ -37,6 +37,7 @@ from elasticapm.conf import constants
 from elasticapm.contrib.django.client import get_client
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.wsgi import get_current_url
 
 logger = get_logger("elasticapm.traces")
 
@@ -53,7 +54,7 @@ TRACESTATE_HEADER_NAME_WSGI = "HTTP_" + constants.TRACESTATE_HEADER_NAME.upper()
 
 class ElasticAPMConfig(AppConfig):
     name = "elasticapm.contrib.django"
-    label = "elasticapm.contrib.django"
+    label = "elasticapm"
     verbose_name = "ElasticAPM"
 
     def __init__(self, *args, **kwargs):
@@ -65,7 +66,7 @@ class ElasticAPMConfig(AppConfig):
         if self.client.config.autoinsert_django_middleware:
             self.insert_middleware(django_settings)
         register_handlers(self.client)
-        if self.client.config.instrument:
+        if self.client.config.instrument and self.client.config.enabled:
             instrument(self.client)
         else:
             self.client.logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
@@ -97,7 +98,8 @@ class ElasticAPMConfig(AppConfig):
 
 
 def register_handlers(client):
-    from django.core.signals import got_request_exception, request_started, request_finished
+    from django.core.signals import got_request_exception, request_finished, request_started
+
     from elasticapm.contrib.django.handlers import exception_handler
 
     # Connect to Django's internal signal handlers
@@ -119,6 +121,7 @@ def register_handlers(client):
     # If we can import celery, register ourselves as exception handler
     try:
         import celery  # noqa F401
+
         from elasticapm.contrib.celery import register_exception_tracking
 
         try:
@@ -133,17 +136,27 @@ def _request_started_handler(client, sender, *args, **kwargs):
     if not _should_start_transaction(client):
         return
     # try to find trace id
+    trace_parent = None
     if "environ" in kwargs:
+        url = get_current_url(kwargs["environ"], strip_querystring=True, path_only=True)
+        if client.should_ignore_url(url):
+            logger.debug("Ignoring request due to %s matching transaction_ignore_urls")
+            return
         trace_parent = TraceParent.from_headers(
             kwargs["environ"],
             TRACEPARENT_HEADER_NAME_WSGI,
             TRACEPARENT_LEGACY_HEADER_NAME_WSGI,
             TRACESTATE_HEADER_NAME_WSGI,
         )
-    elif "scope" in kwargs and "headers" in kwargs["scope"]:
-        trace_parent = TraceParent.from_headers(kwargs["scope"]["headers"])
-    else:
-        trace_parent = None
+    elif "scope" in kwargs:
+        scope = kwargs["scope"]
+        fake_environ = {"SCRIPT_NAME": scope.get("root_path", ""), "PATH_INFO": scope["path"], "QUERY_STRING": ""}
+        url = get_current_url(fake_environ, strip_querystring=True, path_only=True)
+        if client.should_ignore_url(url):
+            logger.debug("Ignoring request due to %s matching transaction_ignore_urls")
+            return
+        if "headers" in scope:
+            trace_parent = TraceParent.from_headers(scope["headers"])
     client.begin_transaction("request", trace_parent=trace_parent)
 
 
@@ -156,6 +169,7 @@ def instrument(client):
     instrument()
     try:
         import celery  # noqa F401
+
         from elasticapm.contrib.celery import register_instrumentation
 
         register_instrumentation(client)

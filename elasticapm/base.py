@@ -37,22 +37,24 @@ import logging
 import os
 import platform
 import sys
+import threading
 import time
 import warnings
 from copy import deepcopy
 
 import elasticapm
-from elasticapm.conf import Config, VersionedConfig, constants, update_config
+from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
-from elasticapm.utils import cgroup, compat, is_master_process, stacks, varmap
+from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, varmap
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.utils.threading import IntervalTimer
 
 __all__ = ("Client",)
+
+CLIENT_SINGLETON = None
 
 
 class Client(object):
@@ -92,16 +94,26 @@ class Client(object):
         self.logger = get_logger("%s.%s" % (cls.__module__, cls.__name__))
         self.error_logger = get_logger("elasticapm.errors")
 
+        self._pid = None
+        self._thread_starter_lock = threading.Lock()
+        self._thread_managers = {}
+
         self.tracer = None
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
+        # setting server_version here is mainly used for testing
+        self.server_version = inline.pop("server_version", None)
+
+        self.check_python_version()
 
         config = Config(config, inline_dict=inline)
         if config.errors:
             for msg in config.errors.values():
                 self.error_logger.error(msg)
             config.disable_send = True
+        if config.service_name == "python_service":
+            self.logger.warning("No custom SERVICE_NAME was set -- using non-descript default 'python_service'")
         self.config = VersionedConfig(config, version=None)
 
         # Insert the log_record_factory into the logging library
@@ -125,23 +137,21 @@ class Client(object):
             "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
         }
 
-        if self.config.secret_token:
-            headers["Authorization"] = "Bearer %s" % self.config.secret_token
         transport_kwargs = {
-            "metadata": self._build_metadata(),
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
             "timeout": self.config.server_timeout,
-            "max_flush_time": self.config.api_request_time / 1000.0,
-            "max_buffer_size": self.config.api_request_size,
             "processors": self.load_processors(),
         }
         self._api_endpoint_url = compat.urlparse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
             constants.EVENTS_API_PATH,
         )
-        self._transport = import_string(self.config.transport_class)(self._api_endpoint_url, **transport_kwargs)
+        transport_class = import_string(self.config.transport_class)
+        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self.config.transport = self._transport
+        self._thread_managers["transport"] = self._transport
 
         for exc_to_filter in self.config.filter_exception_types or []:
             exc_to_filter_type = exc_to_filter.split(".")[-1]
@@ -182,21 +192,39 @@ class Client(object):
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
-        self._metrics = MetricsRegistry(
-            self.config.metrics_interval / 1000.0, self.queue, ignore_patterns=self.config.disable_metrics
-        )
+        self._metrics = MetricsRegistry(self)
         for path in self.config.metrics_sets:
             self._metrics.register(path)
         if self.config.breakdown_metrics:
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+        if self.config.prometheus_metrics:
+            self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
+        self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
-            self._config_updater = IntervalTimer(
-                update_config, 1, "eapm conf updater", daemon=True, args=(self,), evaluate_function_interval=True
-            )
-            self._config_updater.start()
+            self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
+        if self.config.use_elastic_excepthook:
+            self.original_excepthook = sys.excepthook
+            sys.excepthook = self._excepthook
+        if config.enabled:
+            self.start_threads()
+
+        # Save this Client object as the global CLIENT_SINGLETON
+        set_client(self)
+
+    def start_threads(self):
+        current_pid = os.getpid()
+        if self._pid != current_pid:
+            with self._thread_starter_lock:
+                self.logger.debug("Detected PID change from %r to %r, starting threads", self._pid, current_pid)
+                for manager_type, manager in sorted(
+                    self._thread_managers.items(), key=lambda item: item[1].start_stop_order
+                ):
+                    self.logger.debug("Starting %s thread", manager_type)
+                    manager.start_thread(pid=current_pid)
+                self._pid = current_pid
 
     def get_handler(self, name):
         return import_string(name)
@@ -205,6 +233,8 @@ class Client(object):
         """
         Captures and processes an event and pipes it off to Client.send.
         """
+        if not self.config.is_recording:
+            return
         if event_type == "Exception":
             # never gather log stack for exceptions
             stack = False
@@ -244,6 +274,7 @@ class Client(object):
     def queue(self, event_type, data, flush=False):
         if self.config.disable_send:
             return
+        self.start_threads()
         if flush and is_master_process():
             # don't flush in uWSGI master process to avoid ending up in an unpredictable threading state
             flush = False
@@ -258,7 +289,8 @@ class Client(object):
         :param start: override the start timestamp, mostly useful for testing
         :return: the started transaction object
         """
-        return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
+        if self.config.is_recording:
+            return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
 
     def end_transaction(self, name=None, result="", duration=None):
         """
@@ -273,11 +305,12 @@ class Client(object):
         return transaction
 
     def close(self):
-        if self._metrics:
-            self._metrics._stop_collect_timer()
-        if self._config_updater:
-            self._config_updater.cancel()
-        self._transport.close()
+        if self.config.enabled:
+            with self._thread_starter_lock:
+                for _, manager in sorted(self._thread_managers.items(), key=lambda item: item[1].start_stop_order):
+                    manager.stop_thread()
+        global CLIENT_SINGLETON
+        CLIENT_SINGLETON = None
 
     def get_service_info(self):
         if self._service_info:
@@ -303,6 +336,8 @@ class Client(object):
                 "name": keyword_field(self.config.framework_name),
                 "version": keyword_field(self.config.framework_version),
             }
+        if self.config.service_node_name:
+            result["node"] = {"configured_name": keyword_field(self.config.service_node_name)}
         self._service_info = result
         return result
 
@@ -343,12 +378,54 @@ class Client(object):
             system_data["kubernetes"] = k8s
         return system_data
 
-    def _build_metadata(self):
+    def get_cloud_info(self):
+        """
+        Detects if the app is running in a cloud provider and fetches relevant
+        metadata from the cloud provider's metadata endpoint.
+        """
+        provider = str(self.config.cloud_provider).lower()
+
+        if not provider or provider == "none" or provider == "false":
+            return {}
+        if provider == "aws":
+            data = cloud.aws_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
+        elif provider == "gcp":
+            data = cloud.gcp_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
+        elif provider == "azure":
+            data = cloud.azure_metadata()
+            if not data:
+                self.logger.warning("Cloud provider {0} defined, but no metadata was found.".format(provider))
+            return data
+        elif provider == "auto" or provider == "true":
+            # Trial and error
+            data = {}
+            data = cloud.aws_metadata()
+            if data:
+                return data
+            data = cloud.gcp_metadata()
+            if data:
+                return data
+            data = cloud.azure_metadata()
+            return data
+        else:
+            self.logger.warning("Unknown value for CLOUD_PROVIDER, skipping cloud metadata: {}".format(provider))
+            return {}
+
+    def build_metadata(self):
         data = {
             "service": self.get_service_info(),
             "process": self.get_process_info(),
             "system": self.get_system_info(),
+            "cloud": self.get_cloud_info(),
         }
+        if not data["cloud"]:
+            data.pop("cloud")
         if self.config.global_labels:
             data["labels"] = enforce_label_format(self.config.global_labels)
         return data
@@ -477,7 +554,7 @@ class Client(object):
                     exc_name = "%s.%s" % (exc_module, exc_type)
                 else:
                     exc_name = exc_type
-                self.logger.info("Ignored %s exception due to exception type filter", exc_name)
+                self.logger.debug("Ignored %s exception due to exception type filter", exc_name)
                 return True
         return False
 
@@ -500,6 +577,14 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
+    def _excepthook(self, type_, value, traceback):
+        try:
+            self.original_excepthook(type_, value, traceback)
+        except Exception:
+            self.capture_exception(handled=False)
+        finally:
+            self.capture_exception(exc_info=(type_, value, traceback), handled=False)
+
     def load_processors(self):
         """
         Loads processors from self.config.processors, as well as constants.HARDCODED_PROCESSORS.
@@ -512,9 +597,41 @@ class Client(object):
         # setdefault has the nice property that it returns the value that it just set on the dict
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
+    def should_ignore_url(self, url):
+        if self.config.transaction_ignore_urls:
+            for pattern in self.config.transaction_ignore_urls:
+                if pattern.match(url):
+                    return True
+        return False
+
+    def check_python_version(self):
+        v = tuple(map(int, platform.python_version_tuple()[:2]))
+        if v == (2, 7):
+            warnings.warn(
+                (
+                    "The Elastic APM agent will stop supporting Python 2.7 starting in 6.0.0 -- "
+                    "Please upgrade to Python 3.5+ to continue to use the latest features."
+                ),
+                PendingDeprecationWarning,
+            )
+        elif v < (3, 5):
+            warnings.warn("The Elastic APM agent only supports Python 3.5+", DeprecationWarning)
+
 
 class DummyClient(Client):
     """Sends messages into an empty void"""
 
     def send(self, url, **kwargs):
         return None
+
+
+def get_client():
+    return CLIENT_SINGLETON
+
+
+def set_client(client):
+    global CLIENT_SINGLETON
+    if CLIENT_SINGLETON:
+        logger = get_logger("elasticapm")
+        logger.warning("Client object is being set more than once", stack_info=True)
+    CLIENT_SINGLETON = client

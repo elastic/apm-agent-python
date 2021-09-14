@@ -33,13 +33,14 @@ import pytest  # isort:skip
 aiohttp = pytest.importorskip("aiohttp")  # isort:skip
 
 import mock
+from multidict import MultiDict
 
+import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.aiohttp import ElasticAPM
 from elasticapm.contrib.aiohttp.middleware import AioHttpTraceParent
 from elasticapm.utils.disttracing import TraceParent
-from multidict import MultiDict
 
 pytestmark = [pytest.mark.aiohttp]
 
@@ -52,13 +53,16 @@ def aioeapm(elasticapm_client):
         return aiohttp.web.Response(body=b"Hello, world")
 
     async def boom(request):
-        raise ValueError()
+        raise aiohttp.web.HTTPInternalServerError(headers={"boom": "boom"})
 
     app = aiohttp.web.Application()
     app.router.add_route("GET", "/", hello)
+    app.router.add_route("GET", "/hello", hello)
     app.router.add_route("GET", "/boom", boom)
     apm = ElasticAPM(app, elasticapm_client)
     yield apm
+
+    elasticapm.uninstrument()
 
 
 async def test_get(aiohttp_client, aioeapm):
@@ -76,6 +80,7 @@ async def test_get(aiohttp_client, aioeapm):
 
     assert transaction["name"] == "GET /"
     assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
     assert transaction["type"] == "request"
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
@@ -83,6 +88,24 @@ async def test_get(aiohttp_client, aioeapm):
     request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
 
     assert span["name"] == "test"
+
+
+async def test_transaction_ignore_urls(aiohttp_client, aioeapm):
+    app = aioeapm.app
+    client = await aiohttp_client(app)
+    elasticapm_client = aioeapm.client
+    resp = await client.get("/")
+    assert resp.status == 200
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    elasticapm_client.config.update(1, transaction_ignore_urls="x")
+    resp = await client.get("/")
+    assert resp.status == 200
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 2
+    elasticapm_client.config.update(1, transaction_ignore_urls="*,x")
+    resp = await client.get("/")
+    assert resp.status == 200
+    # still only two transaction
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 2
 
 
 async def test_exception(aiohttp_client, aioeapm):
@@ -99,6 +122,7 @@ async def test_exception(aiohttp_client, aioeapm):
 
     assert transaction["name"] == "GET /boom"
     assert transaction["result"] == "HTTP 5xx"
+    assert transaction["outcome"] == "failure"
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
@@ -108,8 +132,29 @@ async def test_exception(aiohttp_client, aioeapm):
     assert len(elasticapm_client.events[constants.ERROR]) == 1
     error = elasticapm_client.events[constants.ERROR][0]
     assert error["transaction_id"] == transaction["id"]
-    assert error["exception"]["type"] == "ValueError"
+    assert error["exception"]["type"] == "HTTPInternalServerError"
     assert error["context"]["request"] == transaction["context"]["request"]
+
+
+async def test_capture_headers_is_dynamic(aiohttp_client, aioeapm):
+    app = aioeapm.app
+    client = await aiohttp_client(app)
+    elasticapm_client = aioeapm.client
+
+    elasticapm_client.config.update("1", capture_headers=True)
+    await client.get("/boom")
+
+    elasticapm_client.config.update("2", capture_headers=False)
+    await client.get("/boom")
+    assert elasticapm_client.config.capture_headers is False
+
+    assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["request"]
+    assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["response"]
+    assert "headers" in elasticapm_client.events[constants.ERROR][0]["context"]["request"]
+
+    assert "headers" not in elasticapm_client.events[constants.TRANSACTION][1]["context"]["request"]
+    assert "headers" not in elasticapm_client.events[constants.TRANSACTION][1]["context"]["response"]
+    assert "headers" not in elasticapm_client.events[constants.ERROR][1]["context"]["request"]
 
 
 async def test_traceparent_handling(aiohttp_client, aioeapm):
@@ -139,3 +184,15 @@ async def test_traceparent_handling(aiohttp_client, aioeapm):
 async def test_aiohttptraceparent_merge(headers, expected):
     result = AioHttpTraceParent.merge_duplicate_headers(headers, "a")
     assert result == expected
+
+
+async def test_aiohttp_transaction_ignore_urls(aiohttp_client, aioeapm):
+    app = aioeapm.app
+    client = await aiohttp_client(app)
+    elasticapm_client = aioeapm.client
+    resp = await client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ello,/world")
+    resp = await client.get("/hello")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1

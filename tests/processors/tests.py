@@ -40,8 +40,9 @@ import pytest
 
 import elasticapm
 from elasticapm import Client, processors
-from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES_UNPROCESSED, ERROR, SPAN, TRANSACTION
 from elasticapm.utils import compat
+from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
@@ -49,25 +50,31 @@ def http_test_data():
     return {
         "context": {
             "request": {
-                "body": "foo=bar&password=123456&the_secret=abc&cc=1234567890098765",
-                "env": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"},
+                "body": "foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
+                "env": {
+                    "foo": "bar",
+                    "password": "hello",
+                    "secret": "hello",
+                    "custom_env": "bye",
+                },
                 "headers": {
                     "foo": "bar",
                     "password": "hello",
-                    "the_secret": "hello",
-                    "a_password_here": "hello",
+                    "secret": "hello",
                     "authorization": "bearer xyz",
+                    "some-header": "some-secret-value",
+                    "cookie": "foo=bar; baz=foo",
                 },
                 "cookies": {
                     "foo": "bar",
                     "password": "topsecret",
-                    "the_secret": "topsecret",
+                    "secret": "topsecret",
                     "sessionid": "123",
-                    "a_password_here": "123456",
+                    "custom-sensitive-cookie": "123",
                 },
                 "url": {
-                    "full": "http://example.com/bla?foo=bar&password=123456&the_secret=abc&cc=1234567890098765",
-                    "search": "foo=bar&password=123456&the_secret=abc&cc=1234567890098765",
+                    "full": "http://example.com/bla?foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
+                    "search": "foo=bar&password=123456&secret=abc&cc=1234567890098765&custom_field=123",
                 },
             },
             "response": {
@@ -75,25 +82,51 @@ def http_test_data():
                 "headers": {
                     "foo": "bar",
                     "password": "hello",
-                    "the_secret": "hello",
-                    "a_password_here": "hello",
+                    "secret": "hello",
                     "authorization": "bearer xyz",
+                    "some-header": "some-secret-value",
+                    "cookie": "foo=bar; baz=foo",
                 },
             },
         }
     }
 
 
-def test_stacktrace():
+@pytest.mark.parametrize(
+    "elasticapm_client, custom_field",
+    [
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["sensitive-stacktrace-val"]},
+            processors.MASK,
+        ),
+        ({}, "bye"),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_stacktrace(elasticapm_client, custom_field):
     data = {
         "exception": {
             "stacktrace": [
-                {"vars": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"}}
+                {
+                    "vars": {
+                        "foo": "bar",
+                        "password": "hello",
+                        "secret": "hello",
+                        "sensitive-stacktrace-val": "bye",
+                    }
+                }
             ],
             "cause": [
                 {
                     "stacktrace": [
-                        {"vars": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"}}
+                        {
+                            "vars": {
+                                "foo": "bar",
+                                "password": "hello",
+                                "secret": "hello",
+                                "sensitive-stacktrace-val": "bye",
+                            }
+                        }
                     ],
                     "cause": [
                         {
@@ -102,8 +135,8 @@ def test_stacktrace():
                                     "vars": {
                                         "foo": "bar",
                                         "password": "hello",
-                                        "the_secret": "hello",
-                                        "a_password_here": "hello",
+                                        "secret": "hello",
+                                        "sensitive-stacktrace-val": "bye",
                                     }
                                 }
                             ]
@@ -114,7 +147,7 @@ def test_stacktrace():
         }
     }
 
-    result = processors.sanitize_stacktrace_locals(None, data)
+    result = processors.sanitize_stacktrace_locals(elasticapm_client, data)
 
     assert "stacktrace" in result["exception"]
     for stacktrace in (
@@ -130,10 +163,10 @@ def test_stacktrace():
         assert vars["foo"] == "bar"
         assert "password" in vars
         assert vars["password"] == processors.MASK
-        assert "the_secret" in vars
-        assert vars["the_secret"] == processors.MASK
-        assert "a_password_here" in vars
-        assert vars["a_password_here"] == processors.MASK
+        assert "secret" in vars
+        assert vars["secret"] == processors.MASK
+        assert "sensitive-stacktrace-val" in vars
+        assert vars["sensitive-stacktrace-val"] == custom_field
 
 
 def test_remove_http_request_body(http_test_data):
@@ -144,92 +177,168 @@ def test_remove_http_request_body(http_test_data):
     assert "body" not in result["context"]["request"]
 
 
-def test_sanitize_http_request_cookies(http_test_data):
+@pytest.mark.parametrize(
+    "elasticapm_client, custom_field, expected_header_cookies",
+    [
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive-cookie"]},
+            {"custom-sensitive-cookie": processors.MASK},
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie={0}".format(processors.MASK),
+        ),
+        (
+            {},
+            {"custom-sensitive-cookie": "123"},
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie=123".format(processors.MASK),
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive-*"]},
+            {"custom-sensitive-cookie": processors.MASK},
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie={0}".format(processors.MASK),
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive"]},
+            {"custom-sensitive-cookie": "123"},
+            "foo=bar; password={0}; secret={0}; csrftoken={0}; custom-sensitive-cookie=123".format(processors.MASK),
+        ),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_sanitize_http_request_cookies(elasticapm_client, custom_field, expected_header_cookies, http_test_data):
     http_test_data["context"]["request"]["headers"][
         "cookie"
-    ] = "foo=bar; password=12345; the_secret=12345; csrftoken=abc"
+    ] = "foo=bar; password=12345; secret=12345; csrftoken=abc; custom-sensitive-cookie=123"
 
-    result = processors.sanitize_http_request_cookies(None, http_test_data)
-
-    assert result["context"]["request"]["cookies"] == {
-        "foo": "bar",
-        "password": processors.MASK,
-        "the_secret": processors.MASK,
-        "sessionid": processors.MASK,
-        "a_password_here": processors.MASK,
-    }
-
-    assert result["context"]["request"]["headers"][
-        "cookie"
-    ] == "foo=bar; password={0}; the_secret={0}; csrftoken={0}".format(processors.MASK)
-
-
-def test_sanitize_http_response_cookies(http_test_data):
-    http_test_data["context"]["response"]["headers"][
-        "set-cookie"
-    ] = "foo=bar; httponly; secure ; sessionid=bar; httponly; secure"
-
-    result = processors.sanitize_http_response_cookies(None, http_test_data)
-
-    assert (
-        result["context"]["response"]["headers"]["set-cookie"]
-        == "foo=bar; httponly; secure ; sessionid=%s; httponly; secure" % processors.MASK
-    )
-
-
-def test_sanitize_http_headers(http_test_data):
-    result = processors.sanitize_http_headers(None, http_test_data)
+    result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
     expected = {
         "foo": "bar",
         "password": processors.MASK,
-        "the_secret": processors.MASK,
-        "a_password_here": processors.MASK,
+        "secret": processors.MASK,
+        "sessionid": processors.MASK,
+    }
+
+    expected.update(custom_field)
+
+    assert result["context"]["request"]["cookies"] == expected
+
+    assert result["context"]["request"]["headers"]["cookie"] == expected_header_cookies
+
+    http_test_data["context"]["request"]["headers"].pop("cookie")
+    http_test_data["context"]["request"]["headers"][
+        "Cookie"
+    ] = "foo=bar; password=12345; secret=12345; csrftoken=abc; custom-sensitive-cookie=123"
+
+    result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
+    expected = {
+        "foo": "bar",
+        "password": processors.MASK,
+        "secret": processors.MASK,
+        "sessionid": processors.MASK,
+    }
+
+    expected.update(custom_field)
+
+    assert result["context"]["request"]["cookies"] == expected
+
+    assert result["context"]["request"]["headers"]["Cookie"] == expected_header_cookies
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client, expected_cookies",
+    [
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom-sensitive-cookie"]},
+            "foo=bar; httponly; secure ; sessionid={0}; httponly; secure; custom-sensitive-cookie={0}".format(
+                processors.MASK
+            ),
+        ),
+        (
+            {},
+            "foo=bar; httponly; secure ; sessionid={0}; httponly; secure; custom-sensitive-cookie=123".format(
+                processors.MASK
+            ),
+        ),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_sanitize_http_response_cookies(elasticapm_client, expected_cookies, http_test_data):
+    http_test_data["context"]["response"]["headers"][
+        "set-cookie"
+    ] = "foo=bar; httponly; secure ; sessionid=bar; httponly; secure; custom-sensitive-cookie=123"
+
+    result = processors.sanitize_http_response_cookies(elasticapm_client, http_test_data)
+
+    assert result["context"]["response"]["headers"]["set-cookie"] == expected_cookies
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client, custom_header",
+    [
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["some-header"]},
+            {"some-header": processors.MASK},
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["some-*"]},
+            {"some-header": processors.MASK},
+        ),
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["other-val"]},
+            {"some-header": "some-secret-value"},
+        ),
+        ({"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["*-*"]}, {"some-header": processors.MASK}),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_sanitize_http_headers(elasticapm_client, custom_header, http_test_data):
+    result = processors.sanitize_http_headers(elasticapm_client, http_test_data)
+    expected = {
+        "cookie": "foo=bar; baz=foo",
+        "foo": "bar",
+        "password": processors.MASK,
+        "secret": processors.MASK,
         "authorization": processors.MASK,
     }
+    expected.update(custom_header)
     assert result["context"]["request"]["headers"] == expected
     assert result["context"]["response"]["headers"] == expected
 
 
-def test_sanitize_http_wgi_env(http_test_data):
-    result = processors.sanitize_http_wsgi_env(None, http_test_data)
-
-    assert result["context"]["request"]["env"] == {
+@pytest.mark.parametrize(
+    "elasticapm_client, custom_env",
+    [
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_env"]},
+            {"custom_env": processors.MASK},
+        ),
+        ({}, {"custom_env": "bye"}),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_sanitize_http_wgi_env(elasticapm_client, custom_env, http_test_data):
+    result = processors.sanitize_http_wsgi_env(elasticapm_client, http_test_data)
+    expected = {
         "foo": "bar",
         "password": processors.MASK,
-        "the_secret": processors.MASK,
-        "a_password_here": processors.MASK,
+        "secret": processors.MASK,
     }
+    expected.update(custom_env)
+    assert result["context"]["request"]["env"] == expected
 
 
-def test_sanitize_http_query_string(http_test_data):
-    result = processors.sanitize_http_request_querystring(None, http_test_data)
-
-    expected = "foo=bar&password={0}&the_secret={0}&cc={0}".format(processors.MASK)
-    assert result["context"]["request"]["url"]["search"] == expected
-    assert result["context"]["request"]["url"]["full"].endswith(expected)
-
-
-def test_post_as_string(http_test_data):
-    result = processors.sanitize_http_request_body(None, http_test_data)
-    expected = "foo=bar&password={0}&the_secret={0}&cc={0}".format(processors.MASK)
+@pytest.mark.parametrize(
+    "elasticapm_client, expected",
+    [
+        (
+            {"sanitize_field_names": BASE_SANITIZE_FIELD_NAMES_UNPROCESSED + ["custom_field"]},
+            "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field={0}".format(processors.MASK),
+        ),
+        ({}, "foo=bar&password={0}&secret={0}&cc=1234567890098765&custom_field=123".format(processors.MASK)),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_post_as_string(elasticapm_client, expected, http_test_data):
+    result = processors.sanitize_http_request_body(elasticapm_client, http_test_data)
     assert result["context"]["request"]["body"] == expected
-
-
-def test_querystring_as_string_with_partials(http_test_data):
-    http_test_data["context"]["request"]["url"]["search"] = "foo=bar&password&secret=123456"
-    result = processors.sanitize_http_request_querystring(None, http_test_data)
-
-    assert result["context"]["request"]["url"]["search"] == "foo=bar&password&secret={0}".format(processors.MASK)
-
-
-def test_sanitize_credit_card():
-    result = processors._sanitize("foo", "4242424242424242")
-    assert result == processors.MASK
-
-
-def test_sanitize_credit_card_with_spaces():
-    result = processors._sanitize("foo", "4242 4242 4242 4242")
-    assert result == processors.MASK
 
 
 def test_sanitize_dict():
@@ -237,21 +346,15 @@ def test_sanitize_dict():
     assert result == {1: 2}
 
 
-def test_non_utf8_encoding(http_test_data):
+def test_non_utf8_encoding(elasticapm_client, http_test_data):
     broken = compat.b("broken=") + u"aéöüa".encode("latin-1")
-    http_test_data["context"]["request"]["url"]["search"] = broken
-    result = processors.sanitize_http_request_querystring(None, http_test_data)
-    assert result["context"]["request"]["url"]["search"] == u"broken=a\ufffd\ufffd\ufffda"
+    http_test_data["context"]["request"]["headers"]["cookie"] = broken
+    result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
+    assert result["context"]["request"]["headers"]["cookie"] == u"broken=a\ufffd\ufffd\ufffda"
 
 
 def test_remove_stacktrace_locals():
-    data = {
-        "exception": {
-            "stacktrace": [
-                {"vars": {"foo": "bar", "password": "hello", "the_secret": "hello", "a_password_here": "hello"}}
-            ]
-        }
-    }
+    data = {"exception": {"stacktrace": [{"vars": {"foo": "bar", "password": "hello", "secret": "hello"}}]}}
     result = processors.remove_stacktrace_locals(None, data)
 
     assert "stacktrace" in result["exception"]
@@ -270,6 +373,10 @@ def dummy_processor(client, data):
 def dummy_processor_no_events(client, data):
     data["processed_no_events"] = True
     return data
+
+
+def dummy_processor_failing(client, data):
+    raise ValueError("oops")
 
 
 @pytest.mark.parametrize(
@@ -344,18 +451,37 @@ def test_for_events_decorator():
 
 
 def test_drop_events_in_processor(elasticapm_client, caplog):
-    dropping_processor = mock.MagicMock(return_value=None, event_types=[SPAN], __name__="dropper")
+    dropping_processor = mock.MagicMock(return_value=None, event_types=[TRANSACTION], __name__="dropper")
     shouldnt_be_called_processor = mock.Mock(event_types=[])
 
     elasticapm_client._transport._processors = [dropping_processor, shouldnt_be_called_processor]
     with caplog.at_level(logging.DEBUG, logger="elasticapm.transport"):
-        elasticapm_client.queue(SPAN, {"some": "data"})
+        elasticapm_client.begin_transaction("test")
+        elasticapm_client.end_transaction("test", "FAIL")
     assert dropping_processor.call_count == 1
     assert shouldnt_be_called_processor.call_count == 0
-    assert elasticapm_client._transport.events[SPAN][0] is None
-    record = caplog.records[0]
-    assert record.message == "Dropped event of type span due to processor mock.mock.dropper"
-    assert record.levelname == "DEBUG"
+    assert elasticapm_client._transport.events[TRANSACTION][0] is None
+    assert_any_record_contains(
+        caplog.records, "Dropped event of type transaction due to processor mock.mock.dropper", "elasticapm.transport"
+    )
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"processors": "tests.processors.tests.dummy_processor,tests.processors.tests.dummy_processor_failing"}],
+    indirect=True,
+)
+def test_drop_events_in_failing_processor(elasticapm_client, caplog):
+
+    with caplog.at_level(logging.WARNING, logger="elasticapm.transport"):
+        elasticapm_client.begin_transaction("test")
+        elasticapm_client.end_transaction("test", "FAIL")
+    assert elasticapm_client._transport.events[TRANSACTION][0] is None
+    assert_any_record_contains(
+        caplog.records,
+        "Dropped event of type transaction due to exception in processor tests.processors.tests.dummy_processor_failing",
+        "elasticapm.transport",
+    )
 
 
 def test_context_lines_processor(elasticapm_client):

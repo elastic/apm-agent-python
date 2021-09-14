@@ -30,9 +30,9 @@
 
 import functools
 
+from elasticapm.conf.constants import LABEL_RE
 from elasticapm.traces import DroppedSpan, capture_span, error_logger, execution_context
 from elasticapm.utils import get_name_from_func
-from elasticapm.conf.constants import LABEL_RE
 
 
 class async_capture_span(capture_span):
@@ -73,7 +73,7 @@ class async_capture_span(capture_span):
                         # could happen if the exception has __slots__
                         pass
             except LookupError:
-                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                error_logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
 async def set_context(data, key="custom"):

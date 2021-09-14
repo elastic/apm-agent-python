@@ -129,7 +129,10 @@ def transform(value, stack=None, context=None):
 
             ret = value_type(transform_rec(o) for o in value)
     elif isinstance(value, uuid.UUID):
-        ret = repr(value)
+        try:
+            ret = repr(value)
+        except AttributeError:
+            ret = None
     elif isinstance(value, dict):
         ret = dict((to_unicode(k), transform_rec(v)) for k, v in compat.iteritems(value))
     elif isinstance(value, compat.text_type):
@@ -179,7 +182,7 @@ def to_string(value):
         return to_unicode(value).encode("utf-8")
 
 
-def shorten(var, list_length=50, string_length=200, dict_length=50):
+def shorten(var, list_length=50, string_length=200, dict_length=50, **kwargs):
     """
     Shorten a given variable based on configurable maximum lengths, leaving
     breadcrumbs in the object to show that it was shortened.
@@ -218,6 +221,10 @@ def shorten(var, list_length=50, string_length=200, dict_length=50):
 
 
 def keyword_field(string):
+    """
+    If the given string is longer than KEYWORD_MAX_LENGTH, truncate it to
+    KEYWORD_MAX_LENGTH-1, adding the "…" character at the end.
+    """
     if not isinstance(string, compat.string_types) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
     return string[: KEYWORD_MAX_LENGTH - 1] + u"…"

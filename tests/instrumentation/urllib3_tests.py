@@ -65,11 +65,50 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     assert spans[0]["type"] == "external"
     assert spans[0]["subtype"] == "http"
     assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["context"]["http"]["status_code"] == 200
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "resource": "127.0.0.1:%d" % parsed_url.port,
+        "type": "external",
+    }
     assert spans[0]["parent_id"] == spans[1]["id"]
+    assert spans[0]["outcome"] == "success"
 
     assert spans[1]["name"] == "test_name"
     assert spans[1]["type"] == "test_type"
     assert spans[1]["parent_id"] == transactions[0]["id"]
+
+
+@pytest.mark.parametrize("status_code", [400, 500])
+def test_urllib3_error(instrument, elasticapm_client, waiting_httpserver, status_code):
+    waiting_httpserver.serve_content("", code=status_code)
+    url = waiting_httpserver.url + "/hello_world"
+    parsed_url = urlparse.urlparse(url)
+    elasticapm_client.begin_transaction("transaction")
+    expected_sig = "GET {0}".format(parsed_url.netloc)
+    with capture_span("test_name", "test_type"):
+        pool = urllib3.PoolManager(timeout=0.1)
+
+        url = "http://{0}/hello_world".format(parsed_url.netloc)
+        r = pool.request("GET", url)
+
+    elasticapm_client.end_transaction("MyView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    assert spans[0]["name"] == expected_sig
+    assert spans[0]["type"] == "external"
+    assert spans[0]["subtype"] == "http"
+    assert spans[0]["context"]["http"]["url"] == url
+    assert spans[0]["context"]["http"]["status_code"] == status_code
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "resource": "127.0.0.1:%d" % parsed_url.port,
+        "type": "external",
+    }
+    assert spans[0]["parent_id"] == spans[1]["id"]
+    assert spans[0]["outcome"] == "failure"
 
 
 @pytest.mark.parametrize(
@@ -92,10 +131,14 @@ def test_trace_parent_propagation_sampled(instrument, elasticapm_client, waiting
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers
-    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == spans[0]["id"]
     assert trace_parent.trace_options.recorded
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
 
     if elasticapm_client.config.use_elastic_traceparent_header:
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
@@ -127,10 +170,14 @@ def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiti
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers
-    trace_parent = TraceParent.from_string(headers[constants.TRACEPARENT_HEADER_NAME])
+    trace_parent = TraceParent.from_string(
+        headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
+    )
     assert trace_parent.trace_id == transactions[0]["trace_id"]
     assert trace_parent.span_id == transaction_object.id
     assert not trace_parent.trace_options.recorded
+    # Check that sample_rate was correctly placed in the tracestate
+    assert constants.TRACESTATE.SAMPLE_RATE in trace_parent.tracestate_dict
     if elasticapm_client.config.use_elastic_traceparent_header:
         assert constants.TRACEPARENT_LEGACY_HEADER_NAME in headers
         assert headers[constants.TRACEPARENT_HEADER_NAME] == headers[constants.TRACEPARENT_LEGACY_HEADER_NAME]
@@ -188,3 +235,57 @@ def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
 
     assert "pass" not in span["context"]["http"]["url"]
+
+
+@pytest.mark.parametrize(
+    "is_sampled", [pytest.param(True, id="is_sampled-True"), pytest.param(False, id="is_sampled-False")]
+)
+@pytest.mark.parametrize(
+    "instance_headers",
+    [pytest.param(True, id="instance-headers-set"), pytest.param(False, id="instance-headers-not-set")],
+)
+@pytest.mark.parametrize(
+    "header_arg,header_kwarg",
+    [
+        pytest.param(True, False, id="args-set"),
+        pytest.param(False, True, id="kwargs-set"),
+        pytest.param(False, False, id="both-not-set"),
+    ],
+)
+def test_instance_headers_are_respected(
+    instrument, elasticapm_client, waiting_httpserver, is_sampled, instance_headers, header_arg, header_kwarg
+):
+    traceparent = TraceParent.from_string(
+        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", "foo=bar,baz=bazzinga"
+    )
+
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    parsed_url = urlparse.urlparse(url)
+    transaction_object = elasticapm_client.begin_transaction("transaction", trace_parent=traceparent)
+    transaction_object.is_sampled = is_sampled
+    pool = urllib3.HTTPConnectionPool(
+        parsed_url.hostname,
+        parsed_url.port,
+        maxsize=1,
+        block=True,
+        headers={"instance": "true"} if instance_headers else None,
+    )
+    if header_arg:
+        args = ("GET", url, None, {"args": "true"})
+    else:
+        args = ("GET", url)
+    if header_kwarg:
+        kwargs = {"headers": {"kwargs": "true"}}
+    else:
+        kwargs = {}
+    r = pool.urlopen(*args, **kwargs)
+    request_headers = waiting_httpserver.requests[0].headers
+    # all combinations should have the "traceparent" header
+    assert "traceparent" in request_headers, (instance_headers, header_arg, header_kwarg)
+    if header_arg:
+        assert "args" in request_headers
+    if header_kwarg:
+        assert "kwargs" in request_headers
+    if instance_headers and not (header_arg or header_kwarg):
+        assert "instance" in request_headers

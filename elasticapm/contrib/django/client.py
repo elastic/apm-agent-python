@@ -37,6 +37,12 @@ from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
 
+try:
+    from rest_framework.request import Request as DrfRequest
+except ImportError:
+    DrfRequest = HttpRequest
+
+from elasticapm import get_client as _get_client
 from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.django.utils import iterate_with_template_sources
@@ -49,10 +55,9 @@ __all__ = ("DjangoClient",)
 
 
 default_client_class = "elasticapm.contrib.django.DjangoClient"
-_client = (None, None)
 
 
-def get_client(client=None):
+def get_client():
     """
     Get an ElasticAPM client.
 
@@ -60,20 +65,16 @@ def get_client(client=None):
     :return:
     :rtype: elasticapm.base.Client
     """
-    global _client
+    if _get_client():
+        return _get_client()
 
-    tmp_client = client is not None
-    if not tmp_client:
-        config = getattr(django_settings, "ELASTIC_APM", {})
-        client = config.get("CLIENT", default_client_class)
-
-    if _client[0] != client:
-        client_class = import_string(client)
-        instance = client_class()
-        if not tmp_client:
-            _client = (client, instance)
-        return instance
-    return _client[1]
+    config = getattr(django_settings, "ELASTIC_APM", {})
+    client = config.get("CLIENT", default_client_class)
+    client_class = import_string(client)
+    instance = client_class()
+    # `instance` will already be in elasticapm.base.CLIENT_SINGLETON due to the
+    # `__init__()` for Client
+    return instance
 
 
 class DjangoClient(Client):
@@ -114,7 +115,7 @@ class DjangoClient(Client):
 
         return user_info
 
-    def get_data_from_request(self, request, capture_body=False):
+    def get_data_from_request(self, request, event_type):
         result = {
             "env": dict(get_environ(request.META)),
             "method": request.method,
@@ -122,24 +123,34 @@ class DjangoClient(Client):
             "cookies": dict(request.COOKIES),
         }
         if self.config.capture_headers:
-            result["headers"] = dict(get_headers(request.META))
+            request_headers = dict(get_headers(request.META))
+
+            for key, value in request_headers.items():
+                if isinstance(value, (int, float)):
+                    request_headers[key] = str(value)
+
+            result["headers"] = request_headers
 
         if request.method in constants.HTTP_WITH_BODY:
-            content_type = request.META.get("CONTENT_TYPE")
-            if content_type == "application/x-www-form-urlencoded":
-                data = compat.multidict_to_dict(request.POST)
-            elif content_type and content_type.startswith("multipart/form-data"):
-                data = compat.multidict_to_dict(request.POST)
-                if request.FILES:
-                    data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+            capture_body = self.config.capture_body in ("all", event_type)
+            if not capture_body:
+                result["body"] = "[REDACTED]"
             else:
-                try:
-                    data = request.body
-                except Exception as e:
-                    self.logger.debug("Can't capture request body: %s", compat.text_type(e))
-                    data = "<unavailable>"
-
-            result["body"] = data if (capture_body or not data) else "[REDACTED]"
+                content_type = request.META.get("CONTENT_TYPE")
+                if content_type == "application/x-www-form-urlencoded":
+                    data = compat.multidict_to_dict(request.POST)
+                elif content_type and content_type.startswith("multipart/form-data"):
+                    data = compat.multidict_to_dict(request.POST)
+                    if request.FILES:
+                        data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+                else:
+                    try:
+                        data = request.body
+                    except Exception as e:
+                        self.logger.debug("Can't capture request body: %s", compat.text_type(e))
+                        data = "<unavailable>"
+                if data is not None:
+                    result["body"] = data
 
         if hasattr(request, "get_raw_uri"):
             # added in Django 1.9
@@ -158,11 +169,18 @@ class DjangoClient(Client):
             result["url"] = get_url_dict(url)
         return result
 
-    def get_data_from_response(self, response):
+    def get_data_from_response(self, response, event_type):
         result = {"status_code": response.status_code}
 
         if self.config.capture_headers and hasattr(response, "items"):
-            result["headers"] = dict(response.items())
+            response_headers = dict(response.items())
+
+            for key, value in response_headers.items():
+                if isinstance(value, (int, float)):
+                    response_headers[key] = str(value)
+
+            result["headers"] = response_headers
+
         return result
 
     def capture(self, event_type, request=None, **kwargs):
@@ -171,11 +189,9 @@ class DjangoClient(Client):
         else:
             context = kwargs["context"]
 
-        is_http_request = isinstance(request, HttpRequest)
+        is_http_request = isinstance(request, (HttpRequest, DrfRequest))
         if is_http_request:
-            context["request"] = self.get_data_from_request(
-                request, capture_body=self.config.capture_body in ("all", "errors")
-            )
+            context["request"] = self.get_data_from_request(request, constants.ERROR)
             context["user"] = self.get_user_info(request)
 
         result = super(DjangoClient, self).capture(event_type, **kwargs)

@@ -4,10 +4,11 @@ FRAMEWORK:
   - none
   - django-1.11
   - django-2.0
-  - django-2.2
-  - django-3.0
+  - django-3.1
+  - django-3.2
   - flask-0.12
   - flask-1.1
+  - flask-2.0
   - opentracing-newest
   - twisted-18
   - celery-3-flask-1.0
@@ -18,6 +19,8 @@ FRAMEWORK:
   - boto3-newest
   - pymongo-newest
   - redis-newest
+  - aioredis-newest
+  #- aioredis-2  # not supported yet
   - psycopg2-newest
   - pymssql-newest
   - pyodbc-newest
@@ -28,12 +31,20 @@ FRAMEWORK:
   - elasticsearch-7
   - cassandra-newest
   - psutil-newest
-  - eventlet-newest
+  #- eventlet-newest
   - gevent-newest
   - zerorpc-0.4
   - mysql_connector-newest
   - pymysql-newest
+  - mysqlclient-newest
   - aiohttp-newest
   - aiopg-newest
+  - asyncpg-newest
   - tornado-newest
-  - starlette-newest
+  # - starlette-newest # disabled for now, see https://github.com/elastic/apm-agent-python/issues/1172
+  - pymemcache-newest
+  - graphene-2
+  - httpx-newest
+  - httplib2-newest
+  - prometheus_client-newest
+  - aiomysql-newest

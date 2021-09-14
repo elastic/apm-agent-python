@@ -13,12 +13,10 @@ about: Create a report to help us improve
 3. ...
 4. ...
 
-**Expected behavior**: ...
-
 **Environment (please complete the following information)**
 - OS: [e.g. Linux]
 - Python version:
-- Framework and version [e.g. Django 2.1]: 
+- Framework and version [e.g. Django 2.1]:
 - APM Server version:
 - Agent version:
 
