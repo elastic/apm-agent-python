@@ -568,7 +568,7 @@ class Span(BaseSpan):
 
         p = self.parent if self.parent else self.transaction
         if self.transaction._breakdown:
-            self._child_durations.stop(self.start_time + self.duration)
+            p._child_durations.stop(self.start_time + self.duration)
             self.transaction.track_span_duration(
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
