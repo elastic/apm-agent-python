@@ -421,13 +421,6 @@ class Span(BaseSpan):
         self.parent_span_id = parent_span_id
         self.frames = None
         self.sync = sync
-        if span_subtype is None and "." in span_type:
-            # old style dottet type, let's split it up
-            type_bits = span_type.split(".")
-            if len(type_bits) == 2:
-                span_type, span_subtype = type_bits[:2]
-            else:
-                span_type, span_subtype, span_action = type_bits[:3]
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
@@ -664,6 +657,13 @@ class capture_span(object):
         sync=None,
     ):
         self.name = name
+        if span_subtype is None and "." in span_type:
+            # old style dottet type, let's split it up
+            type_bits = span_type.split(".")
+            if len(type_bits) == 2:
+                span_type, span_subtype = type_bits[:2]
+            else:
+                span_type, span_subtype, span_action = type_bits[:3]
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
