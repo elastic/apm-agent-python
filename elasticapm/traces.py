@@ -83,10 +83,12 @@ class ChildDuration(object):
 
 
 class BaseSpan(object):
-    def __init__(self, labels=None):
+    def __init__(self, labels=None, start=None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
         self.outcome = None
+        self.start_time = start or _time_func()
+        self.duration = None
         if labels:
             self.label(**labels)
 
@@ -97,7 +99,7 @@ class BaseSpan(object):
         self._child_durations.stop(timestamp)
 
     def end(self, skip_frames=0, duration=None):
-        raise NotImplementedError()
+        self.duration = duration if duration is not None else (_time_func() - self.start_time)
 
     def label(self, **labels):
         """
@@ -131,12 +133,8 @@ class Transaction(BaseSpan):
     ):
         self.id = self.get_dist_tracing_id()
         self.trace_parent = trace_parent
-        if start:
-            self.timestamp = self.start_time = start
-        else:
-            self.timestamp, self.start_time = time.time(), _time_func()
+        self.timestamp = start if start is not None else time.time()
         self.name = None
-        self.duration = None
         self.result = None
         self.transaction_type = transaction_type
         self.tracer = tracer
@@ -164,7 +162,7 @@ class Transaction(BaseSpan):
         super(Transaction, self).__init__()
 
     def end(self, skip_frames=0, duration=None):
-        self.duration = duration if duration is not None else (_time_func() - self.start_time)
+        super().end(skip_frames, duration)
         if self._transaction_metrics:
             self._transaction_metrics.timer(
                 "transaction.duration",
@@ -405,7 +403,6 @@ class Span(BaseSpan):
         :param sync: indicate if the span was executed synchronously or asynchronously
         :param start: timestamp, mostly useful for testing
         """
-        self.start_time = start or _time_func()
         self.id = self.get_dist_tracing_id()
         self.transaction = transaction
         self.name = name
@@ -415,7 +412,6 @@ class Span(BaseSpan):
         # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
         # start time and transaction start time. In this respect, the span timestamp is guaranteed to grow
         # monotonically with respect to the transaction timestamp
-        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         self.duration = None
         self.parent = parent
         self.parent_span_id = parent_span_id
@@ -424,10 +420,11 @@ class Span(BaseSpan):
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
+        super(Span, self).__init__(labels=labels, start=start)
+        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
             p.child_started(self.start_time)
-        super(Span, self).__init__(labels=labels)
 
     def to_dict(self):
         result = {
@@ -466,9 +463,8 @@ class Span(BaseSpan):
         :param duration: override duration, mostly useful for testing
         :return: None
         """
+        super().end(skip_frames, duration)
         tracer = self.transaction.tracer
-        timestamp = _time_func()
-        self.duration = duration if duration is not None else (timestamp - self.start_time)
         if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
@@ -500,13 +496,14 @@ class Span(BaseSpan):
 class DroppedSpan(BaseSpan):
     __slots__ = ("leaf", "parent", "id")
 
-    def __init__(self, parent, leaf=False):
+    def __init__(self, parent, leaf=False, start=None):
         self.parent = parent
         self.leaf = leaf
         self.id = None
-        super(DroppedSpan, self).__init__()
+        super(DroppedSpan, self).__init__(start=start)
 
     def end(self, skip_frames=0, duration=None):
+        super().end(skip_frames, duration)
         execution_context.set_span(self.parent)
 
     def child_started(self, timestamp):
