@@ -231,7 +231,7 @@ def _add_attributes_to_log_record(record):
     client = get_client()
     service_name = client.config.service_name if client else None
     record.elasticapm_service_name = service_name
-    event_dataset = f"{client.config.service_name}.log" if client else None
+    event_dataset = f"{client.config.service_name}" if client else None
     record.elasticapm_event_dataset = event_dataset
 
     record.elasticapm_labels = {
