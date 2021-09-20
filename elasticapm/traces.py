@@ -147,6 +147,7 @@ class Transaction(BaseSpan):
         self._span_counter = 0
         self._span_timers = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
+        self._dropped_span_statistics = defaultdict(lambda: {"count": 0, "duration.sum.us": 0})
         try:
             self._breakdown = self.tracer._agent._metrics.get_metricset(
                 "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
@@ -212,7 +213,7 @@ class Transaction(BaseSpan):
             span = DroppedSpan(parent_span, leaf=True)
         elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
-            span = DroppedSpan(parent_span)
+            span = DroppedSpan(parent_span, context=context)
             self._span_counter += 1
         else:
             span = Span(
@@ -316,6 +317,18 @@ class Transaction(BaseSpan):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self._dropped_span_statistics:
+            result["dropped_spans_stats"] = [
+                {
+                    "type": stype,
+                    "subtype": subtype,
+                    "destination_service_resource": resource,
+                    "outcome": outcome,
+                    "count": v["count"],
+                    "duration.sum.us": v["duration.sum.us"],
+                }
+                for (stype, subtype, resource, outcome), v in self._dropped_span_statistics.items()
+            ]
         if self.sample_rate is not None:
             result["sample_rate"] = float(self.sample_rate)
         if self.trace_parent:
@@ -494,12 +507,14 @@ class Span(BaseSpan):
 
 
 class DroppedSpan(BaseSpan):
-    __slots__ = ("leaf", "parent", "id")
+    __slots__ = ("leaf", "parent", "id", "context", "outcome")
 
-    def __init__(self, parent, leaf=False, start=None):
+    def __init__(self, parent, leaf=False, start=None, context=None):
         self.parent = parent
         self.leaf = leaf
         self.id = None
+        self.context = context
+        self.outcome = constants.OUTCOME.UNKNOWN
         super(DroppedSpan, self).__init__(start=start)
 
     def end(self, skip_frames=0, duration=None):
@@ -526,18 +541,6 @@ class DroppedSpan(BaseSpan):
     @property
     def action(self):
         return None
-
-    @property
-    def context(self):
-        return None
-
-    @property
-    def outcome(self):
-        return "unknown"
-
-    @outcome.setter
-    def outcome(self, value):
-        return
 
 
 class Tracer(object):
@@ -704,6 +707,14 @@ class capture_span(object):
             try:
                 outcome = "failure" if exc_val else "success"
                 span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
+                if isinstance(span, DroppedSpan) and span.context:
+                    try:
+                        resource = span.context["destination"]["service"]["resource"]
+                        stats = transaction._dropped_span_statistics[(self.type, self.subtype, resource, span.outcome)]
+                        stats["count"] += 1
+                        stats["duration.sum.us"] += span.duration
+                    except KeyError:
+                        pass
                 if exc_val and not isinstance(span, DroppedSpan):
                     try:
                         exc_val._elastic_apm_span_id = span.id
