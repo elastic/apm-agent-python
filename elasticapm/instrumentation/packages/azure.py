@@ -58,6 +58,9 @@ class AzureInstrumentation(AbstractInstrumentedModule):
         if ".blob.core." in parsed_url.hostname:
             service = "azureblob"
             service_type = "storage"
+        if ".queue.core." in parsed_url.hostname:
+            service = "azurequeue"
+            service_type = "messaging"
 
         # TODO this will probably not stay in the final instrumentation, just useful for detecting test errors
         if not service:
@@ -98,7 +101,6 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
     query_params = urlparse.parse_qs(parsed_url.query)
     blob = parsed_url.path[1:]
 
-    # TODO encode table from spec to decide signature
     operation_name = "Unknown"
     if method.lower() == "delete":
         operation_name = "Delete"
@@ -196,11 +198,88 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
     return HandlerInfo(signature, service_type, service, operation_name, context)
 
 
+def handle_azurequeue(request, parsed_url, service, service_type, context):
+    """
+    Returns the HandlerInfo for Azure Blob Storage operations
+    """
+    account_name = parsed_url.hostname.split(".")[0]
+    method = request.method
+    query_params = urlparse.parse_qs(parsed_url.query)
+    target_name = parsed_url.path.split("/")[1] if "/" in parsed_url.path else account_name  # /queuename/message
+    context["destination"]["service"] = {
+        "name": service,
+        "resource": "{}/{}".format(service, target_name),
+        "type": service_type,
+    }
+
+    operation_name = "Unknown"
+    preposition = "to "
+    if method.lower() == "delete":
+        operation_name = "DELETE"
+        preposition = ""
+        if parsed_url.path.endswith("/messages"):
+            operation_name = "CLEAR"
+        elif query_params.get("popreceipt", []):
+            # Redundant, but included in case the table at
+            # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
+            # changes in the future
+            operation_name = "DELETE"
+    elif method.lower() == "get":
+        operation_name = "RECEIVE"
+        preposition = "from "
+        if "list" in query_params.get("comp", []):
+            operation_name = "LISTQUEUES"
+        elif "properties" in query_params.get("comp", []):
+            operation_name = "GETPROPERTIES"
+        elif "stats" in query_params.get("comp", []):
+            operation_name = "STATS"
+        elif "metadata" in query_params.get("comp", []):
+            operation_name = "GETMETADATA"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "GETACL"
+        elif "true" in query_params.get("peekonly", []):
+            operation_name = "PEEK"
+    elif method.lower() == "HEAD":
+        operation_name = "RECEIVE"
+        preposition = "from "
+        if "metadata" in query_params.get("comp", []):
+            operation_name = "GETMETADATA"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "GETACL"
+    elif method.lower() == "OPTIONS":
+        operation_name = "PREFLIGHT"
+        preposition = "from "
+    elif method.lower() == "POST":
+        operation_name = "SEND"
+        preposition = "to "
+    elif method.lower() == "PUT":
+        operation_name = "CREATE"
+        preposition = ""
+        if "metadata" in query_params.get("comp", []):
+            operation_name = "SETMETADATA"
+            preposition = "for "
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "SETACL"
+            preposition = "for "
+        elif "properties" in query_params.get("comp", []):
+            operation_name = "SETPROPERTIES"
+            preposition = "for "
+        elif query_params.get("popreceipt", []):
+            operation_name = "UPDATE"
+            preposition = ""
+
+    # If `preposition` is included, it should have a trailing space
+    signature = "AzureQueue {} {}{}".format(operation_name, preposition, target_name)
+
+    return HandlerInfo(signature, service_type, service, operation_name.lower(), context)
+
+
 def handle_default():
     raise NotImplementedError()
 
 
 handlers = {
     "azureblob": handle_azureblob,
+    "azurequeue": handle_azurequeue,
     "default": handle_default,
 }
