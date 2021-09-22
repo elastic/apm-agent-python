@@ -37,9 +37,11 @@ import pytest
 from elasticapm.conf import constants
 
 azureblob = pytest.importorskip("azure.storage.blob")
+azurequeue = pytest.importorskip("azure.storage.queue")
 pytestmark = [pytest.mark.azurestorage]
 
-from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient, __version__
+from azure.storage.blob import BlobServiceClient
+from azure.storage.queue import QueueClient
 
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=basepitest;AccountKey=zkvHzuN7iu2RwXXKfPttS4o3JvayNRlz7Tm7+7IkwbxKzApp4jAmKeNgHILzvubvt7CUglM107eVL0zZPjEXFA==;EndpointSuffix=core.windows.net"
@@ -52,9 +54,8 @@ if not CONNECTION_STRING:
 
 @pytest.fixture()
 def container_client(blob_service_client):
-    container_name = str(uuid.uuid4())
+    container_name = "apm-agent-python-ci-" + str(uuid.uuid4())
     container_client = blob_service_client.create_container(container_name)
-    container_client.container_name = container_name
 
     yield container_client
 
@@ -67,7 +68,18 @@ def blob_service_client():
     return blob_service_client
 
 
-def test_list_blobs(instrument, elasticapm_client, container_client):
+@pytest.fixture()
+def queue_client():
+    queue_name = "apm-agent-python-ci-" + str(uuid.uuid4())
+    queue_client = QueueClient.from_connection_string(CONNECTION_STRING, queue_name)
+    queue_client.create_queue()
+
+    yield queue_client
+
+    queue_client.delete_queue()
+
+
+def test_blob_list_blobs(instrument, elasticapm_client, container_client):
     elasticapm_client.begin_transaction("transaction.test")
     list(container_client.list_blobs())
     elasticapm_client.end_transaction("MyView")
@@ -79,7 +91,7 @@ def test_list_blobs(instrument, elasticapm_client, container_client):
     assert span["action"] == "ListBlobs"
 
 
-def test_create_container(instrument, elasticapm_client, blob_service_client):
+def test_blob_create_container(instrument, elasticapm_client, blob_service_client):
     elasticapm_client.begin_transaction("transaction.test")
     container_name = str(uuid.uuid4())
     container_client = blob_service_client.create_container(container_name)
@@ -93,7 +105,7 @@ def test_create_container(instrument, elasticapm_client, blob_service_client):
     assert span["action"] == "Create"
 
 
-def test_upload(instrument, elasticapm_client, container_client, blob_service_client):
+def test_blob_upload(instrument, elasticapm_client, container_client, blob_service_client):
     elasticapm_client.begin_transaction("transaction.test")
     # Upload this file to the container
     blob_client = blob_service_client.get_blob_client(container=container_client.container_name, blob=__file__)
@@ -106,3 +118,39 @@ def test_upload(instrument, elasticapm_client, container_client, blob_service_cl
     assert span["type"] == "storage"
     assert span["subtype"] == "azureblob"
     assert span["action"] == "Upload"
+
+
+def test_queue(instrument, elasticapm_client, queue_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    # Send a message
+    queue_client.send_message("Test message")
+    list(queue_client.peek_messages())
+    messages = queue_client.receive_messages()
+    for msg_batch in messages.by_page():
+        for msg in msg_batch:
+            queue_client.delete_message(msg)
+    elasticapm_client.end_transaction("MyView")
+
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert span["name"] == "AzureQueue SEND to {}".format(queue_client.queue_name)
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "azurequeue"
+    assert span["action"] == "send"
+
+    span = elasticapm_client.events[constants.SPAN][1]
+    assert span["name"] == "AzureQueue PEEK from {}".format(queue_client.queue_name)
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "azurequeue"
+    assert span["action"] == "peek"
+
+    span = elasticapm_client.events[constants.SPAN][2]
+    assert span["name"] == "AzureQueue RECEIVE from {}".format(queue_client.queue_name)
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "azurequeue"
+    assert span["action"] == "receive"
+
+    span = elasticapm_client.events[constants.SPAN][3]
+    assert span["name"] == "AzureQueue DELETE from {}".format(queue_client.queue_name)
+    assert span["type"] == "messaging"
+    assert span["subtype"] == "azurequeue"
+    assert span["action"] == "delete"

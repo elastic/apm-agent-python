@@ -212,18 +212,19 @@ def handle_azurequeue(request, parsed_url, service, service_type, context):
         "type": service_type,
     }
 
-    operation_name = "Unknown"
+    operation_name = "UNKNOWN"
     preposition = "to "
     if method.lower() == "delete":
         operation_name = "DELETE"
         preposition = ""
-        if parsed_url.path.endswith("/messages"):
+        if parsed_url.path.endswith("/messages") and "popreceipt" not in query_params:
             operation_name = "CLEAR"
         elif query_params.get("popreceipt", []):
             # Redundant, but included in case the table at
             # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
             # changes in the future
             operation_name = "DELETE"
+            preposition = "from "
     elif method.lower() == "get":
         operation_name = "RECEIVE"
         preposition = "from "
@@ -239,20 +240,20 @@ def handle_azurequeue(request, parsed_url, service, service_type, context):
             operation_name = "GETACL"
         elif "true" in query_params.get("peekonly", []):
             operation_name = "PEEK"
-    elif method.lower() == "HEAD":
+    elif method.lower() == "head":
         operation_name = "RECEIVE"
         preposition = "from "
         if "metadata" in query_params.get("comp", []):
             operation_name = "GETMETADATA"
         elif "acl" in query_params.get("comp", []):
             operation_name = "GETACL"
-    elif method.lower() == "OPTIONS":
+    elif method.lower() == "options":
         operation_name = "PREFLIGHT"
         preposition = "from "
-    elif method.lower() == "POST":
+    elif method.lower() == "post":
         operation_name = "SEND"
         preposition = "to "
-    elif method.lower() == "PUT":
+    elif method.lower() == "put":
         operation_name = "CREATE"
         preposition = ""
         if "metadata" in query_params.get("comp", []):
