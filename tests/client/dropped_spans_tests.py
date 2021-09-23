@@ -102,8 +102,8 @@ def test_transaction_max_span_dropped_statistics(elasticapm_client):
 
     assert len(spans) == 1
     for entry in transaction["dropped_spans_stats"]:
-        assert entry["count"] == 10
-        assert entry["duration.sum.us"] == 1000
+        assert entry["duration"]["count"] == 10
+        assert entry["duration"]["sum"]["us"] == 1000000000
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1, "server_version": (7, 15)}], indirect=True)

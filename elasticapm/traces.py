@@ -324,8 +324,7 @@ class Transaction(BaseSpan):
                     "subtype": subtype,
                     "destination_service_resource": resource,
                     "outcome": outcome,
-                    "count": v["count"],
-                    "duration.sum.us": v["duration.sum.us"],
+                    "duration": {"count": v["count"], "sum": {"us": int(v["duration.sum.us"] * 1000000)}},
                 }
                 for (stype, subtype, resource, outcome), v in self._dropped_span_statistics.items()
             ]
@@ -707,7 +706,9 @@ class capture_span(object):
             try:
                 outcome = "failure" if exc_val else "success"
                 span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
-                should_send = transaction.tracer._agent.check_server_version(gte=(7, 16))
+                should_send = (
+                    transaction.tracer._agent.check_server_version(gte=(7, 16)) if transaction.tracer._agent else True
+                )
                 if should_send and isinstance(span, DroppedSpan) and span.context:
                     try:
                         resource = span.context["destination"]["service"]["resource"]
