@@ -104,3 +104,19 @@ def test_transaction_max_span_dropped_statistics(elasticapm_client):
     for entry in transaction["dropped_spans_stats"]:
         assert entry["count"] == 10
         assert entry["duration.sum.us"] == 1000
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1, "server_version": (7, 15)}], indirect=True)
+def test_transaction_max_span_dropped_statistics_not_collected_for_incompatible_server(elasticapm_client):
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("not_dropped"):
+        pass
+    with elasticapm.capture_span(
+        span_type="x", span_subtype="x", extra={"destination": {"service": {"resource": "y"}}}, duration=100
+    ):
+        pass
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.events[constants.SPAN]
+    assert len(spans) == 1
+    assert "dropped_spans_stats" not in transaction

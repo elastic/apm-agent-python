@@ -843,3 +843,20 @@ def test_excepthook(elasticapm_client):
         elasticapm_client._excepthook(type_, value, traceback)
 
     assert elasticapm_client.events[ERROR]
+
+
+def test_check_server_version(elasticapm_client):
+    assert elasticapm_client.server_version is None
+    assert elasticapm_client.check_server_version(gte=(100, 5, 10))
+    assert elasticapm_client.check_server_version(lte=(100, 5, 10))
+
+    elasticapm_client.server_version = (7, 15)
+    assert elasticapm_client.check_server_version(gte=(7,))
+    assert not elasticapm_client.check_server_version(gte=(8,))
+    assert not elasticapm_client.check_server_version(lte=(7,))
+    assert elasticapm_client.check_server_version(lte=(8,))
+    assert elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 15))
+    assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 15))
+    assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 16))
+    assert not elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 13))
+    assert not elasticapm_client.check_server_version(gte=(7, 16), lte=(7, 18))

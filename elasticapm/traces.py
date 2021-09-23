@@ -707,7 +707,8 @@ class capture_span(object):
             try:
                 outcome = "failure" if exc_val else "success"
                 span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
-                if isinstance(span, DroppedSpan) and span.context:
+                should_send = transaction.tracer._agent.check_server_version(gte=(7, 16))
+                if should_send and isinstance(span, DroppedSpan) and span.context:
                     try:
                         resource = span.context["destination"]["service"]["resource"]
                         stats = transaction._dropped_span_statistics[(self.type, self.subtype, resource, span.outcome)]
