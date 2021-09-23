@@ -657,7 +657,7 @@ class capture_span(object):
     ):
         self.name = name
         if span_subtype is None and "." in span_type:
-            # old style dottet type, let's split it up
+            # old style dotted type, let's split it up
             type_bits = span_type.split(".")
             if len(type_bits) == 2:
                 span_type, span_subtype = type_bits[:2]
