@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import json
 from collections import namedtuple
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
@@ -58,9 +59,12 @@ class AzureInstrumentation(AbstractInstrumentedModule):
         if ".blob.core." in parsed_url.hostname:
             service = "azureblob"
             service_type = "storage"
-        if ".queue.core." in parsed_url.hostname:
+        elif ".queue.core." in parsed_url.hostname:
             service = "azurequeue"
             service_type = "messaging"
+        elif ".table.core." in parsed_url.hostname:
+            service = "azuretable"
+            service_type = "storage"
 
         # TODO this will probably not stay in the final instrumentation, just useful for detecting test errors
         if not service:
@@ -200,15 +204,15 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
 
 def handle_azurequeue(request, parsed_url, service, service_type, context):
     """
-    Returns the HandlerInfo for Azure Blob Storage operations
+    Returns the HandlerInfo for Azure Queue operations
     """
     account_name = parsed_url.hostname.split(".")[0]
     method = request.method
     query_params = urlparse.parse_qs(parsed_url.query)
-    target_name = parsed_url.path.split("/")[1] if "/" in parsed_url.path else account_name  # /queuename/message
+    resource_name = parsed_url.path.split("/")[1] if "/" in parsed_url.path else account_name  # /queuename/message
     context["destination"]["service"] = {
         "name": service,
-        "resource": "{}/{}".format(service, target_name),
+        "resource": "{}/{}".format(service, resource_name),
         "type": service_type,
     }
 
@@ -270,17 +274,73 @@ def handle_azurequeue(request, parsed_url, service, service_type, context):
             preposition = ""
 
     # If `preposition` is included, it should have a trailing space
-    signature = "AzureQueue {} {}{}".format(operation_name, preposition, target_name)
+    signature = "AzureQueue {} {}{}".format(operation_name, preposition, resource_name)
 
     return HandlerInfo(signature, service_type, service, operation_name.lower(), context)
 
 
-def handle_default():
-    raise NotImplementedError()
+def handle_azuretable(request, parsed_url, service, service_type, context):
+    """
+    Returns the HandlerInfo for Azure Table Storage operations
+    """
+    account_name = parsed_url.hostname.split(".")[0]
+    method = request.method
+    body = request.body()
+    try:
+        if isinstance(body, bytes):
+            body = request.body().decode("utf-8")
+        body = json.loads(body)
+    except json.decoder.JSONDecodeError:  # str not bytes
+        body = {}
+    query_params = urlparse.parse_qs(parsed_url.query)
+    # /tablename(PartitionKey='<partition-key>',RowKey='<row-key>')
+    resource_name = parsed_url.path.split("/", 1)[1] if "/" in parsed_url.path else parsed_url.path
+    context["destination"]["service"] = {
+        "name": service,
+        "resource": "{}/{}".format(service, account_name),
+        "type": service_type,
+    }
+
+    operation_name = "Unknown"
+    if method.lower() == "put":
+        operation_name = "Update"
+        if "properties" in query_params.get("comp", []):
+            operation_name = "SetProperties"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "SetAcl"
+    elif method.lower() == "post":
+        if resource_name == "Tables":
+            resource_name = body.get("TableName", resource_name)
+            operation_name = "Create"
+        else:  # /<tablename>
+            operation_name = "Insert"
+    elif method.lower() == "get":
+        operation_name = "Query"  # for both /Tables and /table()
+        if "properties" in query_params.get("comp", []):
+            operation_name = "GetProperties"
+        elif "stats" in query_params.get("comp", []):
+            operation_name = "Stats"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "GetAcl"
+    elif method.lower() == "delete":
+        operation_name = "Delete"
+        if "Tables" in resource_name and "'" in resource_name:
+            resource_name = resource_name.split("'")[1]  # /Tables('<table_name>')
+    elif method.lower() == "options":
+        operation_name = "Preflight"
+    elif method.lower() == "head" and "acl" in query_params.get("comp", []):
+        operation_name = "GetAcl"
+    elif method.lower() == "merge":
+        operation_name = "Merge"
+
+    # If `preposition` is included, it should have a trailing space
+    signature = "AzureTable {} {}".format(operation_name, resource_name)
+
+    return HandlerInfo(signature, service_type, service, operation_name.lower(), context)
 
 
 handlers = {
     "azureblob": handle_azureblob,
     "azurequeue": handle_azurequeue,
-    "default": handle_default,
+    "azuretable": handle_azuretable,
 }
