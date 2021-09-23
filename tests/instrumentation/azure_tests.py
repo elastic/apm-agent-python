@@ -44,7 +44,6 @@ from azure.storage.blob import BlobServiceClient
 from azure.storage.queue import QueueClient
 
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=basepitest;AccountKey=zkvHzuN7iu2RwXXKfPttS4o3JvayNRlz7Tm7+7IkwbxKzApp4jAmKeNgHILzvubvt7CUglM107eVL0zZPjEXFA==;EndpointSuffix=core.windows.net"
 
 if not CONNECTION_STRING:
     pytestmark.append(
