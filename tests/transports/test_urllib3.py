@@ -63,6 +63,7 @@ def test_send(waiting_httpserver, elasticapm_client):
 
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_timeout(mock_urlopen, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport("http://localhost", timeout=5, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = MaxRetryError(None, None, reason=TimeoutError())
@@ -76,6 +77,7 @@ def test_timeout(mock_urlopen, elasticapm_client):
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_http_error(waiting_httpserver, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=418, content="I'm a teapot")
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
     transport.start_thread()
@@ -91,6 +93,7 @@ def test_http_error(waiting_httpserver, elasticapm_client):
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_generic_error(mock_urlopen, elasticapm_client):
     url, status, message, body = ("http://localhost:9999", 418, "I'm a teapot", "Nothing")
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport(url, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = Exception("Oopsie")
@@ -146,6 +149,7 @@ def test_header_encodings(elasticapm_client):
     encoded bytestring, and explodes.
     """
     headers = {compat.text_type("X"): compat.text_type("V")}
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport("http://localhost:9999", headers=headers, client=elasticapm_client)
     transport.start_thread()
     try:
