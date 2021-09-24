@@ -95,8 +95,8 @@ async def test_executemany(instrument, connection, elasticapm_client):
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
 
-    assert len(spans) == 2
-    span = spans[1]
+    assert len(spans) == 1
+    span = spans[0]
     assert transaction["id"] == span["transaction_id"]
     assert span["subtype"] == "postgresql"
     assert span["action"] == "query"
@@ -132,8 +132,8 @@ async def test_fetch_methods(connection, elasticapm_client, method, verify):
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
 
-    assert len(spans) == 2
-    span = spans[1]
+    assert len(spans) == 1
+    span = spans[0]
     assert transaction["id"] == span["transaction_id"]
     assert span["subtype"] == "postgresql"
     assert span["action"] == "query"

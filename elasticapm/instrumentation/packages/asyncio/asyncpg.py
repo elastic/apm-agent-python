@@ -49,18 +49,13 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
         ("asyncpg.protocol.protocol", "Protocol.bind_execute_many"),
         ("asyncpg.protocol.protocol", "Protocol.bind"),
         ("asyncpg.protocol.protocol", "Protocol.execute"),
-        ("asyncpg.protocol.protocol", "Protocol.prepare"),
         ("asyncpg.protocol.protocol", "Protocol.query"),
         ("asyncpg.protocol.protocol", "Protocol.copy_in"),
         ("asyncpg.protocol.protocol", "Protocol.copy_out"),
     ]
 
     def get_query(self, method, args):
-        if method == 'Protocol.prepare':
-            return "PREPARE {stmt_name} FROM '{query}'".format(
-                stmt_name=args[0], query=args[1]
-            )
-        elif method in ['Protocol.query', 'Protocol.copy_in', 'Protocol.copy_out']:
+        if method in ['Protocol.query', 'Protocol.copy_in', 'Protocol.copy_out']:
             return args[0]
         else:
             return args[0].query
