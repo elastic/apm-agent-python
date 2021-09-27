@@ -38,8 +38,10 @@ from elasticapm.conf import constants
 
 azureblob = pytest.importorskip("azure.storage.blob")
 azurequeue = pytest.importorskip("azure.storage.queue")
+azurequeue = pytest.importorskip("azure.cosmosdb.table")
 pytestmark = [pytest.mark.azurestorage]
 
+from azure.cosmosdb.table.tableservice import TableService
 from azure.storage.blob import BlobServiceClient
 from azure.storage.queue import QueueClient
 
@@ -76,6 +78,18 @@ def queue_client():
     yield queue_client
 
     queue_client.delete_queue()
+
+
+@pytest.fixture()
+def table_service():
+    table_name = "apm-agent-python-ci-" + str(uuid.uuid4())
+    table_service = TableService(connection_string=CONNECTION_STRING)
+    table_service.create_table(table_name)
+    table_service.table_name = table_name
+
+    yield table_service
+
+    table_service.delete_table(table_name)
 
 
 def test_blob_list_blobs(instrument, elasticapm_client, container_client):
@@ -153,3 +167,20 @@ def test_queue(instrument, elasticapm_client, queue_client):
     assert span["type"] == "messaging"
     assert span["subtype"] == "azurequeue"
     assert span["action"] == "delete"
+
+
+def test_table_create(instrument, elasticapm_client):
+    table_name = "apmagentpythonci" + str(uuid.uuid4().hex)
+    table_service = TableService(connection_string=CONNECTION_STRING)
+
+    elasticapm_client.begin_transaction("transaction.test")
+    table_service.create_table(table_name)
+    table_service.delete_table(table_name)
+    elasticapm_client.end_transaction("MyView")
+
+    span = elasticapm_client.events[constants.SPAN][0]
+
+    assert span["name"] == "AzureTable Create {}".format(table_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azuretable"
+    assert span["action"] == "Create"

@@ -44,7 +44,10 @@ HandlerInfo = namedtuple("HandlerInfo", ("signature", "span_type", "span_subtype
 class AzureInstrumentation(AbstractInstrumentedModule):
     name = "azure"
 
-    instrument_list = [("azure.core.pipeline._base", "Pipeline.run")]
+    instrument_list = [
+        ("azure.core.pipeline._base", "Pipeline.run"),
+        ("azure.cosmosdb.table.common._http.httpclient", "_HTTPClient.perform_request"),
+    ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) == 1:
@@ -52,32 +55,42 @@ class AzureInstrumentation(AbstractInstrumentedModule):
         else:
             request = kwargs["request"]
 
-        parsed_url = urlparse.urlparse(request.url)
+        if hasattr(request, "url"):  # Azure Storage HttpRequest
+            parsed_url = urlparse.urlparse(request.url)
+            hostname = parsed_url.hostname
+            port = parsed_url.port
+            path = parsed_url.path
+            query_params = urlparse.parse_qs(parsed_url.query)
+        else:  # CosmosDB HTTPRequest
+            hostname = request.host
+            port = hostname.split(":")[1] if ":" in hostname else 80
+            path = request.path
+            query_params = request.query
 
         # Detect the service
         service = None
-        if ".blob.core." in parsed_url.hostname:
+        if ".blob.core." in hostname:
             service = "azureblob"
             service_type = "storage"
-        elif ".queue.core." in parsed_url.hostname:
+        elif ".queue.core." in hostname:
             service = "azurequeue"
             service_type = "messaging"
-        elif ".table.core." in parsed_url.hostname:
+        elif ".table.core." in hostname:
             service = "azuretable"
             service_type = "storage"
 
         # TODO this will probably not stay in the final instrumentation, just useful for detecting test errors
         if not service:
-            raise NotImplementedError("service at hostname {} not implemented".format(parsed_url.hostname))
+            raise NotImplementedError("service at hostname {} not implemented".format(hostname))
 
         context = {
             "destination": {
-                "address": parsed_url.hostname,
-                "port": parsed_url.port,
+                "address": hostname,
+                "port": port,
             }
         }
 
-        handler_info = handlers[service](request, parsed_url, service, service_type, context)
+        handler_info = handlers[service](request, hostname, path, query_params, service, service_type, context)
 
         with capture_span(
             handler_info.signature,
@@ -90,11 +103,11 @@ class AzureInstrumentation(AbstractInstrumentedModule):
             return wrapped(*args, **kwargs)
 
 
-def handle_azureblob(request, parsed_url, service, service_type, context):
+def handle_azureblob(request, hostname, path, query_params, service, service_type, context):
     """
     Returns the HandlerInfo for Azure Blob Storage operations
     """
-    account_name = parsed_url.hostname.split(".")[0]
+    account_name = hostname.split(".")[0]
     context["destination"]["service"] = {
         "name": service,
         "resource": "{}/{}".format(service, account_name),
@@ -102,8 +115,7 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
     }
     method = request.method
     headers = request.headers
-    query_params = urlparse.parse_qs(parsed_url.query)
-    blob = parsed_url.path[1:]
+    blob = path[1:]
 
     operation_name = "Unknown"
     if method.lower() == "delete":
@@ -202,14 +214,13 @@ def handle_azureblob(request, parsed_url, service, service_type, context):
     return HandlerInfo(signature, service_type, service, operation_name, context)
 
 
-def handle_azurequeue(request, parsed_url, service, service_type, context):
+def handle_azurequeue(request, hostname, path, query_params, service, service_type, context):
     """
     Returns the HandlerInfo for Azure Queue operations
     """
-    account_name = parsed_url.hostname.split(".")[0]
+    account_name = hostname.split(".")[0]
     method = request.method
-    query_params = urlparse.parse_qs(parsed_url.query)
-    resource_name = parsed_url.path.split("/")[1] if "/" in parsed_url.path else account_name  # /queuename/message
+    resource_name = path.split("/")[1] if "/" in path else account_name  # /queuename/message
     context["destination"]["service"] = {
         "name": service,
         "resource": "{}/{}".format(service, resource_name),
@@ -221,7 +232,7 @@ def handle_azurequeue(request, parsed_url, service, service_type, context):
     if method.lower() == "delete":
         operation_name = "DELETE"
         preposition = ""
-        if parsed_url.path.endswith("/messages") and "popreceipt" not in query_params:
+        if path.endswith("/messages") and "popreceipt" not in query_params:
             operation_name = "CLEAR"
         elif query_params.get("popreceipt", []):
             # Redundant, but included in case the table at
@@ -279,22 +290,19 @@ def handle_azurequeue(request, parsed_url, service, service_type, context):
     return HandlerInfo(signature, service_type, service, operation_name.lower(), context)
 
 
-def handle_azuretable(request, parsed_url, service, service_type, context):
+def handle_azuretable(request, hostname, path, query_params, service, service_type, context):
     """
     Returns the HandlerInfo for Azure Table Storage operations
     """
-    account_name = parsed_url.hostname.split(".")[0]
+    account_name = hostname.split(".")[0]
     method = request.method
-    body = request.body()
+    body = request.body
     try:
-        if isinstance(body, bytes):
-            body = request.body().decode("utf-8")
         body = json.loads(body)
     except json.decoder.JSONDecodeError:  # str not bytes
         body = {}
-    query_params = urlparse.parse_qs(parsed_url.query)
     # /tablename(PartitionKey='<partition-key>',RowKey='<row-key>')
-    resource_name = parsed_url.path.split("/", 1)[1] if "/" in parsed_url.path else parsed_url.path
+    resource_name = path.split("/", 1)[1] if "/" in path else path
     context["destination"]["service"] = {
         "name": service,
         "resource": "{}/{}".format(service, account_name),
@@ -336,7 +344,7 @@ def handle_azuretable(request, parsed_url, service, service_type, context):
     # If `preposition` is included, it should have a trailing space
     signature = "AzureTable {} {}".format(operation_name, resource_name)
 
-    return HandlerInfo(signature, service_type, service, operation_name.lower(), context)
+    return HandlerInfo(signature, service_type, service, operation_name, context)
 
 
 handlers = {
