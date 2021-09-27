@@ -9,6 +9,7 @@ FRAMEWORK:
   - django-3.0
   - django-3.1
   - django-3.2
+  - django-4.0
     #  - django-master
   - flask-0.10
   - flask-0.11
