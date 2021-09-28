@@ -55,7 +55,7 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     ]
 
     def get_query(self, method, args):
-        if method in ['Protocol.query', 'Protocol.copy_in', 'Protocol.copy_out']:
+        if method in ["Protocol.query", "Protocol.copy_in", "Protocol.copy_out"]:
             return args[0]
         else:
             return args[0].query
