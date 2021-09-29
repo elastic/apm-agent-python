@@ -79,9 +79,9 @@ class AzureInstrumentation(AbstractInstrumentedModule):
             service = "azuretable"
             service_type = "storage"
 
-        # TODO this will probably not stay in the final instrumentation, just useful for detecting test errors
+        # Do not create a span if we don't recognize the service
         if not service:
-            raise NotImplementedError("service at hostname {} not implemented".format(hostname))
+            return wrapped(*args, **kwargs)
 
         context = {
             "destination": {
