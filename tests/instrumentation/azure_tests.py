@@ -82,7 +82,7 @@ def queue_client():
 
 @pytest.fixture()
 def table_service():
-    table_name = "apm-agent-python-ci-" + str(uuid.uuid4())
+    table_name = "apmagentpythonci" + str(uuid.uuid4().hex)
     table_service = TableService(connection_string=CONNECTION_STRING)
     table_service.create_table(table_name)
     table_service.table_name = table_name
@@ -184,3 +184,39 @@ def test_table_create(instrument, elasticapm_client):
     assert span["type"] == "storage"
     assert span["subtype"] == "azuretable"
     assert span["action"] == "Create"
+
+
+def test_table(instrument, elasticapm_client, table_service):
+    table_name = table_service.table_name
+    elasticapm_client.begin_transaction("transaction.test")
+    task = {"PartitionKey": "tasksSeattle", "RowKey": "001", "description": "Take out the trash", "priority": 200}
+    table_service.insert_entity(table_name, task)
+    task = {"PartitionKey": "tasksSeattle", "RowKey": "001", "description": "Take out the garbage", "priority": 250}
+    table_service.update_entity(table_name, task)
+    task = table_service.get_entity(table_name, "tasksSeattle", "001")
+    table_service.delete_entity(table_name, "tasksSeattle", "001")
+    elasticapm_client.end_transaction("MyView")
+
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert span["name"] == "AzureTable Insert {}".format(table_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azuretable"
+    assert span["action"] == "Insert"
+
+    span = elasticapm_client.events[constants.SPAN][1]
+    assert span["name"] == "AzureTable Update {}(PartitionKey='tasksSeattle',RowKey='001')".format(table_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azuretable"
+    assert span["action"] == "Update"
+
+    span = elasticapm_client.events[constants.SPAN][2]
+    assert span["name"] == "AzureTable Query {}(PartitionKey='tasksSeattle',RowKey='001')".format(table_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azuretable"
+    assert span["action"] == "Query"
+
+    span = elasticapm_client.events[constants.SPAN][3]
+    assert span["name"] == "AzureTable Delete {}(PartitionKey='tasksSeattle',RowKey='001')".format(table_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azuretable"
+    assert span["action"] == "Delete"
