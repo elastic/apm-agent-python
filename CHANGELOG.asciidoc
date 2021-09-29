@@ -18,7 +18,7 @@ endif::[]
 ===== Bug fixes
 ////
 
-=== Unreleased
+//=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
@@ -26,10 +26,9 @@ endif::[]
 //===== Features
 //
 //
-[float]
-===== Bug fixes
+//[float]
+//===== Bug fixes
 
- * Fixed an issue with httpx instrumentation {pull}1337[#1337]
 
 === Unreleased
 
@@ -43,7 +42,9 @@ endif::[]
 ===== Bug fixes
 
 * Improve span coverage for `asyncpg` {pull}1328[#1328]
-* aiohttp: Correctly pass custom client to tracing middleware {pull}1345[#1345]
+* aiohttp: Correctly pass custom client to tracing middleware {pull}1345[#1345] 
+* Fixed an issue with httpx instrumentation {pull}1337[#1337]
+
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
