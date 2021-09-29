@@ -78,6 +78,9 @@ class AzureInstrumentation(AbstractInstrumentedModule):
         elif ".table.core." in hostname:
             service = "azuretable"
             service_type = "storage"
+        elif ".file.core." in hostname:
+            service = "azurefile"
+            service_type = "storage"
 
         # Do not create a span if we don't recognize the service
         if not service:
@@ -220,7 +223,7 @@ def handle_azurequeue(request, hostname, path, query_params, service, service_ty
     """
     account_name = hostname.split(".")[0]
     method = request.method
-    resource_name = path.split("/")[1] if "/" in path else account_name  # /queuename/message
+    resource_name = path.split("/")[1] if "/" in path else account_name  # /queuename/messages
     context["destination"]["service"] = {
         "name": service,
         "resource": "{}/{}".format(service, resource_name),
@@ -341,8 +344,88 @@ def handle_azuretable(request, hostname, path, query_params, service, service_ty
     elif method.lower() == "merge":
         operation_name = "Merge"
 
-    # If `preposition` is included, it should have a trailing space
     signature = "AzureTable {} {}".format(operation_name, resource_name)
+
+    return HandlerInfo(signature, service_type, service, operation_name, context)
+
+
+def handle_azurefile(request, hostname, path, query_params, service, service_type, context):
+    """
+    Returns the HandlerInfo for Azure File Share Storage operations
+    """
+    account_name = hostname.split(".")[0]
+    method = request.method
+    resource_name = path.split("/", 1)[1] if "/" in path else account_name
+    headers = request.headers
+    context["destination"]["service"] = {
+        "name": service,
+        "resource": "{}/{}".format(service, account_name),
+        "type": service_type,
+    }
+
+    operation_name = "Unknown"
+    if method.lower() == "get":
+        operation_name = "Download"
+        if "list" in query_params.get("comp", []):
+            operation_name = "List"
+        elif "properties" in query_params.get("comp", []):
+            operation_name = "GetProperties"
+        elif "share" in query_params.get("restype", []):
+            operation_name = "GetProperties"
+        elif "metadata" in query_params.get("comp", []):
+            operation_name = "GetMetadata"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "GetAcl"
+        elif "stats" in query_params.get("comp", []):
+            operation_name = "Stats"
+        elif "filepermission" in query_params.get("comp", []):
+            operation_name = "GetPermission"
+        elif "listhandles" in query_params.get("comp", []):
+            operation_name = "ListHandles"
+        elif "rangelist" in query_params.get("comp", []):
+            operation_name = "ListRanges"
+    elif method.lower() == "put":
+        operation_name = "Create"
+        if "properties" in query_params.get("comp", []):
+            operation_name = "SetProperties"
+            if "share" in query_params.get("restype", []):
+                operation_name = "SetProperties"
+        elif "snapshot" in query_params.get("comp", []):
+            operation_name = "Snapshot"
+        elif "metadata" in query_params.get("comp", []):
+            operation_name = "SetMetadata"
+        elif "undelete" in query_params.get("comp", []):
+            operation_name = "Undelete"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "SetAcl"
+        elif "filepermission" in query_params.get("comp", []):
+            operation_name = "SetPermission"
+        elif "directory" in query_params.get("restype", []):
+            operation_name = "Create"
+        elif "forceclosehandles" in query_params.get("comp", []):
+            operation_name = "CloseHandles"
+        elif "range" in query_params.get("comp", []):
+            operation_name = "Upload"
+        elif "x-ms-copy-source" in headers:
+            operation_name = "Copy"
+        elif "x-ms-copy-action" in headers and headers["x-ms-copy-action"] == "abort":
+            operation_name = "Abort"
+        elif "lease" in query_params.get("comp", []):
+            operation_name = "Lease"
+    elif method.lower() == "options":
+        operation_name = "Preflight"
+    elif method.lower() == "head":
+        operation_name = "GetProperties"
+        if "share" in query_params.get("restype", []):
+            operation_name = "GetProperties"
+        elif "metadata" in query_params.get("comp", []):
+            operation_name = "GetMetadata"
+        elif "acl" in query_params.get("comp", []):
+            operation_name = "GetAcl"
+    elif method.lower() == "delete":
+        operation_name = "Delete"
+
+    signature = "AzureFile {} {}".format(operation_name, resource_name)
 
     return HandlerInfo(signature, service_type, service, operation_name, context)
 
@@ -351,4 +434,5 @@ handlers = {
     "azureblob": handle_azureblob,
     "azurequeue": handle_azurequeue,
     "azuretable": handle_azuretable,
+    "azurefile": handle_azurefile,
 }
