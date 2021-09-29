@@ -58,7 +58,8 @@ def deprecated_function():
 
 
 def test_deprecation():
-    deprecated_function()
+    with pytest.deprecated_call():
+        deprecated_function()
 
 
 @pytest.mark.parametrize(
