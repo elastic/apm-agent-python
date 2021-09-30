@@ -44,6 +44,7 @@ endif::[]
 * Improve span coverage for `asyncpg` {pull}1328[#1328]
 * aiohttp: Correctly pass custom client to tracing middleware {pull}1345[#1345] 
 * Fixed an issue with httpx instrumentation {pull}1337[#1337]
+* Fixed an issue with Django 4.0 removing a private method {pull}1347[#1347]
 
 
 [[release-notes-6.x]]
