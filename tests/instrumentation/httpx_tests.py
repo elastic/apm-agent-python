@@ -167,3 +167,22 @@ def test_httpx_error(instrument, elasticapm_client, waiting_httpserver, status_c
     assert spans[0]["context"]["http"]["url"] == url
     assert spans[0]["context"]["http"]["status_code"] == status_code
     assert spans[0]["outcome"] == "failure"
+
+
+def test_httpx_streaming(instrument, elasticapm_client, waiting_httpserver):
+    # client.stream passes the request as a keyword argument to the instrumented method.
+    # This helps test that we can handle it both as an arg and a kwarg
+    # see https://github.com/elastic/apm-agent-python/issues/1336
+    elasticapm_client.begin_transaction("httpx-context-manager-client-streaming")
+    client = httpx.Client()
+    try:
+        with client.stream("GET", url=waiting_httpserver.url) as response:
+            assert response
+    finally:
+        client.close()
+        elasticapm_client.end_transaction("httpx-context-manager-client-streaming")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
