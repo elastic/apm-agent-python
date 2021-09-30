@@ -33,7 +33,6 @@ from __future__ import absolute_import
 
 import django
 from django.conf import settings as django_settings
-from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
 
@@ -45,7 +44,7 @@ except ImportError:
 from elasticapm import get_client as _get_client
 from elasticapm.base import Client
 from elasticapm.conf import constants
-from elasticapm.contrib.django.utils import iterate_with_template_sources
+from elasticapm.contrib.django.utils import get_raw_uri, iterate_with_template_sources
 from elasticapm.utils import compat, encoding, get_url_dict
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -152,21 +151,8 @@ class DjangoClient(Client):
                 if data is not None:
                     result["body"] = data
 
-        if hasattr(request, "get_raw_uri"):
-            # added in Django 1.9
-            url = request.get_raw_uri()
-        else:
-            try:
-                # Requires host to be in ALLOWED_HOSTS, might throw a
-                # DisallowedHost exception
-                url = request.build_absolute_uri()
-            except DisallowedHost:
-                # We can't figure out the real URL, so we have to set it to
-                # DisallowedHost
-                result["url"] = {"full": "DisallowedHost"}
-                url = None
-        if url:
-            result["url"] = get_url_dict(url)
+        url = get_raw_uri(request)
+        result["url"] = get_url_dict(url)
         return result
 
     def get_data_from_response(self, response, event_type):

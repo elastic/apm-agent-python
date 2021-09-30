@@ -31,6 +31,7 @@
 
 import logging
 
+from django.http import HttpRequest
 from django.template.base import Node
 
 from elasticapm.utils.stacks import get_frame_info
@@ -91,3 +92,20 @@ def iterate_with_template_sources(
             exclude_paths_re=exclude_paths_re,
             locals_processor_func=locals_processor_func,
         )
+
+
+def get_raw_uri(request: HttpRequest) -> str:
+    """
+    Return an absolute URI from variables available in this request. Skip
+    allowed hosts protection, so may return insecure URI.
+
+    Re-implementation of Request.get_raw_uri that was removed with Django 4.0.
+
+    :param request: a Request object
+    :return: the URL
+    """
+    return "{scheme}://{host}{path}".format(
+        scheme=request.scheme,
+        host=request._get_raw_host(),
+        path=request.get_full_path(),
+    )
