@@ -38,11 +38,13 @@ from elasticapm.conf import constants
 
 azureblob = pytest.importorskip("azure.storage.blob")
 azurequeue = pytest.importorskip("azure.storage.queue")
-azurequeue = pytest.importorskip("azure.cosmosdb.table")
+azuretable = pytest.importorskip("azure.cosmosdb.table")
+azurefile = pytest.importorskip("azure.storage.fileshare")
 pytestmark = [pytest.mark.azurestorage]
 
 from azure.cosmosdb.table.tableservice import TableService
 from azure.storage.blob import BlobServiceClient
+from azure.storage.fileshare import ShareClient
 from azure.storage.queue import QueueClient
 
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -90,6 +92,17 @@ def table_service():
     yield table_service
 
     table_service.delete_table(table_name)
+
+
+@pytest.fixture()
+def share_client():
+    share_name = "apmagentpythonci" + str(uuid.uuid4().hex)
+    share_client = ShareClient.from_connection_string(conn_str=CONNECTION_STRING, share_name=share_name)
+    share_client.create_share()
+
+    yield share_client
+
+    share_client.delete_share()
 
 
 def test_blob_list_blobs(instrument, elasticapm_client, container_client):
@@ -219,4 +232,39 @@ def test_table(instrument, elasticapm_client, table_service):
     assert span["name"] == "AzureTable Delete {}(PartitionKey='tasksSeattle',RowKey='001')".format(table_name)
     assert span["type"] == "storage"
     assert span["subtype"] == "azuretable"
+    assert span["action"] == "Delete"
+
+
+def test_fileshare(instrument, elasticapm_client, share_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    # Upload this file to the share
+    file_client = share_client.get_file_client("testfile.txt")
+    with open(__file__, "rb") as data:
+        file_client.upload_file(data)
+    file_client.download_file()
+    file_client.delete_file()
+    elasticapm_client.end_transaction("MyView")
+
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert span["name"] == "AzureFile Create {}/testfile.txt".format(share_client.share_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azurefile"
+    assert span["action"] == "Create"
+
+    span = elasticapm_client.events[constants.SPAN][1]
+    assert span["name"] == "AzureFile Upload {}/testfile.txt".format(share_client.share_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azurefile"
+    assert span["action"] == "Upload"
+
+    span = elasticapm_client.events[constants.SPAN][2]
+    assert span["name"] == "AzureFile Download {}/testfile.txt".format(share_client.share_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azurefile"
+    assert span["action"] == "Download"
+
+    span = elasticapm_client.events[constants.SPAN][3]
+    assert span["name"] == "AzureFile Delete {}/testfile.txt".format(share_client.share_name)
+    assert span["type"] == "storage"
+    assert span["subtype"] == "azurefile"
     assert span["action"] == "Delete"
