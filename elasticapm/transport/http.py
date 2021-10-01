@@ -188,7 +188,7 @@ class Transport(HTTPTransportBase):
             logger.warning("HTTP error while fetching server information: %s", str(e))
         except json.JSONDecodeError as e:
             logger.warning("JSON decoding error while fetching server information: %s", str(e))
-        except KeyError:
+        except (KeyError, TypeError):
             logger.warning("No version key found in server response: %s", response.data)
 
     @property
