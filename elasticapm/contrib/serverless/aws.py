@@ -69,6 +69,7 @@ class capture_serverless(object):
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 
         self.client = get_client()
+        self.client.server_version = (8, 0, 0)
         if not self.client:
             self.client = Client(**kwargs)
         if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
