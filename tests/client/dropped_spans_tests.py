@@ -89,11 +89,10 @@ def test_transaction_max_span_dropped_statistics(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("not_dropped"):
         pass
-    for i in range(200):
-        stype = str(i % 5)
-        resource = str(i % 20)
+    for i in range(10):
+        resource = str(i % 2)
         with elasticapm.capture_span(
-            span_type=stype, span_subtype="x", extra={"destination": {"service": {"resource": resource}}}, duration=100
+            span_type="x", span_subtype="y", extra={"destination": {"service": {"resource": resource}}}, duration=100
         ):
             pass
     elasticapm_client.end_transaction()
@@ -102,8 +101,8 @@ def test_transaction_max_span_dropped_statistics(elasticapm_client):
 
     assert len(spans) == 1
     for entry in transaction["dropped_spans_stats"]:
-        assert entry["duration"]["count"] == 10
-        assert entry["duration"]["sum"]["us"] == 1000000000
+        assert entry["duration"]["count"] == 5
+        assert entry["duration"]["sum"]["us"] == 500000000
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1, "server_version": (7, 15)}], indirect=True)

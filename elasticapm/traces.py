@@ -320,13 +320,11 @@ class Transaction(BaseSpan):
         if self._dropped_span_statistics:
             result["dropped_spans_stats"] = [
                 {
-                    "type": stype,
-                    "subtype": subtype,
                     "destination_service_resource": resource,
                     "outcome": outcome,
                     "duration": {"count": v["count"], "sum": {"us": int(v["duration.sum.us"] * 1000000)}},
                 }
-                for (stype, subtype, resource, outcome), v in self._dropped_span_statistics.items()
+                for (resource, outcome), v in self._dropped_span_statistics.items()
             ]
         if self.sample_rate is not None:
             result["sample_rate"] = float(self.sample_rate)
@@ -712,7 +710,7 @@ class capture_span(object):
                 if should_send and isinstance(span, DroppedSpan) and span.context:
                     try:
                         resource = span.context["destination"]["service"]["resource"]
-                        stats = transaction._dropped_span_statistics[(self.type, self.subtype, resource, span.outcome)]
+                        stats = transaction._dropped_span_statistics[(resource, span.outcome)]
                         stats["count"] += 1
                         stats["duration.sum.us"] += span.duration
                     except KeyError:
