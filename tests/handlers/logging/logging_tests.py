@@ -361,7 +361,7 @@ def test_formatter():
 def test_logging_handler_no_client(recwarn):
     # In 6.0, this should be changed to expect a ValueError instead of a log
     warnings.simplefilter("always")
-    LoggingHandler()
+    LoggingHandler(transport_class="tests.fixtures.DummyTransport")
     while True:
         # If we never find our desired warning this will eventually throw an
         # AssertionError
@@ -398,8 +398,8 @@ def test_log_file(elasticapm_client_log_file):
     assert found
 
 
-@pytest.mark.parametrize("elasticapm_client_log_file", [{"log_ecs_formatting": "override"}], indirect=True)
-def test_log_ecs_formatting(elasticapm_client_log_file):
+@pytest.mark.parametrize("elasticapm_client_log_file", [{"log_ecs_reformatting": "override"}], indirect=True)
+def test_log_ecs_reformatting(elasticapm_client_log_file):
     logger = logging.getLogger()
     assert isinstance(logger.handlers[0].formatter, ecs_logging.StdlibFormatter)
     assert isinstance(structlog.get_config()["processors"][-1], ecs_logging.StructlogFormatter)

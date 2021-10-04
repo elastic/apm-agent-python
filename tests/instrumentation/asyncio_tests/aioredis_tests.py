@@ -56,6 +56,18 @@ async def redis_conn():
 
 
 @pytest.mark.integrationtest
+async def test_ping(instrument, elasticapm_client, redis_conn):
+    # The PING command is sent as a byte string, so this tests if we can handle
+    # the command both as a str and as a bytes. See #1307
+    elasticapm_client.begin_transaction("transaction.test")
+    redis_conn.ping()
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert span["name"] == "PING"
+
+
+@pytest.mark.integrationtest
 async def test_pipeline(instrument, elasticapm_client, redis_conn):
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_pipeline", "test"):
