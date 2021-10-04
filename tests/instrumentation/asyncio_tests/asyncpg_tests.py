@@ -81,7 +81,7 @@ async def test_execute_with_sleep(instrument, connection, elasticapm_client):
     assert 100 < span["duration"] < 110
     assert transaction["id"] == span["transaction_id"]
     assert span["type"] == "db"
-    assert span["subtype"] == "postgres"
+    assert span["subtype"] == "postgresql"
     assert span["action"] == "query"
     assert span["sync"] == False
     assert span["name"] == "SELECT FROM"
@@ -98,7 +98,7 @@ async def test_executemany(instrument, connection, elasticapm_client):
     assert len(spans) == 1
     span = spans[0]
     assert transaction["id"] == span["transaction_id"]
-    assert span["subtype"] == "postgres"
+    assert span["subtype"] == "postgresql"
     assert span["action"] == "query"
     assert span["sync"] == False
     assert span["name"] == "INSERT INTO test"
@@ -135,7 +135,7 @@ async def test_fetch_methods(connection, elasticapm_client, method, verify):
     assert len(spans) == 1
     span = spans[0]
     assert transaction["id"] == span["transaction_id"]
-    assert span["subtype"] == "postgres"
+    assert span["subtype"] == "postgresql"
     assert span["action"] == "query"
     assert span["sync"] is False
     assert span["name"] == "SELECT FROM test"
