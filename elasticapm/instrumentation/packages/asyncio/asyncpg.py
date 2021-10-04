@@ -45,25 +45,33 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     name = "asyncpg"
 
     instrument_list = [
-        ("asyncpg.connection", "Connection.execute"),
-        ("asyncpg.connection", "Connection.executemany"),
-        ("asyncpg.connection", "Connection.fetch"),
-        ("asyncpg.connection", "Connection.fetchval"),
-        ("asyncpg.connection", "Connection.fetchrow"),
+        ("asyncpg.protocol.protocol", "Protocol.bind_execute"),
+        ("asyncpg.protocol.protocol", "Protocol.bind_execute_many"),
+        ("asyncpg.protocol.protocol", "Protocol.bind"),
+        ("asyncpg.protocol.protocol", "Protocol.execute"),
+        ("asyncpg.protocol.protocol", "Protocol.query"),
+        ("asyncpg.protocol.protocol", "Protocol.copy_in"),
+        ("asyncpg.protocol.protocol", "Protocol.copy_out"),
     ]
 
+    def get_query(self, method, args):
+        if method in ["Protocol.query", "Protocol.copy_in", "Protocol.copy_out"]:
+            return args[0]
+        else:
+            return args[0].query
+
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        query = args[0] if len(args) else kwargs["query"]
+        query = self.get_query(method, args)
         name = extract_signature(query)
         context = {"db": {"type": "sql", "statement": query}}
         action = "query"
         destination_info = {
             "address": kwargs.get("host", "localhost"),
             "port": int(kwargs.get("port", default_ports.get("postgresql"))),
-            "service": {"name": "postgres", "resource": "postgres", "type": "db"},
+            "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
         }
         context["destination"] = destination_info
         async with async_capture_span(
-            name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
+            name, leaf=True, span_type="db", span_subtype="postgresql", span_action=action, extra=context
         ):
             return await wrapped(*args, **kwargs)
