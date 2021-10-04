@@ -421,3 +421,16 @@ def test_fetch_server_info_no_version(waiting_httpserver, caplog, elasticapm_cli
         transport.fetch_server_info()
     assert elasticapm_client.server_version is None
     assert_any_record_contains(caplog.records, "No version key found in server response")
+
+
+def test_fetch_server_info_flat_string(waiting_httpserver, caplog, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200,
+        content=b'"8.0.0-alpha1"',
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    with caplog.at_level("WARNING"):
+        transport.fetch_server_info()
+    assert elasticapm_client.server_version is None
+    assert_any_record_contains(caplog.records, "No version key found in server response")
