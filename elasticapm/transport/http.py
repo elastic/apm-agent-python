@@ -170,7 +170,10 @@ class Transport(HTTPTransportBase):
 
     def _process_queue(self):
         if not self.client.server_version:
-            self.fetch_server_info()
+            if self.client.config.server_version_override:
+                self.client.server_version = version_string_to_tuple(self.client.config.server_version_override)
+            else:
+                self.fetch_server_info()
         super()._process_queue()
 
     def fetch_server_info(self):

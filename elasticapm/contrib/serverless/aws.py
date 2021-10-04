@@ -65,13 +65,14 @@ class capture_serverless(object):
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"
+        # TODO this can probably be removed once the extension proxies the serverinfo endpoint
+        kwargs["server_version_override"] = "8.0.0"
         if "service_name" not in kwargs:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 
         self.client = get_client()
         if not self.client:
             self.client = Client(**kwargs)
-        self.client.server_version = (8, 0, 0)
         if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrument()
 
