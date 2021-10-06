@@ -39,7 +39,7 @@ class HttpxAsyncClientInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("httpx", "AsyncClient.send")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        request = kwargs.get("request", args[0])
+        request = kwargs.get("request") or args[0]
 
         request_method = request.method.upper()
         url = str(request.url)

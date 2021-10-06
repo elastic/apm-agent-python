@@ -28,24 +28,27 @@ endif::[]
 //
 //[float]
 //===== Bug fixes
-//
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.5.0]]
+==== 6.5.0 - 2021-10-04
+
 [float]
 ===== Features
 
+* Add instrumentation for Azure Storage (blob/table/fileshare) and Azure Queue {pull}1316[#1316]
 
 [float]
 ===== Bug fixes
 
 * Improve span coverage for `asyncpg` {pull}1328[#1328]
+* aiohttp: Correctly pass custom client to tracing middleware {pull}1345[#1345]
+* Fixed an issue with httpx instrumentation {pull}1337[#1337]
+* Fixed an issue with Django 4.0 removing a private method {pull}1347[#1347]
 
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.4.0]]
 ==== 6.4.0 - 2021-08-31
