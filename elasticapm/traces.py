@@ -409,6 +409,7 @@ class Span(BaseSpan):
         "dist_tracing_propagated",
         "timestamp",
         "start_time",
+        "ended_time",
         "duration",
         "parent",
         "parent_span_id",
@@ -450,6 +451,7 @@ class Span(BaseSpan):
         :param start: timestamp, mostly useful for testing
         """
         self.start_time = start or _time_func()
+        self.ended_time = None
         self.id = self.get_dist_tracing_id()
         self.transaction = transaction
         self.name = name
@@ -518,7 +520,11 @@ class Span(BaseSpan):
         if self.frames:
             result["stacktrace"] = self.frames
         if self.composite:
-            result["composite"] = self.composite
+            result["composite"] = {
+                "compression_strategy": self.composite["compression_strategy"],
+                "sum": self.composite["sum"] * 1000,
+                "count": self.composite["count"],
+            }
         return result
 
     def is_same_kind(self, other_span: SpanType) -> bool:
@@ -558,8 +564,8 @@ class Span(BaseSpan):
         """
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
-        timestamp = _time_func()
-        self.duration = duration if duration is not None else (timestamp - self.start_time)
+        self.ended_time = _time_func()
+        self.duration = duration if duration is not None else (self.ended_time - self.start_time)
         if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
@@ -588,6 +594,7 @@ class Span(BaseSpan):
             self.composite = {"compression_strategy": compression_strategy, "count": 1, "sum": self.duration}
         self.composite["count"] += 1
         self.composite["sum"] += sibling.duration
+        self.duration = sibling.ended_time - self.start_time
         return True
 
     def _try_to_compress_composite(self, sibling: SpanType) -> Optional[str]:

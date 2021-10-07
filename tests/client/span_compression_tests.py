@@ -67,7 +67,7 @@ def test_exact_match(elasticapm_client):
     span = spans[0]
     assert "composite" in span
     assert span["composite"]["count"] == 2
-    assert span["composite"]["sum"] == 5
+    assert span["composite"]["sum"] == 5000
     assert span["composite"]["compression_strategy"] == "exact_match"
 
 
@@ -108,7 +108,7 @@ def test_same_kind(elasticapm_client):
     assert span["name"] == "Calls to x"
     assert "composite" in span
     assert span["composite"]["count"] == 2
-    assert span["composite"]["sum"] == 5
+    assert span["composite"]["sum"] == 5000
     assert span["composite"]["compression_strategy"] == "same_kind"
 
 
