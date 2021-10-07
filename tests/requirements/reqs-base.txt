@@ -1,25 +1,26 @@
-pytest==6.2.4
-pytest-django==4.3.0
-coverage==5.5
-pytest-cov==2.12.0
+pytest==6.2.5
+pytest-django==4.4.0
+coverage==6.0
+pytest-cov==3.0.0
 pytest-localserver==0.5.0
 pytest-mock==3.6.1
 pytest-benchmark==3.4.1
-pytest-bdd==4.0.2
-pytest-rerunfailures==9.1.1
-jsonschema==3.2.0
+pytest-bdd==4.1.0
+pytest-rerunfailures==10.2
+jsonschema==3.2.0 ; python_version == '3.6'
+jsonschema==4.0.1 ; python_version > '3.6'
 
 
 py==1.10.0
-more-itertools==8.7.0
-pluggy==0.13.1
+more-itertools==8.10.0
+pluggy==1.0.0
 atomicwrites==1.4.0
-pyrsistent==0.17.3
+pyrsistent==0.18.0
 configparser==5.0.2
-contextlib2==0.6.0
-importlib-metadata==4.0.1
-packaging==20.9
-Mako==1.1.4
+contextlib2==21.6.0
+importlib-metadata==4.8.1
+packaging==21.0
+Mako==1.1.5
 glob2==0.7
 parse==1.19.0
 parse-type==0.5.2
@@ -27,7 +28,6 @@ toml==0.10.2
 iniconfig==1.1.1
 docutils==0.17.1
 py-cpuinfo==8.0.0
-statistics==1.0.3.5
 
 urllib3
 certifi

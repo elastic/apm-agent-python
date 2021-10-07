@@ -63,6 +63,7 @@ def test_send(waiting_httpserver, elasticapm_client):
 
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_timeout(mock_urlopen, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport("http://localhost", timeout=5, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = MaxRetryError(None, None, reason=TimeoutError())
@@ -76,6 +77,7 @@ def test_timeout(mock_urlopen, elasticapm_client):
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_http_error(waiting_httpserver, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=418, content="I'm a teapot")
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
     transport.start_thread()
@@ -91,6 +93,7 @@ def test_http_error(waiting_httpserver, elasticapm_client):
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_generic_error(mock_urlopen, elasticapm_client):
     url, status, message, body = ("http://localhost:9999", 418, "I'm a teapot", "Nothing")
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport(url, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = Exception("Oopsie")
@@ -146,6 +149,7 @@ def test_header_encodings(elasticapm_client):
     encoded bytestring, and explodes.
     """
     headers = {compat.text_type("X"): compat.text_type("V")}
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport("http://localhost:9999", headers=headers, client=elasticapm_client)
     transport.start_thread()
     try:
@@ -410,6 +414,19 @@ def test_fetch_server_info_no_version(waiting_httpserver, caplog, elasticapm_cli
     waiting_httpserver.serve_content(
         code=200,
         content=b"{}",
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    with caplog.at_level("WARNING"):
+        transport.fetch_server_info()
+    assert elasticapm_client.server_version is None
+    assert_any_record_contains(caplog.records, "No version key found in server response")
+
+
+def test_fetch_server_info_flat_string(waiting_httpserver, caplog, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200,
+        content=b'"8.0.0-alpha1"',
     )
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
