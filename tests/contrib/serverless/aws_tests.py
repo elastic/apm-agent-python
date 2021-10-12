@@ -85,7 +85,7 @@ class SampleContext:
     """
 
     def __init__(self):
-        self.invoked_function_arn = "arrrrrn"
+        self.invoked_function_arn = "arn:aws:lambda:us-west-2:123456789012:function:my-function:someAlias"
         self.aws_request_id = "12345"
 
 

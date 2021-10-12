@@ -29,9 +29,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import base64
+import datetime
 import functools
 import json
 import os
+import time
 
 import elasticapm
 from elasticapm.base import Client, get_client
@@ -105,11 +107,33 @@ class capture_serverless(object):
         cold_start = COLD_START
         COLD_START = False
 
-        self.transaction = self.client.begin_transaction("request", trace_parent=trace_parent)
         self.source = "other"
+        transaction_type = "request"
+        transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
         if "httpMethod" in self.event:  # API Gateway
             self.source = "api"
+            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+                transaction_name = "{} {}".format(self.event["httpMethod"], os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+            else:
+                transaction_name = self.name
+        elif "Records" in self.event and len(self.event["Records"]) == 1:
+            record = self.event["Records"][0]
+            if record.get("eventSource") == "aws:s3":  # S3
+                self.source = "s3"
+                transaction_name = "{} {}".format(record["eventName"], record["s3"]["bucket"]["name"])
+            elif record.get("EventSource") == "aws:sns":  # SNS
+                self.source = "sns"
+                transaction_type = "messaging"
+                transaction_name = "RECEIVE {}".format(record["Sns"]["TopicArn"].split(":")[5])
+            elif record.get("eventSource") == "aws:sqs":  # SQS
+                self.source = "sqs"
+                transaction_type = "messaging"
+                transaction_name = "RECEIVE {}".format(record["eventSourceARN"].split(":")[5])
+
+        self.transaction = self.client.begin_transaction(transaction_type, trace_parent=trace_parent)
+        elasticapm.set_transaction_name(transaction_name, override=False)
+        if self.source == "api":
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     self.event,
@@ -118,38 +142,7 @@ class capture_serverless(object):
                 ),
                 "request",
             )
-            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-                elasticapm.set_transaction_name(
-                    "{} {}".format(self.event["httpMethod"], os.environ["AWS_LAMBDA_FUNCTION_NAME"])
-                )
-            else:
-                elasticapm.set_transaction_name(self.name, override=False)
-        elif "Records" in self.event and len(self.event["Records"]) == 1:
-            record = self.event["Records"][0]
-            if record.get("eventSource") == "aws:s3":  # S3
-                self.source = "s3"
-                elasticapm.set_transaction_name("{} {}".format(record["eventName"], record["s3"]["bucket"]["name"]))
-            elif record.get("EventSource") == "aws:sns":  # SNS
-                self.source = "sns"
-                elasticapm.set_transaction_name("RECEIVE {}".format(record["Sns"]["TopicArn"].split(":")[5]))
-            elif record.get("eventSource") == "aws:sqs":  # SQS
-                self.source = "sqs"
-                elasticapm.set_transaction_name("RECEIVE {}".format(record["eventSourceARN"].split(":")[5]))
-        else:  # Other
-            elasticapm.set_transaction_name(os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name), override=False)
-
-        elasticapm.set_context(
-            lambda: get_faas_data(
-                self.event,
-                self.context,
-                cold_start,
-            ),
-            "faas",
-        )
-        elasticapm.set_context({"runtime": {"name": os.environ.get("AWS_EXECUTION_ENV")}}, "service")
-        elasticapm.set_context(
-            {"provider": "aws", "region": os.environ.get("AWS_REGION"), "service": {"name": "lambda"}}, "cloud"
-        )
+        self.set_metadata_and_context(cold_start)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
@@ -175,6 +168,110 @@ class capture_serverless(object):
             print("done flushing elasticapm")
         except ValueError:
             logger.warning("flush timed out")
+
+    def set_metadata_and_context(self, coldstart):
+        """
+        Process the metadata and context fields for this request
+        """
+        metadata = {}
+        cloud_context = {"origin": {"provider": "aws"}}
+        service_context = {}
+        message_context = {}
+
+        faas = {}
+        faas["coldstart"] = coldstart
+        faas["trigger"] = {"type": "other"}
+        faas["execution"] = self.context.aws_request_id
+
+        if self.source == "api":
+            faas["trigger"]["type"] = "http"
+            faas["trigger"]["request_id"] = self.event["requestContext"]["requestId"]
+            service_context["origin"] = {
+                "name": "{} {}/{}".format(
+                    self.event["requestContext"]["httpMethod"],
+                    self.event["requestContext"]["resourcePath"],
+                    self.event["requestContext"]["stage"],
+                )
+            }
+            service_context["origin"]["id"] = self.event["requestContext"]["apiId"]
+            service_context["origin"]["version"] = "2.0" if self.event["headers"]["Via"].startswith("2.0") else "1.0"
+            cloud_context["origin"] = {}
+            cloud_context["origin"]["service"] = {"name": "api gateway"}
+            cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
+            cloud_context["origin"]["provider"] = "aws"
+        elif self.source == "sqs":
+            record = self.event["Records"][0]
+            faas["trigger"]["type"] = "pubsub"
+            faas["trigger"]["request_id"] = record["messageId"]
+            service_context["origin"] = {}
+            service_context["origin"]["name"] = record["eventSourceARN"].split(":")[5]
+            service_context["origin"]["id"] = record["eventSourceARN"]
+            cloud_context["origin"] = {}
+            cloud_context["origin"]["service"] = {"name": "sqs"}
+            cloud_context["origin"]["region"] = record["awsRegion"]
+            cloud_context["origin"]["account"] = {"id": record["eventSourceARN"].split(":")[4]}
+            cloud_context["origin"]["provider"] = "aws"
+            message_context["queue"] = record["eventSourceARN"]
+            if "SentTimestamp" in record["attributes"]:
+                message_context["age"] = int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))
+            if self.client.config.capture_body in ("transactions", "all") and "body" in record:
+                message_context["body"] = record["body"]
+            if self.client.config.capture_headers and record["messageAttributes"]:
+                message_context["headers"] = record["messageAttributes"]
+        elif self.source == "sns":
+            record = self.event["Records"][0]
+            faas["trigger"]["type"] = "pubsub"
+            faas["trigger"]["request_id"] = record["Sns"]["TopicArn"]
+            service_context["origin"] = {}
+            service_context["origin"]["name"] = record["Sns"]["TopicArn"].split(":")[5]
+            service_context["origin"]["id"] = record["Sns"]["TopicArn"]
+            service_context["origin"]["version"] = record["EventVersion"]
+            service_context["origin"]["service"] = {"name": "sns"}
+            cloud_context["origin"] = {}
+            cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
+            cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
+            cloud_context["origin"]["provider"] = "aws"
+            message_context["queue"] = record["Sns"]["TopicArn"]
+            if "Timestamp" in record["Sns"]:
+                message_context["age"] = int(
+                    (
+                        datetime.datetime.now()
+                        - datetime.datetime.strptime(record["Sns"]["Timestamp"], r"%Y-%m-%dT%H:%M:%S.%fZ")
+                    ).total_seconds()
+                    * 1000
+                )
+            if self.client.config.capture_body in ("transactions", "all") and "Message" in record["Sns"]:
+                message_context["body"] = record["Sns"]["Message"]
+            if self.client.config.capture_headers and record["Sns"]["MessageAttributes"]:
+                message_context["headers"] = record["Sns"]["MessageAttributes"]
+        elif self.source == "s3":
+            # TODO s3
+            faas["trigger"]["type"] = "other"
+
+        metadata["faas"] = faas
+
+        metadata["service"] = {}
+        metadata["service"]["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        metadata["service"]["framework"] = {"name": "AWS Lambda"}
+        metadata["service"]["runtime"] = {"name": os.environ.get("AWS_EXECUTION_ENV")}
+        arn = self.context.invoked_function_arn
+        if len(arn.split(":")) > 7:
+            arn = ":".join(arn.split(":")[:7])
+        metadata["service"]["id"] = arn
+        metadata["service"]["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
+        metadata["service"]["node"] = {"configured_name": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}
+
+        metadata["cloud"] = {}
+        metadata["cloud"]["provider"] = "aws"
+        metadata["cloud"]["region"] = os.environ.get("AWS_REGION")
+        metadata["cloud"]["service"] = {"name": "lambda"}
+        metadata["cloud"]["account"] = {"id": arn.split(":")[4]}
+
+        elasticapm.set_context(cloud_context, "cloud")
+        elasticapm.set_context(service_context, "service")
+        if message_context:
+            elasticapm.set_context(service_context, "message")
+        self.client._transport.add_metadata(metadata)
 
 
 def get_data_from_request(event, capture_body=False, capture_headers=True):
@@ -251,33 +348,3 @@ def get_url_dict(event):
     if query:
         url_dict["search"] = encoding.keyword_field(query)
     return url_dict
-
-
-def get_faas_data(event, context, coldstart):
-    """
-    Compile the faas context using the event and context
-    """
-    faas = {}
-    faas["coldstart"] = coldstart
-    faas["id"] = context.invoked_function_arn  # TODO remove alias suffix
-    faas["execution"] = context.aws_request_id
-    faas["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
-    faas["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
-    faas["instance"] = {"id": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}  # TODO double check in final spec
-
-    faas["trigger"] = {}
-    faas["trigger"]["type"] = "other"
-
-    # Trigger type
-    if "httpMethod" in event:
-        faas["trigger"]["type"] = "http"
-        faas["trigger"]["id"] = event["requestContext"]["apiId"]
-        faas["trigger"]["name"] = "{} {}/{}".format(
-            event["httpMethod"], event["requestContext"]["resourcePath"], event["requestContext"]["stage"]
-        )
-        faas["trigger"]["account"] = {"id": event["requestContext"]["accountId"]}
-        faas["trigger"]["version"] = "2.0" if event["requestContext"].get("requestTimeEpoch") else "1.0"
-        faas["trigger"]["request_id"] = event["requestContext"]["requestId"]
-    # TODO sns/sqs/s3
-
-    return faas
