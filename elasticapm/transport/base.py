@@ -217,13 +217,15 @@ class Transport(ThreadManager):
         Only used in specific instances where metadata relies on data we only
         have at request time, such as for lambda metadata
 
-        Note that metadata is not merged. Any key that is present in the
-        added metadata will overwrite that key in the original metadata.
-
-        TODO: should we be merging?
+        Metadata is only merged one key deep.
         """
         if self._metadata is not None:
-            self._metadata.update(data)
+            # Merge one key deep
+            for key, val in data.items():
+                if isinstance(val, dict) and key in self._metadata and isinstance(self._metadata[key], dict):
+                    self._metadata[key].update(val)
+                else:
+                    self._metadata[key] = val
         else:
             self._metadata = data
 
