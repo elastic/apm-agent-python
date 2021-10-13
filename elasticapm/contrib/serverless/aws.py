@@ -245,8 +245,17 @@ class capture_serverless(object):
             if self.client.config.capture_headers and record["Sns"]["MessageAttributes"]:
                 message_context["headers"] = record["Sns"]["MessageAttributes"]
         elif self.source == "s3":
-            # TODO s3
-            faas["trigger"]["type"] = "other"
+            record = self.event["Records"][0]
+            faas["trigger"]["type"] = "datasource"
+            faas["trigger"]["request_id"] = record["responseElements"]["x-amz-request-id"]
+            service_context["origin"] = {}
+            service_context["origin"]["name"] = record["s3"]["bucket"]["name"]
+            service_context["origin"]["id"] = record["s3"]["bucket"]["arn"]
+            service_context["origin"]["version"] = record["eventVersion"]
+            cloud_context["origin"] = {}
+            cloud_context["origin"]["service"] = {"name": "s3"}
+            cloud_context["origin"]["region"] = record["awsRegion"]
+            cloud_context["origin"]["provider"] = "aws"
 
         metadata["faas"] = faas
 
