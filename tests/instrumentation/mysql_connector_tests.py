@@ -87,5 +87,5 @@ def test_mysql_connector_select(instrument, mysql_connector_connection, elastica
         assert span["context"]["destination"] == {
             "address": "mysql",
             "port": 3306,
-            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+            "service": {"name": "", "resource": "mysql", "type": ""},
         }

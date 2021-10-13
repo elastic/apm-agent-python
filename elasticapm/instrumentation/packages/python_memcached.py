@@ -70,7 +70,6 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
         destination = {
             "address": address,
             "port": port,
-            "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
         }
         with capture_span(
             name, span_type="cache", span_subtype="memcached", span_action="query", extra={"destination": destination}

@@ -98,7 +98,7 @@ def test_collection_count(instrument, elasticapm_client, mongo_database):
     assert span["context"]["destination"] == {
         "address": os.environ.get("MONGODB_HOST", "localhost"),
         "port": int(os.environ.get("MONGODB_PORT", 27017)),
-        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+        "service": {"name": "", "resource": "mongodb", "type": ""},
     }
 
 

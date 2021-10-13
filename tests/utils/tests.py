@@ -41,7 +41,7 @@ from elasticapm.utils import (
     read_pem_file,
     sanitize_url,
     starmatch_to_regex,
-    url_to_destination,
+    url_to_destination_resource,
 )
 from elasticapm.utils.deprecation import deprecated
 
@@ -221,13 +221,13 @@ def test_url_sanitization_urlencoded_password():
     ],
 )
 def test_url_to_destination(url, name, resource):
-    destination = url_to_destination(url)
+    destination = url_to_destination_resource(url)
     assert destination["service"]["name"] == name
     assert destination["service"]["resource"] == resource
 
 
 def test_url_to_destination_bad_port():
-    destination = url_to_destination("https://www.elastic.co:bad")
+    destination = url_to_destination_resource("https://www.elastic.co:bad")
     assert destination["service"]["resource"] == "www.elastic.co:443"
 
 

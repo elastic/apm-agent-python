@@ -87,7 +87,7 @@ async def test_pipeline(instrument, elasticapm_client, redis_conn):
     assert spans[0]["context"]["destination"] == {
         "address": os.environ.get("REDIS_HOST", "localhost"),
         "port": int(os.environ.get("REDIS_PORT", 6379)),
-        "service": {"name": "aioredis", "resource": "redis", "type": "db"},
+        "service": {"name": "", "resource": "redis", "type": ""},
     }
 
     assert spans[1]["name"] == "test_pipeline"

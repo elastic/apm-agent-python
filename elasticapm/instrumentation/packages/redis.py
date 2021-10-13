@@ -92,7 +92,7 @@ class RedisConnectionInstrumentation(AbstractInstrumentedModule):
 
 
 def get_destination_info(connection):
-    destination_info = {"service": {"name": "redis", "resource": "redis", "type": "db"}}
+    destination_info = {}
     if hasattr(connection, "port"):
         destination_info["port"] = connection.port
         destination_info["address"] = connection.host

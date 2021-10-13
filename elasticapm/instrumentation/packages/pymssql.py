@@ -58,7 +58,6 @@ class PyMSSQLInstrumentation(DbApi2Instrumentation):
         destination_info = {
             "address": host,
             "port": port,
-            "service": {"name": "mssql", "resource": "mssql", "type": "db"},
         }
         return PyMSSQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
 

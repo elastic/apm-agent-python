@@ -80,7 +80,6 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
         destination_info = {
             "address": host,
             "port": port,
-            "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
         }
         with capture_span(
             signature,

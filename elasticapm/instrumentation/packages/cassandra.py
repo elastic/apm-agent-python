@@ -75,7 +75,6 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
         context["destination"] = {
             "address": host,
             "port": port,
-            "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
         }
 
         with capture_span(name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context):
