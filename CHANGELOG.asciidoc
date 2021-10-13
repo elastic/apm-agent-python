@@ -30,6 +30,18 @@ endif::[]
 //===== Bug fixes
 
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+//
+[float]
+===== Bug fixes
+ * ensure that Prometheus histograms are encoded correctly for APM Server {pull}1354[#1354]
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 

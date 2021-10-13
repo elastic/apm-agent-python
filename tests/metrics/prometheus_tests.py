@@ -133,11 +133,14 @@ def test_histogram(elasticapm_client, prometheus):
     data = list(metricset.collect())
     assert data[0]["samples"]["prometheus.metrics.histo"]["values"] == [0.5, 5.5, 55.0, 100.0]
     assert data[0]["samples"]["prometheus.metrics.histo"]["counts"] == [2, 1, 3, 1]
+    assert all(isinstance(v, int) for v in data[0]["samples"]["prometheus.metrics.histo"]["counts"])
 
     assert data[1]["samples"]["prometheus.metrics.histowithlabel"]["values"] == [0.5, 5.5, 55.0, 100.0]
     assert data[1]["samples"]["prometheus.metrics.histowithlabel"]["counts"] == [1, 1, 1, 0]
+    assert all(isinstance(v, int) for v in data[1]["samples"]["prometheus.metrics.histowithlabel"]["counts"])
     assert data[1]["tags"] == {"alabel": "foo", "anotherlabel": "baz"}
 
     assert data[2]["samples"]["prometheus.metrics.histowithlabel"]["values"] == [0.5, 5.5, 55.0, 100.0]
     assert data[2]["samples"]["prometheus.metrics.histowithlabel"]["counts"] == [0, 0, 0, 1]
+    assert all(isinstance(v, int) for v in data[2]["samples"]["prometheus.metrics.histowithlabel"]["counts"])
     assert data[2]["tags"] == {"alabel": "foo", "anotherlabel": "bazzinga"}
