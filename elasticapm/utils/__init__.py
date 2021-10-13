@@ -193,3 +193,13 @@ def starmatch_to_regex(pattern):
         else:
             res.append(re.escape(c))
     return re.compile(r"(?:%s)\Z" % "".join(res), options)
+
+
+def nested_key(d: dict, *args):
+    for arg in args:
+        try:
+            d = d[arg]
+        except (TypeError, KeyError):
+            d = None
+            break
+    return d

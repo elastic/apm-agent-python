@@ -37,6 +37,7 @@ from elasticapm.conf import constants
 from elasticapm.utils import (
     get_name_from_func,
     get_url_dict,
+    nested_key,
     read_pem_file,
     sanitize_url,
     starmatch_to_regex,
@@ -240,3 +241,22 @@ def test_read_pem_file_chain():
     with open(os.path.join(os.path.dirname(__file__), "..", "ca", "chain.crt"), mode="rb") as f:
         result = read_pem_file(f)
         assert result.endswith(b"\xc8\xae")
+
+
+@pytest.mark.parametrize(
+    "data,key,expected",
+    [
+        (None, "x", None),
+        ({}, "x", None),
+        ({"x": 1}, "x", 1),
+        ({"x": {"y": 1}}, "x.y", 1),
+        ({"x": 1}, "x.y", None),
+        ({"x": {"y": {}}}, "x.y.z", None),
+    ],
+)
+def test_nested_key(data, key, expected):
+    r = nested_key(data, *key.split("."))
+    if expected is None:
+        assert r is expected
+    else:
+        assert r == expected

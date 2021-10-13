@@ -95,7 +95,7 @@ class PrometheusMetrics(MetricsSet):
             sample = samples[sample_pos]
             if "le" in sample.labels:
                 values.append(float(sample.labels["le"]))
-                counts.append(sample.value - prev_val)
+                counts.append(int(sample.value - prev_val))
                 prev_val = sample.value
                 sample_pos += 1
 
