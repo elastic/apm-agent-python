@@ -30,10 +30,7 @@
 
 import pytest  # isort:skip
 
-pytest.importorskip("httpx")  # isort:skip
-
-import httpx
-from httpx import InvalidURL
+httpx = pytest.importorskip("httpx")  # isort:skip
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
@@ -43,6 +40,13 @@ from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = pytest.mark.httpx
 
+httpx_version = tuple(map(int, httpx.__version__.split(".")[:3]))
+
+if httpx_version < (0, 20):
+    allow_redirects = {"allow_redirects": False}
+else:
+    allow_redirects = {"follow_redirects": False}
+
 
 def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
@@ -50,7 +54,7 @@ def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver
     parsed_url = compat.urlparse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
-        httpx.get(url, allow_redirects=False)
+        httpx.get(url, **allow_redirects)
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.events[TRANSACTION]
@@ -85,7 +89,7 @@ def test_httpx_instrumentation_via_client(instrument, elasticapm_client, waiting
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         c = httpx.Client()
-        c.get(url, allow_redirects=False)
+        c.get(url, **allow_redirects)
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.events[TRANSACTION]
@@ -154,7 +158,7 @@ def test_httpx_error(instrument, elasticapm_client, waiting_httpserver, status_c
     url = "http://{0}/hello_world".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
         c = httpx.Client()
-        c.get(url, allow_redirects=False)
+        c.get(url, **allow_redirects)
 
     elasticapm_client.end_transaction("MyView")
 
