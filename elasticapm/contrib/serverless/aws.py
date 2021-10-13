@@ -33,6 +33,7 @@ import datetime
 import functools
 import json
 import os
+import platform
 import time
 
 import elasticapm
@@ -262,13 +263,22 @@ class capture_serverless(object):
         metadata["service"] = {}
         metadata["service"]["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
         metadata["service"]["framework"] = {"name": "AWS Lambda"}
-        metadata["service"]["runtime"] = {"name": os.environ.get("AWS_EXECUTION_ENV")}
+        metadata["service"]["runtime"] = {
+            "name": os.environ.get("AWS_EXECUTION_ENV"),
+            "version": platform.python_version(),
+        }
         arn = self.context.invoked_function_arn
         if len(arn.split(":")) > 7:
             arn = ":".join(arn.split(":")[:7])
         metadata["service"]["id"] = arn
         metadata["service"]["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
         metadata["service"]["node"] = {"configured_name": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}
+        # This is the one piece of metadata that requires deep merging. We add it manually
+        # here to avoid having to deep merge in _transport.add_metadata()
+        if self.client._transport._metadata:
+            node_name = self.client._transport._metadata.get("service", {}).get("node", {}).get("name")
+            if node_name:
+                metadata["service"]["node"]["name"] = node_name
 
         metadata["cloud"] = {}
         metadata["cloud"]["provider"] = "aws"
