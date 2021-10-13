@@ -222,13 +222,12 @@ def test_url_sanitization_urlencoded_password():
 )
 def test_url_to_destination(url, name, resource):
     destination = url_to_destination_resource(url)
-    assert destination["service"]["name"] == name
-    assert destination["service"]["resource"] == resource
+    assert destination == resource
 
 
 def test_url_to_destination_bad_port():
     destination = url_to_destination_resource("https://www.elastic.co:bad")
-    assert destination["service"]["resource"] == "www.elastic.co:443"
+    assert destination == "www.elastic.co:443"
 
 
 def test_read_pem_file():

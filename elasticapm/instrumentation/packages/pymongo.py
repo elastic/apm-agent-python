@@ -105,7 +105,7 @@ class PyMongoBulkInstrumentation(AbstractInstrumentedModule):
             span_type="db",
             span_subtype="mongodb",
             span_action="query",
-            extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
+            extra={"destination": {}},
         ):
             return wrapped(*args, **kwargs)
 
@@ -123,7 +123,7 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
             span_type="db",
             span_subtype="mongodb",
             span_action="query",
-            extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
+            extra={"destination": {}},
         ) as span:
             response = wrapped(*args, **kwargs)
             if span.context and instance.address:
