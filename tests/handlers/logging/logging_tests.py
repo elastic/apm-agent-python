@@ -269,6 +269,7 @@ def test_structlog_processor_no_span(elasticapm_client):
     new_dict = structlog_processor(None, None, event_dict)
     assert new_dict["transaction.id"] == transaction.id
     assert new_dict["trace.id"] == transaction.trace_parent.trace_id
+    assert new_dict["event"]["dataset"] == "myapp"
     assert "span.id" not in new_dict
 
 
