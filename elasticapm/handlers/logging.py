@@ -276,7 +276,6 @@ class Formatter(logging.Formatter):
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
             record.elasticapm_service_name = None
-            record.elasticapm_event_dataset = None
         return super(Formatter, self).format(record=record)
 
     def formatTime(self, record, datefmt=None):
@@ -285,5 +284,4 @@ class Formatter(logging.Formatter):
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
             record.elasticapm_service_name = None
-            record.elasticapm_event_dataset = None
         return super(Formatter, self).formatTime(record=record, datefmt=datefmt)
