@@ -687,10 +687,6 @@ class DroppedSpan(BaseSpan):
         return "DroppedSpan"
 
     @property
-    def duration(self):
-        return 0
-
-    @property
     def type(self):
         return None
 
