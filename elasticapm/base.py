@@ -41,6 +41,7 @@ import threading
 import time
 import warnings
 from copy import deepcopy
+from typing import Optional, Tuple
 
 import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
@@ -617,6 +618,20 @@ class Client(object):
             )
         elif v < (3, 5):
             warnings.warn("The Elastic APM agent only supports Python 3.5+", DeprecationWarning)
+
+    def check_server_version(self, gte: Optional[Tuple[int]] = None, lte: Optional[Tuple[int]] = None) -> bool:
+        """
+        Check APM Server version against greater-or-equal and/or lower-or-equal limits, provided as tuples of integers.
+        If server_version is not set, always returns True.
+        :param gte: a tuple of ints describing the greater-or-equal limit, e.g. (7, 16)
+        :param lte: a tuple of ints describing the lower-or-equal limit, e.g. (7, 99)
+        :return: bool
+        """
+        if not self.server_version:
+            return True
+        gte = gte or (0,)
+        lte = lte or (2 ** 32,)  # let's assume APM Server version will never be greater than 2^32
+        return bool(gte <= self.server_version <= lte)
 
 
 class DummyClient(Client):

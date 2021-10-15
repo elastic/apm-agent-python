@@ -543,28 +543,6 @@ def test_transaction_sample_rate_dynamic(elasticapm_client, not_so_random):
     assert len([t for t in transactions if t["sampled"]]) == 8
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
-def test_transaction_max_spans(elasticapm_client):
-    elasticapm_client.begin_transaction("test_type")
-    for i in range(5):
-        with elasticapm.capture_span("nodrop"):
-            pass
-    for i in range(10):
-        with elasticapm.capture_span("drop"):
-            pass
-    transaction_obj = elasticapm_client.end_transaction("test")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.events[SPAN]
-    assert all(span["transaction_id"] == transaction["id"] for span in spans)
-
-    assert transaction_obj.dropped_spans == 10
-    assert len(spans) == 5
-    for span in spans:
-        assert span["name"] == "nodrop"
-    assert transaction["span_count"] == {"dropped": 10, "started": 5}
-
-
 def test_transaction_max_spans_dynamic(elasticapm_client):
     elasticapm_client.config.update(version=1, transaction_max_spans=1)
     elasticapm_client.begin_transaction("test_type")
@@ -660,35 +638,6 @@ def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
 
     assert spans[3]["name"] == "frames"
     assert spans[3]["stacktrace"] is not None
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 3}], indirect=True)
-def test_transaction_max_span_nested(elasticapm_client):
-    elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("1"):
-        with elasticapm.capture_span("2"):
-            with elasticapm.capture_span("3"):
-                with elasticapm.capture_span("4"):
-                    with elasticapm.capture_span("5"):
-                        pass
-                with elasticapm.capture_span("6"):
-                    pass
-            with elasticapm.capture_span("7"):
-                pass
-        with elasticapm.capture_span("8"):
-            pass
-    with elasticapm.capture_span("9"):
-        pass
-    transaction_obj = elasticapm_client.end_transaction("test")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.events[SPAN]
-
-    assert transaction_obj.dropped_spans == 6
-    assert len(spans) == 3
-    for span in spans:
-        assert span["name"] in ("1", "2", "3")
-    assert transaction["span_count"] == {"dropped": 6, "started": 3}
 
 
 def test_transaction_keyword_truncation(elasticapm_client):
@@ -894,3 +843,20 @@ def test_excepthook(elasticapm_client):
         elasticapm_client._excepthook(type_, value, traceback)
 
     assert elasticapm_client.events[ERROR]
+
+
+def test_check_server_version(elasticapm_client):
+    assert elasticapm_client.server_version is None
+    assert elasticapm_client.check_server_version(gte=(100, 5, 10))
+    assert elasticapm_client.check_server_version(lte=(100, 5, 10))
+
+    elasticapm_client.server_version = (7, 15)
+    assert elasticapm_client.check_server_version(gte=(7,))
+    assert not elasticapm_client.check_server_version(gte=(8,))
+    assert not elasticapm_client.check_server_version(lte=(7,))
+    assert elasticapm_client.check_server_version(lte=(8,))
+    assert elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 15))
+    assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 15))
+    assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 16))
+    assert not elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 13))
+    assert not elasticapm_client.check_server_version(gte=(7, 16), lte=(7, 18))
