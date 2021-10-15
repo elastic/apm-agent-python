@@ -54,7 +54,15 @@ class capture_serverless(object):
     functions.
 
     Begins and ends a single transaction, waiting for the transport to flush
-    before returning from the wrapped function
+    before returning from the wrapped function.
+
+    Example usage:
+
+        from elasticapm import capture_serverless
+
+        @capture_serverless()
+        def handler(event, context):
+            return {"statusCode": r.status_code, "body": "Success!"}
     """
 
     def __init__(self, name=None, **kwargs):

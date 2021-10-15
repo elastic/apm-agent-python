@@ -37,7 +37,7 @@ endif::[]
 [float]
 ===== Features
 
-* Add experimental support for lambda instrumentation {pull}1193[#1193]
+* Add experimental support for AWS lambda instrumentation {pull}1193[#1193]
 
 [float]
 ===== Bug fixes
