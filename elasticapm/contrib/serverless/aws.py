@@ -165,8 +165,16 @@ class capture_serverless(object):
                 lambda: get_data_from_response(self.response, capture_headers=self.client.config.capture_headers),
                 "response",
             )
-            if "statusCode" in self.response:
-                result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
+            status_code = None
+            try:
+                for k, v in self.response.items():
+                    if k.lower() == "statuscode":
+                        status_code = v
+                        break
+            except AttributeError:
+                pass
+            if status_code:
+                result = "HTTP {}xx".format(int(status_code) // 100)
                 elasticapm.set_transaction_result(result, override=False)
 
         self.client.end_transaction()
