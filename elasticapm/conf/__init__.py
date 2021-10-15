@@ -516,9 +516,6 @@ class Config(_ConfigBase):
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://localhost:8200", required=True)
     server_cert = _ConfigValue("SERVER_CERT", validators=[FileIsReadableValidator()])
-    server_version_override = _ConfigValue(
-        "SERVER_VERSION_OVERRIDE", validators=[RegexValidator(r"^[0-9]+\.[0-9]+\.[0-9]+$")]
-    )
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     use_certifi = _BoolConfigValue("USE_CERTIFI", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
