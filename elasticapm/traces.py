@@ -86,12 +86,15 @@ class ChildDuration(object):
 
 
 class BaseSpan(object):
-    def __init__(self, labels=None):
+    def __init__(self, labels=None, start=None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
         self.outcome: Optional[str] = None
         self.compression_buffer: Optional[Union[Span, DroppedSpan]] = None
         self.compression_buffer_lock = threading.Lock()
+        self.start_time: float = start or _time_func()
+        self.ended_time: Optional[float] = None
+        self.duration: Optional[float] = None
         if labels:
             self.label(**labels)
 
@@ -112,6 +115,8 @@ class BaseSpan(object):
                 self.compression_buffer = child
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
+        self.ended_time = _time_func()
+        self.duration = duration if duration is not None else (self.ended_time - self.start_time)
         if self.compression_buffer:
             self.compression_buffer.report()
             self.compression_buffer = None
@@ -169,12 +174,8 @@ class Transaction(BaseSpan):
             )
 
         self.trace_parent: TraceParent = trace_parent
-        if start:
-            self.timestamp = self.start_time = start
-        else:
-            self.timestamp, self.start_time = time.time(), _time_func()
+        self.timestamp = start if start is not None else time.time()
         self.name: Optional[str] = None
-        self.duration: float = 0
         self.result: Optional[str] = None
         self.transaction_type = transaction_type
         self._tracer = tracer
@@ -187,6 +188,7 @@ class Transaction(BaseSpan):
         self._span_counter: int = 0
         self._span_timers: Dict[Tuple[str, str], Timer] = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
+        self._dropped_span_statistics = defaultdict(lambda: {"count": 0, "duration.sum.us": 0})
         try:
             self._breakdown = self.tracer._agent._metrics.get_metricset(
                 "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
@@ -203,7 +205,6 @@ class Transaction(BaseSpan):
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
-        self.duration = duration if duration is not None else (_time_func() - self.start_time)
         if self._transaction_metrics:
             self._transaction_metrics.timer(
                 "transaction.duration",
@@ -253,7 +254,7 @@ class Transaction(BaseSpan):
             span = DroppedSpan(parent_span, leaf=True)
         elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
-            span = DroppedSpan(parent_span)
+            span = DroppedSpan(parent_span, context=context)
             self._span_counter += 1
         else:
             span = Span(
@@ -357,6 +358,15 @@ class Transaction(BaseSpan):
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
         }
+        if self._dropped_span_statistics:
+            result["dropped_spans_stats"] = [
+                {
+                    "destination_service_resource": resource,
+                    "outcome": outcome,
+                    "duration": {"count": v["count"], "sum": {"us": int(v["duration.sum.us"] * 1000000)}},
+                }
+                for (resource, outcome), v in self._dropped_span_statistics.items()
+            ]
         if self.sample_rate is not None:
             result["sample_rate"] = float(self.sample_rate)
         if self.trace_parent:
@@ -450,8 +460,6 @@ class Span(BaseSpan):
         :param sync: indicate if the span was executed synchronously or asynchronously
         :param start: timestamp, mostly useful for testing
         """
-        self.start_time = start or _time_func()
-        self.ended_time = None
         self.id = self.get_dist_tracing_id()
         self.transaction = transaction
         self.name = name
@@ -461,28 +469,20 @@ class Span(BaseSpan):
         # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
         # start time and transaction start time. In this respect, the span timestamp is guaranteed to grow
         # monotonically with respect to the transaction timestamp
-        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
-        self.duration: float = 0
         self.parent = parent
         self.parent_span_id = parent_span_id
         self.frames = None
         self.sync = sync
-        self.dist_tracing_propagated = False
-        self.composite: Dict[str, Any] = {}
-        if span_subtype is None and "." in span_type:
-            # old style dottet type, let's split it up
-            type_bits = span_type.split(".")
-            if len(type_bits) == 2:
-                span_type, span_subtype = type_bits[:2]
-            else:
-                span_type, span_subtype, span_action = type_bits[:3]
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
+        self.dist_tracing_propagated = False
+        self.composite: Dict[str, Any] = {}
+        super(Span, self).__init__(labels=labels, start=start)
+        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
             p.child_started(self.start_time)
-        super(Span, self).__init__(labels=labels)
 
     def to_dict(self) -> dict:
         if (
@@ -564,8 +564,6 @@ class Span(BaseSpan):
         """
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
-        self.ended_time = _time_func()
-        self.duration = duration if duration is not None else (self.ended_time - self.start_time)
         if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
@@ -651,17 +649,19 @@ class Span(BaseSpan):
 
 
 class DroppedSpan(BaseSpan):
-    __slots__ = ("leaf", "parent", "id", "dist_tracing_propagated", "outcome")
+    __slots__ = ("leaf", "parent", "id", "context", "outcome", "dist_tracing_propagated")
 
-    def __init__(self, parent, leaf=False):
+    def __init__(self, parent, leaf=False, start=None, context=None):
         self.parent = parent
         self.leaf = leaf
         self.id = None
         self.dist_tracing_propagated = False
+        self.context = context
         self.outcome = constants.OUTCOME.UNKNOWN
-        super(DroppedSpan, self).__init__()
+        super(DroppedSpan, self).__init__(start=start)
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
+        super().end(skip_frames, duration)
         execution_context.set_span(self.parent)
 
     def child_started(self, timestamp):
@@ -700,10 +700,6 @@ class DroppedSpan(BaseSpan):
 
     @property
     def action(self):
-        return None
-
-    @property
-    def context(self):
         return None
 
 
@@ -815,6 +811,13 @@ class capture_span(object):
         sync: Optional[bool] = None,
     ):
         self.name = name
+        if span_subtype is None and "." in span_type:
+            # old style dotted type, let's split it up
+            type_bits = span_type.split(".")
+            if len(type_bits) == 2:
+                span_type, span_subtype = type_bits[:2]
+            else:
+                span_type, span_subtype, span_action = type_bits[:3]
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
@@ -859,6 +862,17 @@ class capture_span(object):
             try:
                 outcome = "failure" if exc_val else "success"
                 span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
+                should_send = (
+                    transaction.tracer._agent.check_server_version(gte=(7, 16)) if transaction.tracer._agent else True
+                )
+                if should_send and isinstance(span, DroppedSpan) and span.context:
+                    try:
+                        resource = span.context["destination"]["service"]["resource"]
+                        stats = transaction._dropped_span_statistics[(resource, span.outcome)]
+                        stats["count"] += 1
+                        stats["duration.sum.us"] += span.duration
+                    except KeyError:
+                        pass
                 if exc_val and not isinstance(span, DroppedSpan):
                     try:
                         exc_val._elastic_apm_span_id = span.id
