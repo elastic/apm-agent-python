@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import socket
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
@@ -66,7 +67,11 @@ class PythonMemcachedInstrumentation(AbstractInstrumentedModule):
         name = self.get_wrapped_name(wrapped, instance, method)
         address, port = None, None
         if instance.servers:
-            address, port = instance.servers[0].address
+            first_server = instance.servers[0]
+            if first_server.family == socket.AF_UNIX:
+                address = first_server.address
+            else:
+                address, port = first_server.address
         destination = {
             "address": address,
             "port": port,

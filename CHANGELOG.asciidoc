@@ -40,7 +40,9 @@ endif::[]
 //
 [float]
 ===== Bug fixes
- * ensure that Prometheus histograms are encoded correctly for APM Server {pull}1354[#1354]
+
+* Ensure that Prometheus histograms are encoded correctly for APM Server {pull}1354[#1354]
+* Remove problematic (and duplicate) `event.dataset` from logging integrations {pull}1365[#1365]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
