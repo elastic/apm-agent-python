@@ -237,6 +237,7 @@ class CursorProxy(wrapt.ObjectProxy):
             span_action=action,
             extra={"db": {"type": "sql", "statement": sql_string}, "destination": self._self_destination_info},
             skip_frames=1,
+            leaf=True,
         ) as span:
             if params is None:
                 result = method(sql)

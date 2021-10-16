@@ -95,6 +95,8 @@ class HTTPCoreInstrumentation(AbstractInstrumentedModule):
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
                 self._set_disttracing_headers(headers, trace_parent, transaction)
+                if leaf_span:
+                    leaf_span.dist_tracing_propagated = True
             response = wrapped(*args, **kwargs)
             if len(response) > 4:
                 # httpcore < 0.11.0

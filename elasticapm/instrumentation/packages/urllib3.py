@@ -126,6 +126,8 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
             args, kwargs = update_headers(args, kwargs, instance, transaction, trace_parent)
+            if leaf_span:
+                leaf_span.dist_tracing_propagated = True
             response = wrapped(*args, **kwargs)
             if response:
                 if span.context:
