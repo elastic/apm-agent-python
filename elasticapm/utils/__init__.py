@@ -142,7 +142,7 @@ def get_host_from_url(url: str) -> str:
     return host
 
 
-def url_to_destination(url: str, service_type: str = "external") -> dict:
+def url_to_destination_resource(url: str) -> dict:
     parts = compat.urlparse.urlsplit(url)
     hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
@@ -162,7 +162,7 @@ def url_to_destination(url: str, service_type: str = "external") -> dict:
         if port != default_port:
             name += ":%d" % port
         resource += ":%d" % port
-    return {"service": {"name": name, "resource": resource, "type": service_type}}
+    return resource
 
 
 def read_pem_file(file_obj) -> bytes:

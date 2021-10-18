@@ -98,5 +98,5 @@ async def test_aiomysql_select(instrument, aiomysql_connection, elasticapm_clien
         assert span["context"]["destination"] == {
             "address": os.environ.get("MYSQL_HOST", "localhost"),
             "port": default_ports.get("mysql"),
-            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+            "service": {"name": "", "resource": "mysql", "type": ""},
         }

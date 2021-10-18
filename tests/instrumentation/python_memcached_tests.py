@@ -77,7 +77,7 @@ def test_memcached(instrument, elasticapm_client):
     assert spans[1]["context"]["destination"] == {
         "address": host,
         "port": 11211,
-        "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
+        "service": {"name": "", "resource": "memcached", "type": ""},
     }
 
     assert spans[2]["name"] == "Client.get_multi"

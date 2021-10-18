@@ -41,7 +41,7 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
-from elasticapm.utils import compat, encoding, get_name_from_func, nested_key
+from elasticapm.utils import compat, encoding, get_name_from_func, nested_key, url_to_destination_resource
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
 
@@ -210,7 +210,7 @@ class Transaction(BaseSpan):
                 "transaction.duration",
                 reset_on_collect=True,
                 unit="us",
-                **{"transaction.name": self.name, "transaction.type": self.transaction_type}
+                **{"transaction.name": self.name, "transaction.type": self.transaction_type},
             ).update(int(self.duration * 1000000))
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
@@ -232,7 +232,7 @@ class Transaction(BaseSpan):
                     "span.self_time",
                     reset_on_collect=True,
                     unit="us",
-                    **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
+                    **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type},
                 ).update(int((self.duration - self._child_durations.duration) * 1000000))
 
     def _begin_span(
@@ -516,6 +516,30 @@ class Span(BaseSpan):
                 self.context = {}
             self.context["tags"] = self.labels
         if self.context:
+            resource = nested_key(self.context, "destination", "service", "resource")
+            if not resource and (self.leaf or any(k in self.context for k in ("destination", "db", "message", "http"))):
+                type_info = self.subtype or self.type
+                instance = nested_key(self.context, "db", "instance")
+                queue_name = nested_key(self.context, "message", "queue", "name")
+                http_url = nested_key(self.context, "http", "url")
+                if instance:
+                    resource = f"{type_info}/{instance}"
+                elif queue_name:
+                    resource = f"{type_info}/{queue_name}"
+                elif http_url:
+                    resource = url_to_destination_resource(http_url)
+                else:
+                    resource = type_info
+                if "destination" not in self.context:
+                    self.context["destination"] = {}
+                if "service" not in self.context["destination"]:
+                    self.context["destination"]["service"] = {}
+                self.context["destination"]["service"]["resource"] = resource
+                # set fields that are deprecated, but still required by APM Server API
+                if "name" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["name"] = ""
+                if "type" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["type"] = ""
             result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
@@ -641,7 +665,7 @@ class Span(BaseSpan):
         self.context[key] = current
 
     def __str__(self):
-        return u"{}/{}/{}".format(self.name, self.type, self.subtype)
+        return "{}/{}/{}".format(self.name, self.type, self.subtype)
 
     @property
     def tracer(self) -> "Tracer":
