@@ -160,9 +160,6 @@ class capture_serverless(object):
         """
         Transaction teardown
         """
-        if exc_val:
-            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
-
         if self.response and isinstance(self.response, dict):
             elasticapm.set_context(
                 lambda: get_data_from_response(self.response, capture_headers=self.client.config.capture_headers),
@@ -179,6 +176,12 @@ class capture_serverless(object):
             if status_code:
                 result = "HTTP {}xx".format(int(status_code) // 100)
                 elasticapm.set_transaction_result(result, override=False)
+
+        if exc_val:
+            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
+            elasticapm.set_transaction_result("HTTP 5xx", override=False)
+            elasticapm.set_transaction_outcome(http_status_code=500, override=False)
+            elasticapm.set_context({"status_code": 500}, "response")
 
         self.client.end_transaction()
 
