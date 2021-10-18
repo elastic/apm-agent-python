@@ -142,6 +142,9 @@ class Transport(ThreadManager):
             if data is not None:
                 data = self._process_event(event_type, data)
                 if data is not None:
+                    if not buffer_written:
+                        # Write metadata just in time to allow for late metadata changes (such as in lambda)
+                        self._write_metadata(buffer)
                     buffer.write((self._json_serializer({event_type: data}) + "\n").encode("utf-8"))
                     buffer_written = True
                     self._counts[event_type] += 1
@@ -201,9 +204,30 @@ class Transport(ThreadManager):
 
     def _init_buffer(self):
         buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
+        return buffer
+
+    def _write_metadata(self, buffer):
         data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
         buffer.write(data)
-        return buffer
+
+    def add_metadata(self, data):
+        """
+        Add additional metadata do the dictionary
+
+        Only used in specific instances where metadata relies on data we only
+        have at request time, such as for lambda metadata
+
+        Metadata is only merged one key deep.
+        """
+        if self._metadata is not None:
+            # Merge one key deep
+            for key, val in data.items():
+                if isinstance(val, dict) and key in self._metadata and isinstance(self._metadata[key], dict):
+                    self._metadata[key].update(val)
+                else:
+                    self._metadata[key] = val
+        else:
+            self._metadata = data
 
     def _init_event_queue(self, chill_until, max_chill_time):
         # some libraries like eventlet monkeypatch queue.Queue and switch out the implementation.
