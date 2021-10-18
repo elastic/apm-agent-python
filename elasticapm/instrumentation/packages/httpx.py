@@ -30,7 +30,7 @@
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
+from elasticapm.utils import get_host_from_url, sanitize_url
 
 
 class HttpxClientInstrumentation(AbstractInstrumentedModule):
@@ -45,13 +45,12 @@ class HttpxClientInstrumentation(AbstractInstrumentedModule):
         url = str(request.url)
         name = "{request_method} {host}".format(request_method=request_method, host=get_host_from_url(url))
         url = sanitize_url(url)
-        destination = url_to_destination(url)
 
         with capture_span(
             name,
             span_type="external",
             span_subtype="http",
-            extra={"http": {"url": url}, "destination": destination},
+            extra={"http": {"url": url}},
             leaf=True,
         ) as span:
             response = wrapped(*args, **kwargs)

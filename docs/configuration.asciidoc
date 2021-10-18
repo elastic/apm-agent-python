@@ -692,6 +692,49 @@ Except for the special values `-1` and `0`,
 this setting has to be provided in *<<config-format-duration, duration format>>*.
 
 [float]
+[[config-span-compression-exact-match-max_duration]]
+==== `span_compression_exact_match_max_duration`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION` | `SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION` | `"50ms"`
+|============
+
+Consecutive spans that are exact match and that are under this threshold will be compressed into a single composite span.
+This reduces the collection, processing, and storage overhead, and removes clutter from the UI.
+The tradeoff is that the DB statements of all the compressed spans will not be collected.
+
+Two spans are considered exact matches if the following attributes are identical:
+ * span name
+ * span type
+ * span subtype
+ * destination resource (e.g. the Database name)
+
+[float]
+[[config-span-compression-same-kind-max-duration]]
+==== `span_compression_same_kind_max_duration`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"5ms"`
+|============
+
+Consecutive spans to the same destination that are under this threshold will be compressed into a single composite span.
+This reduces the collection, processing, and storage overhead, and removes clutter from the UI.
+The tradeoff is that metadata such as database statements of all the compressed spans will not be collected.
+
+Two spans are considered to be of the same kind if the following attributes are identical:
+ * span type
+ * span subtype
+ * destination resource (e.g. the Database name)
+
+[float]
 [[config-api-request-size]]
 ==== `api_request_size`
 

@@ -107,7 +107,7 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["destination"] == {
         "address": os.environ["ES_URL"],
-        "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
+        "service": {"name": "", "resource": "elasticsearch", "type": ""},
     }
     assert span["context"]["http"]["status_code"] == 200
 

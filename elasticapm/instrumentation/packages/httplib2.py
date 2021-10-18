@@ -31,7 +31,7 @@
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
+from elasticapm.utils import get_host_from_url, sanitize_url
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -72,13 +72,12 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
         signature = params.get("method", "GET").upper()
         signature += " " + get_host_from_url(params["url"])
         url = sanitize_url(params["url"])
-        destination = url_to_destination(url)
         transaction = execution_context.get_transaction()
         with capture_span(
             signature,
             span_type="external",
             span_subtype="http",
-            extra={"http": {"url": url}, "destination": destination},
+            extra={"http": {"url": url}},
             leaf=True,
         ) as span:
             # if httplib2 has been called in a leaf span, this span might be a DroppedSpan.
@@ -93,6 +92,8 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
             self._set_disttracing_headers(params["headers"], trace_parent, transaction)
+            if leaf_span:
+                leaf_span.dist_tracing_propagated = True
 
             response, content = wrapped(*args, **kwargs)
             if span.context:

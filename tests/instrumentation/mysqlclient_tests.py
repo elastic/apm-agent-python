@@ -89,5 +89,5 @@ def test_mysql_connector_select(instrument, mysqlclient_connection, elasticapm_c
         assert span["context"]["destination"] == {
             "address": "mysql",
             "port": 3306,
-            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+            "service": {"name": "", "resource": "mysql", "type": ""},
         }
