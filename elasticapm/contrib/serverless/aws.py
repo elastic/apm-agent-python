@@ -179,9 +179,13 @@ class capture_serverless(object):
 
         if exc_val:
             self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
-            elasticapm.set_transaction_result("HTTP 5xx", override=False)
-            elasticapm.set_transaction_outcome(http_status_code=500, override=False)
-            elasticapm.set_context({"status_code": 500}, "response")
+            if self.source == "api":
+                elasticapm.set_transaction_result("HTTP 5xx", override=False)
+                elasticapm.set_transaction_outcome(http_status_code=500, override=False)
+                elasticapm.set_context({"status_code": 500}, "response")
+            else:
+                elasticapm.set_transaction_result("failure", override=False)
+                elasticapm.set_transaction_outcome(outcome="failure", override=False)
 
         self.client.end_transaction()
 
