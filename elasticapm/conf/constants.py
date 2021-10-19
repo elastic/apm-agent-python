@@ -59,7 +59,7 @@ def _starmatch_to_regex(pattern):
 
 EVENTS_API_PATH = "intake/v2/events"
 AGENT_CONFIG_PATH = "config/v1/agents"
-SERVER_INFO_PATH = "/"
+SERVER_INFO_PATH = ""
 
 TRACE_CONTEXT_VERSION = 0
 TRACEPARENT_HEADER_NAME = "traceparent"

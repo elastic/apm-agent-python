@@ -79,8 +79,6 @@ class capture_serverless(object):
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"
-        # TODO this can probably be removed once the extension proxies the serverinfo endpoint
-        kwargs["server_version"] = (8, 0, 0)
         if "service_name" not in kwargs:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 
