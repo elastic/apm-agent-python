@@ -27,13 +27,15 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-
+from contextlib import suppress
 
 from celery import signals, states
 
 import elasticapm
 from elasticapm.conf import constants
+from elasticapm.traces import execution_context
 from elasticapm.utils import get_name_from_func
+from elasticapm.utils.disttracing import TraceParent
 
 
 class CeleryFilter(object):
@@ -57,9 +59,51 @@ def register_exception_tracking(client):
     _register_worker_signals(client)
 
 
+def set_celery_headers(headers=None, **kwargs):
+    headers = {} if headers is None else headers
+
+    transaction = execution_context.get_transaction()
+    trace_parent = transaction.trace_parent
+    trace_parent_string = trace_parent.to_string()
+
+    headers.update({"elasticapm": {"trace_parent_string": trace_parent_string}})
+
+
+def get_trace_parent(celery_task):
+    """
+    Return a trace parent contained in the request headers of a Celery Task object or None
+    """
+    trace_parent = None
+    with suppress(AttributeError, KeyError):
+        trace_parent_string = celery_task.request.headers["elasticapm"]["trace_parent_string"]
+        trace_parent = TraceParent.from_string(trace_parent_string)
+    return trace_parent
+
+
+def correlation_enabled_globally():
+    # TODO: need help checking client.config for CELERY_CORRELATION
+    return True
+
+
+def correlation_enabled_for_task(celery_task):
+    # We cannot set ["elasticapm"]["correlation"] in before_task_publish as we would
+    # override the choice made by the user, so we consider no value as True
+    enabled = True
+    with suppress(AttributeError, KeyError):
+        # Anything present in correlation means correlation is considered enabled
+        enabled = celery_task.request.headers["elasticapm"]["correlation"] is not False
+    return enabled
+
+
 def register_instrumentation(client):
     def begin_transaction(*args, **kwargs):
-        client.begin_transaction("celery")
+        trace_parent = None
+        task = kwargs["task"]
+        # User has to specifically tell when to not propagate trace ID
+        # When correlation is disabled globally, cannot enable it per task
+        if correlation_enabled_globally() and correlation_enabled_for_task(task):
+            trace_parent = get_trace_parent(task)
+        client.begin_transaction("celery", trace_parent=trace_parent)
 
     def end_transaction(task_id, task, *args, **kwargs):
         name = get_name_from_func(task)
@@ -76,10 +120,12 @@ def register_instrumentation(client):
     dispatch_uid = "elasticapm-tracing-%s"
 
     # unregister any existing clients
+    signals.before_task_publish.disconnect(set_celery_headers, dispatch_uid=dispatch_uid % "before-publish")
     signals.task_prerun.disconnect(begin_transaction, dispatch_uid=dispatch_uid % "prerun")
     signals.task_postrun.disconnect(end_transaction, dispatch_uid=dispatch_uid % "postrun")
 
     # register for this client
+    signals.before_task_publish.connect(set_celery_headers, dispatch_uid=dispatch_uid % "before-publish")
     signals.task_prerun.connect(begin_transaction, dispatch_uid=dispatch_uid % "prerun", weak=False)
     signals.task_postrun.connect(end_transaction, weak=False, dispatch_uid=dispatch_uid % "postrun")
     _register_worker_signals(client)
