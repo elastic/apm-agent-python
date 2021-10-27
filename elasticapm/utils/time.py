@@ -37,7 +37,7 @@ CLOCK_DIFF_UPDATED = 0
 logger = logging.getLogger("elasticapm.utils.time")
 
 
-def time_to_perf_counter(timestamp):
+def time_to_perf_counter(timestamp: float) -> float:
     """
     This function converts a given epoch timestamp in seconds (typically from
     `time.time()`) to the "equivalent" result from `time.perf_counter()`.

@@ -44,6 +44,7 @@ from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func, nested_key, url_to_destination_resource
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.time import time_to_perf_counter
 
 __all__ = ("capture_span", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -92,7 +93,7 @@ class BaseSpan(object):
         self.outcome: Optional[str] = None
         self.compression_buffer: Optional[Union[Span, DroppedSpan]] = None
         self.compression_buffer_lock = threading.Lock()
-        self.start_time: float = start or _time_func()
+        self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
         self.duration: Optional[float] = None
         if labels:
@@ -219,7 +220,7 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._transaction_metrics = None
-        super(Transaction, self).__init__()
+        super(Transaction, self).__init__(start=start)
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
