@@ -282,8 +282,6 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["provider"] = "aws"
 
-        metadata["faas"] = faas
-
         metadata["service"] = {}
         metadata["service"]["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
         metadata["service"]["framework"] = {"name": "AWS Lambda"}
@@ -312,6 +310,8 @@ class capture_serverless(object):
 
         elasticapm.set_context(cloud_context, "cloud")
         elasticapm.set_context(service_context, "service")
+        # faas doesn't actually belong in context, but we handle this in to_dict
+        elasticapm.set_context(faas, "faas")
         if message_context:
             elasticapm.set_context(service_context, "message")
         self.client._transport.add_metadata(metadata)
