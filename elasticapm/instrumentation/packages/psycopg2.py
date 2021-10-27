@@ -92,7 +92,6 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
         destination_info = {
             "address": kwargs.get("host", "localhost"),
             "port": int(kwargs.get("port", default_ports.get("postgresql"))),
-            "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
         }
         with capture_span(
             signature,

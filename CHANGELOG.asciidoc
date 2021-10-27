@@ -30,22 +30,27 @@ endif::[]
 //===== Bug fixes
 
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-//
-//
+[[release-notes-6.6.0]]
+==== 6.6.0 - 2021-10-18
+
+[float]
+===== Features
+
+* Add experimental support for AWS lambda instrumentation {pull}1193[#1193]
+* Add support for span compression {pull}1321[#1321]
+* Auto-infer destination resources for easier instrumentation of new resources {pull}1359[#1359]
+* Add support for dropped span statistics {pull}1327[#1327]
+
 [float]
 ===== Bug fixes
 
 * Ensure that Prometheus histograms are encoded correctly for APM Server {pull}1354[#1354]
 * Remove problematic (and duplicate) `event.dataset` from logging integrations {pull}1365[#1365]
+* Fix for memcache instrumentation when configured with a unix socket {pull}1357[#1357]
 
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.5.0]]
 ==== 6.5.0 - 2021-10-04

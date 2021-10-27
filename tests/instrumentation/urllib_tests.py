@@ -78,9 +78,9 @@ def test_urllib(instrument, elasticapm_client, waiting_httpserver):
     assert spans[0]["context"]["http"]["url"] == url
     assert spans[0]["context"]["http"]["status_code"] == 200
     assert spans[0]["context"]["destination"]["service"] == {
-        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "name": "",
         "resource": "127.0.0.1:%d" % parsed_url.port,
-        "type": "external",
+        "type": "",
     }
     assert spans[0]["parent_id"] == spans[1]["id"]
     assert spans[0]["outcome"] == "success"

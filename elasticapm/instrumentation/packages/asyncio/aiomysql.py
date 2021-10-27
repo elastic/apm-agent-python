@@ -53,7 +53,7 @@ class AioMySQLInstrumentation(AsyncAbstractInstrumentedModule):
                 "destination": {
                     "address": instance.connection.host,
                     "port": instance.connection.port,
-                    "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+                    "service": {"name": "", "resource": "mysql", "type": ""},
                 },
             }
             action = "query"

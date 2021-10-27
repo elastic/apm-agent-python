@@ -91,7 +91,6 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
 
         context["destination"] = {
             "address": instance.host,
-            "service": {"name": "elasticsearch", "resource": "elasticsearch", "type": "db"},
         }
 
 

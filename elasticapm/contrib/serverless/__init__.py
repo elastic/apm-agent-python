@@ -28,34 +28,14 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.contrib.asyncio.traces import async_capture_span
-from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
-from elasticapm.utils import get_host_from_url, sanitize_url
+import os
 
+# Future providers such as GCP and Azure will be added to this if/elif block
+# This way you can use the same syntax for each of the providers from a user
+# perspective
+if os.environ.get("AWS_REGION"):
+    from elasticapm.contrib.serverless.aws import capture_serverless
+else:
+    from elasticapm.contrib.serverless.aws import capture_serverless
 
-class HttpxAsyncClientInstrumentation(AsyncAbstractInstrumentedModule):
-    name = "httpx"
-
-    instrument_list = [("httpx", "AsyncClient.send")]
-
-    async def call(self, module, method, wrapped, instance, args, kwargs):
-        request = kwargs.get("request") or args[0]
-
-        request_method = request.method.upper()
-        url = str(request.url)
-        name = "{request_method} {host}".format(request_method=request_method, host=get_host_from_url(url))
-        url = sanitize_url(url)
-
-        async with async_capture_span(
-            name,
-            span_type="external",
-            span_subtype="http",
-            extra={"http": {"url": url}},
-            leaf=True,
-        ) as span:
-            response = await wrapped(*args, **kwargs)
-            if response is not None:
-                if span.context:
-                    span.context["http"]["status_code"] = response.status_code
-                span.set_success() if response.status_code < 400 else span.set_failure()
-            return response
+__all__ = ("capture_serverless",)
