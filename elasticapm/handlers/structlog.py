@@ -57,7 +57,6 @@ def structlog_processor(logger, method_name, event_dict):
     client = get_client()
     if client:
         event_dict["service.name"] = client.config.service_name
-        event_dict["event.dataset"] = f"{client.config.service_name}.log"
     if transaction and transaction.trace_parent:
         event_dict["trace.id"] = transaction.trace_parent.trace_id
     span = execution_context.get_span()

@@ -37,10 +37,11 @@ from elasticapm.conf import constants
 from elasticapm.utils import (
     get_name_from_func,
     get_url_dict,
+    nested_key,
     read_pem_file,
     sanitize_url,
     starmatch_to_regex,
-    url_to_destination,
+    url_to_destination_resource,
 )
 from elasticapm.utils.deprecation import deprecated
 
@@ -57,7 +58,8 @@ def deprecated_function():
 
 
 def test_deprecation():
-    deprecated_function()
+    with pytest.deprecated_call():
+        deprecated_function()
 
 
 @pytest.mark.parametrize(
@@ -219,14 +221,13 @@ def test_url_sanitization_urlencoded_password():
     ],
 )
 def test_url_to_destination(url, name, resource):
-    destination = url_to_destination(url)
-    assert destination["service"]["name"] == name
-    assert destination["service"]["resource"] == resource
+    destination = url_to_destination_resource(url)
+    assert destination == resource
 
 
 def test_url_to_destination_bad_port():
-    destination = url_to_destination("https://www.elastic.co:bad")
-    assert destination["service"]["resource"] == "www.elastic.co:443"
+    destination = url_to_destination_resource("https://www.elastic.co:bad")
+    assert destination == "www.elastic.co:443"
 
 
 def test_read_pem_file():
@@ -239,3 +240,22 @@ def test_read_pem_file_chain():
     with open(os.path.join(os.path.dirname(__file__), "..", "ca", "chain.crt"), mode="rb") as f:
         result = read_pem_file(f)
         assert result.endswith(b"\xc8\xae")
+
+
+@pytest.mark.parametrize(
+    "data,key,expected",
+    [
+        (None, "x", None),
+        ({}, "x", None),
+        ({"x": 1}, "x", 1),
+        ({"x": {"y": 1}}, "x.y", 1),
+        ({"x": 1}, "x.y", None),
+        ({"x": {"y": {}}}, "x.y.z", None),
+    ],
+)
+def test_nested_key(data, key, expected):
+    r = nested_key(data, *key.split("."))
+    if expected is None:
+        assert r is expected
+    else:
+        assert r == expected

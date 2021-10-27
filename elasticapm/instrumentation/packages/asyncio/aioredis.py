@@ -38,12 +38,16 @@ from elasticapm.traces import execution_context
 class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
     name = "aioredis"
 
-    instrument_list = [("aioredis.pool", "ConnectionsPool.execute"),
-                       ("aioredis.pool", "ConnectionsPool.execute_pubsub")]
+    instrument_list = [
+        ("aioredis.pool", "ConnectionsPool.execute"),
+        ("aioredis.pool", "ConnectionsPool.execute_pubsub"),
+    ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) > 0:
-            wrapped_name = args[0].decode()
+            wrapped_name = args[0]
+            if isinstance(wrapped_name, bytes):
+                wrapped_name = wrapped_name.decode()
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
@@ -74,8 +78,10 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
 class RedisConnectionInstrumentation(AbstractInstrumentedModule):
     name = "aioredis"
 
-    instrument_list = (("aioredis.connection", "RedisConnection.execute"),
-                       ("aioredis.pool", "ConnectionsPool.execute_pubsub"))
+    instrument_list = (
+        ("aioredis.connection", "RedisConnection.execute"),
+        ("aioredis.pool", "ConnectionsPool.execute_pubsub"),
+    )
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
@@ -85,7 +91,7 @@ class RedisConnectionInstrumentation(AbstractInstrumentedModule):
 
 
 def _get_destination_info(connection):
-    destination_info = {"service": {"name": "aioredis", "resource": "redis", "type": "db"}}
+    destination_info = {"service": {"name": "", "resource": "redis", "type": ""}}
 
     if hasattr(connection, "_pool_or_conn"):
         destination_info["port"] = connection._pool_or_conn.address[1]

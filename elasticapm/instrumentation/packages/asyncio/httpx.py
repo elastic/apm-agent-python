@@ -30,7 +30,7 @@
 
 from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
-from elasticapm.utils import get_host_from_url, sanitize_url, url_to_destination
+from elasticapm.utils import get_host_from_url, sanitize_url
 
 
 class HttpxAsyncClientInstrumentation(AsyncAbstractInstrumentedModule):
@@ -39,19 +39,18 @@ class HttpxAsyncClientInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("httpx", "AsyncClient.send")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        request = kwargs.get("request", args[0])
+        request = kwargs.get("request") or args[0]
 
         request_method = request.method.upper()
         url = str(request.url)
         name = "{request_method} {host}".format(request_method=request_method, host=get_host_from_url(url))
         url = sanitize_url(url)
-        destination = url_to_destination(url)
 
         async with async_capture_span(
             name,
             span_type="external",
             span_subtype="http",
-            extra={"http": {"url": url}, "destination": destination},
+            extra={"http": {"url": url}},
             leaf=True,
         ) as span:
             response = await wrapped(*args, **kwargs)

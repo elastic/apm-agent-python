@@ -27,7 +27,9 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from django import VERSION as DJANGO_VERSION
 
 from elasticapm.contrib.django.client import *  # noqa E401
 
-default_app_config = "elasticapm.contrib.django.apps.ElasticAPMConfig"
+if DJANGO_VERSION < (3, 2):
+    default_app_config = "elasticapm.contrib.django.apps.ElasticAPMConfig"

@@ -172,15 +172,14 @@ def test_disable_breakdowns(elasticapm_client):
         "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
     )
     with mock.patch("elasticapm.traces.BaseSpan.child_started") as mock_child_started, mock.patch(
-        "elasticapm.traces.BaseSpan.child_ended"
-    ) as mock_child_ended, mock.patch("elasticapm.traces.Transaction.track_span_duration") as mock_track_span_duration:
+        "elasticapm.traces.Transaction.track_span_duration"
+    ) as mock_track_span_duration:
         transaction = elasticapm_client.begin_transaction("test")
         assert transaction._breakdown is None
         with elasticapm.capture_span("test", span_type="template", span_subtype="django", duration=5):
             pass
         elasticapm_client.end_transaction("test", "OK", duration=5)
         assert mock_child_started.call_count == 0
-        assert mock_child_ended.call_count == 0
         assert mock_track_span_duration.call_count == 0
     # transaction duration should still be captured
     data = list(transaction_metrics.collect())

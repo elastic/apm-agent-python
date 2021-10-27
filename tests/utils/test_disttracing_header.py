@@ -146,3 +146,15 @@ def test_tracestate_length():
     trace_parent.add_tracestate("x", "y" * 256)
     assert len(trace_parent.tracestate_dict) == 2
     assert "x" not in trace_parent.tracestate_dict
+
+
+def test_traceparent_from_header():
+    header = "00-0000651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    legacy_header = "00-1111651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    tp1 = TraceParent.from_headers({"traceparent": header})
+    tp2 = TraceParent.from_headers({"elastic-apm-traceparent": legacy_header})
+    tp3 = TraceParent.from_headers({"traceparent": header, "elastic-apm-traceparent": legacy_header})
+    assert tp1.to_string() == header
+    assert tp2.to_string() == legacy_header
+    # traceparent has precedence over elastic-apm-traceparent
+    assert tp3.to_string() == header

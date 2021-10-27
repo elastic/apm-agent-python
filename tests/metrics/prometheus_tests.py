@@ -45,7 +45,14 @@ if platform.python_implementation() == "CPython":
     prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
 
 
-def test_counter(elasticapm_client):
+@pytest.fixture()
+def prometheus():
+    # reset registry
+    prometheus_client.REGISTRY._collector_to_names = {}
+    prometheus_client.REGISTRY._names_to_collectors = {}
+
+
+def test_counter(elasticapm_client, prometheus):
     metricset = PrometheusMetrics(MetricsRegistry(elasticapm_client))
     counter = prometheus_client.Counter("a_bare_counter", "Bare counter")
     counter_with_labels = prometheus_client.Counter(
@@ -64,7 +71,7 @@ def test_counter(elasticapm_client):
     assert data[2]["tags"] == {"alabel": "bar", "anotherlabel": "bazzinga"}
 
 
-def test_gauge(elasticapm_client):
+def test_gauge(elasticapm_client, prometheus):
     metricset = PrometheusMetrics(MetricsRegistry(elasticapm_client))
     gauge = prometheus_client.Gauge("a_bare_gauge", "Bare gauge")
     gauge_with_labels = prometheus_client.Gauge("gauge_with_labels", "Gauge with labels", ["alabel", "anotherlabel"])
@@ -81,7 +88,7 @@ def test_gauge(elasticapm_client):
     assert data[2]["tags"] == {"alabel": "bar", "anotherlabel": "bazzinga"}
 
 
-def test_summary(elasticapm_client):
+def test_summary(elasticapm_client, prometheus):
     metricset = PrometheusMetrics(MetricsRegistry(elasticapm_client))
     summary = prometheus_client.Summary("a_bare_summary", "Bare summary")
     summary_with_labels = prometheus_client.Summary(
@@ -104,3 +111,36 @@ def test_summary(elasticapm_client):
     assert data[2]["samples"]["prometheus.metrics.summary_with_labels.count"]["value"] == 1.0
     assert data[2]["samples"]["prometheus.metrics.summary_with_labels.sum"]["value"] == 11.0
     assert data[2]["tags"] == {"alabel": "bar", "anotherlabel": "bazzinga"}
+
+
+def test_histogram(elasticapm_client, prometheus):
+    metricset = PrometheusMetrics(MetricsRegistry(elasticapm_client))
+    histo = prometheus_client.Histogram("histo", "test histogram", buckets=[1, 10, 100, float("inf")])
+    histo_with_labels = prometheus_client.Histogram(
+        "histowithlabel", "test histogram with labels", ["alabel", "anotherlabel"], buckets=[1, 10, 100, float("inf")]
+    )
+    histo.observe(0.5)
+    histo.observe(0.6)
+    histo.observe(1.5)
+    histo.observe(26)
+    histo.observe(42)
+    histo.observe(12)
+    histo.observe(105)
+    histo_with_labels.labels(alabel="foo", anotherlabel="baz").observe(1)
+    histo_with_labels.labels(alabel="foo", anotherlabel="baz").observe(10)
+    histo_with_labels.labels(alabel="foo", anotherlabel="baz").observe(100)
+    histo_with_labels.labels(alabel="foo", anotherlabel="bazzinga").observe(1000)
+    data = list(metricset.collect())
+    assert data[0]["samples"]["prometheus.metrics.histo"]["values"] == [0.5, 5.5, 55.0, 100.0]
+    assert data[0]["samples"]["prometheus.metrics.histo"]["counts"] == [2, 1, 3, 1]
+    assert all(isinstance(v, int) for v in data[0]["samples"]["prometheus.metrics.histo"]["counts"])
+
+    assert data[1]["samples"]["prometheus.metrics.histowithlabel"]["values"] == [0.5, 5.5, 55.0, 100.0]
+    assert data[1]["samples"]["prometheus.metrics.histowithlabel"]["counts"] == [1, 1, 1, 0]
+    assert all(isinstance(v, int) for v in data[1]["samples"]["prometheus.metrics.histowithlabel"]["counts"])
+    assert data[1]["tags"] == {"alabel": "foo", "anotherlabel": "baz"}
+
+    assert data[2]["samples"]["prometheus.metrics.histowithlabel"]["values"] == [0.5, 5.5, 55.0, 100.0]
+    assert data[2]["samples"]["prometheus.metrics.histowithlabel"]["counts"] == [0, 0, 0, 1]
+    assert all(isinstance(v, int) for v in data[2]["samples"]["prometheus.metrics.histowithlabel"]["counts"])
+    assert data[2]["tags"] == {"alabel": "foo", "anotherlabel": "bazzinga"}

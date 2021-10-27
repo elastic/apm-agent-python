@@ -67,7 +67,7 @@ class ElasticAPMClientMiddlewareMixin(object):
     @property
     def client(self):
         try:
-            app = apps.get_app_config("elasticapm.contrib.django")
+            app = apps.get_app_config("elasticapm")
             return app.client
         except LookupError:
             return get_client()

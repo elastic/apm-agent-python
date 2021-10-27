@@ -189,6 +189,8 @@ def elasticapm_client(request):
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client = TempStoreClient(**client_config)
     yield client
     client.close()
@@ -208,6 +210,8 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("log_level", "warning")
@@ -289,9 +293,12 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
     client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("central_config", "false")
+    client_config.setdefault("server_version", (8, 0, 0))
     client = Client(**client_config)
     client.httpserver = validating_httpserver
     yield client
@@ -331,9 +338,9 @@ class DummyTransport(HTTPTransportBase):
 
 
 class TempStoreClient(Client):
-    def __init__(self, **inline):
+    def __init__(self, config=None, **inline):
         inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
-        super(TempStoreClient, self).__init__(**inline)
+        super(TempStoreClient, self).__init__(config, **inline)
 
     @property
     def events(self):

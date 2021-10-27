@@ -9,6 +9,7 @@ FRAMEWORK:
   - django-3.0
   - django-3.1
   - django-3.2
+  - django-4.0
     #  - django-master
   - flask-0.10
   - flask-0.11
@@ -70,6 +71,7 @@ FRAMEWORK:
   - asyncpg-newest
   - tornado-newest
   - starlette-0.13
+  - starlette-0.14
   - starlette-newest
   - pymemcache-3.0
   - pymemcache-newest

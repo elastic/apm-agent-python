@@ -85,7 +85,7 @@ def test_cassandra_connect(instrument, elasticapm_client, cassandra_cluster):
     assert span["context"]["destination"] == {
         "address": socket.gethostbyname(os.environ.get("CASSANDRA_HOST", "localhost")),
         "port": 9042,
-        "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
+        "service": {"name": "", "resource": "cassandra", "type": ""},
     }
 
 
@@ -103,7 +103,7 @@ def test_select_query_string(instrument, cassandra_session, elasticapm_client):
     assert span["context"]["destination"] == {
         "address": socket.gethostbyname(os.environ.get("CASSANDRA_HOST", "localhost")),
         "port": 9042,
-        "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
+        "service": {"name": "", "resource": "cassandra", "type": ""},
     }
 
 

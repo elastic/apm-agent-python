@@ -36,7 +36,12 @@ from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 class AioPGInstrumentation(AsyncAbstractInstrumentedModule):
     name = "aiopg"
 
-    instrument_list = [("aiopg.cursor", "Cursor.execute"), ("aiopg.cursor", "Cursor.callproc")]
+    instrument_list = [
+        ("aiopg.cursor", "Cursor.execute"),
+        ("aiopg.cursor", "Cursor.callproc"),
+        ("aiopg.connection", "Cursor.execute"),
+        ("aiopg.connection", "Cursor.callproc"),
+    ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         if method == "Cursor.execute":

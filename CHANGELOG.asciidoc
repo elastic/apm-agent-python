@@ -21,17 +21,118 @@ endif::[]
 //=== Unreleased
 
 // Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 5.x" heading
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
 //[float]
 //===== Features
 //
 //
 //[float]
 //===== Bug fixes
-//
+
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.6.0]]
+==== 6.6.0 - 2021-10-18
+
+[float]
+===== Features
+
+* Add experimental support for AWS lambda instrumentation {pull}1193[#1193]
+* Add support for span compression {pull}1321[#1321]
+* Auto-infer destination resources for easier instrumentation of new resources {pull}1359[#1359]
+* Add support for dropped span statistics {pull}1327[#1327]
+
+[float]
+===== Bug fixes
+
+* Ensure that Prometheus histograms are encoded correctly for APM Server {pull}1354[#1354]
+* Remove problematic (and duplicate) `event.dataset` from logging integrations {pull}1365[#1365]
+* Fix for memcache instrumentation when configured with a unix socket {pull}1357[#1357]
+
+
+[[release-notes-6.5.0]]
+==== 6.5.0 - 2021-10-04
+
+[float]
+===== Features
+
+* Add instrumentation for Azure Storage (blob/table/fileshare) and Azure Queue {pull}1316[#1316]
+
+[float]
+===== Bug fixes
+
+* Improve span coverage for `asyncpg` {pull}1328[#1328]
+* aiohttp: Correctly pass custom client to tracing middleware {pull}1345[#1345]
+* Fixed an issue with httpx instrumentation {pull}1337[#1337]
+* Fixed an issue with Django 4.0 removing a private method {pull}1347[#1347]
+
+
+[[release-notes-6.4.0]]
+==== 6.4.0 - 2021-08-31
+
+[float]
+===== Features
+
+* Rename the experimental `log_ecs_formatting` config to `log_ecs_reformatting` {pull}1300[#1300]
+* Add support for Prometheus histograms {pull}1165[#1165]
+
+[float]
+===== Bug fixes
+
+* Fixed cookie sanitization when Cookie is capitalized {pull}1301[#1301]
+* Fix a bug with exception capturing for bad UUIDs {pull}1304[#1304]
+* Fix potential errors in json serialization {pull}1203[#1203]
+* Fix an issue with certain aioredis commands {pull}1308[#1308]
+
+[[release-notes-6.3.3]]
+==== 6.3.3 - 2021-07-14
+
+[float]
+===== Bug fixes
+
+* ensure that the elasticsearch instrumentation handles DroppedSpans correctly {pull}1190[#1190]
+
+[[release-notes-6.3.2]]
+==== 6.3.2 - 2021-07-07
+
+[float]
+===== Bug fixes
+
+* Fix handling of non-http scopes in Starlette/FastAPI middleware {pull}1187[#1187]
+
+[[release-notes-6.3.1]]
+==== 6.3.1 - 2021/07/07
+
+[float]
+===== Bug fixes
+
+* Fix issue with Starlette/FastAPI hanging on startup {pull}1185[#1185]
+
+[[release-notes-6.3.0]]
+==== 6.3.0 - 2021/07/06
+
+[float]
+===== Features
+
+* Add additional context information about elasticsearch client requests {pull}1108[#1108]
+* Add `use_certifi` config option to allow users to disable `certifi` {pull}1163[#1163]
+
+[float]
+===== Bug fixes
+
+* Fix for Starlette 0.15.0 error collection {pull}1174[#1174]
+* Fix for Starlette static files {pull}1137[#1137]
+
+[[release-notes-6.2.3]]
+==== 6.2.3 - 2021/06/28
+
+[float]
+===== Bug fixes
+ * suppress the default_app_config attribute in Django 3.2+ {pull}1155[#1155]
+ * bump log level for multiple set_client calls to WARNING {pull}1164[#1164]
+ * fix issue with adding disttracing to SQS messages when dropping spans {pull}1170[#1170]
 
 [[release-notes-6.2.2]]
 ==== 6.2.2 - 2021/06/07

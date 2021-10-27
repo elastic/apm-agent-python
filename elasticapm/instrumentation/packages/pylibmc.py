@@ -65,7 +65,6 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
         destination = {
             "address": address,
             "port": port,
-            "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
         }
         with capture_span(
             wrapped_name,

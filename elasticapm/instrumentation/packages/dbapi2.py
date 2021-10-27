@@ -201,7 +201,7 @@ class CursorProxy(wrapt.ObjectProxy):
 
     def __init__(self, wrapped, destination_info=None):
         super(CursorProxy, self).__init__(wrapped)
-        self._self_destination_info = destination_info
+        self._self_destination_info = destination_info or {}
 
     def callproc(self, procname, params=None):
         return self._trace_sql(self.__wrapped__.callproc, procname, params, action=EXEC_ACTION)
@@ -237,6 +237,7 @@ class CursorProxy(wrapt.ObjectProxy):
             span_action=action,
             extra={"db": {"type": "sql", "statement": sql_string}, "destination": self._self_destination_info},
             skip_frames=1,
+            leaf=True,
         ) as span:
             if params is None:
                 result = method(sql)

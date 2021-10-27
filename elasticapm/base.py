@@ -41,6 +41,7 @@ import threading
 import time
 import warnings
 from copy import deepcopy
+from typing import Optional, Tuple
 
 import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
@@ -102,6 +103,8 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
+        # setting server_version here is mainly used for testing
+        self.server_version = inline.pop("server_version", None)
 
         self.check_python_version()
 
@@ -147,7 +150,7 @@ class Client(object):
             constants.EVENTS_API_PATH,
         )
         transport_class = import_string(self.config.transport_class)
-        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self._transport = transport_class(url=self._api_endpoint_url, client=self, **transport_kwargs)
         self.config.transport = self._transport
         self._thread_managers["transport"] = self._transport
 
@@ -197,7 +200,8 @@ class Client(object):
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         if self.config.prometheus_metrics:
             self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
-        self._thread_managers["metrics"] = self._metrics
+        if self.config.metrics_interval:
+            self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
             self._thread_managers["config"] = self.config
@@ -615,6 +619,20 @@ class Client(object):
         elif v < (3, 5):
             warnings.warn("The Elastic APM agent only supports Python 3.5+", DeprecationWarning)
 
+    def check_server_version(self, gte: Optional[Tuple[int]] = None, lte: Optional[Tuple[int]] = None) -> bool:
+        """
+        Check APM Server version against greater-or-equal and/or lower-or-equal limits, provided as tuples of integers.
+        If server_version is not set, always returns True.
+        :param gte: a tuple of ints describing the greater-or-equal limit, e.g. (7, 16)
+        :param lte: a tuple of ints describing the lower-or-equal limit, e.g. (7, 99)
+        :return: bool
+        """
+        if not self.server_version:
+            return True
+        gte = gte or (0,)
+        lte = lte or (2 ** 32,)  # let's assume APM Server version will never be greater than 2^32
+        return bool(gte <= self.server_version <= lte)
+
 
 class DummyClient(Client):
     """Sends messages into an empty void"""
@@ -631,5 +649,5 @@ def set_client(client):
     global CLIENT_SINGLETON
     if CLIENT_SINGLETON:
         logger = get_logger("elasticapm")
-        logger.debug("Client object is being set more than once")
+        logger.warning("Client object is being set more than once", stack_info=True)
     CLIENT_SINGLETON = client

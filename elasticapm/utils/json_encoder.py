@@ -52,7 +52,10 @@ class BetterJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if type(obj) in self.ENCODERS:
             return self.ENCODERS[type(obj)](obj)
-        return super(BetterJSONEncoder, self).default(obj)
+        try:
+            return super(BetterJSONEncoder, self).default(obj)
+        except TypeError:
+            return str(obj)
 
 
 def better_decoder(data):

@@ -40,6 +40,13 @@ from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.httpx, pytest.mark.asyncio]
 
+httpx_version = tuple(map(int, httpx.__version__.split(".")[:3]))
+
+if httpx_version < (0, 20):
+    allow_redirects = {"allow_redirects": False}
+else:
+    allow_redirects = {"follow_redirects": False}
+
 
 async def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
@@ -48,7 +55,7 @@ async def test_httpx_instrumentation(instrument, elasticapm_client, waiting_http
     elasticapm_client.begin_transaction("transaction.test")
     async with async_capture_span("test_request", "test"):
         async with httpx.AsyncClient() as client:
-            await client.get(url, allow_redirects=False)
+            await client.get(url, **allow_redirects)
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.events[TRANSACTION]
@@ -59,9 +66,9 @@ async def test_httpx_instrumentation(instrument, elasticapm_client, waiting_http
     assert spans[0]["outcome"] == "success"
     assert url == spans[0]["context"]["http"]["url"]
     assert spans[0]["context"]["destination"]["service"] == {
-        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "name": "",
         "resource": "127.0.0.1:%d" % parsed_url.port,
-        "type": "external",
+        "type": "",
     }
 
     headers = waiting_httpserver.requests[0].headers
@@ -84,7 +91,7 @@ async def test_httpx_instrumentation_string_url(instrument, elasticapm_client, w
     elasticapm_client.begin_transaction("transaction.test")
     async with async_capture_span("test_request", "test"):
         async with httpx.AsyncClient() as client:
-            await client.get(url, allow_redirects=False)
+            await client.get(url, **allow_redirects)
     elasticapm_client.end_transaction("MyView")
 
     transactions = elasticapm_client.events[TRANSACTION]
@@ -155,7 +162,7 @@ async def test_httpx_error(instrument, elasticapm_client, waiting_httpserver, st
     url = "http://{0}/hello_world".format(parsed_url.netloc)
     async with async_capture_span("test_name", "test_type"):
         async with httpx.AsyncClient() as client:
-            await client.get(url, allow_redirects=False)
+            await client.get(url, **allow_redirects)
 
     elasticapm_client.end_transaction("MyView")
 
@@ -168,3 +175,22 @@ async def test_httpx_error(instrument, elasticapm_client, waiting_httpserver, st
     assert spans[0]["context"]["http"]["url"] == url
     assert spans[0]["context"]["http"]["status_code"] == status_code
     assert spans[0]["outcome"] == "failure"
+
+
+async def test_httpx_streaming(instrument, elasticapm_client, waiting_httpserver):
+    # client.stream passes the request as a keyword argument to the instrumented method.
+    # This helps test that we can handle it both as an arg and a kwarg
+    # see https://github.com/elastic/apm-agent-python/issues/1336
+    elasticapm_client.begin_transaction("httpx-context-manager-client-streaming")
+    client = httpx.AsyncClient()
+    try:
+        async with client.stream("GET", url=waiting_httpserver.url) as response:
+            assert response
+    finally:
+        await client.aclose()
+        elasticapm_client.end_transaction("httpx-context-manager-client-streaming")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
