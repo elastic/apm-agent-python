@@ -44,6 +44,7 @@ from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func, nested_key, url_to_destination_resource
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.time import time_to_perf_counter
 
 __all__ = ("capture_span", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -92,7 +93,7 @@ class BaseSpan(object):
         self.outcome: Optional[str] = None
         self.compression_buffer: Optional[Union[Span, DroppedSpan]] = None
         self.compression_buffer_lock = threading.Lock()
-        self.start_time: float = start or _time_func()
+        self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
         self.duration: Optional[float] = None
         if labels:
@@ -164,6 +165,24 @@ class Transaction(BaseSpan):
         start: Optional[float] = None,
         sample_rate: Optional[float] = None,
     ):
+        """
+        tracer
+            Tracer object
+        transaction_type
+            Transaction type
+        trace_parent
+            TraceParent object representing the parent trace and trace state
+        is_sampled
+            Whether or not this transaction is sampled
+        start
+            Optional start timestamp. This is expected to be an epoch timestamp
+            in seconds (such as from `time.time()`). If it is not, it's recommended
+            that a `duration` is passed into the `end()` method.
+        sample_rate
+            Sample rate which was used to decide whether to sample this transaction.
+            This is reported to the APM server so that unsampled transactions can
+            be extrapolated.
+        """
         self.id = self.get_dist_tracing_id()
         if not trace_parent:
             trace_parent = TraceParent(
@@ -201,7 +220,7 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._transaction_metrics = None
-        super(Transaction, self).__init__()
+        super(Transaction, self).__init__(start=start)
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
