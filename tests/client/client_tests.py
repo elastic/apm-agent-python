@@ -860,3 +860,10 @@ def test_check_server_version(elasticapm_client):
     assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 16))
     assert not elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 13))
     assert not elasticapm_client.check_server_version(gte=(7, 16), lte=(7, 18))
+
+
+def test_backdating_transaction(elasticapm_client):
+    elasticapm_client.begin_transaction("test", start=time.time() - 1)
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert 1000 < transaction["duration"] < 2000
