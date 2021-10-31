@@ -80,29 +80,11 @@ def get_trace_parent(celery_task):
     return trace_parent
 
 
-def correlation_enabled_globally():
-    # TODO: need help checking client.config for CELERY_CORRELATION
-    return True
-
-
-def correlation_enabled_for_task(celery_task):
-    # We cannot set ["elasticapm"]["correlation"] in before_task_publish as we would
-    # override the choice made by the user, so we consider no value as True
-    enabled = True
-    with suppress(AttributeError, KeyError):
-        # Anything present in correlation means correlation is considered enabled
-        enabled = celery_task.request.headers["elasticapm"]["correlation"] is not False
-    return enabled
-
-
 def register_instrumentation(client):
     def begin_transaction(*args, **kwargs):
-        trace_parent = None
         task = kwargs["task"]
-        # User has to specifically tell when to not propagate trace ID
-        # When correlation is disabled globally, cannot enable it per task
-        if correlation_enabled_globally() and correlation_enabled_for_task(task):
-            trace_parent = get_trace_parent(task)
+
+        trace_parent = get_trace_parent(task)
         client.begin_transaction("celery", trace_parent=trace_parent)
 
     def end_transaction(task_id, task, *args, **kwargs):
