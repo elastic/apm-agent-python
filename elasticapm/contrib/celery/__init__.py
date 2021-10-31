@@ -60,13 +60,17 @@ def register_exception_tracking(client):
 
 
 def set_celery_headers(headers=None, **kwargs):
+    """
+    Add elasticapm specific information to celery headers
+    """
     headers = {} if headers is None else headers
 
     transaction = execution_context.get_transaction()
-    trace_parent = transaction.trace_parent
-    trace_parent_string = trace_parent.to_string()
+    if transaction is not None:
+        trace_parent = transaction.trace_parent
+        trace_parent_string = trace_parent.to_string()
 
-    headers.update({"elasticapm": {"trace_parent_string": trace_parent_string}})
+        headers.update({"elasticapm": {"trace_parent_string": trace_parent_string}})
 
 
 def get_trace_parent(celery_task):
