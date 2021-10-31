@@ -299,7 +299,8 @@ For a general guide on how to set up Django with Celery, head over to
 Celery's http://celery.readthedocs.org/en/latest/django/first-steps-with-django.html#django-first-steps[Django
 documentation].
 
-Elastic APM will automatically log errors from your celery tasks, and record performance data.
+Elastic APM will automatically log errors from your celery tasks, record performance data and keep the trace.id
+when the task is launched from an already started Elastic transaction.
 
 [float]
 [[django-logging-http-404-not-found-errors]]
