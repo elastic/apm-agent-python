@@ -241,7 +241,7 @@ class capture_serverless(object):
                 message_context["age"] = int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))
             if self.client.config.capture_body in ("transactions", "all") and "body" in record:
                 message_context["body"] = record["body"]
-            if self.client.config.capture_headers and record["messageAttributes"]:
+            if self.client.config.capture_headers and record.get("messageAttributes"):
                 message_context["headers"] = record["messageAttributes"]
         elif self.source == "sns":
             record = self.event["Records"][0]
@@ -267,7 +267,7 @@ class capture_serverless(object):
                 )
             if self.client.config.capture_body in ("transactions", "all") and "Message" in record["Sns"]:
                 message_context["body"] = record["Sns"]["Message"]
-            if self.client.config.capture_headers and record["Sns"]["MessageAttributes"]:
+            if self.client.config.capture_headers and record["Sns"].get("MessageAttributes"):
                 message_context["headers"] = record["Sns"]["MessageAttributes"]
         elif self.source == "s3":
             record = self.event["Records"][0]
