@@ -121,10 +121,13 @@ class capture_serverless(object):
         transaction_type = "request"
         transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
-        if "httpMethod" in self.event:  # API Gateway
+        self.httpmethod = self.event.get("requestContext", {}).get(
+            "httpMethod", self.event.get("requestContext", {}).get("http", {}).get("method")
+        )
+        if self.httpmethod:  # API Gateway
             self.source = "api"
             if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-                transaction_name = "{} {}".format(self.event["httpMethod"], os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+                transaction_name = "{} {}".format(self.httpmethod, os.environ["AWS_LAMBDA_FUNCTION_NAME"])
             else:
                 transaction_name = self.name
         elif "Records" in self.event and len(self.event["Records"]) == 1:
@@ -211,15 +214,19 @@ class capture_serverless(object):
         if self.source == "api":
             faas["trigger"]["type"] = "http"
             faas["trigger"]["request_id"] = self.event["requestContext"]["requestId"]
+            path = (
+                self.event["requestContext"].get("resourcePath")
+                or self.event["requestContext"]["http"]["path"].split(self.event["requestContext"]["stage"])[-1]
+            )
             service_context["origin"] = {
                 "name": "{} {}/{}".format(
-                    self.event["requestContext"]["httpMethod"],
-                    self.event["requestContext"]["resourcePath"],
+                    self.httpmethod,
+                    path,
                     self.event["requestContext"]["stage"],
                 )
             }
             service_context["origin"]["id"] = self.event["requestContext"]["apiId"]
-            service_context["origin"]["version"] = "2.0" if self.event["headers"]["Via"].startswith("2.0") else "1.0"
+            service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "api gateway"}
             cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
@@ -324,12 +331,15 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     result = {}
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
-    if "httpMethod" not in event:
+    method = event.get("requestContext", {}).get(
+        "httpMethod", event.get("requestContext", {}).get("http", {}).get("method")
+    )
+    if not method:
         # Not API Gateway
         return result
 
-    result["method"] = event["httpMethod"]
-    if event["httpMethod"] in constants.HTTP_WITH_BODY and "body" in event:
+    result["method"] = method
+    if method in constants.HTTP_WITH_BODY and "body" in event:
         body = event["body"]
         if capture_body:
             if event.get("isBase64Encoded"):
@@ -367,21 +377,23 @@ def get_url_dict(event):
     Reconstruct URL from API Gateway
     """
     headers = event.get("headers", {})
-    proto = headers.get("X-Forwarded-Proto", "https")
-    host = headers.get("Host", "")
-    path = event.get("path", "")
-    port = headers.get("X-Forwarded-Port")
+    protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
+    host = headers.get("Host", headers.get("host", ""))
     stage = "/" + event.get("requestContext", {}).get("stage", "")
+    path = event.get("path", event.get("rawPath", "").split(stage)[-1])
+    port = headers.get("X-Forwarded-Port", headers.get("x-forwarded-port"))
     query = ""
-    if event.get("queryStringParameters"):
+    if "rawQueryString" in event:
+        query = event["rawQueryString"]
+    elif event.get("queryStringParameters"):
         query = "?"
         for k, v in compat.iteritems(event["queryStringParameters"]):
             query += "{}={}".format(k, v)
-    url = proto + "://" + host + stage + path + query
+    url = protocol + "://" + host + stage + path + query
 
     url_dict = {
         "full": encoding.keyword_field(url),
-        "protocol": proto,
+        "protocol": protocol,
         "hostname": encoding.keyword_field(host),
         "pathname": encoding.keyword_field(stage + path),
     }
