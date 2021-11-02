@@ -63,9 +63,6 @@ class capture_serverless(object):
         @capture_serverless()
         def handler(event, context):
             return {"statusCode": r.status_code, "body": "Success!"}
-
-    Note: This is an experimental feature, and we may introduce breaking
-    changes in the future.
     """
 
     def __init__(self, name=None, **kwargs):

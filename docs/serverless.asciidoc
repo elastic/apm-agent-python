@@ -1,6 +1,8 @@
 [[lambda-support]]
 === AWS Lambda Support
 
+experimental::[]
+
 Incorporating Elastic APM into your AWS Lambda functions is easy!
 
 [float]
