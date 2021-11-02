@@ -393,6 +393,9 @@ class Transaction(BaseSpan):
             # only set parent_id if this transaction isn't the root
             if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
+        # faas context belongs top-level on the transaction
+        if "faas" in self.context:
+            result["faas"] = self.context.pop("faas")
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -954,7 +957,7 @@ def set_transaction_name(name, override=True):
 def set_transaction_result(result, override=True):
     """
     Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
-    HTTP requests, or "success"/"fail" for background tasks.
+    HTTP requests, or "success"/"failure" for background tasks.
 
     :param name: the name of the transaction
     :param override: if set to False, the name is only set if no name has been set before

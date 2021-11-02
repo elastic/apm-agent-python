@@ -28,6 +28,18 @@ endif::[]
 //
 //[float]
 //===== Bug fixes
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+
+
+[float]
+===== Bug fixes
+
+* Fix some context fields and metadata handling in AWS Lambda support {pull}1368[#1368]
 
 
 [[release-notes-6.x]]
