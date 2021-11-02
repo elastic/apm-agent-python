@@ -39,7 +39,7 @@ import time
 import elasticapm
 from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils import compat, encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
@@ -121,8 +121,8 @@ class capture_serverless(object):
         transaction_type = "request"
         transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
-        self.httpmethod = self.event.get("requestContext", {}).get(
-            "httpMethod", self.event.get("requestContext", {}).get("http", {}).get("method")
+        self.httpmethod = nested_key(self.event, "requestContext", "httpMethod") or nested_key(
+            self.event, "requestContext", "http", "method"
         )
         if self.httpmethod:  # API Gateway
             self.source = "api"
@@ -305,7 +305,7 @@ class capture_serverless(object):
         # This is the one piece of metadata that requires deep merging. We add it manually
         # here to avoid having to deep merge in _transport.add_metadata()
         if self.client._transport._metadata:
-            node_name = self.client._transport._metadata.get("service", {}).get("node", {}).get("name")
+            node_name = nested_key(self.client._transport._metadata, "service", "node", "name")
             if node_name:
                 metadata["service"]["node"]["name"] = node_name
 
@@ -331,9 +331,7 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     result = {}
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
-    method = event.get("requestContext", {}).get(
-        "httpMethod", event.get("requestContext", {}).get("http", {}).get("method")
-    )
+    method = nested_key(event, "requestContext", "httpMethod") or nested_key(event, "requestContext", "http", "method")
     if not method:
         # Not API Gateway
         return result
@@ -379,7 +377,7 @@ def get_url_dict(event):
     headers = event.get("headers", {})
     protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
     host = headers.get("Host", headers.get("host", ""))
-    stage = "/" + event.get("requestContext", {}).get("stage", "")
+    stage = "/" + (nested_key(event, "requestContext", "stage") or "")
     path = event.get("path", event.get("rawPath", "").split(stage)[-1])
     port = headers.get("X-Forwarded-Port", headers.get("x-forwarded-port"))
     query = ""
