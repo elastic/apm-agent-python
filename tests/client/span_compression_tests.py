@@ -30,7 +30,7 @@
 import pytest
 
 import elasticapm
-from elasticapm.conf.constants import SPAN
+from elasticapm.conf.constants import SPAN, TRANSACTION
 
 
 @pytest.mark.parametrize(
@@ -220,3 +220,36 @@ def test_buffer_is_reported_if_next_child_ineligible(elasticapm_client):
     elasticapm_client.end_transaction("test")
     spans = elasticapm_client.events[SPAN]
     assert len(spans) == 3
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"span_compression_same_kind_max_duration": "5ms", "span_compression_exact_match_max_duration": "5ms"}],
+    indirect=True,
+)
+def test_compressed_spans_not_counted(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span(
+        "test1",
+        span_type="a",
+        span_subtype="b",
+        span_action="c",
+        leaf=True,
+        duration=2,
+        extra={"destination": {"service": {"resource": "x"}}},
+    ) as span1:
+        pass
+    with elasticapm.capture_span(
+        "test2",
+        span_type="a",
+        span_subtype="b",
+        span_action="c",
+        leaf=True,
+        duration=3,
+        extra={"destination": {"service": {"resource": "x"}}},
+    ) as span2:
+        pass
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == transaction["span_count"]["started"] == 1

@@ -274,7 +274,6 @@ class Transaction(BaseSpan):
         elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span, context=context)
-            self._span_counter += 1
         else:
             span = Span(
                 transaction=self,
@@ -291,7 +290,6 @@ class Transaction(BaseSpan):
                 start=start,
             )
             span.frames = tracer.frames_collector_func()
-            self._span_counter += 1
         execution_context.set_span(span)
         return span
 
@@ -375,7 +373,7 @@ class Transaction(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "outcome": self.outcome,
             "sampled": self.is_sampled,
-            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
+            "span_count": {"started": self._span_counter, "dropped": self.dropped_spans},
         }
         if self._dropped_span_statistics:
             result["dropped_spans_stats"] = [
@@ -625,6 +623,7 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def report(self) -> None:
+        self.transaction._span_counter += 1
         self.tracer.queue_func(SPAN, self.to_dict())
 
     def try_to_compress(self, sibling: SpanType) -> bool:
