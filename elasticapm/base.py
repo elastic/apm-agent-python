@@ -52,6 +52,7 @@ from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, v
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
+from elasticapm.version import VERSION
 
 __all__ = ("Client",)
 
@@ -135,7 +136,7 @@ class Client(object):
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
-            "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+            "User-Agent": self.get_user_agent(),
         }
 
         transport_kwargs = {
@@ -418,6 +419,18 @@ class Client(object):
         else:
             self.logger.warning("Unknown value for CLOUD_PROVIDER, skipping cloud metadata: {}".format(provider))
             return {}
+
+    def get_user_agent(self) -> str:
+        """
+        Compiles the user agent, which will be added as a header to all requests
+        to the APM Server
+        """
+        if self.config.service_version:
+            return "apm-agent-python/{} ({} {})".format(
+                VERSION, self.config.service_name, self.config.service_version
+            ).encode("utf-8")
+        else:
+            return "apm-agent-python/{} ({})".format(VERSION, self.config.service_name).encode("utf-8")
 
     def build_metadata(self):
         data = {

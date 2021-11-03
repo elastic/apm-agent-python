@@ -297,7 +297,7 @@ def test_send(sending_elasticapm_client):
         "Content-Type": "application/x-ndjson",
         "Content-Encoding": "gzip",
         "Authorization": "Bearer %s" % sending_elasticapm_client.config.secret_token,
-        "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+        "User-Agent": "apm-agent-python/%s (myapp)" % elasticapm.version.VERSION,
     }
     seen_headers = dict(request.headers)
     for k, v in expected_headers.items():

@@ -30,11 +30,9 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.transport.base import Transport
 from elasticapm.utils import compat
-from elasticapm.version import VERSION
 
 
 class HTTPTransportBase(Transport):
@@ -65,7 +63,6 @@ class HTTPTransportBase(Transport):
         self._config_url = "".join((base, constants.AGENT_CONFIG_PATH, tail))
         self._server_info_url = "".join((base, constants.SERVER_INFO_PATH, tail))
         super(HTTPTransportBase, self).__init__(client, compress_level=compress_level, **kwargs)
-        self._headers["User-Agent"] = get_user_agent(self.client)
 
     def send(self, data):
         """
@@ -99,17 +96,6 @@ class HTTPTransportBase(Transport):
         elif self.client.config.secret_token:
             return {"Authorization": "Bearer " + self.client.config.secret_token}
         return {}
-
-
-def get_user_agent(client: Client) -> str:
-    """
-    Compiles the user agent, which will be added as a header to all requests
-    to the APM Server
-    """
-    if client.config.service_version:
-        return "apm-agent-python/{} ({} {})".format(VERSION, client.config.service_name, client.config.service_version)
-    else:
-        return "apm-agent-python/{} ({})".format(VERSION, client.config.service_name)
 
 
 # left for backwards compatibility
