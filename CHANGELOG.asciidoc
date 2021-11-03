@@ -29,6 +29,20 @@ endif::[]
 //[float]
 //===== Bug fixes
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+
+
+[float]
+===== Bug fixes
+
+* Update the `User-Agent` header to the new https://github.com/elastic/apm/pull/514[spec] {pull}1378[#1378]
+
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
