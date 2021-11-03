@@ -52,7 +52,6 @@ from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, v
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
-from elasticapm.version import VERSION
 
 __all__ = ("Client",)
 
@@ -427,10 +426,10 @@ class Client(object):
         """
         if self.config.service_version:
             return "apm-agent-python/{} ({} {})".format(
-                VERSION, self.config.service_name, self.config.service_version
+                elasticapm.VERSION, self.config.service_name, self.config.service_version
             ).encode("utf-8")
         else:
-            return "apm-agent-python/{} ({})".format(VERSION, self.config.service_name).encode("utf-8")
+            return "apm-agent-python/{} ({})".format(elasticapm.VERSION, self.config.service_name).encode("utf-8")
 
     def build_metadata(self):
         data = {
