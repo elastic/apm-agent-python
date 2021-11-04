@@ -245,9 +245,9 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["account"] = {"id": record["eventSourceARN"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = record["eventSourceARN"]
+            message_context["queue"] = {"name": record["eventSourceARN"]}
             if "SentTimestamp" in record["attributes"]:
-                message_context["age"] = int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))
+                message_context["age"] = {"ms": int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))}
             if self.client.config.capture_body in ("transactions", "all") and "body" in record:
                 message_context["body"] = record["body"]
             if self.client.config.capture_headers and record.get("messageAttributes"):
@@ -265,15 +265,17 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
             cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = record["Sns"]["TopicArn"]
+            message_context["queue"] = {"name": record["Sns"]["TopicArn"]}
             if "Timestamp" in record["Sns"]:
-                message_context["age"] = int(
-                    (
-                        datetime.datetime.now()
-                        - datetime.datetime.strptime(record["Sns"]["Timestamp"], r"%Y-%m-%dT%H:%M:%S.%fZ")
-                    ).total_seconds()
-                    * 1000
-                )
+                message_context["age"] = {
+                    "ms": int(
+                        (
+                            datetime.datetime.now()
+                            - datetime.datetime.strptime(record["Sns"]["Timestamp"], r"%Y-%m-%dT%H:%M:%S.%fZ")
+                        ).total_seconds()
+                        * 1000
+                    )
+                }
             if self.client.config.capture_body in ("transactions", "all") and "Message" in record["Sns"]:
                 message_context["body"] = record["Sns"]["Message"]
             if self.client.config.capture_headers and record["Sns"].get("MessageAttributes"):
