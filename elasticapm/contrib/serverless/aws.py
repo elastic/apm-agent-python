@@ -163,21 +163,13 @@ class capture_serverless(object):
                 lambda: get_data_from_response(self.response, capture_headers=self.client.config.capture_headers),
                 "response",
             )
-            status_code = None
-            try:
-                for k, v in self.response.items():
-                    if k.lower() == "statuscode":
-                        status_code = v
-                        break
-            except AttributeError:
-                pass
-            if status_code:
+            if "statusCode" in self.response:
                 try:
-                    result = "HTTP {}xx".format(int(status_code) // 100)
+                    result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
                     elasticapm.set_transaction_result(result, override=False)
                 except ValueError:
-                    # status_code couldn't be cast to an integer
-                    elasticapm.set_transaction_result("HTTP 2xx", override=False)
+                    logger.warning("Lambda function's statusCode was not formed as an int. Assuming 5xx result.")
+                    elasticapm.set_transaction_result("HTTP 5xx", override=False)
         if exc_val:
             self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
             if self.source == "api":
