@@ -235,7 +235,7 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["account"] = {"id": record["eventSourceARN"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = {"name": record["eventSourceARN"]}
+            message_context["queue"] = service_context["origin"]["name"]
             if "SentTimestamp" in record["attributes"]:
                 message_context["age"] = {"ms": int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))}
             if self.client.config.capture_body in ("transactions", "all") and "body" in record:
@@ -255,7 +255,7 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
             cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = {"name": record["Sns"]["TopicArn"]}
+            message_context["queue"] = service_context["origin"]["name"]
             if "Timestamp" in record["Sns"]:
                 message_context["age"] = {
                     "ms": int(
