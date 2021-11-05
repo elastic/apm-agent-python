@@ -178,6 +178,7 @@ class capture_serverless(object):
                     result = "HTTP {}xx".format(int(status_code) // 100)
                     elasticapm.set_transaction_result(result, override=False)
                 except ValueError:
+                    # status_code couldn't be cast to an integer
                     elasticapm.set_transaction_result("HTTP 2xx", override=False)
 
         if exc_val:
