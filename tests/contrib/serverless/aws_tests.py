@@ -119,17 +119,17 @@ def test_request_data(event_api, event_api2):
 def test_response_data():
     response = {"statusCode": 200, "headers": {"foo": "bar"}}
 
-    data = get_data_from_response(response, 200, capture_headers=True)
+    data = get_data_from_response(response, capture_headers=True)
 
     assert data["status_code"] == 200
     assert data["headers"]["foo"] == "bar"
 
-    data = get_data_from_response(response, 200, capture_headers=False)
+    data = get_data_from_response(response, capture_headers=False)
 
     assert data["status_code"] == 200
     assert "headers" not in data
 
-    data = get_data_from_response({}, None, capture_headers=False)
+    data = get_data_from_response({}, capture_headers=False)
 
     assert not data
 

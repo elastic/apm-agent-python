@@ -159,6 +159,10 @@ class capture_serverless(object):
         Transaction teardown
         """
         if self.response and isinstance(self.response, dict):
+            elasticapm.set_context(
+                lambda: get_data_from_response(self.response, capture_headers=self.client.config.capture_headers),
+                "response",
+            )
             status_code = None
             try:
                 for k, v in self.response.items():
@@ -167,12 +171,6 @@ class capture_serverless(object):
                         break
             except AttributeError:
                 pass
-            elasticapm.set_context(
-                lambda: get_data_from_response(
-                    self.response, status_code, capture_headers=self.client.config.capture_headers
-                ),
-                "response",
-            )
             if status_code:
                 try:
                     result = "HTTP {}xx".format(int(status_code) // 100)
@@ -180,7 +178,6 @@ class capture_serverless(object):
                 except ValueError:
                     # status_code couldn't be cast to an integer
                     elasticapm.set_transaction_result("HTTP 2xx", override=False)
-
         if exc_val:
             self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
             if self.source == "api":
@@ -361,14 +358,14 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     return result
 
 
-def get_data_from_response(response, status_code, capture_headers=True):
+def get_data_from_response(response, capture_headers=True):
     """
     Capture response data from lambda return
     """
     result = {}
 
-    if status_code:
-        result["status_code"] = status_code
+    if "statusCode" in response:
+        result["status_code"] = response["statusCode"]
 
     if capture_headers and "headers" in response:
         result["headers"] = response["headers"]
