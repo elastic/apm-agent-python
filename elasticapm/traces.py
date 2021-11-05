@@ -274,7 +274,6 @@ class Transaction(BaseSpan):
         elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span, context=context)
-            self._span_counter += 1
         else:
             span = Span(
                 transaction=self,
@@ -375,7 +374,7 @@ class Transaction(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "outcome": self.outcome,
             "sampled": self.is_sampled,
-            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
+            "span_count": {"started": self._span_counter, "dropped": self.dropped_spans},
         }
         if self._dropped_span_statistics:
             result["dropped_spans_stats"] = [
@@ -639,6 +638,7 @@ class Span(BaseSpan):
         self.composite["count"] += 1
         self.composite["sum"] += sibling.duration
         self.duration = sibling.ended_time - self.start_time
+        self.transaction._span_counter -= 1
         return True
 
     def _try_to_compress_composite(self, sibling: SpanType) -> Optional[str]:
