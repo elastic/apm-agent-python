@@ -867,3 +867,15 @@ def test_backdating_transaction(elasticapm_client):
     elasticapm_client.end_transaction()
     transaction = elasticapm_client.events[TRANSACTION][0]
     assert 1000 < transaction["duration"] < 2000
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({"service_version": "v2"}, "v2"),
+        ({"service_version": "v2 \x00"}, "v2 _"),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_user_agent(elasticapm_client, expected):
+    assert elasticapm_client.get_user_agent() == "apm-agent-python/unknown (myapp {})".format(expected)

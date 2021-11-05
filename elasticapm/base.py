@@ -36,6 +36,7 @@ import itertools
 import logging
 import os
 import platform
+import re
 import sys
 import threading
 import time
@@ -425,11 +426,10 @@ class Client(object):
         to the APM Server
         """
         if self.config.service_version:
-            return "apm-agent-python/{} ({} {})".format(
-                elasticapm.VERSION, self.config.service_name, self.config.service_version
-            ).encode("utf-8")
+            service_version = re.sub(r"[^\t _\x21-\x27\x2a-\x5b\x5d-\x7e\x80-\xff]", "_", self.config.service_version)
+            return "apm-agent-python/{} ({} {})".format(elasticapm.VERSION, self.config.service_name, service_version)
         else:
-            return "apm-agent-python/{} ({})".format(elasticapm.VERSION, self.config.service_name).encode("utf-8")
+            return "apm-agent-python/{} ({})".format(elasticapm.VERSION, self.config.service_name)
 
     def build_metadata(self):
         data = {
