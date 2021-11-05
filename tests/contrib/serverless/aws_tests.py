@@ -117,21 +117,22 @@ def test_request_data(event_api, event_api2):
 
 
 def test_response_data():
-    response = {"statusCode": 200, "headers": {"foo": "bar"}}
-
+    response = {"statusCode": "200", "headers": {"foo": "bar"}}
     data = get_data_from_response(response, capture_headers=True)
-
     assert data["status_code"] == 200
     assert data["headers"]["foo"] == "bar"
 
+    response["statusCode"] = 400
     data = get_data_from_response(response, capture_headers=False)
-
-    assert data["status_code"] == 200
+    assert data["status_code"] == 400
     assert "headers" not in data
 
     data = get_data_from_response({}, capture_headers=False)
-
     assert not data
+
+    response["statusCode"] = "2xx"
+    data = get_data_from_response(response, capture_headers=True)
+    assert data["status_code"] == 500
 
 
 def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):

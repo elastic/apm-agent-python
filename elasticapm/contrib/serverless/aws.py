@@ -65,7 +65,7 @@ class capture_serverless(object):
             return {"statusCode": r.status_code, "body": "Success!"}
     """
 
-    def __init__(self, name=None, **kwargs):
+    def __init__(self, name: str = None, **kwargs) -> None:
         self.name = name
         self.event = {}
         self.context = {}
@@ -189,7 +189,7 @@ class capture_serverless(object):
         except ValueError:
             logger.warning("flush timed out")
 
-    def set_metadata_and_context(self, coldstart):
+    def set_metadata_and_context(self, coldstart: bool) -> None:
         """
         Process the metadata and context fields for this request
         """
@@ -318,7 +318,7 @@ class capture_serverless(object):
         self.client._transport.add_metadata(metadata)
 
 
-def get_data_from_request(event, capture_body=False, capture_headers=True):
+def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:
     """
     Capture context data from API gateway event
     """
@@ -350,21 +350,26 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     return result
 
 
-def get_data_from_response(response, capture_headers=True):
+def get_data_from_response(response: dict, capture_headers: bool = True) -> dict:
     """
     Capture response data from lambda return
     """
     result = {}
 
     if "statusCode" in response:
-        result["status_code"] = response["statusCode"]
+        try:
+            result["status_code"] = int(response["statusCode"])
+        except ValueError:
+            # statusCode wasn't formed as an int
+            # we don't log here, as we will have already logged at transaction.result handling
+            result["status_code"] = 500
 
     if capture_headers and "headers" in response:
         result["headers"] = response["headers"]
     return result
 
 
-def get_url_dict(event):
+def get_url_dict(event: dict) -> dict:
     """
     Reconstruct URL from API Gateway
     """
