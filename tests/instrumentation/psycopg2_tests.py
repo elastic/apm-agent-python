@@ -165,10 +165,10 @@ def test_select_with_dollar_quotes_custom_token():
 
 
 def test_select_with_difficult_table_name():
-    sql_statement = u"""SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
+    sql_statement = """SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
     actual = extract_signature(sql_statement)
 
-    assert u"SELECT FROM myta\n-æøåble" == actual
+    assert "SELECT FROM myta\n-æøåble" == actual
 
 
 def test_select_subselect():
@@ -518,7 +518,7 @@ def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connec
     elasticapm_client = cast(TempStoreClient, get_client())
     elasticapm_client.end_transaction("test", "success")
     span = elasticapm_client.events[SPAN][0]
-    assert span["name"] == "psycopg2.connect localhost:5432"
+    assert span["name"] == f"psycopg2.connect {postgres_connection.info.host}:{postgres_connection.info.port}"
     assert span["action"] == "connect"
 
 
