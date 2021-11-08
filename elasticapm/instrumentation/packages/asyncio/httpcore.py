@@ -32,7 +32,7 @@ from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, execution_context
-from elasticapm.utils import default_ports, url_to_destination
+from elasticapm.utils import default_ports
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -82,7 +82,6 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
         signature = "%s %s" % (method.upper(), host)
 
         url = "%s://%s%s" % (scheme, host, url)
-        destination = url_to_destination(url)
 
         transaction = execution_context.get_transaction()
 
@@ -90,7 +89,7 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
             signature,
             span_type="external",
             span_subtype="http",
-            extra={"http": {"url": url}, "destination": destination},
+            extra={"http": {"url": url}},
             leaf=True,
         ) as span:
             # if httpcore has been called in a leaf span, this span might be a DroppedSpan.

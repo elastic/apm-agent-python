@@ -44,9 +44,9 @@ class AioHttpTraceParent(TraceParent):
         return ",".join(headers.getall(key, [])) or None
 
 
-def tracing_middleware(app):
+def tracing_middleware(app, client=None):
     async def handle_request(request, handler):
-        elasticapm_client = get_client()
+        elasticapm_client = get_client() if client is None else client
         should_trace = elasticapm_client and not elasticapm_client.should_ignore_url(request.path)
         if should_trace:
             trace_parent = AioHttpTraceParent.from_headers(request.headers)

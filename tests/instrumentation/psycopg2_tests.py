@@ -275,7 +275,7 @@ def test_destination(instrument, postgres_connection, elasticapm_client):
     assert span["context"]["destination"] == {
         "address": os.environ.get("POSTGRES_HOST", None),
         "port": default_ports["postgresql"],
-        "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+        "service": {"name": "", "resource": "postgresql", "type": ""},
     }
 
 

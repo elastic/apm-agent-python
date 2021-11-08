@@ -65,6 +65,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.graphql.GraphQLBackendInstrumentation",
     "elasticapm.instrumentation.packages.httpcore.HTTPCoreInstrumentation",
     "elasticapm.instrumentation.packages.httplib2.Httplib2Instrumentation",
+    "elasticapm.instrumentation.packages.azure.AzureInstrumentation",
 }
 
 if sys.version_info >= (3, 7):

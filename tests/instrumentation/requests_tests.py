@@ -61,9 +61,9 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
     assert url == spans[0]["context"]["http"]["url"]
     assert 200 == spans[0]["context"]["http"]["status_code"]
     assert spans[0]["context"]["destination"]["service"] == {
-        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "name": "",
         "resource": "127.0.0.1:%d" % parsed_url.port,
-        "type": "external",
+        "type": "",
     }
     assert spans[0]["outcome"] == "success"
 
@@ -99,9 +99,9 @@ def test_requests_instrumentation_error(instrument, elasticapm_client, waiting_h
     assert url == spans[0]["context"]["http"]["url"]
     assert status_code == spans[0]["context"]["http"]["status_code"]
     assert spans[0]["context"]["destination"]["service"] == {
-        "name": "http://127.0.0.1:%d" % parsed_url.port,
+        "name": "",
         "resource": "127.0.0.1:%d" % parsed_url.port,
-        "type": "external",
+        "type": "",
     }
     assert spans[0]["outcome"] == "failure"
 

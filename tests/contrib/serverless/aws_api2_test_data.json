@@ -1,0 +1,35 @@
+{
+    "version": "2.0",
+    "routeKey": "ANY /fetch_all",
+    "rawPath": "/dev/fetch_all",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "content-length": "0",
+        "host": "02plqthge2.execute-api.us-east-1.amazonaws.com",
+        "user-agent": "curl/7.64.1",
+        "x-amzn-trace-id": "Root=1-618018c5-763ade2b18f5734547c93e98",
+        "x-forwarded-for": "67.171.184.49",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "627286350134",
+        "apiId": "02plqthge2",
+        "domainName": "02plqthge2.execute-api.us-east-1.amazonaws.com",
+        "domainPrefix": "02plqthge2",
+        "http": {
+            "method": "GET",
+            "path": "/dev/fetch_all",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "67.171.184.49",
+            "userAgent": "curl/7.64.1"
+        },
+        "requestId": "IIjO5hs7PHcEPIA=",
+        "routeKey": "ANY /fetch_all",
+        "stage": "dev",
+        "time": "01/Nov/2021:16:41:41 +0000",
+        "timeEpoch": 1635784901594
+    },
+    "isBase64Encoded": false
+}

@@ -52,24 +52,21 @@ logger = get_logger("elasticapm.transport.http")
 
 
 class Transport(HTTPTransportBase):
-    def __init__(self, url, *args, **kwargs):
+    def __init__(self, url: str, *args, **kwargs) -> None:
         super(Transport, self).__init__(url, *args, **kwargs)
-        url_parts = compat.urlparse.urlparse(url)
         pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": self.ca_certs, "block": True}
-        if self._server_cert and url_parts.scheme != "http":
-            pool_kwargs.update(
-                {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
-            )
-            del pool_kwargs["ca_certs"]
-        elif not self._verify_server_cert and url_parts.scheme != "http":
-            pool_kwargs["cert_reqs"] = ssl.CERT_NONE
-            pool_kwargs["assert_hostname"] = False
-        proxies = compat.getproxies_environment()
-        proxy_url = proxies.get("https", proxies.get("http", None))
-        if proxy_url and not compat.proxy_bypass_environment(url_parts.netloc):
-            self.http = urllib3.ProxyManager(proxy_url, **pool_kwargs)
-        else:
-            self.http = urllib3.PoolManager(**pool_kwargs)
+        if url.startswith("https"):
+            if self._server_cert:
+                pool_kwargs.update(
+                    {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
+                )
+                del pool_kwargs["ca_certs"]
+            elif not self._verify_server_cert:
+                pool_kwargs["cert_reqs"] = ssl.CERT_NONE
+                pool_kwargs["assert_hostname"] = False
+        self._pool_kwargs = pool_kwargs
+        self._http = None
+        self._url = url
 
     def send(self, data):
         response = None
@@ -112,6 +109,22 @@ class Transport(HTTPTransportBase):
         finally:
             if response:
                 response.close()
+
+    @property
+    def http(self) -> urllib3.PoolManager:
+        if not self._http:
+            url_parts = compat.urlparse.urlparse(self._url)
+            proxies = compat.getproxies_environment()
+            proxy_url = proxies.get("https", proxies.get("http", None))
+            if proxy_url and not compat.proxy_bypass_environment(url_parts.netloc):
+                self._http = urllib3.ProxyManager(proxy_url, **self._pool_kwargs)
+            else:
+                self._http = urllib3.PoolManager(**self._pool_kwargs)
+        return self._http
+
+    def handle_fork(self) -> None:
+        # reset http pool to avoid sharing connections with the parent process
+        self._http = None
 
     def get_config(self, current_version=None, keys=None):
         """
@@ -188,7 +201,7 @@ class Transport(HTTPTransportBase):
             logger.warning("HTTP error while fetching server information: %s", str(e))
         except json.JSONDecodeError as e:
             logger.warning("JSON decoding error while fetching server information: %s", str(e))
-        except KeyError:
+        except (KeyError, TypeError):
             logger.warning("No version key found in server response: %s", response.data)
 
     @property

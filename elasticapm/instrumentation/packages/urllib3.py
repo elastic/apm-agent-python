@@ -33,7 +33,7 @@ import itertools
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import default_ports, url_to_destination
+from elasticapm.utils import default_ports
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -106,7 +106,6 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
         signature = method.upper() + " " + host
 
         url = "%s://%s%s" % (instance.scheme, host, url)
-        destination = url_to_destination(url)
 
         transaction = execution_context.get_transaction()
 
@@ -114,7 +113,7 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
             signature,
             span_type="external",
             span_subtype="http",
-            extra={"http": {"url": url}, "destination": destination},
+            extra={"http": {"url": url}},
             leaf=True,
         ) as span:
             # if urllib3 has been called in a leaf span, this span might be a DroppedSpan.
@@ -127,6 +126,8 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
                 span_id=parent_id, trace_options=TracingOptions(recorded=True)
             )
             args, kwargs = update_headers(args, kwargs, instance, transaction, trace_parent)
+            if leaf_span:
+                leaf_span.dist_tracing_propagated = True
             response = wrapped(*args, **kwargs)
             if response:
                 if span.context:

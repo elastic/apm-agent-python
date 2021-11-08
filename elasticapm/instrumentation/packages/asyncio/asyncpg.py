@@ -68,7 +68,7 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
         destination_info = {
             "address": kwargs.get("host", "localhost"),
             "port": int(kwargs.get("port", default_ports.get("postgresql"))),
-            "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+            "service": {"name": "", "resource": "postgresql", "type": ""},
         }
         context["destination"] = destination_info
         async with async_capture_span(
