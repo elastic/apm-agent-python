@@ -90,10 +90,10 @@ def tracing_middleware(app):
                 elasticapm.set_transaction_outcome(http_status_code=exc.status_code, override=False)
                 elasticapm.set_context(
                     lambda: get_data_from_response(
-                        exc,
+                        exc,  # noqa: F821
                         elasticapm_client.config,
-                        constants.ERROR if exc.status_code >= 500 else constants.TRANSACTION,
-                    ),  # noqa: F821
+                        constants.ERROR if exc.status_code >= 500 else constants.TRANSACTION,  # noqa: F821
+                    ),
                     "response",
                 )
                 if exc.status_code >= 500:
@@ -101,7 +101,7 @@ def tracing_middleware(app):
                         context={"request": get_data_from_request(request, elasticapm_client.config, constants.ERROR)}
                     )
             raise
-        except Exception as exc:
+        except Exception:
             if elasticapm_client:
                 elasticapm.set_transaction_result("HTTP 5xx", override=False)
                 elasticapm.set_transaction_outcome(http_status_code=500, override=False)
