@@ -39,6 +39,7 @@ endif::[]
 ===== Bug fixes
 * Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
 * Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
+* Fix `aiohttp` exception handling to allow for non-500 responses including `HTTPOk` {pull}1384[#1384]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
