@@ -53,7 +53,9 @@ from elasticapm.utils.encoding import enforce_label_format, keyword_field, short
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 
-__all__ = ("Client",)
+__all__ = (
+    'Client',
+)
 
 CLIENT_SINGLETON = None
 
