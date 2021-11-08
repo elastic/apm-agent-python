@@ -203,6 +203,10 @@ def elasticapm_client(request):
 
 @pytest.fixture()
 def elasticapm_transaction(elasticapm_client):
+    """
+    Useful fixture if spans from other fixtures should be captured.
+    This can be achieved by listing this fixture first.
+    """
     transaction = elasticapm_client.begin_transaction("test")
     yield transaction
 

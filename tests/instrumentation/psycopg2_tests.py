@@ -514,6 +514,7 @@ def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_cli
 
 @pytest.mark.integrationtest
 def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connection):
+    # elastciapm_client.events is only available on `TempStoreClient`, this keeps the type checkers happy
     elasticapm_client = cast(TempStoreClient, get_client())
     elasticapm_client.end_transaction("test", "success")
     span = elasticapm_client.events[SPAN][0]
