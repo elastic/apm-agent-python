@@ -521,7 +521,17 @@ def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connec
     assert span["action"] == "connect"
 
 
-def test_multiple_hosts():
-    host, port = get_destination_info("localhost,foo.bar", "5432,1234")
-    assert host == "localhost"
-    assert port == 5432
+@pytest.mark.parametrize(
+    "host_in,port_in,expected_host_out,expected_port_out",
+    (
+        (None, None, "localhost", 5432),
+        (None, 5432, "localhost", 5432),
+        ("localhost", "5432", "localhost", 5432),
+        ("foo.bar", "5432", "foo.bar", 5432),
+        ("localhost,foo.bar", "5432,1234", "localhost", 5432),  # multiple hosts
+    ),
+)
+def test_get_destination(host_in, port_in, expected_host_out, expected_port_out):
+    host, port = get_destination_info(host_in, port_in)
+    assert host == expected_host_out
+    assert port == expected_port_out

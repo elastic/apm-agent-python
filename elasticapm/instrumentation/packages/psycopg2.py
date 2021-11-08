@@ -142,7 +142,8 @@ def get_destination_info(host: Optional[str], port: Union[None, str, int]) -> tu
     if port:
         port = str(port)
         if "," in port:  # multiple ports defined, take first
-            port = int(port.split(",")[0])
+            port = port.split(",")[0]
+        port = int(port)
     else:
         port = default_ports.get("postgresql")
     return host, port
