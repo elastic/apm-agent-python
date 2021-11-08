@@ -29,6 +29,17 @@ endif::[]
 //[float]
 //===== Bug fixes
 
+=== Unreleased
+
+//[float]
+//===== Features
+
+
+[float]
+===== Bug fixes
+* Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
+* Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
@@ -39,7 +50,6 @@ endif::[]
 ===== Bug fixes
 
 * Fix some context fields and metadata handling in AWS Lambda support {pull}1368[#1368]
-* Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
 
 [[release-notes-6.6.0]]
 ==== 6.6.0 - 2021-10-18
