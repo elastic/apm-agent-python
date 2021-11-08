@@ -213,8 +213,8 @@ class capture_serverless(object):
             service_context["origin"] = {
                 "name": "{} {}/{}".format(
                     self.httpmethod,
-                    path,
                     self.event["requestContext"]["stage"],
+                    path,
                 )
             }
             service_context["origin"]["id"] = self.event["requestContext"]["apiId"]
