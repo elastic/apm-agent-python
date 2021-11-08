@@ -144,7 +144,7 @@ def test_get(app, elasticapm_client):
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
     assert span["name"] == "test"
 
@@ -178,7 +178,7 @@ def test_post(app, elasticapm_client):
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
     assert request["method"] == "POST"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert request["body"] == "foo=bar"
 
     assert span["name"] == "test"
@@ -208,7 +208,7 @@ def test_exception(app, elasticapm_client):
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert transaction["context"]["response"]["status_code"] == 500
 
     assert len(elasticapm_client.events[constants.ERROR]) == 1
@@ -419,7 +419,7 @@ def test_static_files_only(app_static_files_only, elasticapm_client):
     assert transaction["context"]["request"]["url"]["pathname"] == "/tmp/" + file_name
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
 
 def test_static_files_only_file_notfound(app_static_files_only, elasticapm_client):
@@ -449,7 +449,7 @@ def test_static_files_only_file_notfound(app_static_files_only, elasticapm_clien
     assert transaction["context"]["request"]["url"]["pathname"] == "/tmp/whatever"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
 
 def test_make_client_with_config():
