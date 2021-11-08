@@ -35,6 +35,7 @@ import json
 import os
 import platform
 import time
+from typing import Optional
 
 import elasticapm
 from elasticapm.base import Client, get_client
@@ -65,7 +66,7 @@ class capture_serverless(object):
             return {"statusCode": r.status_code, "body": "Success!"}
     """
 
-    def __init__(self, name: str = None, **kwargs) -> None:
+    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
         self.name = name
         self.event = {}
         self.context = {}
