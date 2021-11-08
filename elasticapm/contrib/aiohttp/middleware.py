@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import aiohttp
-from aiohttp.web import HTTPException, Response, middleware
+from aiohttp.web import HTTPException, middleware
 
 import elasticapm
 from elasticapm import get_client
