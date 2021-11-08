@@ -641,11 +641,11 @@ class DummyClient(Client):
         return None
 
 
-def get_client():
+def get_client() -> Client:
     return CLIENT_SINGLETON
 
 
-def set_client(client):
+def set_client(client: Client):
     global CLIENT_SINGLETON
     if CLIENT_SINGLETON:
         logger = get_logger("elasticapm")

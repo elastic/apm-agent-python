@@ -31,12 +31,15 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+from typing import cast
 
 import pytest
 
-from elasticapm.conf.constants import TRANSACTION
-from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm import get_client
+from elasticapm.conf.constants import SPAN, TRANSACTION
+from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature, get_destination_info
 from elasticapm.utils import default_ports
+from tests.fixtures import TempStoreClient
 
 psycopg2 = pytest.importorskip("psycopg2")
 
@@ -507,3 +510,18 @@ def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_cli
         spans = elasticapm_client.spans_for_transaction(transactions[0])
         assert spans[0]["name"] == "INSERT INTO test"
         assert len(spans[0]["context"]["db"]["statement"]) == 10000, spans[0]["context"]["db"]["statement"]
+
+
+@pytest.mark.integrationtest
+def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connection):
+    elasticapm_client = cast(TempStoreClient, get_client())
+    elasticapm_client.end_transaction("test", "success")
+    span = elasticapm_client.events[SPAN][0]
+    assert span["name"] == "psycopg2.connect localhost:5432"
+    assert span["action"] == "connect"
+
+
+def test_multiple_hosts():
+    host, port = get_destination_info("localhost,foo.bar", "5432,1234")
+    assert host == "localhost"
+    assert port == 5432

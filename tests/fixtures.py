@@ -202,6 +202,12 @@ def elasticapm_client(request):
 
 
 @pytest.fixture()
+def elasticapm_transaction(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    yield transaction
+
+
+@pytest.fixture()
 def elasticapm_client_log_file(request):
     original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
