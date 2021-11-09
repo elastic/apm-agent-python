@@ -118,7 +118,7 @@ class DjangoClient(Client):
         result = {
             "env": dict(get_environ(request.META)),
             "method": request.method,
-            "socket": {"remote_address": request.META.get("REMOTE_ADDR"), "encrypted": request.is_secure()},
+            "socket": {"remote_address": request.META.get("REMOTE_ADDR")},
             "cookies": dict(request.COOKIES),
         }
         if self.config.capture_headers:

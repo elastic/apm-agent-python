@@ -126,7 +126,7 @@ async def test_get(app, base_url, http_client):
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
     assert span["name"] == "test"
 
@@ -148,7 +148,7 @@ async def test_exception(app, base_url, http_client):
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert transaction["context"]["response"]["status_code"] == 500
 
     assert len(elasticapm_client.events[constants.ERROR]) == 1
@@ -195,7 +195,7 @@ async def test_render(app, base_url, http_client):
     assert transaction["span_count"]["started"] == 2
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
     span = spans[0]
     assert span["name"] == "test"

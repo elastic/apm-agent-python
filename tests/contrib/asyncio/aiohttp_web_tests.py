@@ -93,7 +93,7 @@ async def test_get(aiohttp_client, aioeapm):
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
     request["method"] == "GET"
-    request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    request["socket"] == {"remote_address": "127.0.0.1"}
 
     assert span["name"] == "test"
 
@@ -138,7 +138,7 @@ async def test_exception(aiohttp_client, aioeapm, url, exception):
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert transaction["context"]["response"]["status_code"] == 500
 
     assert len(elasticapm_client.events[constants.ERROR]) == 1
@@ -166,7 +166,7 @@ async def test_http_exception_below_500(aiohttp_client, aioeapm):
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert transaction["context"]["response"]["status_code"] == 200
 
     assert len(elasticapm_client.events[constants.ERROR]) == 0

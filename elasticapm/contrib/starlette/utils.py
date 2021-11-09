@@ -50,7 +50,7 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
     """
     result = {
         "method": request.method,
-        "socket": {"remote_address": _get_client_ip(request), "encrypted": request.url.is_secure},
+        "socket": {"remote_address": _get_client_ip(request)},
         "cookies": request.cookies,
     }
     if config.capture_headers:
