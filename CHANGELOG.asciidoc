@@ -42,8 +42,15 @@ endif::[]
 
 * Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
 * Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
+* Fix an issue with psycopg2 instrumentation when multiple hosts are defined {pull}1386[#1386]
 * Update the `User-Agent` header to the new https://github.com/elastic/apm/pull/514[spec] {pull}1378[#1378]
 * Improve status_code handling in AWS Lambda integration {pull}1382[#1382]
+* Fix `aiohttp` exception handling to allow for non-500 responses including `HTTPOk` {pull}1384[#1384]
+
+[float]
+===== Other
+
+* Remove unused `http.request.socket.encrypted` context field {pull}1332[#1332]
 
 
 [[release-notes-6.x]]
