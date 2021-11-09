@@ -44,6 +44,7 @@ endif::[]
 * Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
 * Update the `User-Agent` header to the new https://github.com/elastic/apm/pull/514[spec] {pull}1378[#1378]
 * Improve status_code handling in AWS Lambda integration {pull}1382[#1382]
+* Fix `aiohttp` exception handling to allow for non-500 responses including `HTTPOk` {pull}1384[#1384]
 
 
 [[release-notes-6.x]]
