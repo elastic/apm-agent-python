@@ -51,6 +51,7 @@ endif::[]
 ===== Other
 
 * Remove unused `http.request.socket.encrypted` context field {pull}1332[#1332]
+* Remove unused transaction metrics (APM Server handles these metrics instead) {pull}1388[#1388]
 
 
 [[release-notes-6.x]]

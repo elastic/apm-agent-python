@@ -214,23 +214,10 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._breakdown = None
-        try:
-            self._transaction_metrics = self.tracer._agent._metrics.get_metricset(
-                "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-            )
-        except (LookupError, AttributeError):
-            self._transaction_metrics = None
         super(Transaction, self).__init__(start=start)
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
-        if self._transaction_metrics:
-            self._transaction_metrics.timer(
-                "transaction.duration",
-                reset_on_collect=True,
-                unit="us",
-                **{"transaction.name": self.name, "transaction.type": self.transaction_type},
-            ).update(int(self.duration * 1000000))
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -246,7 +233,6 @@ class Transaction(BaseSpan):
                 )
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
-                self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
                 self._breakdown.timer(
                     "span.self_time",
                     reset_on_collect=True,
