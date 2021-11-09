@@ -166,7 +166,7 @@ async def test_http_exception_below_500(aiohttp_client, aioeapm):
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert transaction["context"]["response"]["status_code"] == 200
 
     assert len(elasticapm_client.events[constants.ERROR]) == 0
