@@ -518,7 +518,8 @@ def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connec
     elasticapm_client = cast(TempStoreClient, get_client())
     elasticapm_client.end_transaction("test", "success")
     span = elasticapm_client.events[SPAN][0]
-    assert span["name"] == f"psycopg2.connect {postgres_connection.info.host}:{postgres_connection.info.port}"
+    host = os.environ.get("POSTGRES_HOST", "localhost")
+    assert span["name"] == f"psycopg2.connect {host}:5432"
     assert span["action"] == "connect"
 
 
