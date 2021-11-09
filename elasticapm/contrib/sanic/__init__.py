@@ -86,7 +86,7 @@ class ElasticAPM:
         "SECRET_TOKEN": "supersecrettokenstuff",
     })
 
-    Pass a pre-build Clinet instance to the APM Middleware::
+    Pass a pre-build Client instance to the APM Middleware::
 
     >>> apm = ElasticAPM(app=app, client=Client())
 
