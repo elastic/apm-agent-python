@@ -352,13 +352,13 @@ def test_set_transaction_name(elasticapm_client):
 
     elasticapm_client.begin_transaction("test")
 
-    elasticapm.set_transaction_name("another_name")
+    elasticapm.set_transaction_name(["another_name"])
 
     elasticapm_client.end_transaction("test_name", 200)
 
     transactions = elasticapm_client.events[TRANSACTION]
     assert transactions[0]["name"] == "test_name"
-    assert transactions[1]["name"] == "another_name"
+    assert transactions[1]["name"] == "['another_name']"
 
 
 def test_set_transaction_custom_data(elasticapm_client):
