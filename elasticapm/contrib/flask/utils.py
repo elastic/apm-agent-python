@@ -40,7 +40,7 @@ def get_data_from_request(request, config, event_type):
     result = {
         "env": dict(get_environ(request.environ)),
         "method": request.method,
-        "socket": {"remote_address": request.environ.get("REMOTE_ADDR"), "encrypted": request.is_secure},
+        "socket": {"remote_address": request.environ.get("REMOTE_ADDR")},
         "cookies": request.cookies,
     }
     if config.capture_headers:

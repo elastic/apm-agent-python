@@ -38,7 +38,7 @@ from elasticapm.utils import compat, get_url_dict
 def get_data_from_request(request: Request, config: Config, event_type: str):
     result = {
         "method": request.method,
-        "socket": {"remote_address": request.remote, "encrypted": request.secure},
+        "socket": {"remote_address": request.remote},
         "cookies": dict(request.cookies),
     }
     if config.capture_headers:

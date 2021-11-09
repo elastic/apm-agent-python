@@ -198,6 +198,19 @@ def starmatch_to_regex(pattern: str) -> Pattern:
 
 
 def nested_key(d: dict, *args):
+    """
+    Traverses a dictionary for nested keys. Returns `None` if the at any point
+    in the traversal a key cannot be found.
+
+    Example:
+
+        >>> from elasticapm.utils import nested_key
+        >>> d = {"a": {"b": {"c": 0}}}
+        >>> nested_key(d, "a", "b", "c")
+        0
+        >>> nested_key(d, "a", "b", "d")
+        None
+    """
     for arg in args:
         try:
             d = d[arg]

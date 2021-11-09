@@ -9,6 +9,7 @@ To get you off the ground, we’ve prepared guides for setting up the Agent with
  * <<tornado-support,Tornado>>
  * <<starlette-support,Starlette/FastAPI>>
  * <<sanic-support,Sanic>>
+ * <<lambda-support,AWS Lambda>>
 
 For custom instrumentation, see <<instrumenting-custom-code, Instrumenting Custom Code>>.
 
@@ -21,3 +22,5 @@ include::./aiohttp-server.asciidoc[]
 include::./tornado.asciidoc[]
 
 include::./starlette.asciidoc[]
+
+include::./serverless.asciidoc[]

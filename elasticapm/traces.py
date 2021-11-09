@@ -214,23 +214,10 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._breakdown = None
-        try:
-            self._transaction_metrics = self.tracer._agent._metrics.get_metricset(
-                "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-            )
-        except (LookupError, AttributeError):
-            self._transaction_metrics = None
         super(Transaction, self).__init__(start=start)
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
-        if self._transaction_metrics:
-            self._transaction_metrics.timer(
-                "transaction.duration",
-                reset_on_collect=True,
-                unit="us",
-                **{"transaction.name": self.name, "transaction.type": self.transaction_type},
-            ).update(int(self.duration * 1000000))
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -246,7 +233,6 @@ class Transaction(BaseSpan):
                 )
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
-                self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
                 self._breakdown.timer(
                     "span.self_time",
                     reset_on_collect=True,
@@ -274,7 +260,6 @@ class Transaction(BaseSpan):
         elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span, context=context)
-            self._span_counter += 1
         else:
             span = Span(
                 transaction=self,
@@ -375,7 +360,7 @@ class Transaction(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "outcome": self.outcome,
             "sampled": self.is_sampled,
-            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
+            "span_count": {"started": self._span_counter, "dropped": self.dropped_spans},
         }
         if self._dropped_span_statistics:
             result["dropped_spans_stats"] = [
@@ -393,6 +378,9 @@ class Transaction(BaseSpan):
             # only set parent_id if this transaction isn't the root
             if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
+        # faas context belongs top-level on the transaction
+        if "faas" in self.context:
+            result["faas"] = self.context.pop("faas")
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -636,6 +624,7 @@ class Span(BaseSpan):
         self.composite["count"] += 1
         self.composite["sum"] += sibling.duration
         self.duration = sibling.ended_time - self.start_time
+        self.transaction._span_counter -= 1
         return True
 
     def _try_to_compress_composite(self, sibling: SpanType) -> Optional[str]:
@@ -954,7 +943,7 @@ def set_transaction_name(name, override=True):
 def set_transaction_result(result, override=True):
     """
     Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
-    HTTP requests, or "success"/"fail" for background tasks.
+    HTTP requests, or "success"/"failure" for background tasks.
 
     :param result: Details of the transaction result that should be set
     :param override: if set to False, the name is only set if no name has been set before

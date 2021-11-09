@@ -35,11 +35,12 @@ import json
 import os
 import platform
 import time
+from typing import Optional
 
 import elasticapm
 from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding, get_name_from_func
+from elasticapm.utils import compat, encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
@@ -63,12 +64,9 @@ class capture_serverless(object):
         @capture_serverless()
         def handler(event, context):
             return {"statusCode": r.status_code, "body": "Success!"}
-
-    Note: This is an experimental feature, and we may introduce breaking
-    changes in the future.
     """
 
-    def __init__(self, name=None, **kwargs):
+    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
         self.name = name
         self.event = {}
         self.context = {}
@@ -79,8 +77,6 @@ class capture_serverless(object):
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"
-        # TODO this can probably be removed once the extension proxies the serverinfo endpoint
-        kwargs["server_version"] = (8, 0, 0)
         if "service_name" not in kwargs:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 
@@ -123,10 +119,13 @@ class capture_serverless(object):
         transaction_type = "request"
         transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
-        if "httpMethod" in self.event:  # API Gateway
+        self.httpmethod = nested_key(self.event, "requestContext", "httpMethod") or nested_key(
+            self.event, "requestContext", "http", "method"
+        )
+        if self.httpmethod:  # API Gateway
             self.source = "api"
             if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-                transaction_name = "{} {}".format(self.event["httpMethod"], os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+                transaction_name = "{} {}".format(self.httpmethod, os.environ["AWS_LAMBDA_FUNCTION_NAME"])
             else:
                 transaction_name = self.name
         elif "Records" in self.event and len(self.event["Records"]) == 1:
@@ -160,25 +159,27 @@ class capture_serverless(object):
         """
         Transaction teardown
         """
-        if exc_val:
-            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
-
         if self.response and isinstance(self.response, dict):
             elasticapm.set_context(
                 lambda: get_data_from_response(self.response, capture_headers=self.client.config.capture_headers),
                 "response",
             )
-            status_code = None
-            try:
-                for k, v in self.response.items():
-                    if k.lower() == "statuscode":
-                        status_code = v
-                        break
-            except AttributeError:
-                pass
-            if status_code:
-                result = "HTTP {}xx".format(int(status_code) // 100)
-                elasticapm.set_transaction_result(result, override=False)
+            if "statusCode" in self.response:
+                try:
+                    result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
+                    elasticapm.set_transaction_result(result, override=False)
+                except ValueError:
+                    logger.warning("Lambda function's statusCode was not formed as an int. Assuming 5xx result.")
+                    elasticapm.set_transaction_result("HTTP 5xx", override=False)
+        if exc_val:
+            self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
+            if self.source == "api":
+                elasticapm.set_transaction_result("HTTP 5xx", override=False)
+                elasticapm.set_transaction_outcome(http_status_code=500, override=False)
+                elasticapm.set_context({"status_code": 500}, "response")
+            else:
+                elasticapm.set_transaction_result("failure", override=False)
+                elasticapm.set_transaction_outcome(outcome="failure", override=False)
 
         self.client.end_transaction()
 
@@ -189,7 +190,7 @@ class capture_serverless(object):
         except ValueError:
             logger.warning("flush timed out")
 
-    def set_metadata_and_context(self, coldstart):
+    def set_metadata_and_context(self, coldstart: bool) -> None:
         """
         Process the metadata and context fields for this request
         """
@@ -206,15 +207,19 @@ class capture_serverless(object):
         if self.source == "api":
             faas["trigger"]["type"] = "http"
             faas["trigger"]["request_id"] = self.event["requestContext"]["requestId"]
+            path = (
+                self.event["requestContext"].get("resourcePath")
+                or self.event["requestContext"]["http"]["path"].split(self.event["requestContext"]["stage"])[-1]
+            )
             service_context["origin"] = {
                 "name": "{} {}/{}".format(
-                    self.event["requestContext"]["httpMethod"],
-                    self.event["requestContext"]["resourcePath"],
+                    self.httpmethod,
                     self.event["requestContext"]["stage"],
+                    path,
                 )
             }
             service_context["origin"]["id"] = self.event["requestContext"]["apiId"]
-            service_context["origin"]["version"] = "2.0" if self.event["headers"]["Via"].startswith("2.0") else "1.0"
+            service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "api gateway"}
             cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
@@ -231,12 +236,12 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["account"] = {"id": record["eventSourceARN"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = record["eventSourceARN"]
+            message_context["queue"] = service_context["origin"]["name"]
             if "SentTimestamp" in record["attributes"]:
-                message_context["age"] = int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))
+                message_context["age"] = {"ms": int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))}
             if self.client.config.capture_body in ("transactions", "all") and "body" in record:
                 message_context["body"] = record["body"]
-            if self.client.config.capture_headers and record["messageAttributes"]:
+            if self.client.config.capture_headers and record.get("messageAttributes"):
                 message_context["headers"] = record["messageAttributes"]
         elif self.source == "sns":
             record = self.event["Records"][0]
@@ -251,18 +256,20 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
             cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = record["Sns"]["TopicArn"]
+            message_context["queue"] = service_context["origin"]["name"]
             if "Timestamp" in record["Sns"]:
-                message_context["age"] = int(
-                    (
-                        datetime.datetime.now()
-                        - datetime.datetime.strptime(record["Sns"]["Timestamp"], r"%Y-%m-%dT%H:%M:%S.%fZ")
-                    ).total_seconds()
-                    * 1000
-                )
+                message_context["age"] = {
+                    "ms": int(
+                        (
+                            datetime.datetime.now()
+                            - datetime.datetime.strptime(record["Sns"]["Timestamp"], r"%Y-%m-%dT%H:%M:%S.%fZ")
+                        ).total_seconds()
+                        * 1000
+                    )
+                }
             if self.client.config.capture_body in ("transactions", "all") and "Message" in record["Sns"]:
                 message_context["body"] = record["Sns"]["Message"]
-            if self.client.config.capture_headers and record["Sns"]["MessageAttributes"]:
+            if self.client.config.capture_headers and record["Sns"].get("MessageAttributes"):
                 message_context["headers"] = record["Sns"]["MessageAttributes"]
         elif self.source == "s3":
             record = self.event["Records"][0]
@@ -276,8 +283,6 @@ class capture_serverless(object):
             cloud_context["origin"]["service"] = {"name": "s3"}
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["provider"] = "aws"
-
-        metadata["faas"] = faas
 
         metadata["service"] = {}
         metadata["service"]["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
@@ -295,7 +300,7 @@ class capture_serverless(object):
         # This is the one piece of metadata that requires deep merging. We add it manually
         # here to avoid having to deep merge in _transport.add_metadata()
         if self.client._transport._metadata:
-            node_name = self.client._transport._metadata.get("service", {}).get("node", {}).get("name")
+            node_name = nested_key(self.client._transport._metadata, "service", "node", "name")
             if node_name:
                 metadata["service"]["node"]["name"] = node_name
 
@@ -307,24 +312,27 @@ class capture_serverless(object):
 
         elasticapm.set_context(cloud_context, "cloud")
         elasticapm.set_context(service_context, "service")
+        # faas doesn't actually belong in context, but we handle this in to_dict
+        elasticapm.set_context(faas, "faas")
         if message_context:
             elasticapm.set_context(service_context, "message")
         self.client._transport.add_metadata(metadata)
 
 
-def get_data_from_request(event, capture_body=False, capture_headers=True):
+def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:
     """
     Capture context data from API gateway event
     """
     result = {}
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
-    if "httpMethod" not in event:
+    method = nested_key(event, "requestContext", "httpMethod") or nested_key(event, "requestContext", "http", "method")
+    if not method:
         # Not API Gateway
         return result
 
-    result["method"] = event["httpMethod"]
-    if event["httpMethod"] in constants.HTTP_WITH_BODY and "body" in event:
+    result["method"] = method
+    if method in constants.HTTP_WITH_BODY and "body" in event:
         body = event["body"]
         if capture_body:
             if event.get("isBase64Encoded"):
@@ -343,40 +351,47 @@ def get_data_from_request(event, capture_body=False, capture_headers=True):
     return result
 
 
-def get_data_from_response(response, capture_headers=True):
+def get_data_from_response(response: dict, capture_headers: bool = True) -> dict:
     """
     Capture response data from lambda return
     """
     result = {}
 
     if "statusCode" in response:
-        result["status_code"] = response["statusCode"]
+        try:
+            result["status_code"] = int(response["statusCode"])
+        except ValueError:
+            # statusCode wasn't formed as an int
+            # we don't log here, as we will have already logged at transaction.result handling
+            result["status_code"] = 500
 
     if capture_headers and "headers" in response:
         result["headers"] = response["headers"]
     return result
 
 
-def get_url_dict(event):
+def get_url_dict(event: dict) -> dict:
     """
     Reconstruct URL from API Gateway
     """
     headers = event.get("headers", {})
-    proto = headers.get("X-Forwarded-Proto", "https")
-    host = headers.get("Host", "")
-    path = event.get("path", "")
-    port = headers.get("X-Forwarded-Port")
-    stage = "/" + event.get("requestContext", {}).get("stage", "")
+    protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
+    host = headers.get("Host", headers.get("host", ""))
+    stage = "/" + (nested_key(event, "requestContext", "stage") or "")
+    path = event.get("path", event.get("rawPath", "").split(stage)[-1])
+    port = headers.get("X-Forwarded-Port", headers.get("x-forwarded-port"))
     query = ""
-    if event.get("queryStringParameters"):
+    if "rawQueryString" in event:
+        query = event["rawQueryString"]
+    elif event.get("queryStringParameters"):
         query = "?"
         for k, v in compat.iteritems(event["queryStringParameters"]):
             query += "{}={}".format(k, v)
-    url = proto + "://" + host + stage + path + query
+    url = protocol + "://" + host + stage + path + query
 
     url_dict = {
         "full": encoding.keyword_field(url),
-        "protocol": proto,
+        "protocol": protocol,
         "hostname": encoding.keyword_field(host),
         "pathname": encoding.keyword_field(stage + path),
     }

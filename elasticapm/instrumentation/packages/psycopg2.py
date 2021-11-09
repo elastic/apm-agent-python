@@ -29,6 +29,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import
 
+from typing import Optional, Union
+
 from elasticapm.instrumentation.packages.dbapi2 import (
     ConnectionProxy,
     CursorProxy,
@@ -76,22 +78,11 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
     def call(self, module, method, wrapped, instance, args, kwargs):
         signature = "psycopg2.connect"
 
-        host = kwargs.get("host")
-        if host:
-            signature += " " + compat.text_type(host)
-
-            port = kwargs.get("port")
-            if port:
-                port = str(port)
-                if int(port) != default_ports.get("postgresql"):
-                    host += ":" + port
-            signature += " " + compat.text_type(host)
-        else:
-            # Parse connection string and extract host/port
-            pass
+        host, port = get_destination_info(kwargs.get("host"), kwargs.get("port"))
+        signature = f"{signature} {host}:{port}"
         destination_info = {
-            "address": kwargs.get("host", "localhost"),
-            "port": int(kwargs.get("port", default_ports.get("postgresql"))),
+            "address": host,
+            "port": port,
         }
         with capture_span(
             signature,
@@ -140,3 +131,19 @@ class Psycopg2ExtensionsInstrumentation(DbApi2Instrumentation):
                 kwargs["scope"] = kwargs["scope"].__wrapped__
 
         return wrapped(*args, **kwargs)
+
+
+def get_destination_info(host: Optional[str], port: Union[None, str, int]) -> tuple:
+    if host:
+        if "," in host:  # multiple hosts defined, take first
+            host = host.split(",")[0]
+    else:
+        host = "localhost"
+    if port:
+        port = str(port)
+        if "," in port:  # multiple ports defined, take first
+            port = port.split(",")[0]
+        port = int(port)
+    else:
+        port = default_ports.get("postgresql")
+    return host, port

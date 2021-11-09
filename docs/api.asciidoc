@@ -35,6 +35,21 @@ NOTE: framework integrations like <<django-support, Django>> and <<flask-support
 instantiate the client automatically.
 
 [float]
+[[api-get-client]]
+===== `elasticapm.get_client()`
+
+[small]#Added in v6.1.0.
+
+Retrieves the `Client` singleton. This is useful for many framework integrations,
+where the client is instantiated automatically.
+
+[source,python]
+----
+client = elasticapm.get_client()
+client.capture_message('foo')
+----
+
+[float]
 [[error-api]]
 ==== Errors
 

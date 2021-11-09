@@ -1,0 +1,65 @@
+[[lambda-support]]
+=== AWS Lambda Support
+
+experimental::[]
+
+Incorporating Elastic APM into your AWS Lambda functions is easy!
+
+[float]
+[[lambda-installation]]
+==== Installation
+
+First, you need to add `elastic-apm` as a dependency for your python function.
+Depending on your deployment strategy, this could be as easy as adding
+`elastic-apm` to your `requirements.txt` file, or installing it in the directory
+you plan to deploy using pip:
+
+[source,bash]
+----
+$ pip install -t <target_dir> elastic-apm
+----
+
+You should also add the
+https://github.com/elastic/apm-aws-lambda[Elastic AWS Lambda Extension layer]
+to your function.
+
+[float]
+[[lambda-setup]]
+==== Setup
+
+Once the library is included as a dependency in your function, you must
+import the `capture_serverless` decorator and apply it to your handler:
+
+[source,python]
+----
+from elasticapm import capture_serverless
+
+@capture_serverless()
+def handler(event, context):
+    return {"statusCode": r.status_code, "body": "Success!"}
+----
+
+The agent uses environment variables for <<configuration,configuration>>
+
+[source]
+----
+ELASTIC_APM_LAMBDA_APM_SERVER=<apm-server url>
+ELASTIC_APM_SECRET_TOKEN=<apm-server token>
+ELASTIC_APM_SERVICE_NAME=my-awesome-service
+----
+
+Note that the above configuration assumes you're using the Elastic Lambda
+Extension. The agent will automatically send data to the extension at `localhost`,
+and the extension will then send to the APM Server as specified with
+`ELASTIC_APM_LAMBDA_APM_SERVER`.
+
+[float]
+[[lambda-usage]]
+==== Usage
+
+Once the agent is installed and working, spans will be captured for
+<<supported-technologies,supported technologies>>. You can also use
+<<api-capture-span,`capture_span`>> to capture custom spans, and
+you can retrieve the `Client` object for capturing exceptions/messages
+using <<api-get-client,`get_client`>>.
+
