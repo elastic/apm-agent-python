@@ -23,4 +23,6 @@ include::./tornado.asciidoc[]
 
 include::./starlette.asciidoc[]
 
+include::./sanic.asciidoc[]
+
 include::./serverless.asciidoc[]

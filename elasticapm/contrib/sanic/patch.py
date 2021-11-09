@@ -50,11 +50,11 @@ class ElasticAPMPatchedErrorHandler(ErrorHandler):
         self._current_handler = current_handler  # type: ErrorHandler
         self._apm_handler = None  # type: ApmHandlerType
 
-    def add(self, exception, handler):
-        self._current_handler.add(exception, handler)
+    def add(self, exception, handler, *args, **kwargs):
+        self._current_handler.add(exception, handler, *args, **kwargs)
 
-    def lookup(self, exception):
-        return self._current_handler.lookup(exception)
+    def lookup(self, exception, *args, **kwargs):
+        return self._current_handler.lookup(exception, *args, **kwargs)
 
     def setup_apm_handler(self, apm_handler: ApmHandlerType, force: bool = False):
         if self._apm_handler is None or force:
