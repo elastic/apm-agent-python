@@ -65,7 +65,6 @@ FRAMEWORK:
   - gevent-newest
   - zerorpc-0.4
   - aiohttp-3.0
-  - aiohttp-4.0
   - aiohttp-newest
   - aiopg-newest
   - asyncpg-newest
