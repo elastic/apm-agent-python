@@ -29,13 +29,11 @@ endif::[]
 //[float]
 //===== Bug fixes
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-
+[[release-notes-6.6.2]]
+==== 6.6.2 - 2021-11-10
 
 [float]
 ===== Bug fixes
@@ -53,10 +51,6 @@ endif::[]
 
 * Remove unused `http.request.socket.encrypted` context field {pull}1332[#1332]
 * Remove unused transaction metrics (APM Server handles these metrics instead) {pull}1388[#1388]
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.6.1]]
 ==== 6.6.1 - 2021-11-02
