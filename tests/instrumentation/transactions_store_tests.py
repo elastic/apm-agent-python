@@ -346,19 +346,26 @@ def test_dedot_is_not_run_when_unsampled(elasticapm_client):
     assert "context" not in unsampled_transaction
 
 
-def test_set_transaction_name(elasticapm_client):
+@pytest.mark.parametrize(
+    "name1,name2,expected1,expected2",
+    [
+        ("test_name", "another_name", "test_name", "another_name"),
+        (["test_name"], {"another_name": "foo"}, "['test_name']", "{'another_name': 'foo'}"),
+    ],
+)
+def test_set_transaction_name(elasticapm_client, name1, name2, expected1, expected2):
     elasticapm_client.begin_transaction("test")
-    elasticapm_client.end_transaction("test_name", 200)
+    elasticapm_client.end_transaction(name1, 200)
 
     elasticapm_client.begin_transaction("test")
 
-    elasticapm.set_transaction_name("another_name")
+    elasticapm.set_transaction_name(name2)
 
-    elasticapm_client.end_transaction("test_name", 200)
+    elasticapm_client.end_transaction(name1, 200)
 
     transactions = elasticapm_client.events[TRANSACTION]
-    assert transactions[0]["name"] == "test_name"
-    assert transactions[1]["name"] == "another_name"
+    assert transactions[0]["name"] == expected1
+    assert transactions[1]["name"] == expected2
 
 
 def test_set_transaction_custom_data(elasticapm_client):

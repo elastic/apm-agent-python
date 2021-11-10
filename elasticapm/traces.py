@@ -793,7 +793,7 @@ class Tracer(object):
         transaction = execution_context.get_transaction(clear=True)
         if transaction:
             if transaction.name is None:
-                transaction.name = transaction_name if transaction_name is not None else ""
+                transaction.name = str(transaction_name) if transaction_name is not None else ""
             transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
                 return
@@ -925,7 +925,7 @@ def label(**labels):
         transaction.label(**labels)
 
 
-def set_transaction_name(name, override=True):
+def set_transaction_name(name: str, override: bool = True) -> None:
     """
     Sets the name of the transaction
 
@@ -937,7 +937,7 @@ def set_transaction_name(name, override=True):
     if not transaction:
         return
     if transaction.name is None or override:
-        transaction.name = name
+        transaction.name = str(name)
 
 
 def set_transaction_result(result, override=True):
