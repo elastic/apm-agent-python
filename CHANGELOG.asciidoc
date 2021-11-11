@@ -29,6 +29,18 @@ endif::[]
 //[float]
 //===== Bug fixes
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[float]
+===== Features
+
+* Add support for Sanic framework {pull}1390[#1390]
+
+//[float]
+//===== Bug fixes
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
