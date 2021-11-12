@@ -78,9 +78,13 @@ def get_trace_parent(celery_task):
     Return a trace parent contained in the request headers of a Celery Task object or None
     """
     trace_parent = None
-    with suppress(AttributeError, KeyError):
-        trace_parent_string = celery_task.request.headers["elasticapm"]["trace_parent_string"]
-        trace_parent = TraceParent.from_string(trace_parent_string)
+    with suppress(AttributeError, KeyError, TypeError):
+        if celery_task.request.headers is not None:
+            trace_parent_string = celery_task.request.headers["elasticapm"]["trace_parent_string"]
+            trace_parent = TraceParent.from_string(trace_parent_string)
+        else:
+            trace_parent_string = celery_task.request.elasticapm["trace_parent_string"]
+            trace_parent = TraceParent.from_string(trace_parent_string)
     return trace_parent
 
 
