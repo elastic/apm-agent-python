@@ -44,6 +44,14 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.6.3]]
+==== 6.6.3 - 2021-11-15
+
+[float]
+===== Bug fixes
+
+ * fix an issue with `metrics_sets` configuration referencing the `TransactionMetricSet` removed in 6.6.2 {pull}1397[#1397]
+
 [[release-notes-6.6.2]]
 ==== 6.6.2 - 2021-11-10
 
