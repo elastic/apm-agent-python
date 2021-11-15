@@ -1,2 +1,2 @@
-boto3>=1.7,<1.8
+boto3
 -r reqs-base.txt
