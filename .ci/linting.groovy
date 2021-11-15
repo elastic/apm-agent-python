@@ -16,7 +16,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i)(/test)?linters?.*')
+    issueCommentTrigger('(?i)(/test).linters.*')
   }
   stages {
     stage('Sanity checks') {
