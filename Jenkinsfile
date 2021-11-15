@@ -26,6 +26,7 @@ pipeline {
     HOME = "${env.WORKSPACE}"
     PIP_CACHE = "${env.WORKSPACE}/.cache"
     SLACK_CHANNEL = '#apm-agent-python'
+    NOOP = ""
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
