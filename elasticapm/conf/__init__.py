@@ -550,7 +550,6 @@ class Config(_ConfigBase):
         "METRICS_SETS",
         default=[
             "elasticapm.metrics.sets.cpu.CPUMetricSet",
-            "elasticapm.metrics.sets.transactions.TransactionsMetricSet",
         ],
     )
     metrics_interval = _ConfigValue(
