@@ -37,7 +37,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger("(${obltGitHubComments()}.(full|benchmark)?)")
+    issueCommentTrigger("(${obltGitHubComments()}).?(full|benchmark)?")
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
