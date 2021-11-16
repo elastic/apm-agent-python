@@ -36,6 +36,7 @@ import itertools
 import logging
 import os
 import platform
+import re
 import sys
 import threading
 import time
@@ -135,7 +136,7 @@ class Client(object):
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
-            "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+            "User-Agent": self.get_user_agent(),
         }
 
         transport_kwargs = {
@@ -419,6 +420,17 @@ class Client(object):
             self.logger.warning("Unknown value for CLOUD_PROVIDER, skipping cloud metadata: {}".format(provider))
             return {}
 
+    def get_user_agent(self) -> str:
+        """
+        Compiles the user agent, which will be added as a header to all requests
+        to the APM Server
+        """
+        if self.config.service_version:
+            service_version = re.sub(r"[^\t _\x21-\x27\x2a-\x5b\x5d-\x7e\x80-\xff]", "_", self.config.service_version)
+            return "apm-agent-python/{} ({} {})".format(elasticapm.VERSION, self.config.service_name, service_version)
+        else:
+            return "apm-agent-python/{} ({})".format(elasticapm.VERSION, self.config.service_name)
+
     def build_metadata(self):
         data = {
             "service": self.get_service_info(),
@@ -641,11 +653,11 @@ class DummyClient(Client):
         return None
 
 
-def get_client():
+def get_client() -> Client:
     return CLIENT_SINGLETON
 
 
-def set_client(client):
+def set_client(client: Client):
     global CLIENT_SINGLETON
     if CLIENT_SINGLETON:
         logger = get_logger("elasticapm")

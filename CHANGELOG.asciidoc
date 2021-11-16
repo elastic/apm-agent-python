@@ -31,17 +31,46 @@ endif::[]
 
 === Unreleased
 
-//[float]
-//===== Features
-
-
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
 [float]
-===== Bug fixes
-* Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
-* Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
+===== Features
+
+* Add support for Sanic framework {pull}1390[#1390]
+
+//[float]
+//===== Bug fixes
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.6.3]]
+==== 6.6.3 - 2021-11-15
+
+[float]
+===== Bug fixes
+
+ * fix an issue with `metrics_sets` configuration referencing the `TransactionMetricSet` removed in 6.6.2 {pull}1397[#1397]
+
+[[release-notes-6.6.2]]
+==== 6.6.2 - 2021-11-10
+
+[float]
+===== Bug fixes
+
+* Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
+* Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
+* Fix an issue with psycopg2 instrumentation when multiple hosts are defined {pull}1386[#1386]
+* Update the `User-Agent` header to the new https://github.com/elastic/apm/pull/514[spec] {pull}1378[#1378]
+* Improve status_code handling in AWS Lambda integration {pull}1382[#1382]
+* Fix `aiohttp` exception handling to allow for non-500 responses including `HTTPOk` {pull}1384[#1384]
+* Force transaction names to strings {pull}1389[#1389]
+
+[float]
+===== Other
+
+* Remove unused `http.request.socket.encrypted` context field {pull}1332[#1332]
+* Remove unused transaction metrics (APM Server handles these metrics instead) {pull}1388[#1388]
 
 [[release-notes-6.6.1]]
 ==== 6.6.1 - 2021-11-02

@@ -16,7 +16,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i).*(?:jenkins\\W+)?run\\W+(?:the\\W+)?linters(?:\\W+please)?.*')
+    issueCommentTrigger('(?i)(/test).linters.*')
   }
   stages {
     stage('Sanity checks') {

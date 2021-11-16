@@ -1,2 +1,2 @@
-boto3
+sanic==20.12.2
 -r reqs-base.txt

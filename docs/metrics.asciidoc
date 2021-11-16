@@ -9,7 +9,6 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 === Metric sets
 
 * <<cpu-memory-metricset>>
-* <<transactions-metricset>>
 * <<breakdown-metricset>>
 * <<prometheus-metricset>>
 
@@ -63,7 +62,7 @@ type: long
 
 format: bytes
 
-Actual free memory in bytes. 
+Actual free memory in bytes.
 --
 
 *`system.process.memory.size`*::
@@ -112,52 +111,10 @@ Memory usage in current cgroup slice.
 
 
 [float]
-[[transactions-metricset]]
-==== Transactions metric set
-
-This metric set collects metrics in relation with transactions.
-
-*`transaction.duration`*::
-+
---
-type: simple timer
-
-This timer tracks the duration of transactions and allows for the creation of graphs displaying a weighted average.
-
-Fields:
-
-* `sum`: The sum of all transaction durations in ms since the last report (the delta)
-* `count`: The count of all transactions since the last report (the delta)
-
-You can filter and group by these dimensions:
-
-* `transaction.name`: The name of the transaction
-* `transaction.type`: The type of the transaction, for example `request`
---
-
-[float]
 [[breakdown-metricset]]
 ==== Breakdown metric set
 
 NOTE: Tracking and collection of this metric set can be disabled using the <<config-breakdown_metrics>> setting.
-
-*`transaction.breakdown.count`*::
-+
---
-type: long
-
-format: count (delta)
-
-The number of transactions for which breakdown metrics (`span.self_time`) have been created.
-As the Java agent tracks the breakdown for both sampled and non-sampled transactions,
-this metric is equivalent to `transaction.duration.count`
-
-You can filter and group by these dimensions:
-
-* `transaction.name`: The name of the transaction
-* `transaction.type`: The type of the transaction, for example `request`
-
---
 
 *`span.self_time`*::
 +
