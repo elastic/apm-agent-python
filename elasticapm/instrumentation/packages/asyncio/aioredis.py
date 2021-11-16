@@ -84,10 +84,16 @@ class RedisConnectionInstrumentation(AbstractInstrumentedModule):
     )
 
     def call(self, module, method, wrapped, instance, args, kwargs):
+        wrapped_name = self.get_wrapped_name(wrapped, instance, method)
         span = execution_context.get_span()
-        if span and span.subtype == "aioredis":
+        func_name = args[0].decode("utf-8") if isinstance(args[0], bytes) else args[0]
+        context = {"db": {"type": "query", "statement": "{} {}".format(
+            func_name, args[1])}} if args and len(args) > 1 else None
+        if span and span.subtype == self.name:
             span.context["destination"] = _get_destination_info(instance)
-        return wrapped(*args, **kwargs)
+        with async_capture_span(wrapped_name, span_type="db", span_subtype="redis",
+                                span_action="query", leaf=True, extra=context) as span:
+            return wrapped(*args, **kwargs)
 
 
 def _get_destination_info(connection):
