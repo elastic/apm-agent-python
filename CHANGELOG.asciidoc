@@ -38,8 +38,10 @@ endif::[]
 
 * Add support for Sanic framework {pull}1390[#1390]
 
-//[float]
-//===== Bug fixes
+[float]
+===== Bug fixes
+
+* fix compatibility issues with httpx 0.21 {pull}1403[#1403]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
