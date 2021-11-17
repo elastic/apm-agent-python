@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2021, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,64 +28,35 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.conf import constants
-from elasticapm.contrib.asyncio.traces import async_capture_span
-from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
-from elasticapm.traces import DroppedSpan, execution_context
+from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+from elasticapm.instrumentation.packages.httpx import utils
+from elasticapm.traces import DroppedSpan, capture_span, execution_context
 from elasticapm.utils import default_ports
 from elasticapm.utils.disttracing import TracingOptions
 
 
-class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
-    """
-    This instrumentation only exists to make sure we add distributed tracing
-    headers on our requests from `httpx`. `httpx` is the only place this library
-    is used, so no spans will actually be created (due to already being in
-    a leaf span). However, the rest of the logic was left in (much of this
-    mirrors the urllib3 instrumentation) in case that situation ever changes.
-    """
-
+class HTTPCoreInstrumentation(AbstractInstrumentedModule):
     name = "httpcore"
 
     instrument_list = [
-        ("httpcore._async.connection", "AsyncHTTPConnection.request"),  # < httpcore 0.11
-        ("httpcore._async.connection", "AsyncHTTPConnection.arequest"),  # httpcore 0.11 - 0.12
-        ("httpcore._async.connection", "AsyncHTTPConnection.handle_async_request"),  # >= httpcore 0.13
+        ("httpcore._sync.connection", "SyncHTTPConnection.request"),  # < httpcore 0.13
+        ("httpcore._sync.connection", "SyncHTTPConnection.handle_request"),  # >= httpcore 0.13
+        ("httpcore._sync.connection", "HTTPConnection.handle_request"),  # httpcore >= 0.14 (hopefully...)
     ]
 
-    async def call(self, module, method, wrapped, instance, args, kwargs):
-        if "method" in kwargs:
-            method = kwargs["method"].decode("utf-8")
-        else:
-            method = args[0].decode("utf-8")
-
-        # URL is a tuple of (scheme, host, port, path), we want path
-        if "url" in kwargs:
-            url = kwargs["url"][3].decode("utf-8")
-        else:
-            url = args[1][3].decode("utf-8")
-
-        headers = None
-        if "headers" in kwargs:
-            headers = kwargs["headers"]
-            if headers is None:
-                headers = []
-                kwargs["headers"] = headers
-
-        scheme, host, port = instance.origin
-        scheme = scheme.decode("utf-8")
-        host = host.decode("utf-8")
-
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        url, method, headers = utils.get_request_data(args, kwargs)
+        scheme, host, port, target = url
         if port != default_ports.get(scheme):
             host += ":" + str(port)
 
         signature = "%s %s" % (method.upper(), host)
 
-        url = "%s://%s%s" % (scheme, host, url)
+        url = "%s://%s%s" % (scheme, host, target)
 
         transaction = execution_context.get_transaction()
 
-        async with async_capture_span(
+        with capture_span(
             signature,
             span_type="external",
             span_subtype="http",
@@ -98,22 +69,17 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
                 leaf_span = leaf_span.parent
 
             if headers is not None:
-                # It's possible that there are only dropped spans, e.g. if we started dropping spans due to the
-                # transaction_max_spans limit. In this case, the transaction.id is used
+                # It's possible that there are only dropped spans, e.g. if we started dropping spans.
+                # In this case, the transaction.id is used
                 parent_id = leaf_span.id if leaf_span else transaction.id
                 trace_parent = transaction.trace_parent.copy_from(
                     span_id=parent_id, trace_options=TracingOptions(recorded=True)
                 )
-                self._set_disttracing_headers(headers, trace_parent, transaction)
-            response = await wrapped(*args, **kwargs)
-            if len(response) > 4:
-                # httpcore < 0.11.0
-                # response = (http_version, status_code, reason_phrase, headers, stream)
-                status_code = response[1]
-            else:
-                # httpcore >= 0.11.0
-                # response = (status_code, headers, stream, ext)
-                status_code = response[0]
+                utils.set_disttracing_headers(headers, trace_parent, transaction)
+                if leaf_span:
+                    leaf_span.dist_tracing_propagated = True
+            response = wrapped(*args, **kwargs)
+            status_code = utils.get_status(response)
             if status_code:
                 if span.context:
                     span.context["http"]["status_code"] = status_code
@@ -132,11 +98,3 @@ class HTTPCoreAsyncInstrumentation(AsyncAbstractInstrumentedModule):
                 kwargs["headers"] = headers
             self._set_disttracing_headers(headers, trace_parent, transaction)
         return args, kwargs
-
-    def _set_disttracing_headers(self, headers, trace_parent, transaction):
-        trace_parent_str = trace_parent.to_string()
-        headers.append((bytes(constants.TRACEPARENT_HEADER_NAME, "utf-8"), bytes(trace_parent_str, "utf-8")))
-        if transaction.tracer.config.use_elastic_traceparent_header:
-            headers.append((bytes(constants.TRACEPARENT_LEGACY_HEADER_NAME, "utf-8"), bytes(trace_parent_str, "utf-8")))
-        if trace_parent.tracestate:
-            headers.append((bytes(constants.TRACESTATE_HEADER_NAME, "utf-8"), bytes(trace_parent.tracestate, "utf-8")))

@@ -1,2 +1,2 @@
-httpx==0.12.*
+httpx==0.21.*
 -r reqs-base.txt

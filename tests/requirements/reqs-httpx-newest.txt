@@ -1,2 +1,2 @@
-httpx>=0.15.0
+httpx
 -r reqs-base.txt
