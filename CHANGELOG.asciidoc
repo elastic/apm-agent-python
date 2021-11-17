@@ -29,10 +29,12 @@ endif::[]
 //[float]
 //===== Bug fixes
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.7.0]]
+=== 6.7.0 - 2021-11-17
+
 [float]
 ===== Features
 
@@ -43,9 +45,6 @@ endif::[]
 
 * fix compatibility issues with httpx 0.21 {pull}1403[#1403]
 * fix `span_compression_exact_match_max_duration` default value {pull}1407[#1407]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.6.3]]
 ==== 6.6.3 - 2021-11-15
