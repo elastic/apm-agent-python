@@ -580,7 +580,7 @@ class Config(_ConfigBase):
     )
     span_compression_exact_match_max_duration = _ConfigValue(
         "span_compression_exact_match_max_duration",
-        default=5,
+        default=50,
         validators=[duration_validator],
         type=int,
     )
