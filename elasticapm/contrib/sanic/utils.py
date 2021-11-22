@@ -28,6 +28,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
+from string import ascii_uppercase
 from typing import Dict
 
 from sanic import Sanic
@@ -71,7 +72,8 @@ async def get_request_info(config: Config, request: Request) -> Dict[str, str]:
     :return: A dictionary containing the context information of the ongoing transaction
     """
     env = dict(get_env(request=request))
-    env.update(dict(request.app.config))
+    app_config = {k: v for k, v in dict(request.app.config).items() if all(letter in ascii_uppercase for letter in k)}
+    env.update(app_config)
     result = {
         "env": env,
         "method": request.method,
