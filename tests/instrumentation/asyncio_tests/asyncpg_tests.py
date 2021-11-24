@@ -143,9 +143,7 @@ async def test_fetch_methods(connection, elasticapm_client, method, verify):
 
 async def test_truncate_long_sql(connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    await connection.execute(
-        f"SELECT id, username FROM test WHERE username = {'x' * 10010};"
-    )
+    await connection.execute(f"SELECT id, name FROM test WHERE name = {'x' * 10010};")
     elasticapm_client.end_transaction("test", "OK")
 
     transactions = elasticapm_client.events[constants.TRANSACTION]
