@@ -29,20 +29,19 @@ endif::[]
 //[float]
 //===== Bug fixes
 
-=== Unreleased
 
-//[float]
-//===== Features
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
+[[release-notes-6.7.1]]
+=== 6.7.1 - 2021-11-29
 
 [float]
 ===== Bug fixes
 
+* fix an issue with Sanic exception tracking {pull}1414[#1414]
 * asyncpg: Limit SQL queries in context data to 10000 characters {pull}1416[#1416]
 
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.7.0]]
 === 6.7.0 - 2021-11-17
