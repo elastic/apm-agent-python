@@ -119,3 +119,26 @@ def test_transaction_max_span_dropped_statistics_not_collected_for_incompatible_
     spans = elasticapm_client.events[constants.SPAN]
     assert len(spans) == 1
     assert "dropped_spans_stats" not in transaction
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"exit_span_min_duration": "1ms"}], indirect=True)
+def test_transaction_fast_exit_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span(span_type="x", name="x", leaf=True, duration=2):  # not dropped, too long
+        pass
+    with elasticapm.capture_span(span_type="y", name="y", leaf=True, duration=0.1):  # dropped
+        pass
+    with elasticapm.capture_span(span_type="z", name="z", leaf=False, duration=0.1):  # not dropped, not exit
+        pass
+    elasticapm_client.end_transaction("foo", duration=2.2)
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.events[constants.SPAN]
+    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    metrics = list(breakdown.collect())
+    assert len(spans) == 2
+    assert transaction["span_count"]["started"] == 3
+    assert transaction["span_count"]["dropped"] == 1
+    assert metrics[0]["span"]["type"] == "x"
+    assert metrics[0]["samples"]["span.self_time.sum.us"]["value"] == 2000000
+    assert metrics[1]["span"]["type"] == "y"
+    assert metrics[1]["samples"]["span.self_time.sum.us"]["value"] == 100000

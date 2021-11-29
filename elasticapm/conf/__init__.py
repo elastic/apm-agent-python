@@ -590,6 +590,12 @@ class Config(_ConfigBase):
         validators=[duration_validator],
         type=int,
     )
+    exit_span_min_duration = _ConfigValue(
+        "exit_span_min_duration",
+        default=1,
+        validators=[duration_validator],
+        type=int,
+    )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)
     source_lines_error_library_frames = _ConfigValue("SOURCE_LINES_ERROR_LIBRARY_FRAMES", type=int, default=5)
