@@ -35,7 +35,8 @@ import threading
 import time
 import timeit
 from collections import defaultdict
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from types import TracebackType
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
@@ -867,7 +868,15 @@ class capture_span(object):
 
         return decorated
 
-    def __enter__(self) -> Union[Span, DroppedSpan, None]:
+    def __enter__(self) -> Optional[SpanType]:
+        return self.handle_enter(self.sync)
+
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
+        self.handle_exit(exc_type, exc_val, exc_tb)
+
+    def handle_enter(self, sync: bool) -> Optional[SpanType]:
         transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             return transaction.begin_span(
@@ -879,11 +888,13 @@ class capture_span(object):
                 span_subtype=self.subtype,
                 span_action=self.action,
                 start=self.start,
-                sync=self.sync,
+                sync=sync,
             )
         return None
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def handle_exit(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
         transaction = execution_context.get_transaction()
 
         if transaction and transaction.is_sampled:
