@@ -103,7 +103,7 @@ def test_collection_count(instrument, elasticapm_client, mongo_database):
     }
 
 
-@pytest.mark.skipif(pymongo.version_tuple >= (3, 7), reason="New in 3.7")
+@pytest.mark.skipif(pymongo.version_tuple < (3, 7), reason="New in 3.7")
 @pytest.mark.integrationtest
 def test_collection_count_documents(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
@@ -125,7 +125,7 @@ def test_collection_count_documents(instrument, elasticapm_client, mongo_databas
     }
 
 
-@pytest.mark.skipif(pymongo.version_tuple >= (3, 7), reason="New in 3.7")
+@pytest.mark.skipif(pymongo.version_tuple < (3, 7), reason="New in 3.7")
 @pytest.mark.integrationtest
 def test_collection_estimated_document_count(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
