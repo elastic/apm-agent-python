@@ -1222,6 +1222,7 @@ The unit is provided as a suffix directly after the number–without any separat
 
 *Supported units*
 
+ * `us` (microseconds)
  * `ms` (milliseconds)
  * `s` (seconds)
  * `m` (minutes)
