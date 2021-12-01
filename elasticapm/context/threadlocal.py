@@ -37,14 +37,14 @@ from elasticapm.context.base import BaseContext
 class ThreadLocalContext(BaseContext):
     thread_local = threading.local()
     thread_local.transaction = None
-    thread_local.span = None
+    thread_local.spans = []
 
     def get_transaction(self, clear=False):
         """
-        Get the transaction registered for the current thread.
+        Get the transaction for the current execution context
 
-        :return:
-        :rtype: Transaction
+        If clear=True, also set the transaction to None for the current
+        execution context.
         """
         transaction = getattr(self.thread_local, "transaction", None)
         if clear:
@@ -52,13 +52,54 @@ class ThreadLocalContext(BaseContext):
         return transaction
 
     def set_transaction(self, transaction):
+        """
+        Set the transaction for the current execution context
+        """
         self.thread_local.transaction = transaction
 
-    def get_span(self):
-        return getattr(self.thread_local, "span", None)
+    def get_span(self, extra=False):
+        """
+        Get the active span for the current execution context.
 
-    def set_span(self, span):
-        self.thread_local.span = span
+        If extra=True, a tuple will be returned with the span and its extra
+        data: (span, extra)
+        """
+        spans = getattr(self.thread_local, "spans", [])
+        span = (None, None)
+        if spans:
+            span = spans[-1]
+        if extra:
+            return span
+        else:
+            return span[0]
+
+    def set_span(self, span, extra=None):
+        """
+        Set the active span for the current execution context.
+
+        The previously-activated span will be saved to be re-activated later.
+
+        Optionally, `extra` data can be provided and will be saved alongside
+        the span.
+        """
+        self.thread_local.spans.append((span, extra))
+
+    def unset_span(self, extra=False):
+        """
+        De-activate the current span. If a span was previously active, it will
+        become active again.
+
+        Returns the de-activated span. If extra=True, a tuple will be returned
+        with the span and its extra data: (span, extra)
+        """
+        spans = getattr(self.thread_local, "spans", [])
+        span = (None, None)
+        if spans:
+            span = spans.pop()
+        if extra:
+            return span
+        else:
+            return span[0]
 
 
 execution_context = ThreadLocalContext()

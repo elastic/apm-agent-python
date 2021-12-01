@@ -31,13 +31,46 @@
 
 class BaseContext(object):
     def set_transaction(self, transaction):
+        """
+        Set the transaction for the current execution context
+        """
         raise NotImplementedError
 
     def get_transaction(self, clear=False):
+        """
+        Get the transaction for the current execution context
+
+        If clear=True, also set the transaction to None for the current
+        execution context.
+        """
         raise NotImplementedError
 
-    def set_span(self, span):
+    def set_span(self, span, extra=None):
+        """
+        Set the active span for the current execution context.
+
+        The previously-activated span will be saved to be re-activated later.
+
+        Optionally, `extra` data can be provided and will be saved alongside
+        the span.
+        """
         raise NotImplementedError
 
-    def get_span(self):
+    def get_span(self, extra=False):
+        """
+        Get the active span for the current execution context.
+
+        If extra=True, a tuple will be returned with the span and its extra
+        data: (span, extra)
+        """
+        raise NotImplementedError
+
+    def unset_span(self, extra=False):
+        """
+        De-activate the current span. If a span was previously active, it will
+        become active again.
+
+        Returns the de-activated span. If extra=True, a tuple will be returned
+        with the span and its extra data: (span, extra)
+        """
         raise NotImplementedError
