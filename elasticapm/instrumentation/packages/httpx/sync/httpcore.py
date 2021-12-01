@@ -91,10 +91,6 @@ class HTTPCoreInstrumentation(AbstractInstrumentedModule):
         trace_parent = transaction.trace_parent.copy_from(
             span_id=transaction.id, trace_options=TracingOptions(recorded=False)
         )
-        if "headers" in kwargs:
-            headers = kwargs["headers"]
-            if headers is None:
-                headers = []
-                kwargs["headers"] = headers
-            self._set_disttracing_headers(headers, trace_parent, transaction)
+        headers = utils.get_request_data(args, kwargs)[2]
+        utils.set_disttracing_headers(headers, trace_parent, transaction)
         return args, kwargs
