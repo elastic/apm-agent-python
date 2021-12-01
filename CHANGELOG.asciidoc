@@ -28,7 +28,7 @@ endif::[]
 //
 [float]
 ===== Bug fixes
-* fix AttributeError in sync instrumentation of httpx {pull}xx[#xx]
+* fix AttributeError in sync instrumentation of httpx {pull}1423[1423]
 
 
 [[release-notes-6.x]]
