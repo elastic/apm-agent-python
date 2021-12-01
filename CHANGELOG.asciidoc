@@ -33,6 +33,66 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.7.1]]
+=== 6.7.1 - 2021-11-29
+
+[float]
+===== Bug fixes
+
+* fix an issue with Sanic exception tracking {pull}1414[#1414]
+* asyncpg: Limit SQL queries in context data to 10000 characters {pull}1416[#1416]
+
+
+[[release-notes-6.7.0]]
+=== 6.7.0 - 2021-11-17
+
+[float]
+===== Features
+
+* Add support for Sanic framework {pull}1390[#1390]
+
+[float]
+===== Bug fixes
+
+* fix compatibility issues with httpx 0.21 {pull}1403[#1403]
+* fix `span_compression_exact_match_max_duration` default value {pull}1407[#1407]
+
+[[release-notes-6.6.3]]
+==== 6.6.3 - 2021-11-15
+
+[float]
+===== Bug fixes
+
+ * fix an issue with `metrics_sets` configuration referencing the `TransactionMetricSet` removed in 6.6.2 {pull}1397[#1397]
+
+[[release-notes-6.6.2]]
+==== 6.6.2 - 2021-11-10
+
+[float]
+===== Bug fixes
+
+* Fix an issue where compressed spans would count against `transaction_max_spans` {pull}1377[#1377]
+* Make sure HTTP connections are not re-used after a process fork {pull}1374[#1374]
+* Fix an issue with psycopg2 instrumentation when multiple hosts are defined {pull}1386[#1386]
+* Update the `User-Agent` header to the new https://github.com/elastic/apm/pull/514[spec] {pull}1378[#1378]
+* Improve status_code handling in AWS Lambda integration {pull}1382[#1382]
+* Fix `aiohttp` exception handling to allow for non-500 responses including `HTTPOk` {pull}1384[#1384]
+* Force transaction names to strings {pull}1389[#1389]
+
+[float]
+===== Other
+
+* Remove unused `http.request.socket.encrypted` context field {pull}1332[#1332]
+* Remove unused transaction metrics (APM Server handles these metrics instead) {pull}1388[#1388]
+
+[[release-notes-6.6.1]]
+==== 6.6.1 - 2021-11-02
+
+[float]
+===== Bug fixes
+
+* Fix some context fields and metadata handling in AWS Lambda support {pull}1368[#1368]
+
 [[release-notes-6.6.0]]
 ==== 6.6.0 - 2021-10-18
 

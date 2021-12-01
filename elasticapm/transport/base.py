@@ -268,6 +268,7 @@ class Transport(ThreadManager):
     def start_thread(self, pid=None):
         super(Transport, self).start_thread(pid=pid)
         if (not self._thread or self.pid != self._thread.pid) and not self._closed:
+            self.handle_fork()
             try:
                 self._thread = threading.Thread(target=self._process_queue, name="eapm event processor thread")
                 self._thread.daemon = True
@@ -320,6 +321,10 @@ class Transport(ThreadManager):
         message = str(exception)
         logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
         self.state.set_fail()
+
+    def handle_fork(self) -> None:
+        """Helper method to run code after a fork has been detected"""
+        pass
 
 
 # left for backwards compatibility

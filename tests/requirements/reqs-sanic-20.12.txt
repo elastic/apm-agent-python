@@ -1,2 +1,2 @@
-httpx==0.12.*
+sanic==20.12.2
 -r reqs-base.txt

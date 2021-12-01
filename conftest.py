@@ -63,6 +63,7 @@ for module, fixtures in {
     "django": "tests.contrib.django.fixtures",
     "flask": "tests.contrib.flask.fixtures",
     "aiohttp": "aiohttp.pytest_plugin",
+    "sanic": "tests.contrib.sanic.fixtures",
 }.items():
     try:
         importlib.import_module(module)

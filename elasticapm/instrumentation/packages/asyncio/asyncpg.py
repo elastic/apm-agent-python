@@ -32,6 +32,7 @@ from elasticapm.contrib.asyncio.traces import async_capture_span
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 from elasticapm.utils import default_ports
+from elasticapm.utils.encoding import shorten
 
 
 class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
@@ -63,7 +64,8 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
     async def call(self, module, method, wrapped, instance, args, kwargs):
         query = self.get_query(method, args)
         name = extract_signature(query)
-        context = {"db": {"type": "sql", "statement": query}}
+        sql_string = shorten(query, string_length=10000)
+        context = {"db": {"type": "sql", "statement": sql_string}}
         action = "query"
         destination_info = {
             "address": kwargs.get("host", "localhost"),

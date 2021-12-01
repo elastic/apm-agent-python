@@ -43,7 +43,7 @@ def get_data_from_request(request_handler, request, config, event_type):
     """
     result = {
         "method": request.method,
-        "socket": {"remote_address": request.remote_ip, "encrypted": request.protocol == "https"},
+        "socket": {"remote_address": request.remote_ip},
         "cookies": request.cookies,
         "http_version": request.version,
     }

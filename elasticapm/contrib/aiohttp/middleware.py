@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import aiohttp
-from aiohttp.web import HTTPException, Response, middleware
+from aiohttp.web import HTTPException, middleware
 
 import elasticapm
 from elasticapm import get_client
@@ -78,21 +78,37 @@ def tracing_middleware(app, client=None):
                     "response",
                 )
             return response
-        except Exception as exc:
+        except HTTPException as exc:
+            # HTTPExceptions are response-like, e.g. have headers and status code. They can represent an HTTP
+            # response below a 500 status code and therefore not something to capture as exception. Like
+            # HTTPOk can be raised but will most likely be wrongly tagged as an APM error. Let's try and
+            # capture this according to the status.
+            if exc.status_code < 500 and not should_trace:
+                raise
             if elasticapm_client:
-                elasticapm_client.capture_exception(
-                    context={"request": get_data_from_request(request, elasticapm_client.config, constants.ERROR)}
+                elasticapm.set_transaction_result("HTTP {}xx".format(exc.status_code // 100), override=False)
+                elasticapm.set_transaction_outcome(http_status_code=exc.status_code, override=False)
+                elasticapm.set_context(
+                    lambda: get_data_from_response(
+                        exc,  # noqa: F821
+                        elasticapm_client.config,
+                        constants.ERROR if exc.status_code >= 500 else constants.TRANSACTION,  # noqa: F821
+                    ),
+                    "response",
                 )
+                if exc.status_code >= 500:
+                    elasticapm_client.capture_exception(
+                        context={"request": get_data_from_request(request, elasticapm_client.config, constants.ERROR)}
+                    )
+            raise
+        except Exception:
+            if elasticapm_client:
                 elasticapm.set_transaction_result("HTTP 5xx", override=False)
                 elasticapm.set_transaction_outcome(http_status_code=500, override=False)
                 elasticapm.set_context({"status_code": 500}, "response")
-                # some exceptions are response-like, e.g. have headers and status code. Let's try and capture them
-                if isinstance(exc, (Response, HTTPException)):
-                    elasticapm.set_context(
-                        lambda: get_data_from_response(exc, elasticapm_client.config, constants.ERROR),  # noqa: F821
-                        "response",
-                    )
-
+                elasticapm_client.capture_exception(
+                    context={"request": get_data_from_request(request, elasticapm_client.config, constants.ERROR)}
+                )
             raise
         finally:
             elasticapm_client.end_transaction()

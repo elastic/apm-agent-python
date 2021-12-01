@@ -31,12 +31,15 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+from typing import cast
 
 import pytest
 
-from elasticapm.conf.constants import TRANSACTION
-from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm import get_client
+from elasticapm.conf.constants import SPAN, TRANSACTION
+from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature, get_destination_info
 from elasticapm.utils import default_ports
+from tests.fixtures import TempStoreClient
 
 psycopg2 = pytest.importorskip("psycopg2")
 
@@ -162,10 +165,10 @@ def test_select_with_dollar_quotes_custom_token():
 
 
 def test_select_with_difficult_table_name():
-    sql_statement = u"""SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
+    sql_statement = """SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
     actual = extract_signature(sql_statement)
 
-    assert u"SELECT FROM myta\n-æøåble" == actual
+    assert "SELECT FROM myta\n-æøåble" == actual
 
 
 def test_select_subselect():
@@ -507,3 +510,30 @@ def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_cli
         spans = elasticapm_client.spans_for_transaction(transactions[0])
         assert spans[0]["name"] == "INSERT INTO test"
         assert len(spans[0]["context"]["db"]["statement"]) == 10000, spans[0]["context"]["db"]["statement"]
+
+
+@pytest.mark.integrationtest
+def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connection):
+    # elastciapm_client.events is only available on `TempStoreClient`, this keeps the type checkers happy
+    elasticapm_client = cast(TempStoreClient, get_client())
+    elasticapm_client.end_transaction("test", "success")
+    span = elasticapm_client.events[SPAN][0]
+    host = os.environ.get("POSTGRES_HOST", "localhost")
+    assert span["name"] == f"psycopg2.connect {host}:5432"
+    assert span["action"] == "connect"
+
+
+@pytest.mark.parametrize(
+    "host_in,port_in,expected_host_out,expected_port_out",
+    (
+        (None, None, "localhost", 5432),
+        (None, 5432, "localhost", 5432),
+        ("localhost", "5432", "localhost", 5432),
+        ("foo.bar", "5432", "foo.bar", 5432),
+        ("localhost,foo.bar", "5432,1234", "localhost", 5432),  # multiple hosts
+    ),
+)
+def test_get_destination(host_in, port_in, expected_host_out, expected_port_out):
+    host, port = get_destination_info(host_in, port_in)
+    assert host == expected_host_out
+    assert port == expected_port_out

@@ -202,6 +202,16 @@ def elasticapm_client(request):
 
 
 @pytest.fixture()
+def elasticapm_transaction(elasticapm_client):
+    """
+    Useful fixture if spans from other fixtures should be captured.
+    This can be achieved by listing this fixture first.
+    """
+    transaction = elasticapm_client.begin_transaction("test")
+    yield transaction
+
+
+@pytest.fixture()
 def elasticapm_client_log_file(request):
     original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
@@ -349,6 +359,11 @@ class TempStoreClient(Client):
     def spans_for_transaction(self, transaction):
         """Test helper method to get all spans of a specific transaction"""
         return [span for span in self.events[SPAN] if span["transaction_id"] == transaction["id"]]
+
+
+@pytest.fixture()
+def temp_store_client():
+    return TempStoreClient
 
 
 @pytest.fixture()

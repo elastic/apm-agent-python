@@ -297,7 +297,7 @@ def test_send(sending_elasticapm_client):
         "Content-Type": "application/x-ndjson",
         "Content-Encoding": "gzip",
         "Authorization": "Bearer %s" % sending_elasticapm_client.config.secret_token,
-        "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+        "User-Agent": "apm-agent-python/%s (myapp)" % elasticapm.VERSION,
     }
     seen_headers = dict(request.headers)
     for k, v in expected_headers.items():
@@ -860,3 +860,23 @@ def test_check_server_version(elasticapm_client):
     assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 16))
     assert not elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 13))
     assert not elasticapm_client.check_server_version(gte=(7, 16), lte=(7, 18))
+
+
+def test_backdating_transaction(elasticapm_client):
+    elasticapm_client.begin_transaction("test", start=time.time() - 1)
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert 1000 < transaction["duration"] < 2000
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({"service_version": "v2"}, " v2"),
+        ({"service_version": "v2 \x00"}, " v2 _"),
+        ({}, ""),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_user_agent(elasticapm_client, expected):
+    assert elasticapm_client.get_user_agent() == "apm-agent-python/unknown (myapp{})".format(expected)

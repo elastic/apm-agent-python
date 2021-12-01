@@ -47,6 +47,13 @@ def event_api():
 
 
 @pytest.fixture
+def event_api2():
+    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_api2_test_data.json")
+    with open(aws_data_file) as f:
+        return json.load(f)
+
+
+@pytest.fixture
 def event_s3():
     aws_data_file = os.path.join(os.path.dirname(__file__), "aws_s3_test_data.json")
     with open(aws_data_file) as f:
@@ -89,12 +96,18 @@ class SampleContext:
         self.aws_request_id = "12345"
 
 
-def test_request_data(event_api):
+def test_request_data(event_api, event_api2):
     data = get_data_from_request(event_api, capture_body=True, capture_headers=True)
 
     assert data["method"] == "GET"
     assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
     assert data["headers"]["Host"] == "02plqthge2.execute-api.us-east-1.amazonaws.com"
+
+    data = get_data_from_request(event_api2, capture_body=True, capture_headers=True)
+
+    assert data["method"] == "GET"
+    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
+    assert data["headers"]["host"] == "02plqthge2.execute-api.us-east-1.amazonaws.com"
 
     data = get_data_from_request(event_api, capture_body=False, capture_headers=False)
 
@@ -104,21 +117,22 @@ def test_request_data(event_api):
 
 
 def test_response_data():
-    response = {"statusCode": 200, "headers": {"foo": "bar"}}
-
+    response = {"statusCode": "200", "headers": {"foo": "bar"}}
     data = get_data_from_response(response, capture_headers=True)
-
     assert data["status_code"] == 200
     assert data["headers"]["foo"] == "bar"
 
+    response["statusCode"] = 400
     data = get_data_from_response(response, capture_headers=False)
-
-    assert data["status_code"] == 200
+    assert data["status_code"] == 400
     assert "headers" not in data
 
     data = get_data_from_response({}, capture_headers=False)
-
     assert not data
+
+    response["statusCode"] = "2xx"
+    data = get_data_from_response(response, capture_headers=True)
+    assert data["status_code"] == 500
 
 
 def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):
@@ -132,6 +146,29 @@ def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):
         return {"statusCode": 200, "headers": {"foo": "bar"}}
 
     test_func(event_api, context)
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+
+    assert transaction["name"] == "GET test_func"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["span_count"]["started"] == 1
+    assert transaction["context"]["request"]["method"] == "GET"
+    assert transaction["context"]["request"]["headers"]
+    assert transaction["context"]["response"]["status_code"] == 200
+
+
+def test_capture_serverless_api_gateway_v2(event_api2, context, elasticapm_client):
+
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
+
+    @capture_serverless()
+    def test_func(event, context):
+        with capture_span("test_span"):
+            time.sleep(0.01)
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    test_func(event_api2, context)
 
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     transaction = elasticapm_client.events[constants.TRANSACTION][0]

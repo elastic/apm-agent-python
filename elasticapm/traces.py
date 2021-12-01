@@ -35,7 +35,8 @@ import threading
 import time
 import timeit
 from collections import defaultdict
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from types import TracebackType
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
@@ -44,6 +45,7 @@ from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import compat, encoding, get_name_from_func, nested_key, url_to_destination_resource
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.time import time_to_perf_counter
 
 __all__ = ("capture_span", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
@@ -92,7 +94,7 @@ class BaseSpan(object):
         self.outcome: Optional[str] = None
         self.compression_buffer: Optional[Union[Span, DroppedSpan]] = None
         self.compression_buffer_lock = threading.Lock()
-        self.start_time: float = start or _time_func()
+        self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
         self.duration: Optional[float] = None
         if labels:
@@ -164,6 +166,24 @@ class Transaction(BaseSpan):
         start: Optional[float] = None,
         sample_rate: Optional[float] = None,
     ):
+        """
+        tracer
+            Tracer object
+        transaction_type
+            Transaction type
+        trace_parent
+            TraceParent object representing the parent trace and trace state
+        is_sampled
+            Whether or not this transaction is sampled
+        start
+            Optional start timestamp. This is expected to be an epoch timestamp
+            in seconds (such as from `time.time()`). If it is not, it's recommended
+            that a `duration` is passed into the `end()` method.
+        sample_rate
+            Sample rate which was used to decide whether to sample this transaction.
+            This is reported to the APM server so that unsampled transactions can
+            be extrapolated.
+        """
         self.id = self.get_dist_tracing_id()
         if not trace_parent:
             trace_parent = TraceParent(
@@ -195,23 +215,10 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._breakdown = None
-        try:
-            self._transaction_metrics = self.tracer._agent._metrics.get_metricset(
-                "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-            )
-        except (LookupError, AttributeError):
-            self._transaction_metrics = None
-        super(Transaction, self).__init__()
+        super(Transaction, self).__init__(start=start)
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
-        if self._transaction_metrics:
-            self._transaction_metrics.timer(
-                "transaction.duration",
-                reset_on_collect=True,
-                unit="us",
-                **{"transaction.name": self.name, "transaction.type": self.transaction_type},
-            ).update(int(self.duration * 1000000))
         if self._breakdown:
             for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
                 labels = {
@@ -227,7 +234,6 @@ class Transaction(BaseSpan):
                 )
             labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
-                self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
                 self._breakdown.timer(
                     "span.self_time",
                     reset_on_collect=True,
@@ -255,7 +261,6 @@ class Transaction(BaseSpan):
         elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span, context=context)
-            self._span_counter += 1
         else:
             span = Span(
                 transaction=self,
@@ -356,7 +361,7 @@ class Transaction(BaseSpan):
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "outcome": self.outcome,
             "sampled": self.is_sampled,
-            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
+            "span_count": {"started": self._span_counter, "dropped": self.dropped_spans},
         }
         if self._dropped_span_statistics:
             result["dropped_spans_stats"] = [
@@ -374,6 +379,9 @@ class Transaction(BaseSpan):
             # only set parent_id if this transaction isn't the root
             if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
+        # faas context belongs top-level on the transaction
+        if "faas" in self.context:
+            result["faas"] = self.context.pop("faas")
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -617,6 +625,7 @@ class Span(BaseSpan):
         self.composite["count"] += 1
         self.composite["sum"] += sibling.duration
         self.duration = sibling.ended_time - self.start_time
+        self.transaction._span_counter -= 1
         return True
 
     def _try_to_compress_composite(self, sibling: SpanType) -> Optional[str]:
@@ -785,7 +794,7 @@ class Tracer(object):
         transaction = execution_context.get_transaction(clear=True)
         if transaction:
             if transaction.name is None:
-                transaction.name = transaction_name if transaction_name is not None else ""
+                transaction.name = str(transaction_name) if transaction_name is not None else ""
             transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
                 return
@@ -859,7 +868,15 @@ class capture_span(object):
 
         return decorated
 
-    def __enter__(self) -> Union[Span, DroppedSpan, None]:
+    def __enter__(self) -> Optional[SpanType]:
+        return self.handle_enter(self.sync)
+
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
+        self.handle_exit(exc_type, exc_val, exc_tb)
+
+    def handle_enter(self, sync: bool) -> Optional[SpanType]:
         transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             return transaction.begin_span(
@@ -871,11 +888,13 @@ class capture_span(object):
                 span_subtype=self.subtype,
                 span_action=self.action,
                 start=self.start,
-                sync=self.sync,
+                sync=sync,
             )
         return None
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def handle_exit(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
         transaction = execution_context.get_transaction()
 
         if transaction and transaction.is_sampled:
@@ -917,7 +936,7 @@ def label(**labels):
         transaction.label(**labels)
 
 
-def set_transaction_name(name, override=True):
+def set_transaction_name(name: str, override: bool = True) -> None:
     """
     Sets the name of the transaction
 
@@ -929,15 +948,15 @@ def set_transaction_name(name, override=True):
     if not transaction:
         return
     if transaction.name is None or override:
-        transaction.name = name
+        transaction.name = str(name)
 
 
 def set_transaction_result(result, override=True):
     """
     Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
-    HTTP requests, or "success"/"fail" for background tasks.
+    HTTP requests, or "success"/"failure" for background tasks.
 
-    :param name: the name of the transaction
+    :param result: Details of the transaction result that should be set
     :param override: if set to False, the name is only set if no name has been set before
     :return: None
     """

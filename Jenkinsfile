@@ -37,7 +37,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger("(${obltGitHubComments()}|^run (full|benchmark) tests)")
+    issueCommentTrigger("(${obltGitHubComments()}).?(full|benchmark)?")
   }
   parameters {
     booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
@@ -118,7 +118,7 @@ pipeline {
                 script {
                   // To enable the full test matrix upon GitHub PR comments
                   def frameworkFile = '.ci/.jenkins_framework.yml'
-                  if (env.GITHUB_COMMENT?.contains('full tests')) {
+                  if (env.GITHUB_COMMENT?.contains('full')) {
                     log(level: 'INFO', text: 'Full test matrix has been enabled.')
                     frameworkFile = '.ci/.jenkins_framework_full.yml'
                   }
@@ -214,7 +214,7 @@ pipeline {
               anyOf {
                 branch 'master'
                 expression { return params.Run_As_Master_Branch }
-                expression { return env.GITHUB_COMMENT?.contains('benchmark tests') }
+                expression { return env.GITHUB_COMMENT?.contains('benchmark') }
               }
               expression { return params.bench_ci }
             }
@@ -407,9 +407,11 @@ def runScript(Map params = [:]){
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
-  dir("${BASE_DIR}"){
-    retryWithSleep(retries: 2, seconds: 5, backoff: true) {
-      sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+  filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
+    dir("${BASE_DIR}"){
+      retryWithSleep(retries: 2, seconds: 5, backoff: true) {
+        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      }
     }
   }
 }

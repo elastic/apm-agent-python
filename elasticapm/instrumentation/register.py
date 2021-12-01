@@ -34,7 +34,7 @@ from elasticapm.utils.module_import import import_string
 
 _cls_register = {
     "elasticapm.instrumentation.packages.botocore.BotocoreInstrumentation",
-    "elasticapm.instrumentation.packages.httpx.HttpxClientInstrumentation",
+    "elasticapm.instrumentation.packages.httpx.sync.httpx.HttpxClientInstrumentation",
     "elasticapm.instrumentation.packages.jinja2.Jinja2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2Instrumentation",
     "elasticapm.instrumentation.packages.psycopg2.Psycopg2ExtensionsInstrumentation",
@@ -63,7 +63,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.urllib.UrllibInstrumentation",
     "elasticapm.instrumentation.packages.graphql.GraphQLExecutorInstrumentation",
     "elasticapm.instrumentation.packages.graphql.GraphQLBackendInstrumentation",
-    "elasticapm.instrumentation.packages.httpcore.HTTPCoreInstrumentation",
+    "elasticapm.instrumentation.packages.httpx.sync.httpcore.HTTPCoreInstrumentation",
     "elasticapm.instrumentation.packages.httplib2.Httplib2Instrumentation",
     "elasticapm.instrumentation.packages.azure.AzureInstrumentation",
 }
@@ -73,7 +73,7 @@ if sys.version_info >= (3, 7):
         [
             "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
-            "elasticapm.instrumentation.packages.asyncio.httpx.HttpxAsyncClientInstrumentation",
+            "elasticapm.instrumentation.packages.httpx.async.httpx.HttpxAsyncClientInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
             "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticsearchAsyncTransportInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
@@ -81,7 +81,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
             "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
-            "elasticapm.instrumentation.packages.asyncio.httpcore.HTTPCoreAsyncInstrumentation",
+            "elasticapm.instrumentation.packages.httpx.async.httpcore.HTTPCoreAsyncInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionPoolInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aioredis.RedisPipelineInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionInstrumentation",
