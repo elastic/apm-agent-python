@@ -18,7 +18,7 @@ endif::[]
 ===== Bug fixes
 ////
 
-//=== Unreleased
+=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
@@ -26,8 +26,9 @@ endif::[]
 //===== Features
 //
 //
-//[float]
-//===== Bug fixes
+[float]
+===== Bug fixes
+* fix AttributeError in sync instrumentation of httpx {pull}1423[1423]
 
 
 [[release-notes-6.x]]
