@@ -45,7 +45,7 @@ from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
-def tracer():
+def tracer(elasticapm_client):
     frames = [
         {
             "function": "something_expensive",
@@ -177,7 +177,7 @@ def tracer():
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = Tracer(lambda: frames, lambda frames: frames, queue, Config(), None)
+    store = Tracer(lambda: frames, lambda frames: frames, queue, elasticapm_client.config, elasticapm_client)
     store.events = events
     return store
 
