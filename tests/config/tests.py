@@ -438,3 +438,11 @@ def test_versioned_config_attribute_access(elasticapm_client):
     elasticapm_client.config.update("2", capture_body=True)
     val = elasticapm_client.config.start_stop_order
     assert isinstance(val, int)
+
+
+def test_config_all_upper_case():
+    c = Config.__class__.__dict__.items()
+    for field, config_value in Config.__dict__.items():
+        if not isinstance(config_value, _ConfigValue):
+            continue
+        assert config_value.env_key == config_value.env_key.upper()
