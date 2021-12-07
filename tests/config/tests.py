@@ -227,12 +227,14 @@ def test_size_validation():
 
 def test_duration_validation():
     class MyConfig(_ConfigBase):
+        microsecond = _ConfigValue("US", type=float, validators=[duration_validator])
         millisecond = _ConfigValue("MS", type=int, validators=[duration_validator])
         second = _ConfigValue("S", type=int, validators=[duration_validator])
         minute = _ConfigValue("M", type=int, validators=[duration_validator])
         wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[duration_validator])
 
-    c = MyConfig({"MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
+    c = MyConfig({"US": "10us", "MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
+    assert c.microsecond == 0.01
     assert c.millisecond == -10
     assert c.second == 5 * 1000
     assert c.minute == 17 * 1000 * 60

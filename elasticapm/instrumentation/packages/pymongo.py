@@ -39,6 +39,8 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
         ("pymongo.collection", "Collection.aggregate"),
         ("pymongo.collection", "Collection.bulk_write"),
         ("pymongo.collection", "Collection.count"),
+        ("pymongo.collection", "Collection.count_documents"),
+        ("pymongo.collection", "Collection.estimated_document_count"),
         ("pymongo.collection", "Collection.create_index"),
         ("pymongo.collection", "Collection.create_indexes"),
         ("pymongo.collection", "Collection.delete_many"),

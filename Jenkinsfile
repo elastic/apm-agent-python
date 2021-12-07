@@ -407,9 +407,11 @@ def runScript(Map params = [:]){
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
-  dir("${BASE_DIR}"){
-    retryWithSleep(retries: 2, seconds: 5, backoff: true) {
-      sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+  filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
+    dir("${BASE_DIR}"){
+      retryWithSleep(retries: 2, seconds: 5, backoff: true) {
+        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      }
     }
   }
 }

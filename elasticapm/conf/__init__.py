@@ -290,7 +290,9 @@ class PrecisionValidator(object):
         return rounded
 
 
-duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
+duration_validator = UnitValidator(
+    r"^((?:-)?\d+)(us|ms|s|m)$", r"\d+(us|ms|s|m)", {"us": 0.001, "ms": 1, "s": 1000, "m": 60000}
+)
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
@@ -590,6 +592,12 @@ class Config(_ConfigBase):
         default=5,
         validators=[duration_validator],
         type=int,
+    )
+    exit_span_min_duration = _ConfigValue(
+        "exit_span_min_duration",
+        default=1,
+        validators=[duration_validator],
+        type=float,
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)

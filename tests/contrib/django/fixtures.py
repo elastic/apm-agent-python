@@ -88,6 +88,7 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("span_frames_min_duration", -1)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("exit_span_min_duration", "0ms")
     app = apps.get_app_config("elasticapm")
     old_client = app.client
     client = DjangoClient(**client_config)
