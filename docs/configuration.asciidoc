@@ -692,6 +692,24 @@ Except for the special values `-1` and `0`,
 this setting has to be provided in *<<config-format-duration, duration format>>*.
 
 [float]
+[[config-span-compression-enabled]]
+==== `span_compression_enabled`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `False`
+|============
+
+Enable/disable span compression.
+
+If enabled, the agent will compress very short, repeated spans into a single span,
+which is beneficial for storage and processing requirements.
+Some information is lost in this process, e.g. exact durations of each compressed span.
+
+[float]
 [[config-span-compression-exact-match-max_duration]]
 ==== `span_compression_exact_match_max_duration`
 
