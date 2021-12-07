@@ -593,7 +593,12 @@ class Span(BaseSpan):
         return bool(self.name == other_span.name and self.is_same_kind(other_span))
 
     def is_compression_eligible(self) -> bool:
-        return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
+        """
+        Determine if this span is eligible for compression.
+        """
+        if self.tracer.config.span_compression_enabled:
+            return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
+        return False
 
     @property
     def discardable(self) -> bool:
