@@ -684,7 +684,7 @@ class VersionedConfig(ThreadManager):
         self._update_thread = None
         super(VersionedConfig, self).__init__()
 
-    def update(self, version, **config):
+    def update(self, version: str, **config):
         """
         Update the configuration version
         :param version: version identifier for the new configuration
@@ -724,7 +724,7 @@ class VersionedConfig(ThreadManager):
         self._config.call_pending_callbacks()
 
     @property
-    def changed(self):
+    def changed(self) -> bool:
         return self._config != self._first_config
 
     def __getattr__(self, item):
