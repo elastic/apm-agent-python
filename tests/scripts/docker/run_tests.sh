@@ -47,6 +47,8 @@ fi
 # as this can take several minutes
 docker build --build-arg PYTHON_IMAGE=${1/-/:} -t apm-agent-python:${1} . # replace - with : to get the correct docker image
 PYTHON_VERSION=${1} docker-compose run \
+  -e OTEL_EXPORTER_OTLP_ENDPOINT \
+  -e OTEL_EXPORTER_OTLP_HEADERS \
   -e PYTHON_FULL_VERSION=${1} \
   -e LOCAL_USER_ID=$UID \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
