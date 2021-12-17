@@ -1,6 +1,7 @@
 pytest==6.2.5
 pytest-django==4.4.0
 pytest-otel>=0.0.4
+grpcio-tools==1.26.0
 coverage==6.0
 pytest-cov==3.0.0
 pytest-localserver==0.5.0
