@@ -27,8 +27,8 @@ endif::[]
 //
 //
 [float]
-===== Bug fixes
-* fix AttributeError in sync instrumentation of httpx {pull}1423[1423]
+===== Features
+ * use "unknown-python-service" as default service name if no service name is configured {pull}1438[#1438]
 
 
 [[release-notes-6.x]]
