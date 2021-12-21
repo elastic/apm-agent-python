@@ -86,8 +86,8 @@ apm = ElasticAPM(app)
 
 [options="header"]
 |============
-| Environment                | Django/Flask      | Default           | Example
-| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `python_service`  | `my-app`
+| Environment                | Django/Flask      | Default                   | Example
+| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `unknown-python-service`  | `my-app`
 |============
 
 
