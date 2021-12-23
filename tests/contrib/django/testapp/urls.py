@@ -32,7 +32,7 @@ from __future__ import absolute_import
 
 import django
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponseServerError
 
 from tests.contrib.django.testapp import views
 
@@ -46,7 +46,7 @@ except ImportError:
 def handler500(request):
     if getattr(settings, "BREAK_THAT_500", False):
         raise ValueError("handler500")
-    return HttpResponse("")
+    return HttpResponseServerError("")
 
 
 urlpatterns = (
