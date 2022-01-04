@@ -136,7 +136,14 @@ def test_collect_source_transactions(elasticapm_client):
         assert "post_context" not in in_app_frame, in_app_frame_context
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_sample_rate": 0.4}], indirect=True)
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {"transaction_sample_rate": 0.4, "server_version": (7, 14)},
+        {"transaction_sample_rate": 0.4, "server_version": (8, 0)},
+    ],
+    indirect=True,
+)
 def test_transaction_sampling(elasticapm_client, not_so_random):
     for i in range(10):
         elasticapm_client.begin_transaction("test_type")
@@ -151,6 +158,10 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
 
     # seed is fixed by not_so_random fixture
     assert len([t for t in transactions if t["sampled"]]) == 3
+    if elasticapm_client.server_version < (8, 0):
+        assert len(transactions) == 10
+    else:
+        assert len(transactions) == 3
     for transaction in transactions:
         assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
         assert transaction["sampled"] or not "context" in transaction
