@@ -156,20 +156,19 @@ async def test_trace_parent_propagation_sampled_headers_none(
             status = resp.status
             text = await resp.text()
     elasticapm_client.end_transaction("MyView")
-    transactions = elasticapm_client.events[constants.TRANSACTION]
-    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    spans = elasticapm_client.events[constants.SPAN]
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers
     trace_parent = TraceParent.from_string(
         headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
     )
-    assert trace_parent.trace_id == transactions[0]["trace_id"]
+    assert trace_parent.trace_id == transaction.trace_parent.trace_id
     if sampled:
         assert trace_parent.span_id == spans[0]["id"]
     else:
         assert trace_parent.tracestate_dict[constants.TRACESTATE.SAMPLE_RATE] == "0"
-        assert trace_parent.span_id == transactions[0]["id"]
+        assert trace_parent.span_id == transaction.id
 
 
 @pytest.mark.parametrize(
