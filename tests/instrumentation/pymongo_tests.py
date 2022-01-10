@@ -368,6 +368,30 @@ def test_bulk_execute(instrument, elasticapm_client, mongo_database):
     assert span["name"] == "elasticapm_test.test_bulk.bulk.execute"
 
 
+@pytest.mark.skipif(pymongo.version_tuple < (3, 7), reason="New in 3.7")
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "5ms",
+        }
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+def test_mongodb_span_compression(instrument, elasticapm_client, mongo_database):
+    elasticapm_client.begin_transaction("transaction.test")
+    for i in range(5):
+        blogpost = {"author": "Tom%d" % i, "text": "Foo", "date": datetime.datetime.utcnow()}
+        mongo_database.blogposts.insert_one(blogpost)
+    elasticapm_client.end_transaction("transaction.test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 1
+
+
 def _get_pymongo_span(spans):
     for span in spans:
         if span["subtype"] == "mongodb":
