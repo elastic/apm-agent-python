@@ -509,7 +509,10 @@ class _ConfigBase(object):
 
 class Config(_ConfigBase):
     service_name = _ConfigValue(
-        "SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], default="python_service", required=True
+        "SERVICE_NAME",
+        validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")],
+        default="unknown-python-service",
+        required=True,
     )
     service_node_name = _ConfigValue("SERVICE_NODE_NAME")
     environment = _ConfigValue("ENVIRONMENT")
