@@ -290,7 +290,9 @@ class PrecisionValidator(object):
         return rounded
 
 
-duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
+duration_validator = UnitValidator(
+    r"^((?:-)?\d+)(us|ms|s|m)$", r"\d+(us|ms|s|m)", {"us": 0.001, "ms": 1, "s": 1000, "m": 60000}
+)
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
@@ -507,7 +509,10 @@ class _ConfigBase(object):
 
 class Config(_ConfigBase):
     service_name = _ConfigValue(
-        "SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], default="python_service", required=True
+        "SERVICE_NAME",
+        validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")],
+        default="unknown-python-service",
+        required=True,
     )
     service_node_name = _ConfigValue("SERVICE_NODE_NAME")
     environment = _ConfigValue("ENVIRONMENT")
@@ -578,17 +583,24 @@ class Config(_ConfigBase):
         ],
         type=int,
     )
+    span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=False)
     span_compression_exact_match_max_duration = _ConfigValue(
-        "span_compression_exact_match_max_duration",
+        "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
         default=50,
         validators=[duration_validator],
         type=int,
     )
     span_compression_same_kind_max_duration = _ConfigValue(
-        "span_compression_exact_match_max_duration",
+        "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
         default=5,
         validators=[duration_validator],
         type=int,
+    )
+    exit_span_min_duration = _ConfigValue(
+        "EXIT_SPAN_MIN_DURATION",
+        default=1,
+        validators=[duration_validator],
+        type=float,
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)

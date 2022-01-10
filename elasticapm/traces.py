@@ -232,7 +232,6 @@ class Transaction(BaseSpan):
                 self._breakdown.timer("span.self_time", reset_on_collect=True, unit="us", **labels).update(
                     int(val[0] * 1000000), val[1]
                 )
-            labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
             if self.is_sampled:
                 self._breakdown.timer(
                     "span.self_time",
@@ -413,6 +412,16 @@ class Transaction(BaseSpan):
     def tracer(self) -> "Tracer":
         return self._tracer
 
+    def track_dropped_span(self, span: SpanType):
+        with self._span_timers_lock:
+            try:
+                resource = span.context["destination"]["service"]["resource"]
+                stats = self._dropped_span_statistics[(resource, span.outcome)]
+                stats["count"] += 1
+                stats["duration.sum.us"] += span.duration
+            except KeyError:
+                pass
+
 
 class Span(BaseSpan):
     __slots__ = (
@@ -584,7 +593,16 @@ class Span(BaseSpan):
         return bool(self.name == other_span.name and self.is_same_kind(other_span))
 
     def is_compression_eligible(self) -> bool:
-        return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
+        """
+        Determine if this span is eligible for compression.
+        """
+        if self.tracer.config.span_compression_enabled:
+            return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
+        return False
+
+    @property
+    def discardable(self) -> bool:
+        return self.leaf and not self.dist_tracing_propagated and self.outcome == constants.OUTCOME.SUCCESS
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         """
@@ -611,7 +629,11 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def report(self) -> None:
-        self.tracer.queue_func(SPAN, self.to_dict())
+        if self.discardable and self.duration < self.tracer.config.exit_span_min_duration:
+            self.transaction.track_dropped_span(self)
+            self.transaction.dropped_spans += 1
+        else:
+            self.tracer.queue_func(SPAN, self.to_dict())
 
     def try_to_compress(self, sibling: SpanType) -> bool:
         compression_strategy = (
@@ -836,7 +858,7 @@ class capture_span(object):
         span_subtype: Optional[str] = None,
         span_action: Optional[str] = None,
         start: Optional[int] = None,
-        duration: Optional[int] = None,
+        duration: Optional[float] = None,
         sync: Optional[bool] = None,
     ):
         self.name = name
@@ -901,17 +923,11 @@ class capture_span(object):
             try:
                 outcome = "failure" if exc_val else "success"
                 span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
-                should_send = (
+                should_track_dropped = (
                     transaction.tracer._agent.check_server_version(gte=(7, 16)) if transaction.tracer._agent else True
                 )
-                if should_send and isinstance(span, DroppedSpan) and span.context:
-                    try:
-                        resource = span.context["destination"]["service"]["resource"]
-                        stats = transaction._dropped_span_statistics[(resource, span.outcome)]
-                        stats["count"] += 1
-                        stats["duration.sum.us"] += span.duration
-                    except KeyError:
-                        pass
+                if should_track_dropped and isinstance(span, DroppedSpan) and span.context:
+                    transaction.track_dropped_span(span)
                 if exc_val and not isinstance(span, DroppedSpan):
                     try:
                         exc_val._elastic_apm_span_id = span.id

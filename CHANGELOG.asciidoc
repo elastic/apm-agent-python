@@ -18,7 +18,7 @@ endif::[]
 ===== Bug fixes
 ////
 
-//=== Unreleased
+=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
@@ -26,12 +26,21 @@ endif::[]
 //===== Features
 //
 //
-//[float]
-//===== Bug fixes
-
+[float]
+===== Features
+ * use "unknown-python-service" as default service name if no service name is configured {pull}1438[#1438]
+ * add transaction name to error objects {pull}1441[#1441]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.7.2]]
+=== 6.7.2 - 2021-12-07
+
+[float]
+===== Bug fixes
+* fix AttributeError in sync instrumentation of httpx {pull}1423[#1423]
+* add setting to disable span compression, default to disabled {pull}1429[#1429]
 
 [[release-notes-6.7.1]]
 === 6.7.1 - 2021-11-29

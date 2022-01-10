@@ -86,8 +86,8 @@ apm = ElasticAPM(app)
 
 [options="header"]
 |============
-| Environment                | Django/Flask      | Default           | Example
-| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `python_service`  | `my-app`
+| Environment                | Django/Flask      | Default                   | Example
+| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `unknown-python-service`  | `my-app`
 |============
 
 
@@ -692,6 +692,24 @@ Except for the special values `-1` and `0`,
 this setting has to be provided in *<<config-format-duration, duration format>>*.
 
 [float]
+[[config-span-compression-enabled]]
+==== `span_compression_enabled`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `False`
+|============
+
+Enable/disable span compression.
+
+If enabled, the agent will compress very short, repeated spans into a single span,
+which is beneficial for storage and processing requirements.
+Some information is lost in this process, e.g. exact durations of each compressed span.
+
+[float]
 [[config-span-compression-exact-match-max_duration]]
 ==== `span_compression_exact_match_max_duration`
 
@@ -733,6 +751,24 @@ Two spans are considered to be of the same kind if the following attributes are 
  * span type
  * span subtype
  * destination resource (e.g. the Database name)
+
+[float]
+[[config-exit-span-min-duration]]
+==== `exit_span_min_duration`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_EXIT_SPAN_MIN_DURATION` | `EXIT_SPAN_MIN_DURATION` | `"1ms"`
+|============
+
+Exit spans are spans that represent a call to an external service, like a database.
+If such calls are very short, they are usually not relevant and can be ignored.
+
+NOTE: if a span propagates distributed tracing IDs, it will not be ignored, even if it is shorter than the configured threshold.
+This is to ensure that no broken traces are recorded.
 
 [float]
 [[config-api-request-size]]
@@ -1222,6 +1258,7 @@ The unit is provided as a suffix directly after the number–without any separat
 
 *Supported units*
 
+ * `us` (microseconds)
  * `ms` (milliseconds)
  * `s` (seconds)
  * `m` (minutes)
