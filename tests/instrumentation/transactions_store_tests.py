@@ -335,6 +335,9 @@ def test_labels_dedot(elasticapm_client):
     assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_dedot_is_not_run_when_unsampled(elasticapm_client):
     for sampled in (True, False):
         t = elasticapm_client.begin_transaction("test")
@@ -414,6 +417,9 @@ def test_set_user_context_merge(elasticapm_client):
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_callable_context_ignored_when_not_sampled(elasticapm_client):
     callable_data = mock.Mock()
     callable_data.return_value = {"a": "b"}

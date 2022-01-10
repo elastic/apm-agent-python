@@ -770,6 +770,52 @@ def test_transaction_metrics_error(django_elasticapm_client, client):
         assert transaction["outcome"] == "failure"
 
 
+def test_transaction_metrics_exception(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 0
+        try:
+            client.get(reverse("elasticapm-raise-exc"))
+        except Exception:
+            pass
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+        transactions = django_elasticapm_client.events[TRANSACTION]
+        errors = django_elasticapm_client.events[ERROR]
+
+        assert len(transactions) == 1
+        assert len(errors) == 1
+        transaction = transactions[0]
+        error = errors[0]
+        assert transaction["duration"] > 0
+        assert transaction["result"] == "HTTP 5xx"
+        assert transaction["name"] == "GET tests.contrib.django.testapp.views.raise_exc"
+        assert transaction["outcome"] == "failure"
+        assert transaction["name"] == error["transaction"]["name"]
+
+
+def test_transaction_metrics_404(django_elasticapm_client, client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 0
+        try:
+            r = client.get("/non-existant-url")
+        except Exception as e:
+            pass
+        assert len(django_elasticapm_client.events[TRANSACTION]) == 1
+
+        transactions = django_elasticapm_client.events[TRANSACTION]
+
+        assert len(transactions) == 1
+        transaction = transactions[0]
+        assert transaction["duration"] > 0
+        assert transaction["result"] == "HTTP 4xx"
+        assert transaction["name"] == ""
+        assert transaction["outcome"] == "success"
+
+
 def test_transaction_metrics_debug(django_elasticapm_client, client):
     with override_settings(
         DEBUG=True, **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
@@ -1565,6 +1611,9 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
     assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
 
 
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, client):
     with override_settings(
         TEMPLATES=[

@@ -36,7 +36,7 @@ import time
 import timeit
 from collections import defaultdict
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
@@ -58,6 +58,10 @@ _time_func = timeit.default_timer
 execution_context = init_execution_context()
 
 SpanType = Union["Span", "DroppedSpan"]
+
+
+if TYPE_CHECKING:
+    import elasticapm.Client
 
 
 class ChildDuration(object):
@@ -760,7 +764,7 @@ class DroppedSpan(BaseSpan):
 
 
 class Tracer(object):
-    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent):
+    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client"):
         self.config = config
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
@@ -824,6 +828,8 @@ class Tracer(object):
                 transaction.name = str(transaction_name) if transaction_name is not None else ""
             transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
+                return
+            if not transaction.is_sampled and self._agent.check_server_version(gte=(8, 0)):
                 return
             if transaction.result is None:
                 transaction.result = result
