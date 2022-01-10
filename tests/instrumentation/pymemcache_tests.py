@@ -146,14 +146,11 @@ def test_pymemcache_hash_client(instrument, elasticapm_client):
         "HashClient.set",
         "HashClient.get",
         "HashClient.get_many",
-        "Client.set",
-        "Client.get",
-        "Client.get_many",
     }
 
     assert {t["name"] for t in spans} == expected_signatures
 
-    assert len(spans) == 7
+    assert len(spans) == 4
 
 
 @pytest.mark.parametrize(
