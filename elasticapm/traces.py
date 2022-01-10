@@ -533,30 +533,7 @@ class Span(BaseSpan):
                 self.context = {}
             self.context["tags"] = self.labels
         if self.context:
-            resource = nested_key(self.context, "destination", "service", "resource")
-            if not resource and (self.leaf or any(k in self.context for k in ("destination", "db", "message", "http"))):
-                type_info = self.subtype or self.type
-                instance = nested_key(self.context, "db", "instance")
-                queue_name = nested_key(self.context, "message", "queue", "name")
-                http_url = nested_key(self.context, "http", "url")
-                if instance:
-                    resource = f"{type_info}/{instance}"
-                elif queue_name:
-                    resource = f"{type_info}/{queue_name}"
-                elif http_url:
-                    resource = url_to_destination_resource(http_url)
-                else:
-                    resource = type_info
-                if "destination" not in self.context:
-                    self.context["destination"] = {}
-                if "service" not in self.context["destination"]:
-                    self.context["destination"]["service"] = {}
-                self.context["destination"]["service"]["resource"] = resource
-                # set fields that are deprecated, but still required by APM Server API
-                if "name" not in self.context["destination"]["service"]:
-                    self.context["destination"]["service"]["name"] = ""
-                if "type" not in self.context["destination"]["service"]:
-                    self.context["destination"]["service"]["type"] = ""
+            self.autofill_resource_context()
             result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
@@ -612,6 +589,7 @@ class Span(BaseSpan):
         :param duration: override duration, mostly useful for testing
         :return: None
         """
+        self.autofill_resource_context()
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
         if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
@@ -694,6 +672,34 @@ class Span(BaseSpan):
         current = self.context.get(key, {})
         current.update(data)
         self.context[key] = current
+
+    def autofill_resource_context(self):
+        """Automatically fills "resource" fields based on other fields"""
+        if self.context:
+            resource = nested_key(self.context, "destination", "service", "resource")
+            if not resource and (self.leaf or any(k in self.context for k in ("destination", "db", "message", "http"))):
+                type_info = self.subtype or self.type
+                instance = nested_key(self.context, "db", "instance")
+                queue_name = nested_key(self.context, "message", "queue", "name")
+                http_url = nested_key(self.context, "http", "url")
+                if instance:
+                    resource = f"{type_info}/{instance}"
+                elif queue_name:
+                    resource = f"{type_info}/{queue_name}"
+                elif http_url:
+                    resource = url_to_destination_resource(http_url)
+                else:
+                    resource = type_info
+                if "destination" not in self.context:
+                    self.context["destination"] = {}
+                if "service" not in self.context["destination"]:
+                    self.context["destination"]["service"] = {}
+                self.context["destination"]["service"]["resource"] = resource
+                # set fields that are deprecated, but still required by APM Server API
+                if "name" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["name"] = ""
+                if "type" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["type"] = ""
 
     def __str__(self):
         return "{}/{}/{}".format(self.name, self.type, self.subtype)
