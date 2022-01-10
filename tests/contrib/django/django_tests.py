@@ -1565,6 +1565,9 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
     assert transaction["name"] == "GET tests.contrib.django.testapp.views.no_error"
 
 
+@pytest.mark.parametrize(
+    "django_elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, client):
     with override_settings(
         TEMPLATES=[
