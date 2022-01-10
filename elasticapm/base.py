@@ -547,7 +547,11 @@ class Client(object):
             # parent id might already be set in the handler
             event_data.setdefault("parent_id", span.id if span else transaction.id)
             event_data["transaction_id"] = transaction.id
-            event_data["transaction"] = {"sampled": transaction.is_sampled, "type": transaction.transaction_type}
+            event_data["transaction"] = {
+                "sampled": transaction.is_sampled,
+                "type": transaction.transaction_type,
+                "name": transaction.name,
+            }
 
         return event_data
 

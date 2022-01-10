@@ -33,9 +33,12 @@ from __future__ import absolute_import
 
 import logging
 import threading
+from types import FunctionType
+from typing import Optional
 
 from django.apps import apps
 from django.conf import settings as django_settings
+from django.http import HttpRequest, HttpResponse
 
 import elasticapm
 from elasticapm.conf import constants
@@ -114,10 +117,10 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
     response = wrapped(*args, **kwargs)
     try:
         request, original_response = args
-        # if there's no view_func on the request, and this middleware created
+        # if we haven't set the name in a view, and this middleware created
         # a new response object, it's logged as the responsible transaction
         # name
-        if not hasattr(request, "_elasticapm_view_func") and response is not original_response:
+        if not getattr(request, "_elasticapm_name_set", False) and response is not original_response:
             elasticapm.set_transaction_name(
                 build_name_with_http_method_prefix(get_name_from_middleware(wrapped, instance), request)
             )
@@ -159,25 +162,17 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                 except ImportError:
                     client.logger.warning("Can't instrument middleware %s", middleware_path)
 
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        request._elasticapm_view_func = view_func
+    def process_view(self, request: HttpRequest, view_func: FunctionType, view_args: list, view_kwargs: dict):
+        elasticapm.set_transaction_name(self.get_transaction_name(request, view_func), override=False)
+        request._elasticapm_name_set = True
 
-    def process_response(self, request, response):
+    def process_response(self, request: HttpRequest, response: HttpResponse):
         if django_settings.DEBUG and not self.client.config.debug:
             return response
         try:
             if hasattr(response, "status_code"):
-                transaction_name = None
-                if self.client.config.django_transaction_name_from_route and hasattr(request.resolver_match, "route"):
-                    r = request.resolver_match
-                    # if no route is defined (e.g. for the root URL), fall back on url_name and then function name
-                    transaction_name = r.route or r.url_name or get_name_from_func(r.func)
-                elif getattr(request, "_elasticapm_view_func", False):
-                    transaction_name = get_name_from_func(request._elasticapm_view_func)
-                if transaction_name:
-                    transaction_name = build_name_with_http_method_prefix(transaction_name, request)
-                    elasticapm.set_transaction_name(transaction_name, override=False)
-
+                if not getattr(request, "_elasticapm_name_set", False):
+                    elasticapm.set_transaction_name(self.get_transaction_name(request), override=False)
                 elasticapm.set_context(
                     lambda: self.client.get_data_from_request(request, constants.TRANSACTION), "request"
                 )
@@ -190,6 +185,18 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
         except Exception:
             self.client.error_logger.error("Exception during timing of request", exc_info=True)
         return response
+
+    def get_transaction_name(self, request: HttpRequest, view_func: Optional[FunctionType] = None) -> str:
+        transaction_name = ""
+        if self.client.config.django_transaction_name_from_route and hasattr(request.resolver_match, "route"):
+            r = request.resolver_match
+            # if no route is defined (e.g. for the root URL), fall back on url_name and then function name
+            transaction_name = r.route or r.url_name or get_name_from_func(r.func)
+        elif view_func:
+            transaction_name = get_name_from_func(view_func)
+        if transaction_name:
+            transaction_name = build_name_with_http_method_prefix(transaction_name, request)
+        return transaction_name
 
 
 class ErrorIdMiddleware(MiddlewareMixin):
