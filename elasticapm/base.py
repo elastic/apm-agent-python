@@ -635,7 +635,9 @@ class Client(object):
         elif v < (3, 5):
             warnings.warn("The Elastic APM agent only supports Python 3.5+", DeprecationWarning)
 
-    def check_server_version(self, gte: Optional[Tuple[int]] = None, lte: Optional[Tuple[int]] = None) -> bool:
+    def check_server_version(
+        self, gte: Optional[Tuple[int, ...]] = None, lte: Optional[Tuple[int, ...]] = None
+    ) -> bool:
         """
         Check APM Server version against greater-or-equal and/or lower-or-equal limits, provided as tuples of integers.
         If server_version is not set, always returns True.
