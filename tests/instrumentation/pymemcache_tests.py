@@ -45,15 +45,25 @@ if "MEMCACHED_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping pymemcache tests, no MEMCACHED_HOST environment variable set"))
 
 
+@pytest.fixture()
+def mc_conn(request):
+    params = getattr(request, "param", {})
+    client_class = params.get("client_class", pymemcache.client.base.Client)
+    host = os.environ.get("MEMCACHED_HOST", "localhost")
+    port = int(os.environ.get("MEMCACHED_PORT", "11211"))
+    client = client_class((host, port))
+    yield client
+    client.flush_all()
+
+
 @pytest.mark.integrationtest
-def test_pymemcache_client(instrument, elasticapm_client):
+def test_pymemcache_client(instrument, elasticapm_client, mc_conn):
     elasticapm_client.begin_transaction("transaction.test")
     host = os.environ.get("MEMCACHED_HOST", "localhost")
     with capture_span("test_pymemcache", "test"):
-        conn = pymemcache.client.base.Client((host, 11211))
-        conn.set("mykey", "a")
-        assert b"a" == conn.get("mykey")
-        assert {"mykey": b"a"} == conn.get_many(["mykey", "myotherkey"])
+        mc_conn.set("mykey", "a")
+        assert b"a" == mc_conn.get("mykey")
+        assert {"mykey": b"a"} == mc_conn.get_many(["mykey", "myotherkey"])
     elasticapm_client.end_transaction("BillingView")
 
     transactions = elasticapm_client.events[TRANSACTION]
@@ -92,15 +102,14 @@ def test_pymemcache_client(instrument, elasticapm_client):
     assert len(spans) == 4
 
 
+@pytest.mark.parametrize("mc_conn", [{"client_class": pymemcache.client.base.PooledClient}], indirect=True)
 @pytest.mark.integrationtest
-def test_pymemcache_pooled_client(instrument, elasticapm_client):
+def test_pymemcache_pooled_client(instrument, elasticapm_client, mc_conn):
     elasticapm_client.begin_transaction("transaction.test")
-    host = os.environ.get("MEMCACHED_HOST", "localhost")
     with capture_span("test_pymemcache", "test"):
-        conn = pymemcache.client.base.PooledClient((host, 11211))
-        conn.set("mykey", "a")
-        assert b"a" == conn.get("mykey")
-        assert {"mykey": b"a"} == conn.get_many(["mykey", "myotherkey"])
+        mc_conn.set("mykey", "a")
+        assert b"a" == mc_conn.get("mykey")
+        assert {"mykey": b"a"} == mc_conn.get_many(["mykey", "myotherkey"])
     elasticapm_client.end_transaction("BillingView")
 
     transactions = elasticapm_client.events[TRANSACTION]
@@ -123,7 +132,7 @@ def test_pymemcache_hash_client(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     host = os.environ.get("MEMCACHED_HOST", "localhost")
     with capture_span("test_pymemcache", "test"):
-        conn = pymemcache.client.hash.HashClient([(host, 11211)])
+        conn = pymemcache.client.hash.HashClient([(host, 11211)])  # can't use mc_conn here due to different init
         conn.set("mykey", "a")
         assert b"a" == conn.get("mykey")
         assert {"mykey": b"a"} == conn.get_many(["mykey", "myotherkey"])
@@ -137,11 +146,30 @@ def test_pymemcache_hash_client(instrument, elasticapm_client):
         "HashClient.set",
         "HashClient.get",
         "HashClient.get_many",
-        "Client.set",
-        "Client.get",
-        "Client.get_many",
     }
 
     assert {t["name"] for t in spans} == expected_signatures
 
-    assert len(spans) == 7
+    assert len(spans) == 4
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "5ms",
+        }
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+def test_memcache_span_compression(instrument, elasticapm_client, mc_conn):
+    elasticapm_client.begin_transaction("transaction.test")
+    for i in range(5):
+        mc_conn.set(str(i), i)
+    elasticapm_client.end_transaction("test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 1

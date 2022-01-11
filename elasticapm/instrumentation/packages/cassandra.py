@@ -77,5 +77,7 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
             "port": port,
         }
 
-        with capture_span(name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context):
+        with capture_span(
+            name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context, leaf=True
+        ):
             return wrapped(*args, **kwargs)
