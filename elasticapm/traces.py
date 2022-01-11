@@ -36,7 +36,7 @@ import time
 import timeit
 from collections import defaultdict
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
@@ -58,6 +58,10 @@ _time_func = timeit.default_timer
 execution_context = init_execution_context()
 
 SpanType = Union["Span", "DroppedSpan"]
+
+
+if TYPE_CHECKING:
+    import elasticapm.Client
 
 
 class ChildDuration(object):
@@ -199,6 +203,11 @@ class Transaction(BaseSpan):
         self.result: Optional[str] = None
         self.transaction_type = transaction_type
         self._tracer = tracer
+        self.config_span_compression_enabled = tracer.config.span_compression_enabled
+        self.config_span_compression_exact_match_max_duration = tracer.config.span_compression_exact_match_max_duration
+        self.config_span_compression_same_kind_max_duration = tracer.config.span_compression_same_kind_max_duration
+        self.config_exit_span_min_duration = tracer.config.exit_span_min_duration
+        self.config_transaction_max_spans = tracer.config.transaction_max_spans
 
         self.dropped_spans: int = 0
         self.context: Dict[str, Any] = {}
@@ -257,7 +266,7 @@ class Transaction(BaseSpan):
         tracer = self.tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
-        elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
+        elif self.config_transaction_max_spans and self._span_counter > self.config_transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span, context=context)
         else:
@@ -596,7 +605,7 @@ class Span(BaseSpan):
         """
         Determine if this span is eligible for compression.
         """
-        if self.tracer.config.span_compression_enabled:
+        if self.transaction.config_span_compression_enabled:
             return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
         return False
 
@@ -629,7 +638,7 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def report(self) -> None:
-        if self.discardable and self.duration < self.tracer.config.exit_span_min_duration:
+        if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
             self.transaction.track_dropped_span(self)
             self.transaction.dropped_spans += 1
         else:
@@ -656,7 +665,7 @@ class Span(BaseSpan):
                 "exact_match"
                 if (
                     self.is_exact_match(sibling)
-                    and sibling.duration <= self.transaction.tracer.config.span_compression_exact_match_max_duration
+                    and sibling.duration <= self.transaction.config_span_compression_exact_match_max_duration
                 )
                 else None
             )
@@ -665,7 +674,7 @@ class Span(BaseSpan):
                 "same_kind"
                 if (
                     self.is_same_kind(sibling)
-                    and sibling.duration <= self.transaction.tracer.config.span_compression_same_kind_max_duration
+                    and sibling.duration <= self.transaction.config_span_compression_same_kind_max_duration
                 )
                 else None
             )
@@ -675,11 +684,11 @@ class Span(BaseSpan):
         if not self.is_same_kind(sibling):
             return None
         if self.name == sibling.name:
-            max_duration = self.transaction.tracer.config.span_compression_exact_match_max_duration
+            max_duration = self.transaction.config_span_compression_exact_match_max_duration
             if self.duration <= max_duration and sibling.duration <= max_duration:
                 return "exact_match"
             return None
-        max_duration = self.transaction.tracer.config.span_compression_same_kind_max_duration
+        max_duration = self.transaction.config_span_compression_same_kind_max_duration
         if self.duration <= max_duration and sibling.duration <= max_duration:
             return "same_kind"
         return None
@@ -755,7 +764,7 @@ class DroppedSpan(BaseSpan):
 
 
 class Tracer(object):
-    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent):
+    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client"):
         self.config = config
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
@@ -819,6 +828,8 @@ class Tracer(object):
                 transaction.name = str(transaction_name) if transaction_name is not None else ""
             transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
+                return
+            if not transaction.is_sampled and self._agent.check_server_version(gte=(8, 0)):
                 return
             if transaction.result is None:
                 transaction.result = result
