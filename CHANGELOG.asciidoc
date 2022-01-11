@@ -32,6 +32,7 @@ endif::[]
  * add transaction name to error objects {pull}1441[#1441]
  * don't send unsampled transactions to APM Server 8.0+ {pull}1442[#1442]
  * implement snapshotting of certain configuration during transaction lifetime {pull}1431[#1431]
+ * propagate traceparent IDs via Celery {pull}1371[#1371]
 
 [float]
 ===== Bug fixes
