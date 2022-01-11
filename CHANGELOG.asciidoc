@@ -31,6 +31,12 @@ endif::[]
  * use "unknown-python-service" as default service name if no service name is configured {pull}1438[#1438]
  * add transaction name to error objects {pull}1441[#1441]
  * don't send unsampled transactions to APM Server 8.0+ {pull}1442[#1442]
+ * implement snapshotting of certain configuration during transaction lifetime {pull}1431[#1431]
+ * propagate traceparent IDs via Celery {pull}1371[#1371]
+
+[float]
+===== Bug fixes
+ * Fix span compression for redis, mongodb, cassandra and memcached {pull}1444[#1444]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x

@@ -203,6 +203,11 @@ class Transaction(BaseSpan):
         self.result: Optional[str] = None
         self.transaction_type = transaction_type
         self._tracer = tracer
+        self.config_span_compression_enabled = tracer.config.span_compression_enabled
+        self.config_span_compression_exact_match_max_duration = tracer.config.span_compression_exact_match_max_duration
+        self.config_span_compression_same_kind_max_duration = tracer.config.span_compression_same_kind_max_duration
+        self.config_exit_span_min_duration = tracer.config.exit_span_min_duration
+        self.config_transaction_max_spans = tracer.config.transaction_max_spans
 
         self.dropped_spans: int = 0
         self.context: Dict[str, Any] = {}
@@ -261,7 +266,7 @@ class Transaction(BaseSpan):
         tracer = self.tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
-        elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
+        elif self.config_transaction_max_spans and self._span_counter > self.config_transaction_max_spans - 1:
             self.dropped_spans += 1
             span = DroppedSpan(parent_span, context=context)
         else:
@@ -537,30 +542,7 @@ class Span(BaseSpan):
                 self.context = {}
             self.context["tags"] = self.labels
         if self.context:
-            resource = nested_key(self.context, "destination", "service", "resource")
-            if not resource and (self.leaf or any(k in self.context for k in ("destination", "db", "message", "http"))):
-                type_info = self.subtype or self.type
-                instance = nested_key(self.context, "db", "instance")
-                queue_name = nested_key(self.context, "message", "queue", "name")
-                http_url = nested_key(self.context, "http", "url")
-                if instance:
-                    resource = f"{type_info}/{instance}"
-                elif queue_name:
-                    resource = f"{type_info}/{queue_name}"
-                elif http_url:
-                    resource = url_to_destination_resource(http_url)
-                else:
-                    resource = type_info
-                if "destination" not in self.context:
-                    self.context["destination"] = {}
-                if "service" not in self.context["destination"]:
-                    self.context["destination"]["service"] = {}
-                self.context["destination"]["service"]["resource"] = resource
-                # set fields that are deprecated, but still required by APM Server API
-                if "name" not in self.context["destination"]["service"]:
-                    self.context["destination"]["service"]["name"] = ""
-                if "type" not in self.context["destination"]["service"]:
-                    self.context["destination"]["service"]["type"] = ""
+            self.autofill_resource_context()
             result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
@@ -600,7 +582,7 @@ class Span(BaseSpan):
         """
         Determine if this span is eligible for compression.
         """
-        if self.tracer.config.span_compression_enabled:
+        if self.transaction.config_span_compression_enabled:
             return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
         return False
 
@@ -616,6 +598,7 @@ class Span(BaseSpan):
         :param duration: override duration, mostly useful for testing
         :return: None
         """
+        self.autofill_resource_context()
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
         if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
@@ -633,7 +616,7 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def report(self) -> None:
-        if self.discardable and self.duration < self.tracer.config.exit_span_min_duration:
+        if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
             self.transaction.track_dropped_span(self)
             self.transaction.dropped_spans += 1
         else:
@@ -660,7 +643,7 @@ class Span(BaseSpan):
                 "exact_match"
                 if (
                     self.is_exact_match(sibling)
-                    and sibling.duration <= self.transaction.tracer.config.span_compression_exact_match_max_duration
+                    and sibling.duration <= self.transaction.config_span_compression_exact_match_max_duration
                 )
                 else None
             )
@@ -669,7 +652,7 @@ class Span(BaseSpan):
                 "same_kind"
                 if (
                     self.is_same_kind(sibling)
-                    and sibling.duration <= self.transaction.tracer.config.span_compression_same_kind_max_duration
+                    and sibling.duration <= self.transaction.config_span_compression_same_kind_max_duration
                 )
                 else None
             )
@@ -679,11 +662,11 @@ class Span(BaseSpan):
         if not self.is_same_kind(sibling):
             return None
         if self.name == sibling.name:
-            max_duration = self.transaction.tracer.config.span_compression_exact_match_max_duration
+            max_duration = self.transaction.config_span_compression_exact_match_max_duration
             if self.duration <= max_duration and sibling.duration <= max_duration:
                 return "exact_match"
             return None
-        max_duration = self.transaction.tracer.config.span_compression_same_kind_max_duration
+        max_duration = self.transaction.config_span_compression_same_kind_max_duration
         if self.duration <= max_duration and sibling.duration <= max_duration:
             return "same_kind"
         return None
@@ -698,6 +681,34 @@ class Span(BaseSpan):
         current = self.context.get(key, {})
         current.update(data)
         self.context[key] = current
+
+    def autofill_resource_context(self):
+        """Automatically fills "resource" fields based on other fields"""
+        if self.context:
+            resource = nested_key(self.context, "destination", "service", "resource")
+            if not resource and (self.leaf or any(k in self.context for k in ("destination", "db", "message", "http"))):
+                type_info = self.subtype or self.type
+                instance = nested_key(self.context, "db", "instance")
+                queue_name = nested_key(self.context, "message", "queue", "name")
+                http_url = nested_key(self.context, "http", "url")
+                if instance:
+                    resource = f"{type_info}/{instance}"
+                elif queue_name:
+                    resource = f"{type_info}/{queue_name}"
+                elif http_url:
+                    resource = url_to_destination_resource(http_url)
+                else:
+                    resource = type_info
+                if "destination" not in self.context:
+                    self.context["destination"] = {}
+                if "service" not in self.context["destination"]:
+                    self.context["destination"]["service"] = {}
+                self.context["destination"]["service"]["resource"] = resource
+                # set fields that are deprecated, but still required by APM Server API
+                if "name" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["name"] = ""
+                if "type" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["type"] = ""
 
     def __str__(self):
         return "{}/{}/{}".format(self.name, self.type, self.subtype)

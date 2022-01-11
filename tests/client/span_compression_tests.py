@@ -264,7 +264,10 @@ def test_buffer_is_reported_if_next_child_ineligible(elasticapm_client):
     indirect=True,
 )
 def test_compressed_spans_not_counted(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
+    t = elasticapm_client.begin_transaction("test")
+    assert t.config_span_compression_enabled
+    assert t.config_span_compression_exact_match_max_duration == 5
+    assert t.config_span_compression_same_kind_max_duration == 5
     with elasticapm.capture_span(
         "test1",
         span_type="a",
@@ -286,9 +289,11 @@ def test_compressed_spans_not_counted(elasticapm_client):
     ) as span2:
         pass
     elasticapm_client.end_transaction("test")
+    assert len(elasticapm_client.events[TRANSACTION]) == 1
     transaction = elasticapm_client.events[TRANSACTION][0]
     spans = elasticapm_client.events[SPAN]
-    assert len(spans) == transaction["span_count"]["started"] == 1
+    assert len(spans) == 1
+    assert transaction["span_count"]["started"] == 1
     assert transaction["span_count"]["dropped"] == 0
 
 
