@@ -108,6 +108,7 @@ class PyMongoBulkInstrumentation(AbstractInstrumentedModule):
             span_subtype="mongodb",
             span_action="query",
             extra={"destination": {}},
+            leaf=True,
         ):
             return wrapped(*args, **kwargs)
 
