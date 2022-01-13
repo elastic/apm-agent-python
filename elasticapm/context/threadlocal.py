@@ -37,7 +37,7 @@ from elasticapm.context.base import BaseContext
 class ThreadLocalContext(BaseContext):
     thread_local = threading.local()
     thread_local.transaction = None
-    thread_local.spans = []
+    thread_local.spans = ()
 
     def get_transaction(self, clear=False):
         """
@@ -64,7 +64,7 @@ class ThreadLocalContext(BaseContext):
         If extra=True, a tuple will be returned with the span and its extra
         data: (span, extra)
         """
-        spans = getattr(self.thread_local, "spans", [])
+        spans = getattr(self.thread_local, "spans", ())
         span = (None, None)
         if spans:
             span = spans[-1]
@@ -82,7 +82,7 @@ class ThreadLocalContext(BaseContext):
         Optionally, `extra` data can be provided and will be saved alongside
         the span.
         """
-        self.thread_local.spans.append((span, extra))
+        self.thread_local.spans = self.thread_local.spans + (span, extra)
 
     def unset_span(self, extra=False):
         """
@@ -95,7 +95,8 @@ class ThreadLocalContext(BaseContext):
         spans = getattr(self.thread_local, "spans", [])
         span = (None, None)
         if spans:
-            span = spans.pop()
+            span = spans[-1]
+            self.thread_local.spans = spans[0:-1]
         if extra:
             return span
         else:

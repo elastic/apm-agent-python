@@ -38,7 +38,7 @@ from elasticapm.context.base import BaseContext
 
 class ContextVarsContext(BaseContext):
     elasticapm_transaction_var = contextvars.ContextVar("elasticapm_transaction_var")
-    elasticapm_spans_var = contextvars.ContextVar("elasticapm_spans_var", default=[])
+    elasticapm_spans_var = contextvars.ContextVar("elasticapm_spans_var", default=())
 
     def get_transaction(self, clear=False):
         """
@@ -86,7 +86,7 @@ class ContextVarsContext(BaseContext):
         Optionally, `extra` data can be provided and will be saved alongside
         the span.
         """
-        self.elasticapm_span_var.get().append((span, extra))
+        self.elasticapm_spans_var.set(self.elasticapm_span_var.get() + (span, extra))
 
     def unset_span(self, extra=False):
         """
@@ -99,7 +99,8 @@ class ContextVarsContext(BaseContext):
         spans = self.elasticapm_span_var.get()
         span = (None, None)
         if spans:
-            span = spans.pop()
+            span = spans[-1]
+            self.elasticapm_spans_var.set(spans[0:-1])
         if extra:
             return span
         else:
