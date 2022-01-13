@@ -65,12 +65,14 @@ class BaseContext(object):
         """
         raise NotImplementedError
 
-    def unset_span(self, extra=False):
+    def unset_span(self, extra=False, clear_all=False):
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
 
         Returns the de-activated span. If extra=True, a tuple will be returned
         with the span and its extra data: (span, extra)
+
+        If clear_all=True, all spans will be cleared and no span will be active.
         """
         raise NotImplementedError

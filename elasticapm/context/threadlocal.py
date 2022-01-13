@@ -84,19 +84,24 @@ class ThreadLocalContext(BaseContext):
         """
         self.thread_local.spans = self.thread_local.spans + (span, extra)
 
-    def unset_span(self, extra=False):
+    def unset_span(self, extra=False, clear_all=False):
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
 
         Returns the de-activated span. If extra=True, a tuple will be returned
         with the span and its extra data: (span, extra)
+
+        If clear_all=True, all spans will be cleared and no span will be active.
         """
         spans = getattr(self.thread_local, "spans", [])
         span = (None, None)
         if spans:
             span = spans[-1]
-            self.thread_local.spans = spans[0:-1]
+            if clear_all:
+                self.thread_local.spans = ()
+            else:
+                self.thread_local.spans = spans[0:-1]
         if extra:
             return span
         else:

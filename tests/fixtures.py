@@ -197,7 +197,7 @@ def elasticapm_client(request):
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
     assert not client._transport.validation_errors
 
 
@@ -251,7 +251,7 @@ def elasticapm_client_log_file(request):
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 @pytest.fixture()
@@ -315,7 +315,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client.close()
     # clear any execution context that might linger around
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 class DummyTransport(HTTPTransportBase):

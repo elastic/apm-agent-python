@@ -88,19 +88,24 @@ class ContextVarsContext(BaseContext):
         """
         self.elasticapm_spans_var.set(self.elasticapm_span_var.get() + (span, extra))
 
-    def unset_span(self, extra=False):
+    def unset_span(self, extra=False, clear_all=False):
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
 
         Returns the de-activated span. If extra=True, a tuple will be returned
         with the span and its extra data: (span, extra)
+
+        If clear_all=True, all spans will be cleared and no span will be active.
         """
         spans = self.elasticapm_span_var.get()
         span = (None, None)
         if spans:
             span = spans[-1]
-            self.elasticapm_spans_var.set(spans[0:-1])
+            if clear_all:
+                self.elasticapm_spans_var.set(())
+            else:
+                self.elasticapm_spans_var.set(spans[0:-1])
         if extra:
             return span
         else:

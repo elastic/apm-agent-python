@@ -599,7 +599,7 @@ class Span(BaseSpan):
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
             self.frames = None
-        execution_context.set_span(self.parent)
+        execution_context.unset_span()
 
         p = self.parent if self.parent else self.transaction
         if self.transaction._breakdown:
@@ -694,7 +694,7 @@ class DroppedSpan(BaseSpan):
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
-        execution_context.set_span(self.parent)
+        execution_context.unset_span()
 
     def child_started(self, timestamp):
         pass
