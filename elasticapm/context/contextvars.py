@@ -86,7 +86,7 @@ class ContextVarsContext(BaseContext):
         Optionally, `extra` data can be provided and will be saved alongside
         the span.
         """
-        self.elasticapm_spans_var.set(self.elasticapm_span_var.get() + (span, extra))
+        self.elasticapm_spans_var.set(self.elasticapm_span_var.get() + ((span, extra),))
 
     def unset_span(self, extra=False, clear_all=False):
         """
