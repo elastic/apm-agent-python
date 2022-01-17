@@ -117,15 +117,17 @@ pipeline {
               dir("${BASE_DIR}"){
                 script {
                   // To enable the full test matrix upon GitHub PR comments
+                  def pythonFile = '.ci/.jenkins_python.yml'
                   def frameworkFile = '.ci/.jenkins_framework.yml'
                   if (env.GITHUB_COMMENT?.contains('full')) {
                     log(level: 'INFO', text: 'Full test matrix has been enabled.')
                     frameworkFile = '.ci/.jenkins_framework_full.yml'
+                    pythonFile = '.ci/.jenkins_python_full.yml'
                   }
                   pythonTasksGen = new PythonParallelTaskGenerator(
                     xKey: 'PYTHON_VERSION',
                     yKey: 'FRAMEWORK',
-                    xFile: ".ci/.jenkins_python.yml",
+                    xFile: pythonFile,
                     yFile: frameworkFile,
                     exclusionFile: ".ci/.jenkins_exclude.yml",
                     tag: "Python",

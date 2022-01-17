@@ -62,7 +62,7 @@ pipeline {
               pythonTasksGen = new PythonParallelTaskGenerator(
                 xKey: 'PYTHON_VERSION',
                 yKey: 'FRAMEWORK',
-                xFile: ".ci/.jenkins_python.yml",
+                xFile: ".ci/.jenkins_python_full.yml",
                 yFile: ".ci/.jenkins_framework_full.yml",
                 exclusionFile: ".ci/.jenkins_exclude.yml",
                 tag: "Python",
