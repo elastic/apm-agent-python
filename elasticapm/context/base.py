@@ -56,21 +56,21 @@ class BaseContext(object):
         """
         raise NotImplementedError
 
-    def get_span(self, extra=False):
+    def get_span(self, with_extra=False):
         """
         Get the active span for the current execution context.
 
-        If extra=True, a tuple will be returned with the span and its extra
+        If with_extra=True, a tuple will be returned with the span and its extra
         data: (span, extra)
         """
         raise NotImplementedError
 
-    def unset_span(self, extra=False, clear_all=False):
+    def unset_span(self, with_extra=False, clear_all=False):
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
 
-        Returns the de-activated span. If extra=True, a tuple will be returned
+        Returns the de-activated span. If with_extra=True, a tuple will be returned
         with the span and its extra data: (span, extra)
 
         If clear_all=True, all spans will be cleared and no span will be active.
