@@ -40,7 +40,7 @@ pipeline {
     issueCommentTrigger("(${obltGitHubComments()}).?(full|benchmark)?")
   }
   parameters {
-    booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+    booleanParam(name: 'Run_As_Main_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on main branch.')
     booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
     booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
     booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
@@ -76,7 +76,7 @@ pipeline {
               expression { return env.ONLY_DOCS == "false" }
               anyOf {
                 not { changeRequest() }
-                expression { return params.Run_As_Master_Branch }
+                expression { return params.Run_As_Main_Branch }
               }
             }
           }
@@ -187,7 +187,7 @@ pipeline {
               expression { return env.ONLY_DOCS == "false" }
               anyOf {
                 changeRequest()
-                expression { return !params.Run_As_Master_Branch }
+                expression { return !params.Run_As_Main_Branch }
               }
             }
           }
@@ -214,8 +214,8 @@ pipeline {
             beforeAgent true
             allOf {
               anyOf {
-                branch 'master'
-                expression { return params.Run_As_Master_Branch }
+                branch 'main'
+                expression { return params.Run_As_Main_Branch }
                 expression { return env.GITHUB_COMMENT?.contains('benchmark') }
               }
               expression { return params.bench_ci }
@@ -259,7 +259,7 @@ pipeline {
         beforeInput true
         anyOf {
           tag pattern: 'v\\d+.*', comparator: 'REGEXP'
-          expression { return params.Run_As_Master_Branch }
+          expression { return params.Run_As_Main_Branch }
         }
       }
       stages {
@@ -310,7 +310,7 @@ pipeline {
             beforeInput true
             anyOf {
               tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
-              expression { return params.Run_As_Master_Branch }
+              expression { return params.Run_As_Main_Branch }
             }
           }
           steps {
@@ -321,7 +321,7 @@ pipeline {
                   branch: 'main')
               // It's required to transform the tag value to the artifact version
               sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
-              // The opbeans pipeline will trigger a release for the master branch
+              // The opbeans pipeline will trigger a release for the main branch
               gitPush()
               // The opbeans pipeline will trigger a release for the release tag
               gitCreateTag(tag: "${env.BRANCH_NAME}")
@@ -333,7 +333,7 @@ pipeline {
   }
   post {
     cleanup {
-      notifyBuildResult(analyzeFlakey: true, jobName: getFlakyJobName(withBranch: 'master'))
+      notifyBuildResult(analyzeFlakey: true, jobName: getFlakyJobName(withBranch: 'main'))
     }
   }
 }
