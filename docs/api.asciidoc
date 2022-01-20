@@ -379,7 +379,7 @@ Supported frameworks will automatically attach information about the HTTP reques
 You can attach further data using this function.
 
 TIP: Before using custom context, ensure you understand the different types of
-{apm-overview-ref-v}/metadata.html[metadata] that are available.
+{apm-guide-ref}/metadata.html[metadata] that are available.
 
 Example:
 
@@ -509,7 +509,7 @@ NOTE: `asyncio` is only supported for Python 3.7+.
 Attach labels to the the current transaction and errors.
 
 TIP: Before using custom labels, ensure you understand the different types of
-{apm-overview-ref-v}/metadata.html[metadata] that are available.
+{apm-guide-ref}/metadata.html[metadata] that are available.
 
 Example:
 
