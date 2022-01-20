@@ -359,7 +359,7 @@ experimental::[]
 // TODO: add link to APM Server API Key docs once the docs are released
 
 This base64-encoded string is used to ensure that only your agents can send data to your APM Server.
-The API key must be created using the {apm-guide-ref-v}/api-key.html[APM server command-line tool].
+The API key must be created using the {apm-guide-ref}/api-key.html[APM server command-line tool].
 
 WARNING: API keys only provide any real security if your APM Server uses TLS.
 
