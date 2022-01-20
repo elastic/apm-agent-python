@@ -165,7 +165,7 @@ def handle_azureblob(request, hostname, path, query_params, service, service_typ
         if "x-ms-copy-source" in headers:
             operation_name = "Copy"
             # These are repetitive and unnecessary, but included in case the table at
-            # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
+            # https://github.com/elastic/apm/blob/main/specs/agents/tracing-instrumentation-azure.md
             # changes in the future
             if "block" in query_params.get("comp", []):
                 operation_name = "Copy"
@@ -239,7 +239,7 @@ def handle_azurequeue(request, hostname, path, query_params, service, service_ty
             operation_name = "CLEAR"
         elif query_params.get("popreceipt", []):
             # Redundant, but included in case the table at
-            # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
+            # https://github.com/elastic/apm/blob/main/specs/agents/tracing-instrumentation-azure.md
             # changes in the future
             operation_name = "DELETE"
             preposition = "from "
