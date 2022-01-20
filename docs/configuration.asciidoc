@@ -1128,7 +1128,7 @@ behavior by setting this to `True`.
 | `ELASTIC_APM_USE_ELASTIC_TRACEPARENT_HEADER` | `USE_ELASTIC_TRACEPARENT_HEADER` | `True`
 |============
 
-To enable {apm-overview-ref-v}/distributed-tracing.html[distributed tracing],
+To enable {apm-guide-ref}/distributed-tracing.html[distributed tracing],
 the agent sets a number of HTTP headers to outgoing requests made with <<automatic-instrumentation-http,instrumented HTTP libraries>>.
 These headers (`traceparent` and `tracestate`) are defined in the https://www.w3.org/TR/trace-context-1/[W3C Trace Context] specification.
 
