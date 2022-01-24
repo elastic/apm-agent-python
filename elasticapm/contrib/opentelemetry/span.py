@@ -28,17 +28,28 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import datetime
 import types as python_types
 import typing
 
-from opentelemetry import trace as oteltrace
+from opentelemetry.sdk import trace as oteltrace
 from opentelemetry.trace.span import SpanContext
-from opentelemetry.trace.status import Status
+from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
+
+import elasticapm
+import elasticapm.conf.constants as constants
+import elasticapm.traces
 
 
 class Span(oteltrace.Span):
-    """A span represents a single operation within a trace."""
+    """
+    This is a wrapper around an Elastic APM Span/Transaction object, to match the
+    otel Span API
+    """
+
+    def __init__(self, elastic_span: elasticapm.traces.BaseSpan):
+        self.elastic_span = elastic_span
 
     def end(self, end_time: typing.Optional[int] = None) -> None:
         """Sets the current time as the span's end time.
@@ -46,6 +57,15 @@ class Span(oteltrace.Span):
         Only the first call to `end` should modify the span, and
         implementations are free to ignore or raise on further calls.
         """
+        # FIXME does anything special need to happen here for Transactions?
+        if self.elastic_span.ended_time:
+            # Already ended
+            return
+        if end_time:
+            # FIXME calculate duration
+            self.elastic_span.end()
+        else:
+            self.elastic_span.end()
 
     def get_span_context(self) -> "SpanContext":
         """Gets the span's SpanContext.
@@ -54,18 +74,30 @@ class Span(oteltrace.Span):
         Returns:
             A :class:`opentelemetry.trace.SpanContext` with a copy of this span's immutable state.
         """
+        # FIXME trace_options and trace_state
+        return SpanContext(
+            trace_id=int(self.elastic_span.transaction.trace_parent.trace_id, base=16),
+            span_id=int(self.elastic_span.id, base=16),
+            is_remote=False,
+        )
 
     def set_attributes(self, attributes: typing.Dict[str, types.AttributeValue]) -> None:
         """Sets Attributes.
         Sets Attributes with the key and value passed as arguments dict.
         Note: The behavior of `None` value attributes is undefined, and hence strongly discouraged.
         """
+        for key, value in attributes.items():
+            self.set_attribute(key, value)
 
     def set_attribute(self, key: str, value: types.AttributeValue) -> None:
         """Sets an Attribute.
         Sets a single Attribute with the key and value passed as arguments.
         Note: The behavior of `None` value attributes is undefined, and hence strongly discouraged.
         """
+        # FIXME need to handle otel_attributes -> top level `otel` in the to_dict() methods on Transaction/Span
+        if "otel_attributes" not in self.elastic_span.context:
+            self.elastic_span.context["otel_attributes"] = {}
+        self.elastic_span.context["otel_attributes"][key] = value
 
     def add_event(
         self,
@@ -78,6 +110,7 @@ class Span(oteltrace.Span):
         attributes passed as arguments. Implementations should generate a
         timestamp if the `timestamp` argument is omitted.
         """
+        raise NotImplementedError("Events are not implemented in the otel bridge at this time")
 
     def update_name(self, name: str) -> None:
         """Updates the `Span` name.
@@ -85,17 +118,25 @@ class Span(oteltrace.Span):
         Upon this update, any sampling behavior based on Span name will depend
         on the implementation.
         """
+        self.elastic_span.name = name
 
     def is_recording(self) -> bool:
         """Returns whether this span will be recorded.
         Returns true if this Span is active and recording information like
         events with the add_event operation and attributes using set_attribute.
         """
+        self.elastic_span.transaction.is_sampled
 
     def set_status(self, status: Status) -> None:
         """Sets the Status of the Span. If used, this will override the default
         Span status.
         """
+        if status.status_code == StatusCode.ERROR:
+            self.elastic_span.outcome = constants.OUTCOME.FAILURE
+        elif status.status_code == StatusCode.OK:
+            self.elastic_span.outcome = constants.OUTCOME.SUCCESS
+        else:
+            self.elastic_span.outcome = constants.OUTCOME.UNKNOWN
 
     def record_exception(
         self,
@@ -105,6 +146,14 @@ class Span(oteltrace.Span):
         escaped: bool = False,
     ) -> None:
         """Records an exception as a span event."""
+        client = elasticapm.get_client()
+        # FIXME should otel_attributes be top-level on the exception object?
+        client.capture_exception(
+            exc_info=(type(exception), exception, exception.__traceback__),
+            date=datetime.datetime.fromtimestamp(timestamp),
+            context={"otel_attributes": attributes},
+            handled=escaped,
+        )
 
     def __enter__(self) -> "Span":
         """Invoked when `Span` is used as a context manager.

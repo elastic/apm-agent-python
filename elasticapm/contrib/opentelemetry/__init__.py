@@ -28,6 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from .trace import Tracer
+
+TRACER = None
+
 
 def get_tracer(name):
-    pass
+    global TRACER
+    if not TRACER:
+        TRACER = Tracer()
+    return TRACER

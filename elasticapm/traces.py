@@ -198,6 +198,9 @@ class Transaction(BaseSpan):
         self.result: Optional[str] = None
         self.transaction_type = transaction_type
         self._tracer = tracer
+        # The otel bridge uses Transactions/Spans interchangeably -- storing
+        # a reference to the Transaction in the Transaction simplifies things.
+        self.transaction = self
 
         self.dropped_spans: int = 0
         self.context: Dict[str, Any] = {}
