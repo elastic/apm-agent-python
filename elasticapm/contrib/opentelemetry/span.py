@@ -86,6 +86,8 @@ class Span(oteltrace.Span):
         Sets Attributes with the key and value passed as arguments dict.
         Note: The behavior of `None` value attributes is undefined, and hence strongly discouraged.
         """
+        if not attributes:
+            return
         for key, value in attributes.items():
             self.set_attribute(key, value)
 

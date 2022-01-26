@@ -29,13 +29,23 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import logging
 import typing
 from contextlib import contextmanager
 from typing import Any, Iterator, Optional, Sequence
 
-from opentelemetry import trace as oteltrace
-from opentelemetry.trace import Context, Span, SpanKind
+from opentelemetry import trace as trace_api
+from opentelemetry.sdk import trace as oteltrace
+from opentelemetry.sdk.trace import Context, SpanKind
+from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
+
+import elasticapm
+from elasticapm.traces import execution_context
+
+from .span import Span
+
+logger = logging.getLogger("elasticapm.otel")
 
 
 class Tracer(oteltrace.Tracer):
@@ -91,6 +101,43 @@ class Tracer(oteltrace.Tracer):
         Returns:
             The newly-created span.
         """
+        if links:
+            logger.warning("The opentelemetry bridge does not support links at this time.")
+        if not record_exception:
+            logger.warning("record_exception was set to False, but exceptions will still be recorded for this span.")
+
+        parent_span_context = trace_api.get_current_span(context).get_span_context()
+
+        if parent_span_context is not None and not isinstance(parent_span_context, trace_api.SpanContext):
+            raise TypeError("parent_span_context must be a SpanContext or None.")
+
+        trace_id = None
+        if parent_span_context and parent_span_context.is_valid:
+            trace_id = parent_span_context.trace_id
+            # FIXME tracestate from remote context too?
+
+        span = None
+        current_transaction = execution_context.get_transaction()
+        if parent_span_context and current_transaction:
+            logger.warning(
+                "Remote context included when a transaction was already active. "
+                "Ignoring remote context and creating a Span instead."
+            )
+        elif parent_span_context:
+            # FIXME Create a transaction with trace_id from parent_span_context
+            trace_id
+            pass
+        elif not current_transaction:
+            # FIXME Create root transaction
+            pass
+        else:
+            elastic_span = current_transaction.begin_span(name, start=start_time)
+            span = Span(elastic_span=elastic_span)
+            span.set_attributes(attributes)
+            # FIXME set SpanKind
+            # FIXME deal with set_status_on_exception
+
+        return span
 
     @contextmanager  # type: ignore
     def start_as_current_span(
@@ -149,6 +196,8 @@ class Tracer(oteltrace.Tracer):
         Yields:
             The newly-created span.
         """
+        # FIXME
+        raise NotImplementedError()
 
 
 def get_tracer(
@@ -185,12 +234,28 @@ def get_tracer_provider() -> None:
 
 @contextmanager
 def use_span(
-    span: Any,
+    span: Span,
     end_on_exit: bool = False,
     record_exception: bool = True,
     set_status_on_exception: bool = True,
 ) -> None:
     """
-    Not implemented by otel bridge
+    Takes a non-active span and activates it in the current context.
     """
-    raise NotImplementedError()
+    execution_context.set_span(span)
+    try:
+        yield span
+    except Exception as exc:
+        if record_exception:
+            elasticapm.get_client().capture_exception(handled=False)
+        if set_status_on_exception:
+            span.set_status(
+                Status(
+                    status_code=StatusCode.ERROR,
+                    description=f"{type(exc).__name__}: {exc}",
+                )
+            )
+    finally:
+        execution_context.unset_span()
+        if end_on_exit:
+            span.end()
