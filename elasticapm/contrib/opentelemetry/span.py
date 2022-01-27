@@ -40,6 +40,7 @@ from opentelemetry.util import types
 import elasticapm
 import elasticapm.conf.constants as constants
 import elasticapm.traces
+from elasticapm.traces import execution_context
 
 
 class Span(oteltrace.Span):
@@ -50,6 +51,7 @@ class Span(oteltrace.Span):
 
     def __init__(self, elastic_span: elasticapm.traces.BaseSpan):
         self.elastic_span = elastic_span
+        elastic_span.otel_wrapper = self
 
     def end(self, end_time: typing.Optional[int] = None) -> None:
         """Sets the current time as the span's end time.
@@ -57,7 +59,6 @@ class Span(oteltrace.Span):
         Only the first call to `end` should modify the span, and
         implementations are free to ignore or raise on further calls.
         """
-        # FIXME does anything special need to happen here for Transactions?
         if self.elastic_span.ended_time:
             # Already ended
             return
@@ -66,6 +67,9 @@ class Span(oteltrace.Span):
             self.elastic_span.end()
         else:
             self.elastic_span.end()
+        if isinstance(self.elastic_span, elasticapm.traces.Transaction):
+            # Transactions don't auto-clear when they end
+            execution_context.get_transaction(clear=True)
 
     def get_span_context(self) -> "SpanContext":
         """Gets the span's SpanContext.
