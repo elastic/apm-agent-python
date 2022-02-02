@@ -283,17 +283,20 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
         Register the start of a transaction on the client
 
         :param transaction_type: type of the transaction, e.g. "request"
         :param trace_parent: an optional TraceParent object for distributed tracing
         :param start: override the start timestamp, mostly useful for testing
+        :param auto_activate: whether to set this transaction in execution_context
         :return: the started transaction object
         """
         if self.config.is_recording:
-            return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
+            return self.tracer.begin_transaction(
+                transaction_type, trace_parent=trace_parent, start=start, auto_activate=auto_activate
+            )
 
     def end_transaction(self, name=None, result="", duration=None):
         """

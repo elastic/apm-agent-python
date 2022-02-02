@@ -255,6 +255,7 @@ class Transaction(BaseSpan):
         span_action=None,
         sync=None,
         start=None,
+        auto_activate=True,
     ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
@@ -280,7 +281,8 @@ class Transaction(BaseSpan):
             )
             span.frames = tracer.frames_collector_func()
             self._span_counter += 1
-        execution_context.set_span(span)
+        if auto_activate:
+            execution_context.set_span(span)
         return span
 
     def begin_span(
@@ -294,6 +296,7 @@ class Transaction(BaseSpan):
         span_action=None,
         sync=None,
         start=None,
+        auto_activate=True,
     ):
         """
         Begin a new span
@@ -306,6 +309,7 @@ class Transaction(BaseSpan):
         :param span_action: action of the span , e.g. "query"
         :param sync: indicate if the span is synchronous or not. In most cases, `None` should be used
         :param start: timestamp, mostly useful for testing
+        :param auto_activate: whether to set this span in execution_context
         :return: the Span object
         """
         return self._begin_span(
@@ -319,6 +323,7 @@ class Transaction(BaseSpan):
             span_action=span_action,
             sync=sync,
             start=start,
+            auto_activate=auto_activate,
         )
 
     def end_span(self, skip_frames: int = 0, duration: Optional[float] = None, outcome: str = "unknown"):
@@ -750,13 +755,14 @@ class Tracer(object):
         else:
             return self.config.span_frames_min_duration / 1000.0
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
         Start a new transactions and bind it in a thread-local variable
 
         :param transaction_type: type of the transaction, e.g. "request"
         :param trace_parent: an optional TraceParent object
         :param start: override the start timestamp, mostly useful for testing
+        :param auto_activate: whether to set this transaction in execution_context
 
         :returns the Transaction object
         """
@@ -782,7 +788,8 @@ class Tracer(object):
         )
         if trace_parent is None:
             transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
-        execution_context.set_transaction(transaction)
+        if auto_activate:
+            execution_context.set_transaction(transaction)
         return transaction
 
     def end_transaction(self, result=None, transaction_name=None, duration=None):

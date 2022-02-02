@@ -68,7 +68,6 @@ class Tracer(oteltrace.Tracer):
         set_status_on_exception: bool = True,
     ) -> "Span":
         """
-        # FIXME fix docstring
         Starts a span.
         Create a new span. Start the span without setting it as the current
         span in the context. To start the span and use the context in a single
@@ -91,10 +90,10 @@ class Tracer(oteltrace.Tracer):
             kind: The span's kind (relationship to parent). Note that is
                 meaningful even if there is no parent.
             attributes: The span's attributes.
-            links: Links span to other spans
+            links: Links span to other spans (ignored in this bridge)
             start_time: Sets the start time of a span
             record_exception: Whether to record any exceptions raised within the
-                context as error event on the span.
+                context as error event on the span. (ignored in this bridge)
             set_status_on_exception: Only relevant if the returned span is used
                 in a with/context manager. Defines wether the span status will
                 be automatically set to ERROR when an uncaught exception is
@@ -128,15 +127,15 @@ class Tracer(oteltrace.Tracer):
                 "Ignoring remote context and creating a Span instead."
             )
         elif traceparent:
-            # FIXME transactions auto-activate. Do we want to let them?
-            transaction = client.begin_transaction("otel", traceparent=traceparent, start=start_time)
+            transaction = client.begin_transaction(
+                "otel", traceparent=traceparent, start=start_time, auto_activate=False
+            )
             span = Span(elastic_span=transaction)
         elif not current_transaction:
-            # FIXME transactions auto-activate. Do we want to let them?
-            transaction = client.begin_transaction("otel", start=start_time)
+            transaction = client.begin_transaction("otel", start=start_time, auto_activate=False)
             span = Span(elastic_span=transaction)
         else:
-            elastic_span = current_transaction.begin_span(name, start=start_time)
+            elastic_span = current_transaction.begin_span(name, start=start_time, auto_activate=False)
             span = Span(elastic_span=elastic_span)
             span.set_attributes(attributes)
 
@@ -156,7 +155,6 @@ class Tracer(oteltrace.Tracer):
         end_on_exit: bool = True,
     ) -> Iterator["Span"]:
         """
-        # FIXME fix docstring
         Context manager for creating a new span and set it
         as the current span in this tracer's context.
         Exiting the context manager will call the span's end method,
@@ -186,10 +184,10 @@ class Tracer(oteltrace.Tracer):
             kind: The span's kind (relationship to parent). Note that is
                 meaningful even if there is no parent.
             attributes: The span's attributes.
-            links: Links span to other spans
+            links: Links span to other spans (ignored in this bridge)
             start_time: Sets the start time of a span
             record_exception: Whether to record any exceptions raised within the
-                context as error event on the span.
+                context as error event on the span. (ignored in this bridge)
             set_status_on_exception: Only relevant if the returned span is used
                 in a with/context manager. Defines wether the span status will
                 be automatically set to ERROR when an uncaught exception is
@@ -261,8 +259,10 @@ def use_span(
     """
     Takes a non-active span and activates it in the current context.
     """
-    # FIXME handle transaction activation
-    execution_context.set_span(span)
+    if isinstance(span.elastic_span, elasticapm.traces.Transaction):
+        execution_context.set_transaction(span.elastic_span)
+    else:
+        execution_context.set_span(span)
     try:
         yield span
     except Exception as exc:
@@ -276,6 +276,9 @@ def use_span(
                 )
             )
     finally:
-        execution_context.unset_span()
+        if isinstance(span.elastic_span, elasticapm.traces.Transaction):
+            execution_context.get_transaction(clear=True)
+        else:
+            execution_context.unset_span()
         if end_on_exit:
             span.end()

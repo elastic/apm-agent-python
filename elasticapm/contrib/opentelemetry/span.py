@@ -32,6 +32,7 @@ import datetime
 import types as python_types
 import typing
 
+# FIXME try:except these imports
 from opentelemetry.sdk import trace as oteltrace
 from opentelemetry.trace.span import SpanContext
 from opentelemetry.trace.status import Status, StatusCode
