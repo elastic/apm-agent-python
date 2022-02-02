@@ -36,7 +36,6 @@ Logbook
 MarkupSafe
 WebOb
 Werkzeug
-anyjson
 argparse
 blinker>=1.1
 greenlet
