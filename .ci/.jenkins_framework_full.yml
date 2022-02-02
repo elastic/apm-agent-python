@@ -34,7 +34,6 @@ FRAMEWORK:
   - boto3-1.5
   - boto3-1.6
   - boto3-newest
-  - pymongo-2.9
   - pymongo-3.0
   - pymongo-3.1
   - pymongo-3.2
