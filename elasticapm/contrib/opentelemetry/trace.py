@@ -37,12 +37,14 @@ from typing import Any, Iterator, Optional, Sequence
 from opentelemetry import trace as trace_api
 from opentelemetry.sdk import trace as oteltrace
 from opentelemetry.sdk.trace import Context, SpanKind
+from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
 
 import elasticapm
 from elasticapm.traces import execution_context
 
+from . import context as context_api
 from .span import Span
 from .utils import get_traceparent
 
@@ -259,10 +261,7 @@ def use_span(
     """
     Takes a non-active span and activates it in the current context.
     """
-    if isinstance(span.elastic_span, elasticapm.traces.Transaction):
-        execution_context.set_transaction(span.elastic_span)
-    else:
-        execution_context.set_span(span)
+    context_api.attach(context_api.set_value(_SPAN_KEY, span))
     try:
         yield span
     except Exception as exc:
@@ -276,9 +275,6 @@ def use_span(
                 )
             )
     finally:
-        if isinstance(span.elastic_span, elasticapm.traces.Transaction):
-            execution_context.get_transaction(clear=True)
-        else:
-            execution_context.unset_span()
+        context_api.detach()
         if end_on_exit:
             span.end()

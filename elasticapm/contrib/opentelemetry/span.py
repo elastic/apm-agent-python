@@ -33,7 +33,9 @@ import types as python_types
 import typing
 
 # FIXME try:except these imports
+from opentelemetry.context import Context
 from opentelemetry.sdk import trace as oteltrace
+from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.span import SpanContext
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
@@ -52,6 +54,7 @@ class Span(oteltrace.Span):
 
     def __init__(self, elastic_span: elasticapm.traces.BaseSpan):
         self.elastic_span = elastic_span
+        self.otel_context = Context({_SPAN_KEY: self})
         elastic_span.otel_wrapper = self
 
     def end(self, end_time: typing.Optional[int] = None) -> None:
@@ -64,7 +67,7 @@ class Span(oteltrace.Span):
             # Already ended
             return
         if end_time:
-            # FIXME calculate duration
+            # FIXME calculate duration with end time
             self.elastic_span.end()
         else:
             self.elastic_span.end()
