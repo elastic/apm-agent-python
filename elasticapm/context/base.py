@@ -45,33 +45,26 @@ class BaseContext(object):
         """
         raise NotImplementedError
 
-    def set_span(self, span, extra=None):
+    def set_span(self, span):
         """
         Set the active span for the current execution context.
 
         The previously-activated span will be saved to be re-activated later.
-
-        Optionally, `extra` data can be provided and will be saved alongside
-        the span.
         """
         raise NotImplementedError
 
-    def get_span(self, with_extra=False):
+    def get_span(self):
         """
         Get the active span for the current execution context.
-
-        If with_extra=True, a tuple will be returned with the span and its extra
-        data: (span, extra)
         """
         raise NotImplementedError
 
-    def unset_span(self, with_extra=False, clear_all=False):
+    def unset_span(self, clear_all=False):
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
 
-        Returns the de-activated span. If with_extra=True, a tuple will be returned
-        with the span and its extra data: (span, extra)
+        Returns the deactivated span.
 
         If clear_all=True, all spans will be cleared and no span will be active.
         """

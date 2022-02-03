@@ -36,6 +36,7 @@ from elasticapm.context.base import BaseContext
 
 class ThreadLocalContext(BaseContext):
     thread_local = threading.local()
+    # TODO why do we getattr on every access if the variables are defined here?
     thread_local.transaction = None
     thread_local.spans = ()
 
@@ -57,55 +58,42 @@ class ThreadLocalContext(BaseContext):
         """
         self.thread_local.transaction = transaction
 
-    def get_span(self, with_extra=False):
+    def get_span(self):
         """
         Get the active span for the current execution context.
-
-        If with_extra=True, a tuple will be returned with the span and its extra
-        data: (span, extra)
         """
         spans = getattr(self.thread_local, "spans", ())
-        span = (None, None)
+        span = None
         if spans:
             span = spans[-1]
-        if with_extra:
-            return span
-        else:
-            return span[0]
+        return span
 
-    def set_span(self, span, extra=None):
+    def set_span(self, span):
         """
         Set the active span for the current execution context.
 
         The previously-activated span will be saved to be re-activated later.
-
-        Optionally, `extra` data can be provided and will be saved alongside
-        the span.
         """
-        self.thread_local.spans = self.thread_local.spans + (span, extra)
+        self.thread_local.spans = getattr(self.thread_local, "spans", ()) + (span,)
 
-    def unset_span(self, with_extra=False, clear_all=False):
+    def unset_span(self, clear_all=False):
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
 
-        Returns the de-activated span. If with_extra=True, a tuple will be returned
-        with the span and its extra data: (span, extra)
+        Returns the deactivated span.
 
         If clear_all=True, all spans will be cleared and no span will be active.
         """
-        spans = getattr(self.thread_local, "spans", [])
-        span = (None, None)
+        spans = getattr(self.thread_local, "spans", ())
+        span = None
         if spans:
             span = spans[-1]
             if clear_all:
                 self.thread_local.spans = ()
             else:
                 self.thread_local.spans = spans[0:-1]
-        if with_extra:
-            return span
-        else:
-            return span[0]
+        return span
 
 
 execution_context = ThreadLocalContext()
