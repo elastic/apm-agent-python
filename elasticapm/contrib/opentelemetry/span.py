@@ -32,7 +32,6 @@ import datetime
 import types as python_types
 import typing
 
-# FIXME try:except these imports
 from opentelemetry.context import Context
 from opentelemetry.sdk import trace as oteltrace
 from opentelemetry.trace.propagation import _SPAN_KEY
@@ -104,7 +103,6 @@ class Span(oteltrace.Span):
         Sets a single Attribute with the key and value passed as arguments.
         Note: The behavior of `None` value attributes is undefined, and hence strongly discouraged.
         """
-        # FIXME need to handle otel_attributes -> top level `otel` in the to_dict() methods on Transaction/Span
         if "otel_attributes" not in self.elastic_span.context:
             self.elastic_span.context["otel_attributes"] = {}
         self.elastic_span.context["otel_attributes"][key] = value

@@ -36,7 +36,7 @@ from typing import Any, Iterator, Optional, Sequence
 
 from opentelemetry import trace as trace_api
 from opentelemetry.sdk import trace as oteltrace
-from opentelemetry.sdk.trace import Context, SpanKind
+from opentelemetry.trace import Context, SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
@@ -46,7 +46,7 @@ from elasticapm.traces import execution_context
 
 from . import context as context_api
 from .span import Span
-from .utils import get_traceparent
+from .utils import get_span_kind, get_traceparent
 
 logger = logging.getLogger("elasticapm.otel")
 
@@ -121,7 +121,6 @@ class Tracer(oteltrace.Tracer):
             # FIXME docs for configuration of otel bridge
             client = elasticapm.Client()
 
-        # FIXME set SpanKind
         # FIXME deal with set_status_on_exception
         if traceparent and current_transaction:
             logger.warning(
@@ -129,17 +128,19 @@ class Tracer(oteltrace.Tracer):
                 "Ignoring remote context and creating a Span instead."
             )
         elif traceparent:
-            transaction = client.begin_transaction(
+            elastic_span = client.begin_transaction(
                 "otel", traceparent=traceparent, start=start_time, auto_activate=False
             )
-            span = Span(elastic_span=transaction)
+            span = Span(elastic_span=elastic_span)
         elif not current_transaction:
-            transaction = client.begin_transaction("otel", start=start_time, auto_activate=False)
-            span = Span(elastic_span=transaction)
+            elastic_span = client.begin_transaction("otel", start=start_time, auto_activate=False)
+            span = Span(elastic_span=elastic_span)
         else:
             elastic_span = current_transaction.begin_span(name, start=start_time, auto_activate=False)
             span = Span(elastic_span=elastic_span)
             span.set_attributes(attributes)
+        spankind = get_span_kind(kind)
+        elastic_span.context["otel_spankind"] = spankind
 
         return span
 

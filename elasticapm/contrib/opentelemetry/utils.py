@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from opentelemetry.trace import SpanKind
 from opentelemetry.trace.span import SpanContext
 
 import elasticapm.conf.constants as constants
@@ -57,3 +58,21 @@ def get_traceparent(otel_spancontext: SpanContext) -> TraceParent:
         return traceparent
     else:
         return None
+
+
+def get_span_kind(kind: SpanKind) -> str:
+    """
+    Converts a SpanKind to the string representation
+    """
+    if kind == SpanKind.CLIENT:
+        return "CLIENT"
+    elif kind == SpanKind.CONSUMER:
+        return "CONSUMER"
+    elif kind == SpanKind.INTERNAL:
+        return "INTERNAL"
+    elif kind == SpanKind.PRODUCER:
+        return "PRODUCER"
+    elif kind == SpanKind.SERVER:
+        return "SERVER"
+    else:
+        return "INTERNAL"

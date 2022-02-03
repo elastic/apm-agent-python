@@ -37,6 +37,7 @@ import timeit
 from collections import defaultdict
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
@@ -389,6 +390,20 @@ class Transaction(BaseSpan):
         # faas context belongs top-level on the transaction
         if "faas" in self.context:
             result["faas"] = self.context.pop("faas")
+        # otel attributes and spankind need to be top-level
+        if "otel_spankind" in self.context:
+            result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+        if elasticapm.get_client().check_server_version(gte=(7, 16)):
+            if "otel_attributes" in self.context:
+                if "otel" not in result:
+                    result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                else:
+                    result["otel"]["attributes"] = self.context.pop("otel_attributes")
+        else:
+            # Attributes map to labels for older versions
+            attributes = self.context.pop("otel_attributes")
+            for key, value in attributes.items():
+                result["context"]["tags"][key] = value
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -555,6 +570,20 @@ class Span(BaseSpan):
                     self.context["destination"]["service"]["name"] = ""
                 if "type" not in self.context["destination"]["service"]:
                     self.context["destination"]["service"]["type"] = ""
+            # otel attributes and spankind need to be top-level
+            if "otel_spankind" in self.context:
+                result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+            if elasticapm.get_client().check_server_version(gte=(7, 16)):
+                if "otel_attributes" in self.context:
+                    if "otel" not in result:
+                        result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                    else:
+                        result["otel"]["attributes"] = self.context.pop("otel_attributes")
+            else:
+                # Attributes map to labels for older versions
+                attributes = self.context.pop("otel_attributes")
+                for key, value in attributes.items():
+                    result["context"]["tags"][key] = value
             result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
