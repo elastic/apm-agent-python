@@ -34,6 +34,7 @@ import typing
 
 from opentelemetry.context import Context
 from opentelemetry.sdk import trace as oteltrace
+from opentelemetry.trace import SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.span import SpanContext
 from opentelemetry.trace.status import Status, StatusCode
@@ -65,6 +66,7 @@ class Span(oteltrace.Span):
         if self.elastic_span.ended_time:
             # Already ended
             return
+        self._set_types()
         if end_time:
             # FIXME calculate duration with end time
             self.elastic_span.end()
@@ -178,3 +180,23 @@ class Span(oteltrace.Span):
         """Ends context manager and calls `end` on the `Span`."""
 
         self.end()
+
+    def _set_types(self):
+        """
+        Set the types and subtypes for the underlying Elastic transaction/span
+        """
+        if isinstance(self.elastic_span, elasticapm.traces.Transaction):
+            attributes = self.elastic_span.context.get("otel_attributes", {})
+            span_kind = self.elastic_span.context["otel_spankind"]
+            is_rpc = bool(attributes.get("rpc.system"))
+            is_http = bool(attributes.get("http.url")) or bool(attributes.get("http.scheme"))
+            is_messaging = bool(attributes.get("messaging.system"))
+            if span_kind == SpanKind.SERVER and (is_rpc or is_http):
+                type = "request"
+            elif span_kind == SpanKind.CONSUMER and is_messaging:
+                type = "messaging"
+            else:
+                type = "unknown"
+            self.elastic_span.transaction_type = type
+        else:
+            pass
