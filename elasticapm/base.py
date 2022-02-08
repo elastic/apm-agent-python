@@ -477,6 +477,12 @@ class Client(object):
         event_data["context"] = context
         if transaction and transaction.labels:
             context["tags"] = deepcopy(transaction.labels)
+        # No intake for otel.attributes, so make them labels
+        if "otel_attributes" in context:
+            if context.get("tags"):
+                context["tags"].update(context.pop("otel_attributes"))
+            else:
+                context["tags"] = context.pop("otel_attributes")
 
         # if '.' not in event_type:
         # Assume it's a builtin

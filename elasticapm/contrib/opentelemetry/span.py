@@ -158,11 +158,10 @@ class Span(oteltrace.Span):
     ) -> None:
         """Records an exception as a span event."""
         client = elasticapm.get_client()
-        # FIXME should otel_attributes be top-level on the exception object?
         client.capture_exception(
             exc_info=(type(exception), exception, exception.__traceback__),
             date=datetime.datetime.fromtimestamp(timestamp),
-            context={"otel_attributes": attributes},
+            context={"otel_attributes": attributes} if attributes else None,
             handled=escaped,
         )
 
