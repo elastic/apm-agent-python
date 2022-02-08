@@ -12,7 +12,7 @@ Install the Elastic APM agent using pip:
 
 [source,bash]
 ----
-$ pip install elastic-apm[flask]
+$ pip install "elastic-apm[flask]"
 ----
 
 or add `elastic-apm[flask]` to your project's `requirements.txt` file.
