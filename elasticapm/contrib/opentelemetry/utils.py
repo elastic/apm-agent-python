@@ -47,13 +47,14 @@ def get_traceparent(otel_spancontext: SpanContext) -> TraceParent:
         trace_id = otel_spancontext.trace_id
         span_id = otel_spancontext.span_id
         is_sampled = otel_spancontext.trace_flags.sampled
-        # FIXME tracestate from remote context too?
+        tracestate = otel_spancontext.trace_state
     if trace_id:
         traceparent = TraceParent(
             constants.TRACE_CONTEXT_VERSION,
             "%032x" % trace_id,
             "%016x" % span_id,
             TracingOptions(recorded=is_sampled),
+            tracestate=tracestate.to_header(),
         )
         return traceparent
     else:
