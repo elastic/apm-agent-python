@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import datetime
+import time
 import types as python_types
 import typing
 
@@ -69,8 +70,7 @@ class Span(oteltrace.Span):
             return
         self._set_types()
         if end_time:
-            # FIXME calculate duration with end time
-            self.elastic_span.end()
+            self.elastic_span.end(duration=time.time() - self.elastic_span.timestamp)
         else:
             self.elastic_span.end()
         if isinstance(self.elastic_span, elasticapm.traces.Transaction):
