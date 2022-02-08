@@ -37,7 +37,7 @@ from opentelemetry.context import Context
 from opentelemetry.sdk import trace as oteltrace
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
-from opentelemetry.trace.span import SpanContext
+from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
 
@@ -84,11 +84,14 @@ class Span(oteltrace.Span):
         Returns:
             A :class:`opentelemetry.trace.SpanContext` with a copy of this span's immutable state.
         """
-        # FIXME trace_options and trace_state
         return SpanContext(
             trace_id=int(self.elastic_span.transaction.trace_parent.trace_id, base=16),
             span_id=int(self.elastic_span.id, base=16),
             is_remote=False,
+            trace_flags=TraceFlags(
+                TraceFlags.SAMPLED if self.elastic_span.transaction.is_sampled else TraceFlags.DEFAULT
+            ),
+            trace_state=TraceState(list(self.elastic_span.transaction.trace_parent.tracestate_dict.items())),
         )
 
     def set_attributes(self, attributes: typing.Dict[str, types.AttributeValue]) -> None:
