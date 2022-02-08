@@ -119,9 +119,9 @@ class Tracer(oteltrace.Tracer):
         client = elasticapm.get_client()
         if not client:
             # FIXME docs for configuration of otel bridge
+            # FIXME where are we doing elasticapm.instrument()?
             client = elasticapm.Client()
 
-        # FIXME deal with set_status_on_exception
         if traceparent and current_transaction:
             logger.warning(
                 "Remote context included when a transaction was already active. "
@@ -131,13 +131,13 @@ class Tracer(oteltrace.Tracer):
             elastic_span = client.begin_transaction(
                 "otel", traceparent=traceparent, start=start_time, auto_activate=False
             )
-            span = Span(elastic_span=elastic_span)
+            span = Span(elastic_span=elastic_span, set_status_on_exception=set_status_on_exception)
         elif not current_transaction:
             elastic_span = client.begin_transaction("otel", start=start_time, auto_activate=False)
-            span = Span(elastic_span=elastic_span)
+            span = Span(elastic_span=elastic_span, set_status_on_exception=set_status_on_exception)
         else:
             elastic_span = current_transaction.begin_span(name, start=start_time, auto_activate=False)
-            span = Span(elastic_span=elastic_span)
+            span = Span(elastic_span=elastic_span, set_status_on_exception=set_status_on_exception)
             span.set_attributes(attributes)
         spankind = get_span_kind(kind)
         elastic_span.context["otel_spankind"] = spankind
@@ -257,11 +257,16 @@ def use_span(
     span: Span,
     end_on_exit: bool = False,
     record_exception: bool = True,
-    set_status_on_exception: bool = True,
+    set_status_on_exception: bool = None,
 ) -> None:
     """
     Takes a non-active span and activates it in the current context.
     """
+    if set_status_on_exception is None:
+        set_status_on_exception = span.set_status_on_exception
+    if set_status_on_exception is None:
+        # Default if it's not set in the span or in this context manager
+        set_status_on_exception = True
     context_api.attach(context_api.set_value(_SPAN_KEY, span))
     try:
         yield span

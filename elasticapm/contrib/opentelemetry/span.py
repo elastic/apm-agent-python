@@ -54,10 +54,11 @@ class Span(oteltrace.Span):
     otel Span API
     """
 
-    def __init__(self, elastic_span: elasticapm.traces.BaseSpan):
+    def __init__(self, elastic_span: elasticapm.traces.BaseSpan, set_status_on_exception: typing.Optional[bool] = None):
         self.elastic_span = elastic_span
         self.otel_context = Context({_SPAN_KEY: self})
         elastic_span.otel_wrapper = self
+        self.set_status_on_exception = set_status_on_exception
 
     def end(self, end_time: typing.Optional[int] = None) -> None:
         """Sets the current time as the span's end time.
