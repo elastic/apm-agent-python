@@ -191,6 +191,7 @@ def elasticapm_client(request):
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("exit_span_min_duration", "0ms")
     client = TempStoreClient(**client_config)
     yield client
     client.close()

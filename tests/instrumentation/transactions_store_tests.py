@@ -37,7 +37,7 @@ import mock
 import pytest
 
 import elasticapm
-from elasticapm.conf import Config
+from elasticapm.conf import Config, VersionedConfig
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
 from elasticapm.utils.disttracing import TraceParent
@@ -45,7 +45,7 @@ from tests.utils import assert_any_record_contains
 
 
 @pytest.fixture()
-def tracer():
+def tracer(elasticapm_client):
     frames = [
         {
             "function": "something_expensive",
@@ -177,7 +177,7 @@ def tracer():
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = Tracer(lambda: frames, lambda frames: frames, queue, Config(), None)
+    store = Tracer(lambda: frames, lambda frames: frames, queue, elasticapm_client.config, elasticapm_client)
     store.events = events
     return store
 
@@ -259,20 +259,20 @@ def test_set_unknown_transaction_outcome(elasticapm_client):
 
 
 def test_get_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction(clear=True)
     assert execution_context.get_transaction() is None
 
 
 def test_label_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     transaction = requests_store.begin_transaction("test")
     elasticapm.label(foo="bar")
     transaction.label(baz="bazzinga")
@@ -290,7 +290,7 @@ def test_label_while_no_transaction(caplog):
 
 
 def test_label_with_allowed_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     elasticapm.label(foo=1, bar=True, baz=1.1, bazzinga=decimal.Decimal("1.1"))
     requests_store.end_transaction(200, "test")
@@ -305,7 +305,7 @@ def test_label_with_not_allowed_non_string_value():
         def __unicode__(self):
             return u"ok"
 
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     elasticapm.label(foo=SomeType())
     requests_store.end_transaction(200, "test")
@@ -335,6 +335,9 @@ def test_labels_dedot(elasticapm_client):
     assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_dedot_is_not_run_when_unsampled(elasticapm_client):
     for sampled in (True, False):
         t = elasticapm_client.begin_transaction("test")
@@ -414,6 +417,9 @@ def test_set_user_context_merge(elasticapm_client):
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_callable_context_ignored_when_not_sampled(elasticapm_client):
     callable_data = mock.Mock()
     callable_data.return_value = {"a": "b"}

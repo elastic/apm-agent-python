@@ -12,10 +12,10 @@ FRAMEWORK:
   - flask-2.0
   - opentracing-newest
   - twisted-18
-  - celery-3-flask-1.0
-  - celery-3-django-2.0
   - celery-4-flask-1.0
   - celery-4-django-2.0
+  - celery-5-flask-2
+  - celery-5-django-4
   - requests-newest
   - boto3-newest
   - pymongo-newest

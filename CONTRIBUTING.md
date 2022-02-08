@@ -58,9 +58,9 @@ Once your changes are ready to submit for review:
 1. Rebase your changes
 
     Update your local repository with the most recent code from the main repo,
-    and rebase your branch on top of the latest master branch.
+    and rebase your branch on top of the latest main branch.
     When we merge your PR, we will squash all of your commits into a single
-    commit on the master branch.
+    commit on the main branch.
 
 1. Submit a pull request
 
@@ -80,7 +80,7 @@ Once your changes are ready to submit for review:
 ### Testing
 
 To run local unit tests, you can install the relevant
-[requirements files](https://github.com/elastic/apm-agent-python/tree/master/tests/requirements)
+[requirements files](https://github.com/elastic/apm-agent-python/tree/main/tests/requirements)
 and then run `make test` from the project root:
 
     pip install -r tests/requirements/reqs-flask-1.1.txt
@@ -92,7 +92,7 @@ dependencies are not met.
 If you want to go above and beyond and run the full test suite,
 you need to install several databases (Elasticsearch, PostgreSQL, MySQL, Cassandra, Redis).
 This can be quite a hassle, so we recommend to use our dockerized test setup.
-See [Running tests](https://www.elastic.co/guide/en/apm/agent/python/master/run-tests-locally.html) for detailed instructions.
+See [Running tests](https://www.elastic.co/guide/en/apm/agent/python/main/run-tests-locally.html) for detailed instructions.
 
 
 #### Pytest
@@ -167,7 +167,7 @@ In this example, we will create an instrumentation for the "foo" database, by in
 
 ### Workflow
 
-All feature development and most bug fixes hit the master branch first.
+All feature development and most bug fixes hit the main branch first.
 Pull requests should be reviewed by someone with commit access.
 Once approved, the author of the pull request,
 or reviewer if the author does not have commit access,
@@ -180,12 +180,12 @@ If you have commit access, the process is as follows:
 1. Update the version in `elasticapm/version.py` according to the scale of the change. (major, minor or patch)
 1. Update `CHANGELOG.asciidoc`. Rename the `Unreleased` section to the correct version (`vX.X.X`), and nest under the appropriate sub-heading, e.g., `Python Agent version 5.x`.
 1. For Majors: Add a new row to the EOL table in `docs/upgrading.asciidoc`. The EOL date is the release date plus 18 months.
-1. For Majors: Add the new major version to `conf.yaml` in the [elastic/docs](https://github.com/elastic/docs) repo. 
+1. For Majors: Add the new major version to `conf.yaml` in the [elastic/docs](https://github.com/elastic/docs) repo.
 1. Commit changes with message `update CHANGELOG and bump version to X.Y.Z` where `X.Y.Z` is the version in `elasticapm/version.py`
 1. Tag the commit with `git tag -a vX.Y.Z`, for example `git tag -a v1.2.3`.
    Copy the changelog for the release to the tag message, removing any leading `#`.
-1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current master, e.g. `git branch -f 1.x master`
-1. Push commits and tags upstream with `git push upstream master && git push upstream --tags` (and optionally to your own fork as well)
+1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current main, e.g. `git branch -f 1.x main`
+1. Push commits and tags upstream with `git push upstream main && git push upstream --tags` (and optionally to your own fork as well)
 1. Update major branch, e.g. `1.x` on upstream with `git push upstream 1.x`
 1. After tests pass, Jenkins will automatically build a source package, as well as binary wheels.
    To upload them to PyPI, go to [Jenkins](https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/activity)
