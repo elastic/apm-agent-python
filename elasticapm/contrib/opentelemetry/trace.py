@@ -58,6 +58,14 @@ class Tracer(oteltrace.Tracer):
     and controlling spans' lifecycles.
     """
 
+    def __init__(self, *args, **kwargs):  # type: ignore
+        super().__init__(*args, **kwargs)
+        client = elasticapm.get_client()
+        if not client:
+            client = elasticapm.Client()
+        if client.config.instrument and client.config.enabled:
+            elasticapm.instrument()
+
     def start_span(
         self,
         name: str,
@@ -118,8 +126,6 @@ class Tracer(oteltrace.Tracer):
         current_transaction = execution_context.get_transaction()
         client = elasticapm.get_client()
         if not client:
-            # FIXME docs for configuration of otel bridge
-            # FIXME where are we doing elasticapm.instrument()?
             client = elasticapm.Client()
 
         if traceparent and current_transaction:
