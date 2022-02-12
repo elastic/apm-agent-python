@@ -2,31 +2,31 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - name: python-3.6
+  - name: python-3-6
     image: python:3.6
     command:
     - sleep
     args:
     - infinity
-  - name: python-3.7
+  - name: python-3-7
     image: python:3.7
     command:
     - sleep
     args:
     - infinity
-  - name: python-3.8
+  - name: python-3-8
     image: python:3.8
     command:
     - sleep
     args:
     - infinity
-  - name: python-3.9
+  - name: python-3-9
     image: python:3.9
     command:
     - sleep
     args:
     - infinity
-  - name: python-3.10
+  - name: python-3-10
     image: python:3.10
     command:
     - sleep

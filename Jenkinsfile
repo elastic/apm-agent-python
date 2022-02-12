@@ -86,7 +86,7 @@ pipeline {
           }
           steps {
             withGithubNotify(context: 'Sanity checks', tab: 'tests') {
-              container('python-3.7') {
+              container('python-3-7') {
                 unstash 'source'
                 dir("${BASE_DIR}"){
                   // registry: '' will help to disable the docker login
@@ -165,7 +165,7 @@ pipeline {
           }
           steps {
             withGithubNotify(context: 'Building packages') {
-              container('python-3.9') {
+              container('python-3-9') {
                 unstash 'source'
                 dir("${BASE_DIR}"){
                   sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
@@ -379,7 +379,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
   public Closure generateStep(x, yList){
     return {
       yList.each{ y ->
-        steps.container(x) {
+        steps.container(x.replaceAll('\\.', '-')) {
           def label = "${tag}-${x}-${y}"
           try {
             steps.runScript(label: label, python: x, framework: y)
