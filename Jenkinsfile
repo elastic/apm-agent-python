@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent { label 'linux && immutable' }
+  agent { kubernetes { yamlFile '.ci/k8s/PythonPod.yml' } }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -85,14 +85,11 @@ pipeline {
           }
           steps {
             withGithubNotify(context: 'Sanity checks', tab: 'tests') {
-              deleteDir()
-              unstash 'source'
-              script {
-                docker.image('python:3.7-stretch').inside(){
-                  dir("${BASE_DIR}"){
-                    // registry: '' will help to disable the docker login
-                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
-                  }
+              container('python-3.7') {
+                unstash 'source'
+                dir("${BASE_DIR}"){
+                  // registry: '' will help to disable the docker login
+                  preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
                 }
               }
             }
@@ -167,15 +164,16 @@ pipeline {
           }
           steps {
             withGithubNotify(context: 'Building packages') {
-              deleteDir()
-              unstash 'source'
-              dir("${BASE_DIR}"){
-                sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-                sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-                // skip pypy builds with CIBW_SKIP=pp*
-                sh script: 'CIBW_SKIP="pp* cp27* cp35*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+              container('python-3.9') {
+                unstash 'source'
+                dir("${BASE_DIR}"){
+                  sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
+                  sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
+                  // skip pypy builds with CIBW_SKIP=pp*
+                  sh script: 'CIBW_SKIP="pp* cp27* cp35*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+                }
+                stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
               }
-              stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
             }
           }
         }
@@ -379,8 +377,8 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
   */
   public Closure generateStep(x, yList){
     return {
-      steps.node('linux && immutable'){
-        yList.each{ y ->
+      yList.each{ y ->
+        steps.container(x) {
           def label = "${tag}-${x}-${y}"
           try {
             steps.runScript(label: label, python: x, framework: y)
