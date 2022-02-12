@@ -406,8 +406,7 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  deleteDir()
-  sh "mkdir ${env.PIP_CACHE}"
+  sh "mkdir ${env.PIP_CACHE} || true"
   unstash 'source'
   filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
     dir("${BASE_DIR}"){
