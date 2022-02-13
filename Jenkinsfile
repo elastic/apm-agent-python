@@ -388,7 +388,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
       yList.each{ y ->
         steps.container(x.replaceAll('\\.', '-')) {
           // run within a unique workspace folder to avoid clashing with multiple siblings pods.
-          dir(UUID.randomUUID().toString()) {
+          steps.dir(UUID.randomUUID().toString()) {
             def label = "${tag}-${x}-${y}"
             try {
               steps.runScript(label: label, python: x, framework: y)
