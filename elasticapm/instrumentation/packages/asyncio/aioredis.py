@@ -54,7 +54,8 @@ class RedisConnectionPoolInstrumentation(AbstractInstrumentedModule):
         with async_capture_span(
             wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
         ) as span:
-            span.context["destination"] = _get_destination_info(instance)
+            if span.context:
+                span.context["destination"] = _get_destination_info(instance)
 
             return wrapped(*args, **kwargs)
 
@@ -70,7 +71,8 @@ class RedisPipelineInstrumentation(AbstractInstrumentedModule):
         with async_capture_span(
             wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
         ) as span:
-            span.context["destination"] = _get_destination_info(instance)
+            if span.context:
+                span.context["destination"] = _get_destination_info(instance)
 
             return wrapped(*args, **kwargs)
 
