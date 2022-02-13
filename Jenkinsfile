@@ -311,6 +311,10 @@ pipeline {
 }
 
 def runMatrix() {
+  // prepare the cache in the main workspace, this will be later on consumed in each
+  // execution.
+  sh "mkdir ${env.PIP_CACHE}"
+
   // To enable the full test matrix upon GitHub PR comments
   def pythonFile = '.ci/.jenkins_python.yml'
   def frameworkFile = '.ci/.jenkins_framework.yml'
@@ -408,7 +412,6 @@ def runScript(Map params = [:]){
   def python = params.python
   def framework = params.framework
   log(level: 'INFO', text: "${label}")
-  sh "mkdir ${env.PIP_CACHE} || true"
   unstash 'source'
   filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
     dir("${BASE_DIR}"){
