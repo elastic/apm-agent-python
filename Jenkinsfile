@@ -336,10 +336,11 @@ def runMatrix() {
   def mapParallelTasks = pythonTasksGen.generateParallelTests()
 
   // Let's now enable the windows stages
-  readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+  // TODO: enable back
+  /*readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
     def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
     mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
-  }
+  }*/
   parallel(mapParallelTasks)
 }
 
