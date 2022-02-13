@@ -38,7 +38,6 @@ pipeline {
   }
   triggers {
     issueCommentTrigger("(${obltGitHubComments()}).?(full|benchmark)?")
-    cron('H */4 * * *')
   }
   parameters {
     booleanParam(name: 'Run_As_Main_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on main branch.')
