@@ -386,19 +386,22 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
     return {
       yList.each{ y ->
         steps.container(x.replaceAll('\\.', '-')) {
-          def label = "${tag}-${x}-${y}"
-          try {
-            steps.runScript(label: label, python: x, framework: y)
-            saveResult(x, y, 1)
-          } catch(e){
-            saveResult(x, y, 0)
-            steps.error("${label} tests failed : ${e.toString()}\n")
-          } finally {
-            steps.dir("${steps.env.BASE_DIR}"){
-              steps.dockerLogs(step: "${label}", failNever: true)
-              steps.junit(allowEmptyResults: true, keepLongStdio: true,
-                          testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-              steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.${x}.${y}", allowEmpty: true)
+          // run within a unique workspace folder to avoid clashing with multiple siblings pods.
+          dir(UUID.randomUUID().toString()) {
+            def label = "${tag}-${x}-${y}"
+            try {
+              steps.runScript(label: label, python: x, framework: y)
+              saveResult(x, y, 1)
+            } catch(e){
+              saveResult(x, y, 0)
+              steps.error("${label} tests failed : ${e.toString()}\n")
+            } finally {
+              steps.dir("${steps.env.BASE_DIR}"){
+                steps.dockerLogs(step: "${label}", failNever: true)
+                steps.junit(allowEmptyResults: true, keepLongStdio: true,
+                            testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+                steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.${x}.${y}", allowEmpty: true)
+              }
             }
           }
         }
