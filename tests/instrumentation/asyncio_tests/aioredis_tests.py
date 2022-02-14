@@ -30,6 +30,8 @@
 
 import pytest  # isort:skip
 
+import elasticapm
+
 aioredis = pytest.importorskip("aioredis")  # isort:skip
 
 import os
@@ -181,3 +183,23 @@ async def test_publish_subscribe_async(instrument, elasticapm_client, redis_conn
     assert spans[2]["type"] == "test"
 
     assert len(spans) == 3
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        pytest.param({"transaction_max_spans": 1}),
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+async def test_dropped(instrument, elasticapm_client, redis_conn):
+    # Test that our instrumentation doesn't blow up for dropped spans
+    elasticapm_client.begin_transaction("transaction.test")
+    async with elasticapm.async_capture_span("bla"):
+        pass
+    redis_conn.ping()
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    span = elasticapm_client.spans_for_transaction(transaction)[0]
+    assert span["name"] == "bla"
