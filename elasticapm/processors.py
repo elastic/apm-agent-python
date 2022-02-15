@@ -228,7 +228,7 @@ def add_context_lines_to_frames(client, event):
         event,
         lambda frame: per_file[frame["context_metadata"][0]].append(frame) if "context_metadata" in frame else None,
     )
-    for filename, frames in per_file.items():
+    for frames in per_file.values():
         for frame in frames:
             # context_metadata key has been set in elasticapm.utils.stacks.get_frame_info for
             # all frames for which we should gather source code context lines
