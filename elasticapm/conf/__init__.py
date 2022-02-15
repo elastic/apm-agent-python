@@ -114,7 +114,7 @@ class _ConfigValue(object):
         self,
         dict_key,
         env_key=None,
-        type=compat.text_type,
+        type=str,
         validators=None,
         callbacks=None,
         callbacks_on_default=True,
@@ -155,7 +155,7 @@ class _ConfigValue(object):
             try:
                 value = self.type(value)
             except ValueError as e:
-                raise ConfigurationError("{}: {}".format(self.dict_key, compat.text_type(e)), self.dict_key)
+                raise ConfigurationError("{}: {}".format(self.dict_key, str(e)), self.dict_key)
         instance._errors.pop(self.dict_key, None)
         return value
 
@@ -189,7 +189,7 @@ class _ListConfigValue(_ConfigValue):
         super(_ListConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
-        if isinstance(value, compat.string_types):
+        if isinstance(value, str):
             value = value.split(self.list_separator)
         elif value is not None:
             value = list(value)
@@ -206,7 +206,7 @@ class _DictConfigValue(_ConfigValue):
         super(_DictConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
-        if isinstance(value, compat.string_types):
+        if isinstance(value, str):
             items = (item.split(self.keyval_separator) for item in value.split(self.item_separator))
             value = {key.strip(): self.type(val.strip()) for key, val in items}
         elif not isinstance(value, dict):
@@ -223,7 +223,7 @@ class _BoolConfigValue(_ConfigValue):
         super(_BoolConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
-        if isinstance(value, compat.string_types):
+        if isinstance(value, str):
             if value.lower() == self.true_string:
                 value = True
             elif value.lower() == self.false_string:
@@ -238,7 +238,7 @@ class RegexValidator(object):
         self.verbose_pattern = verbose_pattern or regex
 
     def __call__(self, value, field_name):
-        value = compat.text_type(value)
+        value = str(value)
         match = re.match(self.regex, value)
         if match:
             return value
@@ -252,7 +252,7 @@ class UnitValidator(object):
         self.unit_multipliers = unit_multipliers
 
     def __call__(self, value, field_name):
-        value = compat.text_type(value)
+        value = str(value)
         match = re.match(self.regex, value, re.IGNORECASE)
         if not match:
             raise ConfigurationError("{} does not match pattern {}".format(value, self.verbose_pattern), field_name)
@@ -444,7 +444,7 @@ class _ConfigBase(object):
             env_dict = os.environ
         if inline_dict is None:
             inline_dict = {}
-        for field, config_value in compat.iteritems(self.__class__.__dict__):
+        for field, config_value in self.__class__.__dict__.items():
             if not isinstance(config_value, _ConfigValue):
                 continue
             new_value = self._NO_VALUE
@@ -715,7 +715,7 @@ class VersionedConfig(ThreadManager):
         values.
         """
         callbacks = []
-        for key in compat.iterkeys(self._config.values):
+        for key in self._config.values.keys():
             if key in self._first_config.values and self._config.values[key] != self._first_config.values[key]:
                 callbacks.append((key, self._config.values[key], self._first_config.values[key]))
 
@@ -759,9 +759,7 @@ class VersionedConfig(ThreadManager):
             else:
                 logger.info(
                     "Applied new remote configuration: %s",
-                    "; ".join(
-                        "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
-                    ),
+                    "; ".join("%s=%s" % (str(k), str(v)) for k, v in new_config.items()),
                 )
         elif new_version == self.config_version:
             logger.debug("Remote config unchanged")

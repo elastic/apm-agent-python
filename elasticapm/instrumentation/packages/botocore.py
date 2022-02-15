@@ -28,12 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import urllib.parse
 from collections import namedtuple
 
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span, execution_context
-from elasticapm.utils.compat import urlparse
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
@@ -65,7 +65,7 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             service = service_model.service_name.upper()
             service = endpoint_to_service_id.get(service, service)
 
-        parsed_url = urlparse.urlparse(instance.meta.endpoint_url)
+        parsed_url = urllib.parse.urlparse(instance.meta.endpoint_url)
         context = {
             "destination": {
                 "address": parsed_url.hostname,

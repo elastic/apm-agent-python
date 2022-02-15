@@ -39,7 +39,7 @@ import warnings
 from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
-from elasticapm.utils import compat, wrapt
+from elasticapm.utils import wrapt
 from elasticapm.utils.encoding import to_unicode
 from elasticapm.utils.stacks import iter_stack_frames
 
@@ -92,7 +92,7 @@ class LoggingHandler(logging.Handler):
     def _emit(self, record, **kwargs):
         data = {}
 
-        for k, v in compat.iteritems(record.__dict__):
+        for k, v in record.__dict__.items():
             if "." not in k and k not in ("culprit",):
                 continue
             data[k] = v
@@ -155,7 +155,7 @@ class LoggingHandler(logging.Handler):
 
         return self.client.capture(
             "Message",
-            param_message={"message": compat.text_type(record.msg), "params": record.args},
+            param_message={"message": str(record.msg), "params": record.args},
             stack=stack,
             custom=custom,
             exception=exception,
@@ -265,10 +265,7 @@ class Formatter(logging.Formatter):
             "trace.id=%(elasticapm_trace_id)s "
             "span.id=%(elasticapm_span_id)s"
         )
-        if compat.PY3:
-            super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
-        else:
-            super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt)
+        super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
 
     def format(self, record):
         if not hasattr(record, "elasticapm_transaction_id"):

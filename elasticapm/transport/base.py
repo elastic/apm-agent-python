@@ -31,7 +31,9 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import io
 import os
+import queue as _queue
 import random
 import sys
 import threading
@@ -39,7 +41,7 @@ import time
 import timeit
 from collections import defaultdict
 
-from elasticapm.utils import compat, json_encoder
+from elasticapm.utils import json_encoder
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import ThreadManager
 
@@ -103,7 +105,7 @@ class Transport(ThreadManager):
             kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
             self._event_queue.put((event_type, data, flush), block=False, **kwargs)
 
-        except compat.queue.Full:
+        except _queue.Full:
             logger.debug("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
@@ -123,7 +125,7 @@ class Transport(ThreadManager):
             timed_out = False
             try:
                 event_type, data, flush = self._event_queue.get(block=True, timeout=timeout)
-            except compat.queue.Empty:
+            except _queue.Empty:
                 event_type, data, flush = None, None, None
                 timed_out = True
 
@@ -203,7 +205,7 @@ class Transport(ThreadManager):
         return data
 
     def _init_buffer(self):
-        buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
+        buffer = gzip.GzipFile(fileobj=io.BytesIO(), mode="w", compresslevel=self._compress_level)
         return buffer
 
     def _write_metadata(self, buffer):
@@ -237,14 +239,14 @@ class Transport(ThreadManager):
         # due to the event processor thread being woken up all the time) is not an issue.
         if all(
             (
-                hasattr(compat.queue.Queue, "not_full"),
-                hasattr(compat.queue.Queue, "not_empty"),
-                hasattr(compat.queue.Queue, "unfinished_tasks"),
+                hasattr(_queue.Queue, "not_full"),
+                hasattr(_queue.Queue, "not_empty"),
+                hasattr(_queue.Queue, "unfinished_tasks"),
             )
         ):
             return ChilledQueue(maxsize=10000, chill_until=chill_until, max_chill_time=max_chill_time)
         else:
-            return compat.queue.Queue(maxsize=10000)
+            return _queue.Queue(maxsize=10000)
 
     def _flush(self, buffer):
         """
@@ -362,7 +364,7 @@ class TransportState(object):
         return self.status == self.ERROR
 
 
-class ChilledQueue(compat.queue.Queue, object):
+class ChilledQueue(_queue.Queue, object):
     """
     A queue subclass that is a bit more chill about how often it notifies the not empty event
 
@@ -391,7 +393,7 @@ class ChilledQueue(compat.queue.Queue, object):
             if self.maxsize > 0:
                 if not block:
                     if self._qsize() >= self.maxsize:
-                        raise compat.queue.Full
+                        raise _queue.Full
                 elif timeout is None:
                     while self._qsize() >= self.maxsize:
                         self.not_full.wait()
@@ -402,7 +404,7 @@ class ChilledQueue(compat.queue.Queue, object):
                     while self._qsize() >= self.maxsize:
                         remaining = endtime - time.time()
                         if remaining <= 0.0:
-                            raise compat.queue.Full
+                            raise _queue.Full
                         self.not_full.wait(remaining)
             self._put(item)
             self.unfinished_tasks += 1

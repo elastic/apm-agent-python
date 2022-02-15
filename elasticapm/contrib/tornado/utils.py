@@ -29,7 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import elasticapm
 from elasticapm.conf import constants
-from elasticapm.utils import compat
 
 try:
     import tornado
@@ -76,6 +75,6 @@ def get_data_from_response(request_handler, config, event_type):
 
     if config.capture_headers and request_handler._headers:
         headers = request_handler._headers
-        result["headers"] = {key: ";".join(headers.get_list(key)) for key in compat.iterkeys(headers)}
+        result["headers"] = {key: ";".join(headers.get_list(key)) for key in headers.keys()}
         pass
     return result

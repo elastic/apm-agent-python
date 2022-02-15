@@ -33,7 +33,6 @@ import itertools
 import re
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.utils")
@@ -154,7 +153,7 @@ class TraceParent(object):
         return ret
 
     def _set_tracestate(self):
-        elastic_value = ";".join(["{}:{}".format(k, v) for k, v in compat.iteritems(self.tracestate_dict)])
+        elastic_value = ";".join(["{}:{}".format(k, v) for k, v in self.tracestate_dict.items()])
         # No character validation needed, as we validate in `add_tracestate`. Just validate length.
         if len(elastic_value) > 256:
             logger.debug("Modifications to TraceState would violate length limits, ignoring.")
@@ -183,8 +182,8 @@ class TraceParent(object):
         within the valid range. Checking here means we never have to re-check
         a pair once set, which saves time in the _set_tracestate() function.
         """
-        key = compat.text_type(key)
-        val = compat.text_type(val)
+        key = str(key)
+        val = str(val)
         for bad in (":", ";", ",", "="):
             if bad in key or bad in val:
                 logger.debug("New tracestate key/val pair contains invalid character '{}', ignoring.".format(bad))

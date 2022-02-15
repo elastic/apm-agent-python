@@ -34,12 +34,8 @@ This module implements WSGI related helpers adapted from ``werkzeug.wsgi``
 :copyright: (c) 2010 by the Werkzeug Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from elasticapm.utils import compat
 
-try:
-    from urllib import quote
-except ImportError:
-    from urllib.parse import quote
+from urllib.parse import quote
 
 
 # `get_headers` comes from `werkzeug.datastructures.EnvironHeaders`
@@ -47,7 +43,7 @@ def get_headers(environ):
     """
     Returns only proper HTTP headers.
     """
-    for key, value in compat.iteritems(environ):
+    for key, value in environ.items():
         key = str(key)
         if key.startswith("HTTP_") and key not in ("HTTP_CONTENT_TYPE", "HTTP_CONTENT_LENGTH"):
             yield key[5:].replace("_", "-").lower(), value
