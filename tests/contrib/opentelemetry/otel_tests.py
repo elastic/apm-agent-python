@@ -28,13 +28,24 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from .trace import Tracer
+import pytest
 
-TRACER = None
+from elasticapm.conf import constants
+from elasticapm.contrib.opentelemetry import get_tracer
+from elasticapm.contrib.opentelemetry.trace import Tracer
 
 
-def get_tracer(name, elasticapm_client=None):
-    global TRACER
-    if not TRACER:
-        TRACER = Tracer(name, None, None, None, None, None, elasticapm_client=elasticapm_client)
-    return TRACER
+@pytest.fixture
+def tracer(elasticapm_client) -> Tracer:
+    return get_tracer("test", elasticapm_client=elasticapm_client)
+
+
+def test_root_transaction(tracer: Tracer):
+    with tracer.start_as_current_span("test"):
+        pass
+
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    assert transaction["type"] == "unknown"
+    assert transaction["name"] == "test"
+    assert transaction["result"] == "OK"

@@ -27,14 +27,3 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from .trace import Tracer
-
-TRACER = None
-
-
-def get_tracer(name, elasticapm_client=None):
-    global TRACER
-    if not TRACER:
-        TRACER = Tracer(name, None, None, None, None, None, elasticapm_client=elasticapm_client)
-    return TRACER

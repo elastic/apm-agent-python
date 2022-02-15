@@ -58,12 +58,14 @@ class Tracer(oteltrace.Tracer):
     and controlling spans' lifecycles.
     """
 
-    def __init__(self, *args, **kwargs):  # type: ignore
+    def __init__(self, *args, elasticapm_client=None, **kwargs):  # type: ignore
         super().__init__(*args, **kwargs)
-        client = elasticapm.get_client()
-        if not client:
-            client = elasticapm.Client()
-        if client.config.instrument and client.config.enabled:
+        self.client = elasticapm_client
+        if not self.client:
+            self.client = elasticapm.get_client()
+        if not self.client:
+            self.client = elasticapm.Client()
+        if self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrument()
 
     def start_span(
@@ -124,9 +126,7 @@ class Tracer(oteltrace.Tracer):
 
         span = None
         current_transaction = execution_context.get_transaction()
-        client = elasticapm.get_client()
-        if not client:
-            client = elasticapm.Client()
+        client = self.client
 
         if traceparent and current_transaction:
             logger.warning(
@@ -137,13 +137,28 @@ class Tracer(oteltrace.Tracer):
             elastic_span = client.begin_transaction(
                 "otel", traceparent=traceparent, start=start_time, auto_activate=False
             )
-            span = Span(elastic_span=elastic_span, set_status_on_exception=set_status_on_exception)
+            span = Span(
+                name=name,
+                elastic_span=elastic_span,
+                set_status_on_exception=set_status_on_exception,
+                client=self.client,
+            )
         elif not current_transaction:
             elastic_span = client.begin_transaction("otel", start=start_time, auto_activate=False)
-            span = Span(elastic_span=elastic_span, set_status_on_exception=set_status_on_exception)
+            span = Span(
+                name=name,
+                elastic_span=elastic_span,
+                set_status_on_exception=set_status_on_exception,
+                client=self.client,
+            )
         else:
             elastic_span = current_transaction.begin_span(name, start=start_time, auto_activate=False)
-            span = Span(elastic_span=elastic_span, set_status_on_exception=set_status_on_exception)
+            span = Span(
+                name=name,
+                elastic_span=elastic_span,
+                set_status_on_exception=set_status_on_exception,
+                client=self.client,
+            )
             span.set_attributes(attributes)
         spankind = get_span_kind(kind)
         elastic_span.context["otel_spankind"] = spankind
@@ -287,6 +302,8 @@ def use_span(
                 )
             )
     finally:
-        context_api.detach()
         if end_on_exit:
             span.end()
+        else:
+            # Spans auto-detach when they end.
+            context_api.detach()

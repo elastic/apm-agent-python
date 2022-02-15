@@ -32,6 +32,7 @@ import datetime
 import time
 import types as python_types
 import typing
+from typing import Optional
 
 from opentelemetry.context import Context
 from opentelemetry.sdk import trace as oteltrace
@@ -44,7 +45,6 @@ from opentelemetry.util import types
 import elasticapm
 import elasticapm.conf.constants as constants
 import elasticapm.traces
-from elasticapm.traces import execution_context
 from elasticapm.utils.compat import urlparse
 
 
@@ -54,29 +54,45 @@ class Span(oteltrace.Span):
     otel Span API
     """
 
-    def __init__(self, elastic_span: elasticapm.traces.BaseSpan, set_status_on_exception: typing.Optional[bool] = None):
+    def __init__(
+        self,
+        name: str,
+        elastic_span: elasticapm.traces.BaseSpan,
+        set_status_on_exception: Optional[bool] = None,
+        client: Optional[elasticapm.Client] = None,
+    ):
         self.elastic_span = elastic_span
         self.otel_context = Context({_SPAN_KEY: self})
         elastic_span.otel_wrapper = self
         self.set_status_on_exception = set_status_on_exception
+        self.client = client if client else elasticapm.get_client()
+        self._name = name
 
-    def end(self, end_time: typing.Optional[int] = None) -> None:
+    def end(self, end_time: Optional[int] = None) -> None:
         """Sets the current time as the span's end time.
         The span's end time is the wall time at which the operation finished.
         Only the first call to `end` should modify the span, and
         implementations are free to ignore or raise on further calls.
         """
+        is_transaction = isinstance(self.elastic_span, elasticapm.traces.Transaction)
         if self.elastic_span.ended_time:
             # Already ended
             return
         self._set_types()
         if end_time:
-            self.elastic_span.end(duration=time.time() - self.elastic_span.timestamp)
+            if is_transaction:
+                self.client.end_transaction(
+                    name=self._name,
+                    result=self.elastic_span.outcome or "OK",
+                    duration=time.time() - self.elastic_span.timestamp,
+                )
+            else:
+                self.elastic_span.end(duration=time.time() - self.elastic_span.timestamp)
         else:
-            self.elastic_span.end()
-        if isinstance(self.elastic_span, elasticapm.traces.Transaction):
-            # Transactions don't auto-clear when they end
-            execution_context.get_transaction(clear=True)
+            if is_transaction:
+                self.client.end_transaction(name=self._name, result=self.elastic_span.outcome or "OK")
+            else:
+                self.elastic_span.end()
 
     def get_span_context(self) -> "SpanContext":
         """Gets the span's SpanContext.
@@ -118,7 +134,7 @@ class Span(oteltrace.Span):
         self,
         name: str,
         attributes: types.Attributes = None,
-        timestamp: typing.Optional[int] = None,
+        timestamp: Optional[int] = None,
     ) -> None:
         """Adds an `Event`.
         Adds a single `Event` with the name and, optionally, a timestamp and
@@ -157,7 +173,7 @@ class Span(oteltrace.Span):
         self,
         exception: Exception,
         attributes: types.Attributes = None,
-        timestamp: typing.Optional[int] = None,
+        timestamp: Optional[int] = None,
         escaped: bool = False,
     ) -> None:
         """Records an exception as a span event."""
@@ -177,9 +193,9 @@ class Span(oteltrace.Span):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[python_types.TracebackType],
+        exc_type: Optional[typing.Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[python_types.TracebackType],
     ) -> None:
         """Ends context manager and calls `end` on the `Span`."""
 
@@ -257,19 +273,19 @@ class Span(oteltrace.Span):
                 elif attributes.get("http.url"):
                     resource = parse_net_name(attributes["http.url"])
 
-        if not span_type:
-            span_kind = self.elastic_span.context["otel_spankind"]
-            if span_kind == SpanKind.INTERNAL:
-                span_type = "app"
-                span_subtype = "internal"
-            else:
-                span_type = "unknown"
-        self.elastic_span.type = span_type
-        self.elastic_span.subtype = span_subtype
-        if resource:
-            if "destination" not in self.elastic_span.context:
-                self.elastic_span.context["destination"] = {"service": {"resource": resource}}
-            elif "service" not in self.elastic_span.context["destination"]:
-                self.elastic_span.context["destination"]["service"] = {"resource": resource}
-            else:
-                self.elastic_span.context["destination"]["service"]["resource"] = resource
+            if not span_type:
+                span_kind = self.elastic_span.context["otel_spankind"]
+                if span_kind == SpanKind.INTERNAL:
+                    span_type = "app"
+                    span_subtype = "internal"
+                else:
+                    span_type = "unknown"
+            self.elastic_span.type = span_type
+            self.elastic_span.subtype = span_subtype
+            if resource:
+                if "destination" not in self.elastic_span.context:
+                    self.elastic_span.context["destination"] = {"service": {"resource": resource}}
+                elif "service" not in self.elastic_span.context["destination"]:
+                    self.elastic_span.context["destination"]["service"] = {"resource": resource}
+                else:
+                    self.elastic_span.context["destination"]["service"]["resource"] = resource

@@ -141,4 +141,4 @@ def detach(token: typing.Optional[object] = None) -> None:
     if execution_context.get_span():
         execution_context.unset_span()
     else:
-        execution_context.get_transaction(clear=True)
+        logger.warning("Can't detach a running transaction. Please end the transaction instead.")

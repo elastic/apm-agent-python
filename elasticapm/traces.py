@@ -640,7 +640,11 @@ class Span(BaseSpan):
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
             self.frames = None
-        execution_context.unset_span()
+        current_span = execution_context.get_span()
+        # Because otel can detach context without ending the span, we need to
+        # make sure we only unset the span if it's currently set.
+        if current_span is self:
+            execution_context.unset_span()
 
         p = self.parent if self.parent else self.transaction
         if self.transaction._breakdown:
