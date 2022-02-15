@@ -443,7 +443,6 @@ def test_ignored_exception_is_ignored(django_elasticapm_client, client):
     assert len(django_elasticapm_client.events[ERROR]) == 0
 
 
-@pytest.mark.skipif(compat.PY3, reason="see Python bug #10805")
 def test_record_none_exc_info(django_elasticapm_client):
     # sys.exc_info can return (None, None, None) if no exception is being
     # handled anywhere on the stack. See:
@@ -517,7 +516,7 @@ def test_raw_post_data_partial_read(django_elasticapm_client):
     v = '{"foo": "bar"}'.encode("latin-1")
     request = WSGIRequest(
         environ={
-            "wsgi.input": io.BytesIO(v + compat.b("\r\n\r\n")),
+            "wsgi.input": io.BytesIO(v + "\r\n\r\n".encode("latin-1")),
             "REQUEST_METHOD": "POST",
             "SERVER_NAME": "testserver",
             "SERVER_PORT": "80",
@@ -578,7 +577,7 @@ def test_post_data(django_elasticapm_client):
 def test_post_raw_data(django_elasticapm_client):
     request = WSGIRequest(
         environ={
-            "wsgi.input": io.BytesIO(compat.b("foobar")),
+            "wsgi.input": io.BytesIO("foobar".encode("latin-1")),
             "wsgi.url_scheme": "http",
             "REQUEST_METHOD": "POST",
             "SERVER_NAME": "testserver",
@@ -597,7 +596,7 @@ def test_post_raw_data(django_elasticapm_client):
     request = event["context"]["request"]
     assert request["method"] == "POST"
     if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
-        assert request["body"] == compat.b("foobar")
+        assert request["body"] == "foobar".encode("latin-1")
     else:
         assert request["body"] == "[REDACTED]"
 
@@ -1099,7 +1098,7 @@ def test_django_logging_request_kwarg(django_elasticapm_client):
         extra={
             "request": WSGIRequest(
                 environ={
-                    "wsgi.input": compat.StringIO(),
+                    "wsgi.input": io.StringIO(),
                     "REQUEST_METHOD": "POST",
                     "SERVER_NAME": "testserver",
                     "SERVER_PORT": "80",
@@ -1200,7 +1199,7 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
 @pytest.mark.skipif(django.VERSION > (1, 7), reason="argparse raises CommandError in this case")
 @mock.patch("elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv")
 def test_subcommand_not_set(argv_mock):
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     argv_mock.return_value = ["manage.py", "elasticapm"]
     call_command("elasticapm", stdout=stdout)
     output = stdout.getvalue()
@@ -1209,7 +1208,7 @@ def test_subcommand_not_set(argv_mock):
 
 @mock.patch("elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv")
 def test_subcommand_not_known(argv_mock):
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     argv_mock.return_value = ["manage.py", "elasticapm"]
     call_command("elasticapm", "foo", stdout=stdout)
     output = stdout.getvalue()
@@ -1217,7 +1216,7 @@ def test_subcommand_not_known(argv_mock):
 
 
 def test_settings_missing_secret_token_no_https():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://foo"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1225,7 +1224,7 @@ def test_settings_missing_secret_token_no_https():
 
 
 def test_settings_secret_token_https():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SECRET_TOKEN": "foo", "SERVER_URL": "https://foo"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1233,7 +1232,7 @@ def test_settings_secret_token_https():
 
 
 def test_middleware_not_set():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(**middleware_setting(django.VERSION, ())):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1245,7 +1244,7 @@ def test_middleware_not_set():
 
 
 def test_middleware_not_first():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(
         **middleware_setting(django.VERSION, ("foo", "elasticapm.contrib.django.middleware.TracingMiddleware"))
     ):
@@ -1259,7 +1258,7 @@ def test_middleware_not_first():
 
 
 def test_settings_server_url_default():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1267,7 +1266,7 @@ def test_settings_server_url_default():
 
 
 def test_settings_server_url_is_empty_string():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": ""}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1276,7 +1275,7 @@ def test_settings_server_url_is_empty_string():
 
 
 def test_settings_server_url_not_http_nor_https():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "xhttp://dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1284,7 +1283,7 @@ def test_settings_server_url_not_http_nor_https():
 
 
 def test_settings_server_url_uppercase_http():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "HTTP://dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1292,7 +1291,7 @@ def test_settings_server_url_uppercase_http():
 
 
 def test_settings_server_url_with_at():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://y@dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1301,7 +1300,7 @@ def test_settings_server_url_with_at():
 
 
 def test_settings_server_url_with_credentials():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://x:y@dev.brwnppr.com:8000/"}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
@@ -1314,7 +1313,7 @@ def test_settings_server_url_with_credentials():
     reason="only needed in 1.10 and 1.11 when both middleware settings are valid",
 )
 def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     with override_settings(
         MIDDLEWARE=None, MIDDLEWARE_CLASSES=["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"]
     ):
@@ -1325,7 +1324,7 @@ def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
 
 @mock.patch("elasticapm.transport.http.urllib3.PoolManager.urlopen")
 def test_test_exception(urlopen_mock):
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     resp = mock.Mock(status=200, getheader=lambda h: "http://example.com")
     urlopen_mock.return_value = resp
     with override_settings(
@@ -1338,7 +1337,7 @@ def test_test_exception(urlopen_mock):
 
 @mock.patch("elasticapm.transport.http.Transport.send")
 def test_test_exception_fails(mock_send):
-    stdout = compat.StringIO()
+    stdout = io.StringIO()
     mock_send.side_effect = Exception("boom")
     with override_settings(
         ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport", "SERVICE_NAME": "testapp"},
@@ -1499,7 +1498,9 @@ def test_capture_empty_body(client, django_elasticapm_client):
 )
 def test_capture_files(client, django_elasticapm_client):
     with pytest.raises(MyException), open(os.path.abspath(__file__)) as f:
-        client.post(reverse("elasticapm-raise-exc"), data={"a": "b", "f1": io.BytesIO(100 * compat.b("1")), "f2": f})
+        client.post(
+            reverse("elasticapm-raise-exc"), data={"a": "b", "f1": io.BytesIO(100 * "1".encode("latin-1")), "f2": f}
+        )
     error = django_elasticapm_client.events[ERROR][0]
     if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
         assert error["context"]["request"]["body"] == {"a": "b", "_files": {"f1": "f1", "f2": "django_tests.py"}}
