@@ -29,7 +29,9 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import pytest
+from opentelemetry.trace import SpanKind
 
+import elasticapm.contrib.opentelemetry.context as context
 from elasticapm.conf import constants
 from elasticapm.contrib.opentelemetry import get_tracer
 from elasticapm.contrib.opentelemetry.trace import Tracer
@@ -49,3 +51,23 @@ def test_root_transaction(tracer: Tracer):
     assert transaction["type"] == "unknown"
     assert transaction["name"] == "test"
     assert transaction["result"] == "OK"
+
+
+def test_ot_span(tracer: Tracer):
+    with tracer.start_as_current_span("test") as otel_transaction_span:
+        with tracer.start_as_current_span("testspan", kind=SpanKind.CONSUMER) as otel_span:
+            with tracer.start_as_current_span("testspan2") as otel_span2:
+                pass
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    span1 = client.events[constants.SPAN][1]
+    span2 = client.events[constants.SPAN][0]
+    assert span1["transaction_id"] == span1["parent_id"] == transaction["id"]
+    assert span1["name"] == "testspan"
+
+    assert span2["transaction_id"] == transaction["id"]
+    assert span2["parent_id"] == span1["id"]
+    assert span2["name"] == "testspan2"
+
+
+# FIXME add a test for creating a span without attaching it

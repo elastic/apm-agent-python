@@ -99,7 +99,7 @@ def get_current() -> Context:
     if not span:
         return Context()
 
-    otel_span = getattr(span, "otel_wrapper", Span(span))
+    otel_span = getattr(span, "otel_wrapper", Span(span.name, span))
     context = otel_span.otel_context
 
     return context

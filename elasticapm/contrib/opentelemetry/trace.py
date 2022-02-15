@@ -152,7 +152,7 @@ class Tracer(oteltrace.Tracer):
                 client=self.client,
             )
         else:
-            elastic_span = current_transaction.begin_span(name, start=start_time, auto_activate=False)
+            elastic_span = current_transaction.begin_span(name, "otel", start=start_time, auto_activate=False)
             span = Span(
                 name=name,
                 elastic_span=elastic_span,
