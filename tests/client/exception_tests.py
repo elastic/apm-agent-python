@@ -35,7 +35,7 @@ import pytest
 
 import elasticapm
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH
-from elasticapm.utils import compat, encoding
+from elasticapm.utils import encoding
 from tests.utils.stacks import get_me_more_test_frames
 
 

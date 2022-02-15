@@ -41,7 +41,6 @@ from elasticsearch.serializer import JSONSerializer
 
 import elasticapm
 from elasticapm.conf.constants import TRANSACTION
-from elasticapm.utils import compat
 
 pytestmark = [pytest.mark.elasticsearch]
 
@@ -67,7 +66,7 @@ class SpecialEncoder(JSONSerializer):
         if isinstance(obj, dict):
 
             def yield_key_value(d):
-                for key, value in compat.iteritems(d):
+                for key, value in d.items():
                     try:
                         yield self.default(key), self.force_key_encoding(value)
                     except TypeError:

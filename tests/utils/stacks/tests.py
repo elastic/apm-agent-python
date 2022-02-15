@@ -40,7 +40,7 @@ from mock import Mock
 
 import elasticapm
 from elasticapm.conf import constants
-from elasticapm.utils import compat, stacks
+from elasticapm.utils import stacks
 from elasticapm.utils.stacks import get_culprit, get_stack_info
 from tests.utils.stacks import get_me_a_test_frame, get_me_more_test_frames
 
@@ -56,7 +56,7 @@ class Context(object):
 
     __getitem__ = lambda s, *a: s.dict.__getitem__(*a)
     __setitem__ = lambda s, *a: s.dict.__setitem__(*a)
-    iterkeys = lambda s, *a: compat.iterkeys(s.dict, *a)
+    iterkeys = lambda s, *a: s.dict.keys(*a)
 
 
 def test_get_culprit_bad_module():
