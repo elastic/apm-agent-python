@@ -32,6 +32,7 @@ import datetime
 import time
 import types as python_types
 import typing
+import urllib.parse
 from typing import Optional
 
 from opentelemetry.context import Context
@@ -45,7 +46,6 @@ from opentelemetry.util import types
 import elasticapm
 import elasticapm.conf.constants as constants
 import elasticapm.traces
-from elasticapm.utils.compat import urlparse
 
 
 class Span(oteltrace.Span):
@@ -232,7 +232,7 @@ class Span(oteltrace.Span):
                 return None
 
             def parse_net_name(url: str):
-                u = urlparse.urlparse(url)
+                u = urllib.parse.urlparse(url)
                 if u.port:
                     return u.netloc
                 else:
