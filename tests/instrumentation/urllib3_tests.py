@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import urllib.parse
 
 import pytest
 import urllib3
@@ -34,14 +35,13 @@ import urllib3
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import capture_span
-from elasticapm.utils.compat import urlparse
 from elasticapm.utils.disttracing import TraceParent
 
 
 def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
@@ -83,7 +83,7 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
 def test_urllib3_error(instrument, elasticapm_client, waiting_httpserver, status_code):
     waiting_httpserver.serve_content("", code=status_code)
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
@@ -260,7 +260,7 @@ def test_instance_headers_are_respected(
 
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     transaction_object = elasticapm_client.begin_transaction("transaction", trace_parent=traceparent)
     transaction_object.is_sampled = is_sampled
     pool = urllib3.HTTPConnectionPool(

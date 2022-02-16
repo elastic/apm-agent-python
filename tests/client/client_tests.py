@@ -47,9 +47,7 @@ from pytest_localserver.https import DEFAULT_CERTIFICATE
 
 import elasticapm
 from elasticapm.base import Client
-from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
-from elasticapm.utils import compat, encoding
-from elasticapm.utils.disttracing import TraceParent
+from elasticapm.conf.constants import ERROR
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
 
@@ -217,8 +215,8 @@ def test_config_non_string_types():
     client = TempStoreClient(
         server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"), metrics_interval="0ms"
     )
-    assert isinstance(client.config.secret_token, compat.string_types)
-    assert isinstance(client.config.service_name, compat.string_types)
+    assert isinstance(client.config.secret_token, str)
+    assert isinstance(client.config.service_name, str)
     client.close()
 
 

@@ -28,11 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import urllib.parse
 
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils import compat, default_ports, sanitize_url
+from elasticapm.utils import default_ports, sanitize_url
 from elasticapm.utils.disttracing import TracingOptions
 
 
@@ -45,7 +46,7 @@ def request_host(request):
 
     """
     url = request.get_full_url()
-    parse_result = compat.urlparse.urlparse(url)
+    parse_result = urllib.parse.urlparse(url)
     scheme, host, port = parse_result.scheme, parse_result.hostname, parse_result.port
     try:
         port = int(port)
@@ -62,10 +63,7 @@ def request_host(request):
 class UrllibInstrumentation(AbstractInstrumentedModule):
     name = "urllib"
 
-    if compat.PY2:
-        instrument_list = [("urllib2", "AbstractHTTPHandler.do_open")]
-    else:
-        instrument_list = [("urllib.request", "AbstractHTTPHandler.do_open")]
+    instrument_list = [("urllib.request", "AbstractHTTPHandler.do_open")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         request_object = args[1] if len(args) > 1 else kwargs["req"]

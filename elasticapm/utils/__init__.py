@@ -31,12 +31,13 @@
 import base64
 import os
 import re
+import urllib.parse
 from functools import partial
 from types import FunctionType
 from typing import Pattern
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding
+from elasticapm.utils import encoding
 
 try:
     from functools import partialmethod
@@ -64,9 +65,7 @@ def varmap(func, var, context=None, name=None, **kwargs):
     context.add(objid)
     if isinstance(var, dict):
         # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
-        ret = func(
-            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
-        )
+        ret = func(name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in var.copy().items()), **kwargs)
     elif isinstance(var, (list, tuple)):
         ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
     else:
@@ -107,7 +106,7 @@ def is_master_process() -> bool:
 
 
 def get_url_dict(url: str) -> dict:
-    parse_result = compat.urlparse.urlparse(url)
+    parse_result = urllib.parse.urlparse(url)
 
     url_dict = {
         "full": encoding.keyword_field(url),
@@ -128,12 +127,12 @@ def get_url_dict(url: str) -> dict:
 def sanitize_url(url: str) -> str:
     if "@" not in url:
         return url
-    parts = compat.urlparse.urlparse(url)
+    parts = urllib.parse.urlparse(url)
     return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
 def get_host_from_url(url: str) -> str:
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     host = parsed_url.hostname or " "
 
     if parsed_url.port and default_ports.get(parsed_url.scheme) != parsed_url.port:
@@ -143,7 +142,7 @@ def get_host_from_url(url: str) -> str:
 
 
 def url_to_destination_resource(url: str) -> dict:
-    parts = compat.urlparse.urlsplit(url)
+    parts = urllib.parse.urlsplit(url)
     hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
     if "://[" in url:

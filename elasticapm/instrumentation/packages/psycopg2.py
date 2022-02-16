@@ -38,7 +38,7 @@ from elasticapm.instrumentation.packages.dbapi2 import (
     extract_signature,
 )
 from elasticapm.traces import capture_span
-from elasticapm.utils import compat, default_ports
+from elasticapm.utils import default_ports
 
 
 class PGCursorProxy(CursorProxy):
@@ -52,7 +52,7 @@ class PGCursorProxy(CursorProxy):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self.__wrapped__)
         # if the sql string is already a byte string, we need to decode it using the connection encoding
-        if isinstance(sql, compat.binary_type):
+        if isinstance(sql, bytes):
             sql = sql.decode(psycopg2_extensions.encodings[self.__wrapped__.connection.encoding])
         return sql
 

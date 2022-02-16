@@ -37,9 +37,8 @@ import uuid
 from decimal import Decimal
 
 from elasticapm.conf.constants import KEYWORD_MAX_LENGTH, LABEL_RE, LABEL_TYPES
-from elasticapm.utils import compat
 
-PROTECTED_TYPES = compat.integer_types + (type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
+PROTECTED_TYPES = (int, type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
 
 
 def is_protected_type(obj):
@@ -59,27 +58,24 @@ def force_text(s, encoding="utf-8", strings_only=False, errors="strict"):
     If strings_only is True, don't convert (some) non-string-like objects.
     """
     # Handle the common case first, saves 30-40% when s is an instance of
-    # compat.text_type. This function gets called often in that setting.
+    # str. This function gets called often in that setting.
     #
     # Adapted from Django
-    if isinstance(s, compat.text_type):
+    if isinstance(s, str):
         return s
     if strings_only and is_protected_type(s):
         return s
     try:
-        if not isinstance(s, compat.string_types):
+        if not isinstance(s, str):
             if hasattr(s, "__unicode__"):
                 s = s.__unicode__()
             else:
-                if compat.PY3:
-                    if isinstance(s, bytes):
-                        s = compat.text_type(s, encoding, errors)
-                    else:
-                        s = compat.text_type(s)
+                if isinstance(s, bytes):
+                    s = str(s, encoding, errors)
                 else:
-                    s = compat.text_type(bytes(s), encoding, errors)
+                    s = str(s)
         else:
-            # Note: We use .decode() here, instead of compat.text_type(s, encoding,
+            # Note: We use .decode() here, instead of str(s, encoding,
             # errors), so that if s is a SafeBytes, it ends up being a
             # SafeText at the end.
             s = s.decode(encoding, errors)
@@ -134,12 +130,12 @@ def transform(value, stack=None, context=None):
         except AttributeError:
             ret = None
     elif isinstance(value, dict):
-        ret = dict((to_unicode(k), transform_rec(v)) for k, v in compat.iteritems(value))
-    elif isinstance(value, compat.text_type):
+        ret = dict((to_unicode(k), transform_rec(v)) for k, v in value.items())
+    elif isinstance(value, str):
         ret = to_unicode(value)
-    elif isinstance(value, compat.binary_type):
+    elif isinstance(value, bytes):
         ret = to_string(value)
-    elif not isinstance(value, compat.class_types) and _has_elasticapm_metadata(value):
+    elif not isinstance(value, type) and _has_elasticapm_metadata(value):
         ret = transform_rec(value.__elasticapm__())
     elif isinstance(value, bool):
         ret = bool(value)
@@ -147,8 +143,6 @@ def transform(value, stack=None, context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
-    elif compat.PY2 and isinstance(value, long):  # noqa F821
-        ret = long(value)  # noqa F821
     elif value is not None:
         try:
             ret = transform(repr(value))
@@ -164,12 +158,12 @@ def transform(value, stack=None, context=None):
 
 def to_unicode(value):
     try:
-        value = compat.text_type(force_text(value))
+        value = str(force_text(value))
     except (UnicodeEncodeError, UnicodeDecodeError):
         value = "(Error decoding value)"
     except Exception:  # in some cases we get a different exception
         try:
-            value = compat.binary_type(repr(type(value)))
+            value = bytes(repr(type(value)))
         except Exception:
             value = "(Error decoding value)"
     return value
@@ -177,7 +171,7 @@ def to_unicode(value):
 
 def to_string(value):
     try:
-        return compat.binary_type(value.decode("utf-8").encode("utf-8"))
+        return bytes(value.decode("utf-8").encode("utf-8"))
     except Exception:
         return to_unicode(value).encode("utf-8")
 
@@ -206,14 +200,14 @@ def shorten(var, list_length=50, string_length=200, dict_length=50, **kwargs):
     :return: Shortened variable
     """
     var = transform(var)
-    if isinstance(var, compat.string_types) and len(var) > string_length:
+    if isinstance(var, str) and len(var) > string_length:
         var = var[: string_length - 3] + "..."
     elif isinstance(var, (list, tuple, set, frozenset)) and len(var) > list_length:
         # TODO: we should write a real API for storing some metadata with vars when
         # we get around to doing ref storage
         var = list(var)[:list_length] + ["...", "(%d more elements)" % (len(var) - list_length,)]
     elif isinstance(var, dict) and len(var) > dict_length:
-        trimmed_tuples = [(k, v) for (k, v) in itertools.islice(compat.iteritems(var), dict_length)]
+        trimmed_tuples = [(k, v) for (k, v) in itertools.islice(var.items(), dict_length)]
         if "<truncated>" not in var:
             trimmed_tuples += [("<truncated>", "(%d more elements)" % (len(var) - dict_length))]
         var = dict(trimmed_tuples)
@@ -225,7 +219,7 @@ def keyword_field(string):
     If the given string is longer than KEYWORD_MAX_LENGTH, truncate it to
     KEYWORD_MAX_LENGTH-1, adding the "…" character at the end.
     """
-    if not isinstance(string, compat.string_types) or len(string) <= KEYWORD_MAX_LENGTH:
+    if not isinstance(string, str) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
     return string[: KEYWORD_MAX_LENGTH - 1] + u"…"
 
@@ -241,8 +235,8 @@ def enforce_label_format(labels):
     :return: a new dictionary with sanitized keys/values
     """
     new = {}
-    for key, value in compat.iteritems(labels):
+    for key, value in labels.items():
         if not isinstance(value, LABEL_TYPES):
-            value = keyword_field(compat.text_type(value))
-        new[LABEL_RE.sub("_", compat.text_type(key))] = value
+            value = keyword_field(str(value))
+        new[LABEL_RE.sub("_", str(key))] = value
     return new

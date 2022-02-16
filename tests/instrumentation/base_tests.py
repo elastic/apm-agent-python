@@ -40,7 +40,7 @@ import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.utils import compat, wrapt
+from elasticapm.utils import wrapt
 from tests.utils import assert_any_record_contains
 
 
@@ -100,30 +100,7 @@ def test_double_instrument(elasticapm_client):
         inst.uninstrument()
 
 
-@pytest.mark.skipif(compat.PY3, reason="different object model")
-def test_uninstrument_py2(caplog):
-    assert isinstance(Dummy.dummy, types.MethodType)
-    assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
-
-    instrumentation = _TestDummyInstrumentation()
-    with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
-        instrumentation.instrument()
-    record = caplog.records[0]
-    assert "Instrumented" in record.message
-    assert record.args == ("test_dummy_instrument", "tests.instrumentation.base_tests.Dummy.dummy")
-    assert isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
-
-    with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
-        instrumentation.uninstrument()
-    record = caplog.records[1]
-    assert "Uninstrumented" in record.message
-    assert record.args == ("test_dummy_instrument", "tests.instrumentation.base_tests.Dummy.dummy")
-    assert isinstance(Dummy.dummy, types.MethodType)
-    assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
-
-
-@pytest.mark.skipif(compat.PY2, reason="different object model")
-def test_uninstrument_py3(caplog):
+def test_uninstrument(caplog):
     original = Dummy.dummy
     assert not isinstance(Dummy.dummy, wrapt.BoundFunctionWrapper)
 

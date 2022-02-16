@@ -39,7 +39,6 @@ import pytest
 
 from elasticapm.transport.base import Transport, TransportState
 from elasticapm.transport.exceptions import TransportException
-from elasticapm.utils import compat
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
 
@@ -105,10 +104,7 @@ def test_metadata_prepended(mock_send, elasticapm_client):
     transport.close()
     assert mock_send.call_count == 1
     args, kwargs = mock_send.call_args
-    if compat.PY2:
-        data = gzip.GzipFile(fileobj=compat.StringIO(args[0])).read()
-    else:
-        data = gzip.decompress(args[0])
+    data = gzip.decompress(args[0])
     data = data.decode("utf-8").split("\n")
     assert "metadata" in data[0]
 

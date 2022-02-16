@@ -40,7 +40,7 @@ from sanic.response import HTTPResponse
 from elasticapm.base import Client
 from elasticapm.conf import Config, constants
 from elasticapm.contrib.sanic.sanic_types import EnvInfoType
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import get_url_dict
 
 
 class SanicAPMConfig(dict):
@@ -114,7 +114,7 @@ async def get_response_info(config: Config, response: HTTPResponse) -> Dict[str,
         "finished": True,
         "headers_sent": True,
     }
-    if isinstance(response.status, compat.integer_types):
+    if isinstance(response.status, int):
         result["status_code"] = response.status
 
     if config.capture_headers:

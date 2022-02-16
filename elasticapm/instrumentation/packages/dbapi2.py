@@ -37,7 +37,7 @@ import re
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import compat, wrapt
+from elasticapm.utils import wrapt
 from elasticapm.utils.encoding import force_text, shorten
 
 
@@ -85,7 +85,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
             else:
                 return lexeme
 
-        if isinstance(lexeme, compat.string_types) and lexeme.upper() == keyword:
+        if isinstance(lexeme, str) and lexeme.upper() == keyword:
             seen_keyword = True
 
 

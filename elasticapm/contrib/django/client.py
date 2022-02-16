@@ -141,12 +141,12 @@ class DjangoClient(Client):
                 elif content_type and content_type.startswith("multipart/form-data"):
                     data = compat.multidict_to_dict(request.POST)
                     if request.FILES:
-                        data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+                        data["_files"] = {field: file.name for field, file in request.FILES.items()}
                 else:
                     try:
                         data = request.body
                     except Exception as e:
-                        self.logger.debug("Can't capture request body: %s", compat.text_type(e))
+                        self.logger.debug("Can't capture request body: %s", str(e))
                         data = "<unavailable>"
                 if data is not None:
                     result["body"] = data
@@ -249,8 +249,6 @@ class ProxyClient(object):
     __ne__ = lambda x, o: get_client() != o
     __gt__ = lambda x, o: get_client() > o
     __ge__ = lambda x, o: get_client() >= o
-    if compat.PY2:
-        __cmp__ = lambda x, o: cmp(get_client(), o)  # noqa F821
     __hash__ = lambda x: hash(get_client())
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: get_client()(*a, **kw)
@@ -280,11 +278,9 @@ class ProxyClient(object):
     __invert__ = lambda x: ~(get_client())
     __complex__ = lambda x: complex(get_client())
     __int__ = lambda x: int(get_client())
-    if compat.PY2:
-        __long__ = lambda x: long(get_client())  # noqa F821
     __float__ = lambda x: float(get_client())
     __str__ = lambda x: str(get_client())
-    __unicode__ = lambda x: compat.text_type(get_client())
+    __unicode__ = lambda x: str(get_client())
     __oct__ = lambda x: oct(get_client())
     __hex__ = lambda x: hex(get_client())
     __index__ = lambda x: get_client().__index__()

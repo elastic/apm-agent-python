@@ -32,7 +32,7 @@ from opentracing.span import Span as OTSpanBase
 from opentracing.span import SpanContext as OTSpanContextBase
 
 from elasticapm import traces
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import get_url_dict
 from elasticapm.utils.logging import get_logger
 
 try:
@@ -86,7 +86,7 @@ class OTSpan(OTSpanBase):
             elif key == "result":
                 self.elastic_apm_ref.result = value
             elif key == tags.HTTP_STATUS_CODE:
-                self.elastic_apm_ref.result = "HTTP {}xx".format(compat.text_type(value)[0])
+                self.elastic_apm_ref.result = "HTTP {}xx".format(str(value)[0])
                 traces.set_context({"status_code": value}, "response")
             elif key == "user.id":
                 traces.set_user_context(user_id=value)

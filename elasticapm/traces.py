@@ -42,7 +42,7 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
-from elasticapm.utils import compat, encoding, get_name_from_func, nested_key, url_to_destination_resource
+from elasticapm.utils import encoding, get_name_from_func, nested_key, url_to_destination_resource
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.time import time_to_perf_counter
@@ -229,7 +229,7 @@ class Transaction(BaseSpan):
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
         if self._breakdown:
-            for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
+            for (span_type, span_subtype), timer in self._span_timers.items():
                 labels = {
                     "span.type": span_type,
                     "transaction.name": self.name,
