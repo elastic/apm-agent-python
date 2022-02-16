@@ -30,11 +30,13 @@
 
 import pytest
 from opentelemetry.trace import SpanKind
+from opentelemetry.trace.propagation import _SPAN_KEY
 
 import elasticapm.contrib.opentelemetry.context as context
+import elasticapm.contrib.opentelemetry.trace as trace
+import elasticapm.traces
 from elasticapm.conf import constants
 from elasticapm.contrib.opentelemetry.trace import Tracer
-from elasticapm.traces import execution_context
 
 
 @pytest.fixture
@@ -54,9 +56,9 @@ def test_root_transaction(tracer: Tracer):
 
 
 def test_ot_span(tracer: Tracer):
-    with tracer.start_as_current_span("test") as otel_transaction_span:
-        with tracer.start_as_current_span("testspan", kind=SpanKind.CONSUMER) as otel_span:
-            with tracer.start_as_current_span("testspan2") as otel_span2:
+    with tracer.start_as_current_span("test"):
+        with tracer.start_as_current_span("testspan", kind=SpanKind.CONSUMER):
+            with tracer.start_as_current_span("testspan2"):
                 pass
     client = tracer.client
     transaction = client.events[constants.TRANSACTION][0]
@@ -70,4 +72,26 @@ def test_ot_span(tracer: Tracer):
     assert span2["name"] == "testspan2"
 
 
-# FIXME add a test for creating a span without attaching it
+def test_ot_span_without_auto_attach(tracer: Tracer):
+    with tracer.start_as_current_span("test"):
+        span = tracer.start_span("testspan", kind=SpanKind.CONSUMER)
+        with tracer.start_as_current_span("testspan2"):
+            pass
+        with trace.use_span(span, end_on_exit=True):
+            with tracer.start_as_current_span("testspan3"):
+                pass
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    # The spans come in out of the normal/intuitive order, since "testspan2" ends first.
+    span1 = client.events[constants.SPAN][2]
+    span2 = client.events[constants.SPAN][0]
+    span3 = client.events[constants.SPAN][1]
+    assert span1["transaction_id"] == span1["parent_id"] == transaction["id"]
+    assert span1["name"] == "testspan"
+
+    assert span2["transaction_id"] == span2["parent_id"] == transaction["id"]
+    assert span2["name"] == "testspan2"
+
+    assert span3["transaction_id"] == transaction["id"]
+    assert span3["parent_id"] == span1["id"]
+    assert span3["name"] == "testspan3"
