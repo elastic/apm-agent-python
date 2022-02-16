@@ -33,13 +33,13 @@ from opentelemetry.trace import SpanKind
 
 import elasticapm.contrib.opentelemetry.context as context
 from elasticapm.conf import constants
-from elasticapm.contrib.opentelemetry import get_tracer
 from elasticapm.contrib.opentelemetry.trace import Tracer
+from elasticapm.traces import execution_context
 
 
 @pytest.fixture
 def tracer(elasticapm_client) -> Tracer:
-    return get_tracer("test", elasticapm_client=elasticapm_client)
+    yield Tracer("test", elasticapm_client=elasticapm_client)
 
 
 def test_root_transaction(tracer: Tracer):
