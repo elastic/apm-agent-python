@@ -33,6 +33,7 @@ from __future__ import absolute_import
 
 import logging
 import sys
+import urllib.parse
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -40,7 +41,6 @@ from django.core.management.color import color_style
 from django.utils import termcolors
 
 from elasticapm.contrib.django.client import DjangoClient
-from elasticapm.utils.compat import urlparse
 
 try:
     from django.core.management.base import OutputWrapper
@@ -200,7 +200,7 @@ class Command(BaseCommand):
 
         server_url = client.config.server_url
         if server_url:
-            parsed_url = urlparse.urlparse(server_url)
+            parsed_url = urllib.parse.urlparse(server_url)
             if parsed_url.scheme.lower() in ("http", "https"):
                 # parse netloc, making sure people did not supply basic auth
                 if "@" in parsed_url.netloc:

@@ -30,6 +30,7 @@
 
 import codecs
 import gzip
+import io
 import json
 import logging
 import logging.handlers
@@ -53,7 +54,6 @@ from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
-from elasticapm.utils import compat
 from elasticapm.utils.threading import ThreadManager
 
 try:
@@ -128,7 +128,7 @@ class ValidatingWSGIApp(ContentServer):
         if request.content_encoding == "deflate":
             data = zlib.decompress(data)
         elif request.content_encoding == "gzip":
-            with gzip.GzipFile(fileobj=compat.BytesIO(data)) as f:
+            with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
                 data = f.read()
         data = data.decode(request.charset)
         if request.content_type == "application/x-ndjson":
@@ -146,7 +146,7 @@ class ValidatingWSGIApp(ContentServer):
                     success += 1
                 except jsonschema.ValidationError as e:
                     fail += 1
-                    content += "/".join(map(compat.text_type, e.absolute_schema_path)) + ": " + e.message + "\n"
+                    content += "/".join(map(str, e.absolute_schema_path)) + ": " + e.message + "\n"
             code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()

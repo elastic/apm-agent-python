@@ -57,7 +57,7 @@ def get_data_from_request(request, config, event_type):
                 if request.files:
                     body["_files"] = {
                         field: val[0].filename if len(val) == 1 else [f.filename for f in val]
-                        for field, val in compat.iterlists(request.files)
+                        for field, val in request.files.lists()
                     }
             else:
                 try:
@@ -75,10 +75,10 @@ def get_data_from_request(request, config, event_type):
 def get_data_from_response(response, config, event_type):
     result = {}
 
-    if isinstance(getattr(response, "status_code", None), compat.integer_types):
+    if isinstance(getattr(response, "status_code", None), int):
         result["status_code"] = response.status_code
 
     if config.capture_headers and getattr(response, "headers", None):
         headers = response.headers
-        result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
+        result["headers"] = {key: ";".join(headers.getlist(key)) for key in headers.keys()}
     return result

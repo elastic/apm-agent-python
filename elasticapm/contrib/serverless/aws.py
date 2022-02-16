@@ -40,7 +40,7 @@ from typing import Optional
 import elasticapm
 from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding, get_name_from_func, nested_key
+from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
@@ -385,7 +385,7 @@ def get_url_dict(event: dict) -> dict:
         query = event["rawQueryString"]
     elif event.get("queryStringParameters"):
         query = "?"
-        for k, v in compat.iteritems(event["queryStringParameters"]):
+        for k, v in event["queryStringParameters"].items():
             query += "{}={}".format(k, v)
     url = protocol + "://" + host + stage + path + query
 

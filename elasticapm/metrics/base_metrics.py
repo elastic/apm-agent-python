@@ -33,7 +33,6 @@ import time
 from collections import defaultdict
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
@@ -69,7 +68,7 @@ class MetricsRegistry(ThreadManager):
                 class_obj = import_string(class_path)
                 self._metricsets[class_path] = class_obj(self)
             except ImportError as e:
-                logger.warning("Could not register %s metricset: %s", class_path, compat.text_type(e))
+                logger.warning("Could not register %s metricset: %s", class_path, str(e))
 
     def get_metricset(self, class_path):
         try:
@@ -85,7 +84,7 @@ class MetricsRegistry(ThreadManager):
         if self.client.config.is_recording:
             logger.debug("Collecting metrics")
 
-            for _, metricset in compat.iteritems(self._metricsets):
+            for _, metricset in self._metricsets.items():
                 for data in metricset.collect():
                     self.client.queue(constants.METRICSET, data)
 
@@ -209,7 +208,7 @@ class MetricsSet(object):
         samples = defaultdict(dict)
         if self._counters:
             # iterate over a copy of the dict to avoid threading issues, see #717
-            for (name, labels), counter in compat.iteritems(self._counters.copy()):
+            for (name, labels), counter in self._counters.copy().items():
                 if counter is not noop_metric:
                     val = counter.val
                     if val or not counter.reset_on_collect:
@@ -217,7 +216,7 @@ class MetricsSet(object):
                     if counter.reset_on_collect:
                         counter.reset()
         if self._gauges:
-            for (name, labels), gauge in compat.iteritems(self._gauges.copy()):
+            for (name, labels), gauge in self._gauges.copy().items():
                 if gauge is not noop_metric:
                     val = gauge.val
                     if val or not gauge.reset_on_collect:
@@ -225,7 +224,7 @@ class MetricsSet(object):
                     if gauge.reset_on_collect:
                         gauge.reset()
         if self._timers:
-            for (name, labels), timer in compat.iteritems(self._timers.copy()):
+            for (name, labels), timer in self._timers.copy().items():
                 if timer is not noop_metric:
                     val, count = timer.val
                     if val or not timer.reset_on_collect:
@@ -237,7 +236,7 @@ class MetricsSet(object):
                     if timer.reset_on_collect:
                         timer.reset()
         if self._histograms:
-            for (name, labels), histo in compat.iteritems(self._histograms.copy()):
+            for (name, labels), histo in self._histograms.copy().items():
                 if histo is not noop_metric:
                     counts = histo.val
                     if counts or not histo.reset_on_collect:
@@ -269,7 +268,7 @@ class MetricsSet(object):
                         histo.reset()
 
         if samples:
-            for labels, sample in compat.iteritems(samples):
+            for labels, sample in samples.items():
                 result = {"samples": sample, "timestamp": timestamp}
                 if labels:
                     result["tags"] = {k: v for k, v in labels}
@@ -286,7 +285,7 @@ class MetricsSet(object):
         return data
 
     def _labels_to_key(self, labels):
-        return tuple((k, compat.text_type(v)) for k, v in sorted(compat.iteritems(labels)))
+        return tuple((k, str(v)) for k, v in sorted(labels.items()))
 
 
 class SpanBoundMetricSet(MetricsSet):

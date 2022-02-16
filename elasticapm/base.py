@@ -40,6 +40,7 @@ import re
 import sys
 import threading
 import time
+import urllib.parse
 import warnings
 from copy import deepcopy
 from typing import Optional, Tuple
@@ -119,8 +120,7 @@ class Client(object):
         self.config = VersionedConfig(config, version=None)
 
         # Insert the log_record_factory into the logging library
-        # The LogRecordFactory functionality is only available on python 3.2+
-        if compat.PY3 and not self.config.disable_log_record_factory:
+        if not self.config.disable_log_record_factory:
             record_factory = logging.getLogRecordFactory()
             # Only way to know if it's wrapped is to create a log record
             throwaway_record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
@@ -146,7 +146,7 @@ class Client(object):
             "timeout": self.config.server_timeout,
             "processors": self.load_processors(),
         }
-        self._api_endpoint_url = compat.urlparse.urljoin(
+        self._api_endpoint_url = urllib.parse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
             constants.EVENTS_API_PATH,
         )
@@ -497,7 +497,7 @@ class Client(object):
         if custom.get("culprit"):
             culprit = custom.pop("culprit")
 
-        for k, v in compat.iteritems(result):
+        for k, v in result.items():
             if k not in event_data:
                 event_data[k] = v
 
@@ -529,7 +529,7 @@ class Client(object):
         if "stacktrace" in log and not culprit:
             culprit = stacks.get_culprit(log["stacktrace"], self.config.include_paths, self.config.exclude_paths)
 
-        if "level" in log and isinstance(log["level"], compat.integer_types):
+        if "level" in log and isinstance(log["level"], int):
             log["level"] = logging.getLevelName(log["level"]).lower()
 
         if log:

@@ -39,7 +39,7 @@ import elasticapm
 from elasticapm import get_client, instrument, traces
 from elasticapm.conf import constants
 from elasticapm.contrib.opentracing.span import OTSpan, OTSpanContext
-from elasticapm.utils import compat, disttracing
+from elasticapm.utils import disttracing
 
 
 class Tracer(TracerBase):
@@ -107,7 +107,7 @@ class Tracer(TracerBase):
             span_context = OTSpanContext(trace_parent=trace_parent.copy_from(span_id=span.id))
             ot_span = OTSpan(self, span_context, span)
         if tags:
-            for k, v in compat.iteritems(tags):
+            for k, v in tags.items():
                 ot_span.set_tag(k, v)
         return ot_span
 

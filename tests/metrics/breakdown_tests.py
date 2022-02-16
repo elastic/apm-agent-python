@@ -27,13 +27,11 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import time
 
 import mock
 import pytest
 
 import elasticapm
-from elasticapm.utils import compat
 
 
 def test_bare_transaction(elasticapm_client):
@@ -149,14 +147,14 @@ def test_metrics_reset_after_collect(elasticapm_client):
         pass
     elasticapm_client.end_transaction("test", "OK", duration=15)
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
-    for labels, c in compat.iteritems(breakdown._counters):
+    for labels, c in breakdown._counters.items():
         assert c.val != 0
-    for labels, t in compat.iteritems(breakdown._timers):
+    for labels, t in breakdown._timers.items():
         assert t.val != (0, 0)
     list(breakdown.collect())
-    for labels, c in compat.iteritems(breakdown._counters):
+    for labels, c in breakdown._counters.items():
         assert c.val == 0
-    for labels, t in compat.iteritems(breakdown._timers):
+    for labels, t in breakdown._timers.items():
         assert t.val == (0, 0)
 
 

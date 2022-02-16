@@ -32,12 +32,13 @@ import pytest  # isort:skip
 
 pytest.importorskip("httplib2")  # isort:skip
 
+import urllib.parse
+
 import httplib2
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
-from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = pytest.mark.httplib2
@@ -47,7 +48,7 @@ pytestmark = pytest.mark.httplib2
 def test_httplib2_instrumentation(instrument, elasticapm_client, waiting_httpserver, args):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         httplib2.Http().request(url, *args)
@@ -81,7 +82,7 @@ def test_httplib2_instrumentation(instrument, elasticapm_client, waiting_httpser
 def test_httplib2_instrumentation_error(instrument, elasticapm_client, waiting_httpserver, status_code):
     waiting_httpserver.serve_content("", code=status_code)
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         httplib2.Http().request(url, "GET")

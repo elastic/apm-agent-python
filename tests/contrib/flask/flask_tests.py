@@ -32,22 +32,18 @@ import pytest  # isort:skip
 
 pytest.importorskip("flask")  # isort:skip
 
+import io
 import logging
 import os
+from urllib.request import urlopen
 
 import mock
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
-from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 from tests.contrib.flask.utils import captured_templates
-
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib2 import urlopen
 
 pytestmark = pytest.mark.flask
 
@@ -280,8 +276,8 @@ def test_post_files(flask_apm_client):
             "/an-error/",
             data={
                 "foo": ["bar", "baz"],
-                "f1": (compat.BytesIO(compat.b("1")), "bla"),
-                "f2": [(f, "flask_tests.py"), (compat.BytesIO(compat.b("1")), "blub")],
+                "f1": (io.BytesIO("1".encode("latin-1")), "bla"),
+                "f2": [(f, "flask_tests.py"), (io.BytesIO("1".encode("latin-1")), "blub")],
             },
         )
     assert response.status_code == 500

@@ -28,10 +28,11 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import mock
+import io
+
 import pytest
 
-from elasticapm.utils import cgroup, compat
+from elasticapm.utils import cgroup
 
 
 @pytest.mark.parametrize(
@@ -87,6 +88,6 @@ from elasticapm.utils import cgroup, compat
     ],
 )
 def test_cgroup_parsing(test_input, expected):
-    f = compat.StringIO(test_input)
+    f = io.StringIO(test_input)
     result = cgroup.parse_cgroups(f)
     assert result == expected

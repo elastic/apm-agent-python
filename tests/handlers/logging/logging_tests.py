@@ -42,8 +42,7 @@ from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler
 from elasticapm.handlers.structlog import structlog_processor
-from elasticapm.traces import Tracer, capture_span
-from elasticapm.utils import compat
+from elasticapm.traces import capture_span
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
@@ -327,7 +326,6 @@ def test_structlog_processor_span(elasticapm_client):
         assert "span.id" not in new_dict
 
 
-@pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
 def test_automatic_log_record_factory_install(elasticapm_client):
     """
     Use the elasticapm_client fixture to load the client, which in turn installs

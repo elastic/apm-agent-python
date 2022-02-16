@@ -31,11 +31,11 @@
 import pytest  # isort:skip
 
 httpx = pytest.importorskip("httpx")  # isort:skip
+import urllib.parse
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.contrib.asyncio.traces import async_capture_span
-from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.httpx, pytest.mark.asyncio]
@@ -51,7 +51,7 @@ else:
 async def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     async with async_capture_span("test_request", "test"):
         async with httpx.AsyncClient() as client:
@@ -156,7 +156,7 @@ async def test_url_sanitization(instrument, elasticapm_client, waiting_httpserve
 async def test_httpx_error(instrument, elasticapm_client, waiting_httpserver, status_code):
     waiting_httpserver.serve_content("", code=status_code)
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     url = "http://{0}/hello_world".format(parsed_url.netloc)

@@ -33,7 +33,7 @@ import warnings
 from collections import defaultdict
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, ERROR, MASK, SPAN, TRANSACTION
-from elasticapm.utils import compat, varmap
+from elasticapm.utils import varmap
 from elasticapm.utils.encoding import force_text
 from elasticapm.utils.stacks import get_lines_from_file
 
@@ -228,7 +228,7 @@ def add_context_lines_to_frames(client, event):
         event,
         lambda frame: per_file[frame["context_metadata"][0]].append(frame) if "context_metadata" in frame else None,
     )
-    for filename, frames in compat.iteritems(per_file):
+    for frames in per_file.values():
         for frame in frames:
             # context_metadata key has been set in elasticapm.utils.stacks.get_frame_info for
             # all frames for which we should gather source code context lines

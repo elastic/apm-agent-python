@@ -37,7 +37,6 @@ import traceback
 import logbook
 
 from elasticapm.base import Client
-from elasticapm.utils import compat
 from elasticapm.utils.encoding import to_unicode
 
 LOOKBOOK_LEVELS = {
@@ -54,7 +53,7 @@ class LogbookHandler(logbook.Handler):
     def __init__(self, *args, **kwargs):
         if len(args) == 1:
             arg = args[0]
-            # if isinstance(arg, compat.string_types):
+            # if isinstance(arg, str):
             # self.client = kwargs.pop('client_cls', Client)(dsn=arg)
             if isinstance(arg, Client):
                 self.client = arg
@@ -102,7 +101,7 @@ class LogbookHandler(logbook.Handler):
             exception = None
 
         return self.client.capture_message(
-            param_message={"message": compat.text_type(record.msg), "params": record.args},
+            param_message={"message": str(record.msg), "params": record.args},
             exception=exception,
             level=LOOKBOOK_LEVELS[record.level],
             logger_name=record.channel,

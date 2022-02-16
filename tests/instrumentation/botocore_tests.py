@@ -28,13 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+import urllib.parse
 
 import pytest
 
 import elasticapm
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.botocore import SQS_MAX_ATTRIBUTES
-from elasticapm.utils.compat import urlparse
 from tests.utils import assert_any_record_contains
 
 boto3 = pytest.importorskip("boto3")
@@ -55,7 +55,7 @@ dynamodb_serializer = TypeSerializer()
 if not LOCALSTACK_ENDPOINT:
     pytestmark.append(pytest.mark.skip("Skipping botocore tests, no AWS_URL environment variable set"))
 
-LOCALSTACK_ENDPOINT_URL = urlparse.urlparse(LOCALSTACK_ENDPOINT)
+LOCALSTACK_ENDPOINT_URL = urllib.parse.urlparse(LOCALSTACK_ENDPOINT)
 
 
 @pytest.fixture()
