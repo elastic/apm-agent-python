@@ -86,7 +86,7 @@ async def get_data_from_response(message: dict, config: Config, event_type: str)
     """
     result = {}
 
-    if "status_code" in message:
+    if "status" in message:
         result["status_code"] = message["status"]
 
     if config.capture_headers and "headers" in message:

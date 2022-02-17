@@ -146,6 +146,10 @@ def test_get(app, elasticapm_client):
     assert request["method"] == "GET"
     assert request["socket"] == {"remote_address": "127.0.0.1"}
 
+    response = transaction["context"]["response"]
+    assert response["status_code"] == 200
+    assert response["headers"]["content-type"] == "text/plain; charset=utf-8"
+
     assert span["name"] == "test"
 
 
