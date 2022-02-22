@@ -18,14 +18,25 @@ endif::[]
 ===== Bug fixes
 ////
 
-=== Unreleased
+//=== Unreleased
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
 //[float]
 //===== Features
 //
+//[float]
+//===== Bug fixes
 //
+
+
+
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.8.0]]
+==== 6.8.0 - 2022-02-22
+
 [float]
 ===== Features
  * use "unknown-python-service" as default service name if no service name is configured {pull}1438[#1438]
@@ -33,16 +44,17 @@ endif::[]
  * don't send unsampled transactions to APM Server 8.0+ {pull}1442[#1442]
  * implement snapshotting of certain configuration during transaction lifetime {pull}1431[#1431]
  * propagate traceparent IDs via Celery {pull}1371[#1371]
+ * removed Python 2 compatibility shims {pull}1463[#1463]
+ ** Note: Python 2 support was already removed with version 6.0 of the agent, this now removes unused compatibilit shims.
 
 [float]
 ===== Bug fixes
- * Fix span compression for redis, mongodb, cassandra and memcached {pull}1444[#1444]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
+ * fix span compression for redis, mongodb, cassandra and memcached {pull}1444[#1444]
+ * fix recording of status_code for starlette {pull}1466[#1466]
+ * fix aioredis span context handling {pull}1462[#1462]
 
 [[release-notes-6.7.2]]
-=== 6.7.2 - 2021-12-07
+==== 6.7.2 - 2021-12-07
 
 [float]
 ===== Bug fixes
@@ -50,7 +62,7 @@ endif::[]
 * add setting to disable span compression, default to disabled {pull}1429[#1429]
 
 [[release-notes-6.7.1]]
-=== 6.7.1 - 2021-11-29
+==== 6.7.1 - 2021-11-29
 
 [float]
 ===== Bug fixes
@@ -60,7 +72,7 @@ endif::[]
 
 
 [[release-notes-6.7.0]]
-=== 6.7.0 - 2021-11-17
+==== 6.7.0 - 2021-11-17
 
 [float]
 ===== Features
