@@ -1,0 +1,2 @@
+jinja2<4
+-r reqs-base.txt

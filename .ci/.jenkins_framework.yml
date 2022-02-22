@@ -10,6 +10,7 @@ FRAMEWORK:
   - flask-0.12
   - flask-1.1
   - flask-2.0
+  - jinja2-3
   - opentracing-newest
   - twisted-18
   - celery-4-flask-1.0
