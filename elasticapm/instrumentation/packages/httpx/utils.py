@@ -56,7 +56,6 @@ def get_request_data(args, kwargs) -> Tuple[Tuple[str, str, int, str], str, list
         else:
             url = args[1]
         url = (url[0].decode("utf-8"), url[1].decode("utf-8"), url[2], url[3].decode("utf-8"))
-        print(kwargs)
         if "headers" in kwargs:
             headers = kwargs["headers"]
         else:
