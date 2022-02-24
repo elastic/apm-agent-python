@@ -1,3 +1,2 @@
-Django>=3.2b1,<3.3
 jinja2<4
 -r reqs-base.txt
