@@ -34,7 +34,6 @@ certifi
 Logbook
 WebOb
 argparse
-blinker>=1.1
 greenlet
 mock
 msgpack-python
