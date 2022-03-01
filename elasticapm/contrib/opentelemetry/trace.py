@@ -32,7 +32,7 @@
 import logging
 import typing
 from contextlib import contextmanager
-from typing import Any, Iterator, Optional, Sequence
+from typing import Any, Iterator, Mapping, Optional, Sequence
 
 from opentelemetry import trace as trace_api
 from opentelemetry.sdk import trace as oteltrace
@@ -42,6 +42,7 @@ from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
 
 import elasticapm
+from elasticapm import Client
 from elasticapm.traces import execution_context
 
 from . import context as context_api
@@ -58,12 +59,14 @@ class Tracer(oteltrace.Tracer):
     and controlling spans' lifecycles.
     """
 
-    def __init__(self, *args, elasticapm_client=None, **kwargs):  # type: ignore
+    def __init__(
+        self, *args, elasticapm_client: Optional[Client] = None, config: Optional[Mapping] = None, **kwargs
+    ):  # type: ignore
         self.client = elasticapm_client
         if not self.client:
             self.client = elasticapm.get_client()
         if not self.client:
-            self.client = elasticapm.Client()
+            self.client = elasticapm.Client(config=config)
         if self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrument()
 
@@ -247,6 +250,8 @@ def get_tracer(
     instrumenting_library_version: typing.Optional[str] = None,
     tracer_provider: Optional[Any] = None,
     schema_url: Optional[str] = None,
+    elasticapm_client: Optional[Client] = None,
+    config: Optional[Mapping] = None,
 ) -> "Tracer":
     """
     Returns the Elastic-wrapped Tracer object which allows for span creation
@@ -257,7 +262,7 @@ def get_tracer(
 
     All other args are ignored in this implementation.
     """
-    return Tracer(instrumenting_module_name)
+    return Tracer(instrumenting_module_name, elasticapm_client=elasticapm_client, config=config)
 
 
 def set_tracer_provider(tracer_provider: Any) -> None:
