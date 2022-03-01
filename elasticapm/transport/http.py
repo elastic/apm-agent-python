@@ -194,7 +194,7 @@ class Transport(HTTPTransportBase):
             body = response.data
             data = json_encoder.loads(body.decode("utf8"))
             version = data["version"]
-            logger.info("Fetched APM Server version %s", version)
+            logger.debug("Fetched APM Server version %s", version)
             self.client.server_version = version_string_to_tuple(version)
         except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
             logger.warning("HTTP error while fetching server information: %s", str(e))
