@@ -31,15 +31,10 @@ py-cpuinfo==8.0.0
 
 urllib3
 certifi
-Jinja2
 Logbook
-MarkupSafe
 WebOb
-Werkzeug
 argparse
-blinker>=1.1
 greenlet
-itsdangerous
 mock
 msgpack-python
 pep8
