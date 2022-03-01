@@ -142,6 +142,7 @@ class Tracer(oteltrace.Tracer):
                 set_status_on_exception=set_status_on_exception,
                 client=self.client,
             )
+            span.set_attributes(attributes)
         elif not current_transaction:
             elastic_span = client.begin_transaction("otel", start=start_time, auto_activate=False)
             span = Span(
@@ -150,6 +151,7 @@ class Tracer(oteltrace.Tracer):
                 set_status_on_exception=set_status_on_exception,
                 client=self.client,
             )
+            span.set_attributes(attributes)
         else:
             elastic_span = current_transaction.begin_span(name, "otel", start=start_time, auto_activate=False)
             span = Span(
@@ -300,6 +302,7 @@ def use_span(
                     description=f"{type(exc).__name__}: {exc}",
                 )
             )
+        raise
     finally:
         if end_on_exit:
             span.end()

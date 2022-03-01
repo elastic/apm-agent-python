@@ -211,9 +211,9 @@ class Span(oteltrace.Span):
             is_rpc = bool(attributes.get("rpc.system"))
             is_http = bool(attributes.get("http.url")) or bool(attributes.get("http.scheme"))
             is_messaging = bool(attributes.get("messaging.system"))
-            if span_kind == SpanKind.SERVER and (is_rpc or is_http):
+            if span_kind == SpanKind.SERVER.name and (is_rpc or is_http):
                 transaction_type = "request"
-            elif span_kind == SpanKind.CONSUMER and is_messaging:
+            elif span_kind == SpanKind.CONSUMER.name and is_messaging:
                 transaction_type = "messaging"
             else:
                 transaction_type = "unknown"
@@ -275,7 +275,7 @@ class Span(oteltrace.Span):
 
             if not span_type:
                 span_kind = self.elastic_span.context["otel_spankind"]
-                if span_kind == SpanKind.INTERNAL:
+                if span_kind == SpanKind.INTERNAL.name:
                     span_type = "app"
                     span_subtype = "internal"
                 else:

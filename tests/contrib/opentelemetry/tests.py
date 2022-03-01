@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import pytest
-from opentelemetry.trace import SpanKind
+from opentelemetry.trace import SpanContext, SpanKind, TraceFlags
 from opentelemetry.trace.propagation import _SPAN_KEY
 
 import elasticapm.contrib.opentelemetry.context as context
@@ -95,3 +95,43 @@ def test_ot_span_without_auto_attach(tracer: Tracer):
     assert span3["transaction_id"] == transaction["id"]
     assert span3["parent_id"] == span1["id"]
     assert span3["name"] == "testspan3"
+
+
+def test_ot_transaction_types(tracer: Tracer):
+    with tracer.start_as_current_span(
+        "test_request", attributes={"http.url": "http://localhost"}, kind=SpanKind.SERVER
+    ):
+        pass
+    with tracer.start_as_current_span(
+        "test_messaging", attributes={"messaging.system": "kafka"}, kind=SpanKind.CONSUMER
+    ):
+        pass
+    client = tracer.client
+    transaction1 = client.events[constants.TRANSACTION][0]
+    transaction2 = client.events[constants.TRANSACTION][1]
+    assert transaction1["type"] == "request"
+    assert transaction2["type"] == "messaging"
+
+    assert transaction1["otel"]["span_kind"] == "SERVER"
+    assert transaction1["otel"]["attributes"]["http.url"] == "http://localhost"
+
+
+def test_ot_exception(tracer: Tracer):
+    with pytest.raises(Exception):
+        with tracer.start_as_current_span("test"):
+            raise Exception()
+
+    client = tracer.client
+    error = client.events[constants.ERROR][0]
+    assert error["context"]["otel_spankind"] == "INTERNAL"
+
+
+def test_ot_spancontext(tracer: Tracer):
+    with tracer.start_as_current_span("test") as ot_span:
+        span_context = ot_span.get_span_context()
+    assert isinstance(span_context, SpanContext)
+    assert span_context.trace_id
+    assert span_context.trace_flags.sampled == TraceFlags.SAMPLED
+
+
+# TODO Add some span subtype testing?
