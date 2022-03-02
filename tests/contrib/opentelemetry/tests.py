@@ -28,15 +28,19 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
+import pytest  # isort:skip
+
+pytest.importorskip("opentelemetry.sdk")  # isort:skip
+
 from opentelemetry.trace import SpanContext, SpanKind, TraceFlags
 from opentelemetry.trace.propagation import _SPAN_KEY
 
 import elasticapm.contrib.opentelemetry.context as context
 import elasticapm.contrib.opentelemetry.trace as trace
-import elasticapm.traces
 from elasticapm.conf import constants
 from elasticapm.contrib.opentelemetry.trace import Tracer
+
+pytestmark = pytest.mark.opentelemetry
 
 
 @pytest.fixture

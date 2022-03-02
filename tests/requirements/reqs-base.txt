@@ -41,8 +41,6 @@ pep8
 pytz
 ecs_logging
 structlog
-opentelemetry-api
-opentelemetry-sdk
 
 
 pytest-asyncio==0.15.1 ; python_version >= '3.7'
