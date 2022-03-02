@@ -29,5 +29,15 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import warnings
+
 from .span import OTSpan  # noqa: F401
 from .tracer import Tracer  # noqa: F401
+
+warnings.warn(
+    (
+        "The OpenTracing bridge will be deprecated in the next major release. "
+        "Please migrate to the OpenTelemetry bridge."
+    ),
+    PendingDeprecationWarning,
+)
