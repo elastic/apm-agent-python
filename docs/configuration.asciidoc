@@ -350,8 +350,8 @@ WARNING: Secret tokens only provide any security if your APM Server uses TLS.
 
 [options="header"]
 |============
-| Environment           | `Config` key | Default | Example
-| `ELASTIC_APM_API_KEY` | `api_key`    | `None`   | A base64-encoded string
+| Environment           | Django/Flask | Default | Example
+| `ELASTIC_APM_API_KEY` | `API_KEY`    | `None`   | A base64-encoded string
 |============
 
 experimental::[]
