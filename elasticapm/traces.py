@@ -398,6 +398,8 @@ class Transaction(BaseSpan):
         # otel attributes and spankind need to be top-level
         if "otel_spankind" in self.context:
             result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+        # Some transaction_store_tests use the Tracer without a Client -- the
+        # extra check against `get_client()` is here to make those tests pass
         if elasticapm.get_client() and elasticapm.get_client().check_server_version(gte=(7, 16)):
             if "otel_attributes" in self.context:
                 if "otel" not in result:
