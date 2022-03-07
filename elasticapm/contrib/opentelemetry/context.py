@@ -35,7 +35,7 @@ import uuid
 from opentelemetry.context import Context
 from opentelemetry.trace.propagation import _SPAN_KEY
 
-from elasticapm.contrib.opentelemetry.span import OtelSpan
+from elasticapm.contrib.opentelemetry.span import Span as OtelSpan
 from elasticapm.traces import Transaction, execution_context
 
 logger = logging.getLogger("elasticapm.otel")
