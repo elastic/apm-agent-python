@@ -35,7 +35,7 @@ import uuid
 from opentelemetry.context import Context
 from opentelemetry.trace.propagation import _SPAN_KEY
 
-from elasticapm.contrib.opentelemetry.span import Span
+from elasticapm.contrib.opentelemetry.span import OtelSpan
 from elasticapm.traces import Transaction, execution_context
 
 logger = logging.getLogger("elasticapm.otel")
@@ -99,7 +99,7 @@ def get_current() -> Context:
     if not span:
         return Context()
 
-    otel_span = getattr(span, "otel_wrapper", Span(span.name, span))
+    otel_span = getattr(span, "otel_wrapper", OtelSpan(span.name, span))
     context = otel_span.otel_context
 
     return context
@@ -109,9 +109,9 @@ def attach(context: Context) -> object:
     """Associates a Context with the caller's current execution unit.
 
     Due to limitations in the Elastic APM context management, a token is not
-    returned, nor required to detach a Context.
+    returned by this method, nor required to detach() a Context later.
 
-    Note that a Context will not be attached if it doesn't have a Span at _SPAN_KEY
+    Note that a Context will not be attached if it doesn't have an OtelSpan at _SPAN_KEY
 
     Args:
         context: The Context to set as current.
@@ -120,7 +120,7 @@ def attach(context: Context) -> object:
     """
     span = context.get(_SPAN_KEY)
     if not span:
-        logger.error("Attempted to attach a context without a valid Span")
+        logger.error("Attempted to attach a context without a valid OtelSpan")
         return None
     span.otel_context = context
     elastic_span = span.elastic_span
@@ -135,6 +135,10 @@ def attach(context: Context) -> object:
 def detach(token: typing.Optional[object] = None) -> None:
     """Resets the Context associated with the caller's current execution unit
     to the value it had before attaching a specified Context.
+
+    Due to limitations in the Elastic APM context management, a token is not
+    returned by attach(), nor required to detach() a Context later.
+
     Args:
         token: Tokens are not supported in this bridge, this argument is unused
     """
