@@ -38,9 +38,15 @@ from elasticapm.context.base import BaseContext
 
 class ContextVarsContext(BaseContext):
     elasticapm_transaction_var = contextvars.ContextVar("elasticapm_transaction_var")
-    elasticapm_span_var = contextvars.ContextVar("elasticapm_span_var")
+    elasticapm_spans_var = contextvars.ContextVar("elasticapm_spans_var", default=())
 
     def get_transaction(self, clear=False):
+        """
+        Get the transaction for the current execution context
+
+        If clear=True, also set the transaction to None for the current
+        execution context.
+        """
         try:
             transaction = self.elasticapm_transaction_var.get()
             if clear:
@@ -50,16 +56,45 @@ class ContextVarsContext(BaseContext):
             return None
 
     def set_transaction(self, transaction):
+        """
+        Set the transaction for the current execution context
+        """
         self.elasticapm_transaction_var.set(transaction)
 
     def get_span(self):
-        try:
-            return self.elasticapm_span_var.get()
-        except LookupError:
-            return None
+        """
+        Get the active span for the current execution context.
+        """
+        spans = self.elasticapm_spans_var.get()
+        return spans[-1] if spans else None
 
     def set_span(self, span):
-        self.elasticapm_span_var.set(span)
+        """
+        Set the active span for the current execution context.
+
+        The previously-activated span will be saved to be re-activated later.
+        """
+        spans = self.elasticapm_spans_var.get()
+        self.elasticapm_spans_var.set(spans + (span,))
+
+    def unset_span(self, clear_all=False):
+        """
+        De-activate the current span. If a span was previously active, it will
+        become active again.
+
+        Returns the deactivated span.
+
+        If clear_all=True, all spans will be cleared and no span will be active.
+        """
+        spans = self.elasticapm_spans_var.get()
+        span = None
+        if spans:
+            span = spans[-1]
+            if clear_all:
+                self.elasticapm_spans_var.set(())
+            else:
+                self.elasticapm_spans_var.set(spans[0:-1])
+        return span
 
 
 execution_context = ContextVarsContext()

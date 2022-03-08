@@ -36,8 +36,9 @@ import time
 import timeit
 from collections import defaultdict
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
@@ -58,10 +59,6 @@ _time_func = timeit.default_timer
 execution_context = init_execution_context()
 
 SpanType = Union["Span", "DroppedSpan"]
-
-
-if TYPE_CHECKING:
-    import elasticapm.Client
 
 
 class ChildDuration(object):
@@ -203,6 +200,9 @@ class Transaction(BaseSpan):
         self.result: Optional[str] = None
         self.transaction_type = transaction_type
         self._tracer = tracer
+        # The otel bridge uses Transactions/Spans interchangeably -- storing
+        # a reference to the Transaction in the Transaction simplifies things.
+        self.transaction = self
         self.config_span_compression_enabled = tracer.config.span_compression_enabled
         self.config_span_compression_exact_match_max_duration = tracer.config.span_compression_exact_match_max_duration
         self.config_span_compression_same_kind_max_duration = tracer.config.span_compression_same_kind_max_duration
@@ -261,6 +261,7 @@ class Transaction(BaseSpan):
         span_action=None,
         sync=None,
         start=None,
+        auto_activate=True,
     ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
@@ -286,7 +287,8 @@ class Transaction(BaseSpan):
             )
             span.frames = tracer.frames_collector_func()
             self._span_counter += 1
-        execution_context.set_span(span)
+        if auto_activate:
+            execution_context.set_span(span)
         return span
 
     def begin_span(
@@ -300,6 +302,7 @@ class Transaction(BaseSpan):
         span_action=None,
         sync=None,
         start=None,
+        auto_activate=True,
     ):
         """
         Begin a new span
@@ -312,6 +315,7 @@ class Transaction(BaseSpan):
         :param span_action: action of the span , e.g. "query"
         :param sync: indicate if the span is synchronous or not. In most cases, `None` should be used
         :param start: timestamp, mostly useful for testing
+        :param auto_activate: whether to set this span in execution_context
         :return: the Span object
         """
         return self._begin_span(
@@ -325,6 +329,7 @@ class Transaction(BaseSpan):
             span_action=span_action,
             sync=sync,
             start=start,
+            auto_activate=auto_activate,
         )
 
     def end_span(self, skip_frames: int = 0, duration: Optional[float] = None, outcome: str = "unknown"):
@@ -390,6 +395,22 @@ class Transaction(BaseSpan):
         # faas context belongs top-level on the transaction
         if "faas" in self.context:
             result["faas"] = self.context.pop("faas")
+        # otel attributes and spankind need to be top-level
+        if "otel_spankind" in self.context:
+            result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+        # Some transaction_store_tests use the Tracer without a Client -- the
+        # extra check against `get_client()` is here to make those tests pass
+        if elasticapm.get_client() and elasticapm.get_client().check_server_version(gte=(7, 16)):
+            if "otel_attributes" in self.context:
+                if "otel" not in result:
+                    result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                else:
+                    result["otel"]["attributes"] = self.context.pop("otel_attributes")
+        else:
+            # Attributes map to labels for older versions
+            attributes = self.context.pop("otel_attributes", {})
+            for key, value in attributes.items():
+                result["context"]["tags"][key] = value
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -543,6 +564,22 @@ class Span(BaseSpan):
             self.context["tags"] = self.labels
         if self.context:
             self.autofill_resource_context()
+            # otel attributes and spankind need to be top-level
+            if "otel_spankind" in self.context:
+                result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+            if elasticapm.get_client().check_server_version(gte=(7, 16)):
+                if "otel_attributes" in self.context:
+                    if "otel" not in result:
+                        result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                    else:
+                        result["otel"]["attributes"] = self.context.pop("otel_attributes")
+            else:
+                # Attributes map to labels for older versions
+                attributes = self.context.pop("otel_attributes")
+                if attributes and ("tags" not in self.context):
+                    self.context["tags"] = {}
+                for key, value in attributes.items():
+                    self.context["tags"][key] = value
             result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
@@ -605,7 +642,11 @@ class Span(BaseSpan):
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
             self.frames = None
-        execution_context.set_span(self.parent)
+        current_span = execution_context.get_span()
+        # Because otel can detach context without ending the span, we need to
+        # make sure we only unset the span if it's currently set.
+        if current_span is self:
+            execution_context.unset_span()
 
         p = self.parent if self.parent else self.transaction
         if self.transaction._breakdown:
@@ -732,7 +773,7 @@ class DroppedSpan(BaseSpan):
 
     def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         super().end(skip_frames, duration)
-        execution_context.set_span(self.parent)
+        execution_context.unset_span()
 
     def child_started(self, timestamp):
         pass
@@ -785,13 +826,14 @@ class Tracer(object):
         else:
             return self.config.span_frames_min_duration / 1000.0
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
         Start a new transactions and bind it in a thread-local variable
 
         :param transaction_type: type of the transaction, e.g. "request"
         :param trace_parent: an optional TraceParent object
         :param start: override the start timestamp, mostly useful for testing
+        :param auto_activate: whether to set this transaction in execution_context
 
         :returns the Transaction object
         """
@@ -817,7 +859,8 @@ class Tracer(object):
         )
         if trace_parent is None:
             transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
-        execution_context.set_transaction(transaction)
+        if auto_activate:
+            execution_context.set_transaction(transaction)
         return transaction
 
     def end_transaction(self, result=None, transaction_name=None, duration=None):

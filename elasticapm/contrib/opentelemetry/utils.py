@@ -28,38 +28,52 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import sys
 
-import pytest
+from opentelemetry.trace import SpanKind
+from opentelemetry.trace.span import SpanContext
 
-import elasticapm.context
-from elasticapm.context.threadlocal import ThreadLocalContext
+import elasticapm.conf.constants as constants
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 
-def test_execution_context_backing():
-    execution_context = elasticapm.context.init_execution_context()
-
-    if sys.version_info[0] == 3 and sys.version_info[1] >= 7:
-        from elasticapm.context.contextvars import ContextVarsContext
-
-        assert isinstance(execution_context, ContextVarsContext)
+def get_traceparent(otel_spancontext: SpanContext) -> TraceParent:
+    """
+    Create an elastic TraceParent object from an opentelemetry SpanContext
+    """
+    trace_id = None
+    span_id = None
+    is_sampled = False
+    if otel_spancontext and otel_spancontext.is_valid:
+        trace_id = otel_spancontext.trace_id
+        span_id = otel_spancontext.span_id
+        is_sampled = otel_spancontext.trace_flags.sampled
+        tracestate = otel_spancontext.trace_state
+    if trace_id:
+        traceparent = TraceParent(
+            constants.TRACE_CONTEXT_VERSION,
+            "%032x" % trace_id,
+            "%016x" % span_id,
+            TracingOptions(recorded=is_sampled),
+            tracestate=tracestate.to_header(),
+        )
+        return traceparent
     else:
-        try:
-            import opentelemetry
-
-            pytest.skip(
-                "opentelemetry installs contextvars backport, so this test isn't valid for the opentelemetry matrix"
-            )
-        except ImportError:
-            pass
-
-        assert isinstance(execution_context, ThreadLocalContext)
+        return None
 
 
-def test_execution_context_monkeypatched(monkeypatch):
-    with monkeypatch.context() as m:
-        m.setattr(elasticapm.context, "threading_local_monkey_patched", lambda: True)
-        execution_context = elasticapm.context.init_execution_context()
-
-    # Should always use ThreadLocalContext when thread local is monkey patched
-    assert isinstance(execution_context, ThreadLocalContext)
+def get_span_kind(kind: SpanKind) -> str:
+    """
+    Converts a SpanKind to the string representation
+    """
+    if kind == SpanKind.CLIENT:
+        return "CLIENT"
+    elif kind == SpanKind.CONSUMER:
+        return "CONSUMER"
+    elif kind == SpanKind.INTERNAL:
+        return "INTERNAL"
+    elif kind == SpanKind.PRODUCER:
+        return "PRODUCER"
+    elif kind == SpanKind.SERVER:
+        return "SERVER"
+    else:
+        return "INTERNAL"
