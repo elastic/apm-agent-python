@@ -29,7 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import datetime
-import time
 import types as python_types
 import typing
 import urllib.parse
@@ -84,10 +83,10 @@ class Span(oteltrace.Span):
                 self.client.end_transaction(
                     name=self._name,
                     result=self.elastic_span.outcome or "OK",
-                    duration=time.time() - self.elastic_span.timestamp,
+                    duration=end_time - self.elastic_span.timestamp,
                 )
             else:
-                self.elastic_span.end(duration=time.time() - self.elastic_span.timestamp)
+                self.elastic_span.end(duration=end_time - self.elastic_span.timestamp)
         else:
             if is_transaction:
                 self.client.end_transaction(name=self._name, result=self.elastic_span.outcome or "OK")
