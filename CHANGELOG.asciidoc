@@ -38,8 +38,10 @@ endif::[]
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
 
-//[float]
-//===== Bug fixes
+[float]
+===== Bug fixes
+
+* Fix `exit_span_min_duration` and disable by default {pull}1483[#1483]
 
 
 [[release-notes-6.x]]

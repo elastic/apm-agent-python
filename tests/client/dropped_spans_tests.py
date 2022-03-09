@@ -124,11 +124,11 @@ def test_transaction_max_span_dropped_statistics_not_collected_for_incompatible_
 @pytest.mark.parametrize("elasticapm_client", [{"exit_span_min_duration": "1ms"}], indirect=True)
 def test_transaction_fast_exit_span(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span(span_type="x", name="x", leaf=True, duration=2):  # not dropped, too long
+    with elasticapm.capture_span(span_type="x", name="x", leaf=True, duration=0.002):  # not dropped, too long
         pass
-    with elasticapm.capture_span(span_type="y", name="y", leaf=True, duration=0.1):  # dropped
+    with elasticapm.capture_span(span_type="y", name="y", leaf=True, duration=0.0001):  # dropped
         pass
-    with elasticapm.capture_span(span_type="z", name="z", leaf=False, duration=0.1):  # not dropped, not exit
+    with elasticapm.capture_span(span_type="z", name="z", leaf=False, duration=0.0001):  # not dropped, not exit
         pass
     elasticapm_client.end_transaction("foo", duration=2.2)
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
@@ -139,6 +139,6 @@ def test_transaction_fast_exit_span(elasticapm_client):
     assert transaction["span_count"]["started"] == 3
     assert transaction["span_count"]["dropped"] == 1
     assert metrics[0]["span"]["type"] == "x"
-    assert metrics[0]["samples"]["span.self_time.sum.us"]["value"] == 2000000
+    assert metrics[0]["samples"]["span.self_time.sum.us"]["value"] == 2000
     assert metrics[1]["span"]["type"] == "y"
-    assert metrics[1]["samples"]["span.self_time.sum.us"]["value"] == 100000
+    assert metrics[1]["samples"]["span.self_time.sum.us"]["value"] == 100
