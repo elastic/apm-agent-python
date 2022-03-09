@@ -761,11 +761,13 @@ Two spans are considered to be of the same kind if the following attributes are 
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_EXIT_SPAN_MIN_DURATION` | `EXIT_SPAN_MIN_DURATION` | `"1ms"`
+| `ELASTIC_APM_EXIT_SPAN_MIN_DURATION` | `EXIT_SPAN_MIN_DURATION` | `"0ms"`
 |============
 
 Exit spans are spans that represent a call to an external service, like a database.
 If such calls are very short, they are usually not relevant and can be ignored.
+
+This feature is disabled by default.
 
 NOTE: if a span propagates distributed tracing IDs, it will not be ignored, even if it is shorter than the configured threshold.
 This is to ensure that no broken traces are recorded.
