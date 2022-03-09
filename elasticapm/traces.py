@@ -657,7 +657,7 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def report(self) -> None:
-        if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
+        if self.discardable and (self.duration * 1000) < self.transaction.config_exit_span_min_duration:
             self.transaction.track_dropped_span(self)
             self.transaction.dropped_spans += 1
         else:
