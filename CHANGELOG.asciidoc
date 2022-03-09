@@ -38,14 +38,20 @@ endif::[]
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
 
-[float]
-===== Bug fixes
-
-* Fix `exit_span_min_duration` and disable by default {pull}1483[#1483]
+//[float]
+//===== Bug fixes
 
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.8.1]]
+==== 6.8.1 - 2022-03-09
+
+[float]
+===== Bug fixes
+
+* Fix `exit_span_min_duration` and disable by default {pull}1483[#1483]
 
 [[release-notes-6.8.0]]
 ==== 6.8.0 - 2022-02-22
