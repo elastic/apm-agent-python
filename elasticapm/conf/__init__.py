@@ -598,7 +598,7 @@ class Config(_ConfigBase):
     )
     exit_span_min_duration = _ConfigValue(
         "EXIT_SPAN_MIN_DURATION",
-        default=1,
+        default=0,
         validators=[duration_validator],
         type=float,
     )
