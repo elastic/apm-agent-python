@@ -115,7 +115,7 @@ def test_config_snapshotting_span_compression_drop_exit_span(elasticapm_client):
         span_subtype="b",
         span_action="c",
         extra={"destination": {"service": {"resource": "x"}}},
-        duration=5,
+        duration=0.005,
     ):
         pass
     elasticapm_client.end_transaction()
