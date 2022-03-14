@@ -38,8 +38,10 @@ endif::[]
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
 
-//[float]
-//===== Bug fixes
+[float]
+===== Bug fixes
+
+* Fix Sanic integration to properly respect the `capture_body` config {pull}1485[#1485]
 
 
 [[release-notes-6.x]]

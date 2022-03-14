@@ -259,7 +259,9 @@ class ElasticAPM:
                 trace_parent = TraceParent.from_headers(headers=request.headers)
                 self._client.begin_transaction("request", trace_parent=trace_parent)
                 await set_context(
-                    lambda: get_request_info(config=self._client.config, request=request),
+                    lambda: get_request_info(
+                        config=self._client.config, request=request, event_type=constants.TRANSACTION
+                    ),
                     "request",
                 )
                 self._setup_transaction_name(request=request)
@@ -278,8 +280,7 @@ class ElasticAPM:
         async def _instrument_response(request: Request, response: HTTPResponse):
             await set_context(
                 lambda: get_response_info(
-                    config=self._client.config,
-                    response=response,
+                    config=self._client.config, response=response, event_type=constants.TRANSACTION
                 ),
                 "response",
             )
@@ -324,7 +325,9 @@ class ElasticAPM:
             self._client.capture_exception(
                 exc_info=sys.exc_info(),
                 context={
-                    "request": await get_request_info(config=self._client.config, request=request),
+                    "request": await get_request_info(
+                        config=self._client.config, request=request, event_type=constants.ERROR
+                    ),
                 },
                 handled=True,
             )
