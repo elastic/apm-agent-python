@@ -38,7 +38,7 @@ import time
 from typing import Optional
 
 import elasticapm
-from elasticapm.base import Client, get_client
+from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
@@ -77,12 +77,11 @@ class capture_serverless(object):
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"
-        if "service_name" not in kwargs:
+        if "service_name" not in kwargs and "ELASTIC_APM_SERVICE_NAME" not in os.environ:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 
-        self.client = get_client()
-        if not self.client:
-            self.client = Client(**kwargs)
+        # Don't use get_client() as we may have a config mismatch due to **kwargs
+        self.client = Client(**kwargs)
         if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrument()
 
