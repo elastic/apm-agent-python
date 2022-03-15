@@ -52,7 +52,7 @@ def test_exact_match(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=2,
+        duration=0.002,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span1:
         assert span1.is_compression_eligible()
@@ -62,7 +62,7 @@ def test_exact_match(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=3,
+        duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
         assert span2.is_compression_eligible()
@@ -73,7 +73,7 @@ def test_exact_match(elasticapm_client):
     span = spans[0]
     assert "composite" in span
     assert span["composite"]["count"] == 2
-    assert span["composite"]["sum"] == 5000
+    assert span["composite"]["sum"] == 5
     assert span["composite"]["compression_strategy"] == "exact_match"
 
 
@@ -96,7 +96,7 @@ def test_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=2,
+        duration=0.002,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span1:
         assert span1.is_compression_eligible()
@@ -106,7 +106,7 @@ def test_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=3,
+        duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
         assert span2.is_compression_eligible()
@@ -120,7 +120,7 @@ def test_same_kind(elasticapm_client):
     assert span["name"] == "Calls to x"
     assert "composite" in span
     assert span["composite"]["count"] == 2
-    assert span["composite"]["sum"] == 5000
+    assert span["composite"]["sum"] == 5
     assert span["composite"]["compression_strategy"] == "same_kind"
 
 
@@ -144,7 +144,7 @@ def test_exact_match_after_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=2,
+        duration=0.002,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span1:
         assert span1.is_compression_eligible()
@@ -154,7 +154,7 @@ def test_exact_match_after_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=3,
+        duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
         assert span2.is_compression_eligible()
@@ -166,7 +166,7 @@ def test_exact_match_after_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=2,
+        duration=0.002,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span3:
         assert span3.is_compression_eligible()
@@ -198,7 +198,7 @@ def test_nested_spans(elasticapm_client):
             span_subtype="b",
             span_action="c",
             leaf=True,
-            duration=2,
+            duration=0.002,
             extra={"destination": {"service": {"resource": "x"}}},
         ) as span2:
             pass
@@ -208,7 +208,7 @@ def test_nested_spans(elasticapm_client):
             span_subtype="b",
             span_action="c",
             leaf=True,
-            duration=2,
+            duration=0.002,
             extra={"destination": {"service": {"resource": "x"}}},
         ) as span3:
             pass
@@ -239,7 +239,7 @@ def test_buffer_is_reported_if_next_child_ineligible(elasticapm_client):
             "test",
             "x.y.z",
             leaf=True,
-            duration=2,
+            duration=0.002,
             extra={"destination": {"service": {"resource": "x"}}},
         ) as span2:
             pass
@@ -266,15 +266,15 @@ def test_buffer_is_reported_if_next_child_ineligible(elasticapm_client):
 def test_compressed_spans_not_counted(elasticapm_client):
     t = elasticapm_client.begin_transaction("test")
     assert t.config_span_compression_enabled
-    assert t.config_span_compression_exact_match_max_duration == 5
-    assert t.config_span_compression_same_kind_max_duration == 5
+    assert t.config_span_compression_exact_match_max_duration.to_seconds() == 0.005
+    assert t.config_span_compression_same_kind_max_duration.to_seconds() == 0.005
     with elasticapm.capture_span(
         "test1",
         span_type="a",
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=2,
+        duration=0.002,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span1:
         pass
@@ -284,7 +284,7 @@ def test_compressed_spans_not_counted(elasticapm_client):
         span_subtype="b",
         span_action="c",
         leaf=True,
-        duration=3,
+        duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
         pass

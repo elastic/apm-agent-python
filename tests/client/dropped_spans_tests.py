@@ -30,7 +30,7 @@
 import pytest
 
 import elasticapm
-from elasticapm.conf import constants
+from elasticapm.conf import Seconds, constants
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)

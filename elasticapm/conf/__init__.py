@@ -66,6 +66,81 @@ class ConfigurationError(ValueError):
         super(ValueError, self).__init__(msg)
 
 
+class Seconds:
+    def __init__(self, value: float):
+        if isinstance(value, Seconds):
+            logger.warning("Nested Seconds detected", stacklevel=-1)
+            value = value._value
+        self._value = value
+
+    def to_seconds(self) -> float:
+        return self._value
+
+    def to_milliseconds(self) -> float:
+        return float(self._value) * 1000
+
+    def to_microseconds(self) -> int:
+        return int(self._value * 1000000)
+
+    def __eq__(self, other):
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return self._value == other._value
+
+    def __ne__(self, other):
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return self._value != other._value
+
+    def __lt__(self, other):
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return self._value < other._value
+
+    def __gt__(self, other):
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return self._value > other._value
+
+    def __le__(self, other):
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return self._value <= other._value
+
+    def __ge__(self, other):
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return self._value >= other._value
+
+    def __add__(self, other: "Seconds") -> "Seconds":
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return Seconds(self._value + other._value)
+
+    def __iadd__(self, other) -> "Seconds":
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        self._value += other._value
+        return self
+
+    def __sub__(self, other: "Seconds") -> "Seconds":
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        return Seconds(self._value - other._value)
+
+    def __isub__(self, other: "Seconds") -> "Seconds":
+        if not isinstance(other, Seconds):
+            return NotImplemented
+        self._value -= other._value
+        return self
+
+    def __neg__(self) -> "Seconds":
+        return Seconds(-self._value)
+
+    def __bool__(self) -> bool:
+        return bool(self._value)
+
+
 class _ConfigValue(object):
     """
     Base class for configuration values
@@ -291,7 +366,7 @@ class PrecisionValidator(object):
 
 
 duration_validator = UnitValidator(
-    r"^((?:-)?\d+)(us|ms|s|m)$", r"\d+(us|ms|s|m)", {"us": 0.001, "ms": 1, "s": 1000, "m": 60000}
+    r"^((?:-)?\d+)(us|ms|s|m)$", r"\d+(us|ms|s|m)", {"us": 0.000001, "ms": 0.001, "s": 1, "m": 60}
 )
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
@@ -559,9 +634,9 @@ class Config(_ConfigBase):
     )
     metrics_interval = _ConfigValue(
         "METRICS_INTERVAL",
-        type=int,
-        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
-        default=30000,
+        type=Seconds,
+        validators=[duration_validator, ExcludeRangeValidator(0.001, 0.999, "{range_start} - {range_end} ms")],
+        default=Seconds(30),
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
@@ -569,7 +644,9 @@ class Config(_ConfigBase):
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
-    api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
+    api_request_time = _ConfigValue(
+        "API_REQUEST_TIME", type=Seconds, validators=[duration_validator], default=Seconds(10)
+    )
     transaction_sample_rate = _ConfigValue(
         "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
@@ -577,30 +654,30 @@ class Config(_ConfigBase):
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
     span_frames_min_duration = _ConfigValue(
         "SPAN_FRAMES_MIN_DURATION",
-        default=5,
+        default=Seconds(0.005),
         validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
+            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 0.001})
         ],
-        type=int,
+        type=Seconds,
     )
     span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=False)
     span_compression_exact_match_max_duration = _ConfigValue(
         "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
-        default=50,
+        default=Seconds(0.05),
         validators=[duration_validator],
-        type=int,
+        type=Seconds,
     )
     span_compression_same_kind_max_duration = _ConfigValue(
         "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
-        default=5,
+        default=Seconds(0.005),
         validators=[duration_validator],
-        type=int,
+        type=Seconds,
     )
     exit_span_min_duration = _ConfigValue(
         "EXIT_SPAN_MIN_DURATION",
-        default=0,
+        default=Seconds(0),
         validators=[duration_validator],
-        type=float,
+        type=Seconds,
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)

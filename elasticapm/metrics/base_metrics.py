@@ -32,7 +32,7 @@ import threading
 import time
 from collections import defaultdict
 
-from elasticapm.conf import constants
+from elasticapm.conf import Seconds, constants
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
@@ -107,7 +107,7 @@ class MetricsRegistry(ThreadManager):
 
     @property
     def collect_interval(self):
-        return self.client.config.metrics_interval / 1000.0
+        return self.client.config.metrics_interval.to_seconds()
 
     @property
     def ignore_patterns(self):
@@ -231,6 +231,12 @@ class MetricsSet(object):
                         sum_name = ".sum"
                         if timer._unit:
                             sum_name += "." + timer._unit
+                            if timer._unit == "us":
+                                val = val.to_microseconds()
+                            elif timer._unit == "ms":
+                                val = val.to_milliseconds()
+                        else:
+                            val = val.to_seconds()
                         samples[labels].update({name + sum_name: {"value": val}})
                         samples[labels].update({name + ".count": {"value": count}})
                     if timer.reset_on_collect:
@@ -391,7 +397,7 @@ class Timer(BaseMetric):
     __slots__ = BaseMetric.__slots__ + ("_val", "_count", "_lock", "_unit")
 
     def __init__(self, name=None, reset_on_collect=False, unit=None):
-        self._val = 0
+        self._val = Seconds(0)
         self._count = 0
         self._unit = unit
         self._lock = threading.Lock()

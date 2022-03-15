@@ -93,7 +93,7 @@ class Transport(ThreadManager):
 
     @property
     def _max_flush_time(self):
-        return self.client.config.api_request_time / 1000.0 if self.client else None
+        return self.client.config.api_request_time.to_seconds() if self.client else None
 
     @property
     def _max_buffer_size(self):

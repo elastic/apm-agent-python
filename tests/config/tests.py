@@ -45,6 +45,7 @@ from elasticapm.conf import (
     FileIsReadableValidator,
     PrecisionValidator,
     RegexValidator,
+    Seconds,
     VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
@@ -93,7 +94,7 @@ def test_config_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5000
+    assert config.api_request_time.to_seconds() == 5
 
 
 def test_config_environment():
@@ -116,7 +117,7 @@ def test_config_environment():
         assert config.server_url == "http://example.com:1234"
         assert config.service_version == "1"
         assert config.hostname == "localhost"
-        assert config.api_request_time == 5000
+        assert config.api_request_time.to_seconds() == 5
         assert config.auto_log_stacks is False
 
 
@@ -137,7 +138,7 @@ def test_config_inline_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5000
+    assert config.api_request_time.to_seconds() == 5
 
 
 def test_config_precedence():
@@ -227,17 +228,17 @@ def test_size_validation():
 
 def test_duration_validation():
     class MyConfig(_ConfigBase):
-        microsecond = _ConfigValue("US", type=float, validators=[duration_validator])
-        millisecond = _ConfigValue("MS", type=int, validators=[duration_validator])
-        second = _ConfigValue("S", type=int, validators=[duration_validator])
-        minute = _ConfigValue("M", type=int, validators=[duration_validator])
-        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[duration_validator])
+        microsecond = _ConfigValue("US", type=Seconds, validators=[duration_validator])
+        millisecond = _ConfigValue("MS", type=Seconds, validators=[duration_validator])
+        second = _ConfigValue("S", type=Seconds, validators=[duration_validator])
+        minute = _ConfigValue("M", type=Seconds, validators=[duration_validator])
+        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=Seconds, validators=[duration_validator])
 
     c = MyConfig({"US": "10us", "MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
-    assert c.microsecond == 0.01
-    assert c.millisecond == -10
-    assert c.second == 5 * 1000
-    assert c.minute == 17 * 1000 * 60
+    assert c.microsecond.to_microseconds() == 10
+    assert c.millisecond.to_milliseconds() == -10
+    assert c.second.to_seconds() == 5
+    assert c.minute.to_seconds() == 17 * 60
     assert c.wrong_pattern is None
     assert "WRONG_PATTERN" in c.errors
 
@@ -448,3 +449,26 @@ def test_config_all_upper_case():
         if not isinstance(config_value, _ConfigValue):
             continue
         assert config_value.env_key == config_value.env_key.upper()
+
+
+def test_seconds_type():
+    a = Seconds(1)
+    b = Seconds(2)
+    c = Seconds(1)
+    assert a < b
+    assert b > a
+    assert a == c
+    assert a != b
+    assert a <= b
+    assert b >= a
+    assert not a == 1
+    assert a != 1.0
+    with pytest.raises(TypeError):
+        x = a < 1.0
+    with pytest.raises(TypeError):
+        x = a > 1.0
+    with pytest.raises(TypeError):
+        x = a <= 1.0
+    with pytest.raises(TypeError):
+        x = a >= 1.0
+    assert not Seconds(0)
