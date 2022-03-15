@@ -202,6 +202,10 @@ class capture_serverless(object):
         faas["coldstart"] = coldstart
         faas["trigger"] = {"type": "other"}
         faas["execution"] = self.context.aws_request_id
+        arn = self.context.invoked_function_arn
+        if len(arn.split(":")) > 7:
+            arn = ":".join(arn.split(":")[:7])
+        faas["id"] = arn
 
         if self.source == "api":
             faas["trigger"]["type"] = "http"
@@ -290,10 +294,6 @@ class capture_serverless(object):
             "name": os.environ.get("AWS_EXECUTION_ENV"),
             "version": platform.python_version(),
         }
-        arn = self.context.invoked_function_arn
-        if len(arn.split(":")) > 7:
-            arn = ":".join(arn.split(":")[:7])
-        metadata["service"]["id"] = arn
         metadata["service"]["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
         metadata["service"]["node"] = {"configured_name": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}
         # This is the one piece of metadata that requires deep merging. We add it manually
