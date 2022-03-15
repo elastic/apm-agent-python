@@ -66,7 +66,7 @@ class capture_serverless(object):
             return {"statusCode": r.status_code, "body": "Success!"}
     """
 
-    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, name: Optional[str] = None, elasticapm_client: Optional[Client] = None, **kwargs) -> None:
         self.name = name
         self.event = {}
         self.context = {}
@@ -80,8 +80,12 @@ class capture_serverless(object):
         if "service_name" not in kwargs and "ELASTIC_APM_SERVICE_NAME" not in os.environ:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
 
-        # Don't use get_client() as we may have a config mismatch due to **kwargs
-        self.client = Client(**kwargs)
+        if elasticapm_client:
+            # Mostly for testing
+            self.client = elasticapm_client
+        else:
+            # Don't use get_client() as we may have a config mismatch due to **kwargs
+            self.client = Client(**kwargs)
         if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrument()
 
@@ -123,10 +127,21 @@ class capture_serverless(object):
         )
         if self.httpmethod:  # API Gateway
             self.source = "api"
-            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-                transaction_name = "{} {}".format(self.httpmethod, os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+            if nested_key(self.event, "requestContext", "httpMethod"):
+                # API v1
+                resource = "/{}{}".format(
+                    nested_key(self.event, "requestContext", "stage"),
+                    nested_key(self.event, "requestContext", "resourcePath"),
+                )
             else:
-                transaction_name = self.name
+                # API v2
+                route_key = nested_key(self.event, "requestContext", "routeKey")
+                route_key = f"/{route_key}" if route_key.startswith("$") else route_key.split(" ", 1)[-1]
+                resource = "/{}{}".format(
+                    nested_key(self.event, "requestContext", "stage"),
+                    route_key,
+                )
+            transaction_name = "{} {}".format(self.httpmethod, resource)
         elif "Records" in self.event and len(self.event["Records"]) == 1:
             record = self.event["Records"][0]
             if record.get("eventSource") == "aws:s3":  # S3

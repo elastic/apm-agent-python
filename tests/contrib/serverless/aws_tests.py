@@ -139,7 +139,7 @@ def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
-    @capture_serverless()
+    @capture_serverless(elasticapm_client=elasticapm_client)
     def test_func(event, context):
         with capture_span("test_span"):
             time.sleep(0.01)
@@ -150,7 +150,7 @@ def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
 
-    assert transaction["name"] == "GET test_func"
+    assert transaction["name"] == "GET /dev/fetch_all"
     assert transaction["result"] == "HTTP 2xx"
     assert transaction["span_count"]["started"] == 1
     assert transaction["context"]["request"]["method"] == "GET"
@@ -162,7 +162,7 @@ def test_capture_serverless_api_gateway_v2(event_api2, context, elasticapm_clien
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
-    @capture_serverless()
+    @capture_serverless(elasticapm_client=elasticapm_client)
     def test_func(event, context):
         with capture_span("test_span"):
             time.sleep(0.01)
@@ -173,7 +173,7 @@ def test_capture_serverless_api_gateway_v2(event_api2, context, elasticapm_clien
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
 
-    assert transaction["name"] == "GET test_func"
+    assert transaction["name"] == "GET /dev/fetch_all"
     assert transaction["result"] == "HTTP 2xx"
     assert transaction["span_count"]["started"] == 1
     assert transaction["context"]["request"]["method"] == "GET"
@@ -185,7 +185,7 @@ def test_capture_serverless_s3(event_s3, context, elasticapm_client):
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
-    @capture_serverless()
+    @capture_serverless(elasticapm_client=elasticapm_client)
     def test_func(event, context):
         with capture_span("test_span"):
             time.sleep(0.01)
@@ -204,7 +204,7 @@ def test_capture_serverless_sns(event_sns, context, elasticapm_client):
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
-    @capture_serverless()
+    @capture_serverless(elasticapm_client=elasticapm_client)
     def test_func(event, context):
         with capture_span("test_span"):
             time.sleep(0.01)
@@ -223,7 +223,7 @@ def test_capture_serverless_sqs(event_sqs, context, elasticapm_client):
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
-    @capture_serverless()
+    @capture_serverless(elasticapm_client=elasticapm_client)
     def test_func(event, context):
         with capture_span("test_span"):
             time.sleep(0.01)
@@ -242,7 +242,7 @@ def test_capture_serverless_s3_batch(event_s3_batch, context, elasticapm_client)
 
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
-    @capture_serverless()
+    @capture_serverless(elasticapm_client=elasticapm_client)
     def test_func(event, context):
         with capture_span("test_span"):
             time.sleep(0.01)
