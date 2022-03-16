@@ -227,17 +227,7 @@ class capture_serverless(object):
         if self.source == "api":
             faas["trigger"]["type"] = "http"
             faas["trigger"]["request_id"] = self.event["requestContext"]["requestId"]
-            path = (
-                self.event["requestContext"].get("resourcePath")
-                or self.event["requestContext"]["http"]["path"].split(self.event["requestContext"]["stage"])[-1]
-            )
-            service_context["origin"] = {
-                "name": "{} {}/{}".format(
-                    self.httpmethod,
-                    self.event["requestContext"]["stage"],
-                    path,
-                )
-            }
+            service_context["origin"] = {"name": self.event["requestContext"]["domainName"]}
             service_context["origin"]["id"] = self.event["requestContext"]["apiId"]
             service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
