@@ -375,7 +375,7 @@ def test_bulk_execute(instrument, elasticapm_client, mongo_database):
         {
             "span_compression_enabled": True,
             "span_compression_same_kind_max_duration": "5ms",
-            "span_compression_exact_match_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "50ms",
         }
     ],
     indirect=True,

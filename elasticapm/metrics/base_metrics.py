@@ -235,7 +235,7 @@ class MetricsSet(object):
                                 val = val.to_microseconds()
                             elif timer._unit == "ms":
                                 val = val.to_milliseconds()
-                        else:
+                        elif isinstance(val, Seconds):
                             val = val.to_seconds()
                         samples[labels].update({name + sum_name: {"value": val}})
                         samples[labels].update({name + ".count": {"value": count}})

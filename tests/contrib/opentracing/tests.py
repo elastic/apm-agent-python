@@ -38,7 +38,7 @@ import mock
 from opentracing import Format
 
 import elasticapm
-from elasticapm.conf import constants
+from elasticapm.conf import Seconds, constants
 from elasticapm.contrib.opentracing import Tracer
 from elasticapm.contrib.opentracing.span import OTSpanContext
 from elasticapm.utils.disttracing import TraceParent
@@ -68,7 +68,7 @@ def test_tracer_with_config():
     config = {"METRICS_INTERVAL": "0s", "SERVER_URL": "https://example.com/test"}
     tracer = Tracer(config=config)
     try:
-        assert tracer._agent.config.metrics_interval == 0
+        assert tracer._agent.config.metrics_interval == Seconds(0)
         assert tracer._agent.config.server_url == "https://example.com/test"
     finally:
         tracer._agent.close()
