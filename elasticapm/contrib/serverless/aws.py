@@ -223,6 +223,8 @@ class capture_serverless(object):
         if len(arn.split(":")) > 7:
             arn = ":".join(arn.split(":")[:7])
         faas["id"] = arn
+        faas["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        faas["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
         if self.source == "api":
             faas["trigger"]["type"] = "http"
