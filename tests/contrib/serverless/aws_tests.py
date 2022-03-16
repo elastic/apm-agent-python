@@ -217,6 +217,8 @@ def test_capture_serverless_sns(event_sns, context, elasticapm_client):
 
     assert transaction["name"] == "RECEIVE basepiwstesttopic"
     assert transaction["span_count"]["started"] == 1
+    assert transaction["context"]["message"]["headers"]["Population"] == "1250800"
+    assert transaction["context"]["message"]["headers"]["City"] == "Any City"
 
 
 def test_capture_serverless_sqs(event_sqs, context, elasticapm_client):
@@ -236,6 +238,8 @@ def test_capture_serverless_sqs(event_sqs, context, elasticapm_client):
 
     assert transaction["name"] == "RECEIVE testqueue"
     assert transaction["span_count"]["started"] == 1
+    assert transaction["context"]["message"]["headers"]["Population"] == "1250800"
+    assert transaction["context"]["message"]["headers"]["City"] == "Any City"
 
 
 def test_capture_serverless_s3_batch(event_s3_batch, context, elasticapm_client):

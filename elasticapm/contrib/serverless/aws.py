@@ -248,13 +248,18 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["account"] = {"id": record["eventSourceARN"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = service_context["origin"]["name"]
+            message_context["queue"] = {"name": service_context["origin"]["name"]}
             if "SentTimestamp" in record["attributes"]:
                 message_context["age"] = {"ms": int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))}
             if self.client.config.capture_body in ("transactions", "all") and "body" in record:
                 message_context["body"] = record["body"]
             if self.client.config.capture_headers and record.get("messageAttributes"):
-                message_context["headers"] = record["messageAttributes"]
+                headers = {}
+                for k, v in record["messageAttributes"].items():
+                    if v and v.get("stringValue"):
+                        headers[k] = v.get("stringValue")
+                if headers:
+                    message_context["headers"] = headers
         elif self.source == "sns":
             record = self.event["Records"][0]
             faas["trigger"]["type"] = "pubsub"
@@ -268,7 +273,7 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
             cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = service_context["origin"]["name"]
+            message_context["queue"] = {"name": service_context["origin"]["name"]}
             if "Timestamp" in record["Sns"]:
                 message_context["age"] = {
                     "ms": int(
@@ -282,7 +287,12 @@ class capture_serverless(object):
             if self.client.config.capture_body in ("transactions", "all") and "Message" in record["Sns"]:
                 message_context["body"] = record["Sns"]["Message"]
             if self.client.config.capture_headers and record["Sns"].get("MessageAttributes"):
-                message_context["headers"] = record["Sns"]["MessageAttributes"]
+                headers = {}
+                for k, v in record["Sns"]["MessageAttributes"].items():
+                    if v and v.get("Type") == "String":
+                        headers[k] = v.get("Value")
+                if headers:
+                    message_context["headers"] = headers
         elif self.source == "s3":
             record = self.event["Records"][0]
             faas["trigger"]["type"] = "datasource"
@@ -323,7 +333,7 @@ class capture_serverless(object):
         # faas doesn't actually belong in context, but we handle this in to_dict
         elasticapm.set_context(faas, "faas")
         if message_context:
-            elasticapm.set_context(service_context, "message")
+            elasticapm.set_context(message_context, "message")
         self.client._transport.add_metadata(metadata)
 
 
