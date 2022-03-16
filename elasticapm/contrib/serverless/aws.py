@@ -79,6 +79,8 @@ class capture_serverless(object):
         kwargs["framework_name"] = "AWS Lambda"
         if "service_name" not in kwargs and "ELASTIC_APM_SERVICE_NAME" not in os.environ:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+        if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
+            kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
         if elasticapm_client:
             # Mostly for testing
@@ -309,7 +311,7 @@ class capture_serverless(object):
             "name": os.environ.get("AWS_EXECUTION_ENV"),
             "version": platform.python_version(),
         }
-        metadata["service"]["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
+        metadata["service"]["version"] = self.client.config.service_version
         metadata["service"]["node"] = {"configured_name": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}
         # This is the one piece of metadata that requires deep merging. We add it manually
         # here to avoid having to deep merge in _transport.add_metadata()
