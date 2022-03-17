@@ -96,6 +96,21 @@ class capture_serverless(object):
                 self.event, self.context = args
             else:
                 self.event, self.context = {}, {}
+            # We delay client creation until the function is called, so that
+            # multiple @capture_serverless instances in the same file don't create
+            # multiple clients
+            if not self.client:
+                # Don't use get_client() as we may have a config mismatch due to **kwargs
+                self.client = Client(**self.client_kwargs)
+            if (
+                not self.instrumented
+                and not self.client.config.debug
+                and self.client.config.instrument
+                and self.client.config.enabled
+            ):
+                elasticapm.instrument()
+                self.instrumented = True
+
             if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
                 with self:
                     self.response = func(*args, **kwds)
@@ -109,21 +124,6 @@ class capture_serverless(object):
         """
         Transaction setup
         """
-        # We delay client creation until the function is called, so that
-        # multiple @capture_serverless instances in the same file don't create
-        # multiple clients
-        if not self.client:
-            # Don't use get_client() as we may have a config mismatch due to **kwargs
-            self.client = Client(**self.client_kwargs)
-        if (
-            not self.instrumented
-            and not self.client.config.debug
-            and self.client.config.instrument
-            and self.client.config.enabled
-        ):
-            elasticapm.instrument()
-            self.instrumented = True
-
         trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
 
         global COLD_START
