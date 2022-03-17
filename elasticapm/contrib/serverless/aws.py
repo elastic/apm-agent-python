@@ -71,6 +71,8 @@ class capture_serverless(object):
         self.event = {}
         self.context = {}
         self.response = None
+        self.instrumented = False
+        self.client = elasticapm_client  # elasticapm_client is intended for testing only
 
         # Disable all background threads except for transport
         kwargs["metrics_interval"] = "0ms"
@@ -82,14 +84,7 @@ class capture_serverless(object):
         if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
             kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
-        if elasticapm_client:
-            # Mostly for testing
-            self.client = elasticapm_client
-        else:
-            # Don't use get_client() as we may have a config mismatch due to **kwargs
-            self.client = Client(**kwargs)
-        if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
-            elasticapm.instrument()
+        self.client_kwargs = kwargs
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -114,6 +109,21 @@ class capture_serverless(object):
         """
         Transaction setup
         """
+        # We delay client creation until the function is called, so that
+        # multiple @capture_serverless instances in the same file don't create
+        # multiple clients
+        if not self.client:
+            # Don't use get_client() as we may have a config mismatch due to **kwargs
+            self.client = Client(**self.client_kwargs)
+        if (
+            not self.instrumented
+            and not self.client.config.debug
+            and self.client.config.instrument
+            and self.client.config.enabled
+        ):
+            elasticapm.instrument()
+            self.instrumented = True
+
         trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
 
         global COLD_START
