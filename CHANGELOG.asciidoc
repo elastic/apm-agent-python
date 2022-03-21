@@ -42,6 +42,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix Sanic integration to properly respect the `capture_body` config {pull}1485[#1485]
+* Change default for `stack_trace_limit` from 500 to 50 {pull}1489[#1489]
 
 
 [[release-notes-6.x]]
