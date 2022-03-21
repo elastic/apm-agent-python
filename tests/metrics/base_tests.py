@@ -30,12 +30,13 @@
 
 import logging
 import time
+from datetime import timedelta
 from multiprocessing.dummy import Pool
 
 import mock
 import pytest
 
-from elasticapm.conf import Seconds, constants
+from elasticapm.conf import constants
 from elasticapm.metrics.base_metrics import Counter, Gauge, MetricsRegistry, MetricsSet, NoopMetric, Timer
 from tests.utils import assert_any_record_contains
 
@@ -193,8 +194,8 @@ def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
     counter.inc(), resetting_counter.inc()
     gauge.val = 5
     resetting_gauge.val = 5
-    timer.update(Seconds(1), 1)
-    resetting_timer.update(Seconds(1), 1)
+    timer.update(timedelta(seconds=1), 1)
+    resetting_timer.update(timedelta(seconds=1), 1)
 
     data = list(m.collect())
     more_data = list(m.collect())

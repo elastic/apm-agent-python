@@ -36,6 +36,7 @@ import os
 import re
 import socket
 import threading
+from datetime import timedelta
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES
 from elasticapm.utils import compat, starmatch_to_regex
@@ -64,81 +65,6 @@ class ConfigurationError(ValueError):
     def __init__(self, msg, field_name):
         self.field_name = field_name
         super(ValueError, self).__init__(msg)
-
-
-class Seconds:
-    def __init__(self, value: float):
-        if isinstance(value, Seconds):
-            logger.warning("Nested Seconds detected", stacklevel=-1)
-            value = value._value
-        self._value = value
-
-    def to_seconds(self) -> float:
-        return self._value
-
-    def to_milliseconds(self) -> float:
-        return float(self._value) * 1000
-
-    def to_microseconds(self) -> int:
-        return int(self._value * 1000000)
-
-    def __eq__(self, other):
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return self._value == other._value
-
-    def __ne__(self, other):
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return self._value != other._value
-
-    def __lt__(self, other):
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return self._value < other._value
-
-    def __gt__(self, other):
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return self._value > other._value
-
-    def __le__(self, other):
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return self._value <= other._value
-
-    def __ge__(self, other):
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return self._value >= other._value
-
-    def __add__(self, other: "Seconds") -> "Seconds":
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return Seconds(self._value + other._value)
-
-    def __iadd__(self, other) -> "Seconds":
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        self._value += other._value
-        return self
-
-    def __sub__(self, other: "Seconds") -> "Seconds":
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        return Seconds(self._value - other._value)
-
-    def __isub__(self, other: "Seconds") -> "Seconds":
-        if not isinstance(other, Seconds):
-            return NotImplemented
-        self._value -= other._value
-        return self
-
-    def __neg__(self) -> "Seconds":
-        return Seconds(-self._value)
-
-    def __bool__(self) -> bool:
-        return bool(self._value)
 
 
 class _ConfigValue(object):
@@ -307,6 +233,39 @@ class _BoolConfigValue(_ConfigValue):
         instance._values[self.dict_key] = bool(value)
 
 
+class _DurationConfigValue(_ConfigValue):
+    units = (
+        ("us", 0.000001),
+        ("ms", 0.001),
+        ("s", 1),
+        ("m", 60),
+    )
+
+    def __init__(self, dict_key, allow_microseconds=False, unitless_factor=None, **kwargs):
+        self.type = None  # no type coercion
+        used_units = self.units if allow_microseconds else self.units[1:]
+        pattern = "|".join(unit[0] for unit in used_units)
+        unit_multipliers = dict(used_units)
+        unit_required = ""
+        if unitless_factor:
+            unit_multipliers[None] = unitless_factor
+            unit_required = "?"
+        regex = f"((?:-)?\\d+)({pattern}){unit_required}$"
+        verbose_pattern = f"\\d+({pattern}){unit_required}$"
+        duration_validator = UnitValidator(
+            regex=regex, verbose_pattern=verbose_pattern, unit_multipliers=unit_multipliers
+        )
+        validators = kwargs.pop("validators", [])
+        validators.insert(0, duration_validator)
+        super().__init__(dict_key, validators=validators, **kwargs)
+
+    def __set__(self, config_instance, value):
+        value = self._validate(config_instance, value)
+        value = timedelta(seconds=float(value))
+        self._callback_if_changed(config_instance, value)
+        config_instance._values[self.dict_key] = value
+
+
 class RegexValidator(object):
     def __init__(self, regex, verbose_pattern=None):
         self.regex = regex
@@ -365,9 +324,6 @@ class PrecisionValidator(object):
         return rounded
 
 
-duration_validator = UnitValidator(
-    r"^((?:-)?\d+)(us|ms|s|m)$", r"\d+(us|ms|s|m)", {"us": 0.000001, "ms": 0.001, "s": 1, "m": 60}
-)
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
@@ -632,11 +588,10 @@ class Config(_ConfigBase):
             "elasticapm.metrics.sets.cpu.CPUMetricSet",
         ],
     )
-    metrics_interval = _ConfigValue(
+    metrics_interval = _DurationConfigValue(
         "METRICS_INTERVAL",
-        type=Seconds,
-        validators=[duration_validator, ExcludeRangeValidator(0.001, 0.999, "{range_start} - {range_end} ms")],
-        default=Seconds(30),
+        validators=[ExcludeRangeValidator(0.001, 0.999, "{range_start} - {range_end} s")],
+        default=timedelta(seconds=30),
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
@@ -644,40 +599,27 @@ class Config(_ConfigBase):
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
-    api_request_time = _ConfigValue(
-        "API_REQUEST_TIME", type=Seconds, validators=[duration_validator], default=Seconds(10)
-    )
+    api_request_time = _DurationConfigValue("API_REQUEST_TIME", default=timedelta(seconds=10))
     transaction_sample_rate = _ConfigValue(
         "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
-    span_frames_min_duration = _ConfigValue(
-        "SPAN_FRAMES_MIN_DURATION",
-        default=Seconds(0.005),
-        validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 0.001, "s": 1, "m": 60, None: 0.001})
-        ],
-        type=Seconds,
+    span_frames_min_duration = _DurationConfigValue(
+        "SPAN_FRAMES_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
     span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=False)
-    span_compression_exact_match_max_duration = _ConfigValue(
+    span_compression_exact_match_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
-        default=Seconds(0.05),
-        validators=[duration_validator],
-        type=Seconds,
+        default=timedelta(seconds=0.05),
     )
-    span_compression_same_kind_max_duration = _ConfigValue(
+    span_compression_same_kind_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
-        default=Seconds(0.005),
-        validators=[duration_validator],
-        type=Seconds,
+        default=timedelta(seconds=0.005),
     )
-    exit_span_min_duration = _ConfigValue(
+    exit_span_min_duration = _DurationConfigValue(
         "EXIT_SPAN_MIN_DURATION",
-        default=Seconds(0),
-        validators=[duration_validator],
-        type=Seconds,
+        default=timedelta(seconds=0),
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)

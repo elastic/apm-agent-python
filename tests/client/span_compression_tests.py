@@ -266,8 +266,8 @@ def test_buffer_is_reported_if_next_child_ineligible(elasticapm_client):
 def test_compressed_spans_not_counted(elasticapm_client):
     t = elasticapm_client.begin_transaction("test")
     assert t.config_span_compression_enabled
-    assert t.config_span_compression_exact_match_max_duration.to_seconds() == 0.005
-    assert t.config_span_compression_same_kind_max_duration.to_seconds() == 0.005
+    assert t.config_span_compression_exact_match_max_duration.total_seconds() == 0.005
+    assert t.config_span_compression_same_kind_max_duration.total_seconds() == 0.005
     with elasticapm.capture_span(
         "test1",
         span_type="a",

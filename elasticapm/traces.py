@@ -35,11 +35,12 @@ import threading
 import time
 import timeit
 from collections import defaultdict
+from datetime import timedelta
 from types import TracebackType
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import elasticapm
-from elasticapm.conf import Seconds, constants
+from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
@@ -68,7 +69,7 @@ class ChildDuration(object):
         self.obj = obj
         self._nesting_level: int = 0
         self._start: float = 0
-        self._duration: Seconds = Seconds(0)
+        self._duration: timedelta = timedelta(seconds=0)
         self._lock = threading.Lock()
 
     def start(self, timestamp: float):
@@ -81,10 +82,10 @@ class ChildDuration(object):
         with self._lock:
             self._nesting_level -= 1
             if self._nesting_level == 0:
-                self._duration += Seconds(timestamp - self._start)
+                self._duration += timedelta(seconds=timestamp - self._start)
 
     @property
-    def duration(self) -> Seconds:
+    def duration(self) -> timedelta:
         return self._duration
 
 
@@ -97,7 +98,7 @@ class BaseSpan(object):
         self.compression_buffer_lock = threading.Lock()
         self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
-        self.duration: Optional[Seconds] = None
+        self.duration: Optional[timedelta] = None
         if labels:
             self.label(**labels)
 
@@ -117,9 +118,9 @@ class BaseSpan(object):
                 self.compression_buffer.report()
                 self.compression_buffer = child
 
-    def end(self, skip_frames: int = 0, duration: Optional[Seconds] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
         self.ended_time = _time_func()
-        self.duration = duration if duration is not None else Seconds(self.ended_time - self.start_time)
+        self.duration = duration if duration is not None else timedelta(seconds=self.ended_time - self.start_time)
         if self.compression_buffer:
             self.compression_buffer.report()
             self.compression_buffer = None
@@ -226,7 +227,7 @@ class Transaction(BaseSpan):
             self._breakdown = None
         super(Transaction, self).__init__(start=start)
 
-    def end(self, skip_frames: int = 0, duration: Optional[Seconds] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
         super().end(skip_frames, duration)
         if self._breakdown:
             for (span_type, span_subtype), timer in self._span_timers.items():
@@ -369,7 +370,7 @@ class Transaction(BaseSpan):
             "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
-            "duration": self.duration.to_milliseconds(),
+            "duration": self.duration.total_seconds() * 1000,
             "result": encoding.keyword_field(str(self.result)),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
             "outcome": self.outcome,
@@ -448,7 +449,7 @@ class Transaction(BaseSpan):
                 resource = span.context["destination"]["service"]["resource"]
                 stats = self._dropped_span_statistics[(resource, span.outcome)]
                 stats["count"] += 1
-                stats["duration.sum.us"] += span.duration.to_microseconds()
+                stats["duration.sum.us"] += int(span.duration.total_seconds() * 1000000)
             except KeyError:
                 pass
 
@@ -551,7 +552,7 @@ class Span(BaseSpan):
             "subtype": encoding.keyword_field(self.subtype),
             "action": encoding.keyword_field(self.action),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
-            "duration": self.duration.to_milliseconds(),
+            "duration": self.duration.total_seconds() * 1000,
             "outcome": self.outcome,
         }
         if self.transaction.sample_rate is not None:
@@ -586,7 +587,7 @@ class Span(BaseSpan):
         if self.composite:
             result["composite"] = {
                 "compression_strategy": self.composite["compression_strategy"],
-                "sum": self.composite["sum"].to_milliseconds(),
+                "sum": self.composite["sum"].total_seconds() * 1000,
                 "count": self.composite["count"],
             }
         return result
@@ -650,7 +651,7 @@ class Span(BaseSpan):
 
         p = self.parent if self.parent else self.transaction
         if self.transaction._breakdown:
-            p._child_durations.stop(self.start_time + self.duration.to_seconds())
+            p._child_durations.stop(self.start_time + self.duration.total_seconds())
             self.transaction.track_span_duration(
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
@@ -674,7 +675,7 @@ class Span(BaseSpan):
             self.composite = {"compression_strategy": compression_strategy, "count": 1, "sum": self.duration}
         self.composite["count"] += 1
         self.composite["sum"] += sibling.duration
-        self.duration = Seconds(sibling.ended_time - self.start_time)
+        self.duration = timedelta(seconds=sibling.ended_time - self.start_time)
         self.transaction._span_counter -= 1
         return True
 
@@ -820,8 +821,8 @@ class Tracer(object):
         self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
 
     @property
-    def span_frames_min_duration(self) -> Optional[Seconds]:
-        if self.config.span_frames_min_duration in (Seconds(-1), None):
+    def span_frames_min_duration(self) -> Optional[timedelta]:
+        if self.config.span_frames_min_duration in (timedelta(seconds=-1), None):
             return None
         else:
             return self.config.span_frames_min_duration
@@ -918,7 +919,7 @@ class capture_span(object):
         span_subtype: Optional[str] = None,
         span_action: Optional[str] = None,
         start: Optional[int] = None,
-        duration: Optional[Union[float, Seconds]] = None,
+        duration: Optional[Union[float, timedelta]] = None,
         sync: Optional[bool] = None,
     ):
         self.name = name
@@ -937,8 +938,8 @@ class capture_span(object):
         self.leaf = leaf
         self.labels = labels
         self.start = start
-        if duration and not isinstance(duration, Seconds):
-            duration = Seconds(duration)
+        if duration and not isinstance(duration, timedelta):
+            duration = timedelta(seconds=duration)
         self.duration = duration
         self.sync = sync
 

@@ -43,10 +43,11 @@ import time
 import urllib.parse
 import warnings
 from copy import deepcopy
+from datetime import timedelta
 from typing import Optional, Tuple
 
 import elasticapm
-from elasticapm.conf import Config, Seconds, VersionedConfig, constants
+from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
@@ -307,8 +308,8 @@ class Client(object):
         :param duration: override duration, mostly useful for testing
         :return: the ended transaction object
         """
-        if duration is not None and not isinstance(duration, Seconds):
-            duration = Seconds(duration)
+        if duration is not None and not isinstance(duration, timedelta):
+            duration = timedelta(seconds=duration)
         transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 
