@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
+* Change default for `sanitize_field_names` to sanitize `*auth*` instead of `authorization` {pull}1494[#1494]
 
 [float]
 ===== Bug fixes
