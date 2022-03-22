@@ -59,7 +59,7 @@ class HTTPTransportBase(Transport):
         self._server_info_url = "".join((base, constants.SERVER_INFO_PATH, tail))
         super(HTTPTransportBase, self).__init__(client, compress_level=compress_level, **kwargs)
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         """
         Sends a request to a remote APM Server using HTTP POST.
 

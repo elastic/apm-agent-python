@@ -153,7 +153,8 @@ class Transport(ThreadManager):
 
             queue_size = 0 if buffer.fileobj is None else buffer.fileobj.tell()
 
-            if flush:
+            forced_flush = flush
+            if forced_flush:
                 logger.debug("forced flush")
             elif timed_out or timeout == 0:
                 # update last flush time, as we might have waited for a non trivial amount of time in
@@ -172,7 +173,12 @@ class Transport(ThreadManager):
                 flush = True
             if flush:
                 if buffer_written:
-                    self._flush(buffer)
+                    self._flush(buffer, forced_flush=forced_flush)
+                elif forced_flush and "/localhost:" in self.client.config.server_url:
+                    # No data on buffer, but due to manual flush we should send
+                    # an empty payload with flushed=true query param, but only
+                    # to a local APM server (or lambda extension)
+                    self.send(None, flushed=True)
                 self._last_flush = timeit.default_timer()
                 buffer = self._init_buffer()
                 buffer_written = False
@@ -248,7 +254,7 @@ class Transport(ThreadManager):
         else:
             return _queue.Queue(maxsize=10000)
 
-    def _flush(self, buffer):
+    def _flush(self, buffer, forced_flush=False):
         """
         Flush the queue. This method should only be called from the event processing queue
         :return: None
@@ -262,7 +268,7 @@ class Transport(ThreadManager):
             # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
             data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
             try:
-                self.send(data)
+                self.send(data, forced_flush=forced_flush)
                 self.handle_transport_success()
             except Exception as e:
                 self.handle_transport_fail(e)
@@ -279,7 +285,7 @@ class Transport(ThreadManager):
             except RuntimeError:
                 pass
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         """
         You need to override this to do something with the actual
         data. Usually - this is sending to a server

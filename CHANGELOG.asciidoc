@@ -42,6 +42,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix Sanic integration to properly respect the `capture_body` config {pull}1485[#1485]
+* Lambda fixes to align with the cross-agent spec {pull}1489[#1489]
 
 
 [[release-notes-6.x]]
