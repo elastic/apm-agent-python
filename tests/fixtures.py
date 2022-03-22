@@ -326,6 +326,8 @@ class DummyTransport(HTTPTransportBase):
         self.validation_errors = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
+        if "metadata" not in self.events:
+            self.events["metadata"] = self._metadata
         self._flushed.clear()
         data = self._process_event(event_type, data)
         self.events[event_type].append(data)
