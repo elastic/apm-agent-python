@@ -274,4 +274,4 @@ def test_service_name_override(event_api, context, elasticapm_client):
 
     test_func(event_api, context)
 
-    assert elasticapm_client.events["metadata"]["service"]["name"] == "override"
+    assert elasticapm_client._transport._metadata["service"]["name"] == "override"
