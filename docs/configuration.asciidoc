@@ -656,7 +656,7 @@ Setting an upper limit will prevent edge cases from overloading the agent and th
 [options="header"]
 |============
 | Environment                     | Django/Flask        | Default
-| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
+| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `50`
 |============
 
 This limits the number of frames captured for each stack trace.
