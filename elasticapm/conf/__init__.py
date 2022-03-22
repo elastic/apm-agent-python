@@ -583,6 +583,14 @@ class Config(_ConfigBase):
         ],
         type=int,
     )
+    span_stack_trace_min_duration = _ConfigValue(
+        "SPAN_FRAMES_MIN_DURATION",
+        default=5,
+        validators=[
+            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
+        ],
+        type=int,
+    )
     span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=False)
     span_compression_exact_match_max_duration = _ConfigValue(
         "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
