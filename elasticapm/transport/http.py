@@ -70,13 +70,15 @@ class Transport(HTTPTransportBase):
         self._http = None
         self._url = url
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
 
         url = self._url
+        if forced_flush:
+            url = f"{url}?flushed=true"
         try:
             try:
                 response = self.http.urlopen(
