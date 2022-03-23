@@ -317,7 +317,7 @@ class capture_serverless(object):
             cloud_context["origin"]["provider"] = "aws"
 
         metadata["service"] = {}
-        metadata["service"]["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        metadata["service"]["name"] = self.client.config.service_name
         metadata["service"]["framework"] = {"name": "AWS Lambda"}
         metadata["service"]["runtime"] = {
             "name": os.environ.get("AWS_EXECUTION_ENV"),

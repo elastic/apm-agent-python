@@ -259,3 +259,19 @@ def test_capture_serverless_s3_batch(event_s3_batch, context, elasticapm_client)
 
     assert transaction["name"] == "test_func"
     assert transaction["span_count"]["started"] == 1
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"service_name": "override"}], indirect=True)
+def test_service_name_override(event_api, context, elasticapm_client):
+
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
+
+    @capture_serverless(elasticapm_client=elasticapm_client)
+    def test_func(event, context):
+        with capture_span("test_span"):
+            time.sleep(0.01)
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    test_func(event_api, context)
+
+    assert elasticapm_client._transport._metadata["service"]["name"] == "override"
