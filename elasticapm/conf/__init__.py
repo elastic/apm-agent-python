@@ -604,7 +604,7 @@ class Config(_ConfigBase):
         "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
-    stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
+    stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=50)
     span_frames_min_duration = _DurationConfigValue(
         "SPAN_FRAMES_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
