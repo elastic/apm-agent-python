@@ -34,6 +34,7 @@ import re
 import threading
 import time
 import timeit
+import warnings
 from collections import defaultdict
 from types import TracebackType
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
@@ -638,7 +639,11 @@ class Span(BaseSpan):
         self.autofill_resource_context()
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
-        if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration and self.frames:
+        if (
+            tracer.span_stack_trace_min_duration >= 0
+            and self.duration * 1000 >= tracer.span_stack_trace_min_duration
+            and self.frames
+        ):
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
             self.frames = None
@@ -820,11 +825,23 @@ class Tracer(object):
         self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
 
     @property
-    def span_frames_min_duration(self):
-        if self.config.span_frames_min_duration in (-1, None):
-            return None
+    def span_stack_trace_min_duration(self):
+        if self.config.span_stack_trace_min_duration != 5 or self.config.span_frames_min_duration == 5:
+            # No need to check span_frames_min_duration
+            return self.config.span_stack_trace_min_duration
         else:
-            return self.config.span_frames_min_duration / 1000.0
+            # span_stack_trace_min_duration is default value and span_frames_min_duration is non-default.
+            # warn and use span_frames_min_duration
+            warnings.warn(
+                "`span_frames_min_duration` is deprecated. Please use `span_stack_trace_min_duration`.",
+                DeprecationWarning,
+            )
+            if self.config.span_frames_min_duration < 0:
+                return 0
+            elif self.config.span_frames_min_duration == 0:
+                return -1
+            else:
+                return self.config.span_frames_min_duration
 
     def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
