@@ -194,8 +194,8 @@ def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
     counter.inc(), resetting_counter.inc()
     gauge.val = 5
     resetting_gauge.val = 5
-    timer.update(timedelta(seconds=1), 1)
-    resetting_timer.update(timedelta(seconds=1), 1)
+    timer.update(1, 1)
+    resetting_timer.update(1, 1)
 
     data = list(m.collect())
     more_data = list(m.collect())

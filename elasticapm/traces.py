@@ -248,7 +248,7 @@ class Transaction(BaseSpan):
                     reset_on_collect=True,
                     unit="us",
                     **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type},
-                ).update(self.duration - self._child_durations.duration)
+                ).update((self.duration - self._child_durations.duration).total_seconds() * 1_000_000)
 
     def _begin_span(
         self,
@@ -372,7 +372,7 @@ class Transaction(BaseSpan):
             "type": encoding.keyword_field(self.transaction_type),
             "duration": self.duration.total_seconds() * 1000,
             "result": encoding.keyword_field(str(self.result)),
-            "timestamp": int(self.timestamp * 1000000),  # microseconds
+            "timestamp": int(self.timestamp * 1_000_000),  # microseconds
             "outcome": self.outcome,
             "sampled": self.is_sampled,
             "span_count": {"started": self._span_counter, "dropped": self.dropped_spans},
@@ -420,7 +420,7 @@ class Transaction(BaseSpan):
         # TODO: once asynchronous spans are supported, we should check if the transaction is already finished
         # TODO: and, if it has, exit without tracking.
         with self._span_timers_lock:
-            self._span_timers[(span_type, span_subtype)].update(self_duration)
+            self._span_timers[(span_type, span_subtype)].update(self_duration.total_seconds() * 1_000_000)
 
     @property
     def is_sampled(self) -> bool:
@@ -449,7 +449,7 @@ class Transaction(BaseSpan):
                 resource = span.context["destination"]["service"]["resource"]
                 stats = self._dropped_span_statistics[(resource, span.outcome)]
                 stats["count"] += 1
-                stats["duration.sum.us"] += int(span.duration.total_seconds() * 1000000)
+                stats["duration.sum.us"] += int(span.duration.total_seconds() * 1_000_000)
             except KeyError:
                 pass
 

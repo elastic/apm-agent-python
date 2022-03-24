@@ -31,7 +31,6 @@
 import threading
 import time
 from collections import defaultdict
-from datetime import timedelta
 
 from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
@@ -232,12 +231,6 @@ class MetricsSet(object):
                         sum_name = ".sum"
                         if timer._unit:
                             sum_name += "." + timer._unit
-                            if timer._unit == "us":
-                                val = val.total_seconds() * 1000000
-                            elif timer._unit == "ms":
-                                val = val.total_seconds() * 1000
-                        elif isinstance(val, timedelta):
-                            val = val.total_seconds()
                         samples[labels].update({name + sum_name: {"value": val}})
                         samples[labels].update({name + ".count": {"value": count}})
                     if timer.reset_on_collect:
@@ -398,8 +391,8 @@ class Timer(BaseMetric):
     __slots__ = BaseMetric.__slots__ + ("_val", "_count", "_lock", "_unit")
 
     def __init__(self, name=None, reset_on_collect=False, unit=None):
-        self._val = timedelta(seconds=0)
-        self._count = 0
+        self._val: float = 0
+        self._count: int = 0
         self._unit = unit
         self._lock = threading.Lock()
         super(Timer, self).__init__(name, reset_on_collect=reset_on_collect)
@@ -422,6 +415,7 @@ class Timer(BaseMetric):
     @val.setter
     def val(self, value):
         with self._lock:
+            val, count = value
             self._val, self._count = value
 
 
