@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
+* Change default for `sanitize_field_names` to sanitize `*auth*` instead of `authorization` {pull}1494[#1494]
 * Add `span_stack_trace_min_duration` to replace deprecated `span_frames_min_duration` {pull}1498[#1498]
 
 [float]
@@ -44,6 +45,7 @@ endif::[]
 
 * Fix Sanic integration to properly respect the `capture_body` config {pull}1485[#1485]
 * Lambda fixes to align with the cross-agent spec {pull}1489[#1489]
+* Lambda fix for custom `service_name` {pull}1493[#1493]
 * Change default for `stack_trace_limit` from 500 to 50 {pull}1492[#1492]
 
 
