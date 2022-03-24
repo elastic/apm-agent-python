@@ -584,7 +584,7 @@ class Config(_ConfigBase):
         type=int,
     )
     span_stack_trace_min_duration = _ConfigValue(
-        "SPAN_FRAMES_MIN_DURATION",
+        "SPAN_STACK_TRACE_MIN_DURATION",
         default=5,
         validators=[
             UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
