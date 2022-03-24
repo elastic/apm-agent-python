@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
+* Add `span_stack_trace_min_duration` to replace deprecated `span_frames_min_duration` {pull}1498[#1498]
 
 [float]
 ===== Bug fixes
