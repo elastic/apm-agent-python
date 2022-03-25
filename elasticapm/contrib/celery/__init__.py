@@ -70,8 +70,17 @@ def set_celery_headers(headers=None, **kwargs):
         trace_parent = transaction.trace_parent
         trace_parent_string = trace_parent.to_string()
 
-        headers.update({"elasticapm": {"trace_parent_string": trace_parent_string}})
+        # Construct a new trace parent string if about to use a custom parent id
+        apm_headers = headers.get('elasticapm', dict())
+        if 'parent_span_id' in apm_headers:
+            trace_parent_string = "{:02x}-{}-{}-{:02x}".format(
+                trace_parent.version,
+                trace_parent.trace_id,
+                apm_headers['parent_span_id'],
+                trace_parent.trace_options.asByte)
 
+        apm_headers['trace_parent_string'] = trace_parent_string
+        headers.update(elasticapm=apm_headers)
 
 def get_trace_parent(celery_task):
     """
