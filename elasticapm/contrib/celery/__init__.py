@@ -68,19 +68,16 @@ def set_celery_headers(headers=None, **kwargs):
     transaction = execution_context.get_transaction()
     if transaction is not None:
         trace_parent = transaction.trace_parent
-        trace_parent_string = trace_parent.to_string()
 
-        # Construct a new trace parent string if about to use a custom parent id
+        # Customize parent span id (if provided)
         apm_headers = headers.get('elasticapm', dict())
         if 'parent_span_id' in apm_headers:
-            trace_parent_string = "{:02x}-{}-{}-{:02x}".format(
-                trace_parent.version,
-                trace_parent.trace_id,
-                apm_headers['parent_span_id'],
-                trace_parent.trace_options.asByte)
+            trace_parent = trace_parent.copy_from()
+            trace_parent.span_id = apm_headers['parent_span_id']
 
-        apm_headers['trace_parent_string'] = trace_parent_string
+        apm_headers['trace_parent_string'] = trace_parent.to_string()
         headers.update(elasticapm=apm_headers)
+
 
 def get_trace_parent(celery_task):
     """
