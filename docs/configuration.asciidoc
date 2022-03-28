@@ -700,7 +700,7 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `False`
+| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `True`
 |============
 
 Enable/disable span compression.
@@ -740,7 +740,7 @@ Two spans are considered exact matches if the following attributes are identical
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"5ms"`
+| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"0ms"` (disabled)
 |============
 
 Consecutive spans to the same destination that are under this threshold will be compressed into a single composite span.
