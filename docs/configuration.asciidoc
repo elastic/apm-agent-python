@@ -678,14 +678,14 @@ To disable the limit and always capture all frames, set the value to `-1`.
 | `ELASTIC_APM_SPAN_STACK_TRACE_MIN_DURATION` | `SPAN_STACK_TRACE_MIN_DURATION` | `"5ms"`
 |============
 
-By default, the APM agent will collect a stack trace with every recorded span
-which has a duration equal to or longer than this configured threshold.  While
+By default, the APM agent collects a stack trace with every recorded span
+that has a duration equal to or longer than this configured threshold.  While
 stack traces are very helpful to find the exact place in your code from which a
 span originates, collecting this stack trace does have some overhead. Tune this
-threshold to ensure that you are only collecting stack traces for spans which
+threshold to ensure that you only collect stack traces for spans that
 could be problematic.
 
-To collect traces for all spans, independent of the length, set the value to `0`.
+To collect traces for all spans, regardless of their length, set the value to `0`.
 
 To disable stack trace collection for spans completely, set the value to `-1`.
 
@@ -705,7 +705,7 @@ this setting should be provided in *<<config-format-duration, duration format>>*
 | `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION` | `SPAN_FRAMES_MIN_DURATION` | `"5ms"`
 |============
 
-NOTE: this config value is being deprecated. Use
+NOTE: This config value is being deprecated. Use
 <<config-span-stack-trace-min-duration,`span_stack_trace_min_duration`>> instead.
 
 
