@@ -415,7 +415,6 @@ class Timer(BaseMetric):
     @val.setter
     def val(self, value):
         with self._lock:
-            val, count = value
             self._val, self._count = value
 
 
