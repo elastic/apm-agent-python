@@ -38,6 +38,7 @@ endif::[]
 
 * Add OpenTelemetry API bridge {pull}1411[#1411]
 * Change default for `sanitize_field_names` to sanitize `*auth*` instead of `authorization` {pull}1494[#1494]
+* Allow parent celery tasks to specify the downstream `parent_span_id` in celery headers {pull}1500[#1500]
 
 [float]
 ===== Bug fixes
