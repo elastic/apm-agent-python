@@ -46,6 +46,7 @@ endif::[]
 * Lambda fixes to align with the cross-agent spec {pull}1489[#1489]
 * Lambda fix for custom `service_name` {pull}1493[#1493]
 * Change default for `stack_trace_limit` from 500 to 50 {pull}1492[#1492]
+* Switch all duration handling to use `datetime.timedelta` objects {pull}1488[#1488]
 
 
 [[release-notes-6.x]]

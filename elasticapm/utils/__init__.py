@@ -141,7 +141,7 @@ def get_host_from_url(url: str) -> str:
     return host
 
 
-def url_to_destination_resource(url: str) -> dict:
+def url_to_destination_resource(url: str) -> str:
     parts = urllib.parse.urlsplit(url)
     hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
