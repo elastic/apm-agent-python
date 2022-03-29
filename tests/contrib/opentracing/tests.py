@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from datetime import timedelta
 
 import pytest  # isort:skip
 
@@ -68,7 +69,7 @@ def test_tracer_with_config():
     config = {"METRICS_INTERVAL": "0s", "SERVER_URL": "https://example.com/test"}
     tracer = Tracer(config=config)
     try:
-        assert tracer._agent.config.metrics_interval == 0
+        assert tracer._agent.config.metrics_interval == timedelta(seconds=0)
         assert tracer._agent.config.server_url == "https://example.com/test"
     finally:
         tracer._agent.close()
