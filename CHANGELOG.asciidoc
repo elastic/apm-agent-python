@@ -39,6 +39,7 @@ endif::[]
 * Add OpenTelemetry API bridge {pull}1411[#1411]
 * Change default for `sanitize_field_names` to sanitize `*auth*` instead of `authorization` {pull}1494[#1494]
 * Add `span_stack_trace_min_duration` to replace deprecated `span_frames_min_duration` {pull}1498[#1498]
+* Enable exact_match span compression by default {pull}1504[#1504]
 
 [float]
 ===== Bug fixes

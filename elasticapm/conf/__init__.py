@@ -611,14 +611,14 @@ class Config(_ConfigBase):
     span_stack_trace_min_duration = _DurationConfigValue(
         "SPAN_STACK_TRACE_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
-    span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=False)
+    span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=True)
     span_compression_exact_match_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
         default=timedelta(seconds=0.05),
     )
     span_compression_same_kind_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
-        default=timedelta(seconds=0.005),
+        default=timedelta(seconds=0),
     )
     exit_span_min_duration = _DurationConfigValue(
         "EXIT_SPAN_MIN_DURATION",
