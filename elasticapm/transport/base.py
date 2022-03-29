@@ -92,7 +92,7 @@ class Transport(ThreadManager):
         self.start_stop_order = sys.maxsize  # ensure that the transport thread is always started/stopped last
 
     @property
-    def _max_flush_time(self):
+    def _max_flush_time_seconds(self):
         return self.client.config.api_request_time.total_seconds() if self.client else None
 
     @property
@@ -116,7 +116,9 @@ class Transport(ThreadManager):
         buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
-        max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+        max_flush_time = (
+            self._max_flush_time_seconds * random.uniform(0.9, 1.1) if self._max_flush_time_seconds else None
+        )
 
         while True:
             since_last_flush = timeit.default_timer() - self._last_flush
@@ -182,7 +184,9 @@ class Transport(ThreadManager):
                 self._last_flush = timeit.default_timer()
                 buffer = self._init_buffer()
                 buffer_written = False
-                max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+                max_flush_time = (
+                    self._max_flush_time_seconds * random.uniform(0.9, 1.1) if self._max_flush_time_seconds else None
+                )
                 self._flushed.set()
 
     def _process_event(self, event_type, data):
@@ -301,7 +305,7 @@ class Transport(ThreadManager):
             return
         self._closed = True
         self.queue("close", None)
-        if not self._flushed.wait(timeout=self._max_flush_time):
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             logger.error("Closing the transport connection timed out.")
 
     stop_thread = close
@@ -313,7 +317,7 @@ class Transport(ThreadManager):
         are produced in other threads than can be consumed.
         """
         self.queue(None, None, flush=True)
-        if not self._flushed.wait(timeout=self._max_flush_time):
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             raise ValueError("flush timed out")
 
     def handle_transport_success(self, **kwargs):
