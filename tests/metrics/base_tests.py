@@ -30,7 +30,6 @@
 
 import logging
 import time
-from datetime import timedelta
 from multiprocessing.dummy import Pool
 
 import mock
