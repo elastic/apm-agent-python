@@ -43,6 +43,7 @@ import time
 import urllib.parse
 import warnings
 from copy import deepcopy
+from datetime import timedelta
 from typing import Optional, Tuple
 
 import elasticapm
@@ -307,6 +308,8 @@ class Client(object):
         :param duration: override duration, mostly useful for testing
         :return: the ended transaction object
         """
+        if duration is not None and not isinstance(duration, timedelta):
+            duration = timedelta(seconds=duration)
         transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 

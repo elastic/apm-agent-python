@@ -233,7 +233,7 @@ def test_sync_transport_fail_and_recover(mock_send, caplog):
 @pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "2s"}], indirect=True)
 def test_send_timer(sending_elasticapm_client, caplog):
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        assert sending_elasticapm_client.config.api_request_time == 2000
+        assert sending_elasticapm_client.config.api_request_time.total_seconds() == 2
         sending_elasticapm_client.begin_transaction("test_type")
         sending_elasticapm_client.end_transaction("test")
 

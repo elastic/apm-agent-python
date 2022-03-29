@@ -107,7 +107,7 @@ class MetricsRegistry(ThreadManager):
 
     @property
     def collect_interval(self):
-        return self.client.config.metrics_interval / 1000.0
+        return self.client.config.metrics_interval.total_seconds()
 
     @property
     def ignore_patterns(self):
@@ -391,8 +391,8 @@ class Timer(BaseMetric):
     __slots__ = BaseMetric.__slots__ + ("_val", "_count", "_lock", "_unit")
 
     def __init__(self, name=None, reset_on_collect=False, unit=None):
-        self._val = 0
-        self._count = 0
+        self._val: float = 0
+        self._count: int = 0
         self._unit = unit
         self._lock = threading.Lock()
         super(Timer, self).__init__(name, reset_on_collect=reset_on_collect)

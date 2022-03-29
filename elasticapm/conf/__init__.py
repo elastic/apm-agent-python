@@ -36,6 +36,7 @@ import os
 import re
 import socket
 import threading
+from datetime import timedelta
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES
 from elasticapm.utils import compat, starmatch_to_regex
@@ -232,6 +233,39 @@ class _BoolConfigValue(_ConfigValue):
         instance._values[self.dict_key] = bool(value)
 
 
+class _DurationConfigValue(_ConfigValue):
+    units = (
+        ("us", 0.000001),
+        ("ms", 0.001),
+        ("s", 1),
+        ("m", 60),
+    )
+
+    def __init__(self, dict_key, allow_microseconds=False, unitless_factor=None, **kwargs):
+        self.type = None  # no type coercion
+        used_units = self.units if allow_microseconds else self.units[1:]
+        pattern = "|".join(unit[0] for unit in used_units)
+        unit_multipliers = dict(used_units)
+        unit_required = ""
+        if unitless_factor:
+            unit_multipliers[None] = unitless_factor
+            unit_required = "?"
+        regex = f"((?:-)?\\d+)({pattern}){unit_required}$"
+        verbose_pattern = f"\\d+({pattern}){unit_required}$"
+        duration_validator = UnitValidator(
+            regex=regex, verbose_pattern=verbose_pattern, unit_multipliers=unit_multipliers
+        )
+        validators = kwargs.pop("validators", [])
+        validators.insert(0, duration_validator)
+        super().__init__(dict_key, validators=validators, **kwargs)
+
+    def __set__(self, config_instance, value):
+        value = self._validate(config_instance, value)
+        value = timedelta(seconds=float(value))
+        self._callback_if_changed(config_instance, value)
+        config_instance._values[self.dict_key] = value
+
+
 class RegexValidator(object):
     def __init__(self, regex, verbose_pattern=None):
         self.regex = regex
@@ -283,16 +317,13 @@ class PrecisionValidator(object):
             value = float(value)
         except ValueError:
             raise ConfigurationError("{} is not a float".format(value), field_name)
-        multiplier = 10 ** self.precision
+        multiplier = 10**self.precision
         rounded = math.floor(value * multiplier + 0.5) / multiplier
         if rounded == 0 and self.minimum and value != 0:
             rounded = self.minimum
         return rounded
 
 
-duration_validator = UnitValidator(
-    r"^((?:-)?\d+)(us|ms|s|m)$", r"\d+(us|ms|s|m)", {"us": 0.001, "ms": 1, "s": 1000, "m": 60000}
-)
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
@@ -557,11 +588,10 @@ class Config(_ConfigBase):
             "elasticapm.metrics.sets.cpu.CPUMetricSet",
         ],
     )
-    metrics_interval = _ConfigValue(
+    metrics_interval = _DurationConfigValue(
         "METRICS_INTERVAL",
-        type=int,
-        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
-        default=30000,
+        validators=[ExcludeRangeValidator(0.001, 0.999, "{range_start} - {range_end} s")],
+        default=timedelta(seconds=30),
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
@@ -569,46 +599,30 @@ class Config(_ConfigBase):
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
-    api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
+    api_request_time = _DurationConfigValue("API_REQUEST_TIME", default=timedelta(seconds=10))
     transaction_sample_rate = _ConfigValue(
         "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
     stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=50)
-    span_frames_min_duration = _ConfigValue(
-        "SPAN_FRAMES_MIN_DURATION",
-        default=5,
-        validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
-        ],
-        type=int,
+    span_frames_min_duration = _DurationConfigValue(
+        "SPAN_FRAMES_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
-    span_stack_trace_min_duration = _ConfigValue(
-        "SPAN_STACK_TRACE_MIN_DURATION",
-        default=5,
-        validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
-        ],
-        type=int,
+    span_stack_trace_min_duration = _DurationConfigValue(
+        "SPAN_STACK_TRACE_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
     span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=False)
-    span_compression_exact_match_max_duration = _ConfigValue(
+    span_compression_exact_match_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
-        default=50,
-        validators=[duration_validator],
-        type=int,
+        default=timedelta(seconds=0.05),
     )
-    span_compression_same_kind_max_duration = _ConfigValue(
+    span_compression_same_kind_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
-        default=5,
-        validators=[duration_validator],
-        type=int,
+        default=timedelta(seconds=0.005),
     )
-    exit_span_min_duration = _ConfigValue(
+    exit_span_min_duration = _DurationConfigValue(
         "EXIT_SPAN_MIN_DURATION",
-        default=0,
-        validators=[duration_validator],
-        type=float,
+        default=timedelta(seconds=0),
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)
