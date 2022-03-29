@@ -223,8 +223,8 @@ def test_transaction_max_spans_dynamic(elasticapm_client):
     assert len(spans) == 3
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
-def test_transaction_span_frames_min_duration(elasticapm_client):
+@pytest.mark.parametrize("elasticapm_client", [{"span_stack_trace_min_duration": 20}], indirect=True)
+def test_transaction_span_stack_trace_min_duration(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("noframes", duration=0.001):
         pass
@@ -242,8 +242,8 @@ def test_transaction_span_frames_min_duration(elasticapm_client):
     assert spans[1]["stacktrace"] is not None
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_durarion_ms": -1}], indirect=True)
-def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
+@pytest.mark.parametrize("elasticapm_client", [{"span_stack_trace_min_duration": 0}], indirect=True)
+def test_transaction_span_stack_trace_min_duration_no_limit(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("frames"):
         pass
@@ -261,8 +261,8 @@ def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
     assert spans[1]["stacktrace"] is not None
 
 
-def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
-    elasticapm_client.config.update(version="1", span_frames_min_duration=20)
+def test_transaction_span_stack_trace_min_duration_dynamic(elasticapm_client):
+    elasticapm_client.config.update(version="1", span_stack_trace_min_duration=20)
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("noframes", duration=0.001):
         pass
@@ -279,7 +279,7 @@ def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
     assert spans[1]["name"] == "frames"
     assert spans[1]["stacktrace"] is not None
 
-    elasticapm_client.config.update(version="1", span_frames_min_duration=-1)
+    elasticapm_client.config.update(version="1", span_stack_trace_min_duration=0)
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("frames"):
         pass
@@ -291,6 +291,46 @@ def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
 
     assert len(spans) == 4
     assert spans[2]["name"] == "frames"
+    assert spans[2]["stacktrace"] is not None
+
+    assert spans[3]["name"] == "frames"
+    assert spans[3]["stacktrace"] is not None
+
+
+def test_transaction_span_stack_trace_min_duration_overrides_old_config(elasticapm_client):
+    """
+    span_stack_trace_min_duration overrides span_frames_min_duration (which is deprecated)
+    """
+    elasticapm_client.config.update(version="1", span_stack_trace_min_duration=20, span_frames_min_duration=1)
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("noframes", duration=0.01):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
+    elasticapm_client.end_transaction("test")
+
+    spans = elasticapm_client.events[constants.SPAN]
+
+    assert len(spans) == 2
+    assert spans[0]["name"] == "noframes"
+    assert "stacktrace" not in spans[0]
+
+    assert spans[1]["name"] == "frames"
+    assert spans[1]["stacktrace"] is not None
+
+    # Set span_stack_trace_min_duration to default so it picks up the non-default span_frames_min_duration
+    elasticapm_client.config.update(version="1", span_stack_trace_min_duration=5, span_frames_min_duration=1)
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span("yesframes", duration=0.01):
+        pass
+    with elasticapm.capture_span("frames", duration=0.04):
+        pass
+    elasticapm_client.end_transaction("test")
+
+    spans = elasticapm_client.events[constants.SPAN]
+
+    assert len(spans) == 4
+    assert spans[2]["name"] == "yesframes"
     assert spans[2]["stacktrace"] is not None
 
     assert spans[3]["name"] == "frames"

@@ -608,6 +608,9 @@ class Config(_ConfigBase):
     span_frames_min_duration = _DurationConfigValue(
         "SPAN_FRAMES_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
+    span_stack_trace_min_duration = _DurationConfigValue(
+        "SPAN_STACK_TRACE_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
+    )
     span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=True)
     span_compression_exact_match_max_duration = _DurationConfigValue(
         "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",

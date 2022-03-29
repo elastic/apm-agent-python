@@ -144,7 +144,7 @@ def test_iter_stack_frames_max_frames():
 
 
 @pytest.mark.parametrize(
-    "elasticapm_client", [{"stack_trace_limit": 10, "span_frames_min_duration": -1}], indirect=True
+    "elasticapm_client", [{"stack_trace_limit": 10, "span_stack_trace_min_duration": 0}], indirect=True
 )
 def test_iter_stack_frames_max_frames_is_dynamic(elasticapm_client):
     def func():
