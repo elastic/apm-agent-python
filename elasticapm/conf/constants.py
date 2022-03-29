@@ -95,7 +95,7 @@ BASE_SANITIZE_FIELD_NAMES_UNPROCESSED = [
     "*session*",
     "*credit*",
     "*card*",
-    "authorization",
+    "*auth*",
     "set-cookie",
 ]
 
