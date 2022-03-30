@@ -29,10 +29,12 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.9.0]]
+==== 6.9.0 - 2022-03-29
+
 [float]
 ===== Features
 
@@ -50,10 +52,6 @@ endif::[]
 * Lambda fix for custom `service_name` {pull}1493[#1493]
 * Change default for `stack_trace_limit` from 500 to 50 {pull}1492[#1492]
 * Switch all duration handling to use `datetime.timedelta` objects {pull}1488[#1488]
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.8.1]]
 ==== 6.8.1 - 2022-03-09
