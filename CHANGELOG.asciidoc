@@ -29,6 +29,19 @@ endif::[]
 //===== Bug fixes
 //
 
+
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+[float]
+===== Bug fixes
+
+* Fix `otel_attributes`-related regression with older versions of APM Server (<7.16) {pull}1510[#1510]
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
