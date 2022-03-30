@@ -38,6 +38,23 @@ from elasticapm.utils import encoding
 from elasticapm.utils.disttracing import TraceParent
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"server_version": (7, 15)}, {"server_version": (7, 16)}], indirect=True)
+def test_transaction_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span("test", extra={"a": "b"}):
+        pass
+    elasticapm_client.end_transaction("test", constants.OUTCOME.SUCCESS)
+    transactions = elasticapm_client.events[constants.TRANSACTION]
+    assert len(transactions) == 1
+    assert transactions[0]["name"] == "test"
+    assert transactions[0]["type"] == "test"
+    assert transactions[0]["result"] == constants.OUTCOME.SUCCESS
+
+    spans = elasticapm_client.events[constants.SPAN]
+    assert len(spans) == 1
+    assert spans[0]["name"] == "test"
+
+
 @pytest.mark.parametrize(
     "elasticapm_client", [{"transactions_ignore_patterns": ["^OPTIONS", "views.api.v2"]}], indirect=True
 )

@@ -577,7 +577,7 @@ class Span(BaseSpan):
                         result["otel"]["attributes"] = self.context.pop("otel_attributes")
             else:
                 # Attributes map to labels for older versions
-                attributes = self.context.pop("otel_attributes")
+                attributes = self.context.pop("otel_attributes", {})
                 if attributes and ("tags" not in self.context):
                     self.context["tags"] = {}
                 for key, value in attributes.items():
