@@ -47,7 +47,7 @@ def handler(event, context):
 ----
 
 [float]
-===== Step 3: Configure APM on AWS Lambda
+==== Step 3: Configure APM on AWS Lambda
 
 The APM Lambda Extension and the APM Python agent are configured through environment variables on the AWS Lambda function.
 
