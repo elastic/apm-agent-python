@@ -183,10 +183,10 @@ If you have commit access, the process is as follows:
 1. For Majors: Add the new major version to `conf.yaml` in the [elastic/docs](https://github.com/elastic/docs) repo.
 1. Commit changes with message `update CHANGELOG and bump version to X.Y.Z` where `X.Y.Z` is the version in `elasticapm/version.py`
 1. Open a PR against `main` with this new commit. Review + merge.
-1. Open a PR from `main` to the current major branch (`6.x`, etc). Review + merge.
-1. Tag the new `HEAD` of the current major branch (`6.x`, etc) with `git tag -s vX.Y.Z`, for example `git tag -s v1.2.3`.
+1. Tag the new `HEAD` of `main` with `git tag -s vX.Y.Z`, for example `git tag -s v1.2.3`.
    Copy the changelog for the release to the tag message, removing any leading `#`.
 1. Push tag upstream with `git push upstream --tags`
+1. Open a PR from `main` to the current major branch (`6.x`, etc). Review + merge.
 1. After tests pass, Jenkins will automatically build a source package, as well as binary wheels.
    To upload them to PyPI, go to [Jenkins](https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/activity)
    and look for the build with the correct tag name (`vX.Y.Z`). Once the build is done, a dialog will be shown.
