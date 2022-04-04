@@ -193,3 +193,7 @@ If you have commit access, the process is as follows:
    Note that you need to be logged in to trigger an upload.
 1. Create a [Github release](https://github.com/elastic/apm-agent-python/releases)
    targeting the new tag. Copy the changelog into the body of the release.
+
+If, due to a regression, a bugfix release needs to be done from `6.x` rather
+than `main`, be sure to open a PR back to `main` so the release tag will be
+included on `git log` from `main`.
