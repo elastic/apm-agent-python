@@ -86,6 +86,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.aioredis.RedisPipelineInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.aiomysql.AioMySQLInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiobotocore.AioBotocoreInstrumentation",
         ]
     )
 

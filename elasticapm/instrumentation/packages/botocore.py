@@ -52,6 +52,8 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
 
     instrument_list = [("botocore.client", "BaseClient._make_api_call")]
 
+    capture_span_ctx = capture_span
+
     def call(self, module, method, wrapped, instance, args, kwargs):
         if "operation_name" in kwargs:
             operation_name = kwargs["operation_name"]
@@ -81,7 +83,7 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         if not handler_info:
             handler_info = handle_default(operation_name, service, instance, args, kwargs, context)
 
-        with capture_span(
+        with self.capture_span_ctx(
             handler_info.signature,
             span_type=handler_info.span_type,
             leaf=True,

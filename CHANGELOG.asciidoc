@@ -33,6 +33,11 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[float]
+===== Features
+
+* Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}xxx[#xxx]
+
 [[release-notes-6.9.1]]
 ==== 6.9.1 - 2022-03-30
 
