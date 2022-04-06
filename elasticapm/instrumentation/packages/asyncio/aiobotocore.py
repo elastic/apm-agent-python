@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from elasticapm.contrib.asyncio.traces import async_capture_span
-from elasticapm.instrumentation.packages.botocore import BotocoreInstrumentation
+from elasticapm.instrumentation.packages.botocore import BotocoreInstrumentation, span_modifiers
 
 
 class AioBotocoreInstrumentation(BotocoreInstrumentation):
@@ -38,3 +38,12 @@ class AioBotocoreInstrumentation(BotocoreInstrumentation):
     instrument_list = [("aiobotocore.client", "AioBaseClient._make_api_call")]
 
     capture_span_ctx = async_capture_span
+
+    async def call(self, module, method, wrapped, instance, args, kwargs):
+        service = self._get_service(instance)
+
+        ctx = self._call(service, instance, args, kwargs)
+        async with ctx as span:
+            if service in span_modifiers:
+                span_modifiers[service](span, args, kwargs)
+            return await wrapped(*args, **kwargs)
