@@ -278,7 +278,9 @@ async def test_sqs_send_batch(instrument, elasticapm_client, sqs_client_and_queu
     assert span["id"] in traceparent
 
 
-async def test_sqs_send_too_many_attributes_for_disttracing(instrument, elasticapm_client, sqs_client_and_queue, caplog):
+async def test_sqs_send_too_many_attributes_for_disttracing(
+    instrument, elasticapm_client, sqs_client_and_queue, caplog
+):
     sqs, queue_url = sqs_client_and_queue
     attributes = {str(i): {"DataType": "String", "StringValue": str(i)} for i in range(SQS_MAX_ATTRIBUTES)}
     elasticapm_client.begin_transaction("test")
