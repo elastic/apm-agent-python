@@ -45,6 +45,8 @@ pytestmark = [pytest.mark.sanic]  # isort:skip
 )
 def test_get(url, transaction_name, span_count, custom_context, sanic_elastic_app, elasticapm_client):
     sanic_app, apm = next(sanic_elastic_app(elastic_client=elasticapm_client))
+    if int(sanic.__version__.split(".")[0]) < 21 and url != "/":
+        pytest.skip("str type doesn't work in Sanic 20.x.x")
     source_request, response = sanic_app.test_client.get(
         url,
         headers={
