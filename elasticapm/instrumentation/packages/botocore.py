@@ -55,6 +55,10 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
     capture_span_ctx = capture_span
 
     def _call(self, service, instance, args, kwargs):
+        """
+        This is split out from `call()` so that it can be re-used by the
+        aiobotocore instrumentation without duplicating all of this code.
+        """
         if "operation_name" in kwargs:
             operation_name = kwargs["operation_name"]
         else:
