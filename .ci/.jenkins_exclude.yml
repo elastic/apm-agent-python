@@ -237,3 +237,8 @@ exclude:
     FRAMEWORK: aiomysql-newest
   - PYTHON_VERSION: python-3.10  # getting "loop argument must agree with lock" error
     FRAMEWORK: aiomysql-newest
+  # aiobotocore
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiobotocore-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiobotocore-newest
