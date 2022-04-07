@@ -84,3 +84,4 @@ FRAMEWORK:
   - httplib2-newest
   - sanic-20.12
   - sanic-newest
+  - aiobotocore-newest
