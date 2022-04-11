@@ -41,7 +41,7 @@ pytestmark = pytest.mark.psutil
 def test_cpu_mem_from_psutil(elasticapm_client):
     metricset = cpu_psutil.CPUMetricSet(MetricsRegistry(elasticapm_client))
     # do something that generates some CPU load
-    for i in range(10 ** 6):
+    for i in range(10**6):
         j = i * i
     data = next(metricset.collect())
     # we can't really test any specific values here as it depends on the system state.
@@ -65,7 +65,7 @@ def test_compare_psutil_linux_metricsets(elasticapm_client):
     psutil_metricset = cpu_psutil.CPUMetricSet(MetricsRegistry(elasticapm_client))
     linux_metricset = cpu_linux.CPUMetricSet(MetricsRegistry(elasticapm_client))
     # do something that generates some CPU load
-    for i in range(10 ** 6):
+    for i in range(10**6):
         j = i * i
     psutil_data = next(psutil_metricset.collect())
     linux_data = next(linux_metricset.collect())

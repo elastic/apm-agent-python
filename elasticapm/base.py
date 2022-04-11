@@ -660,7 +660,7 @@ class Client(object):
         if not self.server_version:
             return True
         gte = gte or (0,)
-        lte = lte or (2 ** 32,)  # let's assume APM Server version will never be greater than 2^32
+        lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
         return bool(gte <= self.server_version <= lte)
 
 

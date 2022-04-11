@@ -107,7 +107,6 @@ try:
         def postfork(f):
             return f
 
-
 except (ImportError, AttributeError):
 
     def postfork(f):

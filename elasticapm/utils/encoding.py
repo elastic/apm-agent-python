@@ -149,7 +149,7 @@ def transform(value, stack=None, context=None):
         except Exception:
             # It's common case that a model's __unicode__ definition may try to query the database
             # which if it was not cleaned up correctly, would hit a transaction aborted exception
-            ret = u"<BadRepr: %s>" % type(value)
+            ret = "<BadRepr: %s>" % type(value)
     else:
         ret = None
     del context[objid]
@@ -221,7 +221,7 @@ def keyword_field(string):
     """
     if not isinstance(string, str) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
-    return string[: KEYWORD_MAX_LENGTH - 1] + u"…"
+    return string[: KEYWORD_MAX_LENGTH - 1] + "…"
 
 
 def enforce_label_format(labels):
