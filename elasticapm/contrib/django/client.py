@@ -102,7 +102,12 @@ class DjangoClient(Client):
             if hasattr(user, "id"):
                 user_info["id"] = encoding.keyword_field(user.id)
             if hasattr(user, "get_username"):
-                user_info["username"] = encoding.keyword_field(encoding.force_text(user.get_username()))
+                try:
+                    user_info["username"] = encoding.keyword_field(encoding.force_text(user.get_username()))
+                except TypeError:
+                    # See https://github.com/elastic/apm-agent-python/issues/1514
+                    if hasattr(user, "username"):
+                        user_info["username"] = encoding.keyword_field(encoding.force_text(user.username))
             elif hasattr(user, "username"):
                 user_info["username"] = encoding.keyword_field(encoding.force_text(user.username))
 
