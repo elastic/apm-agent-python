@@ -186,7 +186,7 @@ def elasticapm_client(request):
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
@@ -198,7 +198,7 @@ def elasticapm_client(request):
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
     assert not client._transport.validation_errors
 
 
@@ -220,7 +220,7 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("metrics_interval", "0ms")
@@ -252,7 +252,7 @@ def elasticapm_client_log_file(request):
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 @pytest.fixture()
@@ -303,7 +303,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("include_paths", ("*/tests/*",))
@@ -316,7 +316,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client.close()
     # clear any execution context that might linger around
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 class DummyTransport(HTTPTransportBase):

@@ -8,7 +8,7 @@ if [ -x "$(command -v docker)" ]; then
     do
         imageName="apm-agent-python:${version}"
         registryImageName="docker.elastic.co/observability-ci/${imageName}"
-        (retry 2 docker pull "${registryImageName}")
+        (retry 2 docker pull "${registryImageName}") || echo 'Skip failing packer_cache'
         docker tag "${registryImageName}" "${imageName}"
     done
 fi

@@ -52,18 +52,17 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
 
     instrument_list = [("botocore.client", "BaseClient._make_api_call")]
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
+    capture_span_ctx = capture_span
+
+    def _call(self, service, instance, args, kwargs):
+        """
+        This is split out from `call()` so that it can be re-used by the
+        aiobotocore instrumentation without duplicating all of this code.
+        """
         if "operation_name" in kwargs:
             operation_name = kwargs["operation_name"]
         else:
             operation_name = args[0]
-
-        service_model = instance.meta.service_model
-        if hasattr(service_model, "service_id"):  # added in boto3 1.7
-            service = service_model.service_id
-        else:
-            service = service_model.service_name.upper()
-            service = endpoint_to_service_id.get(service, service)
 
         parsed_url = urllib.parse.urlparse(instance.meta.endpoint_url)
         context = {
@@ -81,14 +80,29 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         if not handler_info:
             handler_info = handle_default(operation_name, service, instance, args, kwargs, context)
 
-        with capture_span(
+        return self.capture_span_ctx(
             handler_info.signature,
             span_type=handler_info.span_type,
             leaf=True,
             span_subtype=handler_info.span_subtype,
             span_action=handler_info.span_action,
             extra=handler_info.context,
-        ) as span:
+        )
+
+    def _get_service(self, instance):
+        service_model = instance.meta.service_model
+        if hasattr(service_model, "service_id"):  # added in boto3 1.7
+            service = service_model.service_id
+        else:
+            service = service_model.service_name.upper()
+            service = endpoint_to_service_id.get(service, service)
+        return service
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        service = self._get_service(instance)
+
+        ctx = self._call(service, instance, args, kwargs)
+        with ctx as span:
             if service in span_modifiers:
                 span_modifiers[service](span, args, kwargs)
             return wrapped(*args, **kwargs)

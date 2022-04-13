@@ -84,13 +84,23 @@ def test_transport_state_set_success():
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
-@pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
-def test_empty_queue_flush_is_not_sent(mock_send, elasticapm_client):
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {"api_request_time": "5s", "server_url": "http://localhost:8200"},
+        {"api_request_time": "5s", "server_url": "http://remotehost:8200"},
+    ],
+    indirect=True,
+)
+def test_empty_queue_flush(mock_send, elasticapm_client):
     transport = Transport(client=elasticapm_client)
     try:
         transport.start_thread()
         transport.flush()
-        assert mock_send.call_count == 0
+        if "localhost:" in elasticapm_client.config.server_url:
+            assert mock_send.call_count == 1
+        else:
+            assert mock_send.call_count == 0
     finally:
         transport.close()
 
@@ -223,7 +233,7 @@ def test_sync_transport_fail_and_recover(mock_send, caplog):
 @pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "2s"}], indirect=True)
 def test_send_timer(sending_elasticapm_client, caplog):
     with caplog.at_level("DEBUG", "elasticapm.transport"):
-        assert sending_elasticapm_client.config.api_request_time == 2000
+        assert sending_elasticapm_client.config.api_request_time.total_seconds() == 2
         sending_elasticapm_client.begin_transaction("test_type")
         sending_elasticapm_client.end_transaction("test")
 
@@ -246,3 +256,11 @@ def test_transport_metadata_pid_change(mock_send, elasticapm_client):
     time.sleep(0.2)
     assert transport._metadata
     transport.close()
+
+
+def test_flushed_arg(sending_elasticapm_client):
+    sending_elasticapm_client.begin_transaction("test_type")
+    sending_elasticapm_client.end_transaction("test")
+    sending_elasticapm_client._transport.flush()
+
+    assert sending_elasticapm_client.httpserver.requests[0].args["flushed"] == "true"

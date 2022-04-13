@@ -77,7 +77,7 @@ def tracer(elasticapm_client):
         },
         {
             "lineno": 4,
-            "filename": u"/var/parent-elasticapm/elasticapm/tests/contrib/django/testapp/templates/list_fish.html",
+            "filename": "/var/parent-elasticapm/elasticapm/tests/contrib/django/testapp/templates/list_fish.html",
         },
         {
             "function": "render",
@@ -303,7 +303,7 @@ def test_label_with_not_allowed_non_string_value():
             return "ok"
 
         def __unicode__(self):
-            return u"ok"
+            return "ok"
 
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")

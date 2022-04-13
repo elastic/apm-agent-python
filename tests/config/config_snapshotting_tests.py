@@ -51,7 +51,7 @@ def test_config_snapshotting_span_compression_exact_match(elasticapm_client):
         span_subtype="b",
         span_action="c",
         extra={"destination": {"service": {"resource": "x"}}},
-        duration=25,
+        duration=0.025,
     ):
         pass
     with elasticapm.capture_span(
@@ -61,7 +61,7 @@ def test_config_snapshotting_span_compression_exact_match(elasticapm_client):
         span_subtype="b",
         span_action="c",
         extra={"destination": {"service": {"resource": "x"}}},
-        duration=25,
+        duration=0.025,
     ):
         pass
     elasticapm_client.end_transaction()
@@ -85,7 +85,7 @@ def test_config_snapshotting_span_compression_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         extra={"destination": {"service": {"resource": "x"}}},
-        duration=25,
+        duration=0.025,
     ):
         pass
     with elasticapm.capture_span(
@@ -95,7 +95,7 @@ def test_config_snapshotting_span_compression_same_kind(elasticapm_client):
         span_subtype="b",
         span_action="c",
         extra={"destination": {"service": {"resource": "x"}}},
-        duration=25,
+        duration=0.025,
     ):
         pass
     elasticapm_client.end_transaction()
@@ -115,7 +115,7 @@ def test_config_snapshotting_span_compression_drop_exit_span(elasticapm_client):
         span_subtype="b",
         span_action="c",
         extra={"destination": {"service": {"resource": "x"}}},
-        duration=5,
+        duration=0.005,
     ):
         pass
     elasticapm_client.end_transaction()

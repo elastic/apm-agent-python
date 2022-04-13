@@ -134,7 +134,7 @@ def test_signal_integration(django_elasticapm_client):
     assert "exception" in event
     exc = event["exception"]
     assert exc["type"] == "ValueError"
-    assert exc["message"] == u"ValueError: invalid literal for int() with base 10: 'hello'"
+    assert exc["message"] == "ValueError: invalid literal for int() with base 10: 'hello'"
     assert exc["handled"] is False
     assert event["culprit"] == "tests.contrib.django.django_tests.test_signal_integration"
 
@@ -477,7 +477,7 @@ def test_404_middleware(django_elasticapm_client, client):
 
         assert "request" in event["context"]
         request = event["context"]["request"]
-        assert request["url"]["full"] == u"http://testserver/non-existant-page"
+        assert request["url"]["full"] == "http://testserver/non-existant-page"
         assert request["method"] == "GET"
         assert "body" not in request
 

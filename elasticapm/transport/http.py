@@ -70,13 +70,15 @@ class Transport(HTTPTransportBase):
         self._http = None
         self._url = url
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
 
         url = self._url
+        if forced_flush:
+            url = f"{url}?flushed=true"
         try:
             try:
                 response = self.http.urlopen(
@@ -194,7 +196,7 @@ class Transport(HTTPTransportBase):
             body = response.data
             data = json_encoder.loads(body.decode("utf8"))
             version = data["version"]
-            logger.info("Fetched APM Server version %s", version)
+            logger.debug("Fetched APM Server version %s", version)
             self.client.server_version = version_string_to_tuple(version)
         except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
             logger.warning("HTTP error while fetching server information: %s", str(e))

@@ -571,6 +571,24 @@ Collected trace data for all services:
 Additionally, some services collect more specific data
 
 [float]
+[[automatic-instrumentation-aiobotocore]]
+==== AWS Aiobotocore
+
+Library: `aiobotocore` (`>=2.2.0`)
+
+Instrumented methods:
+
+ * `aiobotocore.client.BaseClient._make_api_call`
+
+Collected trace data for all services:
+
+ * AWS region (e.g. `eu-central-1`)
+ * AWS service name (e.g. `s3`)
+ * operation name (e.g. `ListBuckets`)
+
+Additionally, some services collect more specific data
+
+[float]
 [[automatic-instrumentation-s3]]
 ===== S3
 

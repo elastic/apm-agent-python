@@ -92,8 +92,8 @@ class Transport(ThreadManager):
         self.start_stop_order = sys.maxsize  # ensure that the transport thread is always started/stopped last
 
     @property
-    def _max_flush_time(self):
-        return self.client.config.api_request_time / 1000.0 if self.client else None
+    def _max_flush_time_seconds(self):
+        return self.client.config.api_request_time.total_seconds() if self.client else None
 
     @property
     def _max_buffer_size(self):
@@ -116,7 +116,9 @@ class Transport(ThreadManager):
         buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
-        max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+        max_flush_time = (
+            self._max_flush_time_seconds * random.uniform(0.9, 1.1) if self._max_flush_time_seconds else None
+        )
 
         while True:
             since_last_flush = timeit.default_timer() - self._last_flush
@@ -153,7 +155,8 @@ class Transport(ThreadManager):
 
             queue_size = 0 if buffer.fileobj is None else buffer.fileobj.tell()
 
-            if flush:
+            forced_flush = flush
+            if forced_flush:
                 logger.debug("forced flush")
             elif timed_out or timeout == 0:
                 # update last flush time, as we might have waited for a non trivial amount of time in
@@ -172,11 +175,18 @@ class Transport(ThreadManager):
                 flush = True
             if flush:
                 if buffer_written:
-                    self._flush(buffer)
+                    self._flush(buffer, forced_flush=forced_flush)
+                elif forced_flush and "/localhost:" in self.client.config.server_url:
+                    # No data on buffer, but due to manual flush we should send
+                    # an empty payload with flushed=true query param, but only
+                    # to a local APM server (or lambda extension)
+                    self.send(None, flushed=True)
                 self._last_flush = timeit.default_timer()
                 buffer = self._init_buffer()
                 buffer_written = False
-                max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+                max_flush_time = (
+                    self._max_flush_time_seconds * random.uniform(0.9, 1.1) if self._max_flush_time_seconds else None
+                )
                 self._flushed.set()
 
     def _process_event(self, event_type, data):
@@ -248,7 +258,7 @@ class Transport(ThreadManager):
         else:
             return _queue.Queue(maxsize=10000)
 
-    def _flush(self, buffer):
+    def _flush(self, buffer, forced_flush=False):
         """
         Flush the queue. This method should only be called from the event processing queue
         :return: None
@@ -262,7 +272,7 @@ class Transport(ThreadManager):
             # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
             data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
             try:
-                self.send(data)
+                self.send(data, forced_flush=forced_flush)
                 self.handle_transport_success()
             except Exception as e:
                 self.handle_transport_fail(e)
@@ -279,7 +289,7 @@ class Transport(ThreadManager):
             except RuntimeError:
                 pass
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         """
         You need to override this to do something with the actual
         data. Usually - this is sending to a server
@@ -295,7 +305,7 @@ class Transport(ThreadManager):
             return
         self._closed = True
         self.queue("close", None)
-        if not self._flushed.wait(timeout=self._max_flush_time):
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             logger.error("Closing the transport connection timed out.")
 
     stop_thread = close
@@ -307,7 +317,7 @@ class Transport(ThreadManager):
         are produced in other threads than can be consumed.
         """
         self.queue(None, None, flush=True)
-        if not self._flushed.wait(timeout=self._max_flush_time):
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             raise ValueError("flush timed out")
 
     def handle_transport_success(self, **kwargs):

@@ -43,6 +43,7 @@ import time
 import urllib.parse
 import warnings
 from copy import deepcopy
+from datetime import timedelta
 from typing import Optional, Tuple
 
 import elasticapm
@@ -283,17 +284,20 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
         Register the start of a transaction on the client
 
         :param transaction_type: type of the transaction, e.g. "request"
         :param trace_parent: an optional TraceParent object for distributed tracing
         :param start: override the start timestamp, mostly useful for testing
+        :param auto_activate: whether to set this transaction in execution_context
         :return: the started transaction object
         """
         if self.config.is_recording:
-            return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
+            return self.tracer.begin_transaction(
+                transaction_type, trace_parent=trace_parent, start=start, auto_activate=auto_activate
+            )
 
     def end_transaction(self, name=None, result="", duration=None):
         """
@@ -304,6 +308,8 @@ class Client(object):
         :param duration: override duration, mostly useful for testing
         :return: the ended transaction object
         """
+        if duration is not None and not isinstance(duration, timedelta):
+            duration = timedelta(seconds=duration)
         transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 
@@ -474,6 +480,12 @@ class Client(object):
         event_data["context"] = context
         if transaction and transaction.labels:
             context["tags"] = deepcopy(transaction.labels)
+        # No intake for otel.attributes, so make them labels
+        if "otel_attributes" in context:
+            if context.get("tags"):
+                context["tags"].update(context.pop("otel_attributes"))
+            else:
+                context["tags"] = context.pop("otel_attributes")
 
         # if '.' not in event_type:
         # Assume it's a builtin
@@ -648,7 +660,7 @@ class Client(object):
         if not self.server_version:
             return True
         gte = gte or (0,)
-        lte = lte or (2 ** 32,)  # let's assume APM Server version will never be greater than 2^32
+        lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
         return bool(gte <= self.server_version <= lte)
 
 

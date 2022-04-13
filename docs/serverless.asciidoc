@@ -1,15 +1,30 @@
 [[lambda-support]]
-=== AWS Lambda Support
-
-experimental::[]
+=== Monitoring AWS Lambda Python Functions
+:layer-section-type: extension-only
+:apm-aws-repo-dir: ./lambda
 
 Incorporating Elastic APM into your AWS Lambda functions is easy!
+Follow the steps below to setup Elastic APM for your AWS Lambda Python functions.
 
 [float]
-[[lambda-installation]]
-==== Installation
+==== Prerequisites
 
-First, you need to add `elastic-apm` as a dependency for your python function.
+You need an APM Server to send APM data to. Follow the {apm-guide-ref}/apm-quick-start.html[APM Quick start] if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {ecloud} in the same AWS region as your AWS Lambda functions.
+
+[float]
+==== Step 1: Setup the APM Lambda Extension
+
+include::{apm-aws-lambda-root}/docs/lambda-selector/lambda-attributes-selector.asciidoc[]
+
+Add the {apm-guide-ref}/aws-lambda-arch.html[APM Lambda Extension] as an https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html[AWS Lambda Layer] to your AWS Lambda function.
+
+include::{apm-aws-lambda-root}/docs/lambda-selector/extension-arn-replacement.asciidoc[]
+include::{apm-aws-lambda-root}/docs/add-extension/add-extension-layer-widget.asciidoc[]
+
+[float]
+==== Step 2: Setup the APM Python Agent
+
+You need to add `elastic-apm` as a dependency for your python function.
 Depending on your deployment strategy, this could be as easy as adding
 `elastic-apm` to your `requirements.txt` file, or installing it in the directory
 you plan to deploy using pip:
@@ -18,14 +33,6 @@ you plan to deploy using pip:
 ----
 $ pip install -t <target_dir> elastic-apm
 ----
-
-You should also add the
-https://github.com/elastic/apm-aws-lambda[Elastic AWS Lambda Extension layer]
-to your function.
-
-[float]
-[[lambda-setup]]
-==== Setup
 
 Once the library is included as a dependency in your function, you must
 import the `capture_serverless` decorator and apply it to your handler:
@@ -39,27 +46,20 @@ def handler(event, context):
     return {"statusCode": r.status_code, "body": "Success!"}
 ----
 
-The agent uses environment variables for <<configuration,configuration>>
-
-[source]
-----
-ELASTIC_APM_LAMBDA_APM_SERVER=<apm-server url>
-ELASTIC_APM_SECRET_TOKEN=<apm-server token>
-ELASTIC_APM_SERVICE_NAME=my-awesome-service
-----
-
-Note that the above configuration assumes you're using the Elastic Lambda
-Extension. The agent will automatically send data to the extension at `localhost`,
-and the extension will then send to the APM Server as specified with
-`ELASTIC_APM_LAMBDA_APM_SERVER`.
-
 [float]
-[[lambda-usage]]
-==== Usage
+==== Step 3: Configure APM on AWS Lambda
 
-Once the agent is installed and working, spans will be captured for
+The APM Lambda Extension and the APM Python agent are configured through environment variables on the AWS Lambda function.
+
+For the minimal configuration, you will need the _APM Server URL_ to set the destination for APM data and an _{apm-guide-ref}/secret-token.html[APM Secret Token]_.
+If you prefer to use an {apm-guide-ref}/api-key.html[APM API key] instead of the APM secret token, use the `ELASTIC_APM_API_KEY` environment variable instead of `ELASTIC_APM_SECRET_TOKEN` in the following configuration.
+
+include::./lambda/configure-lambda-widget.asciidoc[]
+
+You can optionally <<configuration,fine-tune the Python agent>> or the {apm-guide-ref}/aws-lambda-config-options.html[configuration of the APM Lambda Extension].
+
+That's it; Once the agent is installed and working, spans will be captured for
 <<supported-technologies,supported technologies>>. You can also use
 <<api-capture-span,`capture_span`>> to capture custom spans, and
 you can retrieve the `Client` object for capturing exceptions/messages
 using <<api-get-client,`get_client`>>.
-

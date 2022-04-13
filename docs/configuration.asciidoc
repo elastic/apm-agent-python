@@ -350,8 +350,8 @@ WARNING: Secret tokens only provide any security if your APM Server uses TLS.
 
 [options="header"]
 |============
-| Environment           | `Config` key | Default | Example
-| `ELASTIC_APM_API_KEY` | `api_key`    | `None`   | A base64-encoded string
+| Environment           | Django/Flask | Default | Example
+| `ELASTIC_APM_API_KEY` | `API_KEY`    | `None`   | A base64-encoded string
 |============
 
 experimental::[]
@@ -656,7 +656,7 @@ Setting an upper limit will prevent edge cases from overloading the agent and th
 [options="header"]
 |============
 | Environment                     | Django/Flask        | Default
-| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
+| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `50`
 |============
 
 This limits the number of frames captured for each stack trace.
@@ -664,6 +664,33 @@ This limits the number of frames captured for each stack trace.
 Setting the limit to `0` will disable stack trace collection,
 while any positive integer value will be used as the maximum number of frames to collect.
 To disable the limit and always capture all frames, set the value to `-1`.
+
+
+[float]
+[[config-span-stack-trace-min-duration]]
+==== `span_stack_trace_min_duration`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                                 | Django/Flask                    | Default
+| `ELASTIC_APM_SPAN_STACK_TRACE_MIN_DURATION` | `SPAN_STACK_TRACE_MIN_DURATION` | `"5ms"`
+|============
+
+By default, the APM agent collects a stack trace with every recorded span
+that has a duration equal to or longer than this configured threshold.  While
+stack traces are very helpful to find the exact place in your code from which a
+span originates, collecting this stack trace does have some overhead. Tune this
+threshold to ensure that you only collect stack traces for spans that
+could be problematic.
+
+To collect traces for all spans, regardless of their length, set the value to `0`.
+
+To disable stack trace collection for spans completely, set the value to `-1`.
+
+Except for the special values `-1` and `0`,
+this setting should be provided in *<<config-format-duration, duration format>>*.
 
 
 [float]
@@ -678,18 +705,9 @@ To disable the limit and always capture all frames, set the value to `-1`.
 | `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION` | `SPAN_FRAMES_MIN_DURATION` | `"5ms"`
 |============
 
-In its default settings, the APM agent will collect a stack trace with every recorded span.
-While this is very helpful to find the exact place in your code that causes the span,
-collecting this stack trace does have some overhead.
+NOTE: This config value is being deprecated. Use
+<<config-span-stack-trace-min-duration,`span_stack_trace_min_duration`>> instead.
 
-To collect traces for all spans, independent of the length, set the value to `-1`.
-Setting it to a positive value, e.g. `5ms`, will limit stack trace collection to spans
-with durations equal or longer than the given value.
-
-To disable stack trace collection for spans completely, set the value to `0`.
-
-Except for the special values `-1` and `0`,
-this setting has to be provided in *<<config-format-duration, duration format>>*.
 
 [float]
 [[config-span-compression-enabled]]
@@ -700,7 +718,7 @@ this setting has to be provided in *<<config-format-duration, duration format>>*
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `False`
+| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `True`
 |============
 
 Enable/disable span compression.
@@ -740,7 +758,7 @@ Two spans are considered exact matches if the following attributes are identical
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"5ms"`
+| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"0ms"` (disabled)
 |============
 
 Consecutive spans to the same destination that are under this threshold will be compressed into a single composite span.
@@ -761,11 +779,13 @@ Two spans are considered to be of the same kind if the following attributes are 
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_EXIT_SPAN_MIN_DURATION` | `EXIT_SPAN_MIN_DURATION` | `"1ms"`
+| `ELASTIC_APM_EXIT_SPAN_MIN_DURATION` | `EXIT_SPAN_MIN_DURATION` | `"0ms"`
 |============
 
 Exit spans are spans that represent a call to an external service, like a database.
 If such calls are very short, they are usually not relevant and can be ignored.
+
+This feature is disabled by default.
 
 NOTE: if a span propagates distributed tracing IDs, it will not be ignored, even if it is shorter than the configured threshold.
 This is to ensure that no broken traces are recorded.
@@ -853,7 +873,7 @@ WARNING: We recommend always including the default set of validators if you cust
                                                                   "*session*",
                                                                   "*credit*",
                                                                   "*card*",
-                                                                  "authorization",
+                                                                  "*auth*",
                                                                   "set-cookie"]`
 |============
 

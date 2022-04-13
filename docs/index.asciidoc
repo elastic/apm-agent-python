@@ -25,7 +25,7 @@ include::./api.asciidoc[]
 
 include::./metrics.asciidoc[]
 
-include::./opentracing.asciidoc[]
+include::./opentelemetry.asciidoc[]
 
 include::./logging.asciidoc[]
 
@@ -36,3 +36,5 @@ include::./troubleshooting.asciidoc[]
 include::./upgrading.asciidoc[]
 
 include::./release-notes.asciidoc[]
+
+include::./redirects.asciidoc[]

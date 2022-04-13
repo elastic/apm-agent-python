@@ -28,8 +28,9 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import sys
+
+import pytest
 
 import elasticapm.context
 from elasticapm.context.threadlocal import ThreadLocalContext
@@ -43,6 +44,15 @@ def test_execution_context_backing():
 
         assert isinstance(execution_context, ContextVarsContext)
     else:
+        try:
+            import opentelemetry
+
+            pytest.skip(
+                "opentelemetry installs contextvars backport, so this test isn't valid for the opentelemetry matrix"
+            )
+        except ImportError:
+            pass
+
         assert isinstance(execution_context, ThreadLocalContext)
 
 
