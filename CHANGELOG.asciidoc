@@ -36,11 +36,12 @@ endif::[]
 [float]
 ===== Features
 
-* Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}xxx[#xxx]
+* Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}1520[#1520]
 
-//[float]
-//===== Bug fixes
-//
+[float]
+===== Bug fixes
+
+* Fix return for `opentelemetry.Span.is_recording()` {pull}1530[#1530]
 
 
 [[release-notes-6.x]]
