@@ -155,7 +155,7 @@ class Span(oteltrace.Span):
         Returns true if this Span is active and recording information like
         events with the add_event operation and attributes using set_attribute.
         """
-        return self.elastic_span.transaction.is_sampled
+        return self.elastic_span.transaction.is_sampled and not self.elastic_span.ended_time
 
     def set_status(self, status: Status) -> None:
         """Sets the Status of the Span. If used, this will override the default
