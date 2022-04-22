@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@test/support-coverage-reporting') _
+@Library('apm@test/support-coverage-file') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
