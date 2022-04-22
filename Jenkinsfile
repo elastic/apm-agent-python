@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@current') _
+@Library('apm@test/support-coverage-reporting') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
@@ -498,7 +498,8 @@ def convergeCoverage() {
         )
       }
     }
-    sh('python3 -m coverage combine && python3 -m coverage xml')
+    sh(script: 'python3 -m coverage combine && python3 -m coverage xml', label: 'python coverage')
+    // TODO: use coverageReport
     cobertura coberturaReportFile: 'coverage.xml'
   }
 }
