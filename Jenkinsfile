@@ -334,6 +334,7 @@ pipeline {
   post {
     cleanup {
       notifyBuildResult(analyzeFlakey: true, jobName: getFlakyJobName(withBranch: 'main'))
+      generateReport(id: 'coverage', input: 'tests-coverage.json', template: true, compare: true)
     }
   }
 }
