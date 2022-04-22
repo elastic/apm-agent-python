@@ -108,6 +108,7 @@ pipeline {
             allOf {
               expression { return env.ONLY_DOCS == "false" }
               expression { return params.tests_ci }
+              expression { return false }
             }
           }
           steps {
@@ -189,6 +190,7 @@ pipeline {
                 changeRequest()
                 expression { return !params.Run_As_Main_Branch }
               }
+              expression { return false }
             }
           }
           steps {
