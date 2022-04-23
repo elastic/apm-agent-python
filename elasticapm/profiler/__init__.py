@@ -134,4 +134,4 @@ class Profiler(ThreadManager):
 
     @property
     def collect_interval(self):
-        return self.client.config.profiler_interval / 1000.0
+        return self.client.config.profiler_interval.total_seconds()
