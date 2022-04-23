@@ -57,6 +57,7 @@ class HTTPTransportBase(Transport):
         base, sep, tail = self._url.rpartition(constants.EVENTS_API_PATH)
         self._config_url = "".join((base, constants.AGENT_CONFIG_PATH, tail))
         self._server_info_url = "".join((base, constants.SERVER_INFO_PATH, tail))
+        self._profile_url = "".join((base, constants.PROFILE_API_PATH, tail))
         super(HTTPTransportBase, self).__init__(client, compress_level=compress_level, **kwargs)
 
     def send(self, data, forced_flush=False):
@@ -65,6 +66,9 @@ class HTTPTransportBase(Transport):
 
         Returns the shortcut URL of the recorded error on Elastic APM
         """
+        raise NotImplementedError()
+
+    def send_profile(self, profile_data):
         raise NotImplementedError()
 
     def get_config(self, current_version=None, keys=None):

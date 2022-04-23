@@ -593,6 +593,13 @@ class Config(_ConfigBase):
         validators=[ExcludeRangeValidator(0.001, 0.999, "{range_start} - {range_end} s")],
         default=timedelta(seconds=30),
     )
+    profiler = _BoolConfigValue("PROFILER", default=True)
+    profiler_interval = _ConfigValue(
+        "PROFILER_INTERVAL",
+        type=int,
+        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
+        default=20000,
+    )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
     prometheus_metrics_prefix = _ConfigValue("PROMETHEUS_METRICS_PREFIX", default="prometheus.metrics.")
