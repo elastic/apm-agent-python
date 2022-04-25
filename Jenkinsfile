@@ -108,7 +108,6 @@ pipeline {
             allOf {
               expression { return env.ONLY_DOCS == "false" }
               expression { return params.tests_ci }
-              expression { return false }
             }
           }
           steps {
