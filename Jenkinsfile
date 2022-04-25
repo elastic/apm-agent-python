@@ -336,7 +336,6 @@ pipeline {
   post {
     cleanup {
       notifyBuildResult(analyzeFlakey: true, jobName: getFlakyJobName(withBranch: 'main'))
-      generateReport(id: 'coverage', input: 'tests-coverage.json', template: true, compare: true)
     }
   }
 }
@@ -501,8 +500,7 @@ def convergeCoverage() {
       }
     }
     sh(script: 'python3 -m coverage combine && python3 -m coverage xml', label: 'python coverage')
-    // TODO: use coverageReport
-    cobertura coberturaReportFile: 'coverage.xml'
+    coverageReport(baseDir: '.', reportFiles: 'coverage.html', coverageFiles: 'coverage.xml')
   }
 }
 
