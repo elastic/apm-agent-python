@@ -65,8 +65,8 @@ from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
 try:
-    from zprofile.builder import Builder
     from zprofile.cpu_profiler import CPUProfiler
+    from zprofile.builder import Builder
 except ImportError:
     CPUProfiler = None
     Builder = None
