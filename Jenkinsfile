@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-@Library('apm@test/support-coverage-file') _
+@Library('apm@current') _
 
 import co.elastic.matrix.*
 import groovy.transform.Field
@@ -189,7 +189,6 @@ pipeline {
                 changeRequest()
                 expression { return !params.Run_As_Main_Branch }
               }
-              expression { return false }
             }
           }
           steps {
