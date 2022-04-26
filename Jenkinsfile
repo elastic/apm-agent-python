@@ -497,9 +497,9 @@ def convergeCoverage() {
         )
       }
     }
-    sh('python3 -m coverage combine && python3 -m coverage xml')
-    cobertura coberturaReportFile: 'coverage.xml'
+    sh(script: 'python3 -m coverage combine && python3 -m coverage xml', label: 'python coverage')
   }
+  coverageReport(baseDir: "${BASE_DIR}", reportFiles: 'coverage.html', coverageFiles: 'coverage.xml')
 }
 
 def generateResultsReport() {
