@@ -41,7 +41,7 @@ from elasticapm.conf import Config, VersionedConfig
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
 from elasticapm.utils.disttracing import TraceParent
-from tests.utils import assert_any_record_contains
+from tests.utils import any_record_contains, assert_any_record_contains
 
 
 @pytest.fixture()
@@ -283,10 +283,14 @@ def test_label_transaction():
     assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
 
 
-def test_label_while_no_transaction(caplog):
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"enabled": True}, {"enabled": False}], indirect=True,
+)
+def test_label_while_no_transaction(caplog, elasticapm_client):
     with caplog.at_level(logging.WARNING, "elasticapm.errors"):
         elasticapm.label(foo="bar")
-    assert_any_record_contains(caplog.records, "foo", "elasticapm.errors")
+    is_present = any_record_contains(caplog.records, "foo", "elasticapm.errors")
+    assert is_present is elasticapm_client.config.enabled
 
 
 def test_label_with_allowed_non_string_value():

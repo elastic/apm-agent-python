@@ -29,8 +29,12 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def assert_any_record_contains(records, message, logger=None):
-    assert any(
+def any_record_contains(records, message, logger=None):
+    return any(
         message in record.message
         for record in (record for record in records if logger is None or record.name == logger)
     )
+
+
+def assert_any_record_contains(records, message, logger=None):
+    assert any_record_contains(records, message, logger=logger)
