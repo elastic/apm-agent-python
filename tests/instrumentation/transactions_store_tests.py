@@ -284,7 +284,9 @@ def test_label_transaction():
 
 
 @pytest.mark.parametrize(
-    "elasticapm_client", [{"enabled": True}, {"enabled": False}], indirect=True,
+    "elasticapm_client",
+    [{"enabled": True}, {"enabled": False}],
+    indirect=True,
 )
 def test_label_while_no_transaction(caplog, elasticapm_client):
     with caplog.at_level(logging.WARNING, "elasticapm.errors"):
