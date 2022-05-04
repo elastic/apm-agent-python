@@ -48,7 +48,7 @@ def runCheckout() {
 }
 
 def runPreCommit() {
-  docker.image('python:3.7-stretch').inside(){
+  docker.image('python:3.10-bullseye').inside(){
     // registry: '' will help to disable the docker login
     preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
   }
