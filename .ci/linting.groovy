@@ -22,10 +22,12 @@ pipeline {
     stage('Sanity checks') {
       steps {
         script {
-          def sha = getGitCommitSha()
+          // Since gitCheckout is not used, then it's required to call the GitHub environment
+          // variables creation.
+          githubEnv()
           docker.image('python:3.7-stretch').inside(){
             // registry: '' will help to disable the docker login
-            preCommit(commit: "${sha}", junit: true, registry: '')
+            preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
           }
         }
       }
