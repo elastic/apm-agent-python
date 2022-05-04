@@ -20,11 +20,16 @@ pipeline {
   }
   stages {
     stage('Sanity checks') {
+      options { skipDefaultCheckout() }
       steps {
         script {
-          // Since gitCheckout is not used, then it's required to call the GitHub environment
-          // variables creation.
-          githubEnv()
+          // Use gitCheckout to prepare the context
+          try {
+            gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: false)
+          } catch (err) {
+            // NOOP: avoid failing if non-elasticians, this will avoid issues when PRs comming
+            //       from non elasticians since the validation will not fail
+          }
           docker.image('python:3.7-stretch').inside(){
             // registry: '' will help to disable the docker login
             preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
