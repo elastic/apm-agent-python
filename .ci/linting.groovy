@@ -4,8 +4,8 @@
 pipeline {
   agent { label 'linux && immutable' }
   environment {
-    HOME = "${env.WORKSPACE}"
     BASE_DIR = "src"
+    HOME = "${env.WORKSPACE}/${env.BASE_DIR}"
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
