@@ -27,13 +27,11 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import time
 
 import mock
 import pytest
 
 import elasticapm
-from elasticapm.utils import compat
 
 
 def test_bare_transaction(elasticapm_client):
@@ -41,27 +39,16 @@ def test_bare_transaction(elasticapm_client):
     elasticapm_client.end_transaction("test", "OK", duration=5)
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
-    assert len(data) == 2
+    assert len(data) == 1
     asserts = 0
     for elem in data:
-        if "transaction.breakdown.count" in elem["samples"]:
-            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert elem["transaction"] == {"name": "test", "type": "request"}
-            asserts += 1
-        elif "span.self_time.sum.us" in elem["samples"]:
+        if "span.self_time.sum.us" in elem["samples"]:
             assert elem["samples"]["span.self_time.count"]["value"] == 1
             assert elem["samples"]["span.self_time.sum.us"]["value"] == 5000000
             assert elem["transaction"] == {"name": "test", "type": "request"}
             assert elem["span"] == {"subtype": "", "type": "app"}
             asserts += 1
-    assert asserts == 2
-
-    transaction_metrics = elasticapm_client._metrics.get_metricset(
-        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-    )
-    transaction_data = list(transaction_metrics.collect())
-    assert len(transaction_data) == 1
-    assert transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] == 5000000
+    assert asserts == 1
 
 
 def test_single_span(elasticapm_client):
@@ -71,14 +58,10 @@ def test_single_span(elasticapm_client):
     elasticapm_client.end_transaction("test", "OK", duration=15)
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
-    assert len(data) == 3
+    assert len(data) == 2
     asserts = 0
     for elem in data:
-        if "transaction.breakdown.count" in elem["samples"]:
-            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert elem["transaction"] == {"name": "test", "type": "request"}
-            asserts += 1
-        elif "span.self_time.sum.us" in elem["samples"]:
+        if "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 assert elem["samples"]["span.self_time.sum.us"]["value"] == 10000000
@@ -89,14 +72,7 @@ def test_single_span(elasticapm_client):
                 assert elem["samples"]["span.self_time.sum.us"]["value"] == 5000000
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 asserts += 1
-    assert asserts == 3
-
-    transaction_metrics = elasticapm_client._metrics.get_metricset(
-        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-    )
-    transaction_data = list(transaction_metrics.collect())
-    assert len(transaction_data) == 1
-    assert transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] == 15000000
+    assert asserts == 2
 
 
 def test_nested_spans(elasticapm_client):
@@ -109,14 +85,10 @@ def test_nested_spans(elasticapm_client):
     elasticapm_client.end_transaction("test", "OK", duration=25)
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
-    assert len(data) == 4
+    assert len(data) == 3
     asserts = 0
     for elem in data:
-        if "transaction.breakdown.count" in elem["samples"]:
-            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert elem["transaction"] == {"name": "test", "type": "request"}
-            asserts += 1
-        elif "span.self_time.sum.us" in elem["samples"]:
+        if "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 assert elem["samples"]["span.self_time.sum.us"]["value"] == 10000000
@@ -132,14 +104,7 @@ def test_nested_spans(elasticapm_client):
                 assert elem["samples"]["span.self_time.sum.us"]["value"] == 5000000
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 asserts += 1
-    assert asserts == 4
-
-    transaction_metrics = elasticapm_client._metrics.get_metricset(
-        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-    )
-    transaction_data = list(transaction_metrics.collect())
-    assert len(transaction_data) == 1
-    assert transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] == 25000000
+    assert asserts == 3
 
 
 def test_explicit_app_span(elasticapm_client):
@@ -149,43 +114,31 @@ def test_explicit_app_span(elasticapm_client):
     elasticapm_client.end_transaction("test", "OK")
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
-    assert len(data) == 2
+    assert len(data) == 1
     asserts = 0
     for elem in data:
-        if "transaction.breakdown.count" in elem["samples"]:
-            assert elem["samples"]["transaction.breakdown.count"]["value"] == 1
-            assert elem["transaction"] == {"name": "test", "type": "request"}
-            asserts += 1
-        elif "span.self_time.sum.us" in elem["samples"]:
+        if "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
-    assert asserts == 2
+    assert asserts == 1
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"breakdown_metrics": False}], indirect=True)
 def test_disable_breakdowns(elasticapm_client):
     with pytest.raises(LookupError):
         elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
-    transaction_metrics = elasticapm_client._metrics.get_metricset(
-        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-    )
     with mock.patch("elasticapm.traces.BaseSpan.child_started") as mock_child_started, mock.patch(
-        "elasticapm.traces.BaseSpan.child_ended"
-    ) as mock_child_ended, mock.patch("elasticapm.traces.Transaction.track_span_duration") as mock_track_span_duration:
+        "elasticapm.traces.Transaction.track_span_duration"
+    ) as mock_track_span_duration:
         transaction = elasticapm_client.begin_transaction("test")
         assert transaction._breakdown is None
         with elasticapm.capture_span("test", span_type="template", span_subtype="django", duration=5):
             pass
         elasticapm_client.end_transaction("test", "OK", duration=5)
         assert mock_child_started.call_count == 0
-        assert mock_child_ended.call_count == 0
         assert mock_track_span_duration.call_count == 0
-    # transaction duration should still be captured
-    data = list(transaction_metrics.collect())
-    assert len(data) == 1
-    assert data[0]["samples"]["transaction.duration.sum.us"]["value"] == 5000000
 
 
 def test_metrics_reset_after_collect(elasticapm_client):
@@ -194,19 +147,15 @@ def test_metrics_reset_after_collect(elasticapm_client):
         pass
     elasticapm_client.end_transaction("test", "OK", duration=15)
     breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
-    transaction_metrics = elasticapm_client._metrics.get_metricset(
-        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-    )
-    for metricset in (breakdown, transaction_metrics):
-        for labels, c in compat.iteritems(metricset._counters):
-            assert c.val != 0
-        for labels, t in compat.iteritems(metricset._timers):
-            assert t.val != (0, 0)
-        list(metricset.collect())
-        for labels, c in compat.iteritems(metricset._counters):
-            assert c.val == 0
-        for labels, t in compat.iteritems(metricset._timers):
-            assert t.val == (0, 0)
+    for labels, c in breakdown._counters.items():
+        assert c.val != 0
+    for labels, t in breakdown._timers.items():
+        assert t.val != (0, 0)
+    list(breakdown.collect())
+    for labels, c in breakdown._counters.items():
+        assert c.val == 0
+    for labels, t in breakdown._timers.items():
+        assert t.val == (0, 0)
 
 
 def test_multiple_transactions(elasticapm_client):
@@ -220,11 +169,7 @@ def test_multiple_transactions(elasticapm_client):
     data = list(breakdown.collect())
     asserts = 0
     for elem in data:
-        if "transaction.breakdown.count" in elem["samples"]:
-            assert elem["samples"]["transaction.breakdown.count"]["value"] == 2
-            assert elem["transaction"] == {"name": "test", "type": "request"}
-            asserts += 1
-        elif "span.self_time.sum.us" in elem["samples"]:
+        if "span.self_time.sum.us" in elem["samples"]:
             if elem["span"] == {"type": "app", "subtype": ""}:
                 assert elem["transaction"] == {"name": "test", "type": "request"}
                 # precision lost due to float arithmetic
@@ -236,12 +181,4 @@ def test_multiple_transactions(elasticapm_client):
                 assert 9999999 <= elem["samples"]["span.self_time.sum.us"]["value"] <= 10000000
                 assert elem["samples"]["span.self_time.count"]["value"] == 2
                 asserts += 1
-    assert asserts == 3
-
-    transaction_metrics = elasticapm_client._metrics.get_metricset(
-        "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-    )
-    transaction_data = list(transaction_metrics.collect())
-    assert len(transaction_data) == 1
-    assert 19999999 <= transaction_data[0]["samples"]["transaction.duration.sum.us"]["value"] <= 20000000
-    assert transaction_data[0]["samples"]["transaction.duration.count"]["value"] == 2
+    assert asserts == 2

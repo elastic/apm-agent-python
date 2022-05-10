@@ -29,13 +29,15 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 import sys
 
-from elasticapm.base import Client
+from elasticapm.base import Client, get_client  # noqa: F401
 from elasticapm.conf import setup_logging  # noqa: F401
+from elasticapm.contrib.serverless import capture_serverless  # noqa: F401
 from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
 from elasticapm.traces import (  # noqa: F401
     capture_span,
     get_span_id,
     get_trace_id,
+    get_trace_parent_header,
     get_transaction_id,
     label,
     set_context,
@@ -44,17 +46,21 @@ from elasticapm.traces import (  # noqa: F401
     set_transaction_outcome,
     set_transaction_result,
     set_user_context,
-    tag,
 )
 from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
 
 __all__ = ("VERSION", "Client")
 
 try:
-    VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
+    try:
+        VERSION = __import__("importlib.metadata").metadata.version("elastic-apm")
+    except ImportError:
+        VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
 except Exception:
     VERSION = "unknown"
 
 
-if sys.version_info >= (3, 5):
-    from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+if sys.version_info <= (3, 5):
+    raise DeprecationWarning("The Elastic APM agent requires Python 3.6+")
+
+from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401

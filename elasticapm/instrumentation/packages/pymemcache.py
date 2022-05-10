@@ -83,7 +83,6 @@ class PyMemcacheInstrumentation(AbstractInstrumentedModule):
         destination = {
             "address": address,
             "port": port,
-            "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
         }
 
         if "PooledClient" in name:
@@ -106,5 +105,6 @@ class PyMemcacheInstrumentation(AbstractInstrumentedModule):
                 span_subtype="memcached",
                 span_action="query",
                 extra={"destination": destination},
+                leaf=True,
             ):
                 return wrapped(*args, **kwargs)

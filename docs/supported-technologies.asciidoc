@@ -9,6 +9,7 @@ The Elastic APM Python Agent comes with support for the following frameworks:
  * <<supported-aiohttp,Aiohttp Server>>
  * <<supported-tornado,Tornado>>
  * <<supported-starlette,Starlette/FastAPI>>
+ * <<supported-sanic,Sanic>>
 
 For other frameworks and custom Python code, the agent exposes a set of <<api,APIs>> for integration.
 
@@ -18,14 +19,10 @@ For other frameworks and custom Python code, the agent exposes a set of <<api,AP
 
 The following Python versions are supported:
 
- * 2.7
- * 3.5
  * 3.6
  * 3.7
  * 3.8
-
-WARNING: Python 2.7 reached End of Life on January 1, 2020.
-The Elastic APM agent will stop supporting Python 2.7 starting in 6.0.0.
+ * 3.9
 
 [float]
 [[supported-django]]
@@ -38,6 +35,8 @@ We support these Django versions:
  * 2.1
  * 2.2
  * 3.0
+ * 3.1
+ * 3.2
 
 For upcoming Django versions, we generally aim to ensure compatibility starting with the first Release Candidate.
 
@@ -54,6 +53,7 @@ We support these Flask versions:
  * 0.12 (Deprecated)
  * 1.0
  * 1.1
+ * 2.0
 
 [float]
 [[supported-aiohttp]]
@@ -70,6 +70,15 @@ We support these aiohttp versions:
 We support these tornado versions:
 
  * 6.0+
+
+
+[float]
+[[supported-sanic]]
+=== Sanic
+
+We support these sanic versions:
+
+ * 20.12.2+
 
 
 [float]
@@ -114,8 +123,10 @@ Celery tasks will be recorded automatically with Django and Flask only.
 
 Instrumented methods:
 
+ * `elasticsearch.transport.Transport.perform_request`
  * `elasticsearch.connection.http_urllib3.Urllib3HttpConnection.perform_request`
  * `elasticsearch.connection.http_requests.RequestsHttpConnection.perform_request`
+ * `elasticsearch._async.transport.AsyncTransport.perform_request`
  * `elasticsearch_async.connection.AIOHttpConnection.perform_request`
 
 Additionally, the instrumentation wraps the following methods of the `Elasticsearch` client class:
@@ -129,6 +140,8 @@ Collected trace data:
 
  * the query string (if available)
  * the `query` element from the request body (if available)
+ * the response status code
+ * the count of affected rows (if available)
 
 We recommend using keyword arguments only with elasticsearch-py, as recommended by
 https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation[the elasticsearch-py docs].
@@ -199,6 +212,20 @@ The instrumented `connect` method returns a wrapped connection/cursor which inst
 Collected trace data:
 
  * parametrized SQL query
+
+[float]
+[[automatic-instrumentation-db-aiomysql]]
+==== aiomysql
+
+Library: `aiomysql`
+
+Instrumented methods:
+
+ * `aiomysql.cursors.Cursor.execute`
+
+Collected trace data:
+
+    * parametrized SQL query
 
 [float]
 [[automatic-instrumentation-db-postgres]]
@@ -329,7 +356,7 @@ Collected trace data:
 [[automatic-instrumentation-db-redis]]
 ==== Redis
 
-Library: `redis` (`>=2.8,<3.2.0`)
+Library: `redis` (`>=2.8`)
 
 Instrumented methods:
 
@@ -340,6 +367,22 @@ Collected trace data:
 
     * Redis command name
 
+
+[float]
+[[automatic-instrumentation-db-aioredis]]
+==== aioredis
+
+Library: `aioredis` (`<2.0`)
+
+Instrumented methods:
+
+ * `aioredis.pool.ConnectionsPool.execute`
+ * `aioredis.commands.transaction.Pipeline.execute`
+ * `aioredis.connection.RedisConnection.execute`
+
+Collected trace data:
+
+    * Redis command name
 
 [float]
 [[automatic-instrumentation-db-cassandra]]
@@ -360,7 +403,7 @@ Collected trace data:
 [[automatic-instrumentation-db-python-memcache]]
 ==== Python Memcache
 
-Library: `memcache` (`>=1.51`)
+Library: `python-memcached` (`>=1.51`)
 
 Instrumented methods:
 
@@ -519,13 +562,56 @@ Instrumented methods:
 
  * `botocore.client.BaseClient._make_api_call`
 
-Collected trace data:
+Collected trace data for all services:
 
  * AWS region (e.g. `eu-central-1`)
  * AWS service name (e.g. `s3`)
  * operation name (e.g. `ListBuckets`)
 
+Additionally, some services collect more specific data
 
+[float]
+[[automatic-instrumentation-aiobotocore]]
+==== AWS Aiobotocore
+
+Library: `aiobotocore` (`>=2.2.0`)
+
+Instrumented methods:
+
+ * `aiobotocore.client.BaseClient._make_api_call`
+
+Collected trace data for all services:
+
+ * AWS region (e.g. `eu-central-1`)
+ * AWS service name (e.g. `s3`)
+ * operation name (e.g. `ListBuckets`)
+
+Additionally, some services collect more specific data
+
+[float]
+[[automatic-instrumentation-s3]]
+===== S3
+
+ * Bucket name
+
+[float]
+[[automatic-instrumentation-dynamodb]]
+===== DynamoDB
+
+ * Table name
+
+
+[float]
+[[automatic-instrumentation-sns]]
+===== SNS
+
+ * Topic name
+
+[float]
+[[automatic-instrumentation-sqs]]
+===== SQS
+
+ * Queue name
 
 [float]
 [[automatic-instrumentation-template-engines]]

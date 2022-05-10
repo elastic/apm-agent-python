@@ -35,9 +35,9 @@ import logging
 import sys
 import warnings
 
-from django.apps import apps
 from django.conf import settings as django_settings
 
+from elasticapm import get_client
 from elasticapm.handlers.logging import LoggingHandler as BaseLoggingHandler
 from elasticapm.utils.logging import get_logger
 
@@ -51,13 +51,7 @@ class LoggingHandler(BaseLoggingHandler):
 
     @property
     def client(self):
-        try:
-            app = apps.get_app_config("elasticapm.contrib.django")
-            if not app.client:
-                logger.warning("Can't send log message to APM server, Django apps not initialized yet")
-            return app.client
-        except LookupError:
-            logger.warning("Can't send log message to APM server, elasticapm.contrib.django not in INSTALLED_APPS")
+        return get_client()
 
     def _emit(self, record, **kwargs):
         from elasticapm.contrib.django.middleware import LogMiddleware
@@ -79,9 +73,9 @@ def exception_handler(client, request=None, **kwargs):
             client.capture("Exception", exc_info=exc_info, request=request, handled=False)
         except Exception as exc:
             try:
-                client.error_logger.exception(u"Unable to process log entry: %s" % (exc,))
+                client.error_logger.exception("Unable to process log entry: %s" % (exc,))
             except Exception as exc:
-                warnings.warn(u"Unable to process log entry: %s" % (exc,))
+                warnings.warn("Unable to process log entry: %s" % (exc,))
         finally:
             try:
                 del exc_info

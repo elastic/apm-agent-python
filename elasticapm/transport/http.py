@@ -31,51 +31,54 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import hashlib
+import json
 import re
 import ssl
+import urllib.parse
+from urllib.request import getproxies_environment, proxy_bypass_environment
 
-import certifi
 import urllib3
 from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.transport.exceptions import TransportException
 from elasticapm.transport.http_base import HTTPTransportBase
-from elasticapm.utils import compat, json_encoder, read_pem_file
+from elasticapm.utils import json_encoder, read_pem_file
 from elasticapm.utils.logging import get_logger
+
+try:
+    import certifi
+except ImportError:
+    certifi = None
 
 logger = get_logger("elasticapm.transport.http")
 
 
 class Transport(HTTPTransportBase):
-    def __init__(self, url, *args, **kwargs):
+    def __init__(self, url: str, *args, **kwargs) -> None:
         super(Transport, self).__init__(url, *args, **kwargs)
-        url_parts = compat.urlparse.urlparse(url)
-        pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": certifi.where(), "block": True}
-        if self._server_cert and url_parts.scheme != "http":
-            pool_kwargs.update(
-                {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
-            )
-            del pool_kwargs["ca_certs"]
-        elif not self._verify_server_cert and url_parts.scheme != "http":
-            pool_kwargs["cert_reqs"] = ssl.CERT_NONE
-            pool_kwargs["assert_hostname"] = False
-        proxies = compat.getproxies_environment()
-        proxy_url = proxies.get("https", proxies.get("http", None))
-        if proxy_url and not compat.proxy_bypass_environment(url_parts.netloc):
-            self.http = urllib3.ProxyManager(proxy_url, **pool_kwargs)
-        else:
-            self.http = urllib3.PoolManager(**pool_kwargs)
+        pool_kwargs = {"cert_reqs": "CERT_REQUIRED", "ca_certs": self.ca_certs, "block": True}
+        if url.startswith("https"):
+            if self._server_cert:
+                pool_kwargs.update(
+                    {"assert_fingerprint": self.cert_fingerprint, "assert_hostname": False, "cert_reqs": ssl.CERT_NONE}
+                )
+                del pool_kwargs["ca_certs"]
+            elif not self._verify_server_cert:
+                pool_kwargs["cert_reqs"] = ssl.CERT_NONE
+                pool_kwargs["assert_hostname"] = False
+        self._pool_kwargs = pool_kwargs
+        self._http = None
+        self._url = url
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
 
-        if compat.PY2 and isinstance(self._url, compat.text_type):
-            url = self._url.encode("utf-8")
-        else:
-            url = self._url
+        url = self._url
+        if forced_flush:
+            url = f"{url}?flushed=true"
         try:
             try:
                 response = self.http.urlopen(
@@ -101,12 +104,28 @@ class Transport(HTTPTransportBase):
                 else:
                     message = "HTTP %s: " % response.status
                     print_trace = True
-                message += body.decode("utf8", errors="replace")
+                message += body.decode("utf8", errors="replace")[:10000]
                 raise TransportException(message, data, print_trace=print_trace)
             return response.getheader("Location")
         finally:
             if response:
                 response.close()
+
+    @property
+    def http(self) -> urllib3.PoolManager:
+        if not self._http:
+            url_parts = urllib.parse.urlparse(self._url)
+            proxies = getproxies_environment()
+            proxy_url = proxies.get("https", proxies.get("http", None))
+            if proxy_url and not proxy_bypass_environment(url_parts.netloc):
+                self._http = urllib3.ProxyManager(proxy_url, **self._pool_kwargs)
+            else:
+                self._http = urllib3.PoolManager(**self._pool_kwargs)
+        return self._http
+
+    def handle_fork(self) -> None:
+        # reset http pool to avoid sharing connections with the parent process
+        self._http = None
 
     def get_config(self, current_version=None, keys=None):
         """
@@ -137,7 +156,7 @@ class Transport(HTTPTransportBase):
                 "POST", url, body=data, headers=headers, timeout=self._timeout, preload_content=False
             )
         except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
-            logger.debug("HTTP error while fetching remote config: %s", compat.text_type(e))
+            logger.debug("HTTP error while fetching remote config: %s", str(e))
             return current_version, None, max_age
         body = response.read()
         if "Cache-Control" in response.headers:
@@ -155,8 +174,36 @@ class Transport(HTTPTransportBase):
         if not body:
             logger.debug("APM Server answered with empty body and status code %s", response.status)
             return current_version, None, max_age
+        body = body.decode("utf-8")
+        try:
+            data = json_encoder.loads(body)
+            return response.headers.get("Etag"), data, max_age
+        except json.JSONDecodeError:
+            logger.warning("Failed decoding APM Server response as JSON: %s", body)
+            return current_version, None, max_age
 
-        return response.headers.get("Etag"), json_encoder.loads(body.decode("utf-8")), max_age
+    def _process_queue(self):
+        if not self.client.server_version:
+            self.fetch_server_info()
+        super()._process_queue()
+
+    def fetch_server_info(self):
+        headers = self._headers.copy() if self._headers else {}
+        headers.update(self.auth_headers)
+        headers["accept"] = "text/plain"
+        try:
+            response = self.http.urlopen("GET", self._server_info_url, headers=headers, timeout=self._timeout)
+            body = response.data
+            data = json_encoder.loads(body.decode("utf8"))
+            version = data["version"]
+            logger.debug("Fetched APM Server version %s", version)
+            self.client.server_version = version_string_to_tuple(version)
+        except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
+            logger.warning("HTTP error while fetching server information: %s", str(e))
+        except json.JSONDecodeError as e:
+            logger.warning("JSON decoding error while fetching server information: %s", str(e))
+        except (KeyError, TypeError):
+            logger.warning("No version key found in server response: %s", response.data)
 
     @property
     def cert_fingerprint(self):
@@ -171,7 +218,22 @@ class Transport(HTTPTransportBase):
     @property
     def auth_headers(self):
         headers = super(Transport, self).auth_headers
-        return {k.encode("ascii"): v.encode("ascii") for k, v in compat.iteritems(headers)}
+        return {k.encode("ascii"): v.encode("ascii") for k, v in headers.items()}
+
+    @property
+    def ca_certs(self):
+        """
+        Return location of certificate store. If it is available and not disabled via setting,
+        this will return the location of the certifi certificate store.
+        """
+        return certifi.where() if (certifi and self.client.config.use_certifi) else None
+
+
+def version_string_to_tuple(version):
+    if version:
+        version_parts = re.split(r"[.\-]", version)
+        return tuple(int(p) if p.isdigit() else p for p in version_parts)
+    return ()
 
 
 # left for backwards compatibility

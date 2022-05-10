@@ -57,6 +57,5 @@ class MySQLInstrumentation(DbApi2Instrumentation):
         destination_info = {
             "address": args[0] if len(args) else kwargs.get("host", "localhost"),
             "port": args[4] if len(args) > 4 else int(kwargs.get("port", default_ports.get("mysql"))),
-            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
         }
         return MySQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)

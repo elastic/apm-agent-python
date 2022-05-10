@@ -30,8 +30,8 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import importlib
+import os
 import sys
 from os.path import abspath, dirname
 
@@ -63,9 +63,15 @@ for module, fixtures in {
     "django": "tests.contrib.django.fixtures",
     "flask": "tests.contrib.flask.fixtures",
     "aiohttp": "aiohttp.pytest_plugin",
+    "sanic": "tests.contrib.sanic.fixtures",
 }.items():
     try:
         importlib.import_module(module)
         pytest_plugins.append(fixtures)
     except ImportError:
         pass
+
+
+def pytest_report_header(config):
+    if "PYTHON_VERSION" in os.environ:
+        return "matrix: {}/{}".format(os.environ.get("PYTHON_VERSION"), os.environ.get("WEBFRAMEWORK"))

@@ -37,13 +37,15 @@ import mock
 import pytest
 
 import elasticapm
-from elasticapm.conf import Config
+from elasticapm.conf import Config, VersionedConfig
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import Tracer, capture_span, execution_context
+from elasticapm.utils.disttracing import TraceParent
+from tests.utils import any_record_contains, assert_any_record_contains
 
 
 @pytest.fixture()
-def tracer():
+def tracer(elasticapm_client):
     frames = [
         {
             "function": "something_expensive",
@@ -75,7 +77,7 @@ def tracer():
         },
         {
             "lineno": 4,
-            "filename": u"/var/parent-elasticapm/elasticapm/tests/contrib/django/testapp/templates/list_fish.html",
+            "filename": "/var/parent-elasticapm/elasticapm/tests/contrib/django/testapp/templates/list_fish.html",
         },
         {
             "function": "render",
@@ -175,7 +177,7 @@ def tracer():
     def queue(event_type, event, flush=False):
         events[event_type].append(event)
 
-    store = Tracer(lambda: frames, lambda frames: frames, queue, Config(), None)
+    store = Tracer(lambda: frames, lambda frames: frames, queue, elasticapm_client.config, elasticapm_client)
     store.events = events
     return store
 
@@ -203,21 +205,74 @@ def test_leaf_tracing(tracer):
     assert {t["name"] for t in spans} == signatures
 
 
+def test_get_trace_parent_header(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    transaction = elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    assert transaction.trace_parent.to_string() == elasticapm.get_trace_parent_header()
+
+
+def test_get_transaction_id(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    assert transaction.id == elasticapm.get_transaction_id()
+
+
+def test_get_trace_id(elasticapm_client):
+    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
+    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
+    assert trace_parent.trace_id == elasticapm.get_trace_id()
+
+
+def test_set_transaction_result(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_result("success")
+    assert "success" == transaction.result
+
+
+def test_set_transaction_outcome(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("failure")
+    assert "failure" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_50X_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code=500)
+    assert "failure" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_20X_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code=200)
+    assert "success" == transaction.outcome
+
+
+def test_set_transaction_outcome_with_unknown_http_status_code(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything", http_status_code="a")
+    assert "unknown" == transaction.outcome
+
+
+def test_set_unknown_transaction_outcome(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    elasticapm.set_transaction_outcome("anything")
+    assert "unknown" == transaction.outcome
+
+
 def test_get_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction()
 
 
 def test_get_transaction_clear():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction(clear=True)
     assert execution_context.get_transaction() is None
 
 
 def test_label_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     transaction = requests_store.begin_transaction("test")
     elasticapm.label(foo="bar")
     transaction.label(baz="bazzinga")
@@ -228,16 +283,20 @@ def test_label_transaction():
     assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
 
 
-def test_label_while_no_transaction(caplog):
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"enabled": True}, {"enabled": False}],
+    indirect=True,
+)
+def test_label_while_no_transaction(caplog, elasticapm_client):
     with caplog.at_level(logging.WARNING, "elasticapm.errors"):
         elasticapm.label(foo="bar")
-    record = caplog.records[0]
-    assert record.levelno == logging.WARNING
-    assert "foo" in record.args
+    is_present = any_record_contains(caplog.records, "foo", "elasticapm.errors")
+    assert is_present is elasticapm_client.config.enabled
 
 
 def test_label_with_allowed_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     elasticapm.label(foo=1, bar=True, baz=1.1, bazzinga=decimal.Decimal("1.1"))
     requests_store.end_transaction(200, "test")
@@ -250,9 +309,9 @@ def test_label_with_not_allowed_non_string_value():
             return "ok"
 
         def __unicode__(self):
-            return u"ok"
+            return "ok"
 
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
+    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     elasticapm.label(foo=SomeType())
     requests_store.end_transaction(200, "test")
@@ -282,73 +341,9 @@ def test_labels_dedot(elasticapm_client):
     assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
 
 
-### TESTING DEPRECATED TAGGING START ###
-
-
-def test_tagging_is_deprecated(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    with pytest.warns(DeprecationWarning, match="Call to deprecated function tag. Use elasticapm.label instead"):
-        elasticapm.tag(foo="bar")
-    elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert transactions[0]["context"]["tags"] == {"foo": "bar"}
-
-
-def test_tag_transaction():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, Config(), None)
-    transaction = requests_store.begin_transaction("test")
-    elasticapm.tag(foo="bar")
-    transaction.tag(baz="bazzinga")
-    requests_store.end_transaction(200, "test")
-
-    assert transaction.labels == {"foo": "bar", "baz": "bazzinga"}
-    transaction_dict = transaction.to_dict()
-    assert transaction_dict["context"]["tags"] == {"foo": "bar", "baz": "bazzinga"}
-
-
-def test_tag_while_no_transaction(caplog):
-    with caplog.at_level(logging.WARNING, "elasticapm.errors"):
-        elasticapm.tag(foo="bar")
-    record = caplog.records[0]
-    assert record.levelno == logging.WARNING
-    assert "foo" in record.args
-
-
-def test_tag_with_non_string_value():
-    requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, config=Config(), agent=None)
-    t = requests_store.begin_transaction("test")
-    elasticapm.tag(foo=1)
-    requests_store.end_transaction(200, "test")
-    assert t.labels == {"foo": "1"}
-
-
-def test_tags_merge(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    elasticapm.tag(foo=1, bar="baz")
-    elasticapm.tag(bar=3, boo="biz")
-    elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert transactions[0]["context"]["tags"] == {"foo": "1", "bar": "3", "boo": "biz"}
-
-
-def test_tags_dedot(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    elasticapm.tag(**{"d.o.t": "dot"})
-    elasticapm.tag(**{"s*t*a*r": "star"})
-    elasticapm.tag(**{'q"u"o"t"e': "quote"})
-
-    elasticapm_client.end_transaction("test_name", 200)
-
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert transactions[0]["context"]["tags"] == {"d_o_t": "dot", "s_t_a_r": "star", "q_u_o_t_e": "quote"}
-
-
-### TESTING DEPRECATED TAGGING END ###
-
-
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_dedot_is_not_run_when_unsampled(elasticapm_client):
     for sampled in (True, False):
         t = elasticapm_client.begin_transaction("test")
@@ -360,19 +355,26 @@ def test_dedot_is_not_run_when_unsampled(elasticapm_client):
     assert "context" not in unsampled_transaction
 
 
-def test_set_transaction_name(elasticapm_client):
+@pytest.mark.parametrize(
+    "name1,name2,expected1,expected2",
+    [
+        ("test_name", "another_name", "test_name", "another_name"),
+        (["test_name"], {"another_name": "foo"}, "['test_name']", "{'another_name': 'foo'}"),
+    ],
+)
+def test_set_transaction_name(elasticapm_client, name1, name2, expected1, expected2):
     elasticapm_client.begin_transaction("test")
-    elasticapm_client.end_transaction("test_name", 200)
+    elasticapm_client.end_transaction(name1, 200)
 
     elasticapm_client.begin_transaction("test")
 
-    elasticapm.set_transaction_name("another_name")
+    elasticapm.set_transaction_name(name2)
 
-    elasticapm_client.end_transaction("test_name", 200)
+    elasticapm_client.end_transaction(name1, 200)
 
     transactions = elasticapm_client.events[TRANSACTION]
-    assert transactions[0]["name"] == "test_name"
-    assert transactions[1]["name"] == "another_name"
+    assert transactions[0]["name"] == expected1
+    assert transactions[1]["name"] == expected2
 
 
 def test_set_transaction_custom_data(elasticapm_client):
@@ -421,6 +423,9 @@ def test_set_user_context_merge(elasticapm_client):
     assert transactions[0]["context"]["user"] == {"username": "foo", "email": "foo@example.com", "id": 42}
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+)  # unsampled transactions are dropped with server 8.0+
 def test_callable_context_ignored_when_not_sampled(elasticapm_client):
     callable_data = mock.Mock()
     callable_data.return_value = {"a": "b"}
@@ -488,18 +493,10 @@ def test_dotted_span_type_conversion(elasticapm_client):
 def test_span_labelling(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span("test", labels={"foo": "bar", "ba.z": "baz.zinga"}) as span:
-        span.tag(lorem="ipsum")
+        span.label(lorem="ipsum")
     elasticapm_client.end_transaction("test", "OK")
     span = elasticapm_client.events[SPAN][0]
     assert span["context"]["tags"] == {"foo": "bar", "ba_z": "baz.zinga", "lorem": "ipsum"}
-
-
-def test_span_tagging_raises_deprecation_warning(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-    with pytest.warns(DeprecationWarning, match="The tags argument to capture_span is deprecated"):
-        with elasticapm.capture_span("test", tags={"foo": "bar", "ba.z": "baz.zinga"}) as span:
-            span.tag(lorem="ipsum")
-    elasticapm_client.end_transaction("test", "OK")
 
 
 def test_span_sync(elasticapm_client):

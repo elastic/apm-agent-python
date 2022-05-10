@@ -30,15 +30,21 @@
 
 import codecs
 import gzip
+import io
 import json
+import logging
+import logging.handlers
 import os
 import random
 import socket
+import sys
+import tempfile
 import time
 import zlib
 from collections import defaultdict
 
 import jsonschema
+import mock
 import pytest
 from pytest_localserver.http import ContentServer
 from werkzeug.wrappers import Request, Response
@@ -48,7 +54,6 @@ from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
-from elasticapm.utils import compat
 from elasticapm.utils.threading import ThreadManager
 
 try:
@@ -59,19 +64,18 @@ except ImportError:
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
-ERRORS_SCHEMA = os.path.join(cur_dir, ".schemacache", "errors", "error.json")
-TRANSACTIONS_SCHEMA = os.path.join(cur_dir, ".schemacache", "transactions", "transaction.json")
-SPAN_SCHEMA = os.path.join(cur_dir, ".schemacache", "spans", "span.json")
-METADATA_SCHEMA = os.path.join(cur_dir, ".schemacache", "metadata.json")
-
-assert os.path.exists(ERRORS_SCHEMA) and os.path.exists(
-    TRANSACTIONS_SCHEMA
-), 'JSON Schema files not found. Run "make update-json-schema" to download'
+ERRORS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "error.json")
+TRANSACTIONS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "transaction.json")
+SPAN_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "span.json")
+METRICSET_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metricset.json")
+METADATA_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metadata.json")
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
     TRANSACTIONS_SCHEMA, encoding="utf8"
 ) as transactions_json, codecs.open(SPAN_SCHEMA, encoding="utf8") as span_json, codecs.open(
+    METRICSET_SCHEMA, encoding="utf8"
+) as metricset_json, codecs.open(
     METADATA_SCHEMA, encoding="utf8"
 ) as metadata_json:
     VALIDATORS = {
@@ -92,6 +96,12 @@ with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
             json.load(span_json),
             resolver=jsonschema.RefResolver(
                 base_uri="file:" + pathname2url(SPAN_SCHEMA), referrer="file:" + pathname2url(SPAN_SCHEMA)
+            ),
+        ),
+        "metricset": jsonschema.Draft4Validator(
+            json.load(metricset_json),
+            resolver=jsonschema.RefResolver(
+                base_uri="file:" + pathname2url(METRICSET_SCHEMA), referrer="file:" + pathname2url(METRICSET_SCHEMA)
             ),
         ),
         "metadata": jsonschema.Draft4Validator(
@@ -118,7 +128,7 @@ class ValidatingWSGIApp(ContentServer):
         if request.content_encoding == "deflate":
             data = zlib.decompress(data)
         elif request.content_encoding == "gzip":
-            with gzip.GzipFile(fileobj=compat.BytesIO(data)) as f:
+            with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
                 data = f.read()
         data = data.decode(request.charset)
         if request.content_type == "application/x-ndjson":
@@ -136,7 +146,7 @@ class ValidatingWSGIApp(ContentServer):
                     success += 1
                 except jsonschema.ValidationError as e:
                     fail += 1
-                    content += "/".join(map(compat.text_type, e.absolute_schema_path)) + ": " + e.message + "\n"
+                    content += "/".join(map(str, e.absolute_schema_path)) + ": " + e.message + "\n"
             code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()
@@ -146,22 +156,103 @@ class ValidatingWSGIApp(ContentServer):
         return response(environ, start_response)
 
 
+@pytest.fixture
+def mock_client_excepthook():
+    with mock.patch("tests.fixtures.TempStoreClient._excepthook") as m:
+        yield m
+
+
+@pytest.fixture
+def mock_client_capture_exception():
+    with mock.patch("tests.fixtures.TempStoreClient.capture_exception") as m:
+        yield m
+
+
+@pytest.fixture
+def original_exception_hook(request):
+    mock_params = getattr(request, "param", {})
+    original_excepthook = sys.excepthook
+    mck = mock.Mock(side_effect=mock_params.get("side_effect"))
+    sys.excepthook = mck
+    yield mck
+    sys.excepthook = original_excepthook
+
+
 @pytest.fixture()
 def elasticapm_client(request):
+    original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("exit_span_min_duration", "0ms")
     client = TempStoreClient(**client_config)
     yield client
     client.close()
     # clear any execution context that might linger around
+    sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
+    assert not client._transport.validation_errors
+
+
+@pytest.fixture()
+def elasticapm_transaction(elasticapm_client):
+    """
+    Useful fixture if spans from other fixtures should be captured.
+    This can be achieved by listing this fixture first.
+    """
+    transaction = elasticapm_client.begin_transaction("test")
+    yield transaction
+
+
+@pytest.fixture()
+def elasticapm_client_log_file(request):
+    original_exceptionhook = sys.excepthook
+    client_config = getattr(request, "param", {})
+    client_config.setdefault("service_name", "myapp")
+    client_config.setdefault("secret_token", "test_key")
+    client_config.setdefault("central_config", "false")
+    client_config.setdefault("include_paths", ("*/tests/*",))
+    client_config.setdefault("span_stack_trace_min_duration", 0)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("metrics_interval", "0ms")
+    client_config.setdefault("cloud_provider", False)
+    client_config.setdefault("log_level", "warning")
+
+    root_logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    root_logger.addHandler(handler)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.close()
+    client_config["log_file"] = tmp.name
+
+    client = TempStoreClient(**client_config)
+    yield client
+    client.close()
+
+    # delete our tmpfile
+    logger = logging.getLogger("elasticapm")
+    for handler in logger.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            handler.close()
+    os.unlink(tmp.name)
+
+    # Remove our streamhandler
+    root_logger.removeHandler(handler)
+
+    # clear any execution context that might linger around
+    sys.excepthook = original_exceptionhook
+    execution_context.set_transaction(None)
+    execution_context.unset_span(clear_all=True)
 
 
 @pytest.fixture()
@@ -212,29 +303,39 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("central_config", "false")
+    client_config.setdefault("server_version", (8, 0, 0))
     client = Client(**client_config)
     client.httpserver = validating_httpserver
     yield client
     client.close()
     # clear any execution context that might linger around
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 class DummyTransport(HTTPTransportBase):
     def __init__(self, url, *args, **kwargs):
         super(DummyTransport, self).__init__(url, *args, **kwargs)
         self.events = defaultdict(list)
+        self.validation_errors = defaultdict(list)
 
     def queue(self, event_type, data, flush=False):
         self._flushed.clear()
         data = self._process_event(event_type, data)
         self.events[event_type].append(data)
         self._flushed.set()
+        if data is not None:
+            validator = VALIDATORS[event_type]
+            try:
+                validator.validate(data)
+            except jsonschema.ValidationError as e:
+                self.validation_errors[event_type].append(e.message)
 
     def start_thread(self, pid=None):
         # don't call the parent method, but the one from ThreadManager
@@ -248,9 +349,9 @@ class DummyTransport(HTTPTransportBase):
 
 
 class TempStoreClient(Client):
-    def __init__(self, **inline):
+    def __init__(self, config=None, **inline):
         inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
-        super(TempStoreClient, self).__init__(**inline)
+        super(TempStoreClient, self).__init__(config, **inline)
 
     @property
     def events(self):
@@ -259,6 +360,11 @@ class TempStoreClient(Client):
     def spans_for_transaction(self, transaction):
         """Test helper method to get all spans of a specific transaction"""
         return [span for span in self.events[SPAN] if span["transaction_id"] == transaction["id"]]
+
+
+@pytest.fixture()
+def temp_store_client():
+    return TempStoreClient
 
 
 @pytest.fixture()

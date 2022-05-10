@@ -33,13 +33,18 @@ from __future__ import absolute_import
 
 import django
 from django.conf import settings as django_settings
-from django.core.exceptions import DisallowedHost
 from django.db import DatabaseError
 from django.http import HttpRequest
 
+try:
+    from rest_framework.request import Request as DrfRequest
+except ImportError:
+    DrfRequest = HttpRequest
+
+from elasticapm import get_client as _get_client
 from elasticapm.base import Client
 from elasticapm.conf import constants
-from elasticapm.contrib.django.utils import iterate_with_template_sources
+from elasticapm.contrib.django.utils import get_raw_uri, iterate_with_template_sources
 from elasticapm.utils import compat, encoding, get_url_dict
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -49,10 +54,9 @@ __all__ = ("DjangoClient",)
 
 
 default_client_class = "elasticapm.contrib.django.DjangoClient"
-_client = (None, None)
 
 
-def get_client(client=None):
+def get_client():
     """
     Get an ElasticAPM client.
 
@@ -60,20 +64,16 @@ def get_client(client=None):
     :return:
     :rtype: elasticapm.base.Client
     """
-    global _client
+    if _get_client():
+        return _get_client()
 
-    tmp_client = client is not None
-    if not tmp_client:
-        config = getattr(django_settings, "ELASTIC_APM", {})
-        client = config.get("CLIENT", default_client_class)
-
-    if _client[0] != client:
-        client_class = import_string(client)
-        instance = client_class()
-        if not tmp_client:
-            _client = (client, instance)
-        return instance
-    return _client[1]
+    config = getattr(django_settings, "ELASTIC_APM", {})
+    client = config.get("CLIENT", default_client_class)
+    client_class = import_string(client)
+    instance = client_class()
+    # `instance` will already be in elasticapm.base.CLIENT_SINGLETON due to the
+    # `__init__()` for Client
+    return instance
 
 
 class DjangoClient(Client):
@@ -118,7 +118,7 @@ class DjangoClient(Client):
         result = {
             "env": dict(get_environ(request.META)),
             "method": request.method,
-            "socket": {"remote_address": request.META.get("REMOTE_ADDR"), "encrypted": request.is_secure()},
+            "socket": {"remote_address": request.META.get("REMOTE_ADDR")},
             "cookies": dict(request.COOKIES),
         }
         if self.config.capture_headers:
@@ -141,31 +141,18 @@ class DjangoClient(Client):
                 elif content_type and content_type.startswith("multipart/form-data"):
                     data = compat.multidict_to_dict(request.POST)
                     if request.FILES:
-                        data["_files"] = {field: file.name for field, file in compat.iteritems(request.FILES)}
+                        data["_files"] = {field: file.name for field, file in request.FILES.items()}
                 else:
                     try:
                         data = request.body
                     except Exception as e:
-                        self.logger.debug("Can't capture request body: %s", compat.text_type(e))
+                        self.logger.debug("Can't capture request body: %s", str(e))
                         data = "<unavailable>"
                 if data is not None:
                     result["body"] = data
 
-        if hasattr(request, "get_raw_uri"):
-            # added in Django 1.9
-            url = request.get_raw_uri()
-        else:
-            try:
-                # Requires host to be in ALLOWED_HOSTS, might throw a
-                # DisallowedHost exception
-                url = request.build_absolute_uri()
-            except DisallowedHost:
-                # We can't figure out the real URL, so we have to set it to
-                # DisallowedHost
-                result["url"] = {"full": "DisallowedHost"}
-                url = None
-        if url:
-            result["url"] = get_url_dict(url)
+        url = get_raw_uri(request)
+        result["url"] = get_url_dict(url)
         return result
 
     def get_data_from_response(self, response, event_type):
@@ -188,7 +175,7 @@ class DjangoClient(Client):
         else:
             context = kwargs["context"]
 
-        is_http_request = isinstance(request, HttpRequest)
+        is_http_request = isinstance(request, (HttpRequest, DrfRequest))
         if is_http_request:
             context["request"] = self.get_data_from_request(request, constants.ERROR)
             context["user"] = self.get_user_info(request)
@@ -262,8 +249,6 @@ class ProxyClient(object):
     __ne__ = lambda x, o: get_client() != o
     __gt__ = lambda x, o: get_client() > o
     __ge__ = lambda x, o: get_client() >= o
-    if compat.PY2:
-        __cmp__ = lambda x, o: cmp(get_client(), o)  # noqa F821
     __hash__ = lambda x: hash(get_client())
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: get_client()(*a, **kw)
@@ -293,11 +278,9 @@ class ProxyClient(object):
     __invert__ = lambda x: ~(get_client())
     __complex__ = lambda x: complex(get_client())
     __int__ = lambda x: int(get_client())
-    if compat.PY2:
-        __long__ = lambda x: long(get_client())  # noqa F821
     __float__ = lambda x: float(get_client())
     __str__ = lambda x: str(get_client())
-    __unicode__ = lambda x: compat.text_type(get_client())
+    __unicode__ = lambda x: str(get_client())
     __oct__ = lambda x: oct(get_client())
     __hex__ = lambda x: hex(get_client())
     __index__ = lambda x: get_client().__index__()

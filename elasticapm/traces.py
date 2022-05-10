@@ -36,17 +36,21 @@ import time
 import timeit
 import warnings
 from collections import defaultdict
+from datetime import timedelta
+from types import TracebackType
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
-from elasticapm.utils import compat, encoding, get_name_from_func
-from elasticapm.utils.deprecation import deprecated
+from elasticapm.utils import encoding, get_name_from_func, nested_key, url_to_destination_resource
 from elasticapm.utils.disttracing import TraceParent, TracingOptions
 from elasticapm.utils.logging import get_logger
+from elasticapm.utils.time import time_to_perf_counter
 
-__all__ = ("capture_span", "tag", "label", "set_transaction_name", "set_custom_context", "set_user_context")
+__all__ = ("capture_span", "label", "set_transaction_name", "set_custom_context", "set_user_context")
 
 error_logger = get_logger("elasticapm.errors")
 logger = get_logger("elasticapm.traces")
@@ -56,49 +60,73 @@ _time_func = timeit.default_timer
 
 execution_context = init_execution_context()
 
+SpanType = Union["Span", "DroppedSpan"]
+
 
 class ChildDuration(object):
     __slots__ = ("obj", "_nesting_level", "_start", "_duration", "_lock")
 
-    def __init__(self, obj):
+    def __init__(self, obj: "BaseSpan"):
         self.obj = obj
-        self._nesting_level = 0
-        self._start = None
-        self._duration = 0
+        self._nesting_level: int = 0
+        self._start: float = 0
+        self._duration: timedelta = timedelta(seconds=0)
         self._lock = threading.Lock()
 
-    def start(self, timestamp):
+    def start(self, timestamp: float):
         with self._lock:
             self._nesting_level += 1
             if self._nesting_level == 1:
                 self._start = timestamp
 
-    def stop(self, timestamp):
+    def stop(self, timestamp: float):
         with self._lock:
             self._nesting_level -= 1
             if self._nesting_level == 0:
-                self._duration += timestamp - self._start
+                self._duration += timedelta(seconds=timestamp - self._start)
 
     @property
-    def duration(self):
+    def duration(self) -> timedelta:
         return self._duration
 
 
 class BaseSpan(object):
-    def __init__(self, labels=None):
+    def __init__(self, labels=None, start=None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
-        self.outcome = None
+        self.outcome: Optional[str] = None
+        self.compression_buffer: Optional[Union[Span, DroppedSpan]] = None
+        self.compression_buffer_lock = threading.Lock()
+        self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
+        self.ended_time: Optional[float] = None
+        self.duration: Optional[timedelta] = None
         if labels:
             self.label(**labels)
 
     def child_started(self, timestamp):
         self._child_durations.start(timestamp)
 
-    def child_ended(self, timestamp):
-        self._child_durations.stop(timestamp)
+    def child_ended(self, child: SpanType):
+        with self.compression_buffer_lock:
+            if not child.is_compression_eligible():
+                if self.compression_buffer:
+                    self.compression_buffer.report()
+                    self.compression_buffer = None
+                child.report()
+            elif self.compression_buffer is None:
+                self.compression_buffer = child
+            elif not self.compression_buffer.try_to_compress(child):
+                self.compression_buffer.report()
+                self.compression_buffer = child
 
-    def end(self, skip_frames=0, duration=None):
+    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
+        self.ended_time = _time_func()
+        self.duration = duration if duration is not None else timedelta(seconds=self.ended_time - self.start_time)
+        if self.compression_buffer:
+            self.compression_buffer.report()
+            self.compression_buffer = None
+
+    def to_dict(self) -> dict:
         raise NotImplementedError()
 
     def label(self, **labels):
@@ -116,78 +144,94 @@ class BaseSpan(object):
         labels = encoding.enforce_label_format(labels)
         self.labels.update(labels)
 
-    @deprecated("transaction/span.label()")
-    def tag(self, **tags):
-        """
-        This method is deprecated, please use "label()" instead.
-
-        Tag this span with one or multiple key/value tags. Both the values should be strings
-
-            span_obj.tag(key1="value1", key2="value2")
-
-        Note that keys will be dedotted, replacing dot (.), star (*) and double quote (") with an underscore (_)
-
-        :param tags: key/value pairs of tags
-        :return: None
-        """
-        for key in tags.keys():
-            self.labels[LABEL_RE.sub("_", compat.text_type(key))] = encoding.keyword_field(compat.text_type(tags[key]))
-
     def set_success(self):
-        self.outcome = "success"
+        self.outcome = constants.OUTCOME.SUCCESS
 
     def set_failure(self):
-        self.outcome = "failure"
+        self.outcome = constants.OUTCOME.FAILURE
+
+    @staticmethod
+    def get_dist_tracing_id() -> str:
+        return "%016x" % random.getrandbits(64)
+
+    @property
+    def tracer(self) -> "Tracer":
+        raise NotImplementedError()
 
 
 class Transaction(BaseSpan):
     def __init__(
-        self, tracer, transaction_type="custom", trace_parent=None, is_sampled=True, start=None, sample_rate=None
+        self,
+        tracer: "Tracer",
+        transaction_type: str = "custom",
+        trace_parent: Optional[TraceParent] = None,
+        is_sampled: bool = True,
+        start: Optional[float] = None,
+        sample_rate: Optional[float] = None,
     ):
-        self.id = "%016x" % random.getrandbits(64)
-        self.trace_parent = trace_parent
-        if start:
-            self.timestamp = self.start_time = start
-        else:
-            self.timestamp, self.start_time = time.time(), _time_func()
-        self.name = None
-        self.duration = None
-        self.result = None
-        self.transaction_type = transaction_type
-        self.tracer = tracer
+        """
+        tracer
+            Tracer object
+        transaction_type
+            Transaction type
+        trace_parent
+            TraceParent object representing the parent trace and trace state
+        is_sampled
+            Whether or not this transaction is sampled
+        start
+            Optional start timestamp. This is expected to be an epoch timestamp
+            in seconds (such as from `time.time()`). If it is not, it's recommended
+            that a `duration` is passed into the `end()` method.
+        sample_rate
+            Sample rate which was used to decide whether to sample this transaction.
+            This is reported to the APM server so that unsampled transactions can
+            be extrapolated.
+        """
+        self.id = self.get_dist_tracing_id()
+        if not trace_parent:
+            trace_parent = TraceParent(
+                constants.TRACE_CONTEXT_VERSION,
+                "%032x" % random.getrandbits(128),
+                self.id,
+                TracingOptions(recorded=is_sampled),
+            )
 
-        self.dropped_spans = 0
-        self.context = {}
+        self.trace_parent: TraceParent = trace_parent
+        self.timestamp = start if start is not None else time.time()
+        self.name: Optional[str] = None
+        self.result: Optional[str] = None
+        self.transaction_type = transaction_type
+        self._tracer = tracer
+        # The otel bridge uses Transactions/Spans interchangeably -- storing
+        # a reference to the Transaction in the Transaction simplifies things.
+        self.transaction = self
+        self.config_span_compression_enabled = tracer.config.span_compression_enabled
+        self.config_span_compression_exact_match_max_duration = tracer.config.span_compression_exact_match_max_duration
+        self.config_span_compression_same_kind_max_duration = tracer.config.span_compression_same_kind_max_duration
+        self.config_exit_span_min_duration = tracer.config.exit_span_min_duration
+        self.config_transaction_max_spans = tracer.config.transaction_max_spans
+
+        self.dropped_spans: int = 0
+        self.context: Dict[str, Any] = {}
 
         self._is_sampled = is_sampled
         self.sample_rate = sample_rate
-        self._span_counter = 0
-        self._span_timers = defaultdict(Timer)
+        self._span_counter: int = 0
+        self._span_timers: Dict[Tuple[str, str], Timer] = defaultdict(Timer)
         self._span_timers_lock = threading.Lock()
+        self._dropped_span_statistics = defaultdict(lambda: {"count": 0, "duration.sum.us": 0})
         try:
             self._breakdown = self.tracer._agent._metrics.get_metricset(
                 "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
             )
         except (LookupError, AttributeError):
             self._breakdown = None
-        try:
-            self._transaction_metrics = self.tracer._agent._metrics.get_metricset(
-                "elasticapm.metrics.sets.transactions.TransactionsMetricSet"
-            )
-        except (LookupError, AttributeError):
-            self._transaction_metrics = None
-        super(Transaction, self).__init__()
+        super(Transaction, self).__init__(start=start)
 
-    def end(self, skip_frames=0, duration=None):
-        self.duration = duration if duration is not None else (_time_func() - self.start_time)
-        if self._transaction_metrics:
-            self._transaction_metrics.timer(
-                "transaction.duration",
-                reset_on_collect=True,
-                **{"transaction.name": self.name, "transaction.type": self.transaction_type}
-            ).update(self.duration)
+    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
+        super().end(skip_frames, duration)
         if self._breakdown:
-            for (span_type, span_subtype), timer in compat.iteritems(self._span_timers):
+            for (span_type, span_subtype), timer in self._span_timers.items():
                 labels = {
                     "span.type": span_type,
                     "transaction.name": self.name,
@@ -195,15 +239,17 @@ class Transaction(BaseSpan):
                 }
                 if span_subtype:
                     labels["span.subtype"] = span_subtype
-                self._breakdown.timer("span.self_time", reset_on_collect=True, **labels).update(*timer.val)
-            labels = {"transaction.name": self.name, "transaction.type": self.transaction_type}
+                val = timer.val
+                self._breakdown.timer("span.self_time", reset_on_collect=True, unit="us", **labels).update(
+                    val[0], val[1]
+                )
             if self.is_sampled:
-                self._breakdown.counter("transaction.breakdown.count", reset_on_collect=True, **labels).inc()
                 self._breakdown.timer(
                     "span.self_time",
                     reset_on_collect=True,
-                    **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type}
-                ).update(self.duration - self._child_durations.duration)
+                    unit="us",
+                    **{"span.type": "app", "transaction.name": self.name, "transaction.type": self.transaction_type},
+                ).update((self.duration - self._child_durations.duration).total_seconds() * 1_000_000)
 
     def _begin_span(
         self,
@@ -217,15 +263,15 @@ class Transaction(BaseSpan):
         span_action=None,
         sync=None,
         start=None,
+        auto_activate=True,
     ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
         if parent_span and parent_span.leaf:
             span = DroppedSpan(parent_span, leaf=True)
-        elif tracer.config.transaction_max_spans and self._span_counter > tracer.config.transaction_max_spans - 1:
+        elif self.config_transaction_max_spans and self._span_counter > self.config_transaction_max_spans - 1:
             self.dropped_spans += 1
-            span = DroppedSpan(parent_span)
-            self._span_counter += 1
+            span = DroppedSpan(parent_span, context=context)
         else:
             span = Span(
                 transaction=self,
@@ -243,7 +289,8 @@ class Transaction(BaseSpan):
             )
             span.frames = tracer.frames_collector_func()
             self._span_counter += 1
-        execution_context.set_span(span)
+        if auto_activate:
+            execution_context.set_span(span)
         return span
 
     def begin_span(
@@ -257,6 +304,7 @@ class Transaction(BaseSpan):
         span_action=None,
         sync=None,
         start=None,
+        auto_activate=True,
     ):
         """
         Begin a new span
@@ -269,6 +317,7 @@ class Transaction(BaseSpan):
         :param span_action: action of the span , e.g. "query"
         :param sync: indicate if the span is synchronous or not. In most cases, `None` should be used
         :param start: timestamp, mostly useful for testing
+        :param auto_activate: whether to set this span in execution_context
         :return: the Span object
         """
         return self._begin_span(
@@ -282,9 +331,10 @@ class Transaction(BaseSpan):
             span_action=span_action,
             sync=sync,
             start=start,
+            auto_activate=auto_activate,
         )
 
-    def end_span(self, skip_frames=0, duration=None, outcome="unknown"):
+    def end_span(self, skip_frames: int = 0, duration: Optional[float] = None, outcome: str = "unknown"):
         """
         End the currently active span
         :param skip_frames: numbers of frames to skip in the stack trace
@@ -303,7 +353,7 @@ class Transaction(BaseSpan):
         span.end(skip_frames=skip_frames, duration=duration)
         return span
 
-    def ensure_parent_id(self):
+    def ensure_parent_id(self) -> str:
         """If current trace_parent has no span_id, generate one, then return it
 
         This is used to generate a span ID which the RUM agent will use to correlate
@@ -314,20 +364,29 @@ class Transaction(BaseSpan):
             logger.debug("Set parent id to generated %s", self.trace_parent.span_id)
         return self.trace_parent.span_id
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         self.context["tags"] = self.labels
         result = {
             "id": self.id,
             "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
-            "duration": self.duration * 1000,  # milliseconds
+            "duration": self.duration.total_seconds() * 1000,
             "result": encoding.keyword_field(str(self.result)),
-            "timestamp": int(self.timestamp * 1000000),  # microseconds
+            "timestamp": int(self.timestamp * 1_000_000),  # microseconds
             "outcome": self.outcome,
             "sampled": self.is_sampled,
-            "span_count": {"started": self._span_counter - self.dropped_spans, "dropped": self.dropped_spans},
+            "span_count": {"started": self._span_counter, "dropped": self.dropped_spans},
         }
+        if self._dropped_span_statistics:
+            result["dropped_spans_stats"] = [
+                {
+                    "destination_service_resource": resource,
+                    "outcome": outcome,
+                    "duration": {"count": v["count"], "sum": {"us": int(v["duration.sum.us"])}},
+                }
+                for (resource, outcome), v in self._dropped_span_statistics.items()
+            ]
         if self.sample_rate is not None:
             result["sample_rate"] = float(self.sample_rate)
         if self.trace_parent:
@@ -335,6 +394,25 @@ class Transaction(BaseSpan):
             # only set parent_id if this transaction isn't the root
             if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
+        # faas context belongs top-level on the transaction
+        if "faas" in self.context:
+            result["faas"] = self.context.pop("faas")
+        # otel attributes and spankind need to be top-level
+        if "otel_spankind" in self.context:
+            result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+        # Some transaction_store_tests use the Tracer without a Client -- the
+        # extra check against `get_client()` is here to make those tests pass
+        if elasticapm.get_client() and elasticapm.get_client().check_server_version(gte=(7, 16)):
+            if "otel_attributes" in self.context:
+                if "otel" not in result:
+                    result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                else:
+                    result["otel"]["attributes"] = self.context.pop("otel_attributes")
+        else:
+            # Attributes map to labels for older versions
+            attributes = self.context.pop("otel_attributes", {})
+            for key, value in attributes.items():
+                result["context"]["tags"][key] = value
         if self.is_sampled:
             result["context"] = self.context
         return result
@@ -343,10 +421,10 @@ class Transaction(BaseSpan):
         # TODO: once asynchronous spans are supported, we should check if the transaction is already finished
         # TODO: and, if it has, exit without tracking.
         with self._span_timers_lock:
-            self._span_timers[(span_type, span_subtype)].update(self_duration)
+            self._span_timers[(span_type, span_subtype)].update(self_duration.total_seconds() * 1_000_000)
 
     @property
-    def is_sampled(self):
+    def is_sampled(self) -> bool:
         return self._is_sampled
 
     @is_sampled.setter
@@ -362,6 +440,20 @@ class Transaction(BaseSpan):
                 self.sample_rate = "0"
                 self.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, self.sample_rate)
 
+    @property
+    def tracer(self) -> "Tracer":
+        return self._tracer
+
+    def track_dropped_span(self, span: SpanType):
+        with self._span_timers_lock:
+            try:
+                resource = span.context["destination"]["service"]["resource"]
+                stats = self._dropped_span_statistics[(resource, span.outcome)]
+                stats["count"] += 1
+                stats["duration.sum.us"] += int(span.duration.total_seconds() * 1_000_000)
+            except KeyError:
+                pass
+
 
 class Span(BaseSpan):
     __slots__ = (
@@ -373,8 +465,10 @@ class Span(BaseSpan):
         "action",
         "context",
         "leaf",
+        "dist_tracing_propagated",
         "timestamp",
         "start_time",
+        "ended_time",
         "duration",
         "parent",
         "parent_span_id",
@@ -387,18 +481,18 @@ class Span(BaseSpan):
 
     def __init__(
         self,
-        transaction,
-        name,
-        span_type,
-        context=None,
-        leaf=False,
-        labels=None,
-        parent=None,
-        parent_span_id=None,
-        span_subtype=None,
-        span_action=None,
-        sync=None,
-        start=None,
+        transaction: Transaction,
+        name: str,
+        span_type: str,
+        context: Optional[dict] = None,
+        leaf: bool = False,
+        labels: Optional[dict] = None,
+        parent: Optional["Span"] = None,
+        parent_span_id: Optional[str] = None,
+        span_subtype: Optional[str] = None,
+        span_action: Optional[str] = None,
+        sync: Optional[bool] = None,
+        start: Optional[int] = None,
     ):
         """
         Create a new Span
@@ -415,8 +509,7 @@ class Span(BaseSpan):
         :param sync: indicate if the span was executed synchronously or asynchronously
         :param start: timestamp, mostly useful for testing
         """
-        self.start_time = start or _time_func()
-        self.id = "%016x" % random.getrandbits(64)
+        self.id = self.get_dist_tracing_id()
         self.transaction = transaction
         self.name = name
         self.context = context if context is not None else {}
@@ -425,40 +518,42 @@ class Span(BaseSpan):
         # we take the (non-monotonic) transaction timestamp, and add the (monotonic) difference of span
         # start time and transaction start time. In this respect, the span timestamp is guaranteed to grow
         # monotonically with respect to the transaction timestamp
-        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
-        self.duration = None
         self.parent = parent
         self.parent_span_id = parent_span_id
         self.frames = None
         self.sync = sync
-        if span_subtype is None and "." in span_type:
-            # old style dottet type, let's split it up
-            type_bits = span_type.split(".")
-            if len(type_bits) == 2:
-                span_type, span_subtype = type_bits[:2]
-            else:
-                span_type, span_subtype, span_action = type_bits[:3]
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
+        self.dist_tracing_propagated = False
+        self.composite: Dict[str, Any] = {}
+        super(Span, self).__init__(labels=labels, start=start)
+        self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
             p.child_started(self.start_time)
-        super(Span, self).__init__(labels=labels)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        if (
+            self.composite
+            and self.composite["compression_strategy"] == "same_kind"
+            and nested_key(self.context, "destination", "service", "resource")
+        ):
+            name = "Calls to " + self.context["destination"]["service"]["resource"]
+        else:
+            name = self.name
         result = {
             "id": self.id,
             "transaction_id": self.transaction.id,
             "trace_id": self.transaction.trace_parent.trace_id,
             # use either the explicitly set parent_span_id, or the id of the parent, or finally the transaction id
             "parent_id": self.parent_span_id or (self.parent.id if self.parent else self.transaction.id),
-            "name": encoding.keyword_field(self.name),
+            "name": encoding.keyword_field(name),
             "type": encoding.keyword_field(self.type),
             "subtype": encoding.keyword_field(self.subtype),
             "action": encoding.keyword_field(self.action),
             "timestamp": int(self.timestamp * 1000000),  # microseconds
-            "duration": self.duration * 1000,  # milliseconds
+            "duration": self.duration.total_seconds() * 1000,
             "outcome": self.outcome,
         }
         if self.transaction.sample_rate is not None:
@@ -470,12 +565,71 @@ class Span(BaseSpan):
                 self.context = {}
             self.context["tags"] = self.labels
         if self.context:
+            self.autofill_resource_context()
+            # otel attributes and spankind need to be top-level
+            if "otel_spankind" in self.context:
+                result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+            if elasticapm.get_client().check_server_version(gte=(7, 16)):
+                if "otel_attributes" in self.context:
+                    if "otel" not in result:
+                        result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                    else:
+                        result["otel"]["attributes"] = self.context.pop("otel_attributes")
+            else:
+                # Attributes map to labels for older versions
+                attributes = self.context.pop("otel_attributes", {})
+                if attributes and ("tags" not in self.context):
+                    self.context["tags"] = {}
+                for key, value in attributes.items():
+                    self.context["tags"][key] = value
             result["context"] = self.context
         if self.frames:
             result["stacktrace"] = self.frames
+        if self.composite:
+            result["composite"] = {
+                "compression_strategy": self.composite["compression_strategy"],
+                "sum": self.composite["sum"].total_seconds() * 1000,
+                "count": self.composite["count"],
+            }
         return result
 
-    def end(self, skip_frames=0, duration=None):
+    def is_same_kind(self, other_span: SpanType) -> bool:
+        """
+        For compression purposes, two spans are considered to be of the same kind if they have the same
+        values for type, subtype, and destination.service.resource
+        :param other_span: another span object
+        :return: bool
+        """
+        resource = nested_key(self.context, "destination", "service", "resource")
+        return bool(
+            self.type == other_span.type
+            and self.subtype == other_span.subtype
+            and (resource and resource == nested_key(other_span.context, "destination", "service", "resource"))
+        )
+
+    def is_exact_match(self, other_span: SpanType) -> bool:
+        """
+        For compression purposes, two spans are considered to be an exact match if the have the same
+        name and are of the same kind.
+
+        :param other_span: another span object
+        :return: bool
+        """
+        return bool(self.name == other_span.name and self.is_same_kind(other_span))
+
+    def is_compression_eligible(self) -> bool:
+        """
+        Determine if this span is eligible for compression.
+        """
+        if self.transaction.config_span_compression_enabled:
+            return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
+        return False
+
+    @property
+    def discardable(self) -> bool:
+        return self.leaf and not self.dist_tracing_propagated and self.outcome == constants.OUTCOME.SUCCESS
+
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
         """
         End this span and queue it for sending.
 
@@ -483,21 +637,86 @@ class Span(BaseSpan):
         :param duration: override duration, mostly useful for testing
         :return: None
         """
+        self.autofill_resource_context()
+        super().end(skip_frames, duration)
         tracer = self.transaction.tracer
-        timestamp = _time_func()
-        self.duration = duration if duration is not None else (timestamp - self.start_time)
-        if not tracer.span_frames_min_duration or self.duration >= tracer.span_frames_min_duration:
+        if (
+            tracer.span_stack_trace_min_duration >= timedelta(seconds=0)
+            and self.duration >= tracer.span_stack_trace_min_duration
+            and self.frames
+        ):
             self.frames = tracer.frames_processing_func(self.frames)[skip_frames:]
         else:
             self.frames = None
-        execution_context.set_span(self.parent)
-        tracer.queue_func(SPAN, self.to_dict())
+        current_span = execution_context.get_span()
+        # Because otel can detach context without ending the span, we need to
+        # make sure we only unset the span if it's currently set.
+        if current_span is self:
+            execution_context.unset_span()
+
+        p = self.parent if self.parent else self.transaction
         if self.transaction._breakdown:
-            p = self.parent if self.parent else self.transaction
-            p.child_ended(self.start_time + self.duration)
+            p._child_durations.stop(self.start_time + self.duration.total_seconds())
             self.transaction.track_span_duration(
                 self.type, self.subtype, self.duration - self._child_durations.duration
             )
+        p.child_ended(self)
+
+    def report(self) -> None:
+        if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
+            self.transaction.track_dropped_span(self)
+            self.transaction.dropped_spans += 1
+        else:
+            self.tracer.queue_func(SPAN, self.to_dict())
+
+    def try_to_compress(self, sibling: SpanType) -> bool:
+        compression_strategy = (
+            self._try_to_compress_composite(sibling) if self.composite else self._try_to_compress_regular(sibling)
+        )
+        if not compression_strategy:
+            return False
+
+        if not self.composite:
+            self.composite = {"compression_strategy": compression_strategy, "count": 1, "sum": self.duration}
+        self.composite["count"] += 1
+        self.composite["sum"] += sibling.duration
+        self.duration = timedelta(seconds=sibling.ended_time - self.start_time)
+        self.transaction._span_counter -= 1
+        return True
+
+    def _try_to_compress_composite(self, sibling: SpanType) -> Optional[str]:
+        if self.composite["compression_strategy"] == "exact_match":
+            return (
+                "exact_match"
+                if (
+                    self.is_exact_match(sibling)
+                    and sibling.duration <= self.transaction.config_span_compression_exact_match_max_duration
+                )
+                else None
+            )
+        elif self.composite["compression_strategy"] == "same_kind":
+            return (
+                "same_kind"
+                if (
+                    self.is_same_kind(sibling)
+                    and sibling.duration <= self.transaction.config_span_compression_same_kind_max_duration
+                )
+                else None
+            )
+        return None
+
+    def _try_to_compress_regular(self, sibling: SpanType) -> Optional[str]:
+        if not self.is_same_kind(sibling):
+            return None
+        if self.name == sibling.name:
+            max_duration = self.transaction.config_span_compression_exact_match_max_duration
+            if self.duration <= max_duration and sibling.duration <= max_duration:
+                return "exact_match"
+            return None
+        max_duration = self.transaction.config_span_compression_same_kind_max_duration
+        if self.duration <= max_duration and sibling.duration <= max_duration:
+            return "same_kind"
+        return None
 
     def update_context(self, key, data):
         """
@@ -510,30 +729,79 @@ class Span(BaseSpan):
         current.update(data)
         self.context[key] = current
 
+    def autofill_resource_context(self):
+        """Automatically fills "resource" fields based on other fields"""
+        if self.context:
+            resource = nested_key(self.context, "destination", "service", "resource")
+            if not resource and (self.leaf or any(k in self.context for k in ("destination", "db", "message", "http"))):
+                type_info = self.subtype or self.type
+                instance = nested_key(self.context, "db", "instance")
+                queue_name = nested_key(self.context, "message", "queue", "name")
+                http_url = nested_key(self.context, "http", "url")
+                if instance:
+                    resource = f"{type_info}/{instance}"
+                elif queue_name:
+                    resource = f"{type_info}/{queue_name}"
+                elif http_url:
+                    resource = url_to_destination_resource(http_url)
+                else:
+                    resource = type_info
+                if "destination" not in self.context:
+                    self.context["destination"] = {}
+                if "service" not in self.context["destination"]:
+                    self.context["destination"]["service"] = {}
+                self.context["destination"]["service"]["resource"] = resource
+                # set fields that are deprecated, but still required by APM Server API
+                if "name" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["name"] = ""
+                if "type" not in self.context["destination"]["service"]:
+                    self.context["destination"]["service"]["type"] = ""
+
     def __str__(self):
-        return u"{}/{}/{}".format(self.name, self.type, self.subtype)
+        return "{}/{}/{}".format(self.name, self.type, self.subtype)
+
+    @property
+    def tracer(self) -> "Tracer":
+        return self.transaction.tracer
 
 
 class DroppedSpan(BaseSpan):
-    __slots__ = ("leaf", "parent", "id")
+    __slots__ = ("leaf", "parent", "id", "context", "outcome", "dist_tracing_propagated")
 
-    def __init__(self, parent, leaf=False):
+    def __init__(self, parent, leaf=False, start=None, context=None):
         self.parent = parent
         self.leaf = leaf
         self.id = None
-        super(DroppedSpan, self).__init__()
+        self.dist_tracing_propagated = False
+        self.context = context
+        self.outcome = constants.OUTCOME.UNKNOWN
+        super(DroppedSpan, self).__init__(start=start)
 
-    def end(self, skip_frames=0, duration=None):
-        execution_context.set_span(self.parent)
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
+        super().end(skip_frames, duration)
+        execution_context.unset_span()
 
     def child_started(self, timestamp):
         pass
 
-    def child_ended(self, timestamp):
+    def child_ended(self, child: SpanType):
         pass
 
     def update_context(self, key, data):
         pass
+
+    def report(self):
+        pass
+
+    def try_to_compress(self, sibling: SpanType) -> bool:
+        return False
+
+    def is_compression_eligible(self) -> bool:
+        return False
+
+    @property
+    def name(self):
+        return "DroppedSpan"
 
     @property
     def type(self):
@@ -547,21 +815,9 @@ class DroppedSpan(BaseSpan):
     def action(self):
         return None
 
-    @property
-    def context(self):
-        return None
-
-    @property
-    def outcome(self):
-        return "unknown"
-
-    @outcome.setter
-    def outcome(self, value):
-        return
-
 
 class Tracer(object):
-    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent):
+    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client"):
         self.config = config
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
@@ -570,19 +826,34 @@ class Tracer(object):
         self._ignore_patterns = [re.compile(p) for p in config.transactions_ignore_patterns or []]
 
     @property
-    def span_frames_min_duration(self):
-        if self.config.span_frames_min_duration in (-1, None):
-            return None
+    def span_stack_trace_min_duration(self) -> timedelta:
+        if self.config.span_stack_trace_min_duration != timedelta(
+            seconds=0.005
+        ) or self.config.span_frames_min_duration == timedelta(seconds=0.005):
+            # No need to check span_frames_min_duration
+            return self.config.span_stack_trace_min_duration
         else:
-            return self.config.span_frames_min_duration / 1000.0
+            # span_stack_trace_min_duration is default value and span_frames_min_duration is non-default.
+            # warn and use span_frames_min_duration
+            warnings.warn(
+                "`span_frames_min_duration` is deprecated. Please use `span_stack_trace_min_duration`.",
+                DeprecationWarning,
+            )
+            if self.config.span_frames_min_duration < timedelta(seconds=0):
+                return timedelta(seconds=0)
+            elif self.config.span_frames_min_duration == timedelta(seconds=0):
+                return timedelta(seconds=-1)
+            else:
+                return self.config.span_frames_min_duration
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
         Start a new transactions and bind it in a thread-local variable
 
         :param transaction_type: type of the transaction, e.g. "request"
         :param trace_parent: an optional TraceParent object
         :param start: override the start timestamp, mostly useful for testing
+        :param auto_activate: whether to set this transaction in execution_context
 
         :returns the Transaction object
         """
@@ -607,21 +878,10 @@ class Tracer(object):
             sample_rate=sample_rate,
         )
         if trace_parent is None:
-            transaction.trace_parent = TraceParent(
-                constants.TRACE_CONTEXT_VERSION,
-                "%032x" % random.getrandbits(128),
-                transaction.id,
-                TracingOptions(recorded=is_sampled),
-            )
             transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
-        execution_context.set_transaction(transaction)
+        if auto_activate:
+            execution_context.set_transaction(transaction)
         return transaction
-
-    def _should_ignore(self, transaction_name):
-        for pattern in self._ignore_patterns:
-            if pattern.search(transaction_name):
-                return True
-        return False
 
     def end_transaction(self, result=None, transaction_name=None, duration=None):
         """
@@ -634,14 +894,22 @@ class Tracer(object):
         transaction = execution_context.get_transaction(clear=True)
         if transaction:
             if transaction.name is None:
-                transaction.name = transaction_name if transaction_name is not None else ""
+                transaction.name = str(transaction_name) if transaction_name is not None else ""
             transaction.end(duration=duration)
             if self._should_ignore(transaction.name):
+                return
+            if not transaction.is_sampled and self._agent.check_server_version(gte=(8, 0)):
                 return
             if transaction.result is None:
                 transaction.result = result
             self.queue_func(TRANSACTION, transaction.to_dict())
         return transaction
+
+    def _should_ignore(self, transaction_name):
+        for pattern in self._ignore_patterns:
+            if pattern.search(transaction_name):
+                return True
+        return False
 
 
 class capture_span(object):
@@ -661,40 +929,40 @@ class capture_span(object):
 
     def __init__(
         self,
-        name=None,
-        span_type="code.custom",
-        extra=None,
-        skip_frames=0,
-        leaf=False,
-        tags=None,
-        labels=None,
-        span_subtype=None,
-        span_action=None,
-        start=None,
-        duration=None,
-        sync=None,
+        name: Optional[str] = None,
+        span_type: str = "code.custom",
+        extra: Optional[dict] = None,
+        skip_frames: int = 0,
+        leaf: bool = False,
+        labels: Optional[dict] = None,
+        span_subtype: Optional[str] = None,
+        span_action: Optional[str] = None,
+        start: Optional[int] = None,
+        duration: Optional[Union[float, timedelta]] = None,
+        sync: Optional[bool] = None,
     ):
         self.name = name
+        if span_subtype is None and "." in span_type:
+            # old style dotted type, let's split it up
+            type_bits = span_type.split(".")
+            if len(type_bits) == 2:
+                span_type, span_subtype = type_bits[:2]
+            else:
+                span_type, span_subtype, span_action = type_bits[:3]
         self.type = span_type
         self.subtype = span_subtype
         self.action = span_action
         self.extra = extra
         self.skip_frames = skip_frames
         self.leaf = leaf
-        if tags and not labels:
-            warnings.warn(
-                'The tags argument to capture_span is deprecated, use "labels" instead',
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
-            labels = tags
-
         self.labels = labels
         self.start = start
+        if duration and not isinstance(duration, timedelta):
+            duration = timedelta(seconds=duration)
         self.duration = duration
         self.sync = sync
 
-    def __call__(self, func):
+    def __call__(self, func: Callable) -> Callable:
         self.name = self.name or get_name_from_func(func)
 
         @functools.wraps(func)
@@ -704,7 +972,15 @@ class capture_span(object):
 
         return decorated
 
-    def __enter__(self):
+    def __enter__(self) -> Optional[SpanType]:
+        return self.handle_enter(self.sync)
+
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
+        self.handle_exit(exc_type, exc_val, exc_tb)
+
+    def handle_enter(self, sync: bool) -> Optional[SpanType]:
         transaction = execution_context.get_transaction()
         if transaction and transaction.is_sampled:
             return transaction.begin_span(
@@ -716,16 +992,24 @@ class capture_span(object):
                 span_subtype=self.subtype,
                 span_action=self.action,
                 start=self.start,
-                sync=self.sync,
+                sync=sync,
             )
+        return None
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def handle_exit(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> None:
         transaction = execution_context.get_transaction()
 
         if transaction and transaction.is_sampled:
             try:
                 outcome = "failure" if exc_val else "success"
                 span = transaction.end_span(self.skip_frames, duration=self.duration, outcome=outcome)
+                should_track_dropped = (
+                    transaction.tracer._agent.check_server_version(gte=(7, 16)) if transaction.tracer._agent else True
+                )
+                if should_track_dropped and isinstance(span, DroppedSpan) and span.context:
+                    transaction.track_dropped_span(span)
                 if exc_val and not isinstance(span, DroppedSpan):
                     try:
                         exc_val._elastic_apm_span_id = span.id
@@ -733,7 +1017,7 @@ class capture_span(object):
                         # could happen if the exception has __slots__
                         pass
             except LookupError:
-                logger.info("ended non-existing span %s of type %s", self.name, self.type)
+                logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
 def label(**labels):
@@ -745,24 +1029,13 @@ def label(**labels):
     """
     transaction = execution_context.get_transaction()
     if not transaction:
-        error_logger.warning("Ignored labels %s. No transaction currently active.", ", ".join(labels.keys()))
+        if elasticapm.get_client().config.enabled:
+            error_logger.warning("Ignored labels %s. No transaction currently active.", ", ".join(labels.keys()))
     else:
         transaction.label(**labels)
 
 
-@deprecated("elasticapm.label")
-def tag(**tags):
-    """
-    Tags current transaction. Both key and value of the label should be strings.
-    """
-    transaction = execution_context.get_transaction()
-    if not transaction:
-        error_logger.warning("Ignored tags %s. No transaction currently active.", ", ".join(tags.keys()))
-    else:
-        transaction.tag(**tags)
-
-
-def set_transaction_name(name, override=True):
+def set_transaction_name(name: str, override: bool = True) -> None:
     """
     Sets the name of the transaction
 
@@ -774,15 +1047,15 @@ def set_transaction_name(name, override=True):
     if not transaction:
         return
     if transaction.name is None or override:
-        transaction.name = name
+        transaction.name = str(name)
 
 
 def set_transaction_result(result, override=True):
     """
     Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
-    HTTP requests, or "success"/"fail" for background tasks.
+    HTTP requests, or "success"/"failure" for background tasks.
 
-    :param name: the name of the transaction
+    :param result: Details of the transaction result that should be set
     :param override: if set to False, the name is only set if no name has been set before
     :return: None
     """
@@ -835,6 +1108,16 @@ def get_transaction_id():
     if not transaction:
         return
     return transaction.id
+
+
+def get_trace_parent_header():
+    """
+    Return the trace parent header for the current transaction.
+    """
+    transaction = execution_context.get_transaction()
+    if not transaction or not transaction.trace_parent:
+        return
+    return transaction.trace_parent.to_string()
 
 
 def get_trace_id():

@@ -32,8 +32,6 @@ import functools
 import warnings
 
 # https://wiki.python.org/moin/PythonDecoratorLibrary#Smart_deprecation_warnings_.28with_valid_filenames.2C_line_numbers.2C_etc..29
-# Updated to work with 2.6 and 3+.
-from elasticapm.utils import compat
 
 
 def deprecated(alternative=None):
@@ -50,8 +48,8 @@ def deprecated(alternative=None):
             warnings.warn_explicit(
                 msg,
                 category=DeprecationWarning,
-                filename=compat.get_function_code(func).co_filename,
-                lineno=compat.get_function_code(func).co_firstlineno + 1,
+                filename=func.__code__.co_filename,
+                lineno=func.__code__.co_firstlineno + 1,
             )
             return func(*args, **kwargs)
 

@@ -31,23 +31,25 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+from typing import cast
 
 import pytest
 
-from elasticapm.conf.constants import TRANSACTION
-from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature
+from elasticapm import get_client
+from elasticapm.conf.constants import SPAN, TRANSACTION
+from elasticapm.instrumentation.packages.psycopg2 import PGCursorProxy, extract_signature, get_destination_info
 from elasticapm.utils import default_ports
+from tests.fixtures import TempStoreClient
 
 psycopg2 = pytest.importorskip("psycopg2")
 
 
 try:
-    from psycopg2 import sql
+    from psycopg2 import compat
 
-    has_sql_module = True
+    is_cffi = True
 except ImportError:
-    # as of Jan 2018, psycopg2cffi doesn't have this module
-    has_sql_module = False
+    is_cffi = False
 
 try:
     import psycopg2.extensions
@@ -70,7 +72,7 @@ def connect_kwargs():
     }
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def postgres_connection(request):
     conn = psycopg2.connect(**connect_kwargs())
     cursor = conn.cursor()
@@ -163,10 +165,10 @@ def test_select_with_dollar_quotes_custom_token():
 
 
 def test_select_with_difficult_table_name():
-    sql_statement = u"""SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
+    sql_statement = """SELECT id FROM "myta\n-æøåble" WHERE id = 2323"""
     actual = extract_signature(sql_statement)
 
-    assert u"SELECT FROM myta\n-æøåble" == actual
+    assert "SELECT FROM myta\n-æøåble" == actual
 
 
 def test_select_subselect():
@@ -276,7 +278,7 @@ def test_destination(instrument, postgres_connection, elasticapm_client):
     assert span["context"]["destination"] == {
         "address": os.environ.get("POSTGRES_HOST", None),
         "port": default_ports["postgresql"],
-        "service": {"name": "postgresql", "resource": "postgresql", "type": "db"},
+        "service": {"name": "", "resource": "postgresql", "type": ""},
     }
 
 
@@ -386,11 +388,13 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-@pytest.mark.skipif(not has_sql_module, reason="psycopg2.sql module missing")
+@pytest.mark.skipif(is_cffi, reason="psycopg2cffi does not have the sql module")
 def test_psycopg2_composable_query_works(instrument, postgres_connection, elasticapm_client):
     """
     Check that we parse queries that are psycopg2.sql.Composable correctly
     """
+    from psycopg2 import sql
+
     cursor = postgres_connection.cursor()
     query = sql.SQL("SELECT * FROM {table} WHERE {row} LIKE 't%' ORDER BY {row} DESC").format(
         table=sql.Identifier("test"), row=sql.Identifier("name")
@@ -484,3 +488,52 @@ def test_psycopg2_rows_affected(instrument, postgres_connection, elasticapm_clie
 
         assert spans[3]["name"] == "DELETE FROM test"
         assert spans[3]["context"]["db"]["rows_affected"] == 1
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+@pytest.mark.skipif(is_cffi, reason="psycopg2cffi doesn't have execute_values")
+def test_psycopg2_execute_values(instrument, postgres_connection, elasticapm_client):
+    from psycopg2.extras import execute_values
+
+    cursor = postgres_connection.cursor()
+    try:
+        elasticapm_client.begin_transaction("web.django")
+        query = "INSERT INTO test VALUES %s"
+        data = tuple((i, "xxxxx") for i in range(999))
+        # this creates a long (~14000 characters) query, encoded as byte string.
+        # This tests that we shorten already-encoded strings.
+        execute_values(cursor, query, data, page_size=1000)
+        elasticapm_client.end_transaction(None, "test-transaction")
+    finally:
+        transactions = elasticapm_client.events[TRANSACTION]
+        spans = elasticapm_client.spans_for_transaction(transactions[0])
+        assert spans[0]["name"] == "INSERT INTO test"
+        assert len(spans[0]["context"]["db"]["statement"]) == 10000, spans[0]["context"]["db"]["statement"]
+
+
+@pytest.mark.integrationtest
+def test_psycopg2_connection(instrument, elasticapm_transaction, postgres_connection):
+    # elastciapm_client.events is only available on `TempStoreClient`, this keeps the type checkers happy
+    elasticapm_client = cast(TempStoreClient, get_client())
+    elasticapm_client.end_transaction("test", "success")
+    span = elasticapm_client.events[SPAN][0]
+    host = os.environ.get("POSTGRES_HOST", "localhost")
+    assert span["name"] == f"psycopg2.connect {host}:5432"
+    assert span["action"] == "connect"
+
+
+@pytest.mark.parametrize(
+    "host_in,port_in,expected_host_out,expected_port_out",
+    (
+        (None, None, "localhost", 5432),
+        (None, 5432, "localhost", 5432),
+        ("localhost", "5432", "localhost", 5432),
+        ("foo.bar", "5432", "foo.bar", 5432),
+        ("localhost,foo.bar", "5432,1234", "localhost", 5432),  # multiple hosts
+    ),
+)
+def test_get_destination(host_in, port_in, expected_host_out, expected_port_out):
+    host, port = get_destination_info(host_in, port_in)
+    assert host == expected_host_out
+    assert port == expected_port_out

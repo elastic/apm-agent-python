@@ -36,6 +36,7 @@ import os
 
 import mock
 
+import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.tornado import ElasticAPM
@@ -72,7 +73,8 @@ def app(elasticapm_client):
         template_path=os.path.join(os.path.dirname(__file__), "templates"),
     )
     apm = ElasticAPM(app, elasticapm_client)
-    return app
+    yield app
+    elasticapm.uninstrument()
 
 
 @pytest.fixture
@@ -124,7 +126,7 @@ async def test_get(app, base_url, http_client):
     assert transaction["span_count"]["started"] == 1
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
     assert span["name"] == "test"
 
@@ -146,7 +148,7 @@ async def test_exception(app, base_url, http_client):
     assert transaction["type"] == "request"
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
     assert transaction["context"]["response"]["status_code"] == 500
 
     assert len(elasticapm_client.events[constants.ERROR]) == 1
@@ -193,7 +195,7 @@ async def test_render(app, base_url, http_client):
     assert transaction["span_count"]["started"] == 2
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
-    assert request["socket"] == {"remote_address": "127.0.0.1", "encrypted": False}
+    assert request["socket"] == {"remote_address": "127.0.0.1"}
 
     span = spans[0]
     assert span["name"] == "test"
@@ -218,10 +220,10 @@ async def test_capture_headers_body_is_dynamic(app, base_url, http_client):
     errors = elasticapm_client.events[constants.ERROR]
 
     assert "headers" in transactions[0]["context"]["request"]
-    assert transactions[0]["context"]["request"]["body"] == b"xyz"
+    assert transactions[0]["context"]["request"]["body"] == "xyz"
     assert "headers" in transactions[0]["context"]["response"]
     assert "headers" in errors[0]["context"]["request"]
-    assert errors[0]["context"]["request"]["body"] == b"xyz"
+    assert errors[0]["context"]["request"]["body"] == "xyz"
 
     assert "headers" not in transactions[2]["context"]["request"]
     assert "headers" not in transactions[2]["context"]["response"]
@@ -240,3 +242,15 @@ async def test_no_elasticapm_client(app_no_client, base_url, http_client, elasti
     response = await http_client.fetch(base_url)
     assert response.code == 200
     elasticapm_client.end_transaction("test")
+
+
+@pytest.mark.gen_test
+async def test_tornado_transaction_ignore_urls(app, base_url, http_client):
+    elasticapm_client = app.elasticapm_client
+    response = await http_client.fetch(base_url + "/render")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+    elasticapm_client.config.update(1, transaction_ignore_urls="/*ender,/bla")
+
+    response = await http_client.fetch(base_url + "/render")
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1

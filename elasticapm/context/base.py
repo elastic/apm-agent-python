@@ -31,13 +31,41 @@
 
 class BaseContext(object):
     def set_transaction(self, transaction):
+        """
+        Set the transaction for the current execution context
+        """
         raise NotImplementedError
 
     def get_transaction(self, clear=False):
+        """
+        Get the transaction for the current execution context
+
+        If clear=True, also set the transaction to None for the current
+        execution context.
+        """
         raise NotImplementedError
 
     def set_span(self, span):
+        """
+        Set the active span for the current execution context.
+
+        The previously-activated span will be saved to be re-activated later.
+        """
         raise NotImplementedError
 
     def get_span(self):
+        """
+        Get the active span for the current execution context.
+        """
+        raise NotImplementedError
+
+    def unset_span(self, clear_all=False):
+        """
+        De-activate the current span. If a span was previously active, it will
+        become active again.
+
+        Returns the deactivated span.
+
+        If clear_all=True, all spans will be cleared and no span will be active.
+        """
         raise NotImplementedError

@@ -35,7 +35,7 @@ import pytest
 
 import elasticapm
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH
-from elasticapm.utils import compat, encoding
+from elasticapm.utils import encoding
 from tests.utils.stacks import get_me_more_test_frames
 
 
@@ -304,7 +304,7 @@ def test_transaction_data_is_attached_to_errors_exc_handled_outside_span(elastic
 
 def test_transaction_context_is_used_in_errors(elasticapm_client):
     elasticapm_client.begin_transaction("test")
-    elasticapm.tag(foo="baz")
+    elasticapm.label(foo="baz")
     elasticapm.set_custom_context({"a": "b"})
     elasticapm.set_user_context(username="foo", email="foo@example.com", user_id=42)
     elasticapm_client.capture_message("x", custom={"foo": "bar"})
@@ -385,3 +385,15 @@ def test_stack_trace_limit(elasticapm_client):
     exception = elasticapm_client.events[ERROR][-1]
     frames = exception["exception"]["stacktrace"]
     assert len(frames) == 0
+
+
+def test_fail_on_uuid_raise(elasticapm_client):
+    def generate_uuid():
+        from uuid import UUID
+
+        return UUID("INVALID")
+
+    try:
+        generate_uuid()
+    except Exception:
+        elasticapm_client.capture_exception()

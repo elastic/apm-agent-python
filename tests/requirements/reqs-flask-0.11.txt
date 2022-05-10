@@ -1,2 +1,4 @@
 Flask>=0.11,<0.12
+itsdangerous==2.0.1
+blinker>=1.1
 -r reqs-base.txt

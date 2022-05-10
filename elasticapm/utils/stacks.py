@@ -35,15 +35,9 @@ import itertools
 import os
 import re
 import sys
+from functools import lru_cache
 
-from elasticapm.utils import compat
 from elasticapm.utils.encoding import transform
-
-try:
-    from functools import lru_cache
-except ImportError:
-    from cachetools.func import lru_cache
-
 
 _coding_re = re.compile(r"coding[:=]\s*([-\w.]+)")
 
@@ -77,14 +71,13 @@ def get_lines_from_file(filename, lineno, context_lines, loader=None, module_nam
                         break
                 file_obj.seek(0)
                 lines = [
-                    compat.text_type(line, encoding, "replace")
-                    for line in itertools.islice(file_obj, lower_bound, upper_bound + 1)
+                    str(line, encoding, "replace") for line in itertools.islice(file_obj, lower_bound, upper_bound + 1)
                 ]
                 offset = lineno - lower_bound
                 return (
-                    [l.strip("\r\n") for l in lines[0:offset]],
+                    [line.strip("\r\n") for line in lines[0:offset]],
                     lines[offset].strip("\r\n"),
-                    [l.strip("\r\n") for l in lines[offset + 1 :]] if len(lines) > offset else [],
+                    [line.strip("\r\n") for line in lines[offset + 1 :]] if len(lines) > offset else [],
                 )
         except (OSError, IOError, IndexError):
             pass
@@ -291,7 +284,7 @@ def get_frame_info(
             except Exception:
                 f_locals = "<invalid local scope>"
         if locals_processor_func:
-            f_locals = {varname: locals_processor_func(var) for varname, var in compat.iteritems(f_locals)}
+            f_locals = {varname: locals_processor_func(var) for varname, var in f_locals.items()}
         frame_result["vars"] = transform(f_locals)
     return frame_result
 

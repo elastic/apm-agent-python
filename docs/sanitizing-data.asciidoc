@@ -10,6 +10,9 @@ and returns the modified event.
 
 To completely drop an event, your processor should return `False` (or any other "falsy" value) instead of the event.
 
+An event will also be dropped if any processor raises an exception while processing it.
+A log message with level `WARNING` will be issued in this case.
+
 This is an example of a processor that removes the exception stacktrace from an error:
 
 [source,python]
@@ -41,15 +44,14 @@ ELASTIC_APM = {
         'elasticapm.processors.sanitize_http_request_cookies',
         'elasticapm.processors.sanitize_http_headers',
         'elasticapm.processors.sanitize_http_wsgi_env',
-        'elasticapm.processors.sanitize_http_request_querystring',
         'elasticapm.processors.sanitize_http_request_body',
     ),
 }
 ----
 
-NOTE: We recommend to use the above list of processors that sanitize passwords and secrets in different places of the event object.
+NOTE: We recommend using the above list of processors that sanitize passwords and secrets in different places of the event object.
 
-The default set of processors sanitize fields based on a set of defaults defined in `elasticapm.conf.constants`. This set can be configured with the `SANATIZE_FIELD_NAMES` configuration option. For example, if your application produces a sensitive field called `My-Sensitive-Field`, the default processors can be used to automatically sanitize this field. You can specify what fields to santize within default processors like this:
+The default set of processors sanitize fields based on a set of defaults defined in `elasticapm.conf.constants`. This set can be configured with the `SANITIZE_FIELD_NAMES` configuration option. For example, if your application produces a sensitive field called `My-Sensitive-Field`, the default processors can be used to automatically sanitize this field. You can specify what fields to santize within default processors like this:
 
 [source,python]
 ----
@@ -57,15 +59,17 @@ ELASTIC_APM = {
     'APP_NAME': '<APP-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
     'SANITIZE_FIELD_NAMES': (
-        'My-Sensitive-Field',
-        'authorization',
-        'password',
-        'secret',
-        'passwd',
-        'token',
-        'api_key',
-        'access_token',
-        'sessionid',
+        "password",
+        "passwd",
+        "pwd",
+        "secret",
+        "*key",
+        "*token*",
+        "*session*",
+        "*credit*",
+        "*card*",
+        "*auth*",
+        "set-cookie",
     ),
 }
 ----

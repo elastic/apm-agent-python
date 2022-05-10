@@ -1,0 +1,2 @@
+redis<3
+-r reqs-base.txt

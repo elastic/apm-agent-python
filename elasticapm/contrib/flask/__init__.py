@@ -38,6 +38,7 @@ from flask import request, signals
 
 import elasticapm
 import elasticapm.instrumentation.control
+from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
@@ -48,26 +49,6 @@ from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.errors.client")
-
-_client = None
-
-
-def make_client(client_cls, app, **defaults):
-    config = app.config.get("ELASTIC_APM", {})
-
-    if "framework_name" not in defaults:
-        defaults["framework_name"] = "flask"
-        defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
-
-    client = client_cls(config, **defaults)
-    global _client
-    _client = client
-    return client
-
-
-def get_client():
-    global _client
-    return _client
 
 
 class ElasticAPM(object):
@@ -106,8 +87,8 @@ class ElasticAPM(object):
     def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults):
         self.app = app
         self.logging = logging
+        self.client = client or get_client()
         self.client_cls = client_cls
-        self.client = client
 
         if app:
             self.init_app(app, **defaults)
@@ -135,7 +116,13 @@ class ElasticAPM(object):
     def init_app(self, app, **defaults):
         self.app = app
         if not self.client:
-            self.client = make_client(self.client_cls, app, **defaults)
+            config = self.app.config.get("ELASTIC_APM", {})
+
+            if "framework_name" not in defaults:
+                defaults["framework_name"] = "flask"
+                defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
+
+            self.client = self.client_cls(config, **defaults)
 
         # 0 is a valid log level (NOTSET), so we need to check explicitly for it
         if self.logging or self.logging is logging.NOTSET:
@@ -157,6 +144,7 @@ class ElasticAPM(object):
         # Instrument to get spans
         if self.client.config.instrument and self.client.config.enabled:
             elasticapm.instrumentation.control.instrument()
+
             signals.request_started.connect(self.request_started, sender=app)
             signals.request_finished.connect(self.request_finished, sender=app)
             try:
@@ -186,7 +174,7 @@ class ElasticAPM(object):
             return {}
 
     def request_started(self, app):
-        if not self.app.debug or self.client.config.debug:
+        if (not self.app.debug or self.client.config.debug) and not self.client.should_ignore_url(request.path):
             trace_parent = TraceParent.from_headers(request.headers)
             self.client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(

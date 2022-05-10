@@ -1,7 +1,7 @@
 elastic-apm -- Elastic APM agent for Python
 ===========================================
 
-.. image:: https://apm-ci.elastic.co/buildStatus/icon?job=apm-agent-python%2Fapm-agent-python-mbp%2Fmaster
+.. image:: https://apm-ci.elastic.co/buildStatus/icon?job=apm-agent-python%2Fapm-agent-python-mbp%2Fmain
     :target: https://apm-ci.elastic.co/job/apm-agent-python/job/apm-agent-python-mbp/
     :alt: Build Status
 
@@ -30,7 +30,7 @@ If you're interested in contributing, `start here!`_
 .. _documentation: https://www.elastic.co/guide/en/apm/agent/python/current/index.html
 .. _`custom integrations`: https://www.elastic.co/blog/creating-custom-framework-integrations-with-the-elastic-apm-python-agent
 .. _`running the tests locally`: https://www.elastic.co/guide/en/apm/agent/python/current/run-tests-locally.html
-.. _`start here!`: https://github.com/elastic/apm-agent-python/blob/master/CONTRIBUTING.md
+.. _`start here!`: https://github.com/elastic/apm-agent-python/blob/main/CONTRIBUTING.md
 
 License
 -------

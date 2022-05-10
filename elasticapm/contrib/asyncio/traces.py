@@ -29,9 +29,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import functools
+from types import TracebackType
+from typing import Optional, Type
 
 from elasticapm.conf.constants import LABEL_RE
-from elasticapm.traces import DroppedSpan, capture_span, error_logger, execution_context
+from elasticapm.traces import SpanType, capture_span, execution_context
 from elasticapm.utils import get_name_from_func
 
 
@@ -46,34 +48,13 @@ class async_capture_span(capture_span):
 
         return decorated
 
-    async def __aenter__(self):
-        transaction = execution_context.get_transaction()
-        if transaction and transaction.is_sampled:
-            return transaction.begin_span(
-                self.name,
-                self.type,
-                context=self.extra,
-                leaf=self.leaf,
-                labels=self.labels,
-                span_subtype=self.subtype,
-                span_action=self.action,
-                sync=False,
-                start=self.start,
-            )
+    async def __aenter__(self) -> Optional[SpanType]:
+        return self.handle_enter(False)
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        transaction = execution_context.get_transaction()
-        if transaction and transaction.is_sampled:
-            try:
-                span = transaction.end_span(self.skip_frames)
-                if exc_val and not isinstance(span, DroppedSpan):
-                    try:
-                        exc_val._elastic_apm_span_id = span.id
-                    except AttributeError:
-                        # could happen if the exception has __slots__
-                        pass
-            except LookupError:
-                error_logger.info("ended non-existing span %s of type %s", self.name, self.type)
+    async def __aexit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ):
+        self.handle_exit(exc_type, exc_val, exc_tb)
 
 
 async def set_context(data, key="custom"):

@@ -31,7 +31,6 @@
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 from elasticapm.traces import capture_span
-from elasticapm.utils import compat
 
 
 class CassandraInstrumentation(AbstractInstrumentedModule):
@@ -65,7 +64,7 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
                 query_str = query.query_string
             elif hasattr(query, "prepared_statement") and hasattr(query.prepared_statement, "query"):
                 query_str = query.prepared_statement.query
-            elif isinstance(query, compat.string_types):
+            elif isinstance(query, str):
                 query_str = query
             else:
                 query_str = None
@@ -75,8 +74,9 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
         context["destination"] = {
             "address": host,
             "port": port,
-            "service": {"name": "cassandra", "resource": "cassandra", "type": "db"},
         }
 
-        with capture_span(name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context):
+        with capture_span(
+            name, span_type="db", span_subtype="cassandra", span_action=span_action, extra=context, leaf=True
+        ):
             return wrapped(*args, **kwargs)

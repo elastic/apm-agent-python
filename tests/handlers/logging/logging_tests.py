@@ -29,18 +29,20 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import logging.handlers
 import sys
 import warnings
 from logging import LogRecord
 
+import ecs_logging
 import pytest
+import structlog
 
 from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler
 from elasticapm.handlers.structlog import structlog_processor
-from elasticapm.traces import Tracer, capture_span
-from elasticapm.utils import compat
+from elasticapm.traces import capture_span
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
@@ -254,6 +256,7 @@ def test_logging_filter_no_span(elasticapm_client):
     record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
     f.filter(record)
     assert record.elasticapm_transaction_id == transaction.id
+    assert record.elasticapm_service_name == transaction.tracer.config.service_name
     assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
     assert record.elasticapm_span_id is None
     assert record.elasticapm_labels
@@ -276,6 +279,7 @@ def test_logging_filter_span(elasticapm_client):
         record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
         f.filter(record)
         assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_service_name == transaction.tracer.config.service_name
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
@@ -290,6 +294,7 @@ def test_logging_filter_span(elasticapm_client):
         record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg2", [], None)
         f.filter(record)
         assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_service_name == transaction.tracer.config.service_name
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id is None
         assert record.elasticapm_labels
@@ -302,6 +307,7 @@ def test_structlog_processor_span(elasticapm_client):
         event_dict = {}
         new_dict = structlog_processor(None, None, event_dict)
         assert new_dict["transaction.id"] == transaction.id
+        assert new_dict["service.name"] == transaction.tracer.config.service_name
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert new_dict["span.id"] == span.id
 
@@ -315,11 +321,11 @@ def test_structlog_processor_span(elasticapm_client):
         event_dict = {}
         new_dict = structlog_processor(None, None, event_dict)
         assert new_dict["transaction.id"] == transaction.id
+        assert new_dict["service.name"] == transaction.tracer.config.service_name
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert "span.id" not in new_dict
 
 
-@pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
 def test_automatic_log_record_factory_install(elasticapm_client):
     """
     Use the elasticapm_client fixture to load the client, which in turn installs
@@ -330,6 +336,7 @@ def test_automatic_log_record_factory_install(elasticapm_client):
         record_factory = logging.getLogRecordFactory()
         record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
         assert record.elasticapm_transaction_id == transaction.id
+        assert record.elasticapm_service_name == transaction.tracer.config.service_name
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
@@ -341,19 +348,56 @@ def test_formatter():
     formatted_record = formatter.format(record)
     assert "| elasticapm" in formatted_record
     assert hasattr(record, "elasticapm_transaction_id")
+    assert hasattr(record, "elasticapm_service_name")
     record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
     formatted_time = formatter.formatTime(record)
     assert formatted_time
     assert hasattr(record, "elasticapm_transaction_id")
+    assert hasattr(record, "elasticapm_service_name")
 
 
 def test_logging_handler_no_client(recwarn):
     # In 6.0, this should be changed to expect a ValueError instead of a log
     warnings.simplefilter("always")
-    LoggingHandler()
+    LoggingHandler(transport_class="tests.fixtures.DummyTransport")
     while True:
         # If we never find our desired warning this will eventually throw an
         # AssertionError
         w = recwarn.pop(PendingDeprecationWarning)
         if "LoggingHandler requires a Client instance" in w.message.args[0]:
             return True
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({}, logging.NOTSET),
+        ({"log_level": "off"}, 1000),
+        ({"log_level": "trace"}, 5),
+        ({"log_level": "debug"}, logging.DEBUG),
+        ({"log_level": "info"}, logging.INFO),
+        ({"log_level": "WARNING"}, logging.WARNING),
+        ({"log_level": "errOr"}, logging.ERROR),
+        ({"log_level": "CRITICAL"}, logging.CRITICAL),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_log_level_config(elasticapm_client, expected):
+    logger = logging.getLogger("elasticapm")
+    assert logger.level == expected
+
+
+def test_log_file(elasticapm_client_log_file):
+    logger = logging.getLogger("elasticapm")
+    found = False
+    for handler in logger.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            found = True
+    assert found
+
+
+@pytest.mark.parametrize("elasticapm_client_log_file", [{"log_ecs_reformatting": "override"}], indirect=True)
+def test_log_ecs_reformatting(elasticapm_client_log_file):
+    logger = logging.getLogger()
+    assert isinstance(logger.handlers[0].formatter, ecs_logging.StdlibFormatter)
+    assert isinstance(structlog.get_config()["processors"][-1], ecs_logging.StructlogFormatter)

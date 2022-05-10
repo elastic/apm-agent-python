@@ -31,6 +31,7 @@
 
 import os
 
+import certifi
 import mock
 import pytest
 import urllib3.poolmanager
@@ -38,8 +39,8 @@ from urllib3.exceptions import MaxRetryError, TimeoutError
 
 from elasticapm.conf import constants
 from elasticapm.transport.exceptions import TransportException
-from elasticapm.transport.http import Transport
-from elasticapm.utils import compat
+from elasticapm.transport.http import Transport, version_string_to_tuple
+from tests.utils import assert_any_record_contains
 
 try:
     import urlparse
@@ -53,7 +54,7 @@ def test_send(waiting_httpserver, elasticapm_client):
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
     transport.start_thread()
     try:
-        url = transport.send(compat.b("x"))
+        url = transport.send("x".encode("latin-1"))
         assert url == "http://example.com/foo"
     finally:
         transport.close()
@@ -61,6 +62,7 @@ def test_send(waiting_httpserver, elasticapm_client):
 
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_timeout(mock_urlopen, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport("http://localhost", timeout=5, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = MaxRetryError(None, None, reason=TimeoutError())
@@ -74,6 +76,7 @@ def test_timeout(mock_urlopen, elasticapm_client):
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_http_error(waiting_httpserver, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=418, content="I'm a teapot")
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
     transport.start_thread()
@@ -89,6 +92,7 @@ def test_http_error(waiting_httpserver, elasticapm_client):
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_generic_error(mock_urlopen, elasticapm_client):
     url, status, message, body = ("http://localhost:9999", 418, "I'm a teapot", "Nothing")
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport(url, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = Exception("Oopsie")
@@ -100,40 +104,40 @@ def test_generic_error(mock_urlopen, elasticapm_client):
         transport.close()
 
 
-def test_http_proxy_environment_variable():
+def test_http_proxy_environment_variable(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTP_PROXY": "http://example.com"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.ProxyManager)
 
 
-def test_https_proxy_environment_variable():
+def test_https_proxy_environment_variable(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
-def test_https_proxy_environment_variable_is_preferred():
+def test_https_proxy_environment_variable_is_preferred(elasticapm_client):
     with mock.patch.dict("os.environ", {"https_proxy": "https://example.com", "HTTP_PROXY": "http://example.com"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
         assert transport.http.proxy.scheme == "https"
 
 
-def test_no_proxy_star():
+def test_no_proxy_star(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
-def test_no_proxy_host():
+def test_no_proxy_host(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "localhost"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
-def test_no_proxy_all():
+def test_no_proxy_all(elasticapm_client):
     with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
-        transport = Transport("http://localhost:9999", client=None)
+        transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
@@ -143,7 +147,8 @@ def test_header_encodings(elasticapm_client):
     urllib assumes it needs to encode the data as well, which is already a zlib
     encoded bytestring, and explodes.
     """
-    headers = {compat.text_type("X"): compat.text_type("V")}
+    headers = {str("X"): str("V")}
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     transport = Transport("http://localhost:9999", headers=headers, client=elasticapm_client)
     transport.start_thread()
     try:
@@ -151,11 +156,9 @@ def test_header_encodings(elasticapm_client):
             mock_urlopen.return_value = mock.Mock(status=202)
             transport.send("")
         _, args, kwargs = mock_urlopen.mock_calls[0]
-        if compat.PY2:
-            assert isinstance(args[1], compat.binary_type)
         for k, v in kwargs["headers"].items():
-            assert isinstance(k, compat.binary_type)
-            assert isinstance(v, compat.binary_type)
+            assert isinstance(k, bytes)
+            assert isinstance(v, bytes)
     finally:
         transport.close()
 
@@ -167,8 +170,8 @@ def test_ssl_verify_fails(waiting_httpsserver, elasticapm_client):
     transport.start_thread()
     try:
         with pytest.raises(TransportException) as exc_info:
-            url = transport.send(compat.b("x"))
-        assert "CERTIFICATE_VERIFY_FAILED" in str(exc_info)
+            url = transport.send("x".encode("latin-1"))
+        assert "certificate verify failed" in str(exc_info)
     finally:
         transport.close()
 
@@ -180,7 +183,7 @@ def test_ssl_verify_disable(waiting_httpsserver, elasticapm_client):
     transport = Transport(waiting_httpsserver.url, verify_server_cert=False, client=elasticapm_client)
     transport.start_thread()
     try:
-        url = transport.send(compat.b("x"))
+        url = transport.send("x".encode("latin-1"))
         assert url == "https://example.com/foo"
     finally:
         transport.close()
@@ -196,7 +199,7 @@ def test_ssl_verify_disable_http(waiting_httpserver, elasticapm_client):
     transport = Transport(waiting_httpserver.url, verify_server_cert=False, client=elasticapm_client)
     transport.start_thread()
     try:
-        url = transport.send(compat.b("x"))
+        url = transport.send("x".encode("latin-1"))
         assert url == "http://example.com/foo"
     finally:
         transport.close()
@@ -217,7 +220,7 @@ def test_ssl_cert_pinning_http(waiting_httpserver, elasticapm_client):
     )
     transport.start_thread()
     try:
-        url = transport.send(compat.b("x"))
+        url = transport.send("x".encode("latin-1"))
         assert url == "http://example.com/foo"
     finally:
         transport.close()
@@ -235,7 +238,7 @@ def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
     )
     transport.start_thread()
     try:
-        url = transport.send(compat.b("x"))
+        url = transport.send("x".encode("latin-1"))
         assert url == "https://example.com/foo"
     finally:
         transport.close()
@@ -243,17 +246,8 @@ def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning_fails(waiting_httpsserver, elasticapm_client):
-    if compat.PY3:
-        waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
-        url = waiting_httpsserver.url
-    else:
-        # if we use the local test server here, execution blocks somewhere deep in OpenSSL on Python 2.7, presumably
-        # due to a threading issue that has been fixed in later versions. To avoid that, we have to commit a minor
-        # cardinal sin here and do an outside request to https://example.com (which will also fail the fingerprint
-        # assertion).
-        #
-        # May the Testing Goat have mercy on our souls.
-        url = "https://example.com"
+    waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
+    url = waiting_httpsserver.url
     transport = Transport(
         url,
         server_cert=os.path.join(os.path.dirname(__file__), "wrong_cert.pem"),
@@ -263,15 +257,15 @@ def test_ssl_cert_pinning_fails(waiting_httpsserver, elasticapm_client):
     transport.start_thread()
     try:
         with pytest.raises(TransportException) as exc_info:
-            transport.send(compat.b("x"))
+            transport.send("x".encode("latin-1"))
     finally:
         transport.close()
 
     assert "Fingerprints did not match" in exc_info.value.args[0]
 
 
-def test_config_url():
-    transport = Transport("http://example.com/" + constants.EVENTS_API_PATH, client=None)
+def test_config_url(elasticapm_client):
+    transport = Transport("http://example.com/" + constants.EVENTS_API_PATH, client=elasticapm_client)
     assert transport._config_url == "http://example.com/" + constants.AGENT_CONFIG_PATH
 
 
@@ -346,3 +340,85 @@ def test_get_config_empty_response(waiting_httpserver, caplog, elasticapm_client
     assert max_age == 5
     record = caplog.records[-1]
     assert record.message == "APM Server answered with empty body and status code 200"
+
+
+def test_use_certifi(elasticapm_client):
+    transport = Transport("/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    assert transport.ca_certs == certifi.where()
+    elasticapm_client.config.update("2", use_certifi=False)
+    assert not transport.ca_certs
+
+
+@pytest.mark.parametrize(
+    "version,expected",
+    [
+        (
+            "1.2.3",
+            (1, 2, 3),
+        ),
+        (
+            "1.2.3-alpha1",
+            (1, 2, 3, "alpha1"),
+        ),
+        (
+            "1.2.3alpha1",
+            (1, 2, "3alpha1"),
+        ),
+        (
+            "",
+            (),
+        ),
+    ],
+)
+def test_server_version_to_tuple(version, expected):
+    assert version_string_to_tuple(version) == expected
+
+
+def test_fetch_server_info(waiting_httpserver, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200,
+        content=b'{"version": "8.0.0-alpha1"}',
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    transport.fetch_server_info()
+    assert elasticapm_client.server_version == (8, 0, 0, "alpha1")
+
+
+def test_fetch_server_info_no_json(waiting_httpserver, caplog, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200,
+        content=b'"version": "8.0.0-alpha1"',
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    with caplog.at_level("WARNING"):
+        transport.fetch_server_info()
+    assert elasticapm_client.server_version is None
+    assert_any_record_contains(caplog.records, "JSON decoding error while fetching server information")
+
+
+def test_fetch_server_info_no_version(waiting_httpserver, caplog, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200,
+        content=b"{}",
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    with caplog.at_level("WARNING"):
+        transport.fetch_server_info()
+    assert elasticapm_client.server_version is None
+    assert_any_record_contains(caplog.records, "No version key found in server response")
+
+
+def test_fetch_server_info_flat_string(waiting_httpserver, caplog, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200,
+        content=b'"8.0.0-alpha1"',
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    with caplog.at_level("WARNING"):
+        transport.fetch_server_info()
+    assert elasticapm_client.server_version is None
+    assert_any_record_contains(caplog.records, "No version key found in server response")

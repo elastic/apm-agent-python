@@ -30,10 +30,14 @@
 
 import elasticapm
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
-from elasticapm.instrumentation.packages.elasticsearch import ElasticSearchConnectionMixin, ElasticsearchInstrumentation
+from elasticapm.instrumentation.packages.elasticsearch import (
+    ElasticsearchConnectionInstrumentation,
+    ElasticsearchTransportInstrumentation,
+)
+from elasticapm.traces import execution_context
 
 
-class ElasticSearchAsyncConnection(ElasticSearchConnectionMixin, AsyncAbstractInstrumentedModule):
+class ElasticSearchAsyncConnection(ElasticsearchConnectionInstrumentation, AsyncAbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
     instrument_list = [
@@ -42,31 +46,39 @@ class ElasticSearchAsyncConnection(ElasticSearchConnectionMixin, AsyncAbstractIn
     ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        signature = self.get_signature(args, kwargs)
-        context = self.get_context(instance, args, kwargs)
+        span = execution_context.get_span()
 
-        async with elasticapm.async_capture_span(
-            signature,
-            span_type="db",
-            span_subtype="elasticsearch",
-            span_action="query",
-            extra=context,
-            skip_frames=2,
-            leaf=True,
-        ):
-            return await wrapped(*args, **kwargs)
+        self._update_context_by_request_data(span.context, instance, args, kwargs)
+
+        status_code, headers, raw_data = await wrapped(*args, **kwargs)
+
+        span.context["http"] = {"status_code": status_code}
+
+        return status_code, headers, raw_data
 
 
-class AsyncElasticsearchInstrumentation(ElasticsearchInstrumentation, AsyncAbstractInstrumentedModule):
-    name = "elasticsearch"
+class ElasticsearchAsyncTransportInstrumentation(
+    ElasticsearchTransportInstrumentation, AsyncAbstractInstrumentedModule
+):
+    name = "elasticsearch_connection"
 
     instrument_list = [
-        ("elasticsearch._async.client", "AsyncElasticsearch.delete_by_query"),
-        ("elasticsearch._async.client", "AsyncElasticsearch.search"),
-        ("elasticsearch._async.client", "AsyncElasticsearch.count"),
-        ("elasticsearch._async.client", "AsyncElasticsearch.update"),
+        ("elasticsearch._async.transport", "AsyncTransport.perform_request"),
     ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        kwargs = self.inject_apm_params(method, kwargs)
-        return await wrapped(*args, **kwargs)
+        async with elasticapm.async_capture_span(
+            self._get_signature(args, kwargs),
+            span_type="db",
+            span_subtype="elasticsearch",
+            span_action="query",
+            extra={},
+            skip_frames=2,
+            leaf=True,
+        ) as span:
+            result_data = await wrapped(*args, **kwargs)
+
+            if isinstance(result_data, dict) and "hits" in result_data:
+                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
+
+            return result_data

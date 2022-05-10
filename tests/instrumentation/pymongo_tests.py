@@ -81,6 +81,7 @@ def test_collection_bulk_write(instrument, elasticapm_client, mongo_database):
     assert span["name"] == "elasticapm_test.blogposts.bulk_write"
 
 
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 @pytest.mark.integrationtest
 def test_collection_count(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
@@ -98,7 +99,51 @@ def test_collection_count(instrument, elasticapm_client, mongo_database):
     assert span["context"]["destination"] == {
         "address": os.environ.get("MONGODB_HOST", "localhost"),
         "port": int(os.environ.get("MONGODB_PORT", 27017)),
-        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+        "service": {"name": "", "resource": "mongodb", "type": ""},
+    }
+
+
+@pytest.mark.skipif(pymongo.version_tuple < (3, 7), reason="New in 3.7")
+@pytest.mark.integrationtest
+def test_collection_count_documents(instrument, elasticapm_client, mongo_database):
+    blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
+    mongo_database.blogposts.insert_one(blogpost)
+    elasticapm_client.begin_transaction("transaction.test")
+    count = mongo_database.blogposts.count_documents({"author": "Tom"})
+    assert count == 1
+    elasticapm_client.end_transaction("transaction.test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = _get_pymongo_span(elasticapm_client.spans_for_transaction(transactions[0]))
+    assert span["type"] == "db"
+    assert span["subtype"] == "mongodb"
+    assert span["action"] == "query"
+    assert span["name"] == "elasticapm_test.blogposts.count_documents"
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("MONGODB_HOST", "localhost"),
+        "port": int(os.environ.get("MONGODB_PORT", 27017)),
+        "service": {"name": "", "resource": "mongodb", "type": ""},
+    }
+
+
+@pytest.mark.skipif(pymongo.version_tuple < (3, 7), reason="New in 3.7")
+@pytest.mark.integrationtest
+def test_collection_estimated_document_count(instrument, elasticapm_client, mongo_database):
+    blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
+    mongo_database.blogposts.insert_one(blogpost)
+    elasticapm_client.begin_transaction("transaction.test")
+    count = mongo_database.blogposts.estimated_document_count()
+    assert count == 1
+    elasticapm_client.end_transaction("transaction.test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = _get_pymongo_span(elasticapm_client.spans_for_transaction(transactions[0]))
+    assert span["type"] == "db"
+    assert span["subtype"] == "mongodb"
+    assert span["action"] == "query"
+    assert span["name"] == "elasticapm_test.blogposts.estimated_document_count"
+    assert span["context"]["destination"] == {
+        "address": os.environ.get("MONGODB_HOST", "localhost"),
+        "port": int(os.environ.get("MONGODB_PORT", 27017)),
+        "service": {"name": "", "resource": "mongodb", "type": ""},
     }
 
 
@@ -136,6 +181,7 @@ def test_collection_delete_many(instrument, elasticapm_client, mongo_database):
     assert span["name"] == "elasticapm_test.blogposts.delete_many"
 
 
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 @pytest.mark.integrationtest
 def test_collection_insert(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
@@ -184,6 +230,7 @@ def test_collection_insert_many(instrument, elasticapm_client, mongo_database):
     assert span["name"] == "elasticapm_test.blogposts.insert_many"
 
 
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 @pytest.mark.integrationtest
 def test_collection_find(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
@@ -207,7 +254,7 @@ def test_collection_find(instrument, elasticapm_client, mongo_database):
         assert span["context"]["destination"] == {
             "address": os.environ.get("MONGODB_HOST", "localhost"),
             "port": int(os.environ.get("MONGODB_PORT", 27017)),
-            "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+            "service": {"name": "", "resource": "mongodb", "type": ""},
         }
 
 
@@ -229,10 +276,11 @@ def test_collection_find_one(instrument, elasticapm_client, mongo_database):
     assert span["context"]["destination"] == {
         "address": os.environ.get("MONGODB_HOST", "localhost"),
         "port": int(os.environ.get("MONGODB_PORT", 27017)),
-        "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
+        "service": {"name": "", "resource": "mongodb", "type": ""},
     }
 
 
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 @pytest.mark.integrationtest
 def test_collection_remove(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
@@ -249,6 +297,7 @@ def test_collection_remove(instrument, elasticapm_client, mongo_database):
     assert span["name"] == "elasticapm_test.blogposts.remove"
 
 
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 @pytest.mark.integrationtest
 def test_collection_update(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
@@ -269,7 +318,7 @@ def test_collection_update(instrument, elasticapm_client, mongo_database):
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason="New in 3.0")
 def test_collection_update_one(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
-    r = mongo_database.blogposts.insert(blogpost)
+    r = mongo_database.blogposts.insert_one(blogpost)
     elasticapm_client.begin_transaction("transaction.test")
     r = mongo_database.blogposts.update_one({"author": "Tom"}, {"$set": {"author": "Jerry"}})
     assert r.modified_count == 1
@@ -283,10 +332,11 @@ def test_collection_update_one(instrument, elasticapm_client, mongo_database):
 
 
 @pytest.mark.integrationtest
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 @pytest.mark.skipif(pymongo.version_tuple < (3, 0), reason="New in 3.0")
 def test_collection_update_many(instrument, elasticapm_client, mongo_database):
     blogpost = {"author": "Tom", "text": "Foo", "date": datetime.datetime.utcnow()}
-    r = mongo_database.blogposts.insert(blogpost)
+    r = mongo_database.blogposts.insert_one(blogpost)
     elasticapm_client.begin_transaction("transaction.test")
     r = mongo_database.blogposts.update_many({"author": "Tom"}, {"$set": {"author": "Jerry"}})
     assert r.modified_count == 1
@@ -301,6 +351,7 @@ def test_collection_update_many(instrument, elasticapm_client, mongo_database):
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(pymongo.version_tuple < (2, 7), reason="New in 2.7")
+@pytest.mark.skipif(pymongo.version_tuple >= (4, 0), reason="Removed in 4.0")
 def test_bulk_execute(instrument, elasticapm_client, mongo_database):
     elasticapm_client.begin_transaction("transaction.test")
     bulk = mongo_database.test_bulk.initialize_ordered_bulk_op()
@@ -315,6 +366,30 @@ def test_bulk_execute(instrument, elasticapm_client, mongo_database):
     assert span["subtype"] == "mongodb"
     assert span["action"] == "query"
     assert span["name"] == "elasticapm_test.test_bulk.bulk.execute"
+
+
+@pytest.mark.skipif(pymongo.version_tuple < (3, 7), reason="New in 3.7")
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "50ms",
+        }
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+def test_mongodb_span_compression(instrument, elasticapm_client, mongo_database):
+    elasticapm_client.begin_transaction("transaction.test")
+    for i in range(5):
+        blogpost = {"author": "Tom%d" % i, "text": "Foo", "date": datetime.datetime.utcnow()}
+        mongo_database.blogposts.insert_one(blogpost)
+    elasticapm_client.end_transaction("transaction.test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 1
 
 
 def _get_pymongo_span(spans):

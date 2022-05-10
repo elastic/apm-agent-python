@@ -34,6 +34,7 @@ import logging
 import os
 import platform
 import stat
+from datetime import timedelta
 
 import mock
 import pytest
@@ -41,6 +42,7 @@ import pytest
 from elasticapm.conf import (
     Config,
     ConfigurationError,
+    EnumerationValidator,
     FileIsReadableValidator,
     PrecisionValidator,
     RegexValidator,
@@ -49,9 +51,9 @@ from elasticapm.conf import (
     _ConfigBase,
     _ConfigValue,
     _DictConfigValue,
+    _DurationConfigValue,
     _ListConfigValue,
     constants,
-    duration_validator,
     setup_logging,
     size_validator,
 )
@@ -92,7 +94,7 @@ def test_config_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5000
+    assert config.api_request_time.total_seconds() == 5
 
 
 def test_config_environment():
@@ -115,7 +117,7 @@ def test_config_environment():
         assert config.server_url == "http://example.com:1234"
         assert config.service_version == "1"
         assert config.hostname == "localhost"
-        assert config.api_request_time == 5000
+        assert config.api_request_time.total_seconds() == 5
         assert config.auto_log_stacks is False
 
 
@@ -136,7 +138,7 @@ def test_config_inline_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5000
+    assert config.api_request_time.total_seconds() == 5
 
 
 def test_config_precedence():
@@ -226,15 +228,19 @@ def test_size_validation():
 
 def test_duration_validation():
     class MyConfig(_ConfigBase):
-        millisecond = _ConfigValue("MS", type=int, validators=[duration_validator])
-        second = _ConfigValue("S", type=int, validators=[duration_validator])
-        minute = _ConfigValue("M", type=int, validators=[duration_validator])
-        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[duration_validator])
+        microsecond = _DurationConfigValue("US", allow_microseconds=True)
+        millisecond = _DurationConfigValue("MS")
+        second = _DurationConfigValue("S")
+        minute = _DurationConfigValue("M")
+        default_unit_ms = _DurationConfigValue("DM", unitless_factor=0.001)
+        wrong_pattern = _DurationConfigValue("WRONG_PATTERN")
 
-    c = MyConfig({"MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
-    assert c.millisecond == -10
-    assert c.second == 5 * 1000
-    assert c.minute == 17 * 1000 * 60
+    c = MyConfig({"US": "10us", "MS": "-10ms", "S": "5s", "M": "17m", "DM": "83", "WRONG_PATTERN": "5 ms"})
+    assert c.microsecond == timedelta(microseconds=10)
+    assert c.millisecond == timedelta(milliseconds=-10)
+    assert c.second == timedelta(seconds=5)
+    assert c.minute == timedelta(minutes=17)
+    assert c.default_unit_ms == timedelta(milliseconds=83)
     assert c.wrong_pattern is None
     assert "WRONG_PATTERN" in c.errors
 
@@ -332,7 +338,7 @@ def test_required_is_checked_if_field_not_provided():
 def test_callback():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
@@ -346,10 +352,40 @@ def test_callback():
     assert test_var["foo"] == 2
 
 
+def test_callbacks_on_default():
+    test_var = {"foo": 0}
+
+    def set_global(dict_key, old_value, new_value, config_instance):
+        # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
+        # basic variable then instead of a dictionary
+        test_var[dict_key] += 1
+
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 1
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 2
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 3
+
+    # Test without callback on default
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo", callbacks=[set_global], callbacks_on_default=False, default="foobar")
+
+    c = MyConfig()
+    assert test_var["foo"] == 3
+    c = MyConfig({"foo": "bar"})
+    assert test_var["foo"] == 4
+    c.update({"foo": "baz"})
+    assert test_var["foo"] == 5
+
+
 def test_callback_reset():
     test_var = {"foo": 0}
 
-    def set_global(dict_key, old_value, new_value):
+    def set_global(dict_key, old_value, new_value, config_instance):
         # TODO make test_var `nonlocal` once we drop py2 -- it can just be a
         # basic variable then instead of a dictionary
         test_var[dict_key] += 1
@@ -363,3 +399,55 @@ def test_callback_reset():
     assert test_var["foo"] == 2
     c.reset()
     assert test_var["foo"] == 3
+
+
+def test_reset_after_adding_config():
+    class MyConfig(_ConfigBase):
+        foo = _ConfigValue("foo")
+        bar = _ConfigValue("bar")
+
+    c = VersionedConfig(MyConfig({"foo": "baz"}), version=1)
+
+    c.update(version=2, bar="bazzinga")
+
+    c.reset()
+    assert c.bar is None
+
+
+def test_valid_values_validator():
+    # Case sensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=False)
+    assert v("foo", "foo") == "foo"
+    assert v("bar", "foo") == "Bar"
+    assert v("BAZ", "foo") == "baz"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
+
+    # Case insensitive
+    v = EnumerationValidator(["foo", "Bar", "baz"], case_sensitive=True)
+    assert v("foo", "foo") == "foo"
+    with pytest.raises(ConfigurationError):
+        v("bar", "foo")
+    with pytest.raises(ConfigurationError):
+        v("BAZ", "foo")
+    assert v("Bar", "foo") == "Bar"
+    with pytest.raises(ConfigurationError):
+        v("foobar", "foo")
+
+
+def test_versioned_config_attribute_access(elasticapm_client):
+    # see https://github.com/elastic/apm-agent-python/issues/1147
+    val = elasticapm_client.config.start_stop_order
+    assert isinstance(val, int)
+    # update config to ensure start_stop_order isn't read from the proxied Config object
+    elasticapm_client.config.update("2", capture_body=True)
+    val = elasticapm_client.config.start_stop_order
+    assert isinstance(val, int)
+
+
+def test_config_all_upper_case():
+    c = Config.__class__.__dict__.items()
+    for field, config_value in Config.__dict__.items():
+        if not isinstance(config_value, _ConfigValue):
+            continue
+        assert config_value.env_key == config_value.env_key.upper()

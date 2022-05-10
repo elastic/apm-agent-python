@@ -65,7 +65,6 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
         destination = {
             "address": address,
             "port": port,
-            "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
         }
         with capture_span(
             wrapped_name,
@@ -73,6 +72,7 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
             span_subtype="memcached",
             span_action="query",
             extra={"destination": destination},
+            leaf=True,
         ):
             return wrapped(*args, **kwargs)
 

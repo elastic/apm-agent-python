@@ -36,7 +36,6 @@ import datetime
 import decimal
 import uuid
 
-from elasticapm.utils import compat
 from elasticapm.utils import json_encoder as json
 
 
@@ -61,13 +60,15 @@ def test_frozenset():
 
 
 def test_bytes():
-    if compat.PY2:
-        res = bytes("foobar")
-    else:
-        res = bytes("foobar", encoding="ascii")
+    res = bytes("foobar", encoding="ascii")
     assert json.dumps(res) == '"foobar"'
 
 
 def test_decimal():
     res = decimal.Decimal("1.0")
     assert json.dumps(res) == "1.0"
+
+
+def test_unsupported():
+    res = object()
+    assert json.dumps(res).startswith('"<object object at')

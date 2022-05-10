@@ -38,7 +38,6 @@ from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 
 import elasticapm
-from elasticapm.utils import compat
 
 
 class MyException(Exception):
@@ -50,7 +49,7 @@ class IgnoredException(Exception):
 
 
 def no_error(request, id=None):
-    resp = HttpResponse(compat.text_type(id))
+    resp = HttpResponse(str(id))
     resp["My-Header"] = "foo"
     return resp
 

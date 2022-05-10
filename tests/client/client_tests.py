@@ -47,9 +47,7 @@ from pytest_localserver.https import DEFAULT_CERTIFICATE
 
 import elasticapm
 from elasticapm.base import Client
-from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH, SPAN, TRANSACTION
-from elasticapm.utils import compat, encoding
-from elasticapm.utils.disttracing import TraceParent
+from elasticapm.conf.constants import ERROR
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
 
@@ -217,8 +215,8 @@ def test_config_non_string_types():
     client = TempStoreClient(
         server_url="localhost", service_name=MyValue("bar"), secret_token=MyValue("bay"), metrics_interval="0ms"
     )
-    assert isinstance(client.config.secret_token, compat.string_types)
-    assert isinstance(client.config.service_name, compat.string_types)
+    assert isinstance(client.config.secret_token, str)
+    assert isinstance(client.config.service_name, str)
     client.close()
 
 
@@ -232,7 +230,7 @@ def test_empty_processor_list(elasticapm_client):
     assert elasticapm_client.processors == []
 
 
-@pytest.mark.flaky(reruns=3)  # test is flaky on Windows
+@pytest.mark.skipif(platform.system() == "Windows", reason="Flaky test on windows")
 @pytest.mark.parametrize(
     "sending_elasticapm_client",
     [{"transport_class": "elasticapm.transport.http.Transport", "async_mode": False}],
@@ -277,9 +275,8 @@ def test_send_remote_failover_sync_non_transport_exception_error(should_try, htt
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
     client._transport.flush()
-    record = caplog.records[0]
     assert client._transport.state.did_fail()
-    assert "oopsie" in record.message
+    assert_any_record_contains(caplog.records, "oopsie", "elasticapm.transport")
 
     # test recovery
     http_send.side_effect = None
@@ -298,7 +295,7 @@ def test_send(sending_elasticapm_client):
         "Content-Type": "application/x-ndjson",
         "Content-Encoding": "gzip",
         "Authorization": "Bearer %s" % sending_elasticapm_client.config.secret_token,
-        "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+        "User-Agent": "apm-agent-python/%s (myapp)" % elasticapm.VERSION,
     }
     seen_headers = dict(request.headers)
     for k, v in expected_headers.items():
@@ -349,28 +346,22 @@ def test_server_cert_pinning(sending_elasticapm_client):
 
 
 @pytest.mark.parametrize(
-    "elasticapm_client", [{"transactions_ignore_patterns": ["^OPTIONS", "views.api.v2"]}], indirect=True
+    "setting,url,result",
+    [
+        ("", "/foo/bar", False),
+        ("*", "/foo/bar", True),
+        ("/foo/bar,/baz", "/foo/bar", True),
+        ("/foo/bar,/baz", "/baz", True),
+        ("/foo/bar,/bazz", "/baz", False),
+        ("/foo/*/bar,/bazz", "/foo/bar", False),
+        ("/foo/*/bar,/bazz", "/foo/ooo/bar", True),
+        ("*/foo/*/bar,/bazz", "/foo/ooo/bar", True),
+        ("*/foo/*/bar,/bazz", "/baz/foo/ooo/bar", True),
+    ],
 )
-def test_ignore_patterns(elasticapm_client):
-    elasticapm_client.begin_transaction("web")
-    elasticapm_client.end_transaction("OPTIONS views.healthcheck", 200)
-
-    elasticapm_client.begin_transaction("web")
-    elasticapm_client.end_transaction("GET views.users", 200)
-
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    assert len(transactions) == 1
-    assert transactions[0]["name"] == "GET views.users"
-
-
-@pytest.mark.parametrize(
-    "elasticapm_client", [{"transactions_ignore_patterns": ["^OPTIONS", "views.api.v2"]}], indirect=True
-)
-def test_ignore_patterns_with_none_transaction_name(elasticapm_client):
-    elasticapm_client.begin_transaction("web")
-    t = elasticapm_client.end_transaction(None, 200)
-    assert t.name == ""
+def test_should_ignore_url(elasticapm_client, setting, url, result):
+    elasticapm_client.config.update(1, transaction_ignore_urls=setting)
+    assert elasticapm_client.should_ignore_url(url) is result
 
 
 @pytest.mark.parametrize("sending_elasticapm_client", [{"disable_send": True}], indirect=True)
@@ -399,311 +390,6 @@ def test_empty_transport_disables_send():
     client.close()
 
 
-@pytest.mark.parametrize(
-    "elasticapm_client",
-    [
-        {"collect_local_variables": "errors"},
-        {"collect_local_variables": "transactions", "local_var_max_length": 20, "local_var_max_list_length": 10},
-        {"collect_local_variables": "all", "local_var_max_length": 20, "local_var_max_list_length": 10},
-        {"collect_local_variables": "something"},
-    ],
-    indirect=True,
-)
-def test_collect_local_variables_transactions(elasticapm_client):
-    mode = elasticapm_client.config.collect_local_variables
-    elasticapm_client.begin_transaction("test")
-    with elasticapm.capture_span("foo"):
-        a_local_var = 1
-        a_long_local_var = 100 * "a"
-        a_long_local_list = list(range(100))
-        pass
-    elasticapm_client.end_transaction("test", "ok")
-    frame = elasticapm_client.events[SPAN][0]["stacktrace"][0]
-    if mode in ("transactions", "all"):
-        assert "vars" in frame, mode
-        assert frame["vars"]["a_local_var"] == 1
-        assert len(frame["vars"]["a_long_local_var"]) == 20
-        assert len(frame["vars"]["a_long_local_list"]) == 12
-        assert frame["vars"]["a_long_local_list"][-1] == "(90 more elements)"
-    else:
-        assert "vars" not in frame, mode
-
-
-@pytest.mark.parametrize(
-    "elasticapm_client",
-    [
-        {"source_lines_span_library_frames": 0, "source_lines_span_app_frames": 0},
-        {"source_lines_span_library_frames": 1, "source_lines_span_app_frames": 1},
-        {"source_lines_span_library_frames": 7, "source_lines_span_app_frames": 5},
-    ],
-    indirect=True,
-)
-def test_collect_source_transactions(elasticapm_client):
-    library_frame_context = elasticapm_client.config.source_lines_span_library_frames
-    in_app_frame_context = elasticapm_client.config.source_lines_span_app_frames
-    elasticapm_client.begin_transaction("test")
-    with elasticapm.capture_span("foo"):
-        pass
-    elasticapm_client.end_transaction("test", "ok")
-    span = elasticapm_client.events[SPAN][0]
-    in_app_frame = span["stacktrace"][0]
-    library_frame = span["stacktrace"][1]
-    assert not in_app_frame["library_frame"]
-    assert library_frame["library_frame"]
-    if library_frame_context:
-        assert "context_line" in library_frame, library_frame_context
-        assert "pre_context" in library_frame, library_frame_context
-        assert "post_context" in library_frame, library_frame_context
-        lines = len([library_frame["context_line"]] + library_frame["pre_context"] + library_frame["post_context"])
-        assert lines == library_frame_context, library_frame_context
-    else:
-        assert "context_line" not in library_frame, library_frame_context
-        assert "pre_context" not in library_frame, library_frame_context
-        assert "post_context" not in library_frame, library_frame_context
-    if in_app_frame_context:
-        assert "context_line" in in_app_frame, in_app_frame_context
-        assert "pre_context" in in_app_frame, in_app_frame_context
-        assert "post_context" in in_app_frame, in_app_frame_context
-        lines = len([in_app_frame["context_line"]] + in_app_frame["pre_context"] + in_app_frame["post_context"])
-        assert lines == in_app_frame_context, (in_app_frame_context, in_app_frame["lineno"])
-    else:
-        assert "context_line" not in in_app_frame, in_app_frame_context
-        assert "pre_context" not in in_app_frame, in_app_frame_context
-        assert "post_context" not in in_app_frame, in_app_frame_context
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_sample_rate": 0.4}], indirect=True)
-def test_transaction_sampling(elasticapm_client, not_so_random):
-    for i in range(10):
-        elasticapm_client.begin_transaction("test_type")
-        with elasticapm.capture_span("xyz"):
-            pass
-        elasticapm_client.end_transaction("test")
-
-    transactions = elasticapm_client.events[TRANSACTION]
-    spans_per_transaction = defaultdict(list)
-    for span in elasticapm_client.events[SPAN]:
-        spans_per_transaction[span["transaction_id"]].append(span)
-
-    # seed is fixed by not_so_random fixture
-    assert len([t for t in transactions if t["sampled"]]) == 3
-    for transaction in transactions:
-        assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
-        assert transaction["sampled"] or not "context" in transaction
-        assert transaction["sample_rate"] == 0 if not transaction["sampled"] else transaction["sample_rate"] == 0.4
-
-
-def test_transaction_sample_rate_dynamic(elasticapm_client, not_so_random):
-    elasticapm_client.config.update(version="1", transaction_sample_rate=0.4)
-    for i in range(10):
-        elasticapm_client.begin_transaction("test_type")
-        with elasticapm.capture_span("xyz"):
-            pass
-        elasticapm_client.end_transaction("test")
-
-    transactions = elasticapm_client.events[TRANSACTION]
-    spans_per_transaction = defaultdict(list)
-    for span in elasticapm_client.events[SPAN]:
-        spans_per_transaction[span["transaction_id"]].append(span)
-
-    # seed is fixed by not_so_random fixture
-    assert len([t for t in transactions if t["sampled"]]) == 3
-    for transaction in transactions:
-        assert transaction["sampled"] or not transaction["id"] in spans_per_transaction
-        assert transaction["sampled"] or not "context" in transaction
-
-    elasticapm_client.config.update(version="1", transaction_sample_rate=1.0)
-    for i in range(5):
-        elasticapm_client.begin_transaction("test_type")
-        with elasticapm.capture_span("xyz"):
-            pass
-        elasticapm_client.end_transaction("test")
-
-    transactions = elasticapm_client.events[TRANSACTION]
-
-    # seed is fixed by not_so_random fixture
-    assert len([t for t in transactions if t["sampled"]]) == 8
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
-def test_transaction_max_spans(elasticapm_client):
-    elasticapm_client.begin_transaction("test_type")
-    for i in range(5):
-        with elasticapm.capture_span("nodrop"):
-            pass
-    for i in range(10):
-        with elasticapm.capture_span("drop"):
-            pass
-    transaction_obj = elasticapm_client.end_transaction("test")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.events[SPAN]
-    assert all(span["transaction_id"] == transaction["id"] for span in spans)
-
-    assert transaction_obj.dropped_spans == 10
-    assert len(spans) == 5
-    for span in spans:
-        assert span["name"] == "nodrop"
-    assert transaction["span_count"] == {"dropped": 10, "started": 5}
-
-
-def test_transaction_max_spans_dynamic(elasticapm_client):
-    elasticapm_client.config.update(version=1, transaction_max_spans=1)
-    elasticapm_client.begin_transaction("test_type")
-    for i in range(5):
-        with elasticapm.capture_span("span"):
-            pass
-    elasticapm_client.end_transaction("test")
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.spans_for_transaction(transaction)
-    assert len(spans) == 1
-
-    elasticapm_client.config.update(version=2, transaction_max_spans=3)
-    elasticapm_client.begin_transaction("test_type")
-    for i in range(5):
-        with elasticapm.capture_span("span"):
-            pass
-
-    elasticapm_client.end_transaction("test")
-    transaction = elasticapm_client.events[TRANSACTION][1]
-    spans = elasticapm_client.spans_for_transaction(transaction)
-    assert len(spans) == 3
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_duration": 20}], indirect=True)
-def test_transaction_span_frames_min_duration(elasticapm_client):
-    elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("noframes", duration=0.001):
-        pass
-    with elasticapm.capture_span("frames", duration=0.04):
-        pass
-    elasticapm_client.end_transaction("test")
-
-    spans = elasticapm_client.events[SPAN]
-
-    assert len(spans) == 2
-    assert spans[0]["name"] == "noframes"
-    assert "stacktrace" not in spans[0]
-
-    assert spans[1]["name"] == "frames"
-    assert spans[1]["stacktrace"] is not None
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"span_frames_min_durarion_ms": -1}], indirect=True)
-def test_transaction_span_frames_min_duration_no_limit(elasticapm_client):
-    elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("frames"):
-        pass
-    with elasticapm.capture_span("frames", duration=0.04):
-        pass
-    elasticapm_client.end_transaction("test")
-
-    spans = elasticapm_client.events[SPAN]
-
-    assert len(spans) == 2
-    assert spans[0]["name"] == "frames"
-    assert spans[0]["stacktrace"] is not None
-
-    assert spans[1]["name"] == "frames"
-    assert spans[1]["stacktrace"] is not None
-
-
-def test_transaction_span_frames_min_duration_dynamic(elasticapm_client):
-    elasticapm_client.config.update(version="1", span_frames_min_duration=20)
-    elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("noframes", duration=0.001):
-        pass
-    with elasticapm.capture_span("frames", duration=0.04):
-        pass
-    elasticapm_client.end_transaction("test")
-
-    spans = elasticapm_client.events[SPAN]
-
-    assert len(spans) == 2
-    assert spans[0]["name"] == "noframes"
-    assert "stacktrace" not in spans[0]
-
-    assert spans[1]["name"] == "frames"
-    assert spans[1]["stacktrace"] is not None
-
-    elasticapm_client.config.update(version="1", span_frames_min_duration=-1)
-    elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("frames"):
-        pass
-    with elasticapm.capture_span("frames", duration=0.04):
-        pass
-    elasticapm_client.end_transaction("test")
-
-    spans = elasticapm_client.events[SPAN]
-
-    assert len(spans) == 4
-    assert spans[2]["name"] == "frames"
-    assert spans[2]["stacktrace"] is not None
-
-    assert spans[3]["name"] == "frames"
-    assert spans[3]["stacktrace"] is not None
-
-
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 3}], indirect=True)
-def test_transaction_max_span_nested(elasticapm_client):
-    elasticapm_client.begin_transaction("test_type")
-    with elasticapm.capture_span("1"):
-        with elasticapm.capture_span("2"):
-            with elasticapm.capture_span("3"):
-                with elasticapm.capture_span("4"):
-                    with elasticapm.capture_span("5"):
-                        pass
-                with elasticapm.capture_span("6"):
-                    pass
-            with elasticapm.capture_span("7"):
-                pass
-        with elasticapm.capture_span("8"):
-            pass
-    with elasticapm.capture_span("9"):
-        pass
-    transaction_obj = elasticapm_client.end_transaction("test")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.events[SPAN]
-
-    assert transaction_obj.dropped_spans == 6
-    assert len(spans) == 3
-    for span in spans:
-        assert span["name"] in ("1", "2", "3")
-    assert transaction["span_count"] == {"dropped": 6, "started": 3}
-
-
-def test_transaction_keyword_truncation(elasticapm_client):
-    too_long = "x" * (KEYWORD_MAX_LENGTH + 1)
-    expected = encoding.keyword_field(too_long)
-    assert too_long != expected
-    assert len(expected) == KEYWORD_MAX_LENGTH
-    assert expected[-1] != "x"
-    elasticapm_client.begin_transaction(too_long)
-    elasticapm.tag(val=too_long)
-    elasticapm.set_user_context(username=too_long, email=too_long, user_id=too_long)
-    with elasticapm.capture_span(name=too_long, span_type=too_long):
-        pass
-    elasticapm_client.end_transaction(too_long, too_long)
-    elasticapm_client.close()
-
-    span = elasticapm_client.events["span"][0]
-    transaction = elasticapm_client.events["transaction"][0]
-
-    assert transaction["name"] == expected
-    assert transaction["type"] == expected
-    assert transaction["result"] == expected
-
-    assert transaction["context"]["user"]["id"] == expected
-    assert transaction["context"]["user"]["username"] == expected
-    assert transaction["context"]["user"]["email"] == expected
-
-    assert transaction["context"]["tags"]["val"] == expected
-
-    assert span["type"] == expected
-    assert span["name"] == expected
-
-
 @pytest.mark.parametrize("sending_elasticapm_client", [{"service_name": "*"}], indirect=True)
 @mock.patch("elasticapm.transport.base.Transport.send")
 def test_config_error_stops_error_send(mock_send, sending_elasticapm_client):
@@ -720,62 +406,6 @@ def test_config_error_stops_transaction_send(mock_send, sending_elasticapm_clien
     sending_elasticapm_client.end_transaction("test", "OK")
     sending_elasticapm_client.close()
     assert mock_send.call_count == 0
-
-
-def test_trace_parent(elasticapm_client):
-    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
-    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
-    transaction = elasticapm_client.end_transaction("test", "OK")
-    data = transaction.to_dict()
-    assert data["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
-    assert data["parent_id"] == "b7ad6b7169203331"
-
-
-def test_sample_rate_in_dict(elasticapm_client):
-    trace_parent = TraceParent.from_string(
-        "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03", tracestate_string="es=s:0.43"
-    )
-    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
-    with elasticapm.capture_span("x"):
-        pass
-    transaction = elasticapm_client.end_transaction("test", "OK")
-    data = transaction.to_dict()
-    assert data["sample_rate"] == 0.43
-    assert elasticapm_client.events[SPAN][0]["sample_rate"] == 0.43
-
-
-def test_sample_rate_undefined_by_parent(elasticapm_client):
-    trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
-    elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
-    with elasticapm.capture_span("x"):
-        pass
-    transaction = elasticapm_client.end_transaction("test", "OK")
-    data = transaction.to_dict()
-    assert "sample_rate" not in data
-    assert "sample_rate" not in elasticapm_client.events[SPAN][0]
-
-
-def test_trace_parent_not_set(elasticapm_client):
-    elasticapm_client.begin_transaction("test", trace_parent=None)
-    transaction = elasticapm_client.end_transaction("test", "OK")
-    data = transaction.to_dict()
-    assert data["trace_id"] is not None
-    assert "parent_id" not in data
-
-
-def test_ensure_parent_sets_new_id(elasticapm_client):
-    transaction = elasticapm_client.begin_transaction("test", trace_parent=None)
-    assert transaction.id == transaction.trace_parent.span_id
-    span_id = transaction.ensure_parent_id()
-    assert span_id == transaction.trace_parent.span_id
-
-
-def test_ensure_parent_doesnt_change_existing_id(elasticapm_client):
-    transaction = elasticapm_client.begin_transaction("test", trace_parent=None)
-    assert transaction.id == transaction.trace_parent.span_id
-    span_id = transaction.ensure_parent_id()
-    span_id_2 = transaction.ensure_parent_id()
-    assert span_id == span_id_2
 
 
 @pytest.mark.parametrize(
@@ -866,3 +496,43 @@ def test_client_enabled(elasticapm_client):
         assert not elasticapm_client.config.is_recording
         for manager in elasticapm_client._thread_managers.values():
             assert not manager.is_started()
+
+
+def test_excepthook(elasticapm_client):
+    try:
+        raise Exception("hi!")
+    except Exception:
+        type_, value, traceback = sys.exc_info()
+        elasticapm_client._excepthook(type_, value, traceback)
+
+    assert elasticapm_client.events[ERROR]
+
+
+def test_check_server_version(elasticapm_client):
+    assert elasticapm_client.server_version is None
+    assert elasticapm_client.check_server_version(gte=(100, 5, 10))
+    assert elasticapm_client.check_server_version(lte=(100, 5, 10))
+
+    elasticapm_client.server_version = (7, 15)
+    assert elasticapm_client.check_server_version(gte=(7,))
+    assert not elasticapm_client.check_server_version(gte=(8,))
+    assert not elasticapm_client.check_server_version(lte=(7,))
+    assert elasticapm_client.check_server_version(lte=(8,))
+    assert elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 15))
+    assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 15))
+    assert elasticapm_client.check_server_version(gte=(7, 15), lte=(7, 16))
+    assert not elasticapm_client.check_server_version(gte=(7, 12), lte=(7, 13))
+    assert not elasticapm_client.check_server_version(gte=(7, 16), lte=(7, 18))
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client,expected",
+    [
+        ({"service_version": "v2"}, " v2"),
+        ({"service_version": "v2 \x00"}, " v2 _"),
+        ({}, ""),
+    ],
+    indirect=["elasticapm_client"],
+)
+def test_user_agent(elasticapm_client, expected):
+    assert elasticapm_client.get_user_agent() == "apm-agent-python/unknown (myapp{})".format(expected)

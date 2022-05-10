@@ -31,10 +31,13 @@
 import base64
 import os
 import re
+import urllib.parse
 from functools import partial
+from types import FunctionType
+from typing import Pattern
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding
+from elasticapm.utils import encoding
 
 try:
     from functools import partialmethod
@@ -62,9 +65,7 @@ def varmap(func, var, context=None, name=None, **kwargs):
     context.add(objid)
     if isinstance(var, dict):
         # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
-        ret = func(
-            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
-        )
+        ret = func(name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in var.copy().items()), **kwargs)
     elif isinstance(var, (list, tuple)):
         ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
     else:
@@ -73,7 +74,7 @@ def varmap(func, var, context=None, name=None, **kwargs):
     return ret
 
 
-def get_name_from_func(func):
+def get_name_from_func(func: FunctionType) -> str:
     # partials don't have `__module__` or `__name__`, so we use the values from the "inner" function
     if isinstance(func, partial_types):
         return "partial({})".format(get_name_from_func(func.func))
@@ -94,7 +95,7 @@ def build_name_with_http_method_prefix(name, request):
     return " ".join((request.method, name)) if name else name
 
 
-def is_master_process():
+def is_master_process() -> bool:
     # currently only recognizes uwsgi master process
     try:
         import uwsgi
@@ -104,8 +105,8 @@ def is_master_process():
         return False
 
 
-def get_url_dict(url):
-    parse_result = compat.urlparse.urlparse(url)
+def get_url_dict(url: str) -> dict:
+    parse_result = urllib.parse.urlparse(url)
 
     url_dict = {
         "full": encoding.keyword_field(url),
@@ -123,15 +124,15 @@ def get_url_dict(url):
     return url_dict
 
 
-def sanitize_url(url):
+def sanitize_url(url: str) -> str:
     if "@" not in url:
         return url
-    parts = compat.urlparse.urlparse(url)
+    parts = urllib.parse.urlparse(url)
     return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
-def get_host_from_url(url):
-    parsed_url = compat.urlparse.urlparse(url)
+def get_host_from_url(url: str) -> str:
+    parsed_url = urllib.parse.urlparse(url)
     host = parsed_url.hostname or " "
 
     if parsed_url.port and default_ports.get(parsed_url.scheme) != parsed_url.port:
@@ -140,8 +141,8 @@ def get_host_from_url(url):
     return host
 
 
-def url_to_destination(url, service_type="external"):
-    parts = compat.urlparse.urlsplit(url)
+def url_to_destination_resource(url: str) -> str:
+    parts = urllib.parse.urlsplit(url)
     hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
     if "://[" in url:
@@ -160,10 +161,10 @@ def url_to_destination(url, service_type="external"):
         if port != default_port:
             name += ":%d" % port
         resource += ":%d" % port
-    return {"service": {"name": name, "resource": resource, "type": service_type}}
+    return resource
 
 
-def read_pem_file(file_obj):
+def read_pem_file(file_obj) -> bytes:
     cert = b""
     for line in file_obj:
         if line.startswith(b"-----BEGIN CERTIFICATE-----"):
@@ -176,7 +177,13 @@ def read_pem_file(file_obj):
     return base64.b64decode(cert)
 
 
-def starmatch_to_regex(pattern):
+def starmatch_to_regex(pattern: str) -> Pattern:
+    options = re.DOTALL
+    # check if we are case sensitive
+    if pattern.startswith("(?-i)"):
+        pattern = pattern[5:]
+    else:
+        options |= re.IGNORECASE
     i, n = 0, len(pattern)
     res = []
     while i < n:
@@ -186,4 +193,27 @@ def starmatch_to_regex(pattern):
             res.append(".*")
         else:
             res.append(re.escape(c))
-    return re.compile(r"(?:%s)\Z" % "".join(res), re.IGNORECASE | re.DOTALL)
+    return re.compile(r"(?:%s)\Z" % "".join(res), options)
+
+
+def nested_key(d: dict, *args):
+    """
+    Traverses a dictionary for nested keys. Returns `None` if the at any point
+    in the traversal a key cannot be found.
+
+    Example:
+
+        >>> from elasticapm.utils import nested_key
+        >>> d = {"a": {"b": {"c": 0}}}
+        >>> nested_key(d, "a", "b", "c")
+        0
+        >>> nested_key(d, "a", "b", "d")
+        None
+    """
+    for arg in args:
+        try:
+            d = d[arg]
+        except (TypeError, KeyError):
+            d = None
+            break
+    return d

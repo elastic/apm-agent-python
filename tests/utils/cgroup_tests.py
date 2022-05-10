@@ -28,10 +28,11 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import mock
+import io
+
 import pytest
 
-from elasticapm.utils import cgroup, compat
+from elasticapm.utils import cgroup
 
 
 @pytest.mark.parametrize(
@@ -77,9 +78,16 @@ from elasticapm.utils import cgroup, compat
                 "kubernetes": {"pod": {"uid": "5eadac96-ab58-11ea-b82b-0242ac110009"}},
             },
         ),
+        (
+            "9:freezer:/kubepods.slice/kubepods-pod22949dce_fd8b_11ea_8ede_98f2b32c645c.slice/docker-b15a5bdedd2e7645c3be271364324321b908314e4c77857bbfd32a041148c07f.scope",
+            {
+                "container": {"id": "b15a5bdedd2e7645c3be271364324321b908314e4c77857bbfd32a041148c07f"},
+                "kubernetes": {"pod": {"uid": "22949dce-fd8b-11ea-8ede-98f2b32c645c"}},
+            },
+        ),
     ],
 )
 def test_cgroup_parsing(test_input, expected):
-    f = compat.StringIO(test_input)
+    f = io.StringIO(test_input)
     result = cgroup.parse_cgroups(f)
     assert result == expected

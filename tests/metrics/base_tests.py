@@ -37,7 +37,7 @@ import pytest
 
 from elasticapm.conf import constants
 from elasticapm.metrics.base_metrics import Counter, Gauge, MetricsRegistry, MetricsSet, NoopMetric, Timer
-from tests.fixtures import TempStoreClient
+from tests.utils import assert_any_record_contains
 
 
 class DummyMetricSet(MetricsSet):
@@ -86,6 +86,25 @@ def test_metrics_counter(elasticapm_client):
     assert data["samples"]["x"]["value"] == 0
 
 
+def test_metrics_histogram(elasticapm_client):
+    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
+    hist = metricset.histogram("x", buckets=[1, 10, 100])
+    assert len(hist.buckets) == 4
+
+    hist.update(0.3)
+    hist.update(1)
+    hist.update(5)
+    hist.update(20)
+    hist.update(100)
+    hist.update(1000)
+
+    data = list(metricset.collect())
+    assert len(data) == 1
+    d = data[0]
+    assert d["samples"]["x"]["counts"] == [2, 1, 2, 1]
+    assert d["samples"]["x"]["values"] == [0.5, 5.5, 55.0, 100]
+
+
 def test_metrics_labels(elasticapm_client):
     metricset = MetricsSet(MetricsRegistry(elasticapm_client))
     metricset.counter("x", mylabel="a").inc()
@@ -125,6 +144,24 @@ def test_metrics_multithreaded(elasticapm_client):
     assert metricset.counter("x").val == expected
 
 
+@pytest.mark.parametrize("sending_elasticapm_client", [{"metrics_interval": "30s"}], indirect=True)
+def test_metrics_flushed_on_shutdown(sending_elasticapm_client):
+    # this is ugly, we need an API for this at some point...
+    metricset = MetricsSet(sending_elasticapm_client._metrics)
+    sending_elasticapm_client._metrics._metricsets["foo"] = metricset
+    metricset.counter("x").inc()
+    sending_elasticapm_client.close()
+    assert sending_elasticapm_client.httpserver.payloads
+    for item in sending_elasticapm_client.httpserver.payloads[0]:
+        try:
+            assert item["metricset"]["samples"]["x"]["value"] == 1
+            break
+        except KeyError:
+            pass
+    else:
+        assert False, "no item found with matching dict path metricset.samples.x.value"
+
+
 @mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)
 def test_metric_limit(caplog, elasticapm_client):
     m = MetricsSet(MetricsRegistry(elasticapm_client))
@@ -141,10 +178,7 @@ def test_metric_limit(caplog, elasticapm_client):
                 assert isinstance(timer, NoopMetric)
                 assert isinstance(gauge, NoopMetric)
                 assert isinstance(counter, NoopMetric)
-
-    assert len(caplog.records) == 1
-    record = caplog.records[0]
-    assert "The limit of 3 metricsets has been reached" in record.message
+    assert_any_record_contains(caplog.records, "The limit of 3 metricsets has been reached", "elasticapm.metrics")
 
 
 def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
@@ -153,8 +187,8 @@ def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
     resetting_counter = m.counter("resetting_counter", reset_on_collect=True)
     gauge = m.gauge("gauge", reset_on_collect=False)
     resetting_gauge = m.gauge("resetting_gauge", reset_on_collect=True)
-    timer = m.timer("timer", reset_on_collect=False)
-    resetting_timer = m.timer("resetting_timer", reset_on_collect=True)
+    timer = m.timer("timer", reset_on_collect=False, unit="us")
+    resetting_timer = m.timer("resetting_timer", reset_on_collect=True, unit="us")
 
     counter.inc(), resetting_counter.inc()
     gauge.val = 5

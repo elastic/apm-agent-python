@@ -45,7 +45,7 @@ if "MSSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping MS-SQL tests, no MSSQL_HOST environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def pymssql_connection(request):
     conn = pymssql.connect(
         os.environ.get("MSSQL_HOST", "localhost"),
@@ -89,7 +89,7 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert span["context"]["destination"] == {
             "address": "mssql",
             "port": default_ports["mssql"],
-            "service": {"name": "mssql", "resource": "mssql", "type": "db"},
+            "service": {"name": "", "resource": "mssql", "type": ""},
         }
 
 

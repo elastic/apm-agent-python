@@ -77,7 +77,7 @@ def test_memcached(instrument, elasticapm_client):
     assert spans[1]["context"]["destination"] == {
         "address": host,
         "port": 11211,
-        "service": {"name": "memcached", "resource": "memcached", "type": "cache"},
+        "service": {"name": "", "resource": "memcached", "type": ""},
     }
 
     assert spans[2]["name"] == "Client.get_multi"
@@ -90,3 +90,27 @@ def test_memcached(instrument, elasticapm_client):
     assert spans[3]["type"] == "test"
 
     assert len(spans) == 4
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "5ms",
+        }
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+def test_memcache_span_compression(instrument, elasticapm_client):
+    host = os.environ.get("MEMCACHED_HOST", "localhost")
+    conn = memcache.Client([host + ":11211"], debug=0)
+    elasticapm_client.begin_transaction("transaction.test")
+    for i in range(5):
+        conn.set(str(i), i)
+    elasticapm_client.end_transaction("test")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 1

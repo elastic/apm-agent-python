@@ -29,7 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import elasticapm
 from elasticapm.conf import constants
-from elasticapm.utils import compat
 
 try:
     import tornado
@@ -43,7 +42,7 @@ def get_data_from_request(request_handler, request, config, event_type):
     """
     result = {
         "method": request.method,
-        "socket": {"remote_address": request.remote_ip, "encrypted": request.protocol == "https"},
+        "socket": {"remote_address": request.remote_ip},
         "cookies": request.cookies,
         "http_version": request.version,
     }
@@ -60,7 +59,7 @@ def get_data_from_request(request_handler, request, config, event_type):
             try:
                 body = tornado.escape.json_decode(request.body)
             except Exception:
-                body = request.body
+                body = str(request.body, errors="ignore")
 
             if body is not None:
                 result["body"] = body if config.capture_body in ("all", event_type) else "[REDACTED]"
@@ -76,6 +75,6 @@ def get_data_from_response(request_handler, config, event_type):
 
     if config.capture_headers and request_handler._headers:
         headers = request_handler._headers
-        result["headers"] = {key: ";".join(headers.get_list(key)) for key in compat.iterkeys(headers)}
+        result["headers"] = {key: ";".join(headers.get_list(key)) for key in headers.keys()}
         pass
     return result

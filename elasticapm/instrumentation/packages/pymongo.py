@@ -39,6 +39,8 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
         ("pymongo.collection", "Collection.aggregate"),
         ("pymongo.collection", "Collection.bulk_write"),
         ("pymongo.collection", "Collection.count"),
+        ("pymongo.collection", "Collection.count_documents"),
+        ("pymongo.collection", "Collection.estimated_document_count"),
         ("pymongo.collection", "Collection.create_index"),
         ("pymongo.collection", "Collection.create_indexes"),
         ("pymongo.collection", "Collection.delete_many"),
@@ -80,7 +82,6 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
         destination_info = {
             "address": host,
             "port": port,
-            "service": {"name": "mongodb", "resource": "mongodb", "type": "db"},
         }
         with capture_span(
             signature,
@@ -106,7 +107,8 @@ class PyMongoBulkInstrumentation(AbstractInstrumentedModule):
             span_type="db",
             span_subtype="mongodb",
             span_action="query",
-            extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
+            extra={"destination": {}},
+            leaf=True,
         ):
             return wrapped(*args, **kwargs)
 
@@ -124,7 +126,7 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
             span_type="db",
             span_subtype="mongodb",
             span_action="query",
-            extra={"destination": {"service": {"name": "mongodb", "resource": "mongodb", "type": "db"}}},
+            extra={"destination": {}},
         ) as span:
             response = wrapped(*args, **kwargs)
             if span.context and instance.address:

@@ -36,11 +36,15 @@ import itertools
 import logging
 import os
 import platform
+import re
 import sys
 import threading
 import time
+import urllib.parse
 import warnings
 from copy import deepcopy
+from datetime import timedelta
+from typing import Optional, Tuple
 
 import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
@@ -53,6 +57,8 @@ from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 
 __all__ = ("Client",)
+
+CLIENT_SINGLETON = None
 
 
 class Client(object):
@@ -100,6 +106,8 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
+        # setting server_version here is mainly used for testing
+        self.server_version = inline.pop("server_version", None)
 
         self.check_python_version()
 
@@ -108,11 +116,12 @@ class Client(object):
             for msg in config.errors.values():
                 self.error_logger.error(msg)
             config.disable_send = True
+        if config.service_name == "python_service":
+            self.logger.warning("No custom SERVICE_NAME was set -- using non-descript default 'python_service'")
         self.config = VersionedConfig(config, version=None)
 
         # Insert the log_record_factory into the logging library
-        # The LogRecordFactory functionality is only available on python 3.2+
-        if compat.PY3 and not self.config.disable_log_record_factory:
+        if not self.config.disable_log_record_factory:
             record_factory = logging.getLogRecordFactory()
             # Only way to know if it's wrapped is to create a log record
             throwaway_record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
@@ -128,7 +137,7 @@ class Client(object):
         headers = {
             "Content-Type": "application/x-ndjson",
             "Content-Encoding": "gzip",
-            "User-Agent": "elasticapm-python/%s" % elasticapm.VERSION,
+            "User-Agent": self.get_user_agent(),
         }
 
         transport_kwargs = {
@@ -138,12 +147,12 @@ class Client(object):
             "timeout": self.config.server_timeout,
             "processors": self.load_processors(),
         }
-        self._api_endpoint_url = compat.urlparse.urljoin(
+        self._api_endpoint_url = urllib.parse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
             constants.EVENTS_API_PATH,
         )
         transport_class = import_string(self.config.transport_class)
-        self._transport = transport_class(self._api_endpoint_url, self, **transport_kwargs)
+        self._transport = transport_class(url=self._api_endpoint_url, client=self, **transport_kwargs)
         self.config.transport = self._transport
         self._thread_managers["transport"] = self._transport
 
@@ -191,21 +200,32 @@ class Client(object):
             self._metrics.register(path)
         if self.config.breakdown_metrics:
             self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
-        self._thread_managers["metrics"] = self._metrics
+        if self.config.prometheus_metrics:
+            self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
+        if self.config.metrics_interval:
+            self._thread_managers["metrics"] = self._metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
             self._thread_managers["config"] = self.config
         else:
             self._config_updater = None
+        if self.config.use_elastic_excepthook:
+            self.original_excepthook = sys.excepthook
+            sys.excepthook = self._excepthook
         if config.enabled:
             self.start_threads()
 
+        # Save this Client object as the global CLIENT_SINGLETON
+        set_client(self)
+
     def start_threads(self):
-        with self._thread_starter_lock:
-            current_pid = os.getpid()
-            if self._pid != current_pid:
+        current_pid = os.getpid()
+        if self._pid != current_pid:
+            with self._thread_starter_lock:
                 self.logger.debug("Detected PID change from %r to %r, starting threads", self._pid, current_pid)
-                for manager_type, manager in self._thread_managers.items():
+                for manager_type, manager in sorted(
+                    self._thread_managers.items(), key=lambda item: item[1].start_stop_order
+                ):
                     self.logger.debug("Starting %s thread", manager_type)
                     manager.start_thread(pid=current_pid)
                 self._pid = current_pid
@@ -264,17 +284,20 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None):
+    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
         """
         Register the start of a transaction on the client
 
         :param transaction_type: type of the transaction, e.g. "request"
         :param trace_parent: an optional TraceParent object for distributed tracing
         :param start: override the start timestamp, mostly useful for testing
+        :param auto_activate: whether to set this transaction in execution_context
         :return: the started transaction object
         """
         if self.config.is_recording:
-            return self.tracer.begin_transaction(transaction_type, trace_parent=trace_parent, start=start)
+            return self.tracer.begin_transaction(
+                transaction_type, trace_parent=trace_parent, start=start, auto_activate=auto_activate
+            )
 
     def end_transaction(self, name=None, result="", duration=None):
         """
@@ -285,14 +308,18 @@ class Client(object):
         :param duration: override duration, mostly useful for testing
         :return: the ended transaction object
         """
+        if duration is not None and not isinstance(duration, timedelta):
+            duration = timedelta(seconds=duration)
         transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 
     def close(self):
         if self.config.enabled:
             with self._thread_starter_lock:
-                for _, manager in self._thread_managers.items():
+                for _, manager in sorted(self._thread_managers.items(), key=lambda item: item[1].start_stop_order):
                     manager.stop_thread()
+        global CLIENT_SINGLETON
+        CLIENT_SINGLETON = None
 
     def get_service_info(self):
         if self._service_info:
@@ -399,6 +426,17 @@ class Client(object):
             self.logger.warning("Unknown value for CLOUD_PROVIDER, skipping cloud metadata: {}".format(provider))
             return {}
 
+    def get_user_agent(self) -> str:
+        """
+        Compiles the user agent, which will be added as a header to all requests
+        to the APM Server
+        """
+        if self.config.service_version:
+            service_version = re.sub(r"[^\t _\x21-\x27\x2a-\x5b\x5d-\x7e\x80-\xff]", "_", self.config.service_version)
+            return "apm-agent-python/{} ({} {})".format(elasticapm.VERSION, self.config.service_name, service_version)
+        else:
+            return "apm-agent-python/{} ({})".format(elasticapm.VERSION, self.config.service_name)
+
     def build_metadata(self):
         data = {
             "service": self.get_service_info(),
@@ -442,6 +480,12 @@ class Client(object):
         event_data["context"] = context
         if transaction and transaction.labels:
             context["tags"] = deepcopy(transaction.labels)
+        # No intake for otel.attributes, so make them labels
+        if "otel_attributes" in context:
+            if context.get("tags"):
+                context["tags"].update(context.pop("otel_attributes"))
+            else:
+                context["tags"] = context.pop("otel_attributes")
 
         # if '.' not in event_type:
         # Assume it's a builtin
@@ -456,7 +500,7 @@ class Client(object):
         if custom.get("culprit"):
             culprit = custom.pop("culprit")
 
-        for k, v in compat.iteritems(result):
+        for k, v in result.items():
             if k not in event_data:
                 event_data[k] = v
 
@@ -488,7 +532,7 @@ class Client(object):
         if "stacktrace" in log and not culprit:
             culprit = stacks.get_culprit(log["stacktrace"], self.config.include_paths, self.config.exclude_paths)
 
-        if "level" in log and isinstance(log["level"], compat.integer_types):
+        if "level" in log and isinstance(log["level"], int):
             log["level"] = logging.getLevelName(log["level"]).lower()
 
         if log:
@@ -515,7 +559,11 @@ class Client(object):
             # parent id might already be set in the handler
             event_data.setdefault("parent_id", span.id if span else transaction.id)
             event_data["transaction_id"] = transaction.id
-            event_data["transaction"] = {"sampled": transaction.is_sampled, "type": transaction.transaction_type}
+            event_data["transaction"] = {
+                "sampled": transaction.is_sampled,
+                "type": transaction.transaction_type,
+                "name": transaction.name,
+            }
 
         return event_data
 
@@ -536,7 +584,7 @@ class Client(object):
                     exc_name = "%s.%s" % (exc_module, exc_type)
                 else:
                     exc_name = exc_type
-                self.logger.info("Ignored %s exception due to exception type filter", exc_name)
+                self.logger.debug("Ignored %s exception due to exception type filter", exc_name)
                 return True
         return False
 
@@ -559,6 +607,14 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
+    def _excepthook(self, type_, value, traceback):
+        try:
+            self.original_excepthook(type_, value, traceback)
+        except Exception:
+            self.capture_exception(handled=False)
+        finally:
+            self.capture_exception(exc_info=(type_, value, traceback), handled=False)
+
     def load_processors(self):
         """
         Loads processors from self.config.processors, as well as constants.HARDCODED_PROCESSORS.
@@ -570,6 +626,13 @@ class Client(object):
         seen = {}
         # setdefault has the nice property that it returns the value that it just set on the dict
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
+
+    def should_ignore_url(self, url):
+        if self.config.transaction_ignore_urls:
+            for pattern in self.config.transaction_ignore_urls:
+                if pattern.match(url):
+                    return True
+        return False
 
     def check_python_version(self):
         v = tuple(map(int, platform.python_version_tuple()[:2]))
@@ -584,9 +647,37 @@ class Client(object):
         elif v < (3, 5):
             warnings.warn("The Elastic APM agent only supports Python 3.5+", DeprecationWarning)
 
+    def check_server_version(
+        self, gte: Optional[Tuple[int, ...]] = None, lte: Optional[Tuple[int, ...]] = None
+    ) -> bool:
+        """
+        Check APM Server version against greater-or-equal and/or lower-or-equal limits, provided as tuples of integers.
+        If server_version is not set, always returns True.
+        :param gte: a tuple of ints describing the greater-or-equal limit, e.g. (7, 16)
+        :param lte: a tuple of ints describing the lower-or-equal limit, e.g. (7, 99)
+        :return: bool
+        """
+        if not self.server_version:
+            return True
+        gte = gte or (0,)
+        lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
+        return bool(gte <= self.server_version <= lte)
+
 
 class DummyClient(Client):
     """Sends messages into an empty void"""
 
     def send(self, url, **kwargs):
         return None
+
+
+def get_client() -> Client:
+    return CLIENT_SINGLETON
+
+
+def set_client(client: Client):
+    global CLIENT_SINGLETON
+    if CLIENT_SINGLETON:
+        logger = get_logger("elasticapm")
+        logger.warning("Client object is being set more than once", stack_info=True)
+    CLIENT_SINGLETON = client

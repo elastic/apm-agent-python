@@ -46,7 +46,7 @@ if "MYSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping mysqlclient tests, no MYSQL_HOST environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def mysqlclient_connection(request):
     conn = mysqldb.connect(
         host=os.environ.get("MYSQL_HOST", "localhost"),
@@ -58,7 +58,6 @@ def mysqlclient_connection(request):
     cursor.execute("CREATE TABLE `test` (`id` INT, `name` VARCHAR(5))")
     cursor.execute("INSERT INTO `test` (`id`, `name`) VALUES (1, 'one'), (2, 'two'), (3, 'three')")
     row = cursor.fetchone()
-    print(row)
 
     yield conn
 
@@ -89,5 +88,5 @@ def test_mysql_connector_select(instrument, mysqlclient_connection, elasticapm_c
         assert span["context"]["destination"] == {
             "address": "mysql",
             "port": 3306,
-            "service": {"name": "mysql", "resource": "mysql", "type": "db"},
+            "service": {"name": "", "resource": "mysql", "type": ""},
         }

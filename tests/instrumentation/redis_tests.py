@@ -75,7 +75,7 @@ def test_pipeline(instrument, elasticapm_client, redis_conn):
     assert spans[0]["context"]["destination"] == {
         "address": os.environ.get("REDIS_HOST", "localhost"),
         "port": int(os.environ.get("REDIS_PORT", 6379)),
-        "service": {"name": "redis", "resource": "redis", "type": "db"},
+        "service": {"name": "", "resource": "redis", "type": ""},
     }
 
     assert spans[1]["name"] == "test_pipeline"
@@ -108,7 +108,7 @@ def test_rq_patches_redis(instrument, elasticapm_client, redis_conn):
     assert spans[0]["context"]["destination"] == {
         "address": os.environ.get("REDIS_HOST", "localhost"),
         "port": int(os.environ.get("REDIS_PORT", 6379)),
-        "service": {"name": "redis", "resource": "redis", "type": "db"},
+        "service": {"name": "", "resource": "redis", "type": ""},
     }
 
     assert spans[1]["name"] == "test_pipeline"
@@ -139,7 +139,7 @@ def test_redis_client(instrument, elasticapm_client, redis_conn):
     assert spans[0]["context"]["destination"] == {
         "address": os.environ.get("REDIS_HOST", "localhost"),
         "port": int(os.environ.get("REDIS_PORT", 6379)),
-        "service": {"name": "redis", "resource": "redis", "type": "db"},
+        "service": {"name": "", "resource": "redis", "type": ""},
     }
 
     assert spans[1]["name"] == "EXPIRE"
@@ -149,7 +149,7 @@ def test_redis_client(instrument, elasticapm_client, redis_conn):
     assert spans[1]["context"]["destination"] == {
         "address": os.environ.get("REDIS_HOST", "localhost"),
         "port": int(os.environ.get("REDIS_PORT", 6379)),
-        "service": {"name": "redis", "resource": "redis", "type": "db"},
+        "service": {"name": "", "resource": "redis", "type": ""},
     }
 
     assert spans[2]["name"] == "test_redis_client"
@@ -163,3 +163,75 @@ def test_unix_domain_socket_connection_destination_info():
     destination_info = get_destination_info(conn)
     assert destination_info["port"] is None
     assert destination_info["address"] == "unix:///some/path"
+
+
+@pytest.mark.skipif(redis.VERSION < (3,), reason="pubsub not available as context manager in redis-py 2")
+@pytest.mark.integrationtest
+def test_publish_subscribe(instrument, elasticapm_client, redis_conn):
+    elasticapm_client.begin_transaction("transaction.test")
+    with capture_span("test_publish_subscribe", "test"):
+        # publish
+        redis_conn.publish("mykey", "a")
+
+        # subscribe
+        with redis_conn.pubsub() as channel:
+            channel.subscribe("mykey")
+
+    elasticapm_client.end_transaction("MyView")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    expected_signatures = {"test_publish_subscribe", "PUBLISH", "SUBSCRIBE"}
+
+    assert {t["name"] for t in spans} == expected_signatures
+
+    assert spans[0]["name"] == "PUBLISH"
+    assert spans[0]["type"] == "db"
+    assert spans[0]["subtype"] == "redis"
+    assert spans[0]["action"] == "query"
+    assert spans[0]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "", "resource": "redis", "type": ""},
+    }
+
+    assert spans[1]["name"] == "SUBSCRIBE"
+    assert spans[1]["type"] == "db"
+    assert spans[1]["subtype"] == "redis"
+    assert spans[1]["action"] == "query"
+    assert spans[1]["context"]["destination"] == {
+        "address": os.environ.get("REDIS_HOST", "localhost"),
+        "port": int(os.environ.get("REDIS_PORT", 6379)),
+        "service": {"name": "", "resource": "redis", "type": ""},
+    }
+
+    assert spans[2]["name"] == "test_publish_subscribe"
+    assert spans[2]["type"] == "test"
+
+    assert len(spans) == 3
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "5ms",
+        }
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+def test_redis_span_compression(instrument, elasticapm_client, redis_conn):
+    keys = ["a", "b", "c", "d", "e"]
+    for key in keys:
+        redis_conn.set(key, "a")
+    elasticapm_client.begin_transaction("transaction.test")
+    for key in keys:
+        redis_conn.get(key)
+    elasticapm_client.end_transaction("MyView")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 1

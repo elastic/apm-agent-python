@@ -28,13 +28,18 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pytest  # isort:skip
+
+pytest.importorskip("jinja2")  # isort:skip
+
 import os
 
-import pytest
 from jinja2 import Environment, FileSystemLoader
 from jinja2.environment import Template
 
 from elasticapm.conf.constants import TRANSACTION
+
+pytestmark = [pytest.mark.jinja2]
 
 
 @pytest.fixture()

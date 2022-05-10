@@ -3,9 +3,7 @@ version: '2.1'
 services:
   postgres:
     user: postgres
-    image: postgres:9.6
-    ports:
-      - "5432:5432"
+    image: library/postgres:11.10  # PostgreSQL 12+ is not compatible with the odbc-postgresql package in our docker images
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_DB: 'elasticapm_test'
@@ -30,39 +28,27 @@ services:
     image: mongo:3.0
     volumes:
       - pymongodata30:/data/db
-    ports:
-      - "27017:27017"
 
   mongodb32:
     image: mongo:3.2
     volumes:
       - pymongodata32:/data/db
-    ports:
-      - "27017:27017"
 
   mongodb34:
     image: mongo:3.4
     volumes:
       - pymongodata34:/data/db
-    ports:
-      - "27017:27017"
 
   mongodb36:
     image: mongo:3.6
     volumes:
       - pymongodata36:/data/db
-    ports:
-      - "27017:27017"
 
   memcached:
     image: memcached
-    ports:
-      - "11211:11211"
 
   redis:
     image: redis
-    ports:
-      - "6379:6379"
 
   elasticsearch6:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
@@ -117,7 +103,7 @@ services:
       - pyesdata2:/usr/share/elasticsearch/data
 
   mssql:
-    image: microsoft/mssql-server-linux
+    image: mcr.microsoft.com/mssql/server
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Very(!)Secure
@@ -135,6 +121,23 @@ services:
       - MYSQL_RANDOM_ROOT_PASSWORD=yes
     volumes:
       - mysqldata:/var/lib/mysql
+
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - HOSTNAME=localstack
+      - HOSTNAME_EXTERNAL=localstack
+      - SERVICES=sns,sqs,s3,dynamodb,ec2
+      - DEBUG=${DEBUG- }
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_TMP_FOLDER=${TMPDIR}
+      - START_WEB=0
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}

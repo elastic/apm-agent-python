@@ -31,6 +31,7 @@
 import pytest
 from django.apps import apps
 
+import elasticapm
 from elasticapm.conf.constants import SPAN
 from elasticapm.contrib.django.apps import instrument, register_handlers
 from elasticapm.contrib.django.client import DjangoClient
@@ -55,8 +56,10 @@ def django_elasticapm_client(request):
     client_config = getattr(request, "param", {})
     client_config.setdefault("service_name", "app")
     client_config.setdefault("secret_token", "secret")
-    client_config.setdefault("span_frames_min_duration", -1)
-    app = apps.get_app_config("elasticapm.contrib.django")
+    client_config.setdefault("span_stack_trace_min_duration", 0)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    app = apps.get_app_config("elasticapm")
     old_client = app.client
     client = TempStoreClient(**client_config)
     register_handlers(client)
@@ -64,6 +67,7 @@ def django_elasticapm_client(request):
     app.client = client
     yield client
     client.close()
+    elasticapm.uninstrument()
 
     app.client = old_client
 
@@ -77,11 +81,15 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     validating_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     client_config = getattr(request, "param", {})
     client_config.setdefault("server_url", validating_httpserver.url)
+    client_config.setdefault("server_version", (8, 0, 0))
     client_config.setdefault("service_name", "app")
     client_config.setdefault("secret_token", "secret")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
-    client_config.setdefault("span_frames_min_duration", -1)
-    app = apps.get_app_config("elasticapm.contrib.django")
+    client_config.setdefault("span_stack_trace_min_duration", 0)
+    client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
+    client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("exit_span_min_duration", "0ms")
+    app = apps.get_app_config("elasticapm")
     old_client = app.client
     client = DjangoClient(**client_config)
     register_handlers(client)
@@ -90,6 +98,7 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     client.httpserver = validating_httpserver
     yield client
     client.close()
+    elasticapm.uninstrument()
 
     app.client = old_client
 

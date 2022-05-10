@@ -27,15 +27,14 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 
-import json
-
+from starlette.datastructures import Headers
 from starlette.requests import Request
-from starlette.responses import Response
 from starlette.types import Message
 
 from elasticapm.conf import Config, constants
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import get_url_dict
 
 
 async def get_data_from_request(request: Request, config: Config, event_type: str) -> dict:
@@ -51,7 +50,7 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
     """
     result = {
         "method": request.method,
-        "socket": {"remote_address": _get_client_ip(request), "encrypted": request.url.is_secure},
+        "socket": {"remote_address": _get_client_ip(request)},
         "cookies": request.cookies,
     }
     if config.capture_headers:
@@ -64,10 +63,6 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
             body = None
             try:
                 body = await get_body(request)
-                if request.headers.get("content-type") == "application/x-www-form-urlencoded":
-                    body = await query_params_to_dict(body)
-                else:
-                    body = json.loads(body)
             except Exception:
                 pass
             if body is not None:
@@ -78,11 +73,11 @@ async def get_data_from_request(request: Request, config: Config, event_type: st
     return result
 
 
-async def get_data_from_response(response: Response, config: Config, event_type: str) -> dict:
+async def get_data_from_response(message: dict, config: Config, event_type: str) -> dict:
     """Loads data from response for APM capturing.
 
     Args:
-        response (Response)
+        message (dict)
         config (Config)
         event_type (str)
 
@@ -91,15 +86,12 @@ async def get_data_from_response(response: Response, config: Config, event_type:
     """
     result = {}
 
-    if isinstance(getattr(response, "status_code", None), compat.integer_types):
-        result["status_code"] = response.status_code
+    if "status" in message:
+        result["status_code"] = message["status"]
 
-    if config.capture_headers and getattr(response, "headers", None):
-        headers = response.headers
-        result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
-
-    if config.capture_body in ("all", event_type) and hasattr(response, "body"):
-        result["body"] = response.body.decode("utf-8")
+    if config.capture_headers and "headers" in message:
+        headers = Headers(raw=message["headers"])
+        result["headers"] = {key: ";".join(headers.getlist(key)) for key in headers.keys()}
 
     return result
 
@@ -113,6 +105,7 @@ async def set_body(request: Request, body: bytes):
     """
 
     async def receive() -> Message:
+        await asyncio.sleep(0)
         return {"type": "http.request", "body": body}
 
     request._receive = receive
@@ -121,7 +114,9 @@ async def set_body(request: Request, body: bytes):
 async def get_body(request: Request) -> str:
     """Gets body from the request.
 
-    todo: This is not very pretty however it is not usual to get request body out of the target method (business logic).
+    When we consume the body, we replace the streaming mechanism with
+    a mocked version -- this workaround came from
+    https://github.com/encode/starlette/issues/495#issuecomment-513138055
 
     Args:
         request (Request)

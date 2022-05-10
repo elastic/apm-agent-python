@@ -35,7 +35,6 @@ from __future__ import absolute_import
 import decimal
 import uuid
 
-from elasticapm.utils import compat
 from elasticapm.utils.encoding import enforce_label_format, shorten, transform
 
 
@@ -49,20 +48,18 @@ def test_transform_incorrect_unicode():
 
 def test_transform_correct_unicode():
     x = "רונית מגן"
-    if compat.PY2:
-        x = x.decode("utf-8")
 
     result = transform(x)
-    assert type(result) == compat.text_type
+    assert type(result) == str
     assert result == x
 
 
 def test_transform_bad_string():
-    x = compat.b("The following character causes problems: \xd4")
+    x = "The following character causes problems: \xd4".encode("latin-1")
 
     result = transform(x)
-    assert type(result) == compat.binary_type
-    assert result == compat.b("(Error decoding value)")
+    assert type(result) == bytes
+    assert result == "(Error decoding value)".encode("latin-1")
 
 
 def test_transform_float():
@@ -129,15 +126,12 @@ def test_transform_dict_keys_utf8_as_str():
     assert type(result) == dict
     keys = list(result.keys())
     assert len(keys) == 1
-    assert type(keys[0]), compat.binary_type
-    if compat.PY3:
-        assert keys[0] == "רונית מגן"
-    else:
-        assert keys[0] == u"רונית מגן"
+    assert type(keys[0]), bytes
+    assert keys[0] == "רונית מגן"
 
 
 def test_transform_dict_keys_utf8_as_unicode():
-    x = {compat.text_type("\u05e8\u05d5\u05e0\u05d9\u05ea \u05de\u05d2\u05df"): "bar"}
+    x = {str("\u05e8\u05d5\u05e0\u05d9\u05ea \u05de\u05d2\u05df"): "bar"}
 
     result = transform(x)
     keys = list(result.keys())
@@ -180,10 +174,7 @@ def test_transform_broken_repr():
     x = Foo()
 
     result = transform(x)
-    if compat.PY2:
-        expected = u"<BadRepr: <class 'tests.utils.encoding.tests.Foo'>>"
-    else:
-        expected = "<BadRepr: <class 'tests.utils.encoding.tests.test_transform_broken_repr.<locals>.Foo'>>"
+    expected = "<BadRepr: <class 'tests.utils.encoding.tests.test_transform_broken_repr.<locals>.Foo'>>"
     assert result == expected
 
 
@@ -239,9 +230,9 @@ def test_enforce_label_format():
             return "OK"
 
         def __unicode__(self):
-            return u"OK"
+            return "OK"
 
     labels = enforce_label_format(
         {'a.b*c"d': MyObj(), "x": "x" * 1025, "int": 1, "float": 1.1, "decimal": decimal.Decimal("1")}
     )
-    assert labels == {"a_b_c_d": "OK", "x": "x" * 1023 + u"…", "int": 1, "float": 1.1, "decimal": decimal.Decimal("1")}
+    assert labels == {"a_b_c_d": "OK", "x": "x" * 1023 + "…", "int": 1, "float": 1.1, "decimal": decimal.Decimal("1")}

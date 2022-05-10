@@ -36,9 +36,10 @@ import sys
 import traceback
 import warnings
 
+from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
-from elasticapm.utils import compat, wrapt
+from elasticapm.utils import wrapt
 from elasticapm.utils.encoding import to_unicode
 from elasticapm.utils.stacks import iter_stack_frames
 
@@ -91,7 +92,7 @@ class LoggingHandler(logging.Handler):
     def _emit(self, record, **kwargs):
         data = {}
 
-        for k, v in compat.iteritems(record.__dict__):
+        for k, v in record.__dict__.items():
             if "." not in k and k not in ("culprit",):
                 continue
             data[k] = v
@@ -154,13 +155,13 @@ class LoggingHandler(logging.Handler):
 
         return self.client.capture(
             "Message",
-            param_message={"message": compat.text_type(record.msg), "params": record.args},
+            param_message={"message": str(record.msg), "params": record.args},
             stack=stack,
             custom=custom,
             exception=exception,
             level=record.levelno,
             logger_name=record.name,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -172,6 +173,7 @@ class LoggingFilter(logging.Filter):
     * elasticapm_transaction_id
     * elasticapm_trace_id
     * elasticapm_span_id
+    * elasticapm_service_name
 
     These attributes can then be incorporated into your handlers and formatters,
     so that you can tie log messages to transactions in elasticsearch.
@@ -226,7 +228,16 @@ def _add_attributes_to_log_record(record):
     span_id = span.id if span else None
     record.elasticapm_span_id = span_id
 
-    record.elasticapm_labels = {"transaction.id": transaction_id, "trace.id": trace_id, "span.id": span_id}
+    client = get_client()
+    service_name = client.config.service_name if client else None
+    record.elasticapm_service_name = service_name
+
+    record.elasticapm_labels = {
+        "transaction.id": transaction_id,
+        "trace.id": trace_id,
+        "span.id": span_id,
+        "service.name": service_name,
+    }
 
     return record
 
@@ -254,16 +265,14 @@ class Formatter(logging.Formatter):
             "trace.id=%(elasticapm_trace_id)s "
             "span.id=%(elasticapm_span_id)s"
         )
-        if compat.PY3:
-            super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
-        else:
-            super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt)
+        super(Formatter, self).__init__(fmt=fmt, datefmt=datefmt, style=style)
 
     def format(self, record):
         if not hasattr(record, "elasticapm_transaction_id"):
             record.elasticapm_transaction_id = None
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
+            record.elasticapm_service_name = None
         return super(Formatter, self).format(record=record)
 
     def formatTime(self, record, datefmt=None):
@@ -271,4 +280,5 @@ class Formatter(logging.Formatter):
             record.elasticapm_transaction_id = None
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
+            record.elasticapm_service_name = None
         return super(Formatter, self).formatTime(record=record, datefmt=datefmt)

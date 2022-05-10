@@ -43,7 +43,7 @@ if "MYSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping pymysql tests, no MYSQL_HOST environment variable set"))
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def pymysql_connection(request):
     conn = pymysql.connect(
         host=os.environ.get("MYSQL_HOST", "localhost"),
@@ -55,7 +55,6 @@ def pymysql_connection(request):
     cursor.execute("CREATE TABLE `test` (`id` INT, `name` VARCHAR(5))")
     cursor.execute("INSERT INTO `test` (`id`, `name`) VALUES (1, 'one'), (2, 'two'), (3, 'three')")
     row = cursor.fetchone()
-    print(row)
 
     yield conn
 

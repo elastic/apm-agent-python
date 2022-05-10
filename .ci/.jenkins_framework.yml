@@ -4,20 +4,26 @@ FRAMEWORK:
   - none
   - django-1.11
   - django-2.0
-  - django-2.2
-  - django-3.0
+  - django-3.1
+  - django-3.2
+  - django-4.0
   - flask-0.12
   - flask-1.1
+  - flask-2.0
+  - jinja2-3
+  - opentelemetry-newest
   - opentracing-newest
   - twisted-18
-  - celery-3-flask-1.0
-  - celery-3-django-2.0
   - celery-4-flask-1.0
   - celery-4-django-2.0
+  - celery-5-flask-2
+  - celery-5-django-4
   - requests-newest
   - boto3-newest
   - pymongo-newest
   - redis-newest
+  - aioredis-newest
+  #- aioredis-2  # not supported yet
   - psycopg2-newest
   - pymssql-newest
   - pyodbc-newest
@@ -38,7 +44,12 @@ FRAMEWORK:
   - aiopg-newest
   - asyncpg-newest
   - tornado-newest
-  - starlette-newest
+  # - starlette-newest # disabled for now, see https://github.com/elastic/apm-agent-python/issues/1172
   - pymemcache-newest
   - graphene-2
   - httpx-newest
+  - httplib2-newest
+  - prometheus_client-newest
+  - sanic-newest
+  - aiomysql-newest
+  - aiobotocore-newest

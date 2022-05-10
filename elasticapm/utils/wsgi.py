@@ -34,12 +34,8 @@ This module implements WSGI related helpers adapted from ``werkzeug.wsgi``
 :copyright: (c) 2010 by the Werkzeug Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from elasticapm.utils import compat
 
-try:
-    from urllib import quote
-except ImportError:
-    from urllib.parse import quote
+from urllib.parse import quote
 
 
 # `get_headers` comes from `werkzeug.datastructures.EnvironHeaders`
@@ -47,7 +43,7 @@ def get_headers(environ):
     """
     Returns only proper HTTP headers.
     """
-    for key, value in compat.iteritems(environ):
+    for key, value in environ.items():
         key = str(key)
         if key.startswith("HTTP_") and key not in ("HTTP_CONTENT_TYPE", "HTTP_CONTENT_LENGTH"):
             yield key[5:].replace("_", "-").lower(), value
@@ -88,7 +84,7 @@ def get_host(environ):
 
 
 # `get_current_url` comes from `werkzeug.wsgi`
-def get_current_url(environ, root_only=False, strip_querystring=False, host_only=False):
+def get_current_url(environ, root_only=False, strip_querystring=False, host_only=False, path_only=False):
     """A handy helper function that recreates the full URL for the current
     request or parts of it.  Here an example:
 
@@ -107,8 +103,12 @@ def get_current_url(environ, root_only=False, strip_querystring=False, host_only
     :param root_only: set `True` if you only want the root URL.
     :param strip_querystring: set to `True` if you don't want the querystring.
     :param host_only: set to `True` if the host URL should be returned.
+    :param path_only: set to `True` if only the path should be returned.
     """
-    tmp = [environ["wsgi.url_scheme"], "://", get_host(environ)]
+    if path_only:
+        tmp = []
+    else:
+        tmp = [environ["wsgi.url_scheme"], "://", get_host(environ)]
     cat = tmp.append
     if host_only:
         return "".join(tmp) + "/"

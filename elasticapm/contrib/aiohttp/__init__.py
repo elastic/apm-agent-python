@@ -33,8 +33,6 @@ import aiohttp
 import elasticapm
 from elasticapm import Client
 
-CLIENT_KEY = "_elasticapm_client_instance"
-
 
 class ElasticAPM:
     def __init__(self, app, client=None):
@@ -43,7 +41,6 @@ class ElasticAPM:
             config.setdefault("framework_name", "aiohttp")
             config.setdefault("framework_version", aiohttp.__version__)
             client = Client(config=config)
-        app[CLIENT_KEY] = client
         self.app = app
         self.client = client
         self.install_tracing(app, client)
@@ -51,6 +48,6 @@ class ElasticAPM:
     def install_tracing(self, app, client):
         from elasticapm.contrib.aiohttp.middleware import tracing_middleware
 
-        app.middlewares.insert(0, tracing_middleware(app))
+        app.middlewares.insert(0, tracing_middleware(app, client))
         if client.config.instrument and client.config.enabled:
             elasticapm.instrument()
