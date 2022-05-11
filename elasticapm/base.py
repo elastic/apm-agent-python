@@ -116,8 +116,12 @@ class Client(object):
             for msg in config.errors.values():
                 self.error_logger.error(msg)
             config.disable_send = True
-        if config.service_name == "python_service":
-            self.logger.warning("No custom SERVICE_NAME was set -- using non-descript default 'python_service'")
+        if config.service_name == "unknown-python-service":
+            self.logger.warning("No custom SERVICE_NAME was set -- using non-descript default 'unknown-python-service'")
+        if config.service_name.strip() == "":
+            self.logger.error(
+                "SERVICE_NAME cannot be whitespace-only. Please set the SERVICE_NAME to a useful identifier."
+            )
         self.config = VersionedConfig(config, version=None)
 
         # Insert the log_record_factory into the logging library
