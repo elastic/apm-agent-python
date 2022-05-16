@@ -426,6 +426,14 @@ def test_static_files_only(app_static_files_only, elasticapm_client):
     assert request["socket"] == {"remote_address": "127.0.0.1"}
 
 
+def test_non_utf_8_body_in_ignored_paths_with_capture_body(app, elasticapm_client):
+    client = TestClient(app)
+    elasticapm_client.config.update(1, capture_body="all", transaction_ignore_urls="/hello")
+    response = client.post("/hello", data=b"b$\x19\xc2")
+    assert response.status_code == 200
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 0
+
+
 def test_static_files_only_file_notfound(app_static_files_only, elasticapm_client):
     client = TestClient(app_static_files_only)
 
