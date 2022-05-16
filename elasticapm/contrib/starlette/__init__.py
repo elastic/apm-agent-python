@@ -120,7 +120,7 @@ class ElasticAPM:
             elasticapm.instrumentation.control.instrument()
 
         # If we ever make this a general-use ASGI middleware we should use
-        # `asgiref.conpatibility.guarantee_single_callable(app)` here
+        # `asgiref.compatibility.guarantee_single_callable(app)` here
         self.app = app
 
     async def __call__(self, scope, receive, send):
@@ -131,7 +131,7 @@ class ElasticAPM:
             send: send awaitable callable
         """
         # we only handle the http scope, skip anything else.
-        if scope["type"] != "http":
+        if scope["type"] != "http" or (scope["type"] == "http" and self.client.should_ignore_url(scope["path"])):
             await self.app(scope, receive, send)
             return
 
@@ -145,32 +145,36 @@ class ElasticAPM:
                 elasticapm.set_transaction_result(result, override=False)
             await send(message)
 
-        # When we consume the body from receive, we replace the streaming
-        # mechanism with a mocked version -- this workaround came from
-        # https://github.com/encode/starlette/issues/495#issuecomment-513138055
-        body = b""
-        while True:
-            message = await receive()
-            if not message:
-                break
-            if message["type"] == "http.request":
-                b = message.get("body", b"")
-                if b:
-                    body += b
-                if not message.get("more_body", False):
+        if self.client.config.capture_body != "off":
+
+            # When we consume the body from receive, we replace the streaming
+            # mechanism with a mocked version -- this workaround came from
+            # https://github.com/encode/starlette/issues/495#issuecomment-513138055
+            body = []
+            while True:
+                message = await receive()
+                if not message:
                     break
-            if message["type"] == "http.disconnect":
-                break
+                if message["type"] == "http.request":
+                    b = message.get("body", b"")
+                    if b:
+                        body.append(b)
+                    if not message.get("more_body", False):
+                        break
+                if message["type"] == "http.disconnect":
+                    break
 
-        async def _receive() -> Message:
-            await asyncio.sleep(0)
-            return {"type": "http.request", "body": body}
+            async def mocked_receive() -> Message:
+                await asyncio.sleep(0)
+                return {"type": "http.request", "body": b"".join(body)}
 
-        request = Request(scope, receive=_receive)
+            receive = mocked_receive
+
+        request = Request(scope, receive=receive)
         await self._request_started(request)
 
         try:
-            await self.app(scope, _receive, wrapped_send)
+            await self.app(scope, receive, wrapped_send)
             elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
         except Exception:
             await self.capture_exception(
@@ -216,15 +220,12 @@ class ElasticAPM:
         if self.client.config.capture_body != "off":
             await get_body(request)
 
-        if not self.client.should_ignore_url(request.url.path):
-            trace_parent = TraceParent.from_headers(dict(request.headers))
-            self.client.begin_transaction("request", trace_parent=trace_parent)
+        trace_parent = TraceParent.from_headers(dict(request.headers))
+        self.client.begin_transaction("request", trace_parent=trace_parent)
 
-            await set_context(
-                lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request"
-            )
-            transaction_name = self.get_route_name(request) or request.url.path
-            elasticapm.set_transaction_name("{} {}".format(request.method, transaction_name), override=False)
+        await set_context(lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request")
+        transaction_name = self.get_route_name(request) or request.url.path
+        elasticapm.set_transaction_name("{} {}".format(request.method, transaction_name), override=False)
 
     def get_route_name(self, request: Request) -> str:
         app = request.app
