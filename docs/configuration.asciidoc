@@ -99,7 +99,9 @@ While a default is provided, it is essential that you override this default
 with something more descriptive and unique across your infrastructure.
 
 NOTE: The service name must conform to this regular expression: `^[a-zA-Z0-9 _-]+$`.
-In other words, the service name must only contain characters from the ASCII alphabet, numbers, dashes, underscores, and spaces.
+In other words, the service name must only contain characters from the ASCII
+alphabet, numbers, dashes, underscores, and spaces. It cannot be an empty string
+or whitespace-only.
 
 [float]
 [[config-server-url]]
