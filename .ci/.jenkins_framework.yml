@@ -53,3 +53,4 @@ FRAMEWORK:
   - sanic-newest
   - aiomysql-newest
   - aiobotocore-newest
+  - kafka-python-newest
