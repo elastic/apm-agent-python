@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent { label 'linux && immutable && ubuntu-20' }
+  agent { label 'linux-immutable && ubuntu-20' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
