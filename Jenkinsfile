@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent { label 'linux && immutable' }
+  agent { label 'linux && immutable && ubuntu-20' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -173,7 +173,7 @@ pipeline {
                 sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
                 sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
                 // skip pypy builds with CIBW_SKIP=pp*
-                sh script: 'CIBW_SKIP="pp* cp27* cp35*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+                sh script: 'CIBW_SKIP="pp* cp27* cp35*" CIBW_ARCHS_LINUX="x86_64 aarch64" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
               }
               stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
             }
