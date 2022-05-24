@@ -466,6 +466,23 @@ Collected trace data:
 
 * Destination (address and port)
 
+[float]
+[[automatic-instrumentation-db-kafka-python]]
+==== kafka-python
+
+Library: `kafka-python` (`>=2.0`)
+
+Instrumented methods:
+
+ * `kafka.KafkaProducer.send`,
+ * `kafka.KafkaConsumer.poll`,
+ * `kafka.KafkaConsumer.\\__next__`
+
+Collected trace data:
+
+ * Destination (address and port)
+ * topic (if applicable)
+
 
 [float]
 [[automatic-instrumentation-http]]

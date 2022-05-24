@@ -38,7 +38,7 @@ import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import elasticapm
 from elasticapm.conf import constants
@@ -100,6 +100,7 @@ class BaseSpan(object):
         self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
         self.duration: Optional[timedelta] = None
+        self.links: List[Dict[str, str]] = []
         if labels:
             self.label(**labels)
 
@@ -143,6 +144,12 @@ class BaseSpan(object):
         """
         labels = encoding.enforce_label_format(labels)
         self.labels.update(labels)
+
+    def add_link(self, trace_parent: TraceParent) -> None:
+        """
+        Causally link this span/transaction to another span/transaction
+        """
+        self.links.append({"trace_id": trace_parent.trace_id, "span_id": trace_parent.span_id})
 
     def set_success(self):
         self.outcome = constants.OUTCOME.SUCCESS
@@ -394,6 +401,8 @@ class Transaction(BaseSpan):
             # only set parent_id if this transaction isn't the root
             if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
+        if self.links:
+            result["links"] = self.links
         # faas context belongs top-level on the transaction
         if "faas" in self.context:
             result["faas"] = self.context.pop("faas")
@@ -477,6 +486,7 @@ class Span(BaseSpan):
         "sync",
         "outcome",
         "_child_durations",
+        "_cancelled",
     )
 
     def __init__(
@@ -527,6 +537,7 @@ class Span(BaseSpan):
         self.action = span_action
         self.dist_tracing_propagated = False
         self.composite: Dict[str, Any] = {}
+        self._cancelled: bool = False
         super(Span, self).__init__(labels=labels, start=start)
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         if self.transaction._breakdown:
@@ -564,6 +575,8 @@ class Span(BaseSpan):
             if self.context is None:
                 self.context = {}
             self.context["tags"] = self.labels
+        if self.links:
+            result["links"] = self.links
         if self.context:
             self.autofill_resource_context()
             # otel attributes and spankind need to be top-level
@@ -666,6 +679,8 @@ class Span(BaseSpan):
         if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
             self.transaction.track_dropped_span(self)
             self.transaction.dropped_spans += 1
+        elif self._cancelled:
+            self.transaction._span_counter -= 1
         else:
             self.tracer.queue_func(SPAN, self.to_dict())
 
@@ -756,6 +771,15 @@ class Span(BaseSpan):
                     self.context["destination"]["service"]["name"] = ""
                 if "type" not in self.context["destination"]["service"]:
                     self.context["destination"]["service"]["type"] = ""
+
+    def cancel(self) -> None:
+        """
+        Mark span as cancelled. Cancelled spans don't count towards started spans nor dropped spans.
+
+        No checks are made to ensure that spans which already propagated distributed context are not
+        cancelled.
+        """
+        self._cancelled = True
 
     def __str__(self):
         return "{}/{}/{}".format(self.name, self.type, self.subtype)

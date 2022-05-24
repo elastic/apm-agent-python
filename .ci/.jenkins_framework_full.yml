@@ -85,3 +85,4 @@ FRAMEWORK:
   - sanic-20.12
   - sanic-newest
   - aiobotocore-newest
+  - kafka-python-newest

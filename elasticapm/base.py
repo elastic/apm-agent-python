@@ -632,9 +632,18 @@ class Client(object):
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
     def should_ignore_url(self, url):
+        """Checks if URL should be ignored based on the transaction_ignore_urls setting"""
         if self.config.transaction_ignore_urls:
             for pattern in self.config.transaction_ignore_urls:
                 if pattern.match(url):
+                    return True
+        return False
+
+    def should_ignore_topic(self, topic: str) -> bool:
+        """Checks if messaging topic should be ignored based on the ignore_message_queues setting"""
+        if self.config.ignore_message_queues:
+            for pattern in self.config.ignore_message_queues:
+                if pattern.match(topic):
                     return True
         return False
 
