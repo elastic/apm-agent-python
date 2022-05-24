@@ -129,7 +129,7 @@ async def get_body(request: Request) -> str:
 
     request._stream_consumed = False
 
-    return body.decode("utf-8")
+    return body.decode("utf-8", errors="replace")
 
 
 async def query_params_to_dict(query_params: str) -> dict:
