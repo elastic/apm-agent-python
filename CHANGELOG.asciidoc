@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}1520[#1520]
+* Add instrumentation for https://kafka-python.readthedocs.io/en/master/[`kafka-python`] {pull}1555[#1555]
 
 [float]
 ===== Bug fixes
