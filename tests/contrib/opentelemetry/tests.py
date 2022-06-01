@@ -32,7 +32,7 @@ import pytest  # isort:skip
 
 pytest.importorskip("opentelemetry.sdk")  # isort:skip
 
-from opentelemetry.trace import SpanContext, SpanKind, TraceFlags
+from opentelemetry.trace import Link, SpanContext, SpanKind, TraceFlags
 from opentelemetry.trace.propagation import _SPAN_KEY
 
 import elasticapm.contrib.opentelemetry.context as context
@@ -136,6 +136,23 @@ def test_ot_spancontext(tracer: Tracer):
     assert isinstance(span_context, SpanContext)
     assert span_context.trace_id
     assert span_context.trace_flags.sampled == TraceFlags.SAMPLED
+
+
+def test_span_links(tracer: Tracer):
+    span_context = SpanContext(
+        trace_id=int("aabbccddeeff00112233445566778899", 16), span_id=int("0011223344556677", 16), is_remote=False
+    )
+    link = Link(span_context)
+    with tracer.start_as_current_span("testtransaction", links=[link]):
+        with tracer.start_as_current_span("testspan", links=[link]):
+            pass
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    span = client.events[constants.SPAN][0]
+    assert transaction["links"][0]["trace_id"] == "aabbccddeeff00112233445566778899"
+    assert transaction["links"][0]["span_id"] == "0011223344556677"
+    assert span["links"][0]["trace_id"] == "aabbccddeeff00112233445566778899"
+    assert span["links"][0]["span_id"] == "0011223344556677"
 
 
 # TODO Add some span subtype testing?
