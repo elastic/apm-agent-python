@@ -466,3 +466,44 @@ def test_transaction_span_links(elasticapm_client):
     assert span["links"][0]["span_id"] == "0011223344556677"
     assert span["links"][1]["trace_id"] == "00112233445566778899aabbccddeeff"
     assert span["links"][1]["span_id"] == "aabbccddeeff0011"
+
+
+def test_transaction_trace_continuation_continue(elasticapm_client):
+    elasticapm_client.config.update("1", trace_continuation_strategy=constants.TRACE_CONTINUATION_STRATEGY.CONTINUE)
+    tp = TraceParent.from_string("00-aabbccddeeff00112233445566778899-0011223344556677-01")
+    elasticapm_client.begin_transaction("a", trace_parent=tp)
+    elasticapm_client.end_transaction("foo")
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["trace_id"] == tp.trace_id
+    assert "links" not in transaction
+
+
+def test_transaction_trace_continuation_restart(elasticapm_client):
+    elasticapm_client.config.update("1", trace_continuation_strategy=constants.TRACE_CONTINUATION_STRATEGY.RESTART)
+    tp = TraceParent.from_string("00-aabbccddeeff00112233445566778899-0011223344556677-01")
+    elasticapm_client.begin_transaction("a", trace_parent=tp)
+    elasticapm_client.end_transaction("foo")
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["trace_id"] != tp.trace_id
+    assert transaction["links"][0]["trace_id"] == tp.trace_id
+    assert transaction["links"][0]["span_id"] == tp.span_id
+
+
+def test_transaction_trace_continuation_restart_external(elasticapm_client):
+    elasticapm_client.config.update(
+        "1", trace_continuation_strategy=constants.TRACE_CONTINUATION_STRATEGY.RESTART_EXTERNAL
+    )
+    tp = TraceParent.from_string("00-aabbccddeeff00112233445566778899-0011223344556677-01")
+    elasticapm_client.begin_transaction("a", trace_parent=tp)
+    elasticapm_client.end_transaction("foo")
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["trace_id"] != tp.trace_id
+    assert transaction["links"][0]["trace_id"] == tp.trace_id
+    assert transaction["links"][0]["span_id"] == tp.span_id
+
+    tp.add_tracestate("foo", "bar")
+    elasticapm_client.begin_transaction("a", trace_parent=tp)
+    elasticapm_client.end_transaction("foo")
+    transaction = elasticapm_client.events[constants.TRANSACTION][1]
+    assert transaction["trace_id"] == tp.trace_id
+    assert "links" not in transaction
