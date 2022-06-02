@@ -1196,7 +1196,7 @@ Valid values are:
 
 - `'continue'`: The default behavior. An incoming `traceparent` value is used to continue the trace and determine the sampling decision.
 - `'restart'`: Always ignores the `traceparent` header of incoming requests.
-  A new trace-id will be generated and the sampling decision will be made based on <<transaction-sample-rate,`transaction_sample_rate`>>.
+  A new trace-id will be generated and the sampling decision will be made based on <<config-transaction-sample-rate,`transaction_sample_rate`>>.
   A *span link* will be made to the incoming traceparent.
 - `'restart_external'`: If an incoming request includes the `es` vendor flag in `tracestate`, then any 'traceparent' will be considered internal and will be handled as described for `'continue'` above.
   Otherwise, any `'traceparent'` is considered external and will be handled as described for `'restart'` above.

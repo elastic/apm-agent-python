@@ -33,7 +33,7 @@ import ctypes
 import itertools
 import random
 import re
-from typing import Optional
+from typing import Dict, Optional
 
 from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
@@ -190,7 +190,7 @@ class TraceParent(object):
             return ",".join([item[1] for item in headers if item[0] == key])
         return headers.get(key)
 
-    def _parse_tracestate(self, tracestate) -> dict[str, str]:
+    def _parse_tracestate(self, tracestate) -> Dict[str, str]:
         """
         Tracestate can contain data from any vendor, made distinct by vendor
         keys. Vendors are comma-separated. The elastic (es) tracestate data is
