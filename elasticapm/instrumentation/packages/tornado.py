@@ -42,11 +42,14 @@ logger = get_logger("elasticapm.instrument")
 
 class TornadoBaseInstrumentedModule(AbstractInstrumentedModule):
     def instrument(self):
-        import tornado
+        try:
+            import tornado
 
-        if tornado.version_info[0] < 6:
-            logger.debug("Skipping instrumentation of %s. Tornado is only supported with version 6.0+", self.name)
-            return
+            if tornado.version_info[0] < 6:
+                logger.debug("Skipping instrumentation of %s. Tornado is only supported with version 6.0+", self.name)
+                return
+        except ImportError:
+            pass
         super().instrument()
 
 
