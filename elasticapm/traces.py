@@ -38,7 +38,7 @@ import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import elasticapm
 from elasticapm.conf import constants
@@ -91,7 +91,7 @@ class ChildDuration(object):
 
 
 class BaseSpan(object):
-    def __init__(self, labels=None, start=None):
+    def __init__(self, labels=None, start=None, links: Optional[Sequence[TraceParent]] = None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
         self.outcome: Optional[str] = None
@@ -100,7 +100,10 @@ class BaseSpan(object):
         self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
         self.duration: Optional[timedelta] = None
-        self.links: List[Dict[str, str]] = []
+        self.links: Optional[List[Dict[str, str]]] = None
+        if links:
+            for trace_parent in links:
+                self.add_link(trace_parent)
         if labels:
             self.label(**labels)
 
@@ -149,6 +152,8 @@ class BaseSpan(object):
         """
         Causally link this span/transaction to another span/transaction
         """
+        if self.links is None:
+            self.links = []
         self.links.append({"trace_id": trace_parent.trace_id, "span_id": trace_parent.span_id})
 
     def set_success(self):
@@ -175,6 +180,7 @@ class Transaction(BaseSpan):
         is_sampled: bool = True,
         start: Optional[float] = None,
         sample_rate: Optional[float] = None,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         """
         tracer
@@ -193,6 +199,8 @@ class Transaction(BaseSpan):
             Sample rate which was used to decide whether to sample this transaction.
             This is reported to the APM server so that unsampled transactions can
             be extrapolated.
+        links:
+            A list of traceparents to link this transaction causally
         """
         self.id = self.get_dist_tracing_id()
         if not trace_parent:
@@ -233,7 +241,10 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._breakdown = None
-        super(Transaction, self).__init__(start=start)
+        super().__init__(start=start)
+        if links:
+            for trace_parent in links:
+                self.add_link(trace_parent)
 
     def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
         super().end(skip_frames, duration)
@@ -271,6 +282,7 @@ class Transaction(BaseSpan):
         sync=None,
         start=None,
         auto_activate=True,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
@@ -293,6 +305,7 @@ class Transaction(BaseSpan):
                 span_action=span_action,
                 sync=sync,
                 start=start,
+                links=links,
             )
             span.frames = tracer.frames_collector_func()
             self._span_counter += 1
@@ -312,6 +325,7 @@ class Transaction(BaseSpan):
         sync=None,
         start=None,
         auto_activate=True,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         """
         Begin a new span
@@ -325,6 +339,7 @@ class Transaction(BaseSpan):
         :param sync: indicate if the span is synchronous or not. In most cases, `None` should be used
         :param start: timestamp, mostly useful for testing
         :param auto_activate: whether to set this span in execution_context
+        :param links: an optional list of traceparents to link this span with
         :return: the Span object
         """
         return self._begin_span(
@@ -339,6 +354,7 @@ class Transaction(BaseSpan):
             sync=sync,
             start=start,
             auto_activate=auto_activate,
+            links=links,
         )
 
     def end_span(self, skip_frames: int = 0, duration: Optional[float] = None, outcome: str = "unknown"):
@@ -503,6 +519,7 @@ class Span(BaseSpan):
         span_action: Optional[str] = None,
         sync: Optional[bool] = None,
         start: Optional[int] = None,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         """
         Create a new Span
@@ -538,7 +555,7 @@ class Span(BaseSpan):
         self.dist_tracing_propagated = False
         self.composite: Dict[str, Any] = {}
         self._cancelled: bool = False
-        super(Span, self).__init__(labels=labels, start=start)
+        super().__init__(labels=labels, start=start, links=links)
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
@@ -870,7 +887,14 @@ class Tracer(object):
             else:
                 return self.config.span_frames_min_duration
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
+    def begin_transaction(
+        self,
+        transaction_type: str,
+        trace_parent: Optional[TraceParent] = None,
+        start: Optional[float] = None,
+        auto_activate: bool = True,
+        links: Optional[Sequence[TraceParent]] = None,
+    ):
         """
         Start a new transactions and bind it in a thread-local variable
 
@@ -878,6 +902,7 @@ class Tracer(object):
         :param trace_parent: an optional TraceParent object
         :param start: override the start timestamp, mostly useful for testing
         :param auto_activate: whether to set this transaction in execution_context
+        :param list of traceparents to causally link this transaction to
 
         :returns the Transaction object
         """
@@ -900,6 +925,7 @@ class Tracer(object):
             is_sampled=is_sampled,
             start=start,
             sample_rate=sample_rate,
+            links=links,
         )
         if trace_parent is None:
             transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
@@ -949,6 +975,7 @@ class capture_span(object):
         "duration",
         "start",
         "sync",
+        "links",
     )
 
     def __init__(
@@ -964,6 +991,7 @@ class capture_span(object):
         start: Optional[int] = None,
         duration: Optional[Union[float, timedelta]] = None,
         sync: Optional[bool] = None,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         self.name = name
         if span_subtype is None and "." in span_type:
@@ -985,6 +1013,7 @@ class capture_span(object):
             duration = timedelta(seconds=duration)
         self.duration = duration
         self.sync = sync
+        self.links = links
 
     def __call__(self, func: Callable) -> Callable:
         self.name = self.name or get_name_from_func(func)
@@ -1017,6 +1046,7 @@ class capture_span(object):
                 span_action=self.action,
                 start=self.start,
                 sync=sync,
+                links=self.links,
             )
         return None
 

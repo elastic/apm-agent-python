@@ -446,3 +446,23 @@ def test_backdating_transaction(elasticapm_client):
     elasticapm_client.end_transaction()
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     assert 1000 < transaction["duration"] < 2000
+
+
+def test_transaction_span_links(elasticapm_client):
+    tp1 = TraceParent.from_string("00-aabbccddeeff00112233445566778899-0011223344556677-01")
+    tp2 = TraceParent.from_string("00-00112233445566778899aabbccddeeff-aabbccddeeff0011-01")
+    elasticapm_client.begin_transaction("a", links=[tp1, tp2])
+    with elasticapm.capture_span("a", links=(tp1, tp2)):
+        pass
+    elasticapm_client.end_transaction("foo")
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert transaction["links"][0]["trace_id"] == "aabbccddeeff00112233445566778899"
+    assert transaction["links"][0]["span_id"] == "0011223344556677"
+    assert transaction["links"][1]["trace_id"] == "00112233445566778899aabbccddeeff"
+    assert transaction["links"][1]["span_id"] == "aabbccddeeff0011"
+
+    assert span["links"][0]["trace_id"] == "aabbccddeeff00112233445566778899"
+    assert span["links"][0]["span_id"] == "0011223344556677"
+    assert span["links"][1]["trace_id"] == "00112233445566778899aabbccddeeff"
+    assert span["links"][1]["span_id"] == "aabbccddeeff0011"
