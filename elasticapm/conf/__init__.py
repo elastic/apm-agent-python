@@ -38,7 +38,7 @@ import socket
 import threading
 from datetime import timedelta
 
-from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, TRACE_CONTINUATION_STRATEGY
 from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
@@ -670,6 +670,19 @@ class Config(_ConfigBase):
         validators=[EnumerationValidator(["off", "override"])],
         callbacks=[_log_ecs_reformatting_callback],
         default="off",
+    )
+    trace_continuation_strategy = _ConfigValue(
+        "TRACE_CONTINUATION_STRATEGY",
+        validators=[
+            EnumerationValidator(
+                [
+                    TRACE_CONTINUATION_STRATEGY.CONTINUE,
+                    TRACE_CONTINUATION_STRATEGY.RESTART,
+                    TRACE_CONTINUATION_STRATEGY.RESTART_EXTERNAL,
+                ]
+            )
+        ],
+        default=TRACE_CONTINUATION_STRATEGY.CONTINUE,
     )
 
     @property

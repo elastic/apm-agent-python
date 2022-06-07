@@ -114,3 +114,8 @@ except NameError:
     LABEL_TYPES = (bool, int, float, decimal.Decimal)
 
 TRACESTATE = namedtuple("TRACESTATE", ["SAMPLE_RATE"])(SAMPLE_RATE="s")
+TRACE_CONTINUATION_STRATEGY = namedtuple("TRACE_CONTINUATION_STRATEGY", ["CONTINUE", "RESTART", "RESTART_EXTERNAL"])(
+    CONTINUE="continue",
+    RESTART="restart",
+    RESTART_EXTERNAL="restart_external",
+)

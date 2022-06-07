@@ -46,7 +46,7 @@ from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import encoding, get_name_from_func, nested_key, url_to_destination_resource
-from elasticapm.utils.disttracing import TraceParent, TracingOptions
+from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.time import time_to_perf_counter
 
@@ -204,12 +204,7 @@ class Transaction(BaseSpan):
         """
         self.id = self.get_dist_tracing_id()
         if not trace_parent:
-            trace_parent = TraceParent(
-                constants.TRACE_CONTEXT_VERSION,
-                "%032x" % random.getrandbits(128),
-                self.id,
-                TracingOptions(recorded=is_sampled),
-            )
+            trace_parent = TraceParent.new(self.id, is_sampled)
 
         self.trace_parent: TraceParent = trace_parent
         self.timestamp = start if start is not None else time.time()
@@ -894,7 +889,7 @@ class Tracer(object):
         start: Optional[float] = None,
         auto_activate: bool = True,
         links: Optional[Sequence[TraceParent]] = None,
-    ):
+    ) -> Transaction:
         """
         Start a new transactions and bind it in a thread-local variable
 
@@ -902,10 +897,21 @@ class Tracer(object):
         :param trace_parent: an optional TraceParent object
         :param start: override the start timestamp, mostly useful for testing
         :param auto_activate: whether to set this transaction in execution_context
-        :param list of traceparents to causally link this transaction to
-
+        :param links: list of traceparents to causally link this transaction to
         :returns the Transaction object
         """
+        links = links if links else []
+        continuation_strategy = self.config.trace_continuation_strategy
+
+        # we restart the trace if continuation strategy is "restart", or if it is "restart_external" and our
+        # "es" key is not in the tracestate header. In both cases, the original TraceParent is added to trace links.
+        if trace_parent and continuation_strategy != constants.TRACE_CONTINUATION_STRATEGY.CONTINUE:
+            if continuation_strategy == constants.TRACE_CONTINUATION_STRATEGY.RESTART or (
+                continuation_strategy == constants.TRACE_CONTINUATION_STRATEGY.RESTART_EXTERNAL
+                and not trace_parent.tracestate_dict
+            ):
+                links.append(trace_parent)
+                trace_parent = None
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
             sample_rate = trace_parent.tracestate_dict.get(constants.TRACESTATE.SAMPLE_RATE)
