@@ -39,6 +39,7 @@ endif::[]
 * Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}1520[#1520]
 * Add instrumentation for https://kafka-python.readthedocs.io/en/master/[`kafka-python`] {pull}1555[#1555]
 * Add API for span links, and implement span link support for OpenTelemetry bridge {pull}1562[#1562]
+* Add specific instrumentation for SQS delete/batch-delete {pull}1567[#1567]
 
 [float]
 ===== Bug fixes

@@ -164,26 +164,33 @@ def handle_sns(operation_name, service, instance, args, kwargs, context):
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
+SQS_OPERATIONS = {
+    "SendMessage": {"span_action": "send", "signature": "SEND to"},
+    "SendMessageBatch": {"span_action": "send_batch", "signature": "SEND_BATCH to"},
+    "ReceiveMessage": {"span_action": "receive", "signature": "RECEIVE from"},
+    "DeleteMessage": {"span_action": "delete", "signature": "DELETE from"},
+    "DeleteMessageBatch": {"span_action": "delete_batch", "signature": "DELETE_BATCH from"},
+}
+
+
 def handle_sqs(operation_name, service, instance, args, kwargs, context):
-    if operation_name not in ("SendMessage", "SendMessageBatch", "ReceiveMessage"):
+    op = SQS_OPERATIONS.get(operation_name, None)
+    if not op:
         # only "publish" is handled specifically, other endpoints get the default treatment
         return False
     span_type = "messaging"
     span_subtype = "sqs"
-    span_action = "send" if operation_name in ("SendMessage", "SendMessageBatch") else "receive"
     topic_name = ""
-    batch = "_BATCH" if operation_name == "SendMessageBatch" else ""
-    signature_type = "RECEIVE from" if span_action == "receive" else f"SEND{batch} to"
 
     if len(args) > 1:
         topic_name = args[1]["QueueUrl"].rsplit("/", maxsplit=1)[-1]
-    signature = f"SQS {signature_type} {topic_name}".rstrip() if topic_name else f"SQS {signature_type}"
+    signature = f"SQS {op['signature']} {topic_name}".rstrip() if topic_name else f"SQS {op['signature']}"
     context["destination"]["service"] = {
         "name": span_subtype,
         "resource": f"{span_subtype}/{topic_name}" if topic_name else span_subtype,
         "type": span_type,
     }
-    return HandlerInfo(signature, span_type, span_subtype, span_action, context)
+    return HandlerInfo(signature, span_type, span_subtype, op["span_action"], context)
 
 
 def modify_span_sqs(span, args, kwargs):
@@ -200,7 +207,9 @@ def modify_span_sqs(span, args, kwargs):
         attributes_count = len(attributes)
         if "MessageAttributes" in args[1]:
             messages = [args[1]]
-        elif "Entries" in args[1]:
+        # both send_batch and delete_batch use the same "Entries" list. We only want to add the
+        # traceparent to send_batch. We use the existence of ReceiptHandle to differentiate between the two
+        elif "Entries" in args[1] and args[1]["Entries"] and "ReceiptHandle" not in args[1]["Entries"][0]:
             messages = args[1]["Entries"]
         else:
             messages = []
