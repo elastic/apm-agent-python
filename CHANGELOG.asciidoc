@@ -39,12 +39,14 @@ endif::[]
 * Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}1520[#1520]
 * Add instrumentation for https://kafka-python.readthedocs.io/en/master/[`kafka-python`] {pull}1555[#1555]
 * Add API for span links, and implement span link support for OpenTelemetry bridge {pull}1562[#1562]
+* Add specific instrumentation for SQS delete/batch-delete {pull}1567[#1567]
 
 [float]
 ===== Bug fixes
 
 * Fix return for `opentelemetry.Span.is_recording()` {pull}1530[#1530]
 * Fix error logging for bad SERVICE_NAME config {pull}1546[#1546]
+* Do not instrument old versions of Tornado > 6.0 due to incompatibility {pull}1566[#1566]
 
 
 [[release-notes-6.x]]

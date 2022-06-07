@@ -41,6 +41,8 @@ from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.tornado import ElasticAPM
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.wrapt import BoundFunctionWrapper
+from tests.utils import assert_any_record_contains
 
 pytestmark = pytest.mark.tornado
 
@@ -254,3 +256,28 @@ async def test_tornado_transaction_ignore_urls(app, base_url, http_client):
 
     response = await http_client.fetch(base_url + "/render")
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+
+def test_old_tornado_not_instrumented(caplog):
+    with mock.patch("tornado.version_info", (5, 11, 0)):
+        try:
+            with caplog.at_level("DEBUG"):
+                elasticapm.instrument()
+            from tornado.web import RequestHandler
+
+            assert not isinstance(RequestHandler._execute, BoundFunctionWrapper)
+            assert not isinstance(RequestHandler._handle_request_exception, BoundFunctionWrapper)
+            assert not isinstance(RequestHandler.render, BoundFunctionWrapper)
+        finally:
+            elasticapm.uninstrument()
+    assert_any_record_contains(
+        caplog.records, "Skipping instrumentation of tornado_render. Tornado is only supported with version 6.0+"
+    )
+    assert_any_record_contains(
+        caplog.records,
+        "Skipping instrumentation of tornado_handle_request_exception. Tornado is only supported with version 6.0+",
+    )
+    assert_any_record_contains(
+        caplog.records,
+        "Skipping instrumentation of tornado_request_execute. Tornado is only supported with version 6.0+",
+    )
