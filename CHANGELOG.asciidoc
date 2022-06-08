@@ -47,7 +47,7 @@ endif::[]
 * Fix return for `opentelemetry.Span.is_recording()` {pull}1530[#1530]
 * Fix error logging for bad SERVICE_NAME config {pull}1546[#1546]
 * Do not instrument old versions of Tornado > 6.0 due to incompatibility {pull}1566[#1566]
-
+* Fix a problem with our logging handler failing to report internal errors in its emitter {pull}1568[#1568]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
