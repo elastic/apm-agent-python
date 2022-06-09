@@ -75,15 +75,15 @@ class LogbookHandler(logbook.Handler):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.channel.startswith("elasticapm.errors"):
-            sys.stderr.write(to_unicode(record.message + "\n"))
+            sys.stderr.write(to_unicode(record.message) + "\n")
             return
 
         try:
             return self._emit(record)
         except Exception:
             sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
-            sys.stderr.write(to_unicode(record.msg + "\n"))
-            sys.stderr.write(to_unicode(traceback.format_exc() + "\n"))
+            sys.stderr.write(to_unicode(record.message) + "\n")
+            sys.stderr.write(traceback.format_exc() + "\n")
 
             try:
                 self.client.capture("Exception")

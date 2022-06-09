@@ -169,6 +169,15 @@ def test_logbook_handler_emit_error(capsys, elasticapm_client):
     assert "Oops" in err
 
 
+def test_logbook_handler_emit_error_non_str_message(capsys, elasticapm_client):
+    handler = LogbookHandler(elasticapm_client)
+    handler._emit = lambda record: 1 / 0
+    handler.emit(LogRecord("x", 1, ValueError("oh no")))
+    out, err = capsys.readouterr()
+    assert "Top level ElasticAPM exception caught" in err
+    assert "oh no" in err
+
+
 def test_logbook_handler_dont_emit_elasticapm(capsys, elasticapm_client):
     handler = LogbookHandler(elasticapm_client)
     handler.emit(LogRecord("elasticapm.errors", 1, "Oops"))
