@@ -49,6 +49,7 @@ endif::[]
 * Fix error logging for bad SERVICE_NAME config {pull}1546[#1546]
 * Do not instrument old versions of Tornado > 6.0 due to incompatibility {pull}1566[#1566]
 * Fix transaction names for class based views in Django 4.0+ {pull}1571[#1571]
+* Fix a problem with our logging handler failing to report internal errors in its emitter {pull}1568[#1568]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
