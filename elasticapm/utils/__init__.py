@@ -83,7 +83,9 @@ def get_name_from_func(func: FunctionType) -> str:
 
     module = func.__module__
 
-    if hasattr(func, "__name__"):
+    if hasattr(func, "view_class"):
+        view_name = func.view_class.__name__
+    elif hasattr(func, "__name__"):
         view_name = func.__name__
     else:  # Fall back if there's no __name__
         view_name = func.__class__.__name__

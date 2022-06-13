@@ -1662,3 +1662,12 @@ def test_default_app_config_present_by_version():
         assert default_app_config_is_defined
     else:
         assert not default_app_config_is_defined
+
+
+def test_transaction_name_from_class_based_view(client, django_elasticapm_client):
+    with override_settings(
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+    ):
+        client.get(reverse("elasticapm-class-based"))
+        transaction = django_elasticapm_client.events[TRANSACTION][0]
+        assert transaction["name"] == "GET tests.contrib.django.testapp.views.ClassBasedView"
