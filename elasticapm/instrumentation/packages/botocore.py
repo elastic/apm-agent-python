@@ -214,6 +214,7 @@ def modify_span_sqs(span, args, kwargs):
         else:
             messages = []
         for message in messages:
+            message["MessageAttributes"] = message.get("MessageAttributes") or {}
             if len(message["MessageAttributes"]) + attributes_count <= SQS_MAX_ATTRIBUTES:
                 message["MessageAttributes"].update(attributes)
             else:
