@@ -274,6 +274,34 @@ def test_sqs_send_batch(instrument, elasticapm_client, sqs_client_and_queue):
     assert span["id"] in traceparent
 
 
+def test_sqs_no_message_attributes(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    elasticapm_client.begin_transaction("test")
+    response = sqs.send_message_batch(
+        QueueUrl=queue_url,
+        Entries=[
+            {
+                "Id": "foo",
+                "MessageBody": "foo",
+            },
+        ],
+    )
+    transaction = elasticapm_client.end_transaction("test", "test")
+    span = elasticapm_client.events[constants.SPAN][0]
+    messages = sqs.receive_message(
+        QueueUrl=queue_url,
+        AttributeNames=["All"],
+        MessageAttributeNames=[
+            "All",
+        ],
+    )
+    message = messages["Messages"][0]
+    assert "traceparent" in message["MessageAttributes"]
+    traceparent = message["MessageAttributes"]["traceparent"]["StringValue"]
+    assert transaction.trace_parent.trace_id in traceparent
+    assert span["id"] in traceparent
+
+
 def test_sqs_send_too_many_attributes_for_disttracing(instrument, elasticapm_client, sqs_client_and_queue, caplog):
     sqs, queue_url = sqs_client_and_queue
     attributes = {str(i): {"DataType": "String", "StringValue": str(i)} for i in range(SQS_MAX_ATTRIBUTES)}
