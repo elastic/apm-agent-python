@@ -33,7 +33,8 @@ from collections import namedtuple
 
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.traces import capture_span, execution_context
+from elasticapm.traces import SpanType, capture_span, execution_context
+from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
@@ -59,10 +60,7 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
         This is split out from `call()` so that it can be re-used by the
         aiobotocore instrumentation without duplicating all of this code.
         """
-        if "operation_name" in kwargs:
-            operation_name = kwargs["operation_name"]
-        else:
-            operation_name = args[0]
+        operation_name = kwargs.get("operation_name", args[0])
 
         parsed_url = urllib.parse.urlparse(instance.meta.endpoint_url)
         context = {
@@ -103,9 +101,12 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
 
         ctx = self._call(service, instance, args, kwargs)
         with ctx as span:
-            if service in span_modifiers:
-                span_modifiers[service](span, args, kwargs)
-            return wrapped(*args, **kwargs)
+            if service in pre_span_modifiers:
+                pre_span_modifiers[service](span, args, kwargs)
+            result = wrapped(*args, **kwargs)
+            if service in post_span_modifiers:
+                post_span_modifiers[service](span, args, kwargs, result)
+            return result
 
 
 def handle_s3(operation_name, service, instance, args, kwargs, context):
@@ -193,7 +194,8 @@ def handle_sqs(operation_name, service, instance, args, kwargs, context):
     return HandlerInfo(signature, span_type, span_subtype, op["span_action"], context)
 
 
-def modify_span_sqs(span, args, kwargs):
+def modify_span_sqs_pre(span, args, kwargs):
+    operation_name = kwargs.get("operation_name", args[0])
     if span.id:
         trace_parent = span.transaction.trace_parent.copy_from(span_id=span.id)
     else:
@@ -204,21 +206,33 @@ def modify_span_sqs(span, args, kwargs):
     if trace_parent.tracestate:
         attributes[constants.TRACESTATE_HEADER_NAME] = {"DataType": "String", "StringValue": trace_parent.tracestate}
     if len(args) > 1:
-        attributes_count = len(attributes)
-        if "MessageAttributes" in args[1]:
-            messages = [args[1]]
-        # both send_batch and delete_batch use the same "Entries" list. We only want to add the
-        # traceparent to send_batch. We use the existence of ReceiptHandle to differentiate between the two
-        elif "Entries" in args[1] and args[1]["Entries"] and "ReceiptHandle" not in args[1]["Entries"][0]:
-            messages = args[1]["Entries"]
-        else:
-            messages = []
-        for message in messages:
-            message["MessageAttributes"] = message.get("MessageAttributes") or {}
-            if len(message["MessageAttributes"]) + attributes_count <= SQS_MAX_ATTRIBUTES:
-                message["MessageAttributes"].update(attributes)
+        if operation_name in ("SendMessage", "SendMessageBatch"):
+            attributes_count = len(attributes)
+            if operation_name == "SendMessage":
+                messages = [args[1]]
             else:
-                logger.info("Not adding disttracing headers to message due to attribute limit reached")
+                messages = args[1]["Entries"]
+            for message in messages:
+                message["MessageAttributes"] = message.get("MessageAttributes") or {}
+                if len(message["MessageAttributes"]) + attributes_count <= SQS_MAX_ATTRIBUTES:
+                    message["MessageAttributes"].update(attributes)
+                else:
+                    logger.info("Not adding disttracing headers to message due to attribute limit reached")
+        elif operation_name == "ReceiveMessage":
+            message_attributes = args[1].setdefault("MessageAttributeNames", [])
+            if "All" not in message_attributes:
+                message_attributes.extend([constants.TRACEPARENT_HEADER_NAME, constants.TRACESTATE_HEADER_NAME])
+
+
+def modify_span_sqs_post(span: SpanType, args, kwargs, result):
+    operation_name = kwargs.get("operation_name", args[0])
+    if operation_name == "ReceiveMessage" and "Messages" in result:
+        for message in result["Messages"][:1000]:  # only up to 1000 span links are recorded
+            if "MessageAttributes" in message and constants.TRACEPARENT_HEADER_NAME in message["MessageAttributes"]:
+                tp = TraceParent.from_string(
+                    message["MessageAttributes"][constants.TRACEPARENT_HEADER_NAME]["StringValue"]
+                )
+                span.add_link(tp)
 
 
 def handle_default(operation_name, service, instance, args, kwargs, destination):
@@ -240,6 +254,10 @@ handlers = {
     "default": handle_default,
 }
 
-span_modifiers = {
-    "SQS": modify_span_sqs,
+pre_span_modifiers = {
+    "SQS": modify_span_sqs_pre,
+}
+
+post_span_modifiers = {
+    "SQS": modify_span_sqs_post,
 }

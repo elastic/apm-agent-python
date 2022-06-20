@@ -425,3 +425,24 @@ def test_sqs_delete_batch(instrument, elasticapm_client, sqs_client_and_queue):
     assert delete_span["context"]["destination"]["service"]["name"] == "sqs"
     assert delete_span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
     assert delete_span["context"]["destination"]["service"]["type"] == "messaging"
+
+
+def test_sqs_receive_message_span_links(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    send_transaction = elasticapm_client.begin_transaction("test")
+    sqs.send_message(
+        QueueUrl=queue_url,
+        MessageBody=("bar"),
+    )
+    elasticapm_client.end_transaction("test")
+    receive_transaction = elasticapm_client.begin_transaction("test")
+    response = sqs.receive_message(
+        QueueUrl=queue_url,
+        AttributeNames=["All"],
+    )
+    assert len(response["Messages"]) == 1
+    elasticapm_client.end_transaction("test")
+    send_span = elasticapm_client.events[constants.SPAN][0]
+    receive_span = elasticapm_client.events[constants.SPAN][1]
+    assert receive_span["links"][0]["trace_id"] == send_transaction.trace_parent.trace_id
+    assert receive_span["links"][0]["span_id"] == send_span["id"]
