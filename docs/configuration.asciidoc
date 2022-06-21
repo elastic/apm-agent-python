@@ -341,7 +341,7 @@ An example to generate a secure secret token is:
 
 [source,bash]
 ----
-python -c "import uuid; print(str(uuid.uuid4()))"
+python -c "import secrets; print(secrets.token_urlsafe(32))"
 ----
 
 WARNING: Secret tokens only provide any security if your APM Server uses TLS.
