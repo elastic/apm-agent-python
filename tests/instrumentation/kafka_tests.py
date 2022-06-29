@@ -207,3 +207,29 @@ def test_kafka_poll_ongoing_transaction(instrument, elasticapm_client, producer,
     spans = elasticapm_client.events[SPAN]
     assert len(spans) == 1
     assert spans[0]["name"] == "Kafka POLL from bar, foo, test"
+
+
+def test_kafka_no_client(instrument, producer, consumer, topics):
+    assert elasticapm.get_client() is None
+    # the following code shouldn't trigger any errors
+    producer.send("test", key=b"foo", value=b"bar")
+    for item in consumer:
+        pass
+
+
+def test_kafka_send_unsampled_transaction(instrument, elasticapm_client, producer, topics):
+    transaction_object = elasticapm_client.begin_transaction("transaction")
+    transaction_object.is_sampled = False
+    producer.send("test", key=b"foo", value=b"bar")
+    elasticapm_client.end_transaction("foo")
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 0
+
+
+def test_kafka_poll_unsampled_transaction(instrument, elasticapm_client, consumer, topics):
+    transaction_object = elasticapm_client.begin_transaction("transaction")
+    transaction_object.is_sampled = False
+    consumer.poll(timeout_ms=50)
+    elasticapm_client.end_transaction("foo")
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 0
