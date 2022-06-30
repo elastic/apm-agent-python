@@ -36,7 +36,7 @@ from elasticapm import get_client
 from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, capture_span, execution_context
-from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 
 class KafkaInstrumentation(AbstractInstrumentedModule):
@@ -48,6 +48,7 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
     ]
     provider_name = "kafka"
     name = "kafka"
+    creates_transactions = True
 
     def _trace_send(self, instance, wrapped, *args, destination_info=None, **kwargs):
         topic = args[0] if args else kwargs["topic"]
@@ -68,7 +69,10 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
         ) as span:
             transaction = execution_context.get_transaction()
             if transaction:
-                tp = transaction.trace_parent.copy_from(span_id=span.id)
+                tp = transaction.trace_parent.copy_from(
+                    span_id=span.id if span else transaction.id,
+                    trace_options=None if span else TracingOptions(recorded=False),
+                )
             if headers:
                 headers.append((constants.TRACEPARENT_BINARY_HEADER_NAME, tp.to_binary()))
             else:
@@ -79,22 +83,17 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
                 else:
                     kwargs["headers"] = headers
             result = wrapped(*args, **kwargs)
-            if instance and instance._metadata.controller and not isinstance(span, DroppedSpan):
+            if span and instance and instance._metadata.controller and not isinstance(span, DroppedSpan):
                 address = instance._metadata.controller[1]
                 port = instance._metadata.controller[2]
                 span.context["destination"]["address"] = address
                 span.context["destination"]["port"] = port
             return result
 
-    def call_if_sampling(self, module, method, wrapped, instance, args, kwargs):
-        # Contrasting to the superclass implementation, we *always* want to
-        # return a proxied connection, even if there is no ongoing elasticapm
-        # transaction yet. This ensures that we instrument the cursor once
-        # the transaction started.
-        return self.call(module, method, wrapped, instance, args, kwargs)
-
     def call(self, module, method, wrapped, instance, args, kwargs):
         client = get_client()
+        if client is None:
+            return wrapped(*args, **kwargs)
         destination_info = {
             "service": {"name": "kafka", "resource": "kafka/", "type": "messaging"},
         }
@@ -118,7 +117,7 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
                         "destination": destination_info,
                     },
                 ) as span:
-                    if not isinstance(span, DroppedSpan) and instance._subscription.subscription:
+                    if span and not isinstance(span, DroppedSpan) and instance._subscription.subscription:
                         span.name += " from " + ", ".join(sorted(instance._subscription.subscription))
                     results = wrapped(*args, **kwargs)
                     return results
@@ -146,7 +145,7 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
                     except StopIteration:
                         span.cancel()
                         raise
-                    if not isinstance(span, DroppedSpan):
+                    if span and not isinstance(span, DroppedSpan):
                         topic = result[0]
                         if client.should_ignore_topic(topic):
                             span.cancel()

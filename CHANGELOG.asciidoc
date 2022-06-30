@@ -32,6 +32,14 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.10.1]]
+==== 6.10.1 - 2022-06-30
+
+[float]
+===== Bug fixes
+
+* Fix an issue with Kafka instrumentation and unsampled transactions {pull}1579[#1579]
+
 [[release-notes-6.10.0]]
 ==== 6.10.0 - 2022-06-22
 
