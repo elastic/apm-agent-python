@@ -202,7 +202,7 @@ pipeline {
           }
         }
         stage('Benchmarks') {
-          agent { label 'metal' }
+          agent { label 'microbenchmarks-pool' }
           options { skipDefaultCheckout() }
           environment {
             AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
