@@ -47,6 +47,11 @@ class PyMSSQLCursorProxy(CursorProxy):
 class PyMSSQLConnectionProxy(ConnectionProxy):
     cursor_proxy = PyMSSQLCursorProxy
 
+    def cursor(self, *args, **kwargs):
+        c = super().cursor(*args, **kwargs)
+        c._self_database = self._self_database
+        return c
+
 
 class PyMSSQLInstrumentation(DbApi2Instrumentation):
     name = "pymssql"
@@ -59,7 +64,10 @@ class PyMSSQLInstrumentation(DbApi2Instrumentation):
             "address": host,
             "port": port,
         }
-        return PyMSSQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
+        db = args[3] if len(args) > 3 else kwargs.get("database", "")
+        proxy = PyMSSQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
+        proxy._self_database = db
+        return proxy
 
 
 def get_host_port(args, kwargs):

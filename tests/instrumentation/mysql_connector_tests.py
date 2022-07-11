@@ -81,10 +81,11 @@ def test_mysql_connector_select(instrument, mysql_connector_connection, elastica
         assert span["subtype"] == "mysql"
         assert span["action"] == "query"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "eapm_tests"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
         assert span["context"]["destination"] == {
             "address": "mysql",
             "port": 3306,
-            "service": {"name": "", "resource": "mysql", "type": ""},
+            "service": {"name": "", "resource": "mysql/eapm_tests", "type": ""},
         }

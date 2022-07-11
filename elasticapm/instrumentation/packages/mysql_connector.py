@@ -44,6 +44,13 @@ class MySQLCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    @property
+    def _self_database(self) -> str:
+        # for unknown reasons, the connection is available as the `_connection` attribute on Python 3.6,
+        # and as `_cnx` on later Python versions
+        connection = getattr(self, "_cnx") or getattr(self, "_connection")
+        return connection.database if connection else ""
+
 
 class MySQLConnectionProxy(ConnectionProxy):
     cursor_proxy = MySQLCursorProxy

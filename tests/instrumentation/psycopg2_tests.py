@@ -278,7 +278,7 @@ def test_destination(instrument, postgres_connection, elasticapm_client):
     assert span["context"]["destination"] == {
         "address": os.environ.get("POSTGRES_HOST", None),
         "port": default_ports["postgresql"],
-        "service": {"name": "", "resource": "postgresql", "type": ""},
+        "service": {"name": "", "resource": "postgresql/elasticapm_test", "type": ""},
     }
 
 
@@ -382,6 +382,7 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
         assert span["subtype"] == "postgresql"
         assert span["action"] == "query"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "elasticapm_test"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
 
@@ -414,6 +415,7 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
         span = spans[0]
         assert span["name"] == "SELECT FROM test"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "elasticapm_test"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == baked_query
 

@@ -48,7 +48,7 @@ def pymysql_connection(request):
     conn = pymysql.connect(
         host=os.environ.get("MYSQL_HOST", "localhost"),
         user=os.environ.get("MYSQL_USER", "eapm"),
-        password=os.environ.get("MYSQL_PASSWORD", ""),
+        password=os.environ.get("MYSQL_PASSWORD", "Very(!)Secure"),
         database=os.environ.get("MYSQL_DATABASE", "eapm_tests"),
     )
     cursor = conn.cursor()
@@ -80,5 +80,6 @@ def test_pymysql_select(instrument, pymysql_connection, elasticapm_client):
         assert span["subtype"] == "mysql"
         assert span["action"] == "query"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "eapm_tests"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query

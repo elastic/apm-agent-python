@@ -62,6 +62,10 @@ class PGCursorProxy(CursorProxy):
     def __enter__(self):
         return PGCursorProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
+    @property
+    def _self_database(self):
+        return self.connection.info.dbname or ""
+
 
 class PGConnectionProxy(ConnectionProxy):
     cursor_proxy = PGCursorProxy

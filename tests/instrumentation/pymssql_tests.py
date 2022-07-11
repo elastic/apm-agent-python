@@ -50,7 +50,7 @@ def pymssql_connection(request):
     conn = pymssql.connect(
         os.environ.get("MSSQL_HOST", "localhost"),
         os.environ.get("MSSQL_USER", "SA"),
-        os.environ.get("MSSQL_PASSWORD", ""),
+        os.environ.get("MSSQL_PASSWORD", "Very(!)Secure"),
         os.environ.get("MSSQL_DATABASE", "tempdb"),
     )
     cursor = conn.cursor()
@@ -84,6 +84,7 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert span["subtype"] == "pymssql"
         assert span["action"] == "query"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "tempdb"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
         assert span["context"]["destination"] == {
