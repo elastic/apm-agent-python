@@ -1671,3 +1671,26 @@ def test_transaction_name_from_class_based_view(client, django_elasticapm_client
         client.get(reverse("elasticapm-class-based"))
         transaction = django_elasticapm_client.events[TRANSACTION][0]
         assert transaction["name"] == "GET tests.contrib.django.testapp.views.ClassBasedView"
+
+
+def test_request_bad_port(django_elasticapm_client):
+    request = WSGIRequest(
+        environ={
+            "wsgi.input": io.BytesIO(),
+            "REQUEST_METHOD": "POST",
+            "SERVER_NAME": "testserver",
+            "SERVER_PORT": "${port}",
+            "CONTENT_TYPE": "text/html",
+            "ACCEPT": "text/html",
+        }
+    )
+    request.read(1)
+
+    django_elasticapm_client.capture("Message", message="foo", request=request)
+
+    assert len(django_elasticapm_client.events[ERROR]) == 1
+    event = django_elasticapm_client.events[ERROR][0]
+
+    assert "request" in event["context"]
+    request = event["context"]["request"]
+    assert "url" not in request
