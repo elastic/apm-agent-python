@@ -385,6 +385,8 @@ def test_psycopg2_select_LIKE(instrument, postgres_connection, elasticapm_client
         assert span["context"]["db"]["instance"] == "elasticapm_test"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["service"]["target"]["type"] == "postgresql"
+        assert span["context"]["service"]["target"]["name"] == "elasticapm_test"
 
 
 @pytest.mark.integrationtest
@@ -459,6 +461,8 @@ def test_psycopg_context_manager(instrument, elasticapm_client):
     assert len(spans) == 2
     assert spans[0]["subtype"] == "postgresql"
     assert spans[0]["action"] == "connect"
+    assert spans[0]["context"]["service"]["target"]["type"] == "postgresql"
+    assert spans[0]["context"]["service"]["target"]["name"] == "elasticapm_test"
 
     assert spans[1]["subtype"] == "postgresql"
     assert spans[1]["action"] == "query"

@@ -87,6 +87,8 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         assert span["context"]["db"]["instance"] == "elasticapm_test"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["service"]["target"]["type"] == "pyodbc"
+        assert span["context"]["service"]["target"]["name"] == "elasticapm_test"
 
 
 @pytest.mark.integrationtest

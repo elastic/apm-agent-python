@@ -83,3 +83,5 @@ def test_pymysql_select(instrument, pymysql_connection, elasticapm_client):
         assert span["context"]["db"]["instance"] == "eapm_tests"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["service"]["target"]["type"] == "mysql"
+        assert span["context"]["service"]["target"]["name"] == "eapm_tests"

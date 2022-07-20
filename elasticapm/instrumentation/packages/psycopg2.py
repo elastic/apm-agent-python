@@ -83,6 +83,7 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
         signature = "psycopg2.connect"
 
         host, port = get_destination_info(kwargs.get("host"), kwargs.get("port"))
+        database = kwargs.get("database")
         signature = f"{signature} {host}:{port}"
         destination_info = {
             "address": host,
@@ -93,7 +94,8 @@ class Psycopg2Instrumentation(DbApi2Instrumentation):
             span_type="db",
             span_subtype="postgresql",
             span_action="connect",
-            extra={"destination": destination_info},
+            leaf=True,
+            extra={"destination": destination_info, "db": {"type": "sql", "instance": database}},
         ):
             return PGConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
 

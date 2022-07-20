@@ -38,7 +38,7 @@ from elasticapm.utils import default_ports
 
 
 class PyMSSQLCursorProxy(CursorProxy):
-    provider_name = "pymssql"
+    provider_name = "mssql"
 
     def extract_signature(self, sql):
         return extract_signature(sql)

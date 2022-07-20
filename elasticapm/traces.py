@@ -663,6 +663,7 @@ class Span(BaseSpan):
         :return: None
         """
         self.autofill_resource_context()
+        self.autofill_service_target()
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
         if (
@@ -783,6 +784,30 @@ class Span(BaseSpan):
                     self.context["destination"]["service"]["name"] = ""
                 if "type" not in self.context["destination"]["service"]:
                     self.context["destination"]["service"]["type"] = ""
+
+    def autofill_service_target(self):
+        if self.leaf:
+            service_target = nested_key(self.context, "service", "target") or {}
+
+            if not service_target.get("type"):  # infer type from span type & subtype
+                # use sub-type if provided, fallback on type othewise
+                service_target["type"] = self.subtype or self.type
+
+            if not service_target.get("name"):  # infer name from span attributes
+                if nested_key(self.context, "db", "instance"):  # database spans
+                    service_target["name"] = self.context["db"]["instance"]
+                elif "message" in self.context:  # messaging spans
+                    service_target["name"] = self.context["message"]["queue"]["name"]
+                elif nested_key(self.context, "http", "url"):  # http spans
+                    service_target["name"] = self.context["http"]["host"]
+                    if self.context["http"]["url"]["port"]:
+                        service_target["name"] += f":{self.context['http']['port']}"
+            if "service" not in self.context:
+                self.context["service"] = {}
+            self.context["service"]["target"] = service_target
+        elif nested_key(self.context, "service", "target"):
+            # non-exit spans should not have service.target.* fields
+            del self.context["service"]["target"]
 
     def cancel(self) -> None:
         """
