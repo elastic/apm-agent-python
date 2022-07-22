@@ -34,6 +34,7 @@ import re
 import threading
 import time
 import timeit
+import urllib.parse
 import warnings
 from collections import defaultdict
 from datetime import timedelta
@@ -806,9 +807,10 @@ class Span(BaseSpan):
                 elif "message" in self.context:  # messaging spans
                     service_target["name"] = self.context["message"]["queue"]["name"]
                 elif nested_key(self.context, "http", "url"):  # http spans
-                    service_target["name"] = self.context["http"]["host"]
-                    if self.context["http"]["url"]["port"]:
-                        service_target["name"] += f":{self.context['http']['port']}"
+                    parsed_url = urllib.parse.urlparse(self.context["http"]["url"])
+                    service_target["name"] = parsed_url.hostname
+                    if parsed_url.port:
+                        service_target["name"] += f":{parsed_url.port}"
             if "service" not in self.context:
                 self.context["service"] = {}
             self.context["service"]["target"] = service_target
