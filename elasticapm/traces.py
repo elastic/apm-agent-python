@@ -807,7 +807,8 @@ class Span(BaseSpan):
                 elif "message" in self.context:  # messaging spans
                     service_target["name"] = self.context["message"]["queue"]["name"]
                 elif nested_key(self.context, "http", "url"):  # http spans
-                    parsed_url = urllib.parse.urlparse(self.context["http"]["url"])
+                    url = self.context["http"]["url"]
+                    parsed_url = urllib.parse.urlparse(url)
                     service_target["name"] = parsed_url.hostname
                     if parsed_url.port:
                         service_target["name"] += f":{parsed_url.port}"

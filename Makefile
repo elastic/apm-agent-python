@@ -13,10 +13,10 @@ test:
 	# pypy3 should be added to the first `if` once it supports py3.7
 	if [[ "$$PYTHON_VERSION" =~ ^(3.7|3.8|3.9|3.10|nightly)$$ ]] ; then \
 		echo "Python 3.7+, with asyncio"; \
-		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT); \
+		py.test -v $(PYTEST_ARGS) --showlocals $(PYTEST_MARKER) $(PYTEST_JUNIT); \
 	else \
 		echo "Python < 3.7, without asyncio"; \
-		py.test -v $(PYTEST_ARGS) $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/asyncio*/*'; \
+		py.test -v $(PYTEST_ARGS) --showlocals $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/asyncio*/*'; \
 	fi
 
 coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg --cov-branch
