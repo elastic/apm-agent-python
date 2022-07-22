@@ -64,10 +64,14 @@ def varmap(func, var, context=None, name=None, **kwargs):
         return func(name, "<...>", **kwargs)
     context.add(objid)
     if isinstance(var, dict):
+        # Apply func() before recursion, so that `shorten()` doesn't have to iterate over all the trimmed values
+        ret = func(name, var, **kwargs)
         # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
-        ret = func(name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in var.copy().items()), **kwargs)
+        ret = dict((k, varmap(func, v, context, k, **kwargs)) for k, v in ret.copy().items())
     elif isinstance(var, (list, tuple)):
-        ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
+        # Apply func() before recursion, so that `shorten()` doesn't have to iterate over all the trimmed values
+        ret = func(name, var, **kwargs)
+        ret = [varmap(func, f, context, name, **kwargs) for f in ret]
     else:
         ret = func(name, var, **kwargs)
     context.remove(objid)
