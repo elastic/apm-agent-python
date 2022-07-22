@@ -65,8 +65,9 @@ def test_exact_match(elasticapm_client):
         duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
-        assert span2.is_compression_eligible()
-        assert span1.is_exact_match(span2)
+        pass
+    assert span2.is_compression_eligible()
+    assert span1.is_exact_match(span2)
     elasticapm_client.end_transaction("test")
     spans = elasticapm_client.events[SPAN]
     assert len(spans) == 1
@@ -109,9 +110,10 @@ def test_same_kind(elasticapm_client):
         duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
-        assert span2.is_compression_eligible()
-        assert not span1.is_exact_match(span2)
-        assert span1.is_same_kind(span2)
+        pass
+    assert span2.is_compression_eligible()
+    assert not span1.is_exact_match(span2)
+    assert span1.is_same_kind(span2)
     elasticapm_client.end_transaction("test")
     spans = elasticapm_client.events[SPAN]
     assert len(spans) == 1
@@ -157,9 +159,10 @@ def test_exact_match_after_same_kind(elasticapm_client):
         duration=0.003,
         extra={"destination": {"service": {"resource": "x"}}},
     ) as span2:
-        assert span2.is_compression_eligible()
-        assert not span1.is_exact_match(span2)
-        assert span1.is_same_kind(span2)
+        pass
+    assert span2.is_compression_eligible()
+    assert not span1.is_exact_match(span2)
+    assert span1.is_same_kind(span2)
     with elasticapm.capture_span(
         "test1",
         span_type="a",

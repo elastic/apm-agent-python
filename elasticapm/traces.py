@@ -634,8 +634,9 @@ class Span(BaseSpan):
         return bool(
             self.type == other_span.type
             and self.subtype == other_span.subtype
-            and (target_type and target_type == nested_key(other_span.context, "service", "target", "type"))
-            and (target_name and target_name == nested_key(other_span.context, "service", "target", "name"))
+            and (target_type or target_name)
+            and target_type == nested_key(other_span.context, "service", "target", "type")
+            and target_name == nested_key(other_span.context, "service", "target", "name")
         )
 
     def is_exact_match(self, other_span: SpanType) -> bool:
@@ -795,11 +796,11 @@ class Span(BaseSpan):
         if self.leaf:
             service_target = nested_key(self.context, "service", "target") or {}
 
-            if not service_target.get("type"):  # infer type from span type & subtype
+            if "type" not in service_target:  # infer type from span type & subtype
                 # use sub-type if provided, fallback on type othewise
                 service_target["type"] = self.subtype or self.type
 
-            if not service_target.get("name"):  # infer name from span attributes
+            if "name" not in service_target:  # infer name from span attributes
                 if nested_key(self.context, "db", "instance"):  # database spans
                     service_target["name"] = self.context["db"]["instance"]
                 elif "message" in self.context:  # messaging spans
