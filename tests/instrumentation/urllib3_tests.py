@@ -280,7 +280,7 @@ def test_instance_headers_are_respected(
         kwargs = {"headers": {"kwargs": "true"}}
     else:
         kwargs = {}
-    r = pool.urlopen(*args, **kwargs)
+    r = pool.request(*args, **kwargs)
     request_headers = waiting_httpserver.requests[0].headers
     # all combinations should have the "traceparent" header
     assert "traceparent" in request_headers, (instance_headers, header_arg, header_kwarg)
