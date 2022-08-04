@@ -107,7 +107,7 @@ def test_request_data(event_api, event_api2):
     data = get_data_from_request(event_api, capture_body=True, capture_headers=True)
 
     assert data["method"] == "GET"
-    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
+    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all?test%40key=test%40value"
     assert data["headers"]["Host"] == "02plqthge2.execute-api.us-east-1.amazonaws.com"
 
     data = get_data_from_request(event_api2, capture_body=True, capture_headers=True)
@@ -119,7 +119,7 @@ def test_request_data(event_api, event_api2):
     data = get_data_from_request(event_api, capture_body=False, capture_headers=False)
 
     assert data["method"] == "GET"
-    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
+    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all?test%40key=test%40value"
     assert "headers" not in data
 
 
