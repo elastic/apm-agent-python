@@ -137,14 +137,16 @@ class capture_serverless(object):
         transaction_type = "request"
         transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
-        self.httpmethod = nested_key(self.event, "requestContext", "httpMethod") or \
-                          nested_key(self.event, "requestContext", "http", "method") or \
-                          nested_key(self.event, 'httpMethod')
+        self.httpmethod = (
+            nested_key(self.event, "requestContext", "httpMethod")
+            or nested_key(self.event, "requestContext", "http", "method")
+            or nested_key(self.event, "httpMethod")
+        )
 
         if self.httpmethod:  # http request
-            if nested_key(self.event, 'requestContext', 'elb'):
+            if nested_key(self.event, "requestContext", "elb"):
                 self.source = "elb"
-                resource = nested_key(self.event, 'path')
+                resource = nested_key(self.event, "path")
             elif nested_key(self.event, "requestContext", "httpMethod"):
                 self.source = "api"
                 # API v1
@@ -254,10 +256,10 @@ class capture_serverless(object):
             cloud_context["origin"]["service"] = {"name": "api gateway"}
             cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
             cloud_context["origin"]["provider"] = "aws"
-        elif self.source == 'elb':
+        elif self.source == "elb":
             elb_target_group_arn = self.event["requestContext"]["elb"]["targetGroupArn"]
             faas["trigger"]["type"] = "http"
-            faas["trigger"]["request_id"] = self.event['headers']['x-amzn-trace-id']
+            faas["trigger"]["request_id"] = self.event["headers"]["x-amzn-trace-id"]
             service_context["origin"] = {"name": elb_target_group_arn.split(":")[5]}
             service_context["origin"]["id"] = elb_target_group_arn
             service_context["origin"]["version"] = self.event.get("version", "1.0")
@@ -375,9 +377,11 @@ def get_data_from_request(event: dict, capture_body: bool = False, capture_heade
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
 
-    method = nested_key(event, "requestContext", "httpMethod") or \
-             nested_key(event, "requestContext", "http", "method") or \
-             nested_key(event, 'httpMethod')
+    method = (
+        nested_key(event, "requestContext", "httpMethod")
+        or nested_key(event, "requestContext", "http", "method")
+        or nested_key(event, "httpMethod")
+    )
 
     if not method:
         # Not API Gateway
@@ -429,7 +433,7 @@ def get_url_dict(event: dict) -> dict:
     headers = event.get("headers", {})
     protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
     host = headers.get("Host", headers.get("host", ""))
-    stage = (nested_key(event, "requestContext", "stage") or "")
+    stage = nested_key(event, "requestContext", "stage") or ""
     raw_path = event.get("rawPath", "")
     if stage:
         stage = "/" + stage
@@ -443,7 +447,7 @@ def get_url_dict(event: dict) -> dict:
     elif event.get("queryStringParameters"):
         if stage:  # api requires parameters encoding to build correct url
             query = "?" + urlencode(event["queryStringParameters"])
-        else: # for elb we do not have the stage
+        else:  # for elb we do not have the stage
             query = "?" + "&".join(["{}={}".format(k, v) for k, v in event["queryStringParameters"].items()])
 
     url = protocol + "://" + host + stage + path + query
