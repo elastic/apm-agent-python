@@ -1,2 +1,2 @@
-sanic==20.12.6
+sanic==20.12.7
 -r reqs-base.txt
