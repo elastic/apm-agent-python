@@ -262,7 +262,6 @@ class capture_serverless(object):
             faas["trigger"]["request_id"] = self.event["headers"]["x-amzn-trace-id"]
             service_context["origin"] = {"name": elb_target_group_arn.split(":")[5]}
             service_context["origin"]["id"] = elb_target_group_arn
-            service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "elb"}
             cloud_context["origin"]["account"] = {"id": elb_target_group_arn.split(":")[4]}
