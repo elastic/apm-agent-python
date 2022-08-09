@@ -54,6 +54,13 @@ def event_api2():
 
 
 @pytest.fixture
+def event_elb():
+    aws_data_file = os.path.join(os.path.dirname(__file__), "aws_elb_test_data.json")
+    with open(aws_data_file) as f:
+        return json.load(f)
+
+
+@pytest.fixture
 def event_s3():
     aws_data_file = os.path.join(os.path.dirname(__file__), "aws_s3_test_data.json")
     with open(aws_data_file) as f:
@@ -100,7 +107,7 @@ def test_request_data(event_api, event_api2):
     data = get_data_from_request(event_api, capture_body=True, capture_headers=True)
 
     assert data["method"] == "GET"
-    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
+    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all?test%40key=test%40value"
     assert data["headers"]["Host"] == "02plqthge2.execute-api.us-east-1.amazonaws.com"
 
     data = get_data_from_request(event_api2, capture_body=True, capture_headers=True)
@@ -112,8 +119,26 @@ def test_request_data(event_api, event_api2):
     data = get_data_from_request(event_api, capture_body=False, capture_headers=False)
 
     assert data["method"] == "GET"
-    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all"
+    assert data["url"]["full"] == "https://02plqthge2.execute-api.us-east-1.amazonaws.com/dev/fetch_all?test%40key=test%40value"
     assert "headers" not in data
+
+
+def test_elb_request_data(event_elb):
+    data = get_data_from_request(event_elb, capture_body=True, capture_headers=True)
+
+    assert data["method"] == "POST"
+    assert data["url"][
+               "full"] == "https://blabla.com/toolz/api/v2.0/downloadPDF/PDF_2020-09-11_11-06-01.pdf?test%40key=test%40value&language=en-DE"
+    assert data["headers"]["host"] == "blabla.com"
+    assert data["body"] == "blablablabody"
+
+    data = get_data_from_request(event_elb, capture_body=False, capture_headers=False)
+
+    assert data["method"] == "POST"
+    assert data["url"][
+               "full"] == "https://blabla.com/toolz/api/v2.0/downloadPDF/PDF_2020-09-11_11-06-01.pdf?test%40key=test%40value&language=en-DE"
+    assert "headers" not in data
+    assert data["body"] == "[REDACTED]"
 
 
 def test_response_data():
@@ -136,7 +161,6 @@ def test_response_data():
 
 
 def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):
-
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
@@ -159,7 +183,6 @@ def test_capture_serverless_api_gateway(event_api, context, elasticapm_client):
 
 
 def test_capture_serverless_api_gateway_v2(event_api2, context, elasticapm_client):
-
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
@@ -181,8 +204,29 @@ def test_capture_serverless_api_gateway_v2(event_api2, context, elasticapm_clien
     assert transaction["context"]["response"]["status_code"] == 200
 
 
-def test_capture_serverless_s3(event_s3, context, elasticapm_client):
+def test_capture_serverless_elb(event_elb, context, elasticapm_client):
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
+    @capture_serverless(elasticapm_client=elasticapm_client)
+    def test_func(event, context):
+        with capture_span("test_span"):
+            time.sleep(0.01)
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    test_func(event_elb, context)
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+
+    assert transaction["name"] == "POST /toolz/api/v2.0/downloadPDF/PDF_2020-09-11_11-06-01.pdf"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["span_count"]["started"] == 1
+    assert transaction["context"]["request"]["method"] == "POST"
+    assert transaction["context"]["request"]["headers"]
+    assert transaction["context"]["response"]["status_code"] == 200
+
+
+def test_capture_serverless_s3(event_s3, context, elasticapm_client):
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
@@ -201,7 +245,6 @@ def test_capture_serverless_s3(event_s3, context, elasticapm_client):
 
 
 def test_capture_serverless_sns(event_sns, context, elasticapm_client):
-
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
@@ -222,7 +265,6 @@ def test_capture_serverless_sns(event_sns, context, elasticapm_client):
 
 
 def test_capture_serverless_sqs(event_sqs, context, elasticapm_client):
-
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
@@ -243,7 +285,6 @@ def test_capture_serverless_sqs(event_sqs, context, elasticapm_client):
 
 
 def test_capture_serverless_s3_batch(event_s3_batch, context, elasticapm_client):
-
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
@@ -263,7 +304,6 @@ def test_capture_serverless_s3_batch(event_s3_batch, context, elasticapm_client)
 
 @pytest.mark.parametrize("elasticapm_client", [{"service_name": "override"}], indirect=True)
 def test_service_name_override(event_api, context, elasticapm_client):
-
     os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
 
     @capture_serverless(elasticapm_client=elasticapm_client)
