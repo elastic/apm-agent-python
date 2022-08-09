@@ -302,7 +302,7 @@ class capture_serverless(object):
             service_context["origin"]["service"] = {"name": "sns"}
             cloud_context["origin"] = {}
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
-            cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
+            cloud_context["origin"]["account"] = {"id": record["Sns"]["TopicArn"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
             message_context["queue"] = {"name": service_context["origin"]["name"]}
             if "Timestamp" in record["Sns"]:
