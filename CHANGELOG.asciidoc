@@ -29,8 +29,29 @@ endif::[]
 //===== Bug fixes
 //
 
+
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.11.0]]
+==== 6.11.0 - 2022-08-09
+
+[float]
+===== Features
+
+* Added lambda support for ELB triggers {pull}#1605[#1605]
+
+[[release-notes-6.10.2]]
+==== 6.10.2 - 2022-08-04
+
+[float]
+===== Bug fixes
+
+* Fixed an issue with non-integer ports in Django {pull}1590[#1590]
+* Fixed an issue with non-integer ports in Redis {pull}1591[#1591]
+* Fixed a performance issue for local variable shortening via `varmap()` {pull}1593[#1593]
+* Fixed `elasticapm.label()` when a Client object is not available {pull}1596[#1596]
 
 [[release-notes-6.10.1]]
 ==== 6.10.1 - 2022-06-30

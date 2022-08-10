@@ -152,7 +152,10 @@ class DjangoClient(Client):
                     result["body"] = data
 
         url = get_raw_uri(request)
-        result["url"] = get_url_dict(url)
+        try:
+            result["url"] = get_url_dict(url)
+        except ValueError as exc:
+            self.logger.warning(f"URL parsing failed: {exc}")
         return result
 
     def get_data_from_response(self, response, event_type):

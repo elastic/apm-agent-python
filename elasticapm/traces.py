@@ -1124,7 +1124,8 @@ def label(**labels):
     """
     transaction = execution_context.get_transaction()
     if not transaction:
-        if elasticapm.get_client().config.enabled:
+        client = elasticapm.get_client()
+        if not client or client.config.enabled:
             error_logger.warning("Ignored labels %s. No transaction currently active.", ", ".join(labels.keys()))
     else:
         transaction.label(**labels)

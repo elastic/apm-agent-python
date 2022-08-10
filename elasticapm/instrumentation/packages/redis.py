@@ -94,7 +94,7 @@ class RedisConnectionInstrumentation(AbstractInstrumentedModule):
 def get_destination_info(connection):
     destination_info = {}
     if hasattr(connection, "port"):
-        destination_info["port"] = connection.port
+        destination_info["port"] = int(connection.port)
         destination_info["address"] = connection.host
     elif hasattr(connection, "path"):
         destination_info["port"] = None

@@ -78,7 +78,9 @@
             "https"
         ]
     },
-    "queryStringParameters": null,
+    "queryStringParameters": {
+        "test@key": "test@value"
+    },
     "multiValueQueryStringParameters": null,
     "pathParameters": null,
     "stageVariables": null,
