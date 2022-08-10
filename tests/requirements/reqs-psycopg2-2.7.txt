@@ -1,3 +1,0 @@
-psycopg2>=2.7,<2.8 ; platform_python_implementation == 'CPython'
-psycopg2cffi>=2.7,<2.8 ; platform_python_implementation == 'PyPy'
--r reqs-base.txt
