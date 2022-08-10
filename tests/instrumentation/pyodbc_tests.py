@@ -50,7 +50,7 @@ def pyodbc_postgres_connection(request):
         os.environ.get("POSTGRES_USER", "postgres"),
         os.environ.get("POSTGRES_PASSWORD", "postgres"),
         os.environ.get("POSTGRES_HOST", None),
-        os.environ.get("POSTGRES_PORT", None),
+        os.environ.get("POSTGRES_PORT", "5432"),
     )
     conn = pyodbc.connect(conn_str)
     cursor = conn.cursor()
@@ -84,8 +84,11 @@ def test_pyodbc_select(instrument, pyodbc_postgres_connection, elasticapm_client
         assert span["subtype"] == "pyodbc"
         assert span["action"] == "query"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "elasticapm_test"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
+        assert span["context"]["service"]["target"]["type"] == "pyodbc"
+        assert span["context"]["service"]["target"]["name"] == "elasticapm_test"
 
 
 @pytest.mark.integrationtest

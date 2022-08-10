@@ -34,6 +34,7 @@ import re
 import threading
 import time
 import timeit
+import urllib.parse
 import warnings
 from collections import defaultdict
 from datetime import timedelta
@@ -400,10 +401,12 @@ class Transaction(BaseSpan):
             result["dropped_spans_stats"] = [
                 {
                     "destination_service_resource": resource,
+                    "service_target_type": target_type,
+                    "service_target_name": target_name,
                     "outcome": outcome,
                     "duration": {"count": v["count"], "sum": {"us": int(v["duration.sum.us"])}},
                 }
-                for (resource, outcome), v in self._dropped_span_statistics.items()
+                for (resource, outcome, target_type, target_name), v in self._dropped_span_statistics.items()
             ]
         if self.sample_rate is not None:
             result["sample_rate"] = float(self.sample_rate)
@@ -468,7 +471,9 @@ class Transaction(BaseSpan):
         with self._span_timers_lock:
             try:
                 resource = span.context["destination"]["service"]["resource"]
-                stats = self._dropped_span_statistics[(resource, span.outcome)]
+                target_type = nested_key(span.context, "service", "target", "type")
+                target_name = nested_key(span.context, "service", "target", "name")
+                stats = self._dropped_span_statistics[(resource, span.outcome, target_type, target_name)]
                 stats["count"] += 1
                 stats["duration.sum.us"] += int(span.duration.total_seconds() * 1_000_000)
             except KeyError:
@@ -625,11 +630,14 @@ class Span(BaseSpan):
         :param other_span: another span object
         :return: bool
         """
-        resource = nested_key(self.context, "destination", "service", "resource")
+        target_type = nested_key(self.context, "service", "target", "type")
+        target_name = nested_key(self.context, "service", "target", "name")
         return bool(
             self.type == other_span.type
             and self.subtype == other_span.subtype
-            and (resource and resource == nested_key(other_span.context, "destination", "service", "resource"))
+            and (target_type or target_name)
+            and target_type == nested_key(other_span.context, "service", "target", "type")
+            and target_name == nested_key(other_span.context, "service", "target", "name")
         )
 
     def is_exact_match(self, other_span: SpanType) -> bool:
@@ -663,6 +671,7 @@ class Span(BaseSpan):
         :return: None
         """
         self.autofill_resource_context()
+        self.autofill_service_target()
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
         if (
@@ -783,6 +792,32 @@ class Span(BaseSpan):
                     self.context["destination"]["service"]["name"] = ""
                 if "type" not in self.context["destination"]["service"]:
                     self.context["destination"]["service"]["type"] = ""
+
+    def autofill_service_target(self):
+        if self.leaf:
+            service_target = nested_key(self.context, "service", "target") or {}
+
+            if "type" not in service_target:  # infer type from span type & subtype
+                # use sub-type if provided, fallback on type othewise
+                service_target["type"] = self.subtype or self.type
+
+            if "name" not in service_target:  # infer name from span attributes
+                if nested_key(self.context, "db", "instance"):  # database spans
+                    service_target["name"] = self.context["db"]["instance"]
+                elif "message" in self.context:  # messaging spans
+                    service_target["name"] = self.context["message"]["queue"]["name"]
+                elif nested_key(self.context, "http", "url"):  # http spans
+                    url = self.context["http"]["url"]
+                    parsed_url = urllib.parse.urlparse(url)
+                    service_target["name"] = parsed_url.hostname
+                    if parsed_url.port:
+                        service_target["name"] += f":{parsed_url.port}"
+            if "service" not in self.context:
+                self.context["service"] = {}
+            self.context["service"]["target"] = service_target
+        elif nested_key(self.context, "service", "target"):
+            # non-exit spans should not have service.target.* fields
+            del self.context["service"]["target"]
 
     def cancel(self) -> None:
         """
