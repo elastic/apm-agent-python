@@ -150,6 +150,8 @@ class DjangoClient(Client):
                         self.logger.debug("Can't capture request body: %s", str(e))
                         data = "<unavailable>"
                 if data is not None:
+                    # This can be removed once we figure out a soluction to
+                    # https://github.com/elastic/apm-agent-python/issues/305
                     if len(str(data)) > constants.KEYWORD_MAX_LENGTH:
                         result["body"] = keyword_field(str(data))
                     else:
