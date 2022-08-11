@@ -254,6 +254,8 @@ class capture_serverless(object):
             service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "api gateway"}
+            if ".lambda-url." in self.event["requestContext"]["domainName"]:
+                cloud_context["origin"]["service"]["name"] = "lambda url"
             cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
             cloud_context["origin"]["provider"] = "aws"
         elif self.source == "elb":
