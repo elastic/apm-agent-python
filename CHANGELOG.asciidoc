@@ -29,6 +29,18 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+[float]
+===== Bug fixes
+
+* Differentiate Lambda URLs from API Gateway in AWS Lambda integration {pull}#1609[#1609]
+
 
 
 [[release-notes-6.x]]
