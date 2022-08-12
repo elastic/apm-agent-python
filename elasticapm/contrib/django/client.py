@@ -46,7 +46,7 @@ from elasticapm.base import Client
 from elasticapm.conf import constants
 from elasticapm.contrib.django.utils import get_raw_uri, iterate_with_template_sources
 from elasticapm.utils import compat, encoding, get_url_dict
-from elasticapm.utils.encoding import keyword_field
+from elasticapm.utils.encoding import long_field
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
 from elasticapm.utils.wsgi import get_environ, get_headers
@@ -150,12 +150,9 @@ class DjangoClient(Client):
                         self.logger.debug("Can't capture request body: %s", str(e))
                         data = "<unavailable>"
                 if data is not None:
-                    # This can be removed once we figure out a soluction to
+                    # Can we apply this as a processor instead?
                     # https://github.com/elastic/apm-agent-python/issues/305
-                    if len(str(data)) > constants.KEYWORD_MAX_LENGTH:
-                        result["body"] = keyword_field(str(data))
-                    else:
-                        result["body"] = data
+                    result["body"] = long_field(data)
 
         url = get_raw_uri(request)
         try:

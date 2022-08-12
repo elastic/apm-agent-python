@@ -1498,12 +1498,12 @@ def test_capture_empty_body(client, django_elasticapm_client):
 )
 def test_capture_long_body(client, django_elasticapm_client):
     with pytest.raises(MyException):
-        client.post(reverse("elasticapm-raise-exc"), data={"foo": "f" * 1024})
+        client.post(reverse("elasticapm-raise-exc"), data={"foo": "f" * 10000})
     error = django_elasticapm_client.events[ERROR][0]
     if django_elasticapm_client.config.capture_body not in ("error", "all"):
         assert error["context"]["request"]["body"] == "[REDACTED]"
     else:
-        assert error["context"]["request"]["body"] == f'{{\'foo\': \'{"f" * 1014}' + "…"
+        assert error["context"]["request"]["body"] == f'{{\'foo\': \'{"f" * 9990}' + "…"
 
 
 @pytest.mark.parametrize(
