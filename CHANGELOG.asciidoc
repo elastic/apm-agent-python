@@ -40,6 +40,7 @@ endif::[]
 ===== Bug fixes
 
 * Differentiate Lambda URLs from API Gateway in AWS Lambda integration {pull}#1609[#1609]
+* Restrict the size of Django request bodies to prevent APM Server rejection {pull}#1610[#1610]
 
 
 

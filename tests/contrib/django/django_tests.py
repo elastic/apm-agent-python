@@ -848,7 +848,7 @@ def test_request_metrics_301_append_slash(django_elasticapm_client, client):
         **middleware_setting(
             django.VERSION,
             ["elasticapm.contrib.django.middleware.TracingMiddleware", "django.middleware.common.CommonMiddleware"],
-        )
+        ),
     ):
         client.get(reverse("elasticapm-no-error-slash")[:-1])
     transactions = django_elasticapm_client.events[TRANSACTION]
@@ -874,7 +874,7 @@ def test_request_metrics_301_prepend_www(django_elasticapm_client, client):
         **middleware_setting(
             django.VERSION,
             ["elasticapm.contrib.django.middleware.TracingMiddleware", "django.middleware.common.CommonMiddleware"],
-        )
+        ),
     ):
         client.get(reverse("elasticapm-no-error"))
     transactions = django_elasticapm_client.events[TRANSACTION]
@@ -1149,7 +1149,7 @@ def test_stacktraces_have_templates(client, django_elasticapm_client):
     with override_settings(
         TEMPLATE_DEBUG=TEMPLATE_DEBUG,
         TEMPLATES=TEMPLATES_copy,
-        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"]),
     ):
         resp = client.get(reverse("render-heavy-template"))
     assert resp.status_code == 200
@@ -1341,7 +1341,7 @@ def test_test_exception_fails(mock_send):
     mock_send.side_effect = Exception("boom")
     with override_settings(
         ELASTIC_APM={"TRANSPORT_CLASS": "elasticapm.transport.http.Transport", "SERVICE_NAME": "testapp"},
-        **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
+        **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"]),
     ):
         call_command("elasticapm", "test", stdout=stdout, stderr=stdout)
     output = stdout.getvalue()
@@ -1496,6 +1496,21 @@ def test_capture_empty_body(client, django_elasticapm_client):
     [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],
     indirect=True,
 )
+def test_capture_long_body(client, django_elasticapm_client):
+    with pytest.raises(MyException):
+        client.post(reverse("elasticapm-raise-exc"), data={"foo": "f" * 10000})
+    error = django_elasticapm_client.events[ERROR][0]
+    if django_elasticapm_client.config.capture_body not in ("error", "all"):
+        assert error["context"]["request"]["body"] == "[REDACTED]"
+    else:
+        assert error["context"]["request"]["body"] == f'{{\'foo\': \'{"f" * 9990}' + "…"
+
+
+@pytest.mark.parametrize(
+    "django_elasticapm_client",
+    [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],
+    indirect=True,
+)
 def test_capture_files(client, django_elasticapm_client):
     with pytest.raises(MyException), open(os.path.abspath(__file__)) as f:
         client.post(
@@ -1554,7 +1569,7 @@ def test_rum_tracing_context_processor(client, django_elasticapm_client):
                 },
             }
         ],
-        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"])
+        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.TracingMiddleware"]),
     ):
         response = client.get(reverse("render-heavy-template"))
         transactions = django_elasticapm_client.events[TRANSACTION]
@@ -1634,7 +1649,7 @@ def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, cli
                 "elasticapm.contrib.django.middleware.TracingMiddleware",
                 "tests.contrib.django.testapp.middleware.SetTransactionUnsampled",
             ],
-        )
+        ),
     ):
         client.get(reverse("elasticapm-no-error"))
         transaction = django_elasticapm_client.events[TRANSACTION][0]
