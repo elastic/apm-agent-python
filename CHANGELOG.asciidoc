@@ -41,6 +41,7 @@ endif::[]
 
 * Differentiate Lambda URLs from API Gateway in AWS Lambda integration {pull}#1609[#1609]
 * Restrict the size of Django request bodies to prevent APM Server rejection {pull}#1610[#1610]
+* Restrict length of `exception.message` for exceptions captured by the agent {pull}#1619[#1619]
 
 
 
