@@ -18,8 +18,6 @@ jobs:
         extra_args: --help
     - id: files
       uses: jitterbit/get-changed-files@b17fbb00bdc0c0f63fcf166580804b4d2cdc2a42
-    - name: Configure PATH
-      run: echo "${GITHUB_WORKSPACE}/.ci/scripts" >> $GITHUB_PATH
     - name: Precommit changes
       run: |
         for changed_file in ${{ steps.files.outputs.all }}; do
