@@ -33,7 +33,7 @@ import random
 import sys
 
 from elasticapm.conf.constants import EXCEPTION_CHAIN_MAX_DEPTH
-from elasticapm.utils import varmap
+from elasticapm.utils import encoding, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.stacks import get_culprit, get_stack_info, iter_traceback_frames
@@ -132,6 +132,8 @@ class Exception(BaseEvent):
             message = kwargs["message"]
         else:
             message = "%s: %s" % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
+
+        message = encoding.long_field(message)
 
         data = {
             "id": "%032x" % random.getrandbits(128),
