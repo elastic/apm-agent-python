@@ -41,7 +41,6 @@ from elasticsearch.serializer import JSONSerializer
 
 import elasticapm
 from elasticapm.conf.constants import TRANSACTION
-from elasticapm.traces import execution_context
 
 pytestmark = [pytest.mark.elasticsearch]
 
@@ -85,16 +84,6 @@ class SpecialEncoder(JSONSerializer):
 def elasticsearch(request):
     """Elasticsearch client fixture."""
     client = Elasticsearch(hosts=os.environ["ES_URL"], serializer=SpecialEncoder())
-    try:
-        yield client
-    finally:
-        client.indices.delete(index="*")
-
-
-@pytest.fixture
-def elasticsearch_sniff_on_start(request):
-    """Elasticsearch client fixture."""
-    client = Elasticsearch(hosts=os.environ["ES_URL"], serializer=SpecialEncoder(), sniff_on_start=True)
     try:
         yield client
     finally:
@@ -575,14 +564,3 @@ def test_dropped_span(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
     span = spans[0]
     assert span["name"] == "test"
-
-
-@pytest.mark.integrationtest
-def test_sniff_on_start(instrument, elasticapm_client, elasticsearch_sniff_on_start):
-    elasticapm_client.begin_transaction("test")
-    elasticsearch_sniff_on_start.ping()
-    elasticapm_client.end_transaction("test", "OK")
-
-    transaction = elasticapm_client.events[TRANSACTION][0]
-    spans = elasticapm_client.spans_for_transaction(transaction)
-    assert len(spans) == 1
