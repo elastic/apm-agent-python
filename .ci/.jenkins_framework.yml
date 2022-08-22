@@ -36,7 +36,6 @@ FRAMEWORK:
   - psutil-newest
   #- eventlet-newest
   - gevent-newest
-  - zerorpc-0.4
   - mysql_connector-newest
   - pymysql-newest
   - mysqlclient-newest
