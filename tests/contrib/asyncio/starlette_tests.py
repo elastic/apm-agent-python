@@ -434,6 +434,23 @@ def test_non_utf_8_body_in_ignored_paths_with_capture_body(app, elasticapm_clien
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 0
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"capture_body": "all"}], indirect=True)
+def test_long_body(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.post(
+        "/",
+        data={"foo": "b" * 10000},
+    )
+
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    request = transaction["context"]["request"]
+    assert request["body"] == "foo=" + "b" * 9993 + "..."
+
+
 def test_static_files_only_file_notfound(app_static_files_only, elasticapm_client):
     client = TestClient(app_static_files_only)
 
