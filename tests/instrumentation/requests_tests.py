@@ -66,6 +66,8 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
         "resource": "127.0.0.1:%d" % parsed_url.port,
         "type": "",
     }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{parsed_url.port}"
     assert spans[0]["outcome"] == "success"
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers

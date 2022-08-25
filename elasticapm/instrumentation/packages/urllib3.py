@@ -105,7 +105,8 @@ class Urllib3Instrumentation(AbstractInstrumentedModule):
 
         signature = method.upper() + " " + host
 
-        url = "%s://%s%s" % (instance.scheme, host, url)
+        if url.startswith("/"):
+            url = "%s://%s%s" % (instance.scheme, host, url)
 
         transaction = execution_context.get_transaction()
 

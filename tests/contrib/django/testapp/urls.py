@@ -66,6 +66,7 @@ urlpatterns = (
     re_path(r"^trigger-500-log-request$", views.logging_request_exc, name="elasticapm-log-request-exc"),
     re_path(r"^streaming$", views.streaming_view, name="elasticapm-streaming-view"),
     re_path(r"^name-override$", views.override_transaction_name_view, name="elasticapm-name-override"),
+    re_path(r"^class-based$", views.ClassBasedView.as_view(), name="elasticapm-class-based"),
 )
 
 

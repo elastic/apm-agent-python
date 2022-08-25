@@ -34,11 +34,12 @@ import re
 import threading
 import time
 import timeit
+import urllib.parse
 import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import elasticapm
 from elasticapm.conf import constants
@@ -46,7 +47,7 @@ from elasticapm.conf.constants import LABEL_RE, SPAN, TRANSACTION
 from elasticapm.context import init_execution_context
 from elasticapm.metrics.base_metrics import Timer
 from elasticapm.utils import encoding, get_name_from_func, nested_key, url_to_destination_resource
-from elasticapm.utils.disttracing import TraceParent, TracingOptions
+from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.time import time_to_perf_counter
 
@@ -91,7 +92,7 @@ class ChildDuration(object):
 
 
 class BaseSpan(object):
-    def __init__(self, labels=None, start=None):
+    def __init__(self, labels=None, start=None, links: Optional[Sequence[TraceParent]] = None):
         self._child_durations = ChildDuration(self)
         self.labels = {}
         self.outcome: Optional[str] = None
@@ -100,6 +101,10 @@ class BaseSpan(object):
         self.start_time: float = time_to_perf_counter(start) if start is not None else _time_func()
         self.ended_time: Optional[float] = None
         self.duration: Optional[timedelta] = None
+        self.links: Optional[List[Dict[str, str]]] = None
+        if links:
+            for trace_parent in links:
+                self.add_link(trace_parent)
         if labels:
             self.label(**labels)
 
@@ -144,6 +149,14 @@ class BaseSpan(object):
         labels = encoding.enforce_label_format(labels)
         self.labels.update(labels)
 
+    def add_link(self, trace_parent: TraceParent) -> None:
+        """
+        Causally link this span/transaction to another span/transaction
+        """
+        if self.links is None:
+            self.links = []
+        self.links.append({"trace_id": trace_parent.trace_id, "span_id": trace_parent.span_id})
+
     def set_success(self):
         self.outcome = constants.OUTCOME.SUCCESS
 
@@ -168,6 +181,7 @@ class Transaction(BaseSpan):
         is_sampled: bool = True,
         start: Optional[float] = None,
         sample_rate: Optional[float] = None,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         """
         tracer
@@ -186,15 +200,12 @@ class Transaction(BaseSpan):
             Sample rate which was used to decide whether to sample this transaction.
             This is reported to the APM server so that unsampled transactions can
             be extrapolated.
+        links:
+            A list of traceparents to link this transaction causally
         """
         self.id = self.get_dist_tracing_id()
         if not trace_parent:
-            trace_parent = TraceParent(
-                constants.TRACE_CONTEXT_VERSION,
-                "%032x" % random.getrandbits(128),
-                self.id,
-                TracingOptions(recorded=is_sampled),
-            )
+            trace_parent = TraceParent.new(self.id, is_sampled)
 
         self.trace_parent: TraceParent = trace_parent
         self.timestamp = start if start is not None else time.time()
@@ -226,7 +237,10 @@ class Transaction(BaseSpan):
             )
         except (LookupError, AttributeError):
             self._breakdown = None
-        super(Transaction, self).__init__(start=start)
+        super().__init__(start=start)
+        if links:
+            for trace_parent in links:
+                self.add_link(trace_parent)
 
     def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
         super().end(skip_frames, duration)
@@ -264,6 +278,7 @@ class Transaction(BaseSpan):
         sync=None,
         start=None,
         auto_activate=True,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         parent_span = execution_context.get_span()
         tracer = self.tracer
@@ -286,6 +301,7 @@ class Transaction(BaseSpan):
                 span_action=span_action,
                 sync=sync,
                 start=start,
+                links=links,
             )
             span.frames = tracer.frames_collector_func()
             self._span_counter += 1
@@ -305,6 +321,7 @@ class Transaction(BaseSpan):
         sync=None,
         start=None,
         auto_activate=True,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         """
         Begin a new span
@@ -318,6 +335,7 @@ class Transaction(BaseSpan):
         :param sync: indicate if the span is synchronous or not. In most cases, `None` should be used
         :param start: timestamp, mostly useful for testing
         :param auto_activate: whether to set this span in execution_context
+        :param links: an optional list of traceparents to link this span with
         :return: the Span object
         """
         return self._begin_span(
@@ -332,6 +350,7 @@ class Transaction(BaseSpan):
             sync=sync,
             start=start,
             auto_activate=auto_activate,
+            links=links,
         )
 
     def end_span(self, skip_frames: int = 0, duration: Optional[float] = None, outcome: str = "unknown"):
@@ -382,10 +401,12 @@ class Transaction(BaseSpan):
             result["dropped_spans_stats"] = [
                 {
                     "destination_service_resource": resource,
+                    "service_target_type": target_type,
+                    "service_target_name": target_name,
                     "outcome": outcome,
                     "duration": {"count": v["count"], "sum": {"us": int(v["duration.sum.us"])}},
                 }
-                for (resource, outcome), v in self._dropped_span_statistics.items()
+                for (resource, outcome, target_type, target_name), v in self._dropped_span_statistics.items()
             ]
         if self.sample_rate is not None:
             result["sample_rate"] = float(self.sample_rate)
@@ -394,6 +415,8 @@ class Transaction(BaseSpan):
             # only set parent_id if this transaction isn't the root
             if self.trace_parent.span_id and self.trace_parent.span_id != self.id:
                 result["parent_id"] = self.trace_parent.span_id
+        if self.links:
+            result["links"] = self.links
         # faas context belongs top-level on the transaction
         if "faas" in self.context:
             result["faas"] = self.context.pop("faas")
@@ -448,7 +471,9 @@ class Transaction(BaseSpan):
         with self._span_timers_lock:
             try:
                 resource = span.context["destination"]["service"]["resource"]
-                stats = self._dropped_span_statistics[(resource, span.outcome)]
+                target_type = nested_key(span.context, "service", "target", "type")
+                target_name = nested_key(span.context, "service", "target", "name")
+                stats = self._dropped_span_statistics[(resource, span.outcome, target_type, target_name)]
                 stats["count"] += 1
                 stats["duration.sum.us"] += int(span.duration.total_seconds() * 1_000_000)
             except KeyError:
@@ -477,6 +502,7 @@ class Span(BaseSpan):
         "sync",
         "outcome",
         "_child_durations",
+        "_cancelled",
     )
 
     def __init__(
@@ -493,6 +519,7 @@ class Span(BaseSpan):
         span_action: Optional[str] = None,
         sync: Optional[bool] = None,
         start: Optional[int] = None,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         """
         Create a new Span
@@ -527,7 +554,8 @@ class Span(BaseSpan):
         self.action = span_action
         self.dist_tracing_propagated = False
         self.composite: Dict[str, Any] = {}
-        super(Span, self).__init__(labels=labels, start=start)
+        self._cancelled: bool = False
+        super().__init__(labels=labels, start=start, links=links)
         self.timestamp = transaction.timestamp + (self.start_time - transaction.start_time)
         if self.transaction._breakdown:
             p = self.parent if self.parent else self.transaction
@@ -564,6 +592,8 @@ class Span(BaseSpan):
             if self.context is None:
                 self.context = {}
             self.context["tags"] = self.labels
+        if self.links:
+            result["links"] = self.links
         if self.context:
             self.autofill_resource_context()
             # otel attributes and spankind need to be top-level
@@ -600,11 +630,14 @@ class Span(BaseSpan):
         :param other_span: another span object
         :return: bool
         """
-        resource = nested_key(self.context, "destination", "service", "resource")
+        target_type = nested_key(self.context, "service", "target", "type")
+        target_name = nested_key(self.context, "service", "target", "name")
         return bool(
             self.type == other_span.type
             and self.subtype == other_span.subtype
-            and (resource and resource == nested_key(other_span.context, "destination", "service", "resource"))
+            and (target_type or target_name)
+            and target_type == nested_key(other_span.context, "service", "target", "type")
+            and target_name == nested_key(other_span.context, "service", "target", "name")
         )
 
     def is_exact_match(self, other_span: SpanType) -> bool:
@@ -638,6 +671,7 @@ class Span(BaseSpan):
         :return: None
         """
         self.autofill_resource_context()
+        self.autofill_service_target()
         super().end(skip_frames, duration)
         tracer = self.transaction.tracer
         if (
@@ -666,6 +700,8 @@ class Span(BaseSpan):
         if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
             self.transaction.track_dropped_span(self)
             self.transaction.dropped_spans += 1
+        elif self._cancelled:
+            self.transaction._span_counter -= 1
         else:
             self.tracer.queue_func(SPAN, self.to_dict())
 
@@ -757,6 +793,41 @@ class Span(BaseSpan):
                 if "type" not in self.context["destination"]["service"]:
                     self.context["destination"]["service"]["type"] = ""
 
+    def autofill_service_target(self):
+        if self.leaf:
+            service_target = nested_key(self.context, "service", "target") or {}
+
+            if "type" not in service_target:  # infer type from span type & subtype
+                # use sub-type if provided, fallback on type othewise
+                service_target["type"] = self.subtype or self.type
+
+            if "name" not in service_target:  # infer name from span attributes
+                if nested_key(self.context, "db", "instance"):  # database spans
+                    service_target["name"] = self.context["db"]["instance"]
+                elif "message" in self.context:  # messaging spans
+                    service_target["name"] = self.context["message"]["queue"]["name"]
+                elif nested_key(self.context, "http", "url"):  # http spans
+                    url = self.context["http"]["url"]
+                    parsed_url = urllib.parse.urlparse(url)
+                    service_target["name"] = parsed_url.hostname
+                    if parsed_url.port:
+                        service_target["name"] += f":{parsed_url.port}"
+            if "service" not in self.context:
+                self.context["service"] = {}
+            self.context["service"]["target"] = service_target
+        elif nested_key(self.context, "service", "target"):
+            # non-exit spans should not have service.target.* fields
+            del self.context["service"]["target"]
+
+    def cancel(self) -> None:
+        """
+        Mark span as cancelled. Cancelled spans don't count towards started spans nor dropped spans.
+
+        No checks are made to ensure that spans which already propagated distributed context are not
+        cancelled.
+        """
+        self._cancelled = True
+
     def __str__(self):
         return "{}/{}/{}".format(self.name, self.type, self.subtype)
 
@@ -846,7 +917,14 @@ class Tracer(object):
             else:
                 return self.config.span_frames_min_duration
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
+    def begin_transaction(
+        self,
+        transaction_type: str,
+        trace_parent: Optional[TraceParent] = None,
+        start: Optional[float] = None,
+        auto_activate: bool = True,
+        links: Optional[Sequence[TraceParent]] = None,
+    ) -> Transaction:
         """
         Start a new transactions and bind it in a thread-local variable
 
@@ -854,9 +932,21 @@ class Tracer(object):
         :param trace_parent: an optional TraceParent object
         :param start: override the start timestamp, mostly useful for testing
         :param auto_activate: whether to set this transaction in execution_context
-
+        :param links: list of traceparents to causally link this transaction to
         :returns the Transaction object
         """
+        links = links if links else []
+        continuation_strategy = self.config.trace_continuation_strategy
+
+        # we restart the trace if continuation strategy is "restart", or if it is "restart_external" and our
+        # "es" key is not in the tracestate header. In both cases, the original TraceParent is added to trace links.
+        if trace_parent and continuation_strategy != constants.TRACE_CONTINUATION_STRATEGY.CONTINUE:
+            if continuation_strategy == constants.TRACE_CONTINUATION_STRATEGY.RESTART or (
+                continuation_strategy == constants.TRACE_CONTINUATION_STRATEGY.RESTART_EXTERNAL
+                and not trace_parent.tracestate_dict
+            ):
+                links.append(trace_parent)
+                trace_parent = None
         if trace_parent:
             is_sampled = bool(trace_parent.trace_options.recorded)
             sample_rate = trace_parent.tracestate_dict.get(constants.TRACESTATE.SAMPLE_RATE)
@@ -876,6 +966,7 @@ class Tracer(object):
             is_sampled=is_sampled,
             start=start,
             sample_rate=sample_rate,
+            links=links,
         )
         if trace_parent is None:
             transaction.trace_parent.add_tracestate(constants.TRACESTATE.SAMPLE_RATE, sample_rate)
@@ -925,6 +1016,7 @@ class capture_span(object):
         "duration",
         "start",
         "sync",
+        "links",
     )
 
     def __init__(
@@ -940,6 +1032,7 @@ class capture_span(object):
         start: Optional[int] = None,
         duration: Optional[Union[float, timedelta]] = None,
         sync: Optional[bool] = None,
+        links: Optional[Sequence[TraceParent]] = None,
     ):
         self.name = name
         if span_subtype is None and "." in span_type:
@@ -961,6 +1054,7 @@ class capture_span(object):
             duration = timedelta(seconds=duration)
         self.duration = duration
         self.sync = sync
+        self.links = links
 
     def __call__(self, func: Callable) -> Callable:
         self.name = self.name or get_name_from_func(func)
@@ -993,6 +1087,7 @@ class capture_span(object):
                 span_action=self.action,
                 start=self.start,
                 sync=sync,
+                links=self.links,
             )
         return None
 
@@ -1029,7 +1124,8 @@ def label(**labels):
     """
     transaction = execution_context.get_transaction()
     if not transaction:
-        if elasticapm.get_client().config.enabled:
+        client = elasticapm.get_client()
+        if not client or client.config.enabled:
             error_logger.warning("Ignored labels %s. No transaction currently active.", ", ".join(labels.keys()))
     else:
         transaction.label(**labels)

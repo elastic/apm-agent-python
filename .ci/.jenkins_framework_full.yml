@@ -47,7 +47,6 @@ FRAMEWORK:
   - redis-3
   - redis-2
   - redis-newest
-  - psycopg2-2.7
   - psycopg2-newest
   - pymssql-newest
   - memcached-1.51
@@ -65,7 +64,6 @@ FRAMEWORK:
   - elasticsearch-6
   - elasticsearch-7
   - gevent-newest
-  - zerorpc-0.4
   - aiohttp-3.0
   - aiohttp-newest
   - aiopg-newest
@@ -85,3 +83,4 @@ FRAMEWORK:
   - sanic-20.12
   - sanic-newest
   - aiobotocore-newest
+  - kafka-python-newest

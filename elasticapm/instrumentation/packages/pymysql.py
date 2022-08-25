@@ -42,6 +42,10 @@ class PyMySQLCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    @property
+    def _self_database(self) -> str:
+        return self.connection.db.decode("latin1") if self.connection.db else ""
+
 
 class PyMySQLConnectionProxy(ConnectionProxy):
     cursor_proxy = PyMySQLCursorProxy

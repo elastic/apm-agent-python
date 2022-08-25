@@ -1,0 +1,25 @@
+{
+    "requestContext": {
+        "elb": {
+            "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/lambda-279XGJDqGZ5rsrHC2Fjr/49e9d65c45c6791a"
+        }
+    },
+    "httpMethod": "POST",
+    "path": "/toolz/api/v2.0/downloadPDF/PDF_2020-09-11_11-06-01.pdf",
+    "queryStringParameters": {
+        "test%40key": "test%40value",
+        "language": "en-DE"
+    },
+    "headers": {
+        "accept-encoding": "gzip,deflate",
+        "connection": "Keep-Alive",
+        "host": "blabla.com",
+        "user-agent": "Apache-HttpClient/4.5.13 (Java/11.0.15)",
+        "x-amzn-trace-id": "Root=1-xxxxxxxxxxxxxx",
+        "x-forwarded-for": "199.99.99.999",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "body": "blablablabody",
+    "isBase64Encoded": false
+}

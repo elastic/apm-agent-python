@@ -30,6 +30,8 @@
 
 from __future__ import absolute_import
 
+import binascii
+
 import pytest
 
 from elasticapm.utils.disttracing import TraceParent
@@ -88,6 +90,35 @@ def test_trace_parent_wrong_format(caplog):
         trace_parent = TraceParent.from_string(header)
     assert trace_parent is None
     assert_any_record_contains(caplog.records, "Invalid traceparent header format, value 00")
+
+
+def test_trace_parent_binary():
+    header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03"
+    tp = TraceParent.from_string(header)
+    bytestr = tp.to_binary()
+    print(type(bytestr[0]))
+    assert binascii.hexlify(bytestr[0:1]) == b"00"  # version
+    assert binascii.hexlify(bytestr[1:2]) == b"00"  # trace-id field identifier
+    assert binascii.hexlify(bytestr[2:18]) == b"0af7651916cd43dd8448eb211c80319c"  # trace-id
+    assert binascii.hexlify(bytestr[18:19]) == b"01"  # span-id field identifier
+    assert binascii.hexlify(bytestr[19:27]) == b"b7ad6b7169203331"  # span-id
+    assert binascii.hexlify(bytestr[27:28]) == b"02"  # trace-options field identifier
+    assert binascii.hexlify(bytestr[28:29]) == b"03"  # trace-options
+
+    tp2 = TraceParent.from_binary(bytestr)
+    assert tp.version == tp2.version
+    assert tp.trace_id == tp2.trace_id
+    assert tp.span_id == tp2.span_id
+    assert tp.trace_options == tp2.trace_options
+
+
+def test_trace_parent_binary_invalid_length(caplog):
+    with caplog.at_level("DEBUG", "elasticapm.utils"):
+        tp = TraceParent.from_binary(b"123")
+    assert tp is None
+    assert_any_record_contains(
+        caplog.records, "Invalid binary traceparent format, length is 3, should be 29, value b'123'"
+    )
 
 
 @pytest.mark.parametrize(

@@ -35,9 +35,25 @@ from elasticapm.conf import constants
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule, AsyncAbstractInstrumentedModule
 from elasticapm.traces import capture_span
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.logging import get_logger
+
+logger = get_logger("elasticapm.instrument")
 
 
-class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
+class TornadoBaseInstrumentedModule(AbstractInstrumentedModule):
+    def instrument(self):
+        try:
+            import tornado
+
+            if tornado.version_info[0] < 6:
+                logger.debug("Skipping instrumentation of %s. Tornado is only supported with version 6.0+", self.name)
+                return
+        except ImportError:
+            pass
+        super().instrument()
+
+
+class TornadoRequestExecuteInstrumentation(TornadoBaseInstrumentedModule, AsyncAbstractInstrumentedModule):
     name = "tornado_request_execute"
     creates_transactions = True
     instrument_list = [("tornado.web", "RequestHandler._execute")]
@@ -78,7 +94,7 @@ class TornadoRequestExecuteInstrumentation(AsyncAbstractInstrumentedModule):
         return ret
 
 
-class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
+class TornadoHandleRequestExceptionInstrumentation(TornadoBaseInstrumentedModule):
     name = "tornado_handle_request_exception"
 
     instrument_list = [("tornado.web", "RequestHandler._handle_request_exception")]
@@ -115,7 +131,7 @@ class TornadoHandleRequestExceptionInstrumentation(AbstractInstrumentedModule):
         return wrapped(*args, **kwargs)
 
 
-class TornadoRenderInstrumentation(AbstractInstrumentedModule):
+class TornadoRenderInstrumentation(TornadoBaseInstrumentedModule):
     name = "tornado_render"
 
     instrument_list = [("tornado.web", "RequestHandler.render")]

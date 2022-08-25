@@ -44,7 +44,7 @@ import urllib.parse
 import warnings
 from copy import deepcopy
 from datetime import timedelta
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
 import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
@@ -52,6 +52,7 @@ from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
 from elasticapm.traces import Tracer, execution_context
 from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, varmap
+from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.module_import import import_string
@@ -288,7 +289,14 @@ class Client(object):
             flush = False
         self._transport.queue(event_type, data, flush)
 
-    def begin_transaction(self, transaction_type, trace_parent=None, start=None, auto_activate=True):
+    def begin_transaction(
+        self,
+        transaction_type: str,
+        trace_parent: Optional[TraceParent] = None,
+        start: Optional[float] = None,
+        auto_activate: bool = True,
+        links: Optional[Sequence[TraceParent]] = None,
+    ):
         """
         Register the start of a transaction on the client
 
@@ -300,7 +308,7 @@ class Client(object):
         """
         if self.config.is_recording:
             return self.tracer.begin_transaction(
-                transaction_type, trace_parent=trace_parent, start=start, auto_activate=auto_activate
+                transaction_type, trace_parent=trace_parent, start=start, auto_activate=auto_activate, links=links
             )
 
     def end_transaction(self, name=None, result="", duration=None):
@@ -632,9 +640,18 @@ class Client(object):
         return [seen.setdefault(path, import_string(path)) for path in processors if path not in seen]
 
     def should_ignore_url(self, url):
+        """Checks if URL should be ignored based on the transaction_ignore_urls setting"""
         if self.config.transaction_ignore_urls:
             for pattern in self.config.transaction_ignore_urls:
                 if pattern.match(url):
+                    return True
+        return False
+
+    def should_ignore_topic(self, topic: str) -> bool:
+        """Checks if messaging topic should be ignored based on the ignore_message_queues setting"""
+        if self.config.ignore_message_queues:
+            for pattern in self.config.ignore_message_queues:
+                if pattern.match(topic):
                     return True
         return False
 

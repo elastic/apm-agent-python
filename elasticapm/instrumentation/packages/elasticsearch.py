@@ -52,7 +52,7 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
-        if isinstance(span, DroppedSpan):
+        if not span or isinstance(span, DroppedSpan):
             return wrapped(*args, **kwargs)
 
         self._update_context_by_request_data(span.context, instance, args, kwargs)

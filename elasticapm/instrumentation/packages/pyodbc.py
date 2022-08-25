@@ -42,6 +42,12 @@ class PyODBCCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    @property
+    def _self_database(self):
+        import pyodbc
+
+        return self.connection.getinfo(pyodbc.SQL_DATABASE_NAME) or ""
+
 
 class PyODBCConnectionProxy(ConnectionProxy):
     cursor_proxy = PyODBCCursorProxy

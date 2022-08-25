@@ -28,9 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import binascii
 import ctypes
 import itertools
+import random
 import re
+from typing import Dict, Optional
 
 from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
@@ -41,16 +44,31 @@ logger = get_logger("elasticapm.utils")
 class TraceParent(object):
     __slots__ = ("version", "trace_id", "span_id", "trace_options", "tracestate", "tracestate_dict", "is_legacy")
 
-    def __init__(self, version, trace_id, span_id, trace_options, tracestate=None, is_legacy=False):
-        self.version = version
-        self.trace_id = trace_id
-        self.span_id = span_id
-        self.trace_options = trace_options
-        self.is_legacy = is_legacy
-        self.tracestate = tracestate
+    def __init__(
+        self,
+        version: int,
+        trace_id: str,
+        span_id: str,
+        trace_options: "TracingOptions",
+        tracestate: Optional[str] = None,
+        is_legacy: bool = False,
+    ):
+        self.version: int = version
+        self.trace_id: str = trace_id
+        self.span_id: str = span_id
+        self.trace_options: TracingOptions = trace_options
+        self.is_legacy: bool = is_legacy
+        self.tracestate: Optional[str] = tracestate
         self.tracestate_dict = self._parse_tracestate(tracestate)
 
-    def copy_from(self, version=None, trace_id=None, span_id=None, trace_options=None, tracestate=None):
+    def copy_from(
+        self,
+        version: int = None,
+        trace_id: str = None,
+        span_id: str = None,
+        trace_options: "TracingOptions" = None,
+        tracestate: str = None,
+    ):
         return TraceParent(
             version or self.version,
             trace_id or self.trace_id,
@@ -59,14 +77,38 @@ class TraceParent(object):
             tracestate or self.tracestate,
         )
 
-    def to_string(self):
+    def to_string(self) -> str:
         return "{:02x}-{}-{}-{:02x}".format(self.version, self.trace_id, self.span_id, self.trace_options.asByte)
 
-    def to_ascii(self):
+    def to_ascii(self) -> bytes:
         return self.to_string().encode("ascii")
 
+    def to_binary(self) -> bytes:
+        return b"".join(
+            [
+                (self.version).to_bytes(1, byteorder="big"),
+                (0).to_bytes(1, byteorder="big"),
+                bytes.fromhex(self.trace_id),
+                (1).to_bytes(1, byteorder="big"),
+                bytes.fromhex(self.span_id),
+                (2).to_bytes(1, byteorder="big"),
+                (self.trace_options.asByte).to_bytes(1, byteorder="big"),
+            ]
+        )
+
     @classmethod
-    def from_string(cls, traceparent_string, tracestate_string=None, is_legacy=False):
+    def new(cls, transaction_id: str, is_sampled: bool) -> "TraceParent":
+        return cls(
+            version=constants.TRACE_CONTEXT_VERSION,
+            trace_id="%032x" % random.getrandbits(128),
+            span_id=transaction_id,
+            trace_options=TracingOptions(recorded=is_sampled),
+        )
+
+    @classmethod
+    def from_string(
+        cls, traceparent_string: str, tracestate_string: Optional[str] = None, is_legacy: bool = False
+    ) -> Optional["TraceParent"]:
         try:
             parts = traceparent_string.split("-")
             version, trace_id, span_id, trace_flags = parts[:4]
@@ -91,11 +133,11 @@ class TraceParent(object):
     @classmethod
     def from_headers(
         cls,
-        headers,
-        header_name=constants.TRACEPARENT_HEADER_NAME,
-        legacy_header_name=constants.TRACEPARENT_LEGACY_HEADER_NAME,
-        tracestate_header_name=constants.TRACESTATE_HEADER_NAME,
-    ):
+        headers: dict,
+        header_name: str = constants.TRACEPARENT_HEADER_NAME,
+        legacy_header_name: str = constants.TRACEPARENT_LEGACY_HEADER_NAME,
+        tracestate_header_name: str = constants.TRACESTATE_HEADER_NAME,
+    ) -> Optional["TraceParent"]:
         tracestate = cls.merge_duplicate_headers(headers, tracestate_header_name)
         if header_name in headers:
             return TraceParent.from_string(headers[header_name], tracestate, is_legacy=False)
@@ -103,6 +145,29 @@ class TraceParent(object):
             return TraceParent.from_string(headers[legacy_header_name], tracestate, is_legacy=False)
         else:
             return None
+
+    @classmethod
+    def from_binary(cls, data: bytes) -> Optional["TraceParent"]:
+        if len(data) != 29:
+            logger.debug("Invalid binary traceparent format, length is %d, should be 29, value %r", len(data), data)
+            return
+        if (
+            int.from_bytes(data[1:2], byteorder="big") != 0
+            or int.from_bytes(data[18:19], byteorder="big") != 1
+            or int.from_bytes(data[27:28], byteorder="big") != 2
+        ):
+            logger.debug("Invalid binary traceparent format, field identifiers not correct, value %r", data)
+            return
+        version = int.from_bytes(data[0:1], byteorder="big")
+        trace_id = str(binascii.hexlify(data[2:18]), encoding="ascii")
+        span_id = str(binascii.hexlify(data[19:27]), encoding="ascii")
+        try:
+            tracing_options = TracingOptions()
+            tracing_options.asByte = int.from_bytes(data[28:29], byteorder="big")
+        except ValueError:
+            logger.debug("Invalid trace-options field, value %r", data[28:29])
+            return
+        return TraceParent(version, trace_id, span_id, tracing_options)
 
     @classmethod
     def merge_duplicate_headers(cls, headers, key):
@@ -125,7 +190,7 @@ class TraceParent(object):
             return ",".join([item[1] for item in headers if item[0] == key])
         return headers.get(key)
 
-    def _parse_tracestate(self, tracestate):
+    def _parse_tracestate(self, tracestate) -> Dict[str, str]:
         """
         Tracestate can contain data from any vendor, made distinct by vendor
         keys. Vendors are comma-separated. The elastic (es) tracestate data is
@@ -217,6 +282,9 @@ class TracingOptions(ctypes.Union):
         super(TracingOptions, self).__init__()
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+    def __eq__(self, other):
+        return self.asByte == other.asByte
 
 
 def trace_parent_from_string(traceparent_string, tracestate_string=None, is_legacy=False):

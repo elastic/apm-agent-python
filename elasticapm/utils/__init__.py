@@ -63,13 +63,15 @@ def varmap(func, var, context=None, name=None, **kwargs):
     if objid in context:
         return func(name, "<...>", **kwargs)
     context.add(objid)
-    if isinstance(var, dict):
+
+    # Apply func() before recursion, so that `shorten()` doesn't have to iterate over all the trimmed values
+    ret = func(name, var, **kwargs)
+    if isinstance(ret, dict):
         # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
-        ret = func(name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in var.copy().items()), **kwargs)
-    elif isinstance(var, (list, tuple)):
-        ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
-    else:
-        ret = func(name, var, **kwargs)
+        ret = dict((k, varmap(func, v, context, k, **kwargs)) for k, v in ret.copy().items())
+    elif isinstance(ret, (list, tuple)):
+        # Apply func() before recursion, so that `shorten()` doesn't have to iterate over all the trimmed values
+        ret = [varmap(func, f, context, name, **kwargs) for f in ret]
     context.remove(objid)
     return ret
 
@@ -83,7 +85,9 @@ def get_name_from_func(func: FunctionType) -> str:
 
     module = func.__module__
 
-    if hasattr(func, "__name__"):
+    if hasattr(func, "view_class"):
+        view_name = func.view_class.__name__
+    elif hasattr(func, "__name__"):
         view_name = func.__name__
     else:  # Fall back if there's no __name__
         view_name = func.__class__.__name__
