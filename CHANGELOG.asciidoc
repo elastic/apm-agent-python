@@ -39,10 +39,12 @@ endif::[]
 [float]
 ===== Bug fixes
 
-* Differentiate Lambda URLs from API Gateway in AWS Lambda integration {pull}#1609[#1609]
-* Restrict the size of Django request bodies to prevent APM Server rejection {pull}#1610[#1610]
-* Restrict length of `exception.message` for exceptions captured by the agent {pull}#1619[#1619]
-* Fix error when using elasticsearch(sniff_on_start=True) {pull}#1618[#1618]
+* Differentiate Lambda URLs from API Gateway in AWS Lambda integration {pull}1609[#1609]
+* Restrict the size of Django request bodies to prevent APM Server rejection {pull}1610[#1610]
+* Restrict length of `exception.message` for exceptions captured by the agent {pull}1619[#1619]
+* Restrict length of Starlette request bodies {pull}1549[#1549]
+* Fix error when using elasticsearch(sniff_on_start=True) {pull}1618[#1618]
+* Improve handling of ignored URLs and capture_body=off for Starlette {pull}1549[#1549]
 
 
 
@@ -55,7 +57,7 @@ endif::[]
 [float]
 ===== Features
 
-* Added lambda support for ELB triggers {pull}#1605[#1605]
+* Added lambda support for ELB triggers {pull}1605[#1605]
 
 [[release-notes-6.10.2]]
 ==== 6.10.2 - 2022-08-04
