@@ -33,9 +33,11 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-//
+[float]
+===== Features
+
+* Add redis query to context data for redis instrumentation {pull}1406[#1406]
+
 [float]
 ===== Bug fixes
 
