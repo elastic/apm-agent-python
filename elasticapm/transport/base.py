@@ -31,7 +31,9 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import io
 import os
+import queue as _queue
 import random
 import sys
 import threading
@@ -39,7 +41,7 @@ import time
 import timeit
 from collections import defaultdict
 
-from elasticapm.utils import compat, json_encoder
+from elasticapm.utils import json_encoder
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import ThreadManager
 
@@ -90,8 +92,8 @@ class Transport(ThreadManager):
         self.start_stop_order = sys.maxsize  # ensure that the transport thread is always started/stopped last
 
     @property
-    def _max_flush_time(self):
-        return self.client.config.api_request_time / 1000.0 if self.client else None
+    def _max_flush_time_seconds(self):
+        return self.client.config.api_request_time.total_seconds() if self.client else None
 
     @property
     def _max_buffer_size(self):
@@ -103,7 +105,7 @@ class Transport(ThreadManager):
             kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
             self._event_queue.put((event_type, data, flush), block=False, **kwargs)
 
-        except compat.queue.Full:
+        except _queue.Full:
             logger.debug("Event of type %s dropped due to full event queue", event_type)
 
     def _process_queue(self):
@@ -114,7 +116,9 @@ class Transport(ThreadManager):
         buffer = self._init_buffer()
         buffer_written = False
         # add some randomness to timeout to avoid stampedes of several workers that are booted at the same time
-        max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+        max_flush_time = (
+            self._max_flush_time_seconds * random.uniform(0.9, 1.1) if self._max_flush_time_seconds else None
+        )
 
         while True:
             since_last_flush = timeit.default_timer() - self._last_flush
@@ -123,7 +127,7 @@ class Transport(ThreadManager):
             timed_out = False
             try:
                 event_type, data, flush = self._event_queue.get(block=True, timeout=timeout)
-            except compat.queue.Empty:
+            except _queue.Empty:
                 event_type, data, flush = None, None, None
                 timed_out = True
 
@@ -151,7 +155,8 @@ class Transport(ThreadManager):
 
             queue_size = 0 if buffer.fileobj is None else buffer.fileobj.tell()
 
-            if flush:
+            forced_flush = flush
+            if forced_flush:
                 logger.debug("forced flush")
             elif timed_out or timeout == 0:
                 # update last flush time, as we might have waited for a non trivial amount of time in
@@ -170,11 +175,18 @@ class Transport(ThreadManager):
                 flush = True
             if flush:
                 if buffer_written:
-                    self._flush(buffer)
+                    self._flush(buffer, forced_flush=forced_flush)
+                elif forced_flush and "/localhost:" in self.client.config.server_url:
+                    # No data on buffer, but due to manual flush we should send
+                    # an empty payload with flushed=true query param, but only
+                    # to a local APM server (or lambda extension)
+                    self.send(None, flushed=True)
                 self._last_flush = timeit.default_timer()
                 buffer = self._init_buffer()
                 buffer_written = False
-                max_flush_time = self._max_flush_time * random.uniform(0.9, 1.1) if self._max_flush_time else None
+                max_flush_time = (
+                    self._max_flush_time_seconds * random.uniform(0.9, 1.1) if self._max_flush_time_seconds else None
+                )
                 self._flushed.set()
 
     def _process_event(self, event_type, data):
@@ -203,7 +215,7 @@ class Transport(ThreadManager):
         return data
 
     def _init_buffer(self):
-        buffer = gzip.GzipFile(fileobj=compat.BytesIO(), mode="w", compresslevel=self._compress_level)
+        buffer = gzip.GzipFile(fileobj=io.BytesIO(), mode="w", compresslevel=self._compress_level)
         return buffer
 
     def _write_metadata(self, buffer):
@@ -237,16 +249,16 @@ class Transport(ThreadManager):
         # due to the event processor thread being woken up all the time) is not an issue.
         if all(
             (
-                hasattr(compat.queue.Queue, "not_full"),
-                hasattr(compat.queue.Queue, "not_empty"),
-                hasattr(compat.queue.Queue, "unfinished_tasks"),
+                hasattr(_queue.Queue, "not_full"),
+                hasattr(_queue.Queue, "not_empty"),
+                hasattr(_queue.Queue, "unfinished_tasks"),
             )
         ):
             return ChilledQueue(maxsize=10000, chill_until=chill_until, max_chill_time=max_chill_time)
         else:
-            return compat.queue.Queue(maxsize=10000)
+            return _queue.Queue(maxsize=10000)
 
-    def _flush(self, buffer):
+    def _flush(self, buffer, forced_flush=False):
         """
         Flush the queue. This method should only be called from the event processing queue
         :return: None
@@ -260,7 +272,7 @@ class Transport(ThreadManager):
             # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
             data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
             try:
-                self.send(data)
+                self.send(data, forced_flush=forced_flush)
                 self.handle_transport_success()
             except Exception as e:
                 self.handle_transport_fail(e)
@@ -277,7 +289,7 @@ class Transport(ThreadManager):
             except RuntimeError:
                 pass
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         """
         You need to override this to do something with the actual
         data. Usually - this is sending to a server
@@ -293,7 +305,7 @@ class Transport(ThreadManager):
             return
         self._closed = True
         self.queue("close", None)
-        if not self._flushed.wait(timeout=self._max_flush_time):
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             logger.error("Closing the transport connection timed out.")
 
     stop_thread = close
@@ -305,7 +317,7 @@ class Transport(ThreadManager):
         are produced in other threads than can be consumed.
         """
         self.queue(None, None, flush=True)
-        if not self._flushed.wait(timeout=self._max_flush_time):
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             raise ValueError("flush timed out")
 
     def handle_transport_success(self, **kwargs):
@@ -362,7 +374,7 @@ class TransportState(object):
         return self.status == self.ERROR
 
 
-class ChilledQueue(compat.queue.Queue, object):
+class ChilledQueue(_queue.Queue, object):
     """
     A queue subclass that is a bit more chill about how often it notifies the not empty event
 
@@ -391,7 +403,7 @@ class ChilledQueue(compat.queue.Queue, object):
             if self.maxsize > 0:
                 if not block:
                     if self._qsize() >= self.maxsize:
-                        raise compat.queue.Full
+                        raise _queue.Full
                 elif timeout is None:
                     while self._qsize() >= self.maxsize:
                         self.not_full.wait()
@@ -402,7 +414,7 @@ class ChilledQueue(compat.queue.Queue, object):
                     while self._qsize() >= self.maxsize:
                         remaining = endtime - time.time()
                         if remaining <= 0.0:
-                            raise compat.queue.Full
+                            raise _queue.Full
                         self.not_full.wait(remaining)
             self._put(item)
             self.unfinished_tasks += 1

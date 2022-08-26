@@ -36,8 +36,9 @@ import os
 import re
 import socket
 import threading
+from datetime import timedelta
 
-from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES
+from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, TRACE_CONTINUATION_STRATEGY
 from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
@@ -114,7 +115,7 @@ class _ConfigValue(object):
         self,
         dict_key,
         env_key=None,
-        type=compat.text_type,
+        type=str,
         validators=None,
         callbacks=None,
         callbacks_on_default=True,
@@ -155,7 +156,7 @@ class _ConfigValue(object):
             try:
                 value = self.type(value)
             except ValueError as e:
-                raise ConfigurationError("{}: {}".format(self.dict_key, compat.text_type(e)), self.dict_key)
+                raise ConfigurationError("{}: {}".format(self.dict_key, str(e)), self.dict_key)
         instance._errors.pop(self.dict_key, None)
         return value
 
@@ -189,7 +190,7 @@ class _ListConfigValue(_ConfigValue):
         super(_ListConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
-        if isinstance(value, compat.string_types):
+        if isinstance(value, str):
             value = value.split(self.list_separator)
         elif value is not None:
             value = list(value)
@@ -206,7 +207,7 @@ class _DictConfigValue(_ConfigValue):
         super(_DictConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
-        if isinstance(value, compat.string_types):
+        if isinstance(value, str):
             items = (item.split(self.keyval_separator) for item in value.split(self.item_separator))
             value = {key.strip(): self.type(val.strip()) for key, val in items}
         elif not isinstance(value, dict):
@@ -223,7 +224,7 @@ class _BoolConfigValue(_ConfigValue):
         super(_BoolConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value):
-        if isinstance(value, compat.string_types):
+        if isinstance(value, str):
             if value.lower() == self.true_string:
                 value = True
             elif value.lower() == self.false_string:
@@ -232,13 +233,46 @@ class _BoolConfigValue(_ConfigValue):
         instance._values[self.dict_key] = bool(value)
 
 
+class _DurationConfigValue(_ConfigValue):
+    units = (
+        ("us", 0.000001),
+        ("ms", 0.001),
+        ("s", 1),
+        ("m", 60),
+    )
+
+    def __init__(self, dict_key, allow_microseconds=False, unitless_factor=None, **kwargs):
+        self.type = None  # no type coercion
+        used_units = self.units if allow_microseconds else self.units[1:]
+        pattern = "|".join(unit[0] for unit in used_units)
+        unit_multipliers = dict(used_units)
+        unit_required = ""
+        if unitless_factor:
+            unit_multipliers[None] = unitless_factor
+            unit_required = "?"
+        regex = f"((?:-)?\\d+)({pattern}){unit_required}$"
+        verbose_pattern = f"\\d+({pattern}){unit_required}$"
+        duration_validator = UnitValidator(
+            regex=regex, verbose_pattern=verbose_pattern, unit_multipliers=unit_multipliers
+        )
+        validators = kwargs.pop("validators", [])
+        validators.insert(0, duration_validator)
+        super().__init__(dict_key, validators=validators, **kwargs)
+
+    def __set__(self, config_instance, value):
+        value = self._validate(config_instance, value)
+        value = timedelta(seconds=float(value))
+        self._callback_if_changed(config_instance, value)
+        config_instance._values[self.dict_key] = value
+
+
 class RegexValidator(object):
     def __init__(self, regex, verbose_pattern=None):
         self.regex = regex
         self.verbose_pattern = verbose_pattern or regex
 
     def __call__(self, value, field_name):
-        value = compat.text_type(value)
+        value = str(value)
         match = re.match(self.regex, value)
         if match:
             return value
@@ -252,7 +286,7 @@ class UnitValidator(object):
         self.unit_multipliers = unit_multipliers
 
     def __call__(self, value, field_name):
-        value = compat.text_type(value)
+        value = str(value)
         match = re.match(self.regex, value, re.IGNORECASE)
         if not match:
             raise ConfigurationError("{} does not match pattern {}".format(value, self.verbose_pattern), field_name)
@@ -283,14 +317,13 @@ class PrecisionValidator(object):
             value = float(value)
         except ValueError:
             raise ConfigurationError("{} is not a float".format(value), field_name)
-        multiplier = 10 ** self.precision
+        multiplier = 10**self.precision
         rounded = math.floor(value * multiplier + 0.5) / multiplier
         if rounded == 0 and self.minimum and value != 0:
             rounded = self.minimum
         return rounded
 
 
-duration_validator = UnitValidator(r"^((?:-)?\d+)(ms|s|m)$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000})
 size_validator = UnitValidator(
     r"^(\d+)(b|kb|mb|gb)$", r"\d+(b|KB|MB|GB)", {"b": 1, "kb": 1024, "mb": 1024 * 1024, "gb": 1024 * 1024 * 1024}
 )
@@ -442,7 +475,7 @@ class _ConfigBase(object):
             env_dict = os.environ
         if inline_dict is None:
             inline_dict = {}
-        for field, config_value in compat.iteritems(self.__class__.__dict__):
+        for field, config_value in self.__class__.__dict__.items():
             if not isinstance(config_value, _ConfigValue):
                 continue
             new_value = self._NO_VALUE
@@ -507,7 +540,10 @@ class _ConfigBase(object):
 
 class Config(_ConfigBase):
     service_name = _ConfigValue(
-        "SERVICE_NAME", validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")], default="python_service", required=True
+        "SERVICE_NAME",
+        validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")],
+        default="unknown-python-service",
+        required=True,
     )
     service_node_name = _ConfigValue("SERVICE_NODE_NAME")
     environment = _ConfigValue("ENVIRONMENT")
@@ -552,11 +588,10 @@ class Config(_ConfigBase):
             "elasticapm.metrics.sets.cpu.CPUMetricSet",
         ],
     )
-    metrics_interval = _ConfigValue(
+    metrics_interval = _DurationConfigValue(
         "METRICS_INTERVAL",
-        type=int,
-        validators=[duration_validator, ExcludeRangeValidator(1, 999, "{range_start} - {range_end} ms")],
-        default=30000,
+        validators=[ExcludeRangeValidator(0.001, 0.999, "{range_start} - {range_end} s")],
+        default=timedelta(seconds=30),
     )
     breakdown_metrics = _BoolConfigValue("BREAKDOWN_METRICS", default=True)
     prometheus_metrics = _BoolConfigValue("PROMETHEUS_METRICS", default=False)
@@ -564,31 +599,30 @@ class Config(_ConfigBase):
     disable_metrics = _ListConfigValue("DISABLE_METRICS", type=starmatch_to_regex, default=[])
     central_config = _BoolConfigValue("CENTRAL_CONFIG", default=True)
     api_request_size = _ConfigValue("API_REQUEST_SIZE", type=int, validators=[size_validator], default=768 * 1024)
-    api_request_time = _ConfigValue("API_REQUEST_TIME", type=int, validators=[duration_validator], default=10 * 1000)
+    api_request_time = _DurationConfigValue("API_REQUEST_TIME", default=timedelta(seconds=10))
     transaction_sample_rate = _ConfigValue(
         "TRANSACTION_SAMPLE_RATE", type=float, validators=[PrecisionValidator(4, 0.0001)], default=1.0
     )
     transaction_max_spans = _ConfigValue("TRANSACTION_MAX_SPANS", type=int, default=500)
-    stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=500)
-    span_frames_min_duration = _ConfigValue(
-        "SPAN_FRAMES_MIN_DURATION",
-        default=5,
-        validators=[
-            UnitValidator(r"^((?:-)?\d+)(ms|s|m)?$", r"\d+(ms|s|m)", {"ms": 1, "s": 1000, "m": 60000, None: 1})
-        ],
-        type=int,
+    stack_trace_limit = _ConfigValue("STACK_TRACE_LIMIT", type=int, default=50)
+    span_frames_min_duration = _DurationConfigValue(
+        "SPAN_FRAMES_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
-    span_compression_exact_match_max_duration = _ConfigValue(
-        "span_compression_exact_match_max_duration",
-        default=5,
-        validators=[duration_validator],
-        type=int,
+    span_stack_trace_min_duration = _DurationConfigValue(
+        "SPAN_STACK_TRACE_MIN_DURATION", default=timedelta(seconds=0.005), unitless_factor=0.001
     )
-    span_compression_same_kind_max_duration = _ConfigValue(
-        "span_compression_exact_match_max_duration",
-        default=5,
-        validators=[duration_validator],
-        type=int,
+    span_compression_enabled = _BoolConfigValue("SPAN_COMPRESSION_ENABLED", default=True)
+    span_compression_exact_match_max_duration = _DurationConfigValue(
+        "SPAN_COMPRESSION_EXACT_MATCH_MAX_DURATION",
+        default=timedelta(seconds=0.05),
+    )
+    span_compression_same_kind_max_duration = _DurationConfigValue(
+        "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
+        default=timedelta(seconds=0),
+    )
+    exit_span_min_duration = _DurationConfigValue(
+        "EXIT_SPAN_MIN_DURATION",
+        default=timedelta(seconds=0),
     )
     collect_local_variables = _ConfigValue("COLLECT_LOCAL_VARIABLES", default="errors")
     source_lines_error_app_frames = _ConfigValue("SOURCE_LINES_ERROR_APP_FRAMES", type=int, default=5)
@@ -608,6 +642,7 @@ class Config(_ConfigBase):
     autoinsert_django_middleware = _BoolConfigValue("AUTOINSERT_DJANGO_MIDDLEWARE", default=True)
     transactions_ignore_patterns = _ListConfigValue("TRANSACTIONS_IGNORE_PATTERNS", default=[])
     transaction_ignore_urls = _ListConfigValue("TRANSACTION_IGNORE_URLS", type=starmatch_to_regex, default=[])
+    ignore_message_queues = _ListConfigValue("IGNORE_MESSAGE_QUEUES", type=starmatch_to_regex, default=[])
     service_version = _ConfigValue("SERVICE_VERSION")
     framework_name = _ConfigValue("FRAMEWORK_NAME")
     framework_version = _ConfigValue("FRAMEWORK_VERSION")
@@ -635,6 +670,19 @@ class Config(_ConfigBase):
         validators=[EnumerationValidator(["off", "override"])],
         callbacks=[_log_ecs_reformatting_callback],
         default="off",
+    )
+    trace_continuation_strategy = _ConfigValue(
+        "TRACE_CONTINUATION_STRATEGY",
+        validators=[
+            EnumerationValidator(
+                [
+                    TRACE_CONTINUATION_STRATEGY.CONTINUE,
+                    TRACE_CONTINUATION_STRATEGY.RESTART,
+                    TRACE_CONTINUATION_STRATEGY.RESTART_EXTERNAL,
+                ]
+            )
+        ],
+        default=TRACE_CONTINUATION_STRATEGY.CONTINUE,
     )
 
     @property
@@ -675,7 +723,7 @@ class VersionedConfig(ThreadManager):
         self._update_thread = None
         super(VersionedConfig, self).__init__()
 
-    def update(self, version, **config):
+    def update(self, version: str, **config):
         """
         Update the configuration version
         :param version: version identifier for the new configuration
@@ -703,7 +751,7 @@ class VersionedConfig(ThreadManager):
         values.
         """
         callbacks = []
-        for key in compat.iterkeys(self._config.values):
+        for key in self._config.values.keys():
             if key in self._first_config.values and self._config.values[key] != self._first_config.values[key]:
                 callbacks.append((key, self._config.values[key], self._first_config.values[key]))
 
@@ -715,7 +763,7 @@ class VersionedConfig(ThreadManager):
         self._config.call_pending_callbacks()
 
     @property
-    def changed(self):
+    def changed(self) -> bool:
         return self._config != self._first_config
 
     def __getattr__(self, item):
@@ -747,9 +795,7 @@ class VersionedConfig(ThreadManager):
             else:
                 logger.info(
                     "Applied new remote configuration: %s",
-                    "; ".join(
-                        "%s=%s" % (compat.text_type(k), compat.text_type(v)) for k, v in compat.iteritems(new_config)
-                    ),
+                    "; ".join("%s=%s" % (str(k), str(v)) for k, v in new_config.items()),
                 )
         elif new_version == self.config_version:
             logger.debug("Remote config unchanged")

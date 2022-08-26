@@ -34,7 +34,7 @@ from starlette.requests import Request
 from starlette.types import Message
 
 from elasticapm.conf import Config, constants
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import get_url_dict
 
 
 async def get_data_from_request(request: Request, config: Config, event_type: str) -> dict:
@@ -86,12 +86,12 @@ async def get_data_from_response(message: dict, config: Config, event_type: str)
     """
     result = {}
 
-    if "status_code" in message:
+    if "status" in message:
         result["status_code"] = message["status"]
 
     if config.capture_headers and "headers" in message:
         headers = Headers(raw=message["headers"])
-        result["headers"] = {key: ";".join(headers.getlist(key)) for key in compat.iterkeys(headers)}
+        result["headers"] = {key: ";".join(headers.getlist(key)) for key in headers.keys()}
 
     return result
 
@@ -129,7 +129,7 @@ async def get_body(request: Request) -> str:
 
     request._stream_consumed = False
 
-    return body.decode("utf-8")
+    return body.decode("utf-8", errors="replace")
 
 
 async def query_params_to_dict(query_params: str) -> dict:

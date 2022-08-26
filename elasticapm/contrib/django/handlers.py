@@ -73,9 +73,9 @@ def exception_handler(client, request=None, **kwargs):
             client.capture("Exception", exc_info=exc_info, request=request, handled=False)
         except Exception as exc:
             try:
-                client.error_logger.exception(u"Unable to process log entry: %s" % (exc,))
+                client.error_logger.exception("Unable to process log entry: %s" % (exc,))
             except Exception as exc:
-                warnings.warn(u"Unable to process log entry: %s" % (exc,))
+                warnings.warn("Unable to process log entry: %s" % (exc,))
         finally:
             try:
                 del exc_info

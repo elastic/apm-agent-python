@@ -37,7 +37,7 @@ import re
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import compat, wrapt
+from elasticapm.utils import wrapt
 from elasticapm.utils.encoding import force_text, shorten
 
 
@@ -85,7 +85,7 @@ def _scan_for_table_with_tokens(tokens, keyword):
             else:
                 return lexeme
 
-        if isinstance(lexeme, compat.string_types) and lexeme.upper() == keyword:
+        if isinstance(lexeme, str) and lexeme.upper() == keyword:
             seen_keyword = True
 
 
@@ -235,7 +235,10 @@ class CursorProxy(wrapt.ObjectProxy):
             span_type="db",
             span_subtype=self.provider_name,
             span_action=action,
-            extra={"db": {"type": "sql", "statement": sql_string}, "destination": self._self_destination_info},
+            extra={
+                "db": {"type": "sql", "statement": sql_string, "instance": getattr(self, "_self_database", None)},
+                "destination": self._self_destination_info,
+            },
             skip_frames=1,
             leaf=True,
         ) as span:

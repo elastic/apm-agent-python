@@ -28,6 +28,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
+from string import ascii_uppercase
 from typing import Dict
 
 from sanic import Sanic
@@ -39,7 +40,7 @@ from sanic.response import HTTPResponse
 from elasticapm.base import Client
 from elasticapm.conf import Config, constants
 from elasticapm.contrib.sanic.sanic_types import EnvInfoType
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import get_url_dict
 
 
 class SanicAPMConfig(dict):
@@ -62,16 +63,18 @@ def get_env(request: Request) -> EnvInfoType:
 
 
 # noinspection PyBroadException
-async def get_request_info(config: Config, request: Request) -> Dict[str, str]:
+async def get_request_info(config: Config, request: Request, event_type: str) -> Dict[str, str]:
     """
     Generate a traceable context information from the inbound HTTP request
 
     :param config: Application Configuration used to tune the way the data is captured
     :param request: Inbound HTTP request
+    :param event_type: the event type (such as constants.TRANSACTION) for determing whether to capture the body
     :return: A dictionary containing the context information of the ongoing transaction
     """
     env = dict(get_env(request=request))
-    env.update(dict(request.app.config))
+    app_config = {k: v for k, v in dict(request.app.config).items() if all(letter in ascii_uppercase for letter in k)}
+    env.update(app_config)
     result = {
         "env": env,
         "method": request.method,
@@ -85,7 +88,7 @@ async def get_request_info(config: Config, request: Request) -> Dict[str, str]:
     if config.capture_headers:
         result["headers"] = dict(request.headers)
 
-    if request.method in constants.HTTP_WITH_BODY and config.capture_body:
+    if request.method in constants.HTTP_WITH_BODY and config.capture_body in ("all", event_type):
         if request.content_type.startswith("multipart") or "octet-stream" in request.content_type:
             result["body"] = "[DISCARDED]"
         try:
@@ -99,12 +102,13 @@ async def get_request_info(config: Config, request: Request) -> Dict[str, str]:
     return result
 
 
-async def get_response_info(config: Config, response: HTTPResponse) -> Dict[str, str]:
+async def get_response_info(config: Config, response: HTTPResponse, event_type: str) -> Dict[str, str]:
     """
     Generate a traceable context information from the inbound HTTP Response
 
     :param config: Application Configuration used to tune the way the data is captured
     :param response: outbound HTTP Response
+    :param event_type: the event type (such as constants.TRANSACTION) for determing whether to capture the body
     :return: A dictionary containing the context information of the ongoing transaction
     """
     result = {
@@ -112,13 +116,13 @@ async def get_response_info(config: Config, response: HTTPResponse) -> Dict[str,
         "finished": True,
         "headers_sent": True,
     }
-    if isinstance(response.status, compat.integer_types):
+    if isinstance(response.status, int):
         result["status_code"] = response.status
 
     if config.capture_headers:
         result["headers"] = dict(response.headers)
 
-    if config.capture_body and "octet-stream" not in response.content_type:
+    if config.capture_body in ("all", event_type) and "octet-stream" not in response.content_type:
         result["body"] = response.body.decode("utf-8")
     else:
         result["body"] = "[REDACTED]"

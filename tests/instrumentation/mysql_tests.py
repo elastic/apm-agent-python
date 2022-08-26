@@ -76,10 +76,10 @@ def test_select_with_difficult_values():
 
 
 def test_select_with_difficult_table_name():
-    sql = u"""SELECT id FROM `myta\n-æøåble` WHERE id = 2323"""
+    sql = """SELECT id FROM `myta\n-æøåble` WHERE id = 2323"""
     actual = extract_signature(sql)
 
-    assert u"SELECT FROM myta\n-æøåble" == actual
+    assert "SELECT FROM myta\n-æøåble" == actual
 
 
 def test_select_subselect():

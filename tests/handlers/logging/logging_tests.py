@@ -42,8 +42,7 @@ from elasticapm.conf import Config
 from elasticapm.conf.constants import ERROR
 from elasticapm.handlers.logging import Formatter, LoggingFilter, LoggingHandler
 from elasticapm.handlers.structlog import structlog_processor
-from elasticapm.traces import Tracer, capture_span
-from elasticapm.utils import compat
+from elasticapm.traces import capture_span
 from elasticapm.utils.stacks import iter_stack_frames
 from tests.fixtures import TempStoreClient
 
@@ -230,7 +229,7 @@ def test_logger_setup():
 def test_logging_handler_emit_error(capsys, elasticapm_client):
     handler = LoggingHandler(elasticapm_client)
     handler._emit = lambda: 1 / 0
-    handler.emit(LogRecord("x", 1, "/ab/c/", 10, "Oops", [], None))
+    handler.emit(LogRecord("x", 1, "/ab/c/", 10, "Oops", (), None))
     out, err = capsys.readouterr()
     assert "Top level ElasticAPM exception caught" in err
     assert "Oops" in err
@@ -238,9 +237,18 @@ def test_logging_handler_emit_error(capsys, elasticapm_client):
 
 def test_logging_handler_dont_emit_elasticapm(capsys, elasticapm_client):
     handler = LoggingHandler(elasticapm_client)
-    handler.emit(LogRecord("elasticapm.errors", 1, "/ab/c/", 10, "Oops", [], None))
+    handler.emit(LogRecord("elasticapm.errors", 1, "/ab/c/", 10, "Oops", (), None))
     out, err = capsys.readouterr()
     assert "Oops" in err
+
+
+def test_logging_handler_emit_error_non_str_message(capsys, elasticapm_client):
+    handler = LoggingHandler(elasticapm_client)
+    handler._emit = lambda: 1 / 0
+    handler.emit(LogRecord("x", 1, "/ab/c/", 10, ValueError("oh no"), (), None))
+    out, err = capsys.readouterr()
+    assert "Top level ElasticAPM exception caught" in err
+    assert "oh no" in err
 
 
 def test_arbitrary_object(logger):
@@ -327,7 +335,6 @@ def test_structlog_processor_span(elasticapm_client):
         assert "span.id" not in new_dict
 
 
-@pytest.mark.skipif(not compat.PY3, reason="Log record factories are only 3.2+")
 def test_automatic_log_record_factory_install(elasticapm_client):
     """
     Use the elasticapm_client fixture to load the client, which in turn installs

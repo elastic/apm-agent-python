@@ -139,3 +139,17 @@ async def test_fetch_methods(connection, elasticapm_client, method, verify):
     assert span["action"] == "query"
     assert span["sync"] is False
     assert span["name"] == "SELECT FROM test"
+
+
+@pytest.mark.usefixtures("instrument")
+async def test_truncate_long_sql(connection, elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    await connection.execute(f"SELECT id, name FROM test WHERE name = '{'x' * 10010}';")
+    elasticapm_client.end_transaction("test", "OK")
+
+    transactions = elasticapm_client.events[constants.TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+
+    statement = spans[0]["context"]["db"]["statement"]
+    assert len(statement) == 10000
+    assert statement.endswith("...")

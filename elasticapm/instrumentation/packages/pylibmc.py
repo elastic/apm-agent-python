@@ -72,6 +72,7 @@ class PyLibMcInstrumentation(AbstractInstrumentedModule):
             span_subtype="memcached",
             span_action="query",
             extra={"destination": destination},
+            leaf=True,
         ):
             return wrapped(*args, **kwargs)
 

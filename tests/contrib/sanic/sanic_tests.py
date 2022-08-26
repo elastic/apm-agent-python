@@ -32,6 +32,8 @@ import pytest  # isort:skip
 
 sanic = pytest.importorskip("sanic")  # isort:skip
 
+import json
+
 from elasticapm.conf import constants
 
 pytestmark = [pytest.mark.sanic]  # isort:skip
@@ -39,10 +41,12 @@ pytestmark = [pytest.mark.sanic]  # isort:skip
 
 @pytest.mark.parametrize(
     "url, transaction_name, span_count, custom_context",
-    [("/", "GET /", 1, {}), ("/greet/sanic", "GET /greet/<name:string>", 0, {"name": "sanic"})],
+    [("/", "GET /", 1, {}), ("/greet/sanic", "GET /greet/<name:str>", 0, {"name": "sanic"})],
 )
 def test_get(url, transaction_name, span_count, custom_context, sanic_elastic_app, elasticapm_client):
     sanic_app, apm = next(sanic_elastic_app(elastic_client=elasticapm_client))
+    if int(sanic.__version__.split(".")[0]) < 21 and url != "/":
+        pytest.skip("str type doesn't work in Sanic 20.x.x")
     source_request, response = sanic_app.test_client.get(
         url,
         headers={
@@ -97,6 +101,35 @@ def test_capture_exception(sanic_elastic_app, elasticapm_client):
         "type": "request",
     }.items():
         assert transaction[field] == value
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"capture_body": "errors"}, {"capture_body": "all"}, {"capture_body": "off"}], indirect=True
+)
+def test_capture_body(sanic_elastic_app, elasticapm_client):
+    sanic_app, apm = next(sanic_elastic_app(elastic_client=elasticapm_client))
+    _, resp = sanic_app.test_client.post(
+        "/v1/apm/unhandled-exception",
+        headers={
+            constants.TRACEPARENT_HEADER_NAME: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03",
+            constants.TRACESTATE_HEADER_NAME: "foo=bar,bar=baz",
+            "REMOTE_ADDR": "127.0.0.1",
+        },
+        data=json.dumps({"foo": "bar"}),
+    )
+    assert len(elasticapm_client.events[constants.ERROR]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    for field, value in {
+        "name": "POST /v1/apm/unhandled-exception",
+        "result": "HTTP 5xx",
+        "outcome": "failure",
+        "type": "request",
+    }.items():
+        assert transaction[field] == value
+    if elasticapm_client.config.capture_body in ("all", "errors"):
+        assert transaction["context"]["request"]["body"] == '{"foo": "bar"}'
+    else:
+        assert transaction["context"]["request"]["body"] == "[REDACTED]"
 
 
 def test_unhandled_exception_capture(sanic_elastic_app, elasticapm_client):

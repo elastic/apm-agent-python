@@ -125,7 +125,7 @@ def sanic_elastic_app(elasticapm_client):
                 pass
             return json({"response": "ok"})
 
-        @app.get("/greet/<name:string>")
+        @app.get("/greet/<name:str>")
         async def greet_person(request: Request, name: str):
             return json({"response": f"Hello {name}"})
 

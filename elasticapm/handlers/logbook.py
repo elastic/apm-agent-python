@@ -37,7 +37,6 @@ import traceback
 import logbook
 
 from elasticapm.base import Client
-from elasticapm.utils import compat
 from elasticapm.utils.encoding import to_unicode
 
 LOOKBOOK_LEVELS = {
@@ -54,7 +53,7 @@ class LogbookHandler(logbook.Handler):
     def __init__(self, *args, **kwargs):
         if len(args) == 1:
             arg = args[0]
-            # if isinstance(arg, compat.string_types):
+            # if isinstance(arg, str):
             # self.client = kwargs.pop('client_cls', Client)(dsn=arg)
             if isinstance(arg, Client):
                 self.client = arg
@@ -76,15 +75,15 @@ class LogbookHandler(logbook.Handler):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.channel.startswith("elasticapm.errors"):
-            sys.stderr.write(to_unicode(record.message + "\n"))
+            sys.stderr.write(to_unicode(record.message) + "\n")
             return
 
         try:
             return self._emit(record)
         except Exception:
             sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
-            sys.stderr.write(to_unicode(record.msg + "\n"))
-            sys.stderr.write(to_unicode(traceback.format_exc() + "\n"))
+            sys.stderr.write(to_unicode(record.message) + "\n")
+            sys.stderr.write(traceback.format_exc() + "\n")
 
             try:
                 self.client.capture("Exception")
@@ -102,7 +101,7 @@ class LogbookHandler(logbook.Handler):
             exception = None
 
         return self.client.capture_message(
-            param_message={"message": compat.text_type(record.msg), "params": record.args},
+            param_message={"message": str(record.msg), "params": record.args},
             exception=exception,
             level=LOOKBOOK_LEVELS[record.level],
             logger_name=record.channel,

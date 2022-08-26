@@ -34,6 +34,7 @@ import logging
 import os
 import platform
 import stat
+from datetime import timedelta
 
 import mock
 import pytest
@@ -50,9 +51,9 @@ from elasticapm.conf import (
     _ConfigBase,
     _ConfigValue,
     _DictConfigValue,
+    _DurationConfigValue,
     _ListConfigValue,
     constants,
-    duration_validator,
     setup_logging,
     size_validator,
 )
@@ -93,7 +94,7 @@ def test_config_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5000
+    assert config.api_request_time.total_seconds() == 5
 
 
 def test_config_environment():
@@ -116,7 +117,7 @@ def test_config_environment():
         assert config.server_url == "http://example.com:1234"
         assert config.service_version == "1"
         assert config.hostname == "localhost"
-        assert config.api_request_time == 5000
+        assert config.api_request_time.total_seconds() == 5
         assert config.auto_log_stacks is False
 
 
@@ -137,7 +138,7 @@ def test_config_inline_dict():
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
     assert config.hostname == "localhost"
-    assert config.api_request_time == 5000
+    assert config.api_request_time.total_seconds() == 5
 
 
 def test_config_precedence():
@@ -227,15 +228,19 @@ def test_size_validation():
 
 def test_duration_validation():
     class MyConfig(_ConfigBase):
-        millisecond = _ConfigValue("MS", type=int, validators=[duration_validator])
-        second = _ConfigValue("S", type=int, validators=[duration_validator])
-        minute = _ConfigValue("M", type=int, validators=[duration_validator])
-        wrong_pattern = _ConfigValue("WRONG_PATTERN", type=int, validators=[duration_validator])
+        microsecond = _DurationConfigValue("US", allow_microseconds=True)
+        millisecond = _DurationConfigValue("MS")
+        second = _DurationConfigValue("S")
+        minute = _DurationConfigValue("M")
+        default_unit_ms = _DurationConfigValue("DM", unitless_factor=0.001)
+        wrong_pattern = _DurationConfigValue("WRONG_PATTERN")
 
-    c = MyConfig({"MS": "-10ms", "S": "5s", "M": "17m", "WRONG_PATTERN": "5 ms"})
-    assert c.millisecond == -10
-    assert c.second == 5 * 1000
-    assert c.minute == 17 * 1000 * 60
+    c = MyConfig({"US": "10us", "MS": "-10ms", "S": "5s", "M": "17m", "DM": "83", "WRONG_PATTERN": "5 ms"})
+    assert c.microsecond == timedelta(microseconds=10)
+    assert c.millisecond == timedelta(milliseconds=-10)
+    assert c.second == timedelta(seconds=5)
+    assert c.minute == timedelta(minutes=17)
+    assert c.default_unit_ms == timedelta(milliseconds=83)
     assert c.wrong_pattern is None
     assert "WRONG_PATTERN" in c.errors
 
@@ -438,3 +443,11 @@ def test_versioned_config_attribute_access(elasticapm_client):
     elasticapm_client.config.update("2", capture_body=True)
     val = elasticapm_client.config.start_stop_order
     assert isinstance(val, int)
+
+
+def test_config_all_upper_case():
+    c = Config.__class__.__dict__.items()
+    for field, config_value in Config.__dict__.items():
+        if not isinstance(config_value, _ConfigValue):
+            continue
+        assert config_value.env_key == config_value.env_key.upper()

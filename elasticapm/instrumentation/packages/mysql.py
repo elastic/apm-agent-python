@@ -47,6 +47,11 @@ class MySQLCursorProxy(CursorProxy):
 class MySQLConnectionProxy(ConnectionProxy):
     cursor_proxy = MySQLCursorProxy
 
+    def cursor(self, *args, **kwargs):
+        c = super().cursor(*args, **kwargs)
+        c._self_database = self._self_database
+        return c
+
 
 class MySQLInstrumentation(DbApi2Instrumentation):
     name = "mysql"
@@ -58,4 +63,6 @@ class MySQLInstrumentation(DbApi2Instrumentation):
             "address": args[0] if len(args) else kwargs.get("host", "localhost"),
             "port": args[4] if len(args) > 4 else int(kwargs.get("port", default_ports.get("mysql"))),
         }
-        return MySQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
+        proxy = MySQLConnectionProxy(wrapped(*args, **kwargs), destination_info=destination_info)
+        proxy._self_database = kwargs.get("database", kwargs.get("db", ""))
+        return proxy

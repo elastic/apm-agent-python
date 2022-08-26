@@ -32,7 +32,6 @@
 
 from elasticapm.conf import constants
 from elasticapm.transport.base import Transport
-from elasticapm.utils import compat
 
 
 class HTTPTransportBase(Transport):
@@ -52,11 +51,7 @@ class HTTPTransportBase(Transport):
         self._server_cert = server_cert
         self._timeout = timeout
         self._headers = {
-            k.encode("ascii")
-            if isinstance(k, compat.text_type)
-            else k: v.encode("ascii")
-            if isinstance(v, compat.text_type)
-            else v
+            k.encode("ascii") if isinstance(k, str) else k: v.encode("ascii") if isinstance(v, str) else v
             for k, v in (headers if headers is not None else {}).items()
         }
         base, sep, tail = self._url.rpartition(constants.EVENTS_API_PATH)
@@ -64,7 +59,7 @@ class HTTPTransportBase(Transport):
         self._server_info_url = "".join((base, constants.SERVER_INFO_PATH, tail))
         super(HTTPTransportBase, self).__init__(client, compress_level=compress_level, **kwargs)
 
-    def send(self, data):
+    def send(self, data, forced_flush=False):
         """
         Sends a request to a remote APM Server using HTTP POST.
 

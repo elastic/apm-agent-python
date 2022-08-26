@@ -35,7 +35,7 @@ import pytest
 
 import elasticapm
 from elasticapm.conf.constants import ERROR, KEYWORD_MAX_LENGTH
-from elasticapm.utils import compat, encoding
+from elasticapm.utils import encoding
 from tests.utils.stacks import get_me_more_test_frames
 
 
@@ -397,3 +397,13 @@ def test_fail_on_uuid_raise(elasticapm_client):
         generate_uuid()
     except Exception:
         elasticapm_client.capture_exception()
+
+
+def test_long_message(elasticapm_client):
+    try:
+        raise Exception("t" * 1000000)
+    except:
+        elasticapm_client.capture_exception()
+
+    exception = elasticapm_client.events[ERROR][0]
+    assert exception["exception"]["message"] == f'Exception: {"t"*9988}{"…"}'

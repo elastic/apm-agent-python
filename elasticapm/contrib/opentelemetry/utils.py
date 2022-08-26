@@ -28,51 +28,52 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import random
-import shutil
-import sys
-import tempfile
 
-import pytest
+from opentelemetry.trace import SpanKind
+from opentelemetry.trace.span import SpanContext
 
-from elasticapm.conf.constants import ERROR
-from elasticapm.contrib.zerorpc import Middleware
-
-pytestmark = [
-    pytest.mark.zerorpc,
-    pytest.mark.skipif(sys.version_info >= (3, 4), reason="zerorpc>=0.4.0,0.5 not python 3 compatible"),
-]
-
-zerorpc = pytest.importorskip("zerorpc")
-gevent = pytest.importorskip("gevent")
+import elasticapm.conf.constants as constants
+from elasticapm.utils.disttracing import TraceParent, TracingOptions
 
 
-def test_zerorpc_middleware_with_reqrep(elasticapm_client):
-    tmpdir = tempfile.mkdtemp()
-    server_endpoint = "ipc://{0}".format(os.path.join(tmpdir, "random_zeroserver"))
-    try:
-        zerorpc.Context.get_instance().register_middleware(Middleware(client=elasticapm_client))
-        server = zerorpc.Server(random)
-        server.bind(server_endpoint)
-        gevent.spawn(server.run)
+def get_traceparent(otel_spancontext: SpanContext) -> TraceParent:
+    """
+    Create an elastic TraceParent object from an opentelemetry SpanContext
+    """
+    trace_id = None
+    span_id = None
+    is_sampled = False
+    if otel_spancontext and otel_spancontext.is_valid:
+        trace_id = otel_spancontext.trace_id
+        span_id = otel_spancontext.span_id
+        is_sampled = otel_spancontext.trace_flags.sampled
+        tracestate = otel_spancontext.trace_state
+    if trace_id:
+        traceparent = TraceParent(
+            constants.TRACE_CONTEXT_VERSION,
+            "%032x" % trace_id,
+            "%016x" % span_id,
+            TracingOptions(recorded=is_sampled),
+            tracestate=tracestate.to_header(),
+        )
+        return traceparent
+    else:
+        return None
 
-        client = zerorpc.Client()
-        client.connect(server_endpoint)
 
-        with pytest.raises(zerorpc.exceptions.RemoteError) as excinfo:
-            client.choice([])
-
-        client.close()
-        server.close()
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-    ex = excinfo.value
-    assert ex.name == "IndexError"
-    assert len(elasticapm_client.events) == 1
-    exc = elasticapm_client.events[ERROR][0]["exception"]
-    assert exc["type"] == "IndexError"
-    frames = exc["stacktrace"]
-    assert frames[0]["function"] == "choice"
-    assert frames[0]["module"] == "random"
-    assert exc["handled"] is False
+def get_span_kind(kind: SpanKind) -> str:
+    """
+    Converts a SpanKind to the string representation
+    """
+    if kind == SpanKind.CLIENT:
+        return "CLIENT"
+    elif kind == SpanKind.CONSUMER:
+        return "CONSUMER"
+    elif kind == SpanKind.INTERNAL:
+        return "INTERNAL"
+    elif kind == SpanKind.PRODUCER:
+        return "PRODUCER"
+    elif kind == SpanKind.SERVER:
+        return "SERVER"
+    else:
+        return "INTERNAL"

@@ -32,7 +32,7 @@ from __future__ import absolute_import
 
 import django
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponseServerError
 
 from tests.contrib.django.testapp import views
 
@@ -46,7 +46,7 @@ except ImportError:
 def handler500(request):
     if getattr(settings, "BREAK_THAT_500", False):
         raise ValueError("handler500")
-    return HttpResponse("")
+    return HttpResponseServerError("")
 
 
 urlpatterns = (
@@ -66,6 +66,7 @@ urlpatterns = (
     re_path(r"^trigger-500-log-request$", views.logging_request_exc, name="elasticapm-log-request-exc"),
     re_path(r"^streaming$", views.streaming_view, name="elasticapm-streaming-view"),
     re_path(r"^name-override$", views.override_transaction_name_view, name="elasticapm-name-override"),
+    re_path(r"^class-based$", views.ClassBasedView.as_view(), name="elasticapm-class-based"),
 )
 
 

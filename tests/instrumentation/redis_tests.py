@@ -210,3 +210,28 @@ def test_publish_subscribe(instrument, elasticapm_client, redis_conn):
     assert spans[2]["type"] == "test"
 
     assert len(spans) == 3
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "5ms",
+        }
+    ],
+    indirect=True,
+)
+@pytest.mark.integrationtest
+def test_redis_span_compression(instrument, elasticapm_client, redis_conn):
+    keys = ["a", "b", "c", "d", "e"]
+    for key in keys:
+        redis_conn.set(key, "a")
+    elasticapm_client.begin_transaction("transaction.test")
+    for key in keys:
+        redis_conn.get(key)
+    elasticapm_client.end_transaction("MyView")
+    transactions = elasticapm_client.events[TRANSACTION]
+    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    assert len(spans) == 1

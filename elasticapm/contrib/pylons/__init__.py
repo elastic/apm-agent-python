@@ -32,7 +32,6 @@
 from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.middleware import ElasticAPM as Middleware
-from elasticapm.utils import compat
 
 
 def list_from_setting(config, setting):
@@ -44,6 +43,6 @@ def list_from_setting(config, setting):
 
 class ElasticAPM(Middleware):
     def __init__(self, app, config, client_cls=Client):
-        client_config = {key[11:]: val for key, val in compat.iteritems(config) if key.startswith("elasticapm.")}
+        client_config = {key[11:]: val for key, val in config.items() if key.startswith("elasticapm.")}
         client = get_client() or client_cls(**client_config)
         super(ElasticAPM, self).__init__(app, client)

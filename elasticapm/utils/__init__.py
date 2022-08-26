@@ -31,12 +31,13 @@
 import base64
 import os
 import re
+import urllib.parse
 from functools import partial
 from types import FunctionType
 from typing import Pattern
 
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding
+from elasticapm.utils import encoding
 
 try:
     from functools import partialmethod
@@ -62,15 +63,15 @@ def varmap(func, var, context=None, name=None, **kwargs):
     if objid in context:
         return func(name, "<...>", **kwargs)
     context.add(objid)
-    if isinstance(var, dict):
+
+    # Apply func() before recursion, so that `shorten()` doesn't have to iterate over all the trimmed values
+    ret = func(name, var, **kwargs)
+    if isinstance(ret, dict):
         # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
-        ret = func(
-            name, dict((k, varmap(func, v, context, k, **kwargs)) for k, v in compat.iteritems(var.copy())), **kwargs
-        )
-    elif isinstance(var, (list, tuple)):
-        ret = func(name, [varmap(func, f, context, name, **kwargs) for f in var], **kwargs)
-    else:
-        ret = func(name, var, **kwargs)
+        ret = dict((k, varmap(func, v, context, k, **kwargs)) for k, v in ret.copy().items())
+    elif isinstance(ret, (list, tuple)):
+        # Apply func() before recursion, so that `shorten()` doesn't have to iterate over all the trimmed values
+        ret = [varmap(func, f, context, name, **kwargs) for f in ret]
     context.remove(objid)
     return ret
 
@@ -84,7 +85,9 @@ def get_name_from_func(func: FunctionType) -> str:
 
     module = func.__module__
 
-    if hasattr(func, "__name__"):
+    if hasattr(func, "view_class"):
+        view_name = func.view_class.__name__
+    elif hasattr(func, "__name__"):
         view_name = func.__name__
     else:  # Fall back if there's no __name__
         view_name = func.__class__.__name__
@@ -107,7 +110,7 @@ def is_master_process() -> bool:
 
 
 def get_url_dict(url: str) -> dict:
-    parse_result = compat.urlparse.urlparse(url)
+    parse_result = urllib.parse.urlparse(url)
 
     url_dict = {
         "full": encoding.keyword_field(url),
@@ -128,12 +131,12 @@ def get_url_dict(url: str) -> dict:
 def sanitize_url(url: str) -> str:
     if "@" not in url:
         return url
-    parts = compat.urlparse.urlparse(url)
+    parts = urllib.parse.urlparse(url)
     return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
 
 
 def get_host_from_url(url: str) -> str:
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     host = parsed_url.hostname or " "
 
     if parsed_url.port and default_ports.get(parsed_url.scheme) != parsed_url.port:
@@ -142,8 +145,8 @@ def get_host_from_url(url: str) -> str:
     return host
 
 
-def url_to_destination_resource(url: str) -> dict:
-    parts = compat.urlparse.urlsplit(url)
+def url_to_destination_resource(url: str) -> str:
+    parts = urllib.parse.urlsplit(url)
     hostname = parts.hostname if parts.hostname else ""
     # preserve brackets for IPv6 URLs
     if "://[" in url:

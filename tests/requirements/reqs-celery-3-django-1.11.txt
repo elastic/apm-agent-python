@@ -1,2 +1,0 @@
--r reqs-celery-3.txt
--r reqs-django-1.11.txt

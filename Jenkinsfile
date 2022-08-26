@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent { label 'linux && immutable' }
+  agent { label 'linux-immutable && ubuntu-20' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -20,7 +20,7 @@ pipeline {
     JOB_GCS_BUCKET = credentials('gcs-bucket')
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
     GITHUB_CHECK_ITS_NAME = 'Integration Tests'
-    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/master'
+    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/main'
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
     HOME = "${env.WORKSPACE}"
@@ -40,7 +40,7 @@ pipeline {
     issueCommentTrigger("(${obltGitHubComments()}).?(full|benchmark)?")
   }
   parameters {
-    booleanParam(name: 'Run_As_Master_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on master branch.')
+    booleanParam(name: 'Run_As_Main_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on main branch.')
     booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
     booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
     booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
@@ -76,7 +76,7 @@ pipeline {
               expression { return env.ONLY_DOCS == "false" }
               anyOf {
                 not { changeRequest() }
-                expression { return params.Run_As_Master_Branch }
+                expression { return params.Run_As_Main_Branch }
               }
             }
           }
@@ -117,15 +117,17 @@ pipeline {
               dir("${BASE_DIR}"){
                 script {
                   // To enable the full test matrix upon GitHub PR comments
+                  def pythonFile = '.ci/.jenkins_python.yml'
                   def frameworkFile = '.ci/.jenkins_framework.yml'
                   if (env.GITHUB_COMMENT?.contains('full')) {
                     log(level: 'INFO', text: 'Full test matrix has been enabled.')
                     frameworkFile = '.ci/.jenkins_framework_full.yml'
+                    pythonFile = '.ci/.jenkins_python_full.yml'
                   }
                   pythonTasksGen = new PythonParallelTaskGenerator(
                     xKey: 'PYTHON_VERSION',
                     yKey: 'FRAMEWORK',
-                    xFile: ".ci/.jenkins_python.yml",
+                    xFile: pythonFile,
                     yFile: frameworkFile,
                     exclusionFile: ".ci/.jenkins_exclude.yml",
                     tag: "Python",
@@ -171,7 +173,7 @@ pipeline {
                 sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
                 sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
                 // skip pypy builds with CIBW_SKIP=pp*
-                sh script: 'CIBW_SKIP="pp* cp27* cp35*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+                sh script: 'CIBW_SKIP="pp* cp27* cp35*" CIBW_ARCHS_LINUX="x86_64 aarch64" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
               }
               stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
             }
@@ -185,7 +187,7 @@ pipeline {
               expression { return env.ONLY_DOCS == "false" }
               anyOf {
                 changeRequest()
-                expression { return !params.Run_As_Master_Branch }
+                expression { return !params.Run_As_Main_Branch }
               }
             }
           }
@@ -200,7 +202,7 @@ pipeline {
           }
         }
         stage('Benchmarks') {
-          agent { label 'metal' }
+          agent { label 'microbenchmarks-pool' }
           options { skipDefaultCheckout() }
           environment {
             AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
@@ -212,8 +214,8 @@ pipeline {
             beforeAgent true
             allOf {
               anyOf {
-                branch 'master'
-                expression { return params.Run_As_Master_Branch }
+                branch 'main'
+                expression { return params.Run_As_Main_Branch }
                 expression { return env.GITHUB_COMMENT?.contains('benchmark') }
               }
               expression { return params.bench_ci }
@@ -257,7 +259,7 @@ pipeline {
         beforeInput true
         anyOf {
           tag pattern: 'v\\d+.*', comparator: 'REGEXP'
-          expression { return params.Run_As_Master_Branch }
+          expression { return params.Run_As_Main_Branch }
         }
       }
       stages {
@@ -308,17 +310,18 @@ pipeline {
             beforeInput true
             anyOf {
               tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
-              expression { return params.Run_As_Master_Branch }
+              expression { return params.Run_As_Main_Branch }
             }
           }
           steps {
             deleteDir()
             dir("${OPBEANS_REPO}"){
-              git credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
-                  url: "git@github.com:elastic/${OPBEANS_REPO}.git"
+              git(credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
+                  url: "git@github.com:elastic/${OPBEANS_REPO}.git",
+                  branch: 'main')
               // It's required to transform the tag value to the artifact version
               sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
-              // The opbeans pipeline will trigger a release for the master branch
+              // The opbeans pipeline will trigger a release for the main branch
               gitPush()
               // The opbeans pipeline will trigger a release for the release tag
               gitCreateTag(tag: "${env.BRANCH_NAME}")
@@ -330,7 +333,7 @@ pipeline {
   }
   post {
     cleanup {
-      notifyBuildResult(analyzeFlakey: true, jobName: getFlakyJobName(withBranch: 'master'))
+      notifyBuildResult(analyzeFlakey: true, jobName: getFlakyJobName(withBranch: 'main'))
     }
   }
 }
@@ -407,9 +410,11 @@ def runScript(Map params = [:]){
   deleteDir()
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
-  dir("${BASE_DIR}"){
-    retryWithSleep(retries: 2, seconds: 5, backoff: true) {
-      sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+  filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
+    dir("${BASE_DIR}"){
+      retryWithSleep(retries: 2, seconds: 5, backoff: true) {
+        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      }
     }
   }
 }
@@ -492,9 +497,9 @@ def convergeCoverage() {
         )
       }
     }
-    sh('python3 -m coverage combine && python3 -m coverage xml')
-    cobertura coberturaReportFile: 'coverage.xml'
+    sh(script: 'python3 -m coverage combine && python3 -m coverage xml', label: 'python coverage')
   }
+  coverageReport(baseDir: "${BASE_DIR}", reportFiles: 'coverage.html', coverageFiles: 'coverage.xml')
 }
 
 def generateResultsReport() {

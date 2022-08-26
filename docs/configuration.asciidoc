@@ -86,8 +86,8 @@ apm = ElasticAPM(app)
 
 [options="header"]
 |============
-| Environment                | Django/Flask      | Default           | Example
-| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `python_service`  | `my-app`
+| Environment                | Django/Flask      | Default                   | Example
+| `ELASTIC_APM_SERVICE_NAME` | `SERVICE_NAME`    | `unknown-python-service`  | `my-app`
 |============
 
 
@@ -99,7 +99,9 @@ While a default is provided, it is essential that you override this default
 with something more descriptive and unique across your infrastructure.
 
 NOTE: The service name must conform to this regular expression: `^[a-zA-Z0-9 _-]+$`.
-In other words, the service name must only contain characters from the ASCII alphabet, numbers, dashes, underscores, and spaces.
+In other words, the service name must only contain characters from the ASCII
+alphabet, numbers, dashes, underscores, and spaces. It cannot be an empty string
+or whitespace-only.
 
 [float]
 [[config-server-url]]
@@ -339,7 +341,7 @@ An example to generate a secure secret token is:
 
 [source,bash]
 ----
-python -c "import uuid; print(str(uuid.uuid4()))"
+python -c "import secrets; print(secrets.token_urlsafe(32))"
 ----
 
 WARNING: Secret tokens only provide any security if your APM Server uses TLS.
@@ -350,8 +352,8 @@ WARNING: Secret tokens only provide any security if your APM Server uses TLS.
 
 [options="header"]
 |============
-| Environment           | `Config` key | Default | Example
-| `ELASTIC_APM_API_KEY` | `api_key`    | `None`   | A base64-encoded string
+| Environment           | Django/Flask | Default | Example
+| `ELASTIC_APM_API_KEY` | `API_KEY`    | `None`   | A base64-encoded string
 |============
 
 experimental::[]
@@ -359,7 +361,7 @@ experimental::[]
 // TODO: add link to APM Server API Key docs once the docs are released
 
 This base64-encoded string is used to ensure that only your agents can send data to your APM Server.
-The API key must be created using the {apm-server-ref-v}/api-key.html[APM server command-line tool].
+The API key must be created using the {apm-guide-ref}/api-key.html[APM server command-line tool].
 
 WARNING: API keys only provide any real security if your APM Server uses TLS.
 
@@ -656,7 +658,7 @@ Setting an upper limit will prevent edge cases from overloading the agent and th
 [options="header"]
 |============
 | Environment                     | Django/Flask        | Default
-| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `500`
+| `ELASTIC_APM_STACK_TRACE_LIMIT` | `STACK_TRACE_LIMIT` | `50`
 |============
 
 This limits the number of frames captured for each stack trace.
@@ -664,6 +666,33 @@ This limits the number of frames captured for each stack trace.
 Setting the limit to `0` will disable stack trace collection,
 while any positive integer value will be used as the maximum number of frames to collect.
 To disable the limit and always capture all frames, set the value to `-1`.
+
+
+[float]
+[[config-span-stack-trace-min-duration]]
+==== `span_stack_trace_min_duration`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                                 | Django/Flask                    | Default
+| `ELASTIC_APM_SPAN_STACK_TRACE_MIN_DURATION` | `SPAN_STACK_TRACE_MIN_DURATION` | `"5ms"`
+|============
+
+By default, the APM agent collects a stack trace with every recorded span
+that has a duration equal to or longer than this configured threshold.  While
+stack traces are very helpful to find the exact place in your code from which a
+span originates, collecting this stack trace does have some overhead. Tune this
+threshold to ensure that you only collect stack traces for spans that
+could be problematic.
+
+To collect traces for all spans, regardless of their length, set the value to `0`.
+
+To disable stack trace collection for spans completely, set the value to `-1`.
+
+Except for the special values `-1` and `0`,
+this setting should be provided in *<<config-format-duration, duration format>>*.
 
 
 [float]
@@ -678,18 +707,27 @@ To disable the limit and always capture all frames, set the value to `-1`.
 | `ELASTIC_APM_SPAN_FRAMES_MIN_DURATION` | `SPAN_FRAMES_MIN_DURATION` | `"5ms"`
 |============
 
-In its default settings, the APM agent will collect a stack trace with every recorded span.
-While this is very helpful to find the exact place in your code that causes the span,
-collecting this stack trace does have some overhead.
+NOTE: This config value is being deprecated. Use
+<<config-span-stack-trace-min-duration,`span_stack_trace_min_duration`>> instead.
 
-To collect traces for all spans, independent of the length, set the value to `-1`.
-Setting it to a positive value, e.g. `5ms`, will limit stack trace collection to spans
-with durations equal or longer than the given value.
 
-To disable stack trace collection for spans completely, set the value to `0`.
+[float]
+[[config-span-compression-enabled]]
+==== `span_compression_enabled`
 
-Except for the special values `-1` and `0`,
-this setting has to be provided in *<<config-format-duration, duration format>>*.
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_SPAN_COMPRESSION_ENABLED` | `SPAN_COMPRESSION_ENABLED` | `True`
+|============
+
+Enable/disable span compression.
+
+If enabled, the agent will compress very short, repeated spans into a single span,
+which is beneficial for storage and processing requirements.
+Some information is lost in this process, e.g. exact durations of each compressed span.
 
 [float]
 [[config-span-compression-exact-match-max_duration]]
@@ -722,7 +760,7 @@ Two spans are considered exact matches if the following attributes are identical
 [options="header"]
 |============
 | Environment                            | Django/Flask               | Default
-| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"5ms"`
+| `ELASTIC_APM_SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `SPAN_COMPRESSION_SAME_KIND_MAX_DURATION` | `"0ms"` (disabled)
 |============
 
 Consecutive spans to the same destination that are under this threshold will be compressed into a single composite span.
@@ -733,6 +771,26 @@ Two spans are considered to be of the same kind if the following attributes are 
  * span type
  * span subtype
  * destination resource (e.g. the Database name)
+
+[float]
+[[config-exit-span-min-duration]]
+==== `exit_span_min_duration`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
+[options="header"]
+|============
+| Environment                            | Django/Flask               | Default
+| `ELASTIC_APM_EXIT_SPAN_MIN_DURATION` | `EXIT_SPAN_MIN_DURATION` | `"0ms"`
+|============
+
+Exit spans are spans that represent a call to an external service, like a database.
+If such calls are very short, they are usually not relevant and can be ignored.
+
+This feature is disabled by default.
+
+NOTE: if a span propagates distributed tracing IDs, it will not be ignored, even if it is shorter than the configured threshold.
+This is to ensure that no broken traces are recorded.
 
 [float]
 [[config-api-request-size]]
@@ -817,7 +875,7 @@ WARNING: We recommend always including the default set of validators if you cust
                                                                   "*session*",
                                                                   "*credit*",
                                                                   "*card*",
-                                                                  "authorization",
+                                                                  "*auth*",
                                                                   "set-cookie"]`
 |============
 
@@ -1110,11 +1168,41 @@ behavior by setting this to `True`.
 | `ELASTIC_APM_USE_ELASTIC_TRACEPARENT_HEADER` | `USE_ELASTIC_TRACEPARENT_HEADER` | `True`
 |============
 
-To enable {apm-overview-ref-v}/distributed-tracing.html[distributed tracing],
+To enable {apm-guide-ref}/distributed-tracing.html[distributed tracing],
 the agent sets a number of HTTP headers to outgoing requests made with <<automatic-instrumentation-http,instrumented HTTP libraries>>.
 These headers (`traceparent` and `tracestate`) are defined in the https://www.w3.org/TR/trace-context-1/[W3C Trace Context] specification.
 
 Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
+
+[float]
+[[config-trace-continuation-strategy]]
+==== `trace_continuation_strategy`
+
+[options="header"]
+|============
+| Environment                                  | Django/Flask               | Default
+| `ELASTIC_APM_TRACE_CONTINUATION_STRATEGY` | `TRACE_CONTINUATION_STRATEGY` | `continue`
+|============
+
+This option allows some control on how the APM agent handles W3C trace-context headers on incoming requests.
+By default, the `traceparent` and `tracestate` headers are used per W3C spec for distributed tracing.
+However, in certain cases it can be helpful to *not* use the incoming `traceparent` header.
+Some example use cases:
+
+- An Elastic-monitored service is receiving requests with `traceparent` headers from *unmonitored* services.
+- An Elastic-monitored service is publicly exposed, and does not want tracing data (trace-ids, sampling decisions) to possibly be spoofed by user requests.
+
+Valid values are:
+
+- `'continue'`: The default behavior. An incoming `traceparent` value is used to continue the trace and determine the sampling decision.
+- `'restart'`: Always ignores the `traceparent` header of incoming requests.
+  A new trace-id will be generated and the sampling decision will be made based on <<config-transaction-sample-rate,`transaction_sample_rate`>>.
+  A *span link* will be made to the incoming traceparent.
+- `'restart_external'`: If an incoming request includes the `es` vendor flag in `tracestate`, then any 'traceparent' will be considered internal and will be handled as described for `'continue'` above.
+  Otherwise, any `'traceparent'` is considered external and will be handled as described for `'restart'` above.
+
+Starting with Elastic Observability 8.2, span links will be visible in trace
+views.
 
 [float]
 [[config-use-elastic-excepthook]]
@@ -1222,6 +1310,7 @@ The unit is provided as a suffix directly after the number–without any separat
 
 *Supported units*
 
+ * `us` (microseconds)
  * `ms` (milliseconds)
  * `s` (seconds)
  * `m` (minutes)

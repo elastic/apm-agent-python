@@ -1,14 +1,20 @@
 exclude:
-  - PYTHON_VERSION: pypy-3  # pypy3 currently fails on CI, e.g. https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/detail/PR-1099/2/pipeline#step-3497-log-1
+  - PYTHON_VERSION: pypy-3 # pypy3 currently fails on CI, e.g. https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/detail/PR-1099/2/pipeline#step-3497-log-1
     FRAMEWORK: none
   # Django
-    # Django 4.0 requires Python 3.8+
+  # Django 4.0 requires Python 3.8+
   - PYTHON_VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
     FRAMEWORK: django-4.0
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: django-4.0
   - PYTHON_VERSION: python-3.7
     FRAMEWORK: django-4.0
+  - PYTHON_VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
+    FRAMEWORK: celery-5-django-4
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: celery-5-django-4
+  - PYTHON_VERSION: python-3.7
+    FRAMEWORK: celery-5-django-4
   # Flask
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
@@ -21,12 +27,6 @@ exclude:
     FRAMEWORK: celery-4-django-2.0
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: celery-3-django-1.11
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: celery-3-flask-1.0
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: celery-3-django-2.0
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: graphene-2
   - PYTHON_VERSION: python-3.10
@@ -51,8 +51,6 @@ exclude:
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: requests-1.2
   # pymongo
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: pymongo-2.9
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: pymongo-3.0
   - PYTHON_VERSION: python-3.7
@@ -131,15 +129,6 @@ exclude:
     FRAMEWORK: pymssql-newest
   - PYTHON_VERSION: python-3.10 # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
-  # psycopg2
-  - PYTHON_VERSION: python-3.8 # see https://github.com/psycopg/psycopg2/issues/858
-    FRAMEWORK: psycopg2-2.7
-  - PYTHON_VERSION: python-3.9 # see https://github.com/psycopg/psycopg2/issues/858
-    FRAMEWORK: psycopg2-2.7
-  - PYTHON_VERSION: python-3.10 # see https://github.com/psycopg/psycopg2/issues/858
-    FRAMEWORK: psycopg2-2.7
-  - PYTHON_VERSION: pypy-3  # async keyword clash in old version of psycopg2cffi
-    FRAMEWORK: psycopg2-2.7
   # pyodbc
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
@@ -160,19 +149,6 @@ exclude:
     FRAMEWORK: boto3-1.5
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: boto3-1.6
-  # zerorpc - only run on py2
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: zerorpc-0.4
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: zerorpc-0.4
   # aiohttp client, only supported in Python 3.7+
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: aiohttp-3.0
@@ -223,19 +199,27 @@ exclude:
     FRAMEWORK: sanic-20.12
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: sanic-newest
-  - PYTHON_VERSION: python-3.10  # install of uvloop 0.14 fails: https://github.com/MagicStack/uvloop/issues/356
+  - PYTHON_VERSION: python-3.10 # install of uvloop 0.14 fails: https://github.com/MagicStack/uvloop/issues/356
     FRAMEWORK: sanic-20.12
   - PYTHON_VERSION: pypy-3
-  # aioredis
+    # aioredis
     FRAMEWORK: aioredis-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: aioredis-newest
-  - PYTHON_VERSION: python-3.10  # getting "loop argument must agree with lock" error
+  - PYTHON_VERSION: python-3.10 # getting "loop argument must agree with lock" error
     FRAMEWORK: aioredis-newest
   # aiomysql
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: aiomysql-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: aiomysql-newest
-  - PYTHON_VERSION: python-3.10  # getting "loop argument must agree with lock" error
+  - PYTHON_VERSION: python-3.10 # getting "loop argument must agree with lock" error
     FRAMEWORK: aiomysql-newest
+  # aiobotocore
+  - PYTHON_VERSION: pypy-3
+    FRAMEWORK: aiobotocore-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: aiobotocore-newest
+  # mysql-connector-python
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: mysql_connector-newest

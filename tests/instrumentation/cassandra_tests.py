@@ -162,3 +162,24 @@ def test_signature_create_columnfamily():
 
 def test_select_from_collection():
     assert extract_signature("SELECT first, last FROM a.b WHERE id = 1;") == "SELECT FROM a.b"
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [
+        {
+            "span_compression_enabled": True,
+            "span_compression_same_kind_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "50ms",
+        }
+    ],
+    indirect=True,
+)
+def test_cassandra_span_compression(instrument, cassandra_session, elasticapm_client):
+    elasticapm_client.begin_transaction("transaction.test")
+    for i in range(5):
+        cassandra_session.execute("SELECT name from users")
+    elasticapm_client.end_transaction("test")
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1

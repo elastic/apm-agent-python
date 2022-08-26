@@ -17,12 +17,15 @@ FRAMEWORK:
   - flask-1.0
   - flask-1.1
   - flask-2.0
-  - celery-3-flask-1.0
-  - celery-3-django-1.11
-  - celery-3-django-2.0
+  - jinja2-2
+  - jinja2-3
   - celery-4-flask-1.0
   - celery-4-django-1.11
   - celery-4-django-2.0
+  - celery-5-flask-2
+  - celery-5-django-3
+  - celery-5-django-4
+  - opentelemetry-newest
   - opentracing-newest
   - opentracing-2.0
   - twisted-18
@@ -34,7 +37,6 @@ FRAMEWORK:
   - boto3-1.5
   - boto3-1.6
   - boto3-newest
-  - pymongo-2.9
   - pymongo-3.0
   - pymongo-3.1
   - pymongo-3.2
@@ -45,7 +47,6 @@ FRAMEWORK:
   - redis-3
   - redis-2
   - redis-newest
-  - psycopg2-2.7
   - psycopg2-newest
   - pymssql-newest
   - memcached-1.51
@@ -63,7 +64,6 @@ FRAMEWORK:
   - elasticsearch-6
   - elasticsearch-7
   - gevent-newest
-  - zerorpc-0.4
   - aiohttp-3.0
   - aiohttp-newest
   - aiopg-newest
@@ -82,3 +82,5 @@ FRAMEWORK:
   - httplib2-newest
   - sanic-20.12
   - sanic-newest
+  - aiobotocore-newest
+  - kafka-python-newest

@@ -32,13 +32,14 @@ import pytest  # isort:skip
 
 pytest.importorskip("requests")  # isort:skip
 
+import urllib.parse
+
 import requests
 from requests.exceptions import InvalidURL, MissingSchema
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.traces import capture_span
-from elasticapm.utils import compat
 from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = pytest.mark.requests
@@ -47,7 +48,7 @@ pytestmark = pytest.mark.requests
 def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         requests.get(url, allow_redirects=False)
@@ -65,6 +66,8 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
         "resource": "127.0.0.1:%d" % parsed_url.port,
         "type": "",
     }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{parsed_url.port}"
     assert spans[0]["outcome"] == "success"
 
     assert constants.TRACEPARENT_HEADER_NAME in waiting_httpserver.requests[0].headers
@@ -85,7 +88,7 @@ def test_requests_instrumentation(instrument, elasticapm_client, waiting_httpser
 def test_requests_instrumentation_error(instrument, elasticapm_client, waiting_httpserver, status_code):
     waiting_httpserver.serve_content("", code=status_code)
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = compat.urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction.test")
     with capture_span("test_request", "test"):
         requests.get(url, allow_redirects=False)

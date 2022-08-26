@@ -29,11 +29,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import json
+import urllib.parse
 from collections import namedtuple
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils.compat import urlparse
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
@@ -56,11 +56,11 @@ class AzureInstrumentation(AbstractInstrumentedModule):
             request = kwargs["request"]
 
         if hasattr(request, "url"):  # Azure Storage HttpRequest
-            parsed_url = urlparse.urlparse(request.url)
+            parsed_url = urllib.parse.urlparse(request.url)
             hostname = parsed_url.hostname
             port = parsed_url.port
             path = parsed_url.path
-            query_params = urlparse.parse_qs(parsed_url.query)
+            query_params = urllib.parse.parse_qs(parsed_url.query)
         else:  # CosmosDB HTTPRequest
             hostname = request.host
             port = hostname.split(":")[1] if ":" in hostname else 80
@@ -165,7 +165,7 @@ def handle_azureblob(request, hostname, path, query_params, service, service_typ
         if "x-ms-copy-source" in headers:
             operation_name = "Copy"
             # These are repetitive and unnecessary, but included in case the table at
-            # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
+            # https://github.com/elastic/apm/blob/main/specs/agents/tracing-instrumentation-azure.md
             # changes in the future
             if "block" in query_params.get("comp", []):
                 operation_name = "Copy"
@@ -239,7 +239,7 @@ def handle_azurequeue(request, hostname, path, query_params, service, service_ty
             operation_name = "CLEAR"
         elif query_params.get("popreceipt", []):
             # Redundant, but included in case the table at
-            # https://github.com/elastic/apm/blob/master/specs/agents/tracing-instrumentation-azure.md
+            # https://github.com/elastic/apm/blob/main/specs/agents/tracing-instrumentation-azure.md
             # changes in the future
             operation_name = "DELETE"
             preposition = "from "

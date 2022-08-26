@@ -41,7 +41,6 @@ import pytest
 import elasticapm
 from elasticapm import Client, processors
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES_UNPROCESSED, ERROR, SPAN, TRANSACTION
-from elasticapm.utils import compat
 from tests.utils import assert_any_record_contains
 
 
@@ -347,10 +346,10 @@ def test_sanitize_dict():
 
 
 def test_non_utf8_encoding(elasticapm_client, http_test_data):
-    broken = compat.b("broken=") + u"aéöüa".encode("latin-1")
+    broken = "broken=".encode("latin-1") + "aéöüa".encode("latin-1")
     http_test_data["context"]["request"]["headers"]["cookie"] = broken
     result = processors.sanitize_http_request_cookies(elasticapm_client, http_test_data)
-    assert result["context"]["request"]["headers"]["cookie"] == u"broken=a\ufffd\ufffd\ufffda"
+    assert result["context"]["request"]["headers"]["cookie"] == "broken=a\ufffd\ufffd\ufffda"
 
 
 def test_remove_stacktrace_locals():

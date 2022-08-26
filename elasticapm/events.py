@@ -33,7 +33,7 @@ import random
 import sys
 
 from elasticapm.conf.constants import EXCEPTION_CHAIN_MAX_DEPTH
-from elasticapm.utils import compat, varmap
+from elasticapm.utils import encoding, varmap
 from elasticapm.utils.encoding import keyword_field, shorten, to_unicode
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.stacks import get_culprit, get_stack_info, iter_traceback_frames
@@ -133,6 +133,8 @@ class Exception(BaseEvent):
         else:
             message = "%s: %s" % (exc_type, to_unicode(exc_value)) if exc_value else str(exc_type)
 
+        message = encoding.long_field(message)
+
         data = {
             "id": "%032x" % random.getrandbits(128),
             "culprit": keyword_field(culprit),
@@ -146,29 +148,28 @@ class Exception(BaseEvent):
         if hasattr(exc_value, "_elastic_apm_span_id"):
             data["parent_id"] = exc_value._elastic_apm_span_id
             del exc_value._elastic_apm_span_id
-        if compat.PY3:
-            depth = kwargs.get("_exc_chain_depth", 0)
-            if depth > EXCEPTION_CHAIN_MAX_DEPTH:
-                return
-            cause = exc_value.__cause__
-            chained_context = exc_value.__context__
+        depth = kwargs.get("_exc_chain_depth", 0)
+        if depth > EXCEPTION_CHAIN_MAX_DEPTH:
+            return
+        cause = exc_value.__cause__
+        chained_context = exc_value.__context__
 
-            # we follow the pattern of Python itself here and only capture the chained exception
-            # if cause is not None and __suppress_context__ is False
-            if chained_context and not (exc_value.__suppress_context__ and cause is None):
-                if cause:
-                    chained_exc_type = type(cause)
-                    chained_exc_value = cause
-                else:
-                    chained_exc_type = type(chained_context)
-                    chained_exc_value = chained_context
-                chained_exc_info = chained_exc_type, chained_exc_value, chained_context.__traceback__
+        # we follow the pattern of Python itself here and only capture the chained exception
+        # if cause is not None and __suppress_context__ is False
+        if chained_context and not (exc_value.__suppress_context__ and cause is None):
+            if cause:
+                chained_exc_type = type(cause)
+                chained_exc_value = cause
+            else:
+                chained_exc_type = type(chained_context)
+                chained_exc_value = chained_context
+            chained_exc_info = chained_exc_type, chained_exc_value, chained_context.__traceback__
 
-                chained_cause = Exception.capture(
-                    client, exc_info=chained_exc_info, culprit="None", _exc_chain_depth=depth + 1
-                )
-                if chained_cause:
-                    data["exception"]["cause"] = [chained_cause["exception"]]
+            chained_cause = Exception.capture(
+                client, exc_info=chained_exc_info, culprit="None", _exc_chain_depth=depth + 1
+            )
+            if chained_cause:
+                data["exception"]["cause"] = [chained_cause["exception"]]
         return data
 
 

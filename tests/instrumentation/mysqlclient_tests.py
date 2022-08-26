@@ -58,7 +58,6 @@ def mysqlclient_connection(request):
     cursor.execute("CREATE TABLE `test` (`id` INT, `name` VARCHAR(5))")
     cursor.execute("INSERT INTO `test` (`id`, `name`) VALUES (1, 'one'), (2, 'two'), (3, 'three')")
     row = cursor.fetchone()
-    print(row)
 
     yield conn
 
@@ -84,10 +83,13 @@ def test_mysql_connector_select(instrument, mysqlclient_connection, elasticapm_c
         assert span["subtype"] == "mysql"
         assert span["action"] == "query"
         assert "db" in span["context"]
+        assert span["context"]["db"]["instance"] == "eapm_tests"
         assert span["context"]["db"]["type"] == "sql"
         assert span["context"]["db"]["statement"] == query
         assert span["context"]["destination"] == {
             "address": "mysql",
             "port": 3306,
-            "service": {"name": "", "resource": "mysql", "type": ""},
+            "service": {"name": "", "resource": "mysql/eapm_tests", "type": ""},
         }
+        assert span["context"]["service"]["target"]["type"] == "mysql"
+        assert span["context"]["service"]["target"]["name"] == "eapm_tests"

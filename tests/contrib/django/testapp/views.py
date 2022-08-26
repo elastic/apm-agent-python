@@ -36,9 +36,9 @@ import time
 from django.contrib.auth.models import User
 from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
+from django.views import View
 
 import elasticapm
-from elasticapm.utils import compat
 
 
 class MyException(Exception):
@@ -50,7 +50,7 @@ class IgnoredException(Exception):
 
 
 def no_error(request, id=None):
-    resp = HttpResponse(compat.text_type(id))
+    resp = HttpResponse(str(id))
     resp["My-Header"] = "foo"
     return resp
 
@@ -142,3 +142,8 @@ def override_transaction_name_view(request):
     elasticapm.set_transaction_name("foo")
     elasticapm.set_transaction_result("okydoky")
     return HttpResponse()
+
+
+class ClassBasedView(View):
+    def get(self, request):
+        return HttpResponse()

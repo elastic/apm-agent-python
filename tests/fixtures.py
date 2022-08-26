@@ -30,6 +30,7 @@
 
 import codecs
 import gzip
+import io
 import json
 import logging
 import logging.handlers
@@ -53,7 +54,6 @@ from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
-from elasticapm.utils import compat
 from elasticapm.utils.threading import ThreadManager
 
 try:
@@ -128,7 +128,7 @@ class ValidatingWSGIApp(ContentServer):
         if request.content_encoding == "deflate":
             data = zlib.decompress(data)
         elif request.content_encoding == "gzip":
-            with gzip.GzipFile(fileobj=compat.BytesIO(data)) as f:
+            with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
                 data = f.read()
         data = data.decode(request.charset)
         if request.content_type == "application/x-ndjson":
@@ -146,7 +146,7 @@ class ValidatingWSGIApp(ContentServer):
                     success += 1
                 except jsonschema.ValidationError as e:
                     fail += 1
-                    content += "/".join(map(compat.text_type, e.absolute_schema_path)) + ": " + e.message + "\n"
+                    content += "/".join(map(str, e.absolute_schema_path)) + ": " + e.message + "\n"
             code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()
@@ -186,18 +186,19 @@ def elasticapm_client(request):
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("exit_span_min_duration", "0ms")
     client = TempStoreClient(**client_config)
     yield client
     client.close()
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
     assert not client._transport.validation_errors
 
 
@@ -219,7 +220,7 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
     client_config.setdefault("include_paths", ("*/tests/*",))
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("metrics_interval", "0ms")
@@ -251,7 +252,7 @@ def elasticapm_client_log_file(request):
     # clear any execution context that might linger around
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 @pytest.fixture()
@@ -302,7 +303,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("transport_class", "elasticapm.transport.http.Transport")
-    client_config.setdefault("span_frames_min_duration", -1)
+    client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("include_paths", ("*/tests/*",))
@@ -315,7 +316,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client.close()
     # clear any execution context that might linger around
     execution_context.set_transaction(None)
-    execution_context.set_span(None)
+    execution_context.unset_span(clear_all=True)
 
 
 class DummyTransport(HTTPTransportBase):

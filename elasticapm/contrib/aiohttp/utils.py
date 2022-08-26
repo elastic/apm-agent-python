@@ -32,7 +32,7 @@ from typing import Union
 from aiohttp.web import HTTPException, Request, Response
 
 from elasticapm.conf import Config
-from elasticapm.utils import compat, get_url_dict
+from elasticapm.utils import get_url_dict
 
 
 def get_data_from_request(request: Request, config: Config, event_type: str):
@@ -53,9 +53,9 @@ def get_data_from_request(request: Request, config: Config, event_type: str):
 def get_data_from_response(response: Union[HTTPException, Response], config: Config, event_type: str):
     result = {}
     status = getattr(response, "status", getattr(response, "status_code", None))
-    if isinstance(status, compat.integer_types):
+    if isinstance(status, int):
         result["status_code"] = status
     if config.capture_headers and getattr(response, "headers", None):
         headers = response.headers
-        result["headers"] = {key: ";".join(headers.getall(key)) for key in compat.iterkeys(headers)}
+        result["headers"] = {key: ";".join(headers.getall(key)) for key in headers.keys()}
     return result

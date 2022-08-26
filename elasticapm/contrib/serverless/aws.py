@@ -36,13 +36,16 @@ import os
 import platform
 import time
 from typing import Optional
+from urllib.parse import urlencode
 
 import elasticapm
-from elasticapm.base import Client, get_client
+from elasticapm.base import Client
 from elasticapm.conf import constants
-from elasticapm.utils import compat, encoding, get_name_from_func, nested_key
+from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
+
+SERVERLESS_HTTP_REQUEST = ("api", "elb")
 
 logger = get_logger("elasticapm.serverless")
 
@@ -66,25 +69,25 @@ class capture_serverless(object):
             return {"statusCode": r.status_code, "body": "Success!"}
     """
 
-    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, name: Optional[str] = None, elasticapm_client: Optional[Client] = None, **kwargs) -> None:
         self.name = name
         self.event = {}
         self.context = {}
         self.response = None
+        self.instrumented = False
+        self.client = elasticapm_client  # elasticapm_client is intended for testing only
 
         # Disable all background threads except for transport
         kwargs["metrics_interval"] = "0ms"
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"
-        if "service_name" not in kwargs:
+        if "service_name" not in kwargs and "ELASTIC_APM_SERVICE_NAME" not in os.environ:
             kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+        if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
+            kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
-        self.client = get_client()
-        if not self.client:
-            self.client = Client(**kwargs)
-        if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
-            elasticapm.instrument()
+        self.client_kwargs = kwargs
 
     def __call__(self, func):
         self.name = self.name or get_name_from_func(func)
@@ -96,6 +99,21 @@ class capture_serverless(object):
                 self.event, self.context = args
             else:
                 self.event, self.context = {}, {}
+            # We delay client creation until the function is called, so that
+            # multiple @capture_serverless instances in the same file don't create
+            # multiple clients
+            if not self.client:
+                # Don't use get_client() as we may have a config mismatch due to **kwargs
+                self.client = Client(**self.client_kwargs)
+            if (
+                not self.instrumented
+                and not self.client.config.debug
+                and self.client.config.instrument
+                and self.client.config.enabled
+            ):
+                elasticapm.instrument()
+                self.instrumented = True
+
             if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
                 with self:
                     self.response = func(*args, **kwds)
@@ -119,15 +137,33 @@ class capture_serverless(object):
         transaction_type = "request"
         transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
-        self.httpmethod = nested_key(self.event, "requestContext", "httpMethod") or nested_key(
-            self.event, "requestContext", "http", "method"
+        self.httpmethod = (
+            nested_key(self.event, "requestContext", "httpMethod")
+            or nested_key(self.event, "requestContext", "http", "method")
+            or nested_key(self.event, "httpMethod")
         )
-        if self.httpmethod:  # API Gateway
-            self.source = "api"
-            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-                transaction_name = "{} {}".format(self.httpmethod, os.environ["AWS_LAMBDA_FUNCTION_NAME"])
+
+        if self.httpmethod:  # http request
+            if nested_key(self.event, "requestContext", "elb"):
+                self.source = "elb"
+                resource = nested_key(self.event, "path")
+            elif nested_key(self.event, "requestContext", "httpMethod"):
+                self.source = "api"
+                # API v1
+                resource = "/{}{}".format(
+                    nested_key(self.event, "requestContext", "stage"),
+                    nested_key(self.event, "requestContext", "resourcePath"),
+                )
             else:
-                transaction_name = self.name
+                self.source = "api"
+                # API v2
+                route_key = nested_key(self.event, "requestContext", "routeKey")
+                route_key = f"/{route_key}" if route_key.startswith("$") else route_key.split(" ", 1)[-1]
+                resource = "/{}{}".format(
+                    nested_key(self.event, "requestContext", "stage"),
+                    route_key,
+                )
+            transaction_name = "{} {}".format(self.httpmethod, resource)
         elif "Records" in self.event and len(self.event["Records"]) == 1:
             record = self.event["Records"][0]
             if record.get("eventSource") == "aws:s3":  # S3
@@ -144,7 +180,7 @@ class capture_serverless(object):
 
         self.transaction = self.client.begin_transaction(transaction_type, trace_parent=trace_parent)
         elasticapm.set_transaction_name(transaction_name, override=False)
-        if self.source == "api":
+        if self.source in SERVERLESS_HTTP_REQUEST:
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     self.event,
@@ -173,7 +209,7 @@ class capture_serverless(object):
                     elasticapm.set_transaction_result("HTTP 5xx", override=False)
         if exc_val:
             self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
-            if self.source == "api":
+            if self.source in SERVERLESS_HTTP_REQUEST:
                 elasticapm.set_transaction_result("HTTP 5xx", override=False)
                 elasticapm.set_transaction_outcome(http_status_code=500, override=False)
                 elasticapm.set_context({"status_code": 500}, "response")
@@ -203,26 +239,35 @@ class capture_serverless(object):
         faas["coldstart"] = coldstart
         faas["trigger"] = {"type": "other"}
         faas["execution"] = self.context.aws_request_id
+        arn = self.context.invoked_function_arn
+        if len(arn.split(":")) > 7:
+            arn = ":".join(arn.split(":")[:7])
+        faas["id"] = arn
+        faas["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        faas["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
         if self.source == "api":
             faas["trigger"]["type"] = "http"
             faas["trigger"]["request_id"] = self.event["requestContext"]["requestId"]
-            path = (
-                self.event["requestContext"].get("resourcePath")
-                or self.event["requestContext"]["http"]["path"].split(self.event["requestContext"]["stage"])[-1]
-            )
-            service_context["origin"] = {
-                "name": "{} {}/{}".format(
-                    self.httpmethod,
-                    self.event["requestContext"]["stage"],
-                    path,
-                )
-            }
+            service_context["origin"] = {"name": self.event["requestContext"]["domainName"]}
             service_context["origin"]["id"] = self.event["requestContext"]["apiId"]
             service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "api gateway"}
+            if ".lambda-url." in self.event["requestContext"]["domainName"]:
+                cloud_context["origin"]["service"]["name"] = "lambda url"
             cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
+            cloud_context["origin"]["provider"] = "aws"
+        elif self.source == "elb":
+            elb_target_group_arn = self.event["requestContext"]["elb"]["targetGroupArn"]
+            faas["trigger"]["type"] = "http"
+            faas["trigger"]["request_id"] = self.event["headers"]["x-amzn-trace-id"]
+            service_context["origin"] = {"name": elb_target_group_arn.split(":")[5]}
+            service_context["origin"]["id"] = elb_target_group_arn
+            cloud_context["origin"] = {}
+            cloud_context["origin"]["service"] = {"name": "elb"}
+            cloud_context["origin"]["account"] = {"id": elb_target_group_arn.split(":")[4]}
+            cloud_context["origin"]["region"] = elb_target_group_arn.split(":")[3]
             cloud_context["origin"]["provider"] = "aws"
         elif self.source == "sqs":
             record = self.event["Records"][0]
@@ -236,13 +281,18 @@ class capture_serverless(object):
             cloud_context["origin"]["region"] = record["awsRegion"]
             cloud_context["origin"]["account"] = {"id": record["eventSourceARN"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = service_context["origin"]["name"]
+            message_context["queue"] = {"name": service_context["origin"]["name"]}
             if "SentTimestamp" in record["attributes"]:
                 message_context["age"] = {"ms": int((time.time() * 1000) - int(record["attributes"]["SentTimestamp"]))}
             if self.client.config.capture_body in ("transactions", "all") and "body" in record:
                 message_context["body"] = record["body"]
             if self.client.config.capture_headers and record.get("messageAttributes"):
-                message_context["headers"] = record["messageAttributes"]
+                headers = {}
+                for k, v in record["messageAttributes"].items():
+                    if v and v.get("stringValue"):
+                        headers[k] = v.get("stringValue")
+                if headers:
+                    message_context["headers"] = headers
         elif self.source == "sns":
             record = self.event["Records"][0]
             faas["trigger"]["type"] = "pubsub"
@@ -254,9 +304,9 @@ class capture_serverless(object):
             service_context["origin"]["service"] = {"name": "sns"}
             cloud_context["origin"] = {}
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
-            cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
+            cloud_context["origin"]["account"] = {"id": record["Sns"]["TopicArn"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
-            message_context["queue"] = service_context["origin"]["name"]
+            message_context["queue"] = {"name": service_context["origin"]["name"]}
             if "Timestamp" in record["Sns"]:
                 message_context["age"] = {
                     "ms": int(
@@ -270,7 +320,12 @@ class capture_serverless(object):
             if self.client.config.capture_body in ("transactions", "all") and "Message" in record["Sns"]:
                 message_context["body"] = record["Sns"]["Message"]
             if self.client.config.capture_headers and record["Sns"].get("MessageAttributes"):
-                message_context["headers"] = record["Sns"]["MessageAttributes"]
+                headers = {}
+                for k, v in record["Sns"]["MessageAttributes"].items():
+                    if v and v.get("Type") == "String":
+                        headers[k] = v.get("Value")
+                if headers:
+                    message_context["headers"] = headers
         elif self.source == "s3":
             record = self.event["Records"][0]
             faas["trigger"]["type"] = "datasource"
@@ -285,17 +340,13 @@ class capture_serverless(object):
             cloud_context["origin"]["provider"] = "aws"
 
         metadata["service"] = {}
-        metadata["service"]["name"] = os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        metadata["service"]["name"] = self.client.config.service_name
         metadata["service"]["framework"] = {"name": "AWS Lambda"}
         metadata["service"]["runtime"] = {
             "name": os.environ.get("AWS_EXECUTION_ENV"),
             "version": platform.python_version(),
         }
-        arn = self.context.invoked_function_arn
-        if len(arn.split(":")) > 7:
-            arn = ":".join(arn.split(":")[:7])
-        metadata["service"]["id"] = arn
-        metadata["service"]["version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
+        metadata["service"]["version"] = self.client.config.service_version
         metadata["service"]["node"] = {"configured_name": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}
         # This is the one piece of metadata that requires deep merging. We add it manually
         # here to avoid having to deep merge in _transport.add_metadata()
@@ -315,7 +366,7 @@ class capture_serverless(object):
         # faas doesn't actually belong in context, but we handle this in to_dict
         elasticapm.set_context(faas, "faas")
         if message_context:
-            elasticapm.set_context(service_context, "message")
+            elasticapm.set_context(message_context, "message")
         self.client._transport.add_metadata(metadata)
 
 
@@ -326,7 +377,13 @@ def get_data_from_request(event: dict, capture_body: bool = False, capture_heade
     result = {}
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
-    method = nested_key(event, "requestContext", "httpMethod") or nested_key(event, "requestContext", "http", "method")
+
+    method = (
+        nested_key(event, "requestContext", "httpMethod")
+        or nested_key(event, "requestContext", "http", "method")
+        or nested_key(event, "httpMethod")
+    )
+
     if not method:
         # Not API Gateway
         return result
@@ -377,16 +434,23 @@ def get_url_dict(event: dict) -> dict:
     headers = event.get("headers", {})
     protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
     host = headers.get("Host", headers.get("host", ""))
-    stage = "/" + (nested_key(event, "requestContext", "stage") or "")
-    path = event.get("path", event.get("rawPath", "").split(stage)[-1])
+    stage = nested_key(event, "requestContext", "stage") or ""
+    raw_path = event.get("rawPath", "")
+    if stage:
+        stage = "/" + stage
+        raw_path = raw_path.split(stage)[-1]
+
+    path = event.get("path", raw_path)
     port = headers.get("X-Forwarded-Port", headers.get("x-forwarded-port"))
     query = ""
     if "rawQueryString" in event:
         query = event["rawQueryString"]
     elif event.get("queryStringParameters"):
-        query = "?"
-        for k, v in compat.iteritems(event["queryStringParameters"]):
-            query += "{}={}".format(k, v)
+        if stage:  # api requires parameters encoding to build correct url
+            query = "?" + urlencode(event["queryStringParameters"])
+        else:  # for elb we do not have the stage
+            query = "?" + "&".join(["{}={}".format(k, v) for k, v in event["queryStringParameters"].items()])
+
     url = protocol + "://" + host + stage + path + query
 
     url_dict = {

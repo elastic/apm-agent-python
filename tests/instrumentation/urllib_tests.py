@@ -27,33 +27,26 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import urllib.parse
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 
 import mock
 import pytest
 
 from elasticapm.conf import constants
-from elasticapm.conf.constants import TRANSACTION
+from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.traces import capture_span
-from elasticapm.utils.compat import urlparse
 from elasticapm.utils.disttracing import TraceParent
 
-try:
-    from urllib.error import HTTPError, URLError
-    from urllib.request import urlopen
-
-    request_method = "http.client.HTTPConnection.request"
-    getresponse_method = "http.client.HTTPConnection.getresponse"
-except ImportError:
-    from urllib2 import HTTPError, URLError, urlopen
-
-    request_method = "httplib.HTTPConnection.request"
-    getresponse_method = "httplib.HTTPConnection.getresponse"
+request_method = "http.client.HTTPConnection.request"
+getresponse_method = "http.client.HTTPConnection.getresponse"
 
 
 def test_urllib(instrument, elasticapm_client, waiting_httpserver):
     waiting_httpserver.serve_content("")
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
@@ -82,6 +75,8 @@ def test_urllib(instrument, elasticapm_client, waiting_httpserver):
         "resource": "127.0.0.1:%d" % parsed_url.port,
         "type": "",
     }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{parsed_url.port}"
     assert spans[0]["parent_id"] == spans[1]["id"]
     assert spans[0]["outcome"] == "success"
 
@@ -94,7 +89,7 @@ def test_urllib(instrument, elasticapm_client, waiting_httpserver):
 def test_urllib_error(instrument, elasticapm_client, waiting_httpserver, status_code):
     waiting_httpserver.serve_content("", code=status_code)
     url = waiting_httpserver.url + "/hello_world"
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
@@ -125,7 +120,7 @@ def test_urllib_standard_port(mock_getresponse, mock_request, instrument, elasti
     mock_getresponse.return_value = mock.Mock(code=200, status=200)
 
     url = "http://example.com/"
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     r = urlopen(url)
@@ -192,8 +187,7 @@ def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiti
     transaction_object.is_sampled = False
     urlopen(url)
     elasticapm_client.end_transaction("MyView")
-    transactions = elasticapm_client.events[TRANSACTION]
-    spans = elasticapm_client.spans_for_transaction(transactions[0])
+    spans = elasticapm_client.events[SPAN]
 
     assert not spans
 
@@ -202,7 +196,7 @@ def test_trace_parent_propagation_unsampled(instrument, elasticapm_client, waiti
     trace_parent = TraceParent.from_string(
         headers[constants.TRACEPARENT_HEADER_NAME], tracestate_string=headers[constants.TRACESTATE_HEADER_NAME]
     )
-    assert trace_parent.trace_id == transactions[0]["trace_id"]
+    assert trace_parent.trace_id == transaction_object.trace_parent.trace_id
     assert trace_parent.span_id == transaction_object.id
     assert not trace_parent.trace_options.recorded
     # Check that sample_rate was correctly placed in the tracestate

@@ -50,4 +50,4 @@ def test_init():
     assert middleware.client.config.server_url == "http://localhost/api/store"
     assert middleware.client.config.service_name == "p" * 32
     assert middleware.client.config.secret_token == "a" * 32
-    assert middleware.client.config.metrics_interval == 0
+    assert middleware.client.config.metrics_interval.total_seconds() == 0
