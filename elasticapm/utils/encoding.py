@@ -229,6 +229,9 @@ def long_field(data):
     If the given data, converted to string, is longer than LONG_FIELD_MAX_LENGTH,
     truncate it to LONG_FIELD_MAX_LENGTH-1, adding the "…" character at the end.
 
+    If data is bytes, truncate it to LONG_FIELD_MAX_LENGTH-3, adding b"..." to
+    the end.
+
     Returns the original data if truncation is not required.
 
     Per https://github.com/elastic/apm/blob/main/specs/agents/field-limits.md#long_field_max_length-configuration,
@@ -242,9 +245,12 @@ def long_field(data):
 
     Other fields should be truncated via `elasticapm.utils.encoding.keyword_field()`
     """
-    string = str(data) if not isinstance(data, str) else data
-    if len(string) > LONG_FIELD_MAX_LENGTH:
-        return string[: LONG_FIELD_MAX_LENGTH - 1] + "…"
+    str_or_bytes = str(data) if not isinstance(data, (str, bytes)) else data
+    if len(str_or_bytes) > LONG_FIELD_MAX_LENGTH:
+        if isinstance(str_or_bytes, bytes):
+            return str_or_bytes[: LONG_FIELD_MAX_LENGTH - 3] + b"..."
+        else:
+            return str_or_bytes[: LONG_FIELD_MAX_LENGTH - 1] + "…"
     else:
         return data
 
