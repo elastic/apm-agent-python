@@ -47,6 +47,7 @@ from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.starlette.utils import get_body, get_data_from_request, get_data_from_response
 from elasticapm.utils.disttracing import TraceParent
+from elasticapm.utils.encoding import long_field
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.errors.client")
@@ -166,7 +167,7 @@ class ElasticAPM:
 
             async def mocked_receive() -> Message:
                 await asyncio.sleep(0)
-                return {"type": "http.request", "body": b"".join(body)}
+                return {"type": "http.request", "body": long_field(b"".join(body))}
 
             receive = mocked_receive
 
