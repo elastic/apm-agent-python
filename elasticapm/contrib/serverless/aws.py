@@ -261,8 +261,7 @@ class capture_serverless(object):
         elif self.source == "elb":
             elb_target_group_arn = self.event["requestContext"]["elb"]["targetGroupArn"]
             faas["trigger"]["type"] = "http"
-            faas["trigger"]["request_id"] = self.event["headers"]["x-amzn-trace-id"]
-            service_context["origin"] = {"name": elb_target_group_arn.split(":")[5]}
+            service_context["origin"] = {"name": elb_target_group_arn.split(":")[5].split("/")[1]}
             service_context["origin"]["id"] = elb_target_group_arn
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "elb"}
