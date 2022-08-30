@@ -265,6 +265,7 @@ def test_capture_serverless_elb(event_elb, context, elasticapm_client):
     assert transaction["context"]["request"]["method"] == "POST"
     assert transaction["context"]["request"]["headers"]
     assert transaction["context"]["response"]["status_code"] == 200
+    assert transaction["context"]["service"]["origin"]["name"] == "lambda-279XGJDqGZ5rsrHC2Fjr"
 
 
 def test_capture_serverless_s3(event_s3, context, elasticapm_client):
