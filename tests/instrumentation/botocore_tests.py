@@ -97,6 +97,7 @@ def test_botocore_instrumentation(instrument, elasticapm_client):
     assert span["type"] == "aws"
     assert span["subtype"] == "ec2"
     assert span["action"] == "DescribeInstances"
+    assert span["context"]["http"]["request"]["id"]
 
 
 def test_s3(instrument, elasticapm_client):
@@ -117,6 +118,7 @@ def test_s3(instrument, elasticapm_client):
         assert span["context"]["destination"]["service"]["name"] == "s3"
         assert span["context"]["destination"]["service"]["resource"] == "xyz"
         assert span["context"]["destination"]["service"]["type"] == "storage"
+        assert span["context"]["http"]["request"]["id"]
     assert spans[0]["name"] == "S3 CreateBucket xyz"
     assert spans[0]["action"] == "CreateBucket"
     assert spans[1]["name"] == "S3 PutObject xyz"
@@ -175,6 +177,7 @@ def test_dynamodb(instrument, elasticapm_client, dynamodb):
         assert span["context"]["destination"]["service"]["name"] == "dynamodb"
         assert span["context"]["destination"]["service"]["resource"] == "Movies"
         assert span["context"]["destination"]["service"]["type"] == "db"
+        assert span["context"]["http"]["request"]["id"]
     assert spans[0]["name"] == "DynamoDB PutItem Movies"
     assert spans[1]["name"] == "DynamoDB Query Movies"
     assert spans[1]["context"]["db"]["statement"] == "title = :v1 and #y = :v2"
@@ -200,6 +203,7 @@ def test_sns(instrument, elasticapm_client):
     assert spans[2]["context"]["destination"]["service"]["name"] == "sns"
     assert spans[2]["context"]["destination"]["service"]["resource"] == "sns/mytopic"
     assert spans[2]["context"]["destination"]["service"]["type"] == "messaging"
+    assert spans[2]["context"]["http"]["request"]["id"]
 
 
 def test_sqs_send(instrument, elasticapm_client, sqs_client_and_queue):
@@ -222,6 +226,7 @@ def test_sqs_send(instrument, elasticapm_client, sqs_client_and_queue):
     assert span["context"]["destination"]["service"]["name"] == "sqs"
     assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
     assert span["context"]["destination"]["service"]["type"] == "messaging"
+    assert span["context"]["http"]["request"]["id"]
 
     messages = sqs.receive_message(
         QueueUrl=queue_url,
