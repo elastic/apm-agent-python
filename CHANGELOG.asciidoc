@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Add redis query to context data for redis instrumentation {pull}1406[#1406]
+* Add AWS request ID to all botocore spans (at `span.context.http.request.id`) {pull}1625[#1625]
 
 [float]
 ===== Bug fixes
