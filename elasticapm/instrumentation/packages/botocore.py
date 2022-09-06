@@ -106,6 +106,9 @@ class BotocoreInstrumentation(AbstractInstrumentedModule):
             result = wrapped(*args, **kwargs)
             if service in post_span_modifiers:
                 post_span_modifiers[service](span, args, kwargs, result)
+            request_id = result.get("ResponseMetadata", {}).get("RequestId")
+            if request_id:
+                span.update_context("http", {"request": {"id": request_id}})
             return result
 
 
