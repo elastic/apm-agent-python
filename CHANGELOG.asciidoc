@@ -48,6 +48,7 @@ endif::[]
 * Restrict length of Starlette request bodies {pull}1549[#1549]
 * Fix error when using elasticsearch(sniff_on_start=True) {pull}1618[#1618]
 * Improve handling of ignored URLs and capture_body=off for Starlette {pull}1549[#1549]
+* Fix possible error in the transport flush for Lambda functions {pull}1628[#1628]
 
 
 
