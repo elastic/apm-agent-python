@@ -180,7 +180,7 @@ class Transport(ThreadManager):
                     # No data on buffer, but due to manual flush we should send
                     # an empty payload with flushed=true query param, but only
                     # to a local APM server (or lambda extension)
-                    self.send({}, forced_flush=True)
+                    self.send("", forced_flush=True)
                 self._last_flush = timeit.default_timer()
                 buffer = self._init_buffer()
                 buffer_written = False
