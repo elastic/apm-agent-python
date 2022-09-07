@@ -264,3 +264,13 @@ def test_flushed_arg(sending_elasticapm_client):
     sending_elasticapm_client._transport.flush()
 
     assert sending_elasticapm_client.httpserver.requests[0].args["flushed"] == "true"
+
+
+@pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "100ms"}], indirect=True)
+def test_flushed_arg_with_wait(sending_elasticapm_client):
+    sending_elasticapm_client.begin_transaction("test_type")
+    sending_elasticapm_client.end_transaction("test")
+    time.sleep(0.2)
+    sending_elasticapm_client._transport.flush()
+
+    assert sending_elasticapm_client.httpserver.requests[1].args["flushed"] == "true"
