@@ -31,6 +31,7 @@ from __future__ import absolute_import
 from elasticapm import get_client
 from elasticapm.traces import execution_context
 
+import json
 
 def structlog_processor(logger, method_name, event_dict):
     """
@@ -51,6 +52,7 @@ def structlog_processor(logger, method_name, event_dict):
     :return:
         `event_dict`, with three new entries.
     """
+    event_dict = json.loads(event_dict) if isinstance(event_dict, str) else event_dict
     transaction = execution_context.get_transaction()
     if transaction:
         event_dict["transaction.id"] = transaction.id
@@ -62,4 +64,5 @@ def structlog_processor(logger, method_name, event_dict):
     span = execution_context.get_span()
     if span and span.id:
         event_dict["span.id"] = span.id
+    event_dict = json.dumps(event_dict)
     return event_dict
