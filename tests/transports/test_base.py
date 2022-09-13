@@ -266,11 +266,12 @@ def test_flushed_arg(sending_elasticapm_client):
     assert sending_elasticapm_client.httpserver.requests[0].args["flushed"] == "true"
 
 
+@pytest.mark.flaky(reruns=3)  # Trying to test automatic flushes is inherently flaky
 @pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "100ms"}], indirect=True)
 def test_flushed_arg_with_wait(sending_elasticapm_client):
     sending_elasticapm_client.begin_transaction("test_type")
     sending_elasticapm_client.end_transaction("test")
-    time.sleep(0.2)
+    time.sleep(0.3)
     sending_elasticapm_client._transport.flush()
 
     assert sending_elasticapm_client.httpserver.requests[1].args["flushed"] == "true"
