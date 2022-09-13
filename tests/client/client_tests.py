@@ -254,6 +254,7 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     sending_elasticapm_client.httpserver.code = 202
     sending_elasticapm_client.capture_message("bar", handled=False)
     sending_elasticapm_client.close()
+    time.sleep(0.2)
     assert not sending_elasticapm_client._transport.state.did_fail()
 
 
