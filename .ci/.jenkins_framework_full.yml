@@ -63,6 +63,7 @@ FRAMEWORK:
   - elasticsearch-5
   - elasticsearch-6
   - elasticsearch-7
+  - elasticsearch-8
   - gevent-newest
   - aiohttp-3.0
   - aiohttp-newest

@@ -45,10 +45,19 @@ should_capture_body_re = re.compile("/(_search|_msearch|_count|_async_search|_sq
 class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
-    instrument_list = [
-        ("elasticsearch.connection.http_urllib3", "Urllib3HttpConnection.perform_request"),
-        ("elasticsearch.connection.http_requests", "RequestsHttpConnection.perform_request"),
-    ]
+    def get_instrument_list(self):
+        try:
+            import elastic_transport  # noqa: F401
+
+            return [
+                ("elastic_transport._node._http_urllib3", "Urllib3HttpNode.perform_request"),
+                ("elastic_transport._node._http_requests", "RequestsHttpNode.perform_request"),
+            ]
+        except ImportError:
+            return [
+                ("elasticsearch.connection.http_urllib3", "Urllib3HttpConnection.perform_request"),
+                ("elasticsearch.connection.http_requests", "RequestsHttpConnection.perform_request"),
+            ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
@@ -57,11 +66,14 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
 
         self._update_context_by_request_data(span.context, instance, args, kwargs)
 
-        status_code, headers, raw_data = wrapped(*args, **kwargs)
-
+        result = wrapped(*args, **kwargs)
+        if hasattr(result, "meta"):  # elasticsearch-py 8.x+
+            status_code = result.meta.status
+        else:
+            status_code = result[0]
         span.context["http"] = {"status_code": status_code}
 
-        return status_code, headers, raw_data
+        return result
 
     def _update_context_by_request_data(self, context, instance, args, kwargs):
         args_len = len(args)
@@ -97,9 +109,17 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
 class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
-    instrument_list = [
-        ("elasticsearch.transport", "Transport.perform_request"),
-    ]
+    def get_instrument_list(self):
+        try:
+            import elastic_transport  # noqa: F401
+
+            return [
+                ("elastic_transport", "Transport.perform_request"),
+            ]
+        except ImportError:
+            return [
+                ("elasticsearch.transport", "Transport.perform_request"),
+            ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         with elasticapm.capture_span(

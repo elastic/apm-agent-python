@@ -76,6 +76,22 @@ services:
     volumes:
       - pyesdata7:/usr/share/elasticsearch/data
 
+  elasticsearch8:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+    ports:
+      - "9200:9200"
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "network.host=_site_"
+      - "transport.host=127.0.0.1"
+      - "http.host=0.0.0.0"
+      - "xpack.security.enabled=false"
+      - "action.destructive_requires_name=false" # allow for easy cleanup by calling DELETE *
+    volumes:
+      - pyesdata8:/usr/share/elasticsearch/data
+
   elasticsearch5:
     image: docker.elastic.co/elasticsearch/elasticsearch:5.6.16
     healthcheck:
@@ -162,6 +178,7 @@ services:
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
+      ES_8_URL: 'http://elasticsearch8:9200'
       ES_7_URL: 'http://elasticsearch7:9200'
       ES_6_URL: 'http://elasticsearch6:9200'
       ES_5_URL: 'http://elasticsearch5:9200'
@@ -180,6 +197,8 @@ volumes:
   pymongodata36:
     driver: local
   pyesdata7:
+    driver: local
+  pyesdata8:
     driver: local
   pyesdata6:
     driver: local

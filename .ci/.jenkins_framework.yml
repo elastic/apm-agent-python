@@ -30,8 +30,8 @@ FRAMEWORK:
   - memcached-newest
   - pylibmc-newest
   - elasticsearch-2
-  - elasticsearch-6
   - elasticsearch-7
+  - elasticsearch-8
   - cassandra-newest
   - psutil-newest
   #- eventlet-newest
