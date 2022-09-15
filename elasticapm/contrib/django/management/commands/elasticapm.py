@@ -181,6 +181,9 @@ class Command(BaseCommand):
         passed = True
         client = DjangoClient(metrics_interval="0ms")
 
+        if not client.config.enabled:
+            return True
+
         def is_set(x):
             return x and x != "None"
 

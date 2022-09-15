@@ -1215,6 +1215,14 @@ def test_subcommand_not_known(argv_mock):
     assert 'No such command "foo"' in output
 
 
+def test_settings_not_enabled_no_checks():
+    stdout = io.StringIO()
+    with override_settings(ELASTIC_APM={"ENABLED": False}):
+        call_command("elasticapm", "check", stdout=stdout)
+    output = stdout.getvalue()
+    assert "" == output
+
+
 def test_settings_missing_secret_token_no_https():
     stdout = io.StringIO()
     with override_settings(ELASTIC_APM={"SERVER_URL": "http://foo"}):
