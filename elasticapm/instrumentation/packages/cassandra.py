@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from typing import Optional
 
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.instrumentation.packages.dbapi2 import extract_signature
@@ -49,6 +50,9 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
             else:
                 host = instance.endpoints_resolved[0].address
                 port = instance.endpoints_resolved[0].port
+            keyspace: Optional[str] = args[0] if args else kwargs.get("keyspace")
+            if keyspace:
+                context["db"] = {"instance": keyspace}
         else:
             hosts = list(instance.hosts)
             if hasattr(hosts[0], "endpoint"):
@@ -58,6 +62,9 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
                 # < cassandra-driver 3.18
                 host = hosts[0].address
                 port = instance.cluster.port
+            db_context = {}
+            if instance.keyspace:
+                db_context["instance"] = instance.keyspace
             span_action = "query"
             query = args[0] if args else kwargs.get("query")
             if hasattr(query, "query_string"):
@@ -70,7 +77,9 @@ class CassandraInstrumentation(AbstractInstrumentedModule):
                 query_str = None
             if query_str:
                 name = extract_signature(query_str)
-                context["db"] = {"type": "sql", "statement": query_str}
+                db_context.update({"type": "sql", "statement": query_str})
+            if db_context:
+                context["db"] = db_context
         context["destination"] = {
             "address": host,
             "port": port,
