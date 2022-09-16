@@ -20,7 +20,7 @@ configparser==5.0.2
 contextlib2==21.6.0
 importlib-metadata==4.8.1
 packaging==21.0
-Mako==1.1.5
+Mako==1.2.2
 glob2==0.7
 parse==1.19.0
 parse-type==0.5.2
