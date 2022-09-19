@@ -111,6 +111,7 @@ class ElasticAPM(object):
         #
         # Unfortunately, that also means that we can't capture any response data,
         # as the response isn't ready at this point in time.
+        elasticapm.set_transaction_outcome(outcome=constants.OUTCOME.FAILURE, override=False)
         self.client.end_transaction(result="HTTP 5xx")
 
     def init_app(self, app, **defaults):
