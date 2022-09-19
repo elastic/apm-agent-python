@@ -83,13 +83,16 @@ class PyMongoInstrumentation(AbstractInstrumentedModule):
             "address": host,
             "port": port,
         }
+        context = {"destination": destination_info}
+        if instance.database.name:
+            context["db"] = {"instance": instance.database.name}
         with capture_span(
             signature,
             span_type="db",
             span_subtype="mongodb",
             span_action="query",
             leaf=True,
-            extra={"destination": destination_info},
+            extra=context,
         ):
             return wrapped(*args, **kwargs)
 
@@ -121,6 +124,9 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         collection = instance.collection
         signature = ".".join([collection.full_name, "cursor.refresh"])
+        context = {"destination": {}}
+        if instance.collection.database.name:
+            context["db"] = {"instance": instance.collection.database.name}
         with capture_span(
             signature,
             span_type="db",
