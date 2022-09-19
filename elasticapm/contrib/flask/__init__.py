@@ -55,12 +55,12 @@ class ElasticAPM(object):
     """
     Flask application for Elastic APM.
 
-    Look up configuration from ``os.environ.get('ELASTIC_APM_APP_NAME')`` and
+    Look up configuration from ``os.environ.get('ELASTIC_APM_SERVICE_NAME')`` and
     ``os.environ.get('ELASTIC_APM_SECRET_TOKEN')``::
 
     >>> elasticapm = ElasticAPM(app)
 
-    Pass an arbitrary APP_NAME and SECRET_TOKEN::
+    Pass an arbitrary SERVICE_NAME and SECRET_TOKEN::
 
     >>> elasticapm = ElasticAPM(app, service_name='myapp', secret_token='asdasdasd')
 

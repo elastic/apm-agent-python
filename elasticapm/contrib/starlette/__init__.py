@@ -85,7 +85,7 @@ class ElasticAPM:
 
     >>> app.add_middleware(ElasticAPM, client=apm)
 
-    Pass an arbitrary APP_NAME and SECRET_TOKEN::
+    Pass an arbitrary SERVICE_NAME and SECRET_TOKEN::
 
     >>> elasticapm = ElasticAPM(app, service_name='myapp', secret_token='asdasdasd')
 
