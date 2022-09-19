@@ -40,6 +40,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix Django's `manage.py check` when agent is disabled {pull}1632[#1632]
+* Fix an issue with long body truncation for Starlette {pull}1635[#1635]
 
 
 [[release-notes-6.x]]
