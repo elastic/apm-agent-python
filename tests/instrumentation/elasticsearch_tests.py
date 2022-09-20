@@ -93,6 +93,7 @@ class SpecialEncoder(JSONSerializer):
 def elasticsearch(request):
     """Elasticsearch client fixture."""
     client = Elasticsearch(hosts=os.environ["ES_URL"], serializer=SpecialEncoder())
+    client.indices.delete(index="*")
     try:
         yield client
     finally:
@@ -291,7 +292,7 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 2
 
     for span in spans:
-        assert span["name"] == "ES GET /tweets/%s/1/_source" % document_type
+        assert span["name"] in ("ES GET /tweets/%s/1/_source" % document_type, "ES GET /tweets/_source/1")
         assert span["type"] == "db"
         assert span["subtype"] == "elasticsearch"
         assert span["action"] == "query"
@@ -304,9 +305,7 @@ def test_get_source(instrument, elasticapm_client, elasticsearch):
 def test_update_document(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
-    r1 = elasticsearch.update(
-        index="tweets", id="1", refresh=True, **get_kwargs({"doc": {"text": "adios"}}, document_kwarg_name="doc")
-    )
+    r1 = elasticsearch.update(index="tweets", id=1, body={"doc": {"text": "adios"}}, refresh=True, **get_kwargs())
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -316,7 +315,7 @@ def test_update_document(instrument, elasticapm_client, elasticsearch):
     assert len(spans) == 1
 
     span = spans[0]
-    assert span["name"] == "ES POST /tweets/%s/1/_update" % document_type
+    assert span["name"] in ("ES POST /tweets/_update/1", "ES POST /tweets/%s/1/_update" % document_type)
     assert span["type"] == "db"
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
@@ -358,9 +357,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_search_querystring(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
+    elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
     search_query = "user:kimchy"
     result = elasticsearch.search(q=search_query, index="tweets")
@@ -386,9 +383,7 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_search_both(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
+    elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
     search_querystring = "text:hola"
     search_query = {"query": {"term": {"user": "kimchy"}}}
@@ -414,9 +409,7 @@ def test_search_both(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_count_body(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
+    elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}}
     result = elasticsearch.count(body=search_query)
@@ -441,9 +434,7 @@ def test_count_body(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_count_querystring(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
+    elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
     search_query = "user:kimchy"
     result = elasticsearch.count(q=search_query, index="tweets")
@@ -467,11 +458,9 @@ def test_count_querystring(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_delete(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
-    )
+    elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
-    result = elasticsearch.delete(id=1, index="tweets", doc_type=document_type)
+    result = elasticsearch.delete(id="1", index="tweets", **get_kwargs())
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
@@ -488,8 +477,8 @@ def test_delete(instrument, elasticapm_client, elasticsearch):
 
 @pytest.mark.integrationtest
 def test_multiple_indexes(instrument, elasticapm_client, elasticsearch):
-    elasticsearch.create(index="tweets", doc_type="users", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
-    elasticsearch.create(index="snaps", doc_type="posts", id=1, body={"user": "kimchy", "text": "hola"}, refresh=True)
+    elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
+    elasticsearch.create(index="snaps", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
     result = elasticsearch.search(index=["tweets", "snaps"], q="user:kimchy")
     elasticapm_client.end_transaction("test", "OK")

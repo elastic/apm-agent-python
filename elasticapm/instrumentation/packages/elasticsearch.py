@@ -31,6 +31,7 @@
 from __future__ import absolute_import
 
 import re
+from urllib.parse import parse_qs
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
@@ -81,6 +82,10 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
         params = args[2] if args_len > 2 else kwargs.get("params")
         body_serialized = args[3] if args_len > 3 else kwargs.get("body")
 
+        if "?" in url and not params:
+            url, qs = url.split("?", 1)
+            params = {k: v[0] for k, v in parse_qs(qs).items()}
+
         should_capture_body = bool(should_capture_body_re.search(url))
 
         context["db"] = {"type": "elasticsearch"}
@@ -90,9 +95,12 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             # but not in others. We simply capture both if they are there so the
             # user can see it.
             if params and "q" in params:
-                # 'q' is already encoded to a byte string at this point
-                # we assume utf8, which is the default
-                query.append("q=" + params["q"].decode("utf-8", errors="replace"))
+                # 'q' may already be encoded to a byte string at this point.
+                # We assume utf8, which is the default
+                q = params["q"]
+                if isinstance(q, bytes):
+                    q = q.decode("utf-8", errors="replace")
+                query.append("q=" + q)
             if body_serialized:
                 if isinstance(body_serialized, bytes):
                     query.append(body_serialized.decode("utf-8", errors="replace"))
@@ -134,7 +142,11 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
             result_data = wrapped(*args, **kwargs)
 
             try:
-                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
+                if hasattr(result_data, "body"):  # ES >= 8
+                    hits = result_data.body["hits"]["total"]["value"]
+                else:
+                    hits = result_data["hits"]["total"]["value"]
+                span.context["db"]["rows_affected"] = hits
             except (KeyError, TypeError):
                 pass
 
@@ -144,5 +156,6 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
         args_len = len(args)
         http_method = args[0] if args_len else kwargs.get("method")
         http_path = args[1] if args_len > 1 else kwargs.get("url")
+        http_path = http_path.split("?", 1)[0]  # we don't want to capture a potential query string in the span name
 
         return "ES %s %s" % (http_method, http_path)
