@@ -56,19 +56,30 @@ class MetricsRegistry(ThreadManager):
         self._collect_timer = None
         super(MetricsRegistry, self).__init__()
 
-    def register(self, class_path):
+    def register(self, class_path, instance=None):
         """
         Register a new metric set
+
+        If instance is not None, the class_path will be used as the
+        identifier for the instance, otherwise the class_path will be used to
+        instantiate a new MetricsSet instance.
+
         :param class_path: a string with the import path of the metricset class
+        :param instance: a MetricsSet instance
         """
-        if class_path in self._metricsets:
-            return
+        if instance is None:
+            if class_path in self._metricsets:
+                return
+            else:
+                try:
+                    class_obj = import_string(class_path)
+                    self._metricsets[class_path] = class_obj(self)
+                except ImportError as e:
+                    logger.warning("Could not register %s metricset: %s", class_path, str(e))
+        elif isinstance(instance, MetricsSet):
+            self._metricsets[class_path] = instance
         else:
-            try:
-                class_obj = import_string(class_path)
-                self._metricsets[class_path] = class_obj(self)
-            except ImportError as e:
-                logger.warning("Could not register %s metricset: %s", class_path, str(e))
+            logger.warning(f"Could not register metricset: {instance} is not of type MetricsSet")
 
     def get_metricset(self, class_path):
         try:
