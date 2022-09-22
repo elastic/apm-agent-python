@@ -31,7 +31,8 @@
 from __future__ import absolute_import
 
 import re
-from urllib.parse import parse_qs
+from typing import Optional
+from urllib.parse import parse_qs, urlparse
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
@@ -109,9 +110,24 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
 
-        context["destination"] = {
-            "address": instance.host,
-        }
+        # ES5: `host` is URL, no `port` attribute
+        # ES6, ES7: `host` URL, `hostname` is host, `port` is port
+        # ES8: `host` is hostname, no `hostname` attribute, `port` is `port`
+        if not hasattr(instance, "port"):
+            # ES5, parse hostname and port from URL stored in `host`
+            parsed_url = urlparse(instance.host)
+            host = parsed_url.hostname
+            port = parsed_url.port
+        elif not hasattr(instance, "hostname"):
+            # ES8 (and up, one can hope)
+            host = instance.host
+            port = instance.port
+        else:
+            # ES6, ES7
+            host = instance.hostname
+            port = instance.port
+
+        context["destination"] = {"address": host, "port": port}
 
 
 class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
@@ -141,14 +157,9 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
         ) as span:
             result_data = wrapped(*args, **kwargs)
 
-            try:
-                if hasattr(result_data, "body"):  # ES >= 8
-                    hits = result_data.body["hits"]["total"]["value"]
-                else:
-                    hits = result_data["hits"]["total"]["value"]
+            hits = self._get_hits(result_data)
+            if hits:
                 span.context["db"]["rows_affected"] = hits
-            except (KeyError, TypeError):
-                pass
 
             return result_data
 
@@ -159,3 +170,13 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
         http_path = http_path.split("?", 1)[0]  # we don't want to capture a potential query string in the span name
 
         return "ES %s %s" % (http_method, http_path)
+
+    def _get_hits(self, result) -> Optional[int]:
+        if getattr(result, "body", None) and "hits" in result.body:  # ES >= 8
+            return result.body["hits"]["total"]["value"]
+        elif isinstance(result, dict) and "hits" in result:
+            return (
+                result["hits"]["total"]["value"]
+                if isinstance(result["hits"]["total"], dict)
+                else result["hits"]["total"]
+            )

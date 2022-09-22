@@ -104,7 +104,8 @@ class ElasticsearchAsyncTransportInstrumentation(
         ) as span:
             result_data = await wrapped(*args, **kwargs)
 
-            if isinstance(result_data, dict) and "hits" in result_data:
-                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
+            hits = self._get_hits(result_data)
+            if hits:
+                span.context["db"]["rows_affected"] = hits
 
             return result_data

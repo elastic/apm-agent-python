@@ -34,6 +34,7 @@ pytest.importorskip("elasticsearch")  # isort:skip
 
 import json
 import os
+import urllib.parse
 
 from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import Elasticsearch
@@ -52,6 +53,8 @@ document_type = "_doc" if ES_VERSION[0] >= 6 else "doc"
 
 
 def get_kwargs(document=None, document_kwarg_name="document"):
+    if ES_VERSION[0] < 6:
+        return {"doc_type": "doc", "body": document} if document else {"doc_type": "doc"}
     if ES_VERSION[0] < 7:
         return {"doc_type": "_doc", "body": document} if document else {"doc_type": "_doc"}
     elif ES_VERSION[0] < 8:
@@ -105,6 +108,7 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     elasticapm_client.begin_transaction("test")
     result = elasticsearch.ping()
     elasticapm_client.end_transaction("test", "OK")
+    parsed_url = urllib.parse.urlparse(os.environ["ES_URL"])
 
     transaction = elasticapm_client.events[TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
@@ -115,7 +119,8 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["destination"] == {
-        "address": os.environ["ES_URL"],
+        "address": parsed_url.hostname,
+        "port": parsed_url.port,
         "service": {"name": "", "resource": "elasticsearch", "type": ""},
     }
     assert span["context"]["http"]["status_code"] == 200
@@ -350,7 +355,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
         '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
     )
-    if ES_VERSION[0] >= 7:
+    if ES_VERSION[0] >= 6:
         assert span["context"]["db"]["rows_affected"] == 1
     assert span["context"]["http"]["status_code"] == 200
 
@@ -376,7 +381,7 @@ def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
     assert span["context"]["db"]["statement"] == "q=user:kimchy"
-    if ES_VERSION[0] >= 7:
+    if ES_VERSION[0] >= 6:
         assert span["context"]["db"]["rows_affected"] == 1
     assert span["context"]["http"]["status_code"] == 200
 

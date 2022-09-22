@@ -64,7 +64,7 @@ services:
       - pyesdata6:/usr/share/elasticsearch/data
 
   elasticsearch7:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200"]
     environment:
