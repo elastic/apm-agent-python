@@ -41,6 +41,8 @@ services:
 
   mongodb36:
     image: mongo:3.6
+    ports:
+      - "27017:27017"
     volumes:
       - pymongodata36:/data/db
 

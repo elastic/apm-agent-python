@@ -85,7 +85,7 @@ class ElasticAPM:
 
     >>> app.add_middleware(ElasticAPM, client=apm)
 
-    Pass an arbitrary APP_NAME and SECRET_TOKEN::
+    Pass an arbitrary SERVICE_NAME and SECRET_TOKEN::
 
     >>> elasticapm = ElasticAPM(app, service_name='myapp', secret_token='asdasdasd')
 
@@ -146,6 +146,9 @@ class ElasticAPM:
                 elasticapm.set_transaction_result(result, override=False)
             await send(message)
 
+        _mocked_receive = None
+        _request_receive = None
+
         if self.client.config.capture_body != "off":
 
             # When we consume the body from receive, we replace the streaming
@@ -165,17 +168,25 @@ class ElasticAPM:
                 if message["type"] == "http.disconnect":
                     break
 
+            joined_body = b"".join(body)
+
             async def mocked_receive() -> Message:
                 await asyncio.sleep(0)
-                return {"type": "http.request", "body": long_field(b"".join(body))}
+                return {"type": "http.request", "body": long_field(joined_body)}
 
-            receive = mocked_receive
+            _mocked_receive = mocked_receive
 
-        request = Request(scope, receive=receive)
+            async def request_receive() -> Message:
+                await asyncio.sleep(0)
+                return {"type": "http.request", "body": joined_body}
+
+            _request_receive = request_receive
+
+        request = Request(scope, receive=_mocked_receive or receive)
         await self._request_started(request)
 
         try:
-            await self.app(scope, receive, wrapped_send)
+            await self.app(scope, _request_receive or receive, wrapped_send)
             elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
         except Exception:
             await self.capture_exception(

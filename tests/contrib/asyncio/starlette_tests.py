@@ -67,10 +67,10 @@ def app(elasticapm_client):
 
     @app.route("/", methods=["GET", "POST"])
     async def hi(request):
-        await request.body()
+        body = await request.body()
         with async_capture_span("test"):
             pass
-        return PlainTextResponse("ok")
+        return PlainTextResponse(str(len(body)))
 
     @app.route("/hi/{name}", methods=["GET"])
     async def hi_name(request):
@@ -449,6 +449,7 @@ def test_long_body(app, elasticapm_client):
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     request = transaction["context"]["request"]
     assert request["body"] == "foo=" + "b" * 9993 + "..."
+    assert response.text == "10004"
 
 
 def test_static_files_only_file_notfound(app_static_files_only, elasticapm_client):

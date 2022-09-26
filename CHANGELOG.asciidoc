@@ -29,6 +29,22 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[float]
+===== Features
+ * Add backend granularity data to SQL backends as well as Cassandra and pymongo {pull}1585[#1585], {pull}1639[#1639]
+
+[float]
+===== Bug fixes
+
+* Fix Django's `manage.py check` when agent is disabled {pull}1632[#1632]
+* Fix an issue with long body truncation for Starlette {pull}1635[#1635]
+* Fix an issue with transaction outcomes in Flask for uncaught exceptions {pull}1637[#1637]
+
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
