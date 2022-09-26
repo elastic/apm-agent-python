@@ -33,8 +33,9 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
+[float]
+===== Features
+ * Add backend granularity data to SQL backends as well as Cassandra and pymongo {pull}1585[#1585], {pull}1639[#1639]
 
 [float]
 ===== Bug fixes
