@@ -51,11 +51,18 @@ except ImportError:
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
-    transport = Transport(waiting_httpserver.url, client=elasticapm_client)
+    transport = Transport(
+        waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
     transport.start_thread()
     try:
         url = transport.send("x".encode("latin-1"))
         assert url == "http://example.com/foo"
+        request_headers = waiting_httpserver.requests[0].headers
+        assert request_headers["User-Agent"].startswith("apm-agent-python/")
+        assert request_headers["Authorization"] == "Bearer test_key"
+        assert request_headers["Content-Type"] == "application/x-ndjson"
+        assert request_headers["Content-Encoding"] == "gzip"
     finally:
         transport.close()
 
@@ -277,7 +284,7 @@ def test_get_config(waiting_httpserver, elasticapm_client):
     transport = Transport(
         url + "/" + constants.EVENTS_API_PATH,
         client=elasticapm_client,
-        headers={"Content-Type": "application/x-ndjson", "Content-Encoding": "gzip"},
+        headers=elasticapm_client._transport._headers,
     )
     version, data, max_age = transport.get_config("1", {})
     assert version == "2"
@@ -380,9 +387,16 @@ def test_fetch_server_info(waiting_httpserver, elasticapm_client):
         content=b'{"version": "8.0.0-alpha1"}',
     )
     url = waiting_httpserver.url
-    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    transport = Transport(
+        url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
     transport.fetch_server_info()
     assert elasticapm_client.server_version == (8, 0, 0, "alpha1")
+    request_headers = waiting_httpserver.requests[0].headers
+    assert request_headers["User-Agent"].startswith("apm-agent-python/")
+    assert "Authorization" in request_headers
+    assert "Content-Type" not in request_headers
+    assert "Content-Encoding" not in request_headers
 
 
 def test_fetch_server_info_no_json(waiting_httpserver, caplog, elasticapm_client):
