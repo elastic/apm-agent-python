@@ -50,6 +50,7 @@ except ImportError:
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
+    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(
         waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
