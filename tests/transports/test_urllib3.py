@@ -339,6 +339,19 @@ def test_get_config_cache_control_zero(waiting_httpserver, caplog, elasticapm_cl
     assert max_age == 300  # if max-age is 0, we use the default
 
 
+def test_get_config_cache_control_negative(waiting_httpserver, caplog, elasticapm_client):
+    waiting_httpserver.serve_content(
+        code=200, content=b'{"x": "y"}', headers={"Cache-Control": "max-age=-1", "Etag": "2"}
+    )
+    url = waiting_httpserver.url
+    transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
+    with caplog.at_level("DEBUG", "elasticapm.transport.http"):
+        max_age = transport.get_config("1", {})[2]
+    assert max_age == 300  # if max-age is negative, we use the default
+    record = caplog.records[-1]
+    assert record.message == "Could not parse Cache-Control header: max-age=-1"
+
+
 def test_get_config_cache_control_less_than_minimum(waiting_httpserver, caplog, elasticapm_client):
     waiting_httpserver.serve_content(
         code=200, content=b'{"x": "y"}', headers={"Cache-Control": "max-age=3", "Etag": "2"}
