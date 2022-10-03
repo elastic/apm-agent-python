@@ -69,7 +69,7 @@ undeploy-pods: k8s-login
 
 # @help:get-pods:Get the deployed pods in the K8s cluster
 .PHONY: deploy-pods
-get-pods: k8s-login
+get-pods:
 	$(KUBECTL) get pods
 	$(KUBECTL) describe pod $(K8S_POD_NAME)
 
