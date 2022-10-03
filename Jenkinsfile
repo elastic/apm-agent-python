@@ -39,9 +39,9 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'Run_As_Main_Branch', defaultValue: false, description: 'Allow to run any steps on a PR, some steps normally only run on main branch.')
-    booleanParam(name: 'bench_ci', defaultValue: true, description: 'Enable benchmarks.')
-    booleanParam(name: 'tests_ci', defaultValue: true, description: 'Enable tests.')
-    booleanParam(name: 'package_ci', defaultValue: true, description: 'Enable building packages.')
+    booleanParam(name: 'bench_ci', defaultValue: false, description: 'Enable benchmarks.')
+    booleanParam(name: 'tests_ci', defaultValue: false, description: 'Enable tests.')
+    booleanParam(name: 'package_ci', defaultValue: false, description: 'Enable building packages.')
   }
   stages {
     stage('Initializing'){
