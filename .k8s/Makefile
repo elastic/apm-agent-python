@@ -12,6 +12,7 @@ MAKEFLAGS += --silent --no-print-directory
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 K8S_CLUSTER ?= observability-ci-test-k8s
 K8S_NAMESPACE ?= default
+K8S_POD_NAME ?= python-versions-pod
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 # TODO: GCLOUD specific, maybe it wont't be needed if we are cloud agnostic?
 GCLOUD_K8S_CLUSTER_REGION ?= us-central1-c
@@ -61,8 +62,25 @@ k8s-login: bin/kubectl
 deploy-pods: k8s-login
 	$(KUBECTL) apply -f PythonPod.yml
 
+# @help:undeploy-pods:Deploy the pods in the K8s cluster
+.PHONY: undeploy-pods
+undeploy-pods: k8s-login
+	$(KUBECTL) delete -f PythonPod.yml
+
 # @help:get-pods:Get the deployed pods in the K8s cluster
 .PHONY: deploy-pods
 get-pods: k8s-login
 	$(KUBECTL) get pods
-	$(KUBECTL) describe pod python-versions-pod
+	$(KUBECTL) describe pod $(K8S_POD_NAME)
+
+# @help:ssh-pod:Interactive shell with the default pod
+ssh-default-pod:
+	$(KUBECTL) exec --stdin --tty $(K8S_POD_NAME) -- /bin/bash
+
+# @help:ssh-pod:Interactive shell in the given container
+ssh-pod-%:
+	$(KUBECTL) exec --stdin --tty $(K8S_POD_NAME) --container $* -- /bin/bash
+
+# @help:sync-pods:Sync workspace with the pods
+sync-pods:
+	$(KUBECTL) cp ./ $(K8S_POD_NAME):/src
