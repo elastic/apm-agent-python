@@ -1,5 +1,5 @@
 starlette>=0.15
 aiofiles
-requests
+httpx
 flask
 -r reqs-base.txt

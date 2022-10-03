@@ -250,11 +250,17 @@ def test_capture_headers_body_is_dynamic(app, elasticapm_client):
 
     for i, val in enumerate((True, False)):
         elasticapm_client.config.update(str(i), capture_body="transaction" if val else "none", capture_headers=val)
-        client.post("/", "somedata", headers={"foo": "bar"})
+        try:
+            client.post("/", content="somedata", headers={"foo": "bar"})
+        except TypeError:  # starlette < 0.21.0 used requests as base for TestClient, with a different API
+            client.post("/", "somedata", headers={"foo": "bar"})
 
         elasticapm_client.config.update(str(i) + str(i), capture_body="error" if val else "none", capture_headers=val)
         with pytest.raises(ValueError):
-            client.post("/raise-exception", "somedata", headers={"foo": "bar"})
+            try:
+                client.post("/raise-exception", content="somedata", headers={"foo": "bar"})
+            except TypeError:
+                client.post("/raise-exception", "somedata", headers={"foo": "bar"})
 
     assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["request"]
     assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["response"]
