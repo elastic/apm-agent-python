@@ -30,10 +30,13 @@
 
 import pytest  # isort:skip
 
+from tests.instrumentation.elasticsearch_tests import get_kwargs
+
 pytest.importorskip("elasticsearch._async")  # isort:skip
 
 import json
 import os
+import urllib.parse
 
 from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import AsyncElasticsearch
@@ -64,6 +67,7 @@ async def test_ping(instrument, elasticapm_client, async_elasticsearch):
     elasticapm_client.begin_transaction("test")
     result = await async_elasticsearch.ping()
     elasticapm_client.end_transaction("test", "OK")
+    parsed_url = urllib.parse.urlparse(os.environ["ES_URL"])
 
     transaction = elasticapm_client.events[TRANSACTION][0]
     spans = elasticapm_client.spans_for_transaction(transaction)
@@ -74,6 +78,12 @@ async def test_ping(instrument, elasticapm_client, async_elasticsearch):
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["sync"] is False
+    assert span["context"]["destination"] == {
+        "address": parsed_url.hostname,
+        "port": parsed_url.port,
+        "service": {"name": "", "resource": "elasticsearch", "type": ""},
+    }
+    assert span["context"]["http"]["status_code"] == 200
 
 
 async def test_info(instrument, elasticapm_client, async_elasticsearch):
@@ -96,21 +106,29 @@ async def test_info(instrument, elasticapm_client, async_elasticsearch):
 
 async def test_create(instrument, elasticapm_client, async_elasticsearch):
     elasticapm_client.begin_transaction("test")
+    responses = []
+    iid = lambda: str(len(responses) + 1)
     if ES_VERSION[0] < 5:
-        r1 = await async_elasticsearch.create("tweets", document_type, {"user": "kimchy", "text": "hola"}, 1)
+        responses.append(
+            await async_elasticsearch.create("tweets", document_type, {"user": "kimchy", "text": "hola"}, iid())
+        )
     elif ES_VERSION[0] < 7:
-        r1 = await async_elasticsearch.create("tweets", document_type, 1, body={"user": "kimchy", "text": "hola"})
+        responses.append(
+            await async_elasticsearch.create("tweets", document_type, iid(), body={"user": "kimchy", "text": "hola"})
+        )
+    elif ES_VERSION[0] < 8:
+        responses.append(await async_elasticsearch.create("tweets", iid(), body={"user": "kimchy", "text": "hola"}))
     else:
-        r1 = await async_elasticsearch.create("tweets", 1, body={"user": "kimchy", "text": "hola"})
-    r2 = await async_elasticsearch.create(
-        index="tweets", doc_type=document_type, id=2, body={"user": "kimchy", "text": "hola"}, refresh=True
+        pass  # elasticsearch-py 8+ doesn't support positional arguments
+    responses.append(
+        await async_elasticsearch.create(index="tweets", id=iid(), **get_kwargs({"user": "kimchy", "text": "hola"}))
     )
     elasticapm_client.end_transaction("test", "OK")
 
     transaction = elasticapm_client.events[TRANSACTION][0]
 
     spans = elasticapm_client.spans_for_transaction(transaction)
-    assert len(spans) == 2
+    assert len(spans) == len(responses)
 
     for i, span in enumerate(spans):
         if ES_VERSION[0] >= 5:
@@ -130,7 +148,7 @@ async def test_create(instrument, elasticapm_client, async_elasticsearch):
 
 async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
     await async_elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola", "userid": 1}, refresh=True
+        index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola", "userid": 1})
     )
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}
@@ -161,7 +179,7 @@ async def test_search_body(instrument, elasticapm_client, async_elasticsearch):
 
 async def test_count_body(instrument, elasticapm_client, async_elasticsearch):
     await async_elasticsearch.create(
-        index="tweets", doc_type=document_type, id=1, body={"user": "kimchy", "text": "hola"}, refresh=True
+        index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"})
     )
     elasticapm_client.begin_transaction("test")
     search_query = {"query": {"term": {"user": "kimchy"}}}
