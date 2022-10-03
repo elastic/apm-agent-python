@@ -60,3 +60,9 @@ k8s-login: bin/kubectl
 .PHONY: deploy-pods
 deploy-pods: k8s-login
 	$(KUBECTL) apply -f PythonPod.yml
+
+# @help:get-pods:Get the deployed pods in the K8s cluster
+.PHONY: deploy-pods
+get-pods: k8s-login
+	$(KUBECTL) get pods
+	$(KUBECTL) describe pod python-versions-pod
