@@ -32,3 +32,4 @@ tests/python-agent-junit.xml
 .pytest_cache/
 .python-version
 .env
+.k8s/bin
