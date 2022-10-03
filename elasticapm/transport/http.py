@@ -75,6 +75,12 @@ class Transport(HTTPTransportBase):
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
+        headers.update(
+            {
+                b"Content-Type": b"application/x-ndjson",
+                b"Content-Encoding": b"gzip",
+            }
+        )
 
         url = self._url
         if forced_flush:
@@ -146,7 +152,6 @@ class Transport(HTTPTransportBase):
         data = json_encoder.dumps(keys).encode("utf-8")
         headers = self._headers.copy()
         headers[b"Content-Type"] = "application/json"
-        headers.pop(b"Content-Encoding", None)  # remove gzip content-encoding header
         headers.update(self.auth_headers)
         max_age = 300
         if current_version:
@@ -190,7 +195,7 @@ class Transport(HTTPTransportBase):
     def fetch_server_info(self):
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        headers["accept"] = "text/plain"
+        headers[b"accept"] = b"text/plain"
         try:
             response = self.http.urlopen("GET", self._server_info_url, headers=headers, timeout=self._timeout)
             body = response.data

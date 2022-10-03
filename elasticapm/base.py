@@ -140,8 +140,6 @@ class Client(object):
                 logging.setLogRecordFactory(new_factory)
 
         headers = {
-            "Content-Type": "application/x-ndjson",
-            "Content-Encoding": "gzip",
             "User-Agent": self.get_user_agent(),
         }
 
