@@ -293,6 +293,10 @@ class MetricsSet(object):
         pass
 
     def before_yield(self, data):
+        """
+        A methos that is called right before the data is yielded to be sent
+        to Elasticsearch. Can be used to modify the data.
+        """
         return data
 
     def _labels_to_key(self, labels):

@@ -160,3 +160,56 @@ All metrics collected from `prometheus_client` are prefixed with `"prometheus.me
 [[prometheus-metricset-beta]]
 ===== Beta limitations
  * The metrics format may change without backwards compatibility in future releases.
+
+[float]
+[[custom-metrics]]
+=== Custom Metrics
+
+Custom metrics allow you to send your own metrics to Elasticsearch.
+
+The most commond way to send custom metrics is with the Prometheus metrics set.
+See <<prometheus-metricset>> for more information.
+
+However, you can also use your own metrics set. If you collect the metrics
+manually in your code, you can use the base `MetricsSet` class:
+
+[source,python]
+----
+from elasticapm.metrics.base_metrics import MetricsSet
+
+client = elasticapm.Client()
+metrics_set = MetricsSet(client._metrics)
+client._metrics.register("my_awesome_metrics", metrics_set)
+
+for x in range(10):
+    metrics_set.counter("my_counter").inc()
+----
+
+Alternatively, you can create your own MetricsSet class which inherits from the
+base class. In this case, you'll usually want to override the `before_collect`
+method, where you can gather and set metrics before they are collected and sent
+to Elasticsearch.
+
+You can instantiate and add your `MetricsSet` instance as shown in the example above,
+or you can pass in an import string for the class:
+
+[source,python]
+----
+client = elasticapm.Client()
+client._metrics.register("myapp.metrics.MyAwesomeMetricsSet")
+----
+
+Your MetricsSet might look something like this:
+
+[source,python]
+----
+from elasticapm.metrics.base_metrics import MetricsSet
+
+class MyAwesomeMetricsSet(MetricsSet):
+    def before_collect(self):
+        self.gauge("my_gauge").set(myapp.some_value)
+----
+
+In the example above, the MetricsSet would look up `myapp.some_value` and set
+the metric `my_gauge` to that value. This would happen whenever metrics are
+collected/sent, which is controlled by the <<config-metrics_interval, `metrics_interval`>> setting.
