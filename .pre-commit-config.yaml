@@ -1,15 +1,16 @@
 repos:
 -   repo: https://github.com/pycqa/isort
-    rev: 5.7.0
+    rev: 5.10.1
     hooks:
     -   id: isort
 -   repo: https://github.com/ambv/black
-    rev: 22.3.0
+    rev: 22.8.0
     hooks:
     -   id: black
         language_version: python3
+        exclude: elasticapm\/utils\/wrapt
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.2
     hooks:
     -   id: flake8
         exclude: elasticapm\/utils\/wrapt|build|src|tests|dist|conftest.py|setup.py
