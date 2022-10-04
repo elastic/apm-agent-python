@@ -44,13 +44,15 @@ bin/kubectl: bin
 	curl -sSLo "$(BIN_DIR)/kubectl" "https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(ARCH_L)/amd64/kubectl"
 	chmod +x "$(BIN_DIR)/kubectl"
 
+setup: bin/kubectl
+
 ################################
 ## K8s specific helper functions
 ################################
 
 ## @help:k8s-login:Get the credentials of the k8s cluster.
 .PHONY: k8s-login
-k8s-login: bin/kubectl
+k8s-login:
 	@gcloud container clusters get-credentials \
 		--zone $(GCLOUD_K8S_CLUSTER_REGION) \
 		--project $(GCLOUD_K8S_CLUSTER_PROJECT) \
@@ -59,7 +61,7 @@ k8s-login: bin/kubectl
 
 # @help:deploy-pods:Deploy the pods in the K8s cluster
 .PHONY: deploy-pods
-deploy-pods: k8s-login
+deploy-pods:
 	$(KUBECTL) apply -f PythonPod.yml
 
 # @help:undeploy-pods:Deploy the pods in the K8s cluster

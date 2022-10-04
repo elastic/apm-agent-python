@@ -24,7 +24,6 @@ $ VAULT_TOKEN=$(cat ${HOME}/.vault-token) \
     make -C .k8s report-unit-test-results
 ```
 
-
 ### Know what you can do with the existing make
 
 ```bash

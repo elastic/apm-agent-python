@@ -9,20 +9,6 @@ spec:
   - name: python-3-6
     image: python:3.6
     command:
-    - WEBFRAMEWORK=none tests/scripts/run_tests.sh
-  - name: python-3-7
-    image: python:3.7
-    command:
-    - WEBFRAMEWORK=none tests/scripts/run_tests.sh
-  - name: python-3-8
-    image: python:3.8
-    command:
-    - WEBFRAMEWORK=none tests/scripts/run_tests.sh
-  - name: python-3-9
-    image: python:3.9
-    command:
-    - WEBFRAMEWORK=none tests/scripts/run_tests.sh
-  - name: python-3-10
-    image: python:3.10
-    command:
-    - WEBFRAMEWORK=none tests/scripts/run_tests.sh
+    - sleep
+    args:
+    - infinity
