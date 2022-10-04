@@ -31,6 +31,7 @@
 import threading
 import time
 from collections import defaultdict
+from typing import Union
 
 from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
@@ -56,36 +57,43 @@ class MetricsRegistry(ThreadManager):
         self._collect_timer = None
         super(MetricsRegistry, self).__init__()
 
-    def register(self, class_path, instance=None):
+    def register(self, metricset: Union[str, type]) -> "MetricsSet":
         """
         Register a new metric set
 
-        If instance is not None, the class_path will be used as the
-        identifier for the instance, otherwise the class_path will be used to
-        instantiate a new MetricsSet instance.
-
-        :param class_path: a string with the import path of the metricset class
-        :param instance: a MetricsSet instance
+        :param metricset: a string with the import path of the metricset class,
+            or a class object that can be used to instantiate the metricset.
+            If a class object is used, you can use the class object or
+            `metricset.__name__` to retrieve the metricset using `get_metricset`.
+        :return: the metricset instance
         """
-        if instance is None:
-            if class_path in self._metricsets:
-                return
-            else:
-                try:
-                    class_obj = import_string(class_path)
-                    self._metricsets[class_path] = class_obj(self)
-                except ImportError as e:
-                    logger.warning("Could not register %s metricset: %s", class_path, str(e))
-        elif isinstance(instance, MetricsSet):
-            self._metricsets[class_path] = instance
+        class_id = metricset if isinstance(metricset, str) else metricset.__name__
+        if class_id in self._metricsets:
+            return self._metricsets[class_id]
         else:
-            logger.warning(f"Could not register metricset: {instance} is not of type MetricsSet")
+            if isinstance(metricset, str):
+                try:
+                    class_obj = import_string(metricset)
+                    self._metricsets[metricset] = class_obj(self)
+                except ImportError as e:
+                    logger.warning("Could not register %s metricset: %s", metricset, str(e))
+            else:
+                if isinstance(metricset, type):
+                    self._metricsets[class_id] = metricset(self)
+                else:
+                    logger.warning(
+                        "Could not register %s metricset: must be an import "
+                        "path as a string, or a metricset class object",
+                        metricset,
+                    )
+        return self._metricsets.get(class_id)
 
-    def get_metricset(self, class_path):
+    def get_metricset(self, metricset: Union[str, type]) -> "MetricsSet":
+        metricset = metricset if isinstance(metricset, str) else metricset.__name__
         try:
-            return self._metricsets[class_path]
+            return self._metricsets[metricset]
         except KeyError:
-            raise MetricSetNotFound(class_path)
+            raise MetricSetNotFound(metricset)
 
     def collect(self):
         """

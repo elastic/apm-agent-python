@@ -59,7 +59,7 @@ def test_metrics_registry(elasticapm_client):
 @pytest.mark.parametrize("elasticapm_client", [{"metrics_interval": "30s"}], indirect=True)
 def test_metrics_registry_instance(elasticapm_client):
     registry = MetricsRegistry(elasticapm_client)
-    registry.register("DummyMetricSet", DummyMetricSet(registry))
+    registry.register(DummyMetricSet)
     registry.collect()
     assert len(elasticapm_client.events[constants.METRICSET])
 
