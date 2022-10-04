@@ -39,7 +39,7 @@ import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import elasticapm
 from elasticapm.conf import constants
@@ -62,6 +62,7 @@ _time_func = timeit.default_timer
 execution_context = init_execution_context()
 
 SpanType = Union["Span", "DroppedSpan"]
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
 
 
 class ChildDuration(object):
@@ -1056,7 +1057,7 @@ class capture_span(object):
         self.sync = sync
         self.links = links
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
         self.name = self.name or get_name_from_func(func)
 
         @functools.wraps(func)
