@@ -1,0 +1,5 @@
+ARG VERSION
+FROM python:${VERSION}
+WORKDIR /code
+ADD . .
+ENV WEBFRAMEWORK=none

@@ -7,8 +7,20 @@ metadata:
 spec:
   containers:
   - name: python-3-6
-    image: python:3.6
-    command:
-    - sleep
-    args:
-    - infinity
+    image: apm-agent-python-3.6
+    command: [ "tests/scripts/run_tests.sh" ]
+    env:
+    - name: WEBFRAMEWORK
+      value: "none"
+  - name: python-3-7
+    image: apm-agent-python-3.7
+    command: [ "tests/scripts/run_tests.sh" ]
+    env:
+    - name: WEBFRAMEWORK
+      value: "none"
+  - name: python-3-8
+    image: apm-agent-python-3.8
+    command: [ "tests/scripts/run_tests.sh" ]
+    env:
+    - name: WEBFRAMEWORK
+      value: "none"

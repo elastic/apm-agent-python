@@ -30,3 +30,8 @@ $ VAULT_TOKEN=$(cat ${HOME}/.vault-token) \
 $ make -C .k8s help
 ```
 
+## Skaffold
+
+```bash
+$ skaffold dev --default-repo=docker.elastic.co/beats-dev
+```

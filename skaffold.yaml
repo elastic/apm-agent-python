@@ -1,0 +1,38 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: apm-agent-python
+# The list of docker images to be built and in sync with the workspace
+build:
+  artifacts:
+  - image: apm-agent-python-3.6
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        VERSION: "3.6"
+    sync:
+      infer:
+      - '**/*.py'
+  - image: apm-agent-python-3.7
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        VERSION: "3.7"
+    sync:
+      infer:
+      - '**/*.py'
+  - image: apm-agent-python-3.8
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        VERSION: "3.8"
+    sync:
+      infer:
+      - '**/*.py'
+deploy:
+  kubectl:
+    manifests:
+      - .k8s/PythonPod.yml
