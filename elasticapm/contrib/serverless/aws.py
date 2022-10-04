@@ -35,7 +35,7 @@ import json
 import os
 import platform
 import time
-from typing import Optional
+from typing import Optional, TypeVar
 from urllib.parse import urlencode
 
 import elasticapm
@@ -50,6 +50,8 @@ SERVERLESS_HTTP_REQUEST = ("api", "elb")
 logger = get_logger("elasticapm.serverless")
 
 COLD_START = True
+
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
 
 
 class capture_serverless(object):
@@ -93,7 +95,7 @@ class capture_serverless(object):
 
         self.client_kwargs = kwargs
 
-    def __call__(self, func):
+    def __call__(self, func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
         self.name = self.name or get_name_from_func(func)
 
         @functools.wraps(func)

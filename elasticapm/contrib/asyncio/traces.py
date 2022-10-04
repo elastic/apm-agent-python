@@ -30,15 +30,17 @@
 
 import functools
 from types import TracebackType
-from typing import Optional, Type
+from typing import Optional, Type, TypeVar
 
 from elasticapm.conf.constants import LABEL_RE
 from elasticapm.traces import SpanType, capture_span, execution_context
 from elasticapm.utils import get_name_from_func
 
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
+
 
 class async_capture_span(capture_span):
-    def __call__(self, func):
+    def __call__(self, func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
         self.name = self.name or get_name_from_func(func)
 
         @functools.wraps(func)
