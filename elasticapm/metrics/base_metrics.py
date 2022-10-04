@@ -78,14 +78,7 @@ class MetricsRegistry(ThreadManager):
                 except ImportError as e:
                     logger.warning("Could not register %s metricset: %s", metricset, str(e))
             else:
-                if isinstance(metricset, type):
-                    self._metricsets[class_id] = metricset(self)
-                else:
-                    logger.warning(
-                        "Could not register %s metricset: must be an import "
-                        "path as a string, or a metricset class object",
-                        metricset,
-                    )
+                self._metricsets[class_id] = metricset(self)
         return self._metricsets.get(class_id)
 
     def get_metricset(self, metricset: Union[str, type]) -> "MetricsSet":
