@@ -11,6 +11,7 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 * <<cpu-memory-metricset>>
 * <<breakdown-metricset>>
 * <<prometheus-metricset>>
+* <<custom-metrics>>
 
 [float]
 [[cpu-memory-metricset]]
@@ -167,11 +168,10 @@ All metrics collected from `prometheus_client` are prefixed with `"prometheus.me
 
 Custom metrics allow you to send your own metrics to Elasticsearch.
 
-The most common way to send custom metrics is with the Prometheus metrics set.
-See <<prometheus-metricset>> for more information.
-
-However, you can also use your own metrics set. If you collect the metrics
-manually in your code, you can use the base `MetricsSet` class:
+The most common way to send custom metrics is with the
+<<prometheus-metricset,Prometheus metrics set>>.  However, you can also use your
+own metrics set. If you collect the metrics manually in your code, you can use
+the base `MetricsSet` class:
 
 [source,python]
 ----
