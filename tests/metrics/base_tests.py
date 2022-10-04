@@ -36,11 +36,11 @@ import mock
 import pytest
 
 from elasticapm.conf import constants
-from elasticapm.metrics.base_metrics import Counter, Gauge, MetricsRegistry, MetricsSet, NoopMetric, Timer
+from elasticapm.metrics.base_metrics import Counter, Gauge, MetricSet, MetricsRegistry, NoopMetric, Timer
 from tests.utils import assert_any_record_contains
 
 
-class DummyMetricSet(MetricsSet):
+class DummyMetricSet(MetricSet):
     def before_collect(self):
         self.gauge("a.b.c.d").val = 0
         self.gauge("a").val = 0
@@ -79,7 +79,7 @@ def test_disable_metrics(elasticapm_client):
 
 
 def test_metrics_counter(elasticapm_client):
-    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
+    metricset = MetricSet(MetricsRegistry(elasticapm_client))
     metricset.counter("x").inc()
     data = next(metricset.collect())
     assert data["samples"]["x"]["value"] == 1
@@ -95,7 +95,7 @@ def test_metrics_counter(elasticapm_client):
 
 
 def test_metrics_histogram(elasticapm_client):
-    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
+    metricset = MetricSet(MetricsRegistry(elasticapm_client))
     hist = metricset.histogram("x", buckets=[1, 10, 100])
     assert len(hist.buckets) == 4
 
@@ -114,7 +114,7 @@ def test_metrics_histogram(elasticapm_client):
 
 
 def test_metrics_labels(elasticapm_client):
-    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
+    metricset = MetricSet(MetricsRegistry(elasticapm_client))
     metricset.counter("x", mylabel="a").inc()
     metricset.counter("y", mylabel="a").inc()
     metricset.counter("x", mylabel="b").inc().inc()
@@ -137,7 +137,7 @@ def test_metrics_labels(elasticapm_client):
 
 
 def test_metrics_multithreaded(elasticapm_client):
-    metricset = MetricsSet(MetricsRegistry(elasticapm_client))
+    metricset = MetricSet(MetricsRegistry(elasticapm_client))
     pool = Pool(5)
 
     def target():
@@ -155,7 +155,7 @@ def test_metrics_multithreaded(elasticapm_client):
 @pytest.mark.parametrize("sending_elasticapm_client", [{"metrics_interval": "30s"}], indirect=True)
 def test_metrics_flushed_on_shutdown(sending_elasticapm_client):
     # this is ugly, we need an API for this at some point...
-    metricset = MetricsSet(sending_elasticapm_client._metrics)
+    metricset = MetricSet(sending_elasticapm_client._metrics)
     sending_elasticapm_client._metrics._metricsets["foo"] = metricset
     metricset.counter("x").inc()
     sending_elasticapm_client.close()
@@ -172,7 +172,7 @@ def test_metrics_flushed_on_shutdown(sending_elasticapm_client):
 
 @mock.patch("elasticapm.metrics.base_metrics.DISTINCT_LABEL_LIMIT", 3)
 def test_metric_limit(caplog, elasticapm_client):
-    m = MetricsSet(MetricsRegistry(elasticapm_client))
+    m = MetricSet(MetricsRegistry(elasticapm_client))
     with caplog.at_level(logging.WARNING, logger="elasticapm.metrics"):
         for i in range(2):
             counter = m.counter("counter", some_label=i)
@@ -190,7 +190,7 @@ def test_metric_limit(caplog, elasticapm_client):
 
 
 def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
-    m = MetricsSet(MetricsRegistry(elasticapm_client))
+    m = MetricSet(MetricsRegistry(elasticapm_client))
     counter = m.counter("counter", reset_on_collect=False)
     resetting_counter = m.counter("resetting_counter", reset_on_collect=True)
     gauge = m.gauge("gauge", reset_on_collect=False)

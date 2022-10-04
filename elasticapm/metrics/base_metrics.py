@@ -57,7 +57,7 @@ class MetricsRegistry(ThreadManager):
         self._collect_timer = None
         super(MetricsRegistry, self).__init__()
 
-    def register(self, metricset: Union[str, type]) -> "MetricsSet":
+    def register(self, metricset: Union[str, type]) -> "MetricSet":
         """
         Register a new metric set
 
@@ -81,7 +81,7 @@ class MetricsRegistry(ThreadManager):
                 self._metricsets[class_id] = metricset(self)
         return self._metricsets.get(class_id)
 
-    def get_metricset(self, metricset: Union[str, type]) -> "MetricsSet":
+    def get_metricset(self, metricset: Union[str, type]) -> "MetricSet":
         metricset = metricset if isinstance(metricset, str) else metricset.__name__
         try:
             return self._metricsets[metricset]
@@ -126,7 +126,7 @@ class MetricsRegistry(ThreadManager):
         return self.client.config.disable_metrics or []
 
 
-class MetricsSet(object):
+class MetricSet(object):
     def __init__(self, registry):
         self._lock = threading.Lock()
         self._counters = {}
@@ -304,7 +304,7 @@ class MetricsSet(object):
         return tuple((k, str(v)) for k, v in sorted(labels.items()))
 
 
-class SpanBoundMetricSet(MetricsSet):
+class SpanBoundMetricSet(MetricSet):
     def before_yield(self, data):
         tags = data.get("tags", None)
         if tags:

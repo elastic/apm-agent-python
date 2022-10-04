@@ -28,7 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.metrics.base_metrics import MetricsSet
+from elasticapm.metrics.base_metrics import MetricSet
 
 try:
     import psutil
@@ -36,7 +36,7 @@ except ImportError:
     raise ImportError("psutil not found. Install it to get system and process metrics")
 
 
-class CPUMetricSet(MetricsSet):
+class CPUMetricSet(MetricSet):
     def __init__(self, registry):
         psutil.cpu_percent(interval=None)
         self._process = psutil.Process()

@@ -34,7 +34,7 @@ import re
 import resource
 import threading
 
-from elasticapm.metrics.base_metrics import MetricsSet
+from elasticapm.metrics.base_metrics import MetricSet
 
 SYS_STATS = "/proc/stat"
 MEM_STATS = "/proc/meminfo"
@@ -72,7 +72,7 @@ class CGroupFiles(object):
         self.stat = stat if os.access(stat, os.R_OK) else None
 
 
-class CPUMetricSet(MetricsSet):
+class CPUMetricSet(MetricSet):
     def __init__(
         self,
         registry,
