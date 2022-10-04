@@ -294,7 +294,7 @@ class MetricsSet(object):
 
     def before_yield(self, data):
         """
-        A methos that is called right before the data is yielded to be sent
+        A method that is called right before the data is yielded to be sent
         to Elasticsearch. Can be used to modify the data.
         """
         return data
