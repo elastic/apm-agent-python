@@ -9,7 +9,8 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     unixodbc-dev \
     freetds-dev \
     libmemcached-dev \
-    make &&\
+    make \
+    gnupg2 && \
     rm -rf /var/lib/apt/lists/*
 
 # connection to ha.pool.sks-keyservers.net fails sometimes, so let's retry with couple different servers
