@@ -1,5 +1,5 @@
 ARG PYTHON_IMAGE
-FROM ${PYTHON_IMAGE}
+FROM ${PYTHON_IMAGE}-slim
 
 RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     ca-certificates \
