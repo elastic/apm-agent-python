@@ -112,7 +112,10 @@ skaffold-deploy:
 		--label=user.repo=$(GIT_USERNAME)
 
 # @help:skaffold-test:Run the tests in the deployed pods and report the results.
-skaffold-test: skaffold-deploy
+skaffold-test: skaffold-deploy skaffold-wait
+
+# @help:skaffold-wait:Report the results.
+skaffold-wait:
 	K8S_NAMESPACE=$(K8S_NAMESPACE) \
 	GIT_USERNAME=$(GIT_USERNAME) \
 	$(CURDIR)/wait.sh
