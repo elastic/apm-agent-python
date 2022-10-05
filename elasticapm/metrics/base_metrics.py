@@ -511,3 +511,9 @@ noop_metric = NoopMetric("noop")
 class MetricSetNotFound(LookupError):
     def __init__(self, class_path):
         super(MetricSetNotFound, self).__init__("%s metric set not found" % class_path)
+
+
+# This is for backwards compatibility for the brave souls who were using
+# the undocumented system for custom metrics before we fixed it up and
+# documented it.
+MetricsSet = MetricSet
