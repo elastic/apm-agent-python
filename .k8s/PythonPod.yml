@@ -1,39 +1,44 @@
-apiVersion: v1
-kind: Pod
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: python-versions-pod
   labels:
     repo: apm-agent-python
+    type: unit-test
 spec:
-  restartPolicy: Never
-  containers:
-  - name: python-3-6
-    image: apm-agent-python-3.6
-    command: [ "tests/scripts/run_tests.sh" ]
-    env:
-    - name: WEBFRAMEWORK
-      value: "none"
-  - name: python-3-7
-    image: apm-agent-python-3.7
-    command: [ "tests/scripts/run_tests.sh" ]
-    env:
-    - name: WEBFRAMEWORK
-      value: "none"
-  - name: python-3-8
-    image: apm-agent-python-3.8
-    command: [ "tests/scripts/run_tests.sh" ]
-    env:
-    - name: WEBFRAMEWORK
-      value: "none"
-  - name: python-3-9
-    image: apm-agent-python-3.9
-    command: [ "tests/scripts/run_tests.sh" ]
-    env:
-    - name: WEBFRAMEWORK
-      value: "none"
-  - name: python-3-10
-    image: apm-agent-python-3.10
-    command: [ "tests/scripts/run_tests.sh" ]
-    env:
-    - name: WEBFRAMEWORK
-      value: "none"
+  ttlSecondsAfterFinished: 10
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: python-3-6
+        image: apm-agent-python-3.6
+        command: [ "tests/scripts/run_tests.sh" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "none"
+      - name: python-3-7
+        image: apm-agent-python-3.7
+        command: [ "tests/scripts/run_tests.sh" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "none"
+      - name: python-3-8
+        image: apm-agent-python-3.8
+        command: [ "tests/scripts/run_tests.sh" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "none"
+      - name: python-3-9
+        image: apm-agent-python-3.9
+        command: [ "tests/scripts/run_tests.sh" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "none"
+      - name: python-3-10
+        image: apm-agent-python-3.10
+        command: [ "tests/scripts/run_tests.sh" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "none"

@@ -33,3 +33,4 @@ tests/python-agent-junit.xml
 .python-version
 .env
 .k8s/bin
+.k8s/tags.json
