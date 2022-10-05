@@ -178,7 +178,7 @@ the base `MetricSet` class:
 from elasticapm.metrics.base_metrics import MetricSet
 
 client = elasticapm.Client()
-metricset = client._metrics.register(MetricSet)
+metricset = client.metrics.register(MetricSet)
 
 for x in range(10):
     metricset.counter("my_counter").inc()

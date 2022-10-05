@@ -70,7 +70,7 @@ def test_metrics_registry_instance(elasticapm_client):
     indirect=True,
 )
 def test_disable_metrics(elasticapm_client):
-    elasticapm_client._metrics.collect()
+    elasticapm_client.metrics.collect()
     metrics = elasticapm_client.events[constants.METRICSET][0]
     assert "a" in metrics["samples"]
     assert "b" in metrics["samples"]
@@ -155,8 +155,8 @@ def test_metrics_multithreaded(elasticapm_client):
 @pytest.mark.parametrize("sending_elasticapm_client", [{"metrics_interval": "30s"}], indirect=True)
 def test_metrics_flushed_on_shutdown(sending_elasticapm_client):
     # this is ugly, we need an API for this at some point...
-    metricset = MetricSet(sending_elasticapm_client._metrics)
-    sending_elasticapm_client._metrics._metricsets["foo"] = metricset
+    metricset = MetricSet(sending_elasticapm_client.metrics)
+    sending_elasticapm_client.metrics._metricsets["foo"] = metricset
     metricset.counter("x").inc()
     sending_elasticapm_client.close()
     assert sending_elasticapm_client.httpserver.payloads

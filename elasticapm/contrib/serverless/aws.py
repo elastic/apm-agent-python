@@ -225,7 +225,7 @@ class capture_serverless(object):
 
         self.client.end_transaction()
         # Collect any custom+prometheus metrics if enabled
-        self.client._metrics.collect()
+        self.client.metrics.collect()
 
         try:
             logger.debug("flushing elasticapm")
