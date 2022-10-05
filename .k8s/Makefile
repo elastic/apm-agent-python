@@ -100,7 +100,7 @@ skaffold-build:
 # @help:skaffold-deploy:Deploy the pods
 skaffold-deploy:
 	cd ..; \
-	$(SKAFFOLD) deploy --default-repo=docker.elastic.co/beats-dev --build-artifacts=tags.json
+	$(SKAFFOLD) deploy --default-repo=docker.elastic.co/beats-dev --build-artifacts=tags.json --namespace=$(K8S_NAMESPACE)
 
 # @help:skaffold-results:Report results
 skaffold-results:
