@@ -8,7 +8,9 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     odbc-postgresql \
     unixodbc-dev \
     freetds-dev \
-    libmemcached-dev &&\
+    libmemcached-dev \
+    make \
+    gnupg2 && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /code
 ADD . .
