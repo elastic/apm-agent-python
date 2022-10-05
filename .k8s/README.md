@@ -33,5 +33,5 @@ $ make -C .k8s help
 ## Skaffold
 
 ```bash
-$ skaffold dev --default-repo=docker.elastic.co/beats-dev
+$ make -C .k8s skaffold-build skaffold-test
 ```

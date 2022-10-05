@@ -8,6 +8,8 @@ SKAFFOLD ?= skaffold
 PATH := $(BIN_DIR):$(PATH)
 MAKEFLAGS += --silent --no-print-directory
 .SHELLFLAGS = -ec
+GIT_USERNAME ?= $(shell git config user.name | tr -d ' ')
+
 .SILENT:
 
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
@@ -20,6 +22,7 @@ GCLOUD_K8S_CLUSTER_REGION ?= us-central1-c
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 # TODO: GCLOUD specific, maybe it wont't be needed if we are cloud agnostic?
 GCLOUD_K8S_CLUSTER_PROJECT ?= elastic-observability
+DEFAULT_REPO ?= docker.elastic.co/beats-dev
 
 ################################
 ## Helper function
@@ -95,13 +98,20 @@ sync-pods:
 # @help:skaffold-build:Sync workspace with the pods
 skaffold-build:
 	cd ..; \
-	$(SKAFFOLD) build --default-repo=docker.elastic.co/beats-dev --file-output=tags.json
+	$(SKAFFOLD) build \
+		--file-output=$(CURDIR)/tags.json
 
 # @help:skaffold-deploy:Deploy the pods
 skaffold-deploy:
 	cd ..; \
-	$(SKAFFOLD) deploy --default-repo=docker.elastic.co/beats-dev --build-artifacts=tags.json --namespace=$(K8S_NAMESPACE)
+	$(SKAFFOLD) deploy \
+		--default-repo=$(DEFAULT_REPO) \
+		--build-artifacts=$(CURDIR)/tags.json \
+		--namespace=$(K8S_NAMESPACE) \
+		--label=user.repo=$(GIT_USERNAME)
 
-# @help:skaffold-results:Report results
-skaffold-results:
+# @help:skaffold-test:Run the tests in the deployed pods and report the results.
+skaffold-test: skaffold-deploy
+	K8S_NAMESPACE=$(K8S_NAMESPACE) \
+	GIT_USERNAME=$(GIT_USERNAME) \
 	$(CURDIR)/wait.sh
