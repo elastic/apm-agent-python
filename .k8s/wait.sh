@@ -23,13 +23,17 @@ function countTestJobs {
 function finish {
     echo ">> Export logs"
     mkdir -p $BUILD_OUTPUT_DIR
-    POD=$(kubectl get job.batch -o name $BATCH_FILTER $NAMESPACE)
-    for CONTAINER in $(kubectl get job.batch $BATCH_FILTER $NAMESPACE -o jsonpath="{.items[*].spec.template.spec.containers[*].name}")
+    for POD in $(kubectl get job.batch -o name $BATCH_FILTER $NAMESPACE)
     do
-        echo -e "    ${BLUE}Logs for the container $CONTAINER can be found in $BUILD_OUTPUT_DIR/$CONTAINER.out${NC}"
-        kubectl logs $POD --container $CONTAINER $NAMESPACE > $BUILD_OUTPUT_DIR/$CONTAINER.out
-        #echo -e "    ${BLUE}JUnit for the container $CONTAINER can be found in $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml${NC}"
-        #echo "kubectl cp --container $CONTAINER $NAMESPACE $POD:/code/tests/python-agent-junit.xml $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml"
+        POD_NAME=$(basename $POD)
+        mkdir -p $BUILD_OUTPUT_DIR/$POD_NAME
+        for CONTAINER in $(kubectl get job.batch --field-selector metadata.name=$POD_NAME $BATCH_FILTER $NAMESPACE -o jsonpath="{.items[*].spec.template.spec.containers[*].name}")
+        do
+            echo -e "    ${BLUE}Logs for the container $POD_NAME:$CONTAINER can be found in $BUILD_OUTPUT_DIR/$POD_NAME/$CONTAINER.out${NC}"
+            kubectl logs $POD --container $CONTAINER $NAMESPACE > $BUILD_OUTPUT_DIR/$POD_NAME/$CONTAINER.out
+            #echo -e "    ${BLUE}JUnit for the container $CONTAINER can be found in $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml${NC}"
+            #echo "kubectl cp --container $CONTAINER $NAMESPACE $POD:/code/tests/python-agent-junit.xml $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml"
+        done
     done
     echo -e "    ${GREEN}Exported${NC}"
 }
