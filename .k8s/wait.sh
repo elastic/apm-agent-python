@@ -8,6 +8,10 @@ set -euo pipefail
 BUILD_OUTPUT_DIR="../build"
 BATCH_FILTER="-l repo=apm-agent-python,type=unit-test,user.repo=${GIT_USERNAME}"
 NAMESPACE="--namespace ${K8S_NAMESPACE}"
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 ##########################
 ### Functions
@@ -22,9 +26,10 @@ function finish {
     POD=$(kubectl get job.batch -o name $BATCH_FILTER $NAMESPACE)
     for CONTAINER in $(kubectl get job.batch $BATCH_FILTER $NAMESPACE -o jsonpath="{.items[*].spec.template.spec.containers[*].name}")
     do
-        echo ">>> Logs for the container $CONTAINER can be found in $BUILD_OUTPUT_DIR/$CONTAINER.out"
+        echo -e "    ${BLUE}Logs for the container $CONTAINER can be found in $BUILD_OUTPUT_DIR/$CONTAINER.out${NC}"
         kubectl logs $POD --container $CONTAINER $NAMESPACE > $BUILD_OUTPUT_DIR/$CONTAINER.out
     done
+    echo -e "    ${GREEN}Exported${NC}"
 }
 trap finish SIGINT SIGTERM ERR EXIT
 
@@ -34,6 +39,7 @@ function waitForJobsToStart {
         jobcount=$(countTestJobs)
         sleep 5
     done
+    echo -e "    ${GREEN}Started${NC}"
 }
 
 # See https://stackoverflow.com/questions/55073453/wait-for-kubernetes-job-to-complete-on-either-failure-success-using-command-line
@@ -53,10 +59,10 @@ function waitForCompletion {
     # store exit code in variable
     exit_code=$?
 
-    if (( $exit_code == 0 )); then
-      echo ">>> Job completed"
+    if [ $exit_code -eq 0 ]; then
+        echo -e "    ${GREEN}Job completed${NC}"
     else
-      echo ">>> Job failed with exit code ${exit_code}, exiting..."
+        echo -e "    ${RED}Job failed with exit code ${exit_code}, ${NC}exiting..."
     fi
     exit $exit_code
 }
