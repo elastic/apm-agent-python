@@ -13,7 +13,7 @@ build:
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
-        VERSION: "3.6"
+        PYTHON_VERSION: "3.6"
     sync:
       infer:
       - '**/*.py'
@@ -22,7 +22,7 @@ build:
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
-        VERSION: "3.7"
+        PYTHON_VERSION: "3.7"
     sync:
       infer:
       - '**/*.py'
@@ -31,7 +31,7 @@ build:
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
-        VERSION: "3.8"
+        PYTHON_VERSION: "3.8"
     sync:
       infer:
       - '**/*.py'
@@ -40,7 +40,7 @@ build:
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
-        VERSION: "3.9"
+        PYTHON_VERSION: "3.9"
     sync:
       infer:
       - '**/*.py'
@@ -49,7 +49,7 @@ build:
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
-        VERSION: "3.10"
+        PYTHON_VERSION: "3.10"
     sync:
       infer:
       - '**/*.py'

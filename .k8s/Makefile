@@ -99,6 +99,7 @@ sync-pods:
 skaffold-build:
 	cd ..; \
 	$(SKAFFOLD) build \
+		--default-repo=$(DEFAULT_REPO) \
 		--file-output=$(CURDIR)/tags.json
 
 # @help:skaffold-deploy:Deploy the pods
