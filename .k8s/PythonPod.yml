@@ -6,7 +6,7 @@ metadata:
     repo: apm-agent-python
     type: unit-test
 spec:
-  ttlSecondsAfterFinished: 10
+  ttlSecondsAfterFinished: 120
   backoffLimit: 0
   template:
     spec:
