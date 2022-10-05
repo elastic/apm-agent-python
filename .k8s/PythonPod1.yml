@@ -1,13 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: apm-agen-python-none
+  name: apm-agen-python-flask-2.0
   labels:
     repo: apm-agent-python
     type: unit-test
-    framework: none
+    framework: flask-2.0
 spec:
-  ttlSecondsAfterFinished: 300
+  ttlSecondsAfterFinished: 30
   backoffLimit: 0
   template:
     spec:
@@ -18,28 +18,28 @@ spec:
         command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
-          value: "none"
+          value: "flask-2.0"
       - name: python-3-7
         image: apm-agent-python-3.7
         command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
-          value: "none"
+          value: "flask-2.0"
       - name: python-3-8
         image: apm-agent-python-3.8
         command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
-          value: "none"
+          value: "flask-2.0"
       - name: python-3-9
         image: apm-agent-python-3.9
         command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
-          value: "none"
+          value: "flask-2.0"
       - name: python-3-10
         image: apm-agent-python-3.10
         command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
-          value: "none"
+          value: "flask-2.0"

@@ -56,4 +56,4 @@ build:
 deploy:
   kubectl:
     manifests:
-      - .k8s/PythonPod.yml
+      - .k8s/PythonPod*
