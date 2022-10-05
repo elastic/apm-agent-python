@@ -4,6 +4,7 @@ ARCH_L = $(shell uname|tr '[:upper:]' '[:lower:]')
 BIN_DIR ?= $(CURDIR)/bin
 KUBECTL_VERSION ?= $(shell curl -sSf https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 KUBECTL ?= $(BIN_DIR)/kubectl
+SKAFFOLD ?= skaffold
 PATH := $(BIN_DIR):$(PATH)
 MAKEFLAGS += --silent --no-print-directory
 .SHELLFLAGS = -ec
@@ -86,3 +87,21 @@ ssh-pod-%:
 # @help:sync-pods:Sync workspace with the pods
 sync-pods:
 	$(KUBECTL) cp ./ $(K8S_POD_NAME):/src
+
+################################
+## Skaffold specific helper functions
+################################
+
+# @help:skaffold-build:Sync workspace with the pods
+skaffold-build:
+	cd ..; \
+	$(SKAFFOLD) build --default-repo=docker.elastic.co/beats-dev --file-output=tags.json
+
+# @help:skaffold-deploy:Deploy the pods
+skaffold-deploy:
+	cd ..; \
+	$(SKAFFOLD) deploy --default-repo=docker.elastic.co/beats-dev --build-artifacts=tags.json
+
+# @help:skaffold-results:Report results
+skaffold-results:
+	$(CURDIR)/wait.sh
