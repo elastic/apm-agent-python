@@ -4,6 +4,9 @@ metadata:
   name: apm-agent-python
 # The list of docker images to be built and in sync with the workspace
 build:
+  local:
+    tryImportMissing: false
+    concurrency: 0
   artifacts:
   - image: apm-agent-python-3.6
     context: .
