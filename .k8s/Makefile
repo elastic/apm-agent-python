@@ -6,7 +6,7 @@ KUBECTL_VERSION ?= $(shell curl -sSf https://storage.googleapis.com/kubernetes-r
 KUBECTL ?= $(BIN_DIR)/kubectl
 SKAFFOLD ?= skaffold
 PATH := $(BIN_DIR):$(PATH)
-MAKEFLAGS += --silent --no-print-directory
+#MAKEFLAGS += --silent --no-print-directory
 .SHELLFLAGS = -ec
 GIT_USERNAME ?= $(shell git config user.name | tr -d ' ')
 
@@ -94,6 +94,16 @@ sync-pods:
 ################################
 ## Skaffold specific helper functions
 ################################
+# @help:skaffold-docker-base:Generate the docker base image
+skaffold-docker-base:
+	for number in "3.6" "3.7" "3.8" "3.9" "3.10" ; do \
+		$(MAKE) skaffold-base-$$number ; \
+	done
+
+skaffold-base-%:
+	cd ../tests; \
+	docker build --build-arg PYTHON_IMAGE=python:$* -t $(DEFAULT_REPO)/apm-agent-python:$* . ; \
+	docker push $(DEFAULT_REPO)/apm-agent-python:$*
 
 # @help:skaffold-build:Sync workspace with the pods
 skaffold-build:
