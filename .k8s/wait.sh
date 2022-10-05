@@ -31,7 +31,7 @@ function finish {
     done
     echo -e "    ${GREEN}Exported${NC}"
 }
-trap finish SIGINT SIGTERM ERR EXIT
+trap finish ERR EXIT
 
 function waitForJobsToStart {
     jobcount=0
@@ -44,27 +44,27 @@ function waitForJobsToStart {
 
 # See https://stackoverflow.com/questions/55073453/wait-for-kubernetes-job-to-complete-on-either-failure-success-using-command-line
 function waitForCompletion {
-    TIMEOUT_FLAG="--timeout=600s"
+    while true; do
+        echo -e "    ${BLUE}is job completed/failed?${NC}"
+        if kubectl wait job.batch --for=condition=complete --timeout=0 $BATCH_FILTER $NAMESPACE 2>/dev/null; then
+            job_result=0
+            break
+        fi
 
-    # wait for completion as background process - capture PID
-    kubectl wait job.batch --for=condition=complete $TIMEOUT_FLAG $BATCH_FILTER $NAMESPACE &
-    completion_pid=$!
+        if kubectl wait job.batch --for=condition=failed --timeout=0 $BATCH_FILTER $NAMESPACE 2>/dev/null; then
+            job_result=1
+            break
+        fi
 
-    # wait for failure as background process - capture PID
-    kubectl wait job.batch --for=condition=failed $TIMEOUT_FLAG $BATCH_FILTER $NAMESPACE && exit 1 &
-    failure_pid=$!
+        sleep 10
+    done
 
-    # capture exit code of the first subprocess to exit
-    wait -n $completion_pid $failure_pid
-    # store exit code in variable
-    exit_code=$?
-
-    if [ $exit_code -eq 0 ]; then
+    if [[ $job_result -eq 0 ]]; then
         echo -e "    ${GREEN}Job completed${NC}"
     else
-        echo -e "    ${RED}Job failed with exit code ${exit_code}, ${NC}exiting..."
+        echo -e "    ${RED}Job failed with exit code ${job_result}, ${NC}exiting..."
+        exit $job_result
     fi
-    exit $exit_code
 }
 
 ##########################
