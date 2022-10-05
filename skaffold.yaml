@@ -32,6 +32,24 @@ build:
     sync:
       infer:
       - '**/*.py'
+  - image: apm-agent-python-3.9
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        VERSION: "3.9"
+    sync:
+      infer:
+      - '**/*.py'
+  - image: apm-agent-python-3.10
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        VERSION: "3.10"
+    sync:
+      infer:
+      - '**/*.py'
 deploy:
   kubectl:
     manifests:

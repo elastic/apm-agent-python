@@ -5,6 +5,7 @@ metadata:
   labels:
     repo: apm-agent-python
 spec:
+  restartPolicy: Never
   containers:
   - name: python-3-6
     image: apm-agent-python-3.6
@@ -20,6 +21,18 @@ spec:
       value: "none"
   - name: python-3-8
     image: apm-agent-python-3.8
+    command: [ "tests/scripts/run_tests.sh" ]
+    env:
+    - name: WEBFRAMEWORK
+      value: "none"
+  - name: python-3-9
+    image: apm-agent-python-3.9
+    command: [ "tests/scripts/run_tests.sh" ]
+    env:
+    - name: WEBFRAMEWORK
+      value: "none"
+  - name: python-3-10
+    image: apm-agent-python-3.10
     command: [ "tests/scripts/run_tests.sh" ]
     env:
     - name: WEBFRAMEWORK
