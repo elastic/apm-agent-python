@@ -8,7 +8,8 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     odbc-postgresql \
     unixodbc-dev \
     freetds-dev \
-    libmemcached-dev &&\
+    libmemcached-dev \
+    make &&\
     rm -rf /var/lib/apt/lists/*
 
 # connection to ha.pool.sks-keyservers.net fails sometimes, so let's retry with couple different servers
