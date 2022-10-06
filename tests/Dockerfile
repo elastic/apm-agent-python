@@ -5,8 +5,8 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     build-essential \
     ca-certificates \
     curl \
+    default-mysql-server \
     gnupg2 \
-    libmysqlclient-dev \
     libpq-dev \
     make \
     netcat \
