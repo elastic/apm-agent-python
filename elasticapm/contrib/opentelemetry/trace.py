@@ -36,7 +36,7 @@ from typing import Any, Iterator, Mapping, Optional, Sequence
 
 from opentelemetry import trace as trace_api
 from opentelemetry.sdk import trace as oteltrace
-from opentelemetry.trace import Context, SpanKind
+from opentelemetry.trace import Context, Link, SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util import types
@@ -76,7 +76,7 @@ class Tracer(oteltrace.Tracer):
         context: Optional[Context] = None,
         kind: SpanKind = SpanKind.INTERNAL,
         attributes: types.Attributes = None,
-        links: Optional[Sequence[Any]] = None,
+        links: Optional[Sequence[Link]] = None,
         start_time: Optional[int] = None,
         record_exception: bool = True,
         set_status_on_exception: bool = True,
@@ -116,8 +116,6 @@ class Tracer(oteltrace.Tracer):
         Returns:
             The newly-created span.
         """
-        if links:
-            logger.warning("The opentelemetry bridge does not support links at this time.")
         if not record_exception:
             logger.warning("record_exception was set to False, but exceptions will still be recorded for this span.")
 
@@ -130,6 +128,7 @@ class Tracer(oteltrace.Tracer):
         current_transaction = execution_context.get_transaction()
         client = self.client
 
+        elastic_links = tuple(get_traceparent(link.context) for link in links) if links else None
         if traceparent and current_transaction:
             logger.warning(
                 "Remote context included when a transaction was already active. "
@@ -137,7 +136,7 @@ class Tracer(oteltrace.Tracer):
             )
         elif traceparent:
             elastic_span = client.begin_transaction(
-                "otel", traceparent=traceparent, start=start_time, auto_activate=False
+                "otel", trace_parent=traceparent, start=start_time, auto_activate=False, links=elastic_links
             )
             span = Span(
                 name=name,
@@ -147,7 +146,7 @@ class Tracer(oteltrace.Tracer):
             )
             span.set_attributes(attributes)
         elif not current_transaction:
-            elastic_span = client.begin_transaction("otel", start=start_time, auto_activate=False)
+            elastic_span = client.begin_transaction("otel", start=start_time, auto_activate=False, links=elastic_links)
             span = Span(
                 name=name,
                 elastic_span=elastic_span,
@@ -156,7 +155,9 @@ class Tracer(oteltrace.Tracer):
             )
             span.set_attributes(attributes)
         else:
-            elastic_span = current_transaction.begin_span(name, "otel", start=start_time, auto_activate=False)
+            elastic_span = current_transaction.begin_span(
+                name, "otel", start=start_time, auto_activate=False, links=elastic_links
+            )
             span = Span(
                 name=name,
                 elastic_span=elastic_span,
@@ -176,7 +177,7 @@ class Tracer(oteltrace.Tracer):
         context: Optional[Context] = None,
         kind: SpanKind = SpanKind.INTERNAL,
         attributes: types.Attributes = None,
-        links: Optional[Sequence[Any]] = None,
+        links: Optional[Sequence[Link]] = None,
         start_time: Optional[int] = None,
         record_exception: bool = True,
         set_status_on_exception: bool = True,

@@ -155,7 +155,7 @@ class Span(oteltrace.Span):
         Returns true if this Span is active and recording information like
         events with the add_event operation and attributes using set_attribute.
         """
-        self.elastic_span.transaction.is_sampled
+        return self.elastic_span.transaction.is_sampled and not self.elastic_span.ended_time
 
     def set_status(self, status: Status) -> None:
         """Sets the Status of the Span. If used, this will override the default
@@ -238,11 +238,11 @@ class Span(oteltrace.Span):
                     port = http_port_from_scheme(u.scheme)
                     return u.netloc if not port else "{}:{}".format(u.netloc, port)
 
-            peer_port = attributes.get("net.peer.port", -1)
-            net_name = attributes.get("net.peer.name", attributes.get("net.peer.ip", ""))
+            net_port = attributes.get("net.peer.port", -1)
+            net_name = net_peer = attributes.get("net.peer.name", attributes.get("net.peer.ip", ""))
 
-            if net_name and (peer_port > 0):
-                net_name = "{}:{}".format(net_name, peer_port)
+            if net_name and (net_port > 0):
+                net_name = f"{net_name}:{net_port}"
 
             if attributes.get("db.system"):
                 span_type = "db"
@@ -267,8 +267,11 @@ class Span(oteltrace.Span):
             elif attributes.get("http.url") or attributes.get("http.scheme"):
                 span_type = "external"
                 span_subtype = "http"
-                if attributes.get("http.host") and attributes.get("http.scheme"):
-                    resource = "{}:{}".format(attributes["http.host"], attributes["http.scheme"])
+                http_host = attributes.get("http.host", net_peer)
+                if http_host:
+                    if net_port < 0:
+                        net_port = http_port_from_scheme(attributes.get("http.scheme"))
+                    resource = http_host if net_port < 0 else f"{http_host}:{net_port}"
                 elif attributes.get("http.url"):
                     resource = parse_net_name(attributes["http.url"])
 

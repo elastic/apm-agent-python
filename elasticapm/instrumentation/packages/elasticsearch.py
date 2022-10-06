@@ -31,6 +31,8 @@
 from __future__ import absolute_import
 
 import re
+from typing import Optional
+from urllib.parse import parse_qs, urlparse
 
 import elasticapm
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
@@ -45,29 +47,45 @@ should_capture_body_re = re.compile("/(_search|_msearch|_count|_async_search|_sq
 class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
-    instrument_list = [
-        ("elasticsearch.connection.http_urllib3", "Urllib3HttpConnection.perform_request"),
-        ("elasticsearch.connection.http_requests", "RequestsHttpConnection.perform_request"),
-    ]
+    def get_instrument_list(self):
+        try:
+            import elastic_transport  # noqa: F401
+
+            return [
+                ("elastic_transport._node._http_urllib3", "Urllib3HttpNode.perform_request"),
+                ("elastic_transport._node._http_requests", "RequestsHttpNode.perform_request"),
+            ]
+        except ImportError:
+            return [
+                ("elasticsearch.connection.http_urllib3", "Urllib3HttpConnection.perform_request"),
+                ("elasticsearch.connection.http_requests", "RequestsHttpConnection.perform_request"),
+            ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
-        if isinstance(span, DroppedSpan):
+        if not span or isinstance(span, DroppedSpan):
             return wrapped(*args, **kwargs)
 
         self._update_context_by_request_data(span.context, instance, args, kwargs)
 
-        status_code, headers, raw_data = wrapped(*args, **kwargs)
-
+        result = wrapped(*args, **kwargs)
+        if hasattr(result, "meta"):  # elasticsearch-py 8.x+
+            status_code = result.meta.status
+        else:
+            status_code = result[0]
         span.context["http"] = {"status_code": status_code}
 
-        return status_code, headers, raw_data
+        return result
 
     def _update_context_by_request_data(self, context, instance, args, kwargs):
         args_len = len(args)
         url = args[1] if args_len > 1 else kwargs.get("url")
         params = args[2] if args_len > 2 else kwargs.get("params")
         body_serialized = args[3] if args_len > 3 else kwargs.get("body")
+
+        if "?" in url and not params:
+            url, qs = url.split("?", 1)
+            params = {k: v[0] for k, v in parse_qs(qs).items()}
 
         should_capture_body = bool(should_capture_body_re.search(url))
 
@@ -78,9 +96,12 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             # but not in others. We simply capture both if they are there so the
             # user can see it.
             if params and "q" in params:
-                # 'q' is already encoded to a byte string at this point
-                # we assume utf8, which is the default
-                query.append("q=" + params["q"].decode("utf-8", errors="replace"))
+                # 'q' may already be encoded to a byte string at this point.
+                # We assume utf8, which is the default
+                q = params["q"]
+                if isinstance(q, bytes):
+                    q = q.decode("utf-8", errors="replace")
+                query.append("q=" + q)
             if body_serialized:
                 if isinstance(body_serialized, bytes):
                     query.append(body_serialized.decode("utf-8", errors="replace"))
@@ -89,17 +110,40 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
             if query:
                 context["db"]["statement"] = "\n\n".join(query)
 
-        context["destination"] = {
-            "address": instance.host,
-        }
+        # ES5: `host` is URL, no `port` attribute
+        # ES6, ES7: `host` URL, `hostname` is host, `port` is port
+        # ES8: `host` is hostname, no `hostname` attribute, `port` is `port`
+        if not hasattr(instance, "port"):
+            # ES5, parse hostname and port from URL stored in `host`
+            parsed_url = urlparse(instance.host)
+            host = parsed_url.hostname
+            port = parsed_url.port
+        elif not hasattr(instance, "hostname"):
+            # ES8 (and up, one can hope)
+            host = instance.host
+            port = instance.port
+        else:
+            # ES6, ES7
+            host = instance.hostname
+            port = instance.port
+
+        context["destination"] = {"address": host, "port": port}
 
 
 class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
-    instrument_list = [
-        ("elasticsearch.transport", "Transport.perform_request"),
-    ]
+    def get_instrument_list(self):
+        try:
+            import elastic_transport  # noqa: F401
+
+            return [
+                ("elastic_transport", "Transport.perform_request"),
+            ]
+        except ImportError:
+            return [
+                ("elasticsearch.transport", "Transport.perform_request"),
+            ]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         with elasticapm.capture_span(
@@ -113,10 +157,9 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
         ) as span:
             result_data = wrapped(*args, **kwargs)
 
-            try:
-                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
-            except (KeyError, TypeError):
-                pass
+            hits = self._get_hits(result_data)
+            if hits:
+                span.context["db"]["rows_affected"] = hits
 
             return result_data
 
@@ -124,5 +167,16 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
         args_len = len(args)
         http_method = args[0] if args_len else kwargs.get("method")
         http_path = args[1] if args_len > 1 else kwargs.get("url")
+        http_path = http_path.split("?", 1)[0]  # we don't want to capture a potential query string in the span name
 
         return "ES %s %s" % (http_method, http_path)
+
+    def _get_hits(self, result) -> Optional[int]:
+        if getattr(result, "body", None) and "hits" in result.body:  # ES >= 8
+            return result.body["hits"]["total"]["value"]
+        elif isinstance(result, dict) and "hits" in result:
+            return (
+                result["hits"]["total"]["value"]
+                if isinstance(result["hits"]["total"], dict)
+                else result["hits"]["total"]
+            )

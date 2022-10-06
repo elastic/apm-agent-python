@@ -68,6 +68,8 @@ def test_httpx_instrumentation(instrument, elasticapm_client, waiting_httpserver
         "resource": "127.0.0.1:%d" % parsed_url.port,
         "type": "",
     }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{parsed_url.port}"
 
     headers = waiting_httpserver.requests[0].headers
     assert constants.TRACEPARENT_HEADER_NAME in headers

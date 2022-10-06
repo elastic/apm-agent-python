@@ -246,7 +246,7 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     # test error
     with caplog.at_level("ERROR", "elasticapm.transport"):
         sending_elasticapm_client.capture_message("foo", handled=False)
-    sending_elasticapm_client._transport.flush()
+    sending_elasticapm_client._transport._flushed.wait(timeout=1)
     assert sending_elasticapm_client._transport.state.did_fail()
     assert_any_record_contains(caplog.records, "go away")
 
@@ -536,3 +536,7 @@ def test_check_server_version(elasticapm_client):
 )
 def test_user_agent(elasticapm_client, expected):
     assert elasticapm_client.get_user_agent() == "apm-agent-python/unknown (myapp{})".format(expected)
+
+
+def test_label_without_client():
+    elasticapm.label(foo="foo")

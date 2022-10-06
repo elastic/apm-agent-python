@@ -87,8 +87,14 @@ class RedisConnectionInstrumentation(AbstractInstrumentedModule):
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
-        if span and span.subtype == "aioredis":
+        db_context = None
+        if args and len(args) > 1:
+            func_name = args[0].decode("utf-8") if isinstance(args[0], bytes) else args[0]
+            db_context = {"type": "query", "statement": "{} {}".format(func_name, args[1])}
+        if span and span.subtype == self.name:
             span.context["destination"] = _get_destination_info(instance)
+            if db_context:
+                span.context["db"] = db_context
         return wrapped(*args, **kwargs)
 
 
@@ -96,10 +102,10 @@ def _get_destination_info(connection):
     destination_info = {"service": {"name": "", "resource": "redis", "type": ""}}
 
     if hasattr(connection, "_pool_or_conn"):
-        destination_info["port"] = connection._pool_or_conn.address[1]
+        destination_info["port"] = int(connection._pool_or_conn.address[1])
         destination_info["address"] = connection._pool_or_conn.address[0]
     else:
-        destination_info["port"] = connection.address[1]
+        destination_info["port"] = int(connection.address[1])
         destination_info["address"] = connection.address[0]
 
     return destination_info

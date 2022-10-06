@@ -71,6 +71,8 @@ def test_urllib3(instrument, elasticapm_client, waiting_httpserver):
         "resource": "127.0.0.1:%d" % parsed_url.port,
         "type": "",
     }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{parsed_url.port}"
     assert spans[0]["parent_id"] == spans[1]["id"]
     assert spans[0]["outcome"] == "success"
 
@@ -278,7 +280,7 @@ def test_instance_headers_are_respected(
         kwargs = {"headers": {"kwargs": "true"}}
     else:
         kwargs = {}
-    r = pool.urlopen(*args, **kwargs)
+    r = pool.request(*args, **kwargs)
     request_headers = waiting_httpserver.requests[0].headers
     # all combinations should have the "traceparent" header
     assert "traceparent" in request_headers, (instance_headers, header_arg, header_kwarg)

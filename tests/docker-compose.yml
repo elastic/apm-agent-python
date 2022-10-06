@@ -41,6 +41,8 @@ services:
 
   mongodb36:
     image: mongo:3.6
+    ports:
+      - "27017:27017"
     volumes:
       - pymongodata36:/data/db
 
@@ -64,7 +66,7 @@ services:
       - pyesdata6:/usr/share/elasticsearch/data
 
   elasticsearch7:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200"]
     environment:
@@ -75,6 +77,22 @@ services:
       - "xpack.security.enabled=false"
     volumes:
       - pyesdata7:/usr/share/elasticsearch/data
+
+  elasticsearch8:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+    ports:
+      - "9200:9200"
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "network.host=_site_"
+      - "transport.host=127.0.0.1"
+      - "http.host=0.0.0.0"
+      - "xpack.security.enabled=false"
+      - "action.destructive_requires_name=false" # allow for easy cleanup by calling DELETE *
+    volumes:
+      - pyesdata8:/usr/share/elasticsearch/data
 
   elasticsearch5:
     image: docker.elastic.co/elasticsearch/elasticsearch:5.6.16
@@ -139,9 +157,30 @@ services:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: docker.io/bitnami/kafka:3.1
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
   run_tests:
     image: apm-agent-python:${PYTHON_VERSION}
     environment:
+      ES_8_URL: 'http://elasticsearch8:9200'
       ES_7_URL: 'http://elasticsearch7:9200'
       ES_6_URL: 'http://elasticsearch6:9200'
       ES_5_URL: 'http://elasticsearch5:9200'
@@ -161,6 +200,8 @@ volumes:
     driver: local
   pyesdata7:
     driver: local
+  pyesdata8:
+    driver: local
   pyesdata6:
     driver: local
   pyesdata5:
@@ -172,4 +213,8 @@ volumes:
   pymssqldata:
     driver: local
   mysqldata:
+    driver: local
+  zookeeper_data:
+    driver: local
+  kafka_data:
     driver: local

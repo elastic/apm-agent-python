@@ -34,27 +34,41 @@ from elasticapm.instrumentation.packages.elasticsearch import (
     ElasticsearchConnectionInstrumentation,
     ElasticsearchTransportInstrumentation,
 )
-from elasticapm.traces import execution_context
+from elasticapm.traces import DroppedSpan, execution_context
 
 
 class ElasticSearchAsyncConnection(ElasticsearchConnectionInstrumentation, AsyncAbstractInstrumentedModule):
     name = "elasticsearch_connection"
 
-    instrument_list = [
-        ("elasticsearch_async.connection", "AIOHttpConnection.perform_request"),
-        ("elasticsearch._async.http_aiohttp", "AIOHttpConnection.perform_request"),
-    ]
+    def get_instrument_list(self):
+        try:
+            import elastic_transport  # noqa: F401
+
+            return [
+                ("elastic_transport._node._http_aiohttp", "AiohttpHttpNode.perform_request"),
+            ]
+        except ImportError:
+            return [
+                ("elasticsearch_async.connection", "AIOHttpConnection.perform_request"),
+                ("elasticsearch._async.http_aiohttp", "AIOHttpConnection.perform_request"),
+            ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         span = execution_context.get_span()
+        if not span or isinstance(span, DroppedSpan):
+            return wrapped(*args, **kwargs)
 
         self._update_context_by_request_data(span.context, instance, args, kwargs)
 
-        status_code, headers, raw_data = await wrapped(*args, **kwargs)
+        result = await wrapped(*args, **kwargs)
+        if hasattr(result, "meta"):  # elasticsearch-py 8.x+
+            status_code = result.meta.status
+        else:
+            status_code = result[0]
 
         span.context["http"] = {"status_code": status_code}
 
-        return status_code, headers, raw_data
+        return result
 
 
 class ElasticsearchAsyncTransportInstrumentation(
@@ -65,6 +79,18 @@ class ElasticsearchAsyncTransportInstrumentation(
     instrument_list = [
         ("elasticsearch._async.transport", "AsyncTransport.perform_request"),
     ]
+
+    def get_instrument_list(self):
+        try:
+            import elastic_transport  # noqa: F401
+
+            return [
+                ("elastic_transport", "AsyncTransport.perform_request"),
+            ]
+        except ImportError:
+            return [
+                ("elasticsearch._async.transport", "AsyncTransport.perform_request"),
+            ]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         async with elasticapm.async_capture_span(
@@ -78,7 +104,8 @@ class ElasticsearchAsyncTransportInstrumentation(
         ) as span:
             result_data = await wrapped(*args, **kwargs)
 
-            if isinstance(result_data, dict) and "hits" in result_data:
-                span.context["db"]["rows_affected"] = result_data["hits"]["total"]["value"]
+            hits = self._get_hits(result_data)
+            if hits:
+                span.context["db"]["rows_affected"] = hits
 
             return result_data

@@ -36,6 +36,7 @@ import os
 import socket
 
 from cassandra.cluster import Cluster
+from cassandra.protocol import ConfigurationException
 from cassandra.query import SimpleStatement
 
 from elasticapm.conf.constants import TRANSACTION
@@ -57,6 +58,11 @@ def cassandra_cluster():
 @pytest.fixture()
 def cassandra_session(cassandra_cluster):
     session = cassandra_cluster.connect()
+    try:
+        # make sure the keyspace doesn't exist
+        session.execute("DROP KEYSPACE testkeyspace;")
+    except ConfigurationException:
+        pass
     session.execute(
         """
         CREATE KEYSPACE testkeyspace
@@ -89,6 +95,38 @@ def test_cassandra_connect(instrument, elasticapm_client, cassandra_cluster):
     }
 
 
+def test_cassandra_connect_keyspace(instrument, elasticapm_client, cassandra_cluster):
+    session = cassandra_cluster.connect()
+    try:
+        session.execute(
+            """
+            CREATE KEYSPACE testkeyspace
+            WITH REPLICATION = { 'class' : 'SimpleStrategy' ,'replication_factor' : 1 }
+        """
+        )
+        elasticapm_client.begin_transaction("transaction.test")
+        sess = cassandra_cluster.connect("testkeyspace")
+        elasticapm_client.end_transaction("test")
+    finally:
+        session.execute("DROP KEYSPACE testkeyspace;")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+
+    assert span["type"] == "db"
+    assert span["subtype"] == "cassandra"
+    assert span["action"] == "connect"
+    assert span["duration"] > 0
+    assert span["name"] == "Cluster.connect"
+    assert span["context"]["destination"] == {
+        "address": socket.gethostbyname(os.environ.get("CASSANDRA_HOST", "localhost")),
+        "port": 9042,
+        "service": {"name": "", "resource": "cassandra/testkeyspace", "type": ""},
+    }
+    assert span["context"]["service"]["target"]["type"] == "cassandra"
+    assert span["context"]["service"]["target"]["name"] == "testkeyspace"
+
+
 def test_select_query_string(instrument, cassandra_session, elasticapm_client):
     elasticapm_client.begin_transaction("transaction.test")
     cassandra_session.execute("SELECT name from users")
@@ -99,12 +137,14 @@ def test_select_query_string(instrument, cassandra_session, elasticapm_client):
     assert span["subtype"] == "cassandra"
     assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
-    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql"}
+    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql", "instance": "testkeyspace"}
     assert span["context"]["destination"] == {
         "address": socket.gethostbyname(os.environ.get("CASSANDRA_HOST", "localhost")),
         "port": 9042,
-        "service": {"name": "", "resource": "cassandra", "type": ""},
+        "service": {"name": "", "resource": "cassandra/testkeyspace", "type": ""},
     }
+    assert span["context"]["service"]["target"]["type"] == "cassandra"
+    assert span["context"]["service"]["target"]["name"] == "testkeyspace"
 
 
 def test_select_simple_statement(instrument, cassandra_session, elasticapm_client):
@@ -118,7 +158,7 @@ def test_select_simple_statement(instrument, cassandra_session, elasticapm_clien
     assert span["subtype"] == "cassandra"
     assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
-    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql"}
+    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql", "instance": "testkeyspace"}
 
 
 def test_select_prepared_statement(instrument, cassandra_session, elasticapm_client):
@@ -132,7 +172,7 @@ def test_select_prepared_statement(instrument, cassandra_session, elasticapm_cli
     assert span["subtype"] == "cassandra"
     assert span["action"] == "query"
     assert span["name"] == "SELECT FROM users"
-    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql"}
+    assert span["context"]["db"] == {"statement": "SELECT name from users", "type": "sql", "instance": "testkeyspace"}
 
 
 def test_signature_create_keyspace():

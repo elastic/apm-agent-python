@@ -176,11 +176,15 @@ class Transport(ThreadManager):
             if flush:
                 if buffer_written:
                     self._flush(buffer, forced_flush=forced_flush)
-                elif forced_flush and "/localhost:" in self.client.config.server_url:
+                elif forced_flush and any(x in self.client.config.server_url for x in ("/localhost:", "/127.0.0.1:")):
                     # No data on buffer, but due to manual flush we should send
                     # an empty payload with flushed=true query param, but only
                     # to a local APM server (or lambda extension)
-                    self.send(None, flushed=True)
+                    try:
+                        self.send("", forced_flush=True)
+                        self.handle_transport_success()
+                    except Exception as e:
+                        self.handle_transport_fail(e)
                 self._last_flush = timeit.default_timer()
                 buffer = self._init_buffer()
                 buffer_written = False

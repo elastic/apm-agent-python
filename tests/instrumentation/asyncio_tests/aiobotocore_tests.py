@@ -259,7 +259,7 @@ async def test_sqs_send_batch(instrument, elasticapm_client, sqs_client_and_queu
     assert span["name"] == "SQS SEND_BATCH to myqueue"
     assert span["type"] == "messaging"
     assert span["subtype"] == "sqs"
-    assert span["action"] == "send"
+    assert span["action"] == "send_batch"
     assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
     assert span["context"]["destination"]["service"]["name"] == "sqs"
     assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"

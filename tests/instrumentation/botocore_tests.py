@@ -97,6 +97,7 @@ def test_botocore_instrumentation(instrument, elasticapm_client):
     assert span["type"] == "aws"
     assert span["subtype"] == "ec2"
     assert span["action"] == "DescribeInstances"
+    assert span["context"]["http"]["request"]["id"]
 
 
 def test_s3(instrument, elasticapm_client):
@@ -117,6 +118,7 @@ def test_s3(instrument, elasticapm_client):
         assert span["context"]["destination"]["service"]["name"] == "s3"
         assert span["context"]["destination"]["service"]["resource"] == "xyz"
         assert span["context"]["destination"]["service"]["type"] == "storage"
+        assert span["context"]["http"]["request"]["id"]
     assert spans[0]["name"] == "S3 CreateBucket xyz"
     assert spans[0]["action"] == "CreateBucket"
     assert spans[1]["name"] == "S3 PutObject xyz"
@@ -175,6 +177,7 @@ def test_dynamodb(instrument, elasticapm_client, dynamodb):
         assert span["context"]["destination"]["service"]["name"] == "dynamodb"
         assert span["context"]["destination"]["service"]["resource"] == "Movies"
         assert span["context"]["destination"]["service"]["type"] == "db"
+        assert span["context"]["http"]["request"]["id"]
     assert spans[0]["name"] == "DynamoDB PutItem Movies"
     assert spans[1]["name"] == "DynamoDB Query Movies"
     assert spans[1]["context"]["db"]["statement"] == "title = :v1 and #y = :v2"
@@ -200,6 +203,7 @@ def test_sns(instrument, elasticapm_client):
     assert spans[2]["context"]["destination"]["service"]["name"] == "sns"
     assert spans[2]["context"]["destination"]["service"]["resource"] == "sns/mytopic"
     assert spans[2]["context"]["destination"]["service"]["type"] == "messaging"
+    assert spans[2]["context"]["http"]["request"]["id"]
 
 
 def test_sqs_send(instrument, elasticapm_client, sqs_client_and_queue):
@@ -222,6 +226,7 @@ def test_sqs_send(instrument, elasticapm_client, sqs_client_and_queue):
     assert span["context"]["destination"]["service"]["name"] == "sqs"
     assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
     assert span["context"]["destination"]["service"]["type"] == "messaging"
+    assert span["context"]["http"]["request"]["id"]
 
     messages = sqs.receive_message(
         QueueUrl=queue_url,
@@ -255,11 +260,39 @@ def test_sqs_send_batch(instrument, elasticapm_client, sqs_client_and_queue):
     assert span["name"] == "SQS SEND_BATCH to myqueue"
     assert span["type"] == "messaging"
     assert span["subtype"] == "sqs"
-    assert span["action"] == "send"
+    assert span["action"] == "send_batch"
     assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
     assert span["context"]["destination"]["service"]["name"] == "sqs"
     assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
     assert span["context"]["destination"]["service"]["type"] == "messaging"
+    messages = sqs.receive_message(
+        QueueUrl=queue_url,
+        AttributeNames=["All"],
+        MessageAttributeNames=[
+            "All",
+        ],
+    )
+    message = messages["Messages"][0]
+    assert "traceparent" in message["MessageAttributes"]
+    traceparent = message["MessageAttributes"]["traceparent"]["StringValue"]
+    assert transaction.trace_parent.trace_id in traceparent
+    assert span["id"] in traceparent
+
+
+def test_sqs_no_message_attributes(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    elasticapm_client.begin_transaction("test")
+    response = sqs.send_message_batch(
+        QueueUrl=queue_url,
+        Entries=[
+            {
+                "Id": "foo",
+                "MessageBody": "foo",
+            },
+        ],
+    )
+    transaction = elasticapm_client.end_transaction("test", "test")
+    span = elasticapm_client.events[constants.SPAN][0]
     messages = sqs.receive_message(
         QueueUrl=queue_url,
         AttributeNames=["All"],
@@ -324,7 +357,7 @@ def test_sqs_send_disttracing_dropped_span(instrument, elasticapm_client, sqs_cl
     assert transaction.id in traceparent  # due to DroppedSpan, transaction.id is used instead of span.id
 
 
-def test_sqs_receive(instrument, elasticapm_client, sqs_client_and_queue):
+def test_sqs_receive_and_delete(instrument, elasticapm_client, sqs_client_and_queue):
     sqs, queue_url = sqs_client_and_queue
     sqs.send_message(
         QueueUrl=queue_url,
@@ -341,13 +374,80 @@ def test_sqs_receive(instrument, elasticapm_client, sqs_client_and_queue):
             "All",
         ],
     )
+    sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"])
     elasticapm_client.end_transaction("test", "test")
-    span = elasticapm_client.events[constants.SPAN][0]
-    assert span["name"] == "SQS RECEIVE from myqueue"
-    assert span["type"] == "messaging"
-    assert span["subtype"] == "sqs"
-    assert span["action"] == "receive"
-    assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
-    assert span["context"]["destination"]["service"]["name"] == "sqs"
-    assert span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
-    assert span["context"]["destination"]["service"]["type"] == "messaging"
+
+    receive_span = elasticapm_client.events[constants.SPAN][0]
+    assert receive_span["name"] == "SQS RECEIVE from myqueue"
+    assert receive_span["type"] == "messaging"
+    assert receive_span["subtype"] == "sqs"
+    assert receive_span["action"] == "receive"
+    assert receive_span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert receive_span["context"]["destination"]["service"]["name"] == "sqs"
+    assert receive_span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
+    assert receive_span["context"]["destination"]["service"]["type"] == "messaging"
+
+    delete_span = elasticapm_client.events[constants.SPAN][1]
+    assert delete_span["name"] == "SQS DELETE from myqueue"
+    assert delete_span["type"] == "messaging"
+    assert delete_span["subtype"] == "sqs"
+    assert delete_span["action"] == "delete"
+    assert delete_span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert delete_span["context"]["destination"]["service"]["name"] == "sqs"
+    assert delete_span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
+    assert delete_span["context"]["destination"]["service"]["type"] == "messaging"
+
+
+def test_sqs_delete_batch(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    sqs.send_message(
+        QueueUrl=queue_url,
+        MessageAttributes={
+            "Title": {"DataType": "String", "StringValue": "foo"},
+        },
+        MessageBody=("bar"),
+    )
+    response = sqs.receive_message(
+        QueueUrl=queue_url,
+        AttributeNames=["All"],
+        MessageAttributeNames=[
+            "All",
+        ],
+    )
+    elasticapm_client.begin_transaction("test")
+    sqs.delete_message_batch(
+        QueueUrl=queue_url,
+        Entries=[{"Id": "foo", "ReceiptHandle": response["Messages"][0]["ReceiptHandle"]}],
+    )
+    elasticapm_client.end_transaction("test", "test")
+
+    delete_span = elasticapm_client.events[constants.SPAN][0]
+    assert delete_span["name"] == "SQS DELETE_BATCH from myqueue"
+    assert delete_span["type"] == "messaging"
+    assert delete_span["subtype"] == "sqs"
+    assert delete_span["action"] == "delete_batch"
+    assert delete_span["context"]["destination"]["cloud"]["region"] == "us-east-1"
+    assert delete_span["context"]["destination"]["service"]["name"] == "sqs"
+    assert delete_span["context"]["destination"]["service"]["resource"] == "sqs/myqueue"
+    assert delete_span["context"]["destination"]["service"]["type"] == "messaging"
+
+
+def test_sqs_receive_message_span_links(instrument, elasticapm_client, sqs_client_and_queue):
+    sqs, queue_url = sqs_client_and_queue
+    send_transaction = elasticapm_client.begin_transaction("test")
+    sqs.send_message(
+        QueueUrl=queue_url,
+        MessageBody=("bar"),
+    )
+    elasticapm_client.end_transaction("test")
+    receive_transaction = elasticapm_client.begin_transaction("test")
+    response = sqs.receive_message(
+        QueueUrl=queue_url,
+        AttributeNames=["All"],
+    )
+    assert len(response["Messages"]) == 1
+    elasticapm_client.end_transaction("test")
+    send_span = elasticapm_client.events[constants.SPAN][0]
+    receive_span = elasticapm_client.events[constants.SPAN][1]
+    assert receive_span["links"][0]["trace_id"] == send_transaction.trace_parent.trace_id
+    assert receive_span["links"][0]["span_id"] == send_span["id"]

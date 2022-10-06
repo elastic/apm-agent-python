@@ -30,6 +30,9 @@
 
 import functools
 import warnings
+from typing import TypeVar
+
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
 
 # https://wiki.python.org/moin/PythonDecoratorLibrary#Smart_deprecation_warnings_.28with_valid_filenames.2C_line_numbers.2C_etc..29
 
@@ -39,7 +42,7 @@ def deprecated(alternative=None):
     as deprecated. It will result in a warning being emitted
     when the function is used."""
 
-    def real_decorator(func):
+    def real_decorator(func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
         @functools.wraps(func)
         def new_func(*args, **kwargs):
             msg = "Call to deprecated function {0}.".format(func.__name__)

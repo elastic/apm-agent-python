@@ -35,7 +35,8 @@ import json
 import os
 import platform
 import time
-from typing import Optional
+from typing import Optional, TypeVar
+from urllib.parse import urlencode
 
 import elasticapm
 from elasticapm.base import Client
@@ -44,9 +45,13 @@ from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
+SERVERLESS_HTTP_REQUEST = ("api", "elb")
+
 logger = get_logger("elasticapm.serverless")
 
 COLD_START = True
+
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
 
 
 class capture_serverless(object):
@@ -86,7 +91,7 @@ class capture_serverless(object):
 
         self.client_kwargs = kwargs
 
-    def __call__(self, func):
+    def __call__(self, func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
         self.name = self.name or get_name_from_func(func)
 
         @functools.wraps(func)
@@ -134,18 +139,25 @@ class capture_serverless(object):
         transaction_type = "request"
         transaction_name = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", self.name)
 
-        self.httpmethod = nested_key(self.event, "requestContext", "httpMethod") or nested_key(
-            self.event, "requestContext", "http", "method"
+        self.httpmethod = (
+            nested_key(self.event, "requestContext", "httpMethod")
+            or nested_key(self.event, "requestContext", "http", "method")
+            or nested_key(self.event, "httpMethod")
         )
-        if self.httpmethod:  # API Gateway
-            self.source = "api"
-            if nested_key(self.event, "requestContext", "httpMethod"):
+
+        if self.httpmethod:  # http request
+            if nested_key(self.event, "requestContext", "elb"):
+                self.source = "elb"
+                resource = nested_key(self.event, "path")
+            elif nested_key(self.event, "requestContext", "httpMethod"):
+                self.source = "api"
                 # API v1
                 resource = "/{}{}".format(
                     nested_key(self.event, "requestContext", "stage"),
                     nested_key(self.event, "requestContext", "resourcePath"),
                 )
             else:
+                self.source = "api"
                 # API v2
                 route_key = nested_key(self.event, "requestContext", "routeKey")
                 route_key = f"/{route_key}" if route_key.startswith("$") else route_key.split(" ", 1)[-1]
@@ -170,7 +182,7 @@ class capture_serverless(object):
 
         self.transaction = self.client.begin_transaction(transaction_type, trace_parent=trace_parent)
         elasticapm.set_transaction_name(transaction_name, override=False)
-        if self.source == "api":
+        if self.source in SERVERLESS_HTTP_REQUEST:
             elasticapm.set_context(
                 lambda: get_data_from_request(
                     self.event,
@@ -199,7 +211,7 @@ class capture_serverless(object):
                     elasticapm.set_transaction_result("HTTP 5xx", override=False)
         if exc_val:
             self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
-            if self.source == "api":
+            if self.source in SERVERLESS_HTTP_REQUEST:
                 elasticapm.set_transaction_result("HTTP 5xx", override=False)
                 elasticapm.set_transaction_outcome(http_status_code=500, override=False)
                 elasticapm.set_context({"status_code": 500}, "response")
@@ -244,7 +256,19 @@ class capture_serverless(object):
             service_context["origin"]["version"] = self.event.get("version", "1.0")
             cloud_context["origin"] = {}
             cloud_context["origin"]["service"] = {"name": "api gateway"}
+            if ".lambda-url." in self.event["requestContext"]["domainName"]:
+                cloud_context["origin"]["service"]["name"] = "lambda url"
             cloud_context["origin"]["account"] = {"id": self.event["requestContext"]["accountId"]}
+            cloud_context["origin"]["provider"] = "aws"
+        elif self.source == "elb":
+            elb_target_group_arn = self.event["requestContext"]["elb"]["targetGroupArn"]
+            faas["trigger"]["type"] = "http"
+            service_context["origin"] = {"name": elb_target_group_arn.split(":")[5].split("/")[1]}
+            service_context["origin"]["id"] = elb_target_group_arn
+            cloud_context["origin"] = {}
+            cloud_context["origin"]["service"] = {"name": "elb"}
+            cloud_context["origin"]["account"] = {"id": elb_target_group_arn.split(":")[4]}
+            cloud_context["origin"]["region"] = elb_target_group_arn.split(":")[3]
             cloud_context["origin"]["provider"] = "aws"
         elif self.source == "sqs":
             record = self.event["Records"][0]
@@ -281,7 +305,7 @@ class capture_serverless(object):
             service_context["origin"]["service"] = {"name": "sns"}
             cloud_context["origin"] = {}
             cloud_context["origin"]["region"] = record["Sns"]["TopicArn"].split(":")[3]
-            cloud_context["origin"]["account_id"] = record["Sns"]["TopicArn"].split(":")[4]
+            cloud_context["origin"]["account"] = {"id": record["Sns"]["TopicArn"].split(":")[4]}
             cloud_context["origin"]["provider"] = "aws"
             message_context["queue"] = {"name": service_context["origin"]["name"]}
             if "Timestamp" in record["Sns"]:
@@ -354,7 +378,13 @@ def get_data_from_request(event: dict, capture_body: bool = False, capture_heade
     result = {}
     if capture_headers and "headers" in event:
         result["headers"] = event["headers"]
-    method = nested_key(event, "requestContext", "httpMethod") or nested_key(event, "requestContext", "http", "method")
+
+    method = (
+        nested_key(event, "requestContext", "httpMethod")
+        or nested_key(event, "requestContext", "http", "method")
+        or nested_key(event, "httpMethod")
+    )
+
     if not method:
         # Not API Gateway
         return result
@@ -405,16 +435,23 @@ def get_url_dict(event: dict) -> dict:
     headers = event.get("headers", {})
     protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
     host = headers.get("Host", headers.get("host", ""))
-    stage = "/" + (nested_key(event, "requestContext", "stage") or "")
-    path = event.get("path", event.get("rawPath", "").split(stage)[-1])
+    stage = nested_key(event, "requestContext", "stage") or ""
+    raw_path = event.get("rawPath", "")
+    if stage:
+        stage = "/" + stage
+        raw_path = raw_path.split(stage)[-1]
+
+    path = event.get("path", raw_path)
     port = headers.get("X-Forwarded-Port", headers.get("x-forwarded-port"))
     query = ""
     if "rawQueryString" in event:
         query = event["rawQueryString"]
     elif event.get("queryStringParameters"):
-        query = "?"
-        for k, v in event["queryStringParameters"].items():
-            query += "{}={}".format(k, v)
+        if stage:  # api requires parameters encoding to build correct url
+            query = "?" + urlencode(event["queryStringParameters"])
+        else:  # for elb we do not have the stage
+            query = "?" + "&".join(["{}={}".format(k, v) for k, v in event["queryStringParameters"].items()])
+
     url = protocol + "://" + host + stage + path + query
 
     url_dict = {

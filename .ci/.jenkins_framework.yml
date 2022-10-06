@@ -30,13 +30,12 @@ FRAMEWORK:
   - memcached-newest
   - pylibmc-newest
   - elasticsearch-2
-  - elasticsearch-6
   - elasticsearch-7
+  - elasticsearch-8
   - cassandra-newest
   - psutil-newest
   #- eventlet-newest
   - gevent-newest
-  - zerorpc-0.4
   - mysql_connector-newest
   - pymysql-newest
   - mysqlclient-newest
@@ -44,7 +43,7 @@ FRAMEWORK:
   - aiopg-newest
   - asyncpg-newest
   - tornado-newest
-  # - starlette-newest # disabled for now, see https://github.com/elastic/apm-agent-python/issues/1172
+  - starlette-newest
   - pymemcache-newest
   - graphene-2
   - httpx-newest
@@ -53,3 +52,4 @@ FRAMEWORK:
   - sanic-newest
   - aiomysql-newest
   - aiobotocore-newest
+  - kafka-python-newest

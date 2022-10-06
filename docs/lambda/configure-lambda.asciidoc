@@ -33,7 +33,7 @@ aws lambda update-function-configuration --function-name yourLambdaFunctionName 
 
 // tag::sam-extension-only[]
 
-In your SAM `template.yml` file add the Layer ARNs of the APM Extension and the APM Agent as follows:
+In your SAM `template.yml` file configure the following environment variables:
 
 [source,yml]
 ----
@@ -54,7 +54,7 @@ Resources:
 
 // tag::serverless-extension-only[]
 
-In your `serverless.yml` file add the Layer ARNs of the APM Extension and the APM Agent to your function as follows:
+In your `serverless.yml` file configure the following environment variables:
 
 [source,yml]
 ----
@@ -71,7 +71,7 @@ functions:
 // end::serverless-extension-only[]
 
 // tag::terraform-extension-only[]
-To add the APM Extension and the APM Agent to your function add the ARNs to the `layers` property in your Terraform file:
+In your Terraform file configure the following environment variables:
 
 [source,terraform]
 ----
@@ -89,3 +89,15 @@ resource "aws_lambda_function" "your_lambda_function" {
 ----
 
 // end::terraform-extension-only[]
+
+// tag::container-extension-only[]
+Environment variables configured for an AWS Lambda function are passed to the container running the lambda function.
+You can use one of the other options (through AWS Web Console, AWS CLI, etc.) to configure the following environment variables:
+
+[source,bash]
+----
+ELASTIC_APM_LAMBDA_APM_SERVER = <YOUR-APM-SERVER-URL>     # this is your APM Server URL
+ELASTIC_APM_SECRET_TOKEN      = <YOUR-APM-SECRET-TOKEN>   # this is your APM secret token
+----
+
+// end::container-extension-only[]

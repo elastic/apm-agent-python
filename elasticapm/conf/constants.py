@@ -64,11 +64,13 @@ SERVER_INFO_PATH = ""
 TRACE_CONTEXT_VERSION = 0
 TRACEPARENT_HEADER_NAME = "traceparent"
 TRACEPARENT_LEGACY_HEADER_NAME = "elastic-apm-traceparent"
+TRACEPARENT_BINARY_HEADER_NAME = "elasticapmtraceparent"
 TRACESTATE_HEADER_NAME = "tracestate"
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 KEYWORD_MAX_LENGTH = 1024
+LONG_FIELD_MAX_LENGTH = 10000
 
 HTTP_WITH_BODY = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -113,3 +115,8 @@ except NameError:
     LABEL_TYPES = (bool, int, float, decimal.Decimal)
 
 TRACESTATE = namedtuple("TRACESTATE", ["SAMPLE_RATE"])(SAMPLE_RATE="s")
+TRACE_CONTINUATION_STRATEGY = namedtuple("TRACE_CONTINUATION_STRATEGY", ["CONTINUE", "RESTART", "RESTART_EXTERNAL"])(
+    CONTINUE="continue",
+    RESTART="restart",
+    RESTART_EXTERNAL="restart_external",
+)

@@ -35,16 +35,89 @@ endif::[]
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
 [float]
 ===== Features
+ * Add backend granularity data to SQL backends as well as Cassandra and pymongo {pull}1585[#1585], {pull}1639[#1639]
+ * Add support for instrumenting the Elasticsearch 8 Python client {pull}1642[#1642]
 
-* Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}xxx[#xxx]
+[float]
+===== Bug fixes
 
-//[float]
-//===== Bug fixes
-//
+* Fix Django's `manage.py check` when agent is disabled {pull}1632[#1632]
+* Fix an issue with long body truncation for Starlette {pull}1635[#1635]
+* Fix an issue with transaction outcomes in Flask for uncaught exceptions {pull}1637[#1637]
 
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.12.0]]
+==== 6.12.0 - 2022-09-07
+
+[float]
+===== Features
+
+* Add redis query to context data for redis instrumentation {pull}1406[#1406]
+* Add AWS request ID to all botocore spans (at `span.context.http.request.id`) {pull}1625[#1625]
+
+[float]
+===== Bug fixes
+
+* Differentiate Lambda URLs from API Gateway in AWS Lambda integration {pull}1609[#1609]
+* Restrict the size of Django request bodies to prevent APM Server rejection {pull}1610[#1610]
+* Restrict length of `exception.message` for exceptions captured by the agent {pull}1619[#1619]
+* Restrict length of Starlette request bodies {pull}1549[#1549]
+* Fix error when using elasticsearch(sniff_on_start=True) {pull}1618[#1618]
+* Improve handling of ignored URLs and capture_body=off for Starlette {pull}1549[#1549]
+* Fix possible error in the transport flush for Lambda functions {pull}1628[#1628]
+
+[[release-notes-6.11.0]]
+==== 6.11.0 - 2022-08-09
+
+[float]
+===== Features
+
+* Added lambda support for ELB triggers {pull}1605[#1605]
+
+[[release-notes-6.10.2]]
+==== 6.10.2 - 2022-08-04
+
+[float]
+===== Bug fixes
+
+* Fixed an issue with non-integer ports in Django {pull}1590[#1590]
+* Fixed an issue with non-integer ports in Redis {pull}1591[#1591]
+* Fixed a performance issue for local variable shortening via `varmap()` {pull}1593[#1593]
+* Fixed `elasticapm.label()` when a Client object is not available {pull}1596[#1596]
+
+[[release-notes-6.10.1]]
+==== 6.10.1 - 2022-06-30
+
+[float]
+===== Bug fixes
+
+* Fix an issue with Kafka instrumentation and unsampled transactions {pull}1579[#1579]
+
+[[release-notes-6.10.0]]
+==== 6.10.0 - 2022-06-22
+
+[float]
+===== Features
+
+* Add instrumentation for https://github.com/aio-libs/aiobotocore[`aiobotocore`] {pull}1520[#1520]
+* Add instrumentation for https://kafka-python.readthedocs.io/en/master/[`kafka-python`] {pull}1555[#1555]
+* Add API for span links, and implement span link support for OpenTelemetry bridge {pull}1562[#1562]
+* Add span links to SQS ReceiveMessage call {pull}1575[#1575]
+* Add specific instrumentation for SQS delete/batch-delete {pull}1567[#1567]
+* Add `trace_continuation_strategy` setting {pull}1564[#1564]
+
+[float]
+===== Bug fixes
+
+* Fix return for `opentelemetry.Span.is_recording()` {pull}1530[#1530]
+* Fix error logging for bad SERVICE_NAME config {pull}1546[#1546]
+* Do not instrument old versions of Tornado > 6.0 due to incompatibility {pull}1566[#1566]
+* Fix transaction names for class based views in Django 4.0+ {pull}1571[#1571]
+* Fix a problem with our logging handler failing to report internal errors in its emitter {pull}1568[#1568]
+
 
 [[release-notes-6.9.1]]
 ==== 6.9.1 - 2022-03-30

@@ -11,7 +11,7 @@ it is need as field to store the results of the tests.
 @Field def pythonTasksGen
 
 pipeline {
-  agent { label 'linux && immutable' }
+  agent { label 'linux-immutable && ubuntu-20' }
   environment {
     REPO = 'apm-agent-python'
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -19,8 +19,6 @@ pipeline {
     NOTIFY_TO = credentials('notify-to')
     JOB_GCS_BUCKET = credentials('gcs-bucket')
     CODECOV_SECRET = 'secret/apm-team/ci/apm-agent-python-codecov'
-    GITHUB_CHECK_ITS_NAME = 'Integration Tests'
-    ITS_PIPELINE = 'apm-integration-tests-selector-mbp/main'
     BENCHMARK_SECRET  = 'secret/apm-team/ci/benchmark-cloud'
     OPBEANS_REPO = 'opbeans-python'
     HOME = "${env.WORKSPACE}"
@@ -65,35 +63,6 @@ pipeline {
               dir("${BASE_DIR}"){
                 // Skip all the stages except docs for PR's with asciidoc and md changes only
                 env.ONLY_DOCS = isGitRegionMatch(patterns: [ '.*\\.(asciidoc|md)' ], shouldMatchAll: true)
-              }
-            }
-          }
-        }
-        stage('Sanity checks') {
-          when {
-            beforeAgent true
-            allOf {
-              expression { return env.ONLY_DOCS == "false" }
-              anyOf {
-                not { changeRequest() }
-                expression { return params.Run_As_Main_Branch }
-              }
-            }
-          }
-          environment {
-            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
-          }
-          steps {
-            withGithubNotify(context: 'Sanity checks', tab: 'tests') {
-              deleteDir()
-              unstash 'source'
-              script {
-                docker.image('python:3.7-stretch').inside(){
-                  dir("${BASE_DIR}"){
-                    // registry: '' will help to disable the docker login
-                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
-                  }
-                }
               }
             }
           }
@@ -173,36 +142,14 @@ pipeline {
                 sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
                 sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
                 // skip pypy builds with CIBW_SKIP=pp*
-                sh script: 'CIBW_SKIP="pp* cp27* cp35*" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+                sh script: 'CIBW_SKIP="pp* cp27* cp35*" CIBW_ARCHS_LINUX="x86_64 aarch64" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
               }
               stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
             }
           }
         }
-        stage('Integration Tests') {
-          agent none
-          when {
-            beforeAgent true
-            allOf {
-              expression { return env.ONLY_DOCS == "false" }
-              anyOf {
-                changeRequest()
-                expression { return !params.Run_As_Main_Branch }
-              }
-            }
-          }
-          steps {
-            build(job: env.ITS_PIPELINE, propagate: false, wait: false,
-                  parameters: [string(name: 'INTEGRATION_TEST', value: 'Python'),
-                              string(name: 'BUILD_OPTS', value: "--with-agent-python-flask --python-agent-package git+https://github.com/${env.CHANGE_FORK?.trim() ?: 'elastic' }/${env.REPO}.git@${env.GIT_BASE_COMMIT} --opbeans-python-agent-branch ${env.GIT_BASE_COMMIT}"),
-                              string(name: 'GITHUB_CHECK_NAME', value: env.GITHUB_CHECK_ITS_NAME),
-                              string(name: 'GITHUB_CHECK_REPO', value: env.REPO),
-                              string(name: 'GITHUB_CHECK_SHA1', value: env.GIT_BASE_COMMIT)])
-            githubNotify(context: "${env.GITHUB_CHECK_ITS_NAME}", description: "${env.GITHUB_CHECK_ITS_NAME} ...", status: 'PENDING', targetUrl: "${env.JENKINS_URL}search/?q=${env.ITS_PIPELINE.replaceAll('/','+')}")
-          }
-        }
         stage('Benchmarks') {
-          agent { label 'metal' }
+          agent { label 'microbenchmarks-pool' }
           options { skipDefaultCheckout() }
           environment {
             AGENT_WORKDIR = "${env.WORKSPACE}/${env.BUILD_NUMBER}/${env.BASE_DIR}"
@@ -497,9 +444,9 @@ def convergeCoverage() {
         )
       }
     }
-    sh('python3 -m coverage combine && python3 -m coverage xml')
-    cobertura coberturaReportFile: 'coverage.xml'
+    sh(script: 'python3 -m coverage combine && python3 -m coverage xml', label: 'python coverage')
   }
+  coverageReport(baseDir: "${BASE_DIR}", reportFiles: 'coverage.html', coverageFiles: 'coverage.xml')
 }
 
 def generateResultsReport() {

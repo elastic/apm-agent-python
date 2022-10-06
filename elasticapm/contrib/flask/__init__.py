@@ -55,12 +55,12 @@ class ElasticAPM(object):
     """
     Flask application for Elastic APM.
 
-    Look up configuration from ``os.environ.get('ELASTIC_APM_APP_NAME')`` and
+    Look up configuration from ``os.environ.get('ELASTIC_APM_SERVICE_NAME')`` and
     ``os.environ.get('ELASTIC_APM_SECRET_TOKEN')``::
 
     >>> elasticapm = ElasticAPM(app)
 
-    Pass an arbitrary APP_NAME and SECRET_TOKEN::
+    Pass an arbitrary SERVICE_NAME and SECRET_TOKEN::
 
     >>> elasticapm = ElasticAPM(app, service_name='myapp', secret_token='asdasdasd')
 
@@ -111,6 +111,7 @@ class ElasticAPM(object):
         #
         # Unfortunately, that also means that we can't capture any response data,
         # as the response isn't ready at this point in time.
+        elasticapm.set_transaction_outcome(outcome=constants.OUTCOME.FAILURE, override=False)
         self.client.end_transaction(result="HTTP 5xx")
 
     def init_app(self, app, **defaults):

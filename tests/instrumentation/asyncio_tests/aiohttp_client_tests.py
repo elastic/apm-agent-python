@@ -68,6 +68,8 @@ async def test_http_get(instrument, event_loop, elasticapm_client, waiting_https
         "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
         "type": "",
     }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{waiting_httpserver.server_address[1]}"
     assert spans[0]["outcome"] == "success"
 
 

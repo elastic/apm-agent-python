@@ -40,7 +40,6 @@ from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
 from elasticapm.utils import wrapt
-from elasticapm.utils.encoding import to_unicode
 from elasticapm.utils.stacks import iter_stack_frames
 
 
@@ -74,15 +73,15 @@ class LoggingHandler(logging.Handler):
 
         # Avoid typical config issues by overriding loggers behavior
         if record.name.startswith(("elasticapm.errors",)):
-            sys.stderr.write(to_unicode(record.message) + "\n")
+            sys.stderr.write(record.getMessage() + "\n")
             return
 
         try:
             return self._emit(record)
         except Exception:
             sys.stderr.write("Top level ElasticAPM exception caught - failed creating log record.\n")
-            sys.stderr.write(to_unicode(record.msg + "\n"))
-            sys.stderr.write(to_unicode(traceback.format_exc() + "\n"))
+            sys.stderr.write(record.getMessage() + "\n")
+            sys.stderr.write(traceback.format_exc() + "\n")
 
             try:
                 self.client.capture("Exception")

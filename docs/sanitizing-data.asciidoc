@@ -36,7 +36,7 @@ To use this processor, update your `ELASTIC_APM` settings like this:
 [source,python]
 ----
 ELASTIC_APM = {
-    'APP_NAME': '<APP-NAME>',
+    'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
     'PROCESSORS': (
         'path.to.my_processor',
@@ -56,7 +56,7 @@ The default set of processors sanitize fields based on a set of defaults defined
 [source,python]
 ----
 ELASTIC_APM = {
-    'APP_NAME': '<APP-NAME>',
+    'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
     'SANITIZE_FIELD_NAMES': (
         "password",

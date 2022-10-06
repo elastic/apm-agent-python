@@ -75,6 +75,12 @@ class Transport(HTTPTransportBase):
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
+        headers.update(
+            {
+                b"Content-Type": b"application/x-ndjson",
+                b"Content-Encoding": b"gzip",
+            }
+        )
 
         url = self._url
         if forced_flush:
@@ -146,7 +152,6 @@ class Transport(HTTPTransportBase):
         data = json_encoder.dumps(keys).encode("utf-8")
         headers = self._headers.copy()
         headers[b"Content-Type"] = "application/json"
-        headers.pop(b"Content-Encoding", None)  # remove gzip content-encoding header
         headers.update(self.auth_headers)
         max_age = 300
         if current_version:
@@ -159,11 +164,9 @@ class Transport(HTTPTransportBase):
             logger.debug("HTTP error while fetching remote config: %s", str(e))
             return current_version, None, max_age
         body = response.read()
-        if "Cache-Control" in response.headers:
-            try:
-                max_age = int(next(re.finditer(r"max-age=(\d+)", response.headers["Cache-Control"])).groups()[0])
-            except StopIteration:
-                logger.debug("Could not parse Cache-Control header: %s", response.headers["Cache-Control"])
+
+        max_age = self._get_cache_control_max_age(response.headers) or max_age
+
         if response.status == 304:
             # config is unchanged, return
             logger.debug("Configuration unchanged")
@@ -182,6 +185,22 @@ class Transport(HTTPTransportBase):
             logger.warning("Failed decoding APM Server response as JSON: %s", body)
             return current_version, None, max_age
 
+    def _get_cache_control_max_age(self, response_headers):
+        max_age = None
+        if "Cache-Control" in response_headers:
+            try:
+                cc_max_age = int(next(re.finditer(r"max-age=(\d+)", response_headers["Cache-Control"])).groups()[0])
+                if cc_max_age <= 0:
+                    # max_age remains at default value
+                    pass
+                elif cc_max_age < 5:
+                    max_age = 5
+                else:
+                    max_age = cc_max_age
+            except StopIteration:
+                logger.debug("Could not parse Cache-Control header: %s", response_headers["Cache-Control"])
+        return max_age
+
     def _process_queue(self):
         if not self.client.server_version:
             self.fetch_server_info()
@@ -190,7 +209,7 @@ class Transport(HTTPTransportBase):
     def fetch_server_info(self):
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        headers["accept"] = "text/plain"
+        headers[b"accept"] = b"text/plain"
         try:
             response = self.http.urlopen("GET", self._server_info_url, headers=headers, timeout=self._timeout)
             body = response.data

@@ -67,10 +67,10 @@ def app(elasticapm_client):
 
     @app.route("/", methods=["GET", "POST"])
     async def hi(request):
-        await request.body()
+        body = await request.body()
         with async_capture_span("test"):
             pass
-        return PlainTextResponse("ok")
+        return PlainTextResponse(str(len(body)))
 
     @app.route("/hi/{name}", methods=["GET"])
     async def hi_name(request):
@@ -250,11 +250,17 @@ def test_capture_headers_body_is_dynamic(app, elasticapm_client):
 
     for i, val in enumerate((True, False)):
         elasticapm_client.config.update(str(i), capture_body="transaction" if val else "none", capture_headers=val)
-        client.post("/", "somedata", headers={"foo": "bar"})
+        try:
+            client.post("/", content="somedata", headers={"foo": "bar"})
+        except TypeError:  # starlette < 0.21.0 used requests as base for TestClient, with a different API
+            client.post("/", "somedata", headers={"foo": "bar"})
 
         elasticapm_client.config.update(str(i) + str(i), capture_body="error" if val else "none", capture_headers=val)
         with pytest.raises(ValueError):
-            client.post("/raise-exception", "somedata", headers={"foo": "bar"})
+            try:
+                client.post("/raise-exception", content="somedata", headers={"foo": "bar"})
+            except TypeError:
+                client.post("/raise-exception", "somedata", headers={"foo": "bar"})
 
     assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["request"]
     assert "headers" in elasticapm_client.events[constants.TRANSACTION][0]["context"]["response"]
@@ -424,6 +430,32 @@ def test_static_files_only(app_static_files_only, elasticapm_client):
     request = transaction["context"]["request"]
     assert request["method"] == "GET"
     assert request["socket"] == {"remote_address": "127.0.0.1"}
+
+
+def test_non_utf_8_body_in_ignored_paths_with_capture_body(app, elasticapm_client):
+    client = TestClient(app)
+    elasticapm_client.config.update(1, capture_body="all", transaction_ignore_urls="/hello")
+    response = client.post("/hello", data=b"b$\x19\xc2")
+    assert response.status_code == 200
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 0
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"capture_body": "all"}], indirect=True)
+def test_long_body(app, elasticapm_client):
+    client = TestClient(app)
+
+    response = client.post(
+        "/",
+        data={"foo": "b" * 10000},
+    )
+
+    assert response.status_code == 200
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    request = transaction["context"]["request"]
+    assert request["body"] == "foo=" + "b" * 9993 + "..."
+    assert response.text == "10004"
 
 
 def test_static_files_only_file_notfound(app_static_files_only, elasticapm_client):

@@ -36,7 +36,7 @@ import itertools
 import uuid
 from decimal import Decimal
 
-from elasticapm.conf.constants import KEYWORD_MAX_LENGTH, LABEL_RE, LABEL_TYPES
+from elasticapm.conf.constants import KEYWORD_MAX_LENGTH, LABEL_RE, LABEL_TYPES, LONG_FIELD_MAX_LENGTH
 
 PROTECTED_TYPES = (int, type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
 
@@ -222,6 +222,37 @@ def keyword_field(string):
     if not isinstance(string, str) or len(string) <= KEYWORD_MAX_LENGTH:
         return string
     return string[: KEYWORD_MAX_LENGTH - 1] + "…"
+
+
+def long_field(data):
+    """
+    If the given data, converted to string, is longer than LONG_FIELD_MAX_LENGTH,
+    truncate it to LONG_FIELD_MAX_LENGTH-1, adding the "…" character at the end.
+
+    If data is bytes, truncate it to LONG_FIELD_MAX_LENGTH-3, adding b"..." to
+    the end.
+
+    Returns the original data if truncation is not required.
+
+    Per https://github.com/elastic/apm/blob/main/specs/agents/field-limits.md#long_field_max_length-configuration,
+    this should only be applied to the following fields:
+
+    - `transaction.context.request.body`, `error.context.request.body`
+    - `transaction.context.message.body`, `span.context.message.body`, `error.context.message.body`
+    - `span.context.db.statement`
+    - `error.exception.message`
+    - `error.log.message`
+
+    Other fields should be truncated via `elasticapm.utils.encoding.keyword_field()`
+    """
+    str_or_bytes = str(data) if not isinstance(data, (str, bytes)) else data
+    if len(str_or_bytes) > LONG_FIELD_MAX_LENGTH:
+        if isinstance(str_or_bytes, bytes):
+            return str_or_bytes[: LONG_FIELD_MAX_LENGTH - 3] + b"..."
+        else:
+            return str_or_bytes[: LONG_FIELD_MAX_LENGTH - 1] + "…"
+    else:
+        return data
 
 
 def enforce_label_format(labels):
