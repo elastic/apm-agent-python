@@ -14,45 +14,30 @@ build:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
         PYTHON_VERSION: "3.6"
-    sync:
-      infer:
-      - '**/*.py'
   - image: apm-agent-python-3.7
     context: .
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
         PYTHON_VERSION: "3.7"
-    sync:
-      infer:
-      - '**/*.py'
   - image: apm-agent-python-3.8
     context: .
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
         PYTHON_VERSION: "3.8"
-    sync:
-      infer:
-      - '**/*.py'
   - image: apm-agent-python-3.9
     context: .
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
         PYTHON_VERSION: "3.9"
-    sync:
-      infer:
-      - '**/*.py'
   - image: apm-agent-python-3.10
     context: .
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
         PYTHON_VERSION: "3.10"
-    sync:
-      infer:
-      - '**/*.py'
 deploy:
   kubectl:
     manifests:
