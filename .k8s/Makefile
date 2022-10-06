@@ -12,6 +12,8 @@ GIT_USERNAME ?= $(shell git config user.name | tr -d ' ')
 
 .SILENT:
 
+# Whether to run all the python versions from the whole support matrix
+FULL ?= false
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 K8S_CLUSTER ?= observability-ci-test-k8s
 K8S_NAMESPACE ?= default
