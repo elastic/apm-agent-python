@@ -324,6 +324,8 @@ def test_capture_serverless_sqs(event_sqs, context, elasticapm_client):
     assert transaction["span_count"]["started"] == 1
     assert transaction["context"]["message"]["headers"]["Population"] == "1250800"
     assert transaction["context"]["message"]["headers"]["City"] == "Any City"
+    assert len(transaction["links"]) == 1
+    assert transaction["links"][0] == {"trace_id": "0af7651916cd43dd8448eb211c80319c", "span_id": "b7ad6b7169203331"}
 
 
 def test_capture_serverless_s3_batch(event_s3_batch, context, elasticapm_client):

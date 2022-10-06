@@ -180,7 +180,16 @@ class capture_serverless(object):
                 transaction_type = "messaging"
                 transaction_name = "RECEIVE {}".format(record["eventSourceARN"].split(":")[5])
 
-        self.transaction = self.client.begin_transaction(transaction_type, trace_parent=trace_parent)
+        if "Records" in self.event:
+            links = [
+                TraceParent.from_string(record["messageAttributes"]["traceparent"]["stringValue"])
+                for record in self.event["Records"][:1000]
+                if "messageAttributes" in record and "traceparent" in record["messageAttributes"]
+            ]
+        else:
+            links = []
+
+        self.transaction = self.client.begin_transaction(transaction_type, trace_parent=trace_parent, links=links)
         elasticapm.set_transaction_name(transaction_name, override=False)
         if self.source in SERVERLESS_HTTP_REQUEST:
             elasticapm.set_context(
