@@ -32,7 +32,7 @@ function finish {
             echo -e "    ${BLUE}Logs for the container $POD_NAME:$CONTAINER can be found in $BUILD_OUTPUT_DIR/$POD_NAME/$CONTAINER.out${NC}"
             kubectl logs $POD --container $CONTAINER $NAMESPACE > $BUILD_OUTPUT_DIR/$POD_NAME/$CONTAINER.out
             #echo -e "    ${BLUE}JUnit for the container $CONTAINER can be found in $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml${NC}"
-            #echo "kubectl cp --container $CONTAINER $NAMESPACE $POD:/code/tests/python-agent-junit.xml $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml"
+            #echo "kubectl cp --container $CONTAINER $NAMESPACE $POD:/tmp/python-agent-junit.xml $BUILD_OUTPUT_DIR/$CONTAINER-junit.xml"
         done
     done
     echo -e "    ${GREEN}Exported${NC}"
