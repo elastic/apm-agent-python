@@ -23,7 +23,8 @@ build:
 deploy:
   kubectl:
     manifests:
-      - .k8s/PythonPod*
+      - .k8s/generated/3.6*
+      - .k8s/generated/3.10*
 
 profiles:
 # The list of docker images to be built for a full matrix coverage validation
@@ -41,6 +42,10 @@ profiles:
         dockerfile: ".k8s/Dockerfile"
         buildArgs:
           PYTHON_VERSION: "3.9"
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.9*
 - name: python-3.8
   activation:
     - env: FULL=true
@@ -54,6 +59,10 @@ profiles:
         dockerfile: ".k8s/Dockerfile"
         buildArgs:
           PYTHON_VERSION: "3.8"
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.8*
 - name: python-3.7
   activation:
     - env: FULL=true
@@ -67,3 +76,7 @@ profiles:
         dockerfile: ".k8s/Dockerfile"
         buildArgs:
           PYTHON_VERSION: "3.7"
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.7*

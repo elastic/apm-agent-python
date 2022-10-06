@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: apm-agen-python-<version>-<framework>
+  labels:
+    repo: apm-agent-python
+    type: unit-test
+    version: <version>
+    framework: <framework>
+spec:
+  ttlSecondsAfterFinished: 100
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: python-<version>
+        image: apm-agent-python-<version>
+        command: [ "tests/scripts/run_tests.sh" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "<framework>"
