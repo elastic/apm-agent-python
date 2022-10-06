@@ -4,11 +4,11 @@ ARCH_L = $(shell uname|tr '[:upper:]' '[:lower:]')
 BIN_DIR ?= $(CURDIR)/bin
 KUBECTL_VERSION ?= $(shell curl -sSf https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 KUBECTL ?= $(BIN_DIR)/kubectl
-SKAFFOLD ?= skaffold
+SKAFFOLD ?= $(BIN_DIR)/skaffold
 PATH := $(BIN_DIR):$(PATH)
 #MAKEFLAGS += --silent --no-print-directory
 .SHELLFLAGS = -ec
-GIT_USERNAME ?= $(shell git config user.name | tr -d ' ')
+GIT_USERNAME ?= $(shell git config user.name | tr -d ' '| tr '[:upper:]' '[:lower:]')
 
 .SILENT:
 
@@ -16,7 +16,7 @@ GIT_USERNAME ?= $(shell git config user.name | tr -d ' ')
 FULL ?= false
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 K8S_CLUSTER ?= observability-ci-test-k8s
-K8S_NAMESPACE ?= default
+K8S_NAMESPACE ?= $(GIT_USERNAME)
 K8S_POD_NAME ?= python-versions-pod
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 # TODO: GCLOUD specific, maybe it wont't be needed if we are cloud agnostic?
@@ -47,10 +47,15 @@ bin:
 
 ## @help:bin/kubectl:Install kubectl CLI in the selected binary folder.
 bin/kubectl: bin
-	curl -sSLo "$(BIN_DIR)/kubectl" "https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(ARCH_L)/amd64/kubectl"
-	chmod +x "$(BIN_DIR)/kubectl"
+	curl -sSLo "$(KUBECTL)" "https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(ARCH_L)/amd64/kubectl"
+	chmod +x "$(KUBECTL)
 
-setup: bin/kubectl
+## @help:bin/skaffold:Install skaffold CLI in the selected binary folder.
+bin/skaffold: bin
+	curl -sSLo "$(SKAFFOLD)" "https://storage.googleapis.com/skaffold/releases/latest/skaffold-$(ARCH_L)-amd64"
+	chmod +x "$(SKAFFOLD)"
+
+setup: bin/kubectl bin/skaffold
 
 ################################
 ## K8s specific helper functions
@@ -64,6 +69,10 @@ k8s-login:
 		--project $(GCLOUD_K8S_CLUSTER_PROJECT) \
 		$(K8S_CLUSTER)
 	$(KUBECTL) config set-context $$(kubectl config current-context) --namespace $(K8S_NAMESPACE)
+
+## @help:k8s-create-namespace:Create the k8s namespace.
+k8s-create-namespace:
+	$(KUBECTL) create namespace $(K8S_NAMESPACE)
 
 # @help:deploy-pods:Deploy the pods in the K8s cluster
 .PHONY: deploy-pods
