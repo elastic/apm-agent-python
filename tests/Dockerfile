@@ -6,6 +6,7 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     ca-certificates \
     curl \
     gnupg2 \
+    libmysqlclient-dev \
     libpq-dev \
     make \
     netcat \
