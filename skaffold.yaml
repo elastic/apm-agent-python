@@ -22,13 +22,20 @@ build:
         PYTHON_VERSION: "3.10"
 deploy:
   kubectl:
-    manifests:
-      - .k8s/generated/3.6*
-      - .k8s/generated/3.10*
+    manifests: ## need a default manifest so we can use profiles to be added easily . Maybe a different approach could be done
+    - ".k8s/generated/default.yaml"
 
 profiles:
 # The list of docker images to be built for a full matrix coverage validation
 # reverse order for the python version so the console output shows those versions nice and tidy
+- name: python-3.10
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.10/**
 - name: python-3.9
   activation:
     - env: FULL=true
@@ -45,7 +52,7 @@ profiles:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/3.9*
+      .k8s/generated/3.9/**
 - name: python-3.8
   activation:
     - env: FULL=true
@@ -62,7 +69,7 @@ profiles:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/3.8*
+      .k8s/generated/3.8/**
 - name: python-3.7
   activation:
     - env: FULL=true
@@ -79,4 +86,54 @@ profiles:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/3.7*
+      .k8s/generated/3.7/**
+- name: python-3.6
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.6/**
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: all
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**

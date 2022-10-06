@@ -130,7 +130,7 @@ skaffold-deploy:
 		--default-repo=$(DEFAULT_REPO) \
 		--build-artifacts=$(CURDIR)/tags.json \
 		--namespace=$(K8S_NAMESPACE) \
-		--label=user.repo=$(GIT_USERNAME)
+		--label=user.repo=$(GIT_USERNAME) -p requests,flask-1.1
 
 # @help:skaffold-test:Run the tests in the deployed pods and report the results.
 skaffold-test: skaffold-deploy skaffold-wait
