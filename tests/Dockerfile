@@ -7,6 +7,7 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     curl \
     default-mysql-server \
     gnupg2 \
+    libmariadb-dev \
     libpq-dev \
     make \
     netcat \
