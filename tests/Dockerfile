@@ -5,7 +5,6 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     build-essential \
     ca-certificates \
     curl \
-    default-mysql-server \
     gnupg2 \
     libmariadb-dev \
     libpq-dev \
