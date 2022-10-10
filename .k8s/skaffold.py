@@ -102,8 +102,13 @@ def main():
                 for line in infile:
                     outfile.write(line)
 
-    print("Copying dockerignore files...")
+    print("Copying dockerignore file...")
+    # avoid exposing anything unrelated to the source code.
     shutil.copyfile('.k8s/.dockerignore', '.dockerignore')
+
+    print("Copying default yaml file...")
+    # skaffold requires a default manifest ... this is the workaround for now.
+    shutil.copyfile(f'{templatesLocation}/default.yaml', f'{generatedLocation}/default.yaml')
 
 if __name__ == '__main__':
     main()
