@@ -25,6 +25,16 @@ GCLOUD_K8S_CLUSTER_REGION ?= us-central1-c
 GCLOUD_K8S_CLUSTER_PROJECT ?= elastic-observability
 DEFAULT_REPO ?= docker.elastic.co/beats-dev
 
+EXCLUDE = .ci/.jenkins_exclude.yml
+ifeq ($(FULL), true)
+FRAMEWORKS = .ci/.jenkins_framework_full.yml
+VERSIONS = .ci/.jenkins_python_full.yml
+else
+FRAMEWORKS = .ci/.jenkins_framework.yml
+VERSIONS = .ci/.jenkins_python.yml
+endif
+
+
 ################################
 ## Helper function
 ################################
@@ -100,8 +110,10 @@ skaffold-base-%:
 # @help:skaffold-generate:Generate the skaffold configuration on the fly
 skaffold-generate:
 	cd ..; \
-		python3 .k8s/skaffold.py
-	echo "You can now use skaffold with profiles..."
+		python3 .k8s/skaffold.py \
+			-f $(FRAMEWORKS) \
+			-v $(VERSIONS) \
+			-e $(EXCLUDE)
 
 # @help:skaffold-build:Sync workspace with the pods
 skaffold-build:
