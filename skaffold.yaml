@@ -101,7 +101,7 @@ profiles:
     path: /deploy/kubectl/manifests/1
     value:
       .k8s/generated/**
-// Generated
+# Generated
 - name: kafka
   patches:
   - op: add
