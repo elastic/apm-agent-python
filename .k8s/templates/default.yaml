@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "apm-agen-python-3-6-none"
+  labels:
+    repo: "apm-agent-python"
+    type: "unit-test"
+    version: "3.6"
+    framework: "none"
+spec:
+  ttlSecondsAfterFinished: 0
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: "python-3-6"
+        image: "apm-agent-python-3.6"
+        command: [ "echo hi" ]
+        env:
+        - name: WEBFRAMEWORK
+          value: "none"
