@@ -17,7 +17,6 @@ FULL ?= false
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 K8S_CLUSTER ?= observability-ci-test-k8s
 K8S_NAMESPACE ?= $(GIT_USERNAME)
-K8S_POD_NAME ?= python-versions-pod
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 # TODO: GCLOUD specific, maybe it wont't be needed if we are cloud agnostic?
 GCLOUD_K8S_CLUSTER_REGION ?= us-central1-c
@@ -74,33 +73,15 @@ k8s-login:
 k8s-create-namespace:
 	$(KUBECTL) create namespace $(K8S_NAMESPACE)
 
-# @help:deploy-pods:Deploy the pods in the K8s cluster
-.PHONY: deploy-pods
-deploy-pods:
-	$(KUBECTL) apply -f PythonPod.yml
-
-# @help:undeploy-pods:Deploy the pods in the K8s cluster
-.PHONY: undeploy-pods
-undeploy-pods: k8s-login
-	$(KUBECTL) delete -f PythonPod.yml
+# @help:get-pods:Get the deployed pods in the K8s cluster
+.PHONY: get-pods
+get-pods:
+	$(KUBECTL) get pods -n $(K8S_NAMESPACE)
 
 # @help:get-pods:Get the deployed pods in the K8s cluster
-.PHONY: deploy-pods
-get-pods:
-	$(KUBECTL) get pods
-	$(KUBECTL) describe pod $(K8S_POD_NAME)
-
-# @help:ssh-pod:Interactive shell with the default pod
-ssh-default-pod:
-	$(KUBECTL) exec --stdin --tty $(K8S_POD_NAME) -- /bin/bash
-
-# @help:ssh-pod:Interactive shell in the given container
-ssh-pod-%:
-	$(KUBECTL) exec --stdin --tty $(K8S_POD_NAME) --container $* -- /bin/bash
-
-# @help:sync-pods:Sync workspace with the pods
-sync-pods:
-	$(KUBECTL) cp ./ $(K8S_POD_NAME):/src
+.PHONY: get-jobs
+get-jobs:
+	$(KUBECTL) get job.batch -n $(K8S_NAMESPACE)
 
 ################################
 ## Skaffold specific helper functions
@@ -136,10 +117,32 @@ skaffold-deploy:
 		--default-repo=$(DEFAULT_REPO) \
 		--build-artifacts=$(CURDIR)/tags.json \
 		--namespace=$(K8S_NAMESPACE) \
-		--label=user.repo=$(GIT_USERNAME) -p requests,flask-1.1
+		--label=user.repo=$(GIT_USERNAME) -p flask-1.1
+
+# @help:skaffold-deploy-%:Deploy the pods for the given framework
+skaffold-deploy-%:
+	cd ..; \
+	$(SKAFFOLD) deploy \
+		--default-repo=$(DEFAULT_REPO) \
+		--build-artifacts=$(CURDIR)/tags.json \
+		--namespace=$(K8S_NAMESPACE) \
+		--label=user.repo=$(GIT_USERNAME) -p $*
 
 # @help:skaffold-test:Run the tests in the deployed pods and report the results.
 skaffold-test: skaffold-deploy skaffold-wait
+
+# @help:skaffold-test-%:Run the tests in the deployed pods and report the results for the given framework
+skaffold-test-%:
+	$(MAKE) skaffold-deploy-$* skaffold-wait
+
+# @help:skaffold-deploy:Deploy the pods
+skaffold-render:
+	cd ..; \
+	$(SKAFFOLD) render \
+		--default-repo=$(DEFAULT_REPO) \
+		--build-artifacts=$(CURDIR)/tags.json \
+		--namespace=$(K8S_NAMESPACE) \
+		--label=user.repo=$(GIT_USERNAME) -p flask-1.1
 
 # @help:skaffold-wait:Report the results.
 skaffold-wait:

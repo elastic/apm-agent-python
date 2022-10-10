@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "apm-agen-python-{{ pythonVersion }}-{{ framework }}"
+  name: "apm-agen-python-{{ pythonVersion | replace(".", "-") }}-{{ framework | replace(".", "-") }}"
   labels:
     repo: "apm-agent-python"
     type: "unit-test"
@@ -14,7 +14,7 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-      - name: python-{{ pythonVersion }}
+      - name: "python-{{ pythonVersion | replace(".", "-") }}"
         image: "apm-agent-python-{{ pythonVersion }}"
         command: [ "tests/scripts/run_tests.sh" ]
         env:

@@ -1,7 +1,7 @@
 # K8s
 
 This folder contains all the definitions regarding the different python versions used for
-testing the APM Agent Python with
+testing the APM Agent Python with.
 
 ## Pre-requisites
 
@@ -13,15 +13,27 @@ Access to a Kubernetes cluster, then configure the environment variables
 
 ```
 
+## Versions
+
+The list of supported versions can be found in:
+
+* `.ci/.jenkins_framework.yml`
+* `.ci/.jenkins_python.yml`
+
 ## Use cases
 
-### `unit-test` in all the defined pods
+### Generate the skaffold configuration
 
 ```bash
-$ VAULT_TOKEN=$(cat ${HOME}/.vault-token) \
-    make -C .k8s unit-test
-$ VAULT_TOKEN=$(cat ${HOME}/.vault-token) \
-    make -C .k8s report-unit-test-results
+$ make -C .k8s skaffold-generate
+```
+
+### Syncup your local changes in a docker image
+
+> :warning: This can expose some secrest, so be careful!
+
+```bash
+$ make -C .k8s skaffold-buid
 ```
 
 ### Know what you can do with the existing make
@@ -66,6 +78,19 @@ Deployments stabilized in 1.027 second
     Exported
 $ echo $?
 0
+```
+
+### Test any given framework
+
+```bash
+## Build all the docker images
+$ make -C .k8s skaffold-build
+
+## Test django
+$ make -C .k8s skaffold-test-django
+
+## Test django-1.1
+$ make -C .k8s skaffold-test-django-1.1
 ```
 
 ## Implementation details
