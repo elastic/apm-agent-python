@@ -95,45 +95,7114 @@ profiles:
     path: /deploy/kubectl/manifests/1
     value:
       .k8s/generated/3.6/**
-- name: none
-  patches:
-  - op: add
-    path: /deploy/kubectl/manifests/1
-    value:
-      .k8s/generated/**/none/*.yaml
-- name: requests
-  patches:
-  - op: add
-    path: /deploy/kubectl/manifests/1
-    value:
-      .k8s/generated/**/requests/*.yaml
-- name: flask
-  patches:
-  - op: add
-    path: /deploy/kubectl/manifests/1
-    value:
-      .k8s/generated/**/flask/*.yaml
-- name: flask-2.0
-  patches:
-  - op: add
-    path: /deploy/kubectl/manifests/1
-    value:
-      .k8s/generated/**/flask/*2.0.yaml
-- name: flask-1.1
-  patches:
-  - op: add
-    path: /deploy/kubectl/manifests/1
-    value:
-      .k8s/generated/**/flask/*1.1.yaml
-- name: flask-1.1
-  patches:
-  - op: add
-    path: /deploy/kubectl/manifests/1
-    value:
-      .k8s/generated/**/flask/*1.1.yaml
 - name: all
   patches:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
       .k8s/generated/**
+// Generated
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-1.11
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*1.11.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*2.0.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-django-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: graphene
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*.yaml
+
+- name: graphene-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/graphene/*2.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml
+- name: none
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/none/*.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.1.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-3.2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*3.2.yaml
+- name: django
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*.yaml
+
+- name: django-4.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/django/*4.0.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-0.12
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*0.12.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-1.1
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*1.1.yaml
+- name: flask
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*.yaml
+
+- name: flask-2.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/flask/*2.0.yaml
+- name: jinja2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*.yaml
+
+- name: jinja2-3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/jinja2/*3.yaml
+- name: opentelemetry
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*.yaml
+
+- name: opentelemetry-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentelemetry/*newest.yaml
+- name: opentracing
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*.yaml
+
+- name: opentracing-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/opentracing/*newest.yaml
+- name: twisted
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*.yaml
+
+- name: twisted-18
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/twisted/*18.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-4-flask-1.0
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*4.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-flask-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: celery
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*.yaml
+
+- name: celery-5-django-4
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/celery/*5.yaml
+- name: requests
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*.yaml
+
+- name: requests-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/requests/*newest.yaml
+- name: boto3
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*.yaml
+
+- name: boto3-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/boto3/*newest.yaml
+- name: pymongo
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*.yaml
+
+- name: pymongo-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymongo/*newest.yaml
+- name: redis
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*.yaml
+
+- name: redis-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/redis/*newest.yaml
+- name: psycopg2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*.yaml
+
+- name: psycopg2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psycopg2/*newest.yaml
+- name: pyodbc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*.yaml
+
+- name: pyodbc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pyodbc/*newest.yaml
+- name: memcached
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*.yaml
+
+- name: memcached-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/memcached/*newest.yaml
+- name: pylibmc
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*.yaml
+
+- name: pylibmc-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pylibmc/*newest.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*2.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-7
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*7.yaml
+- name: elasticsearch
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*.yaml
+
+- name: elasticsearch-8
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/elasticsearch/*8.yaml
+- name: cassandra
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*.yaml
+
+- name: cassandra-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/cassandra/*newest.yaml
+- name: psutil
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*.yaml
+
+- name: psutil-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/psutil/*newest.yaml
+- name: gevent
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*.yaml
+
+- name: gevent-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/gevent/*newest.yaml
+- name: mysql_connector
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*.yaml
+
+- name: mysql_connector-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysql_connector/*newest.yaml
+- name: pymysql
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*.yaml
+
+- name: pymysql-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymysql/*newest.yaml
+- name: mysqlclient
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*.yaml
+
+- name: mysqlclient-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/mysqlclient/*newest.yaml
+- name: aiohttp
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*.yaml
+
+- name: aiohttp-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiohttp/*newest.yaml
+- name: aiopg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*.yaml
+
+- name: aiopg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiopg/*newest.yaml
+- name: asyncpg
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*.yaml
+
+- name: asyncpg-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/asyncpg/*newest.yaml
+- name: tornado
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*.yaml
+
+- name: tornado-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/tornado/*newest.yaml
+- name: pymemcache
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*.yaml
+
+- name: pymemcache-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/pymemcache/*newest.yaml
+- name: httpx
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*.yaml
+
+- name: httpx-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httpx/*newest.yaml
+- name: httplib2
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*.yaml
+
+- name: httplib2-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/httplib2/*newest.yaml
+- name: prometheus_client
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*.yaml
+
+- name: prometheus_client-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/prometheus_client/*newest.yaml
+- name: sanic
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*.yaml
+
+- name: sanic-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/sanic/*newest.yaml
+- name: aiobotocore
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*.yaml
+
+- name: aiobotocore-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/aiobotocore/*newest.yaml
+- name: kafka
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*.yaml
+
+- name: kafka-python-newest
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**/kafka/*python.yaml

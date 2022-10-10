@@ -116,6 +116,12 @@ skaffold-base-%:
 	docker build --build-arg PYTHON_IMAGE=python:$* -t $(DEFAULT_REPO)/apm-agent-python:$* . ; \
 	docker push $(DEFAULT_REPO)/apm-agent-python:$*
 
+# @help:skaffold-generate:Generate the skaffold configuration on the fly
+skaffold-generate:
+	cd ..; \
+		python3 .k8s/skaffold.py
+	echo "You can now use skaffold with profiles..."
+
 # @help:skaffold-build:Sync workspace with the pods
 skaffold-build:
 	cd ..; \

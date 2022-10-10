@@ -23,6 +23,10 @@ def getFrameworkVersion(framework):
         return list[1]
     return None
 
+# Default values
+templatesLocation = '.k8s/templates'
+generatedLocation = '.k8s/generated'
+
 # Parse command line arguments
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument("-v", "--version", default=".ci/.jenkins_python.yml", help="YAML file with the list of versions.")
@@ -30,10 +34,10 @@ parser.add_argument("-f", "--framework", default=".ci/.jenkins_framework.yml", h
 parser.add_argument("-e", "--exclude", default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework that are excluded.")
 args = vars(parser.parse_args())
 
-with open('.k8s/templates/manifest.yaml.tmpl') as file_:
+with open(f'{templatesLocation}/manifest.yaml.tmpl') as file_:
     manifestTemplate = Template(file_.read())
 
-with open('.k8s/templates/profile.yaml.tmpl') as file_:
+with open(f'{templatesLocation}/profile.yaml.tmpl') as file_:
     profileTemplate = Template(file_.read())
 
 # Read files
@@ -51,7 +55,8 @@ def isExcluded(version, framework):
     return False
 
 def generateSkaffold(version, framework):
-    print(" - generating skaffold for " + version + " and " + framework)
+    """Given the python and framework then generate the k8s manifest and skaffold profile"""
+    # print(" - generating skaffold for " + version + " and " + framework)
     pythonVersion = getPythonVersion(version)
     frameworkName = getFrameworkName(framework)
 
@@ -59,7 +64,7 @@ def generateSkaffold(version, framework):
     output = manifestTemplate.render(pythonVersion=pythonVersion,framework=framework)
 
     # Generate the opinionated folder structure
-    skaffoldDir = f'.k8s/generated/k8s/{pythonVersion}/{frameworkName}'
+    skaffoldDir = f'{generatedLocation}/{pythonVersion}/{frameworkName}'
     Path(skaffoldDir).mkdir(parents=True, exist_ok=True)
 
     # Generate k8s manifest for the given python version and framework
@@ -77,20 +82,20 @@ def updateProfiles(framework):
     # Render the template
     output = profileTemplate.render(framework=framework, name=name, version=version)
 
-    profilesFile = f'.k8s/generated/profiles.yaml'
+    profilesFile = f'{generatedLocation}/profiles.yaml'
     with open(profilesFile, 'a') as f:
         f.write(output)
 
 def main():
     print("Generating kubernetes configuration on the fly...")
-    # Generate the skaffold files
     for version in versionFile.get('PYTHON_VERSION'):
         for framework in frameworkFile.get('FRAMEWORK'):
             if not isExcluded(version, framework):
                 generateSkaffold(version, framework)
+
     print("Generating skaffold configuration on the fly...")
-    filenames = ['.k8s/templates/skaffold.yaml.tmpl', '.k8s/generated/profiles.yaml']
-    with open('skaffold.yml', 'w') as outfile:
+    filenames = [f'{templatesLocation}/skaffold.yaml', f'{generatedLocation}/profiles.yaml']
+    with open('skaffold.yaml', 'w') as outfile:
         for fname in filenames:
             with open(fname) as infile:
                 for line in infile:
