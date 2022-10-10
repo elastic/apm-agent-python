@@ -33,7 +33,11 @@ $ make -C .k8s skaffold-generate
 > :warning: This can expose some secrest, so be careful!
 
 ```bash
-$ make -C .k8s skaffold-buid
+## For the default versions
+$ make -C .k8s skaffold-build
+
+## For all the python versions
+$ FULL=true make -C .k8s skaffold-build
 ```
 
 ### Know what you can do with the existing make

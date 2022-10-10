@@ -2,6 +2,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import yaml
 from jinja2 import Template
 from pathlib import Path
+import shutil
 
 
 ## Helper functions
@@ -100,6 +101,9 @@ def main():
             with open(fname) as infile:
                 for line in infile:
                     outfile.write(line)
+
+    print("Copying dockerignore files...")
+    shutil.copyfile('.k8s/.dockerignore', '.dockerignore')
 
 if __name__ == '__main__':
     main()

@@ -32,7 +32,11 @@ tests/python-agent-junit.xml
 .pytest_cache/
 .python-version
 .env
+
+## Begin K8s specific changes
 .k8s/bin
 .k8s/tags.json
 .k8s/generated/
 skaffold.yaml
+.dockerignore
+## End K8s specific changes
