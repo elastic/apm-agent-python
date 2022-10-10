@@ -1,12 +1,14 @@
-- name: {{ frameworkName }}
+- name: {{ name }}
   patches:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/**/{{ frameworkName }}/*.yaml
+      .k8s/generated/**/{{ name }}/*.yaml
+{% if version %}
 - name: {{ framework }}
   patches:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/**/{{ frameworkName }}/*{{ frameworkVersion }}.yaml
+      .k8s/generated/**/{{ name }}/*{{ version }}.yaml
+{% endif %}
