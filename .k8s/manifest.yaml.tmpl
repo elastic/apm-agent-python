@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: apm-agen-python-<version>-<framework>
+  name: "apm-agen-python-{{ pythonVersion }}-{{ framework }}"
   labels:
-    repo: apm-agent-python
-    type: unit-test
-    version: <version>
-    framework: <framework>
+    repo: "apm-agent-python"
+    type: "unit-test"
+    version: "{{ pythonVersion }}"
+    framework: "{{ framework }}"
 spec:
   ttlSecondsAfterFinished: 100
   backoffLimit: 0
@@ -14,9 +14,9 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-      - name: python-<version>
-        image: apm-agent-python-<version>
+      - name: python-{{ pythonVersion }}
+        image: "apm-agent-python-{{ pythonVersion }}"
         command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
-          value: "<framework>"
+          value: "{{ framework }}"
