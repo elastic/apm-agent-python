@@ -1,0 +1,104 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: apm-agent-python
+# The list of docker images to be built and in sync with the workspace by default
+build:
+  local:
+    tryImportMissing: false
+    concurrency: 0
+  artifacts:
+  - image: apm-agent-python-3.6
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        PYTHON_VERSION: "3.6"
+  - image: apm-agent-python-3.10
+    context: .
+    docker:
+      dockerfile: ".k8s/Dockerfile"
+      buildArgs:
+        PYTHON_VERSION: "3.10"
+deploy:
+  kubectl:
+    manifests: ## need a default manifest so we can use profiles to be added easily . Maybe a different approach could be done
+    - ".k8s/generated/default.yaml"
+
+profiles:
+# The list of docker images to be built for a full matrix coverage validation
+# reverse order for the python version so the console output shows those versions nice and tidy
+- name: python-3.10
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.10/**
+- name: python-3.9
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /build/artifacts/1
+    value:
+      image: apm-agent-python-3.9
+      context: .
+      docker:
+        dockerfile: ".k8s/Dockerfile"
+        buildArgs:
+          PYTHON_VERSION: "3.9"
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.9/**
+- name: python-3.8
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /build/artifacts/1
+    value:
+      image: apm-agent-python-3.8
+      context: .
+      docker:
+        dockerfile: ".k8s/Dockerfile"
+        buildArgs:
+          PYTHON_VERSION: "3.8"
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.8/**
+- name: python-3.7
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /build/artifacts/1
+    value:
+      image: apm-agent-python-3.7
+      context: .
+      docker:
+        dockerfile: ".k8s/Dockerfile"
+        buildArgs:
+          PYTHON_VERSION: "3.7"
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.7/**
+- name: python-3.6
+  activation:
+    - env: FULL=true
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/3.6/**
+- name: all
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/**
+// Generated
