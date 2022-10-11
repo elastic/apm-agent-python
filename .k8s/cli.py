@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import click
 from jinja2 import Template
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -77,12 +78,8 @@ def build(version, repo, extra):
     extraFlag = ''
     if extra:
         extraFlag = f'{extra}'
-    command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output=tags.json {profilesFlag}'
-    click.echo(click.style(f"TBC {command}", fg='red'))
-    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    for line in p.stdout.readlines():
-        print(line)
-    retval = p.wait()
+    command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output={generatedLocation}/tags.json {profilesFlag}'
+    runCommand(command)
 
 
 @cli.command('test', short_help='Test support matrix')
@@ -150,6 +147,16 @@ def isExcluded(version, framework, excludeFile):
         if (value.get('PYTHON_VERSION') == version and value.get('FRAMEWORK') == framework):
             return True
     return False
+
+def runCommand(cmd):
+    """Given the command to run it runs the command and print the output"""
+    click.echo(click.style(f"Running {cmd}", fg='blue'))
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True, shell=True) as p:
+        for line in p.stdout:
+            click.echo(click.style(line.strip(), fg='yellow'))
+
+    if p.returncode != 0:
+        raise subprocess.CalledProcessError(p.returncode, p.args)
 
 def updateProfiles(framework):
     """Given the python and framework then update the generated skaffold profiles for that framework and version"""

@@ -107,21 +107,6 @@ skaffold-base-%:
 	docker build --build-arg PYTHON_IMAGE=python:$* -t $(DEFAULT_REPO)/apm-agent-python:$* . ; \
 	docker push $(DEFAULT_REPO)/apm-agent-python:$*
 
-# @help:skaffold-generate:Generate the skaffold configuration on the fly
-skaffold-generate:
-	cd ..; \
-		python3 .k8s/skaffold.py \
-			-f $(FRAMEWORKS) \
-			-v $(VERSIONS) \
-			-e $(EXCLUDE)
-
-# @help:skaffold-build:Sync workspace with the pods
-skaffold-build:
-	cd ..; \
-	$(SKAFFOLD) build \
-		--default-repo=$(DEFAULT_REPO) \
-		--file-output=$(CURDIR)/tags.json
-
 # @help:skaffold-deploy:Deploy the pods
 skaffold-deploy:
 	cd ..; \
