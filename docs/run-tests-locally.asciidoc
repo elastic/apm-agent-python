@@ -9,7 +9,7 @@ https://github.com/elastic/apm-agent-python/blob/main/Jenkinsfile[Jenkins Config
 [float]
 [[pre-commit]]
 ==== Pre Commit
-We run our git hooks on every commit to automatically point out issues in code. Those issues are also detected within the Jenkins pipeline.
+We run our git hooks on every commit to automatically point out issues in code. Those issues are also detected within the GitHub actions.
 Please follow the installation steps stated in https://pre-commit.com/#install.
 
 [float]
@@ -19,12 +19,12 @@ We run two code linters `isort` and `flake8`. You can trigger each single one lo
 
 [source,bash]
 ----
-$ ./tests/scripts/docker/isort.sh <pip-cache-dir>
+$ pre-commit run -a isort
 ----
 
 [source,bash]
 ----
-$ ./tests/scripts/docker/flake8.sh <pip-cache-dir>
+$ pre-commit run -a flake8
 ----
 
 [float]
@@ -34,7 +34,7 @@ We test that the code is formatted using `black`. You can trigger this check by 
 
 [source,bash]
 ----
-$ ./tests/scripts/docker/black.sh <pip-cache-dir>
+$ pre-commit run -a black
 ----
 
 [float]
@@ -72,5 +72,7 @@ checkout, you might do something like this:
 
 [source,bash]
 ----
-$ ./scripts/compose.py start 7.3 --with-agent-python-django --with-opbeans-python --opbeans-python-agent-local-repo=~/elastic/apm-agent-python
+$ ./scripts/compose.py start 7.3 \
+    --with-agent-python-django --with-opbeans-python \
+    --opbeans-python-agent-local-repo=~/elastic/apm-agent-python
 ----
