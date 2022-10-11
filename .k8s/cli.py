@@ -1,0 +1,146 @@
+#!/usr/bin/python
+import click
+from jinja2 import Template
+from pathlib import Path
+import shutil
+import yaml
+
+# Default values
+templatesLocation = '.k8s/templates'
+generatedLocation = '.k8s/generated'
+
+with open(f'{templatesLocation}/manifest.yaml.tmpl') as file_:
+    manifestTemplate = Template(file_.read())
+
+with open(f'{templatesLocation}/profile.yaml.tmpl') as file_:
+    profileTemplate = Template(file_.read())
+
+@click.group()
+def cli():
+    """This script enriches Skaffold to run the given commands in K8s for the matrix support."""
+    pass
+
+@cli.command('generate', short_help='Generate the Skaffold context')
+@click.option('--exclude', '-x', show_default=True, default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework tuples that are excluded")
+@click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
+@click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
+def generate(version, framework, exclude):
+    """This script enriches Skaffold to run the given commands in K8s for the matrix support."""
+    click.echo(click.style(f"generate(exclude={exclude} framework={framework} version={version})", fg='blue'))
+    # Read files
+    with open(version, "r") as fp:
+        versionFile = yaml.safe_load(fp)
+    with open(framework, "r") as fp:
+        frameworkFile = yaml.safe_load(fp)
+    with open(exclude, "r") as fp:
+        excludeFile = yaml.safe_load(fp)
+
+    click.echo(click.style("Generating kubernetes configuration on the fly...", fg='yellow'))
+    for ver in versionFile.get('PYTHON_VERSION'):
+        for fra in frameworkFile.get('FRAMEWORK'):
+            if not isExcluded(ver, fra, excludeFile):
+                generateSkaffold(ver, fra)
+
+    click.echo(click.style("Generating skaffold configuration on the fly...", fg='yellow'))
+    filenames = [f'{templatesLocation}/skaffold.yaml', f'{generatedLocation}/profiles.tmp']
+    with open('skaffold.yaml', 'w') as outfile:
+        for fname in filenames:
+            with open(fname) as infile:
+                for line in infile:
+                    outfile.write(line)
+
+    click.echo(click.style("Copying dockerignore file...", fg='yellow'))
+    # avoid exposing anything unrelated to the source code.
+    shutil.copyfile('.k8s/.dockerignore', '.dockerignore')
+
+    click.echo(click.style("Copying default yaml file...", fg='yellow'))
+    # skaffold requires a default manifest ... this is the workaround for now.
+    shutil.copyfile(f'{templatesLocation}/default.yaml', f'{generatedLocation}/default.yaml')
+
+
+@cli.command('build', short_help='Build the docker images')
+@click.option('--version', '-v', multiple=True, help="Python version to be built")
+def build(version):
+    """Build docker images that contain your workspace."""
+    click.echo('\n'.join(version))
+
+@cli.command('test', short_help='Test support matrix')
+@click.option('--version', '-v', multiple=True, help="Python version to be tested.")
+@click.option('--framework', '-f', multiple=True, help="Framework to be tested.")
+def test(framework, version):
+    """Run the test support matrix for the default version and frameworks or filtered by them."""
+    click.echo(click.style(f"framework={framework} version={version}", fg='blue'))
+    deploy(framework, version)
+
+
+def deploy(framework, version):
+    click.echo(click.style('TBC', fg='red'))
+
+
+def generateSkaffold(version, framework):
+    """Given the python and framework then generate the k8s manifest and skaffold profile"""
+    # print(" - generating skaffold for " + version + " and " + framework)
+    pythonVersion = getPythonVersion(version)
+    frameworkName = getFrameworkName(framework)
+
+    # Render the template
+    output = manifestTemplate.render(pythonVersion=pythonVersion,framework=framework)
+
+    # Generate the opinionated folder structure
+    skaffoldDir = f'{generatedLocation}/{pythonVersion}/{frameworkName}'
+    Path(skaffoldDir).mkdir(parents=True, exist_ok=True)
+
+    # Generate k8s manifest for the given python version and framework
+    skaffoldFile = f'{skaffoldDir}/{pythonVersion}-{framework}.yaml'
+    with open(skaffoldFile, 'w') as f:
+        f.write(output)
+
+    updateProfiles(framework)
+
+
+## Helper functions
+#########
+def getPythonVersion(version):
+    """Given the format python-version then returns version"""
+    list = version.split("-")
+    return list[1]
+
+def getFrameworkName(framework):
+    """Given the format framework-version then returns framework"""
+    list = framework.split("-")
+    return list[0]
+
+def getFrameworkVersion(framework):
+    """Given the format framework-version then returns version otherwise None"""
+    list = framework.split("-")
+    if len(list) > 1:
+        return list[1]
+    return None
+
+def isExcluded(version, framework, excludeFile):
+    """Given the version and framework then it returns whether the tuple is excluded"""
+    for value in excludeFile.get('exclude'):
+        if (value.get('PYTHON_VERSION') == version and value.get('FRAMEWORK') == framework):
+            return True
+    return False
+
+def updateProfiles(framework):
+    """Given the python and framework then update the generated skaffold profiles for that framework and version"""
+    name = getFrameworkName(framework)
+    version = getFrameworkVersion(framework)
+    # Render the template
+    output = profileTemplate.render(framework=framework, name=name, version=version)
+
+    profilesFile = f'{generatedLocation}/profiles.tmp'
+    with open(profilesFile, 'a') as f:
+        f.write(output)
+
+## Main
+#########
+
+cli.add_command(generate)
+cli.add_command(build)
+cli.add_command(test)
+
+if __name__ == '__main__':
+    cli()
