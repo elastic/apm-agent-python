@@ -49,7 +49,7 @@ $ make -C .k8s help
 ## Skaffold
 
 ```bash
-$ make -C .k8s skaffold-build skaffold-test
+$ python3 .k8s/cli.py --help
 ```
 
 ### Test any given framework
@@ -62,10 +62,10 @@ $ python3 .k8s/cli.py build
 $ python3 .k8s/cli.py build --version python-3.9 --version python-3.10
 
 ## Test django
-$ make -C .k8s skaffold-test-django
+$ python3 .k8s/cli.py test --framework django
 
-## Test django-1.1
-$ make -C .k8s skaffold-test-django-1.1
+## Test django-1.1 in python-3.6
+$ python3 .k8s/cli.py test --framework django-1.1 --version python-3.6
 ```
 
 ## Implementation details

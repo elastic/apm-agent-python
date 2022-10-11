@@ -86,18 +86,23 @@ def build(version, repo, extra):
 @click.option('--framework', '-f', multiple=True, help="Framework to be tested.")
 @click.option('--version', '-v', multiple=True, help="Python version to be tested.")
 @click.option('--extra', '-x', help="Extra arguments for the skaffold tool.")
-def test(framework, version, extra):
+@click.option('--namespace', '-n', show_default=True, default="default", help="Run the in the specified namespace")
+def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
     click.echo(click.style(f"framework={framework} version={version}", fg='blue'))
-    deploy(framework, version, extra)
+    deploy(framework, version, extra, namespace)
 
 
-def deploy(framework, version, extra):
+def deploy(framework, version, extra, namespace):
     # Enable the skaffold profiles matching the given framework and version, if any
-    profiles = ''
+    profilesFlag = ''
     if framework or version:
-        profiles = '-p ' + ','.join(framework + version)
-    click.echo(click.style(f"TBC skaffold deploy {extra} {profiles} ", fg='red'))
+        profilesFlag = '-p ' + ','.join(framework + version)
+    extraFlag = ''
+    if extra:
+        extraFlag = f'{extra}'
+    command = f'skaffold deploy {extraFlag} --build-artifacts={generatedLocation}/tags.json -n {namespace} {profilesFlag}'
+    runCommand(command)
 
 
 
