@@ -188,6 +188,8 @@ class TraceParent(object):
         # this works for all known WSGI implementations
         if isinstance(headers, list):
             return ",".join([item[1] for item in headers if item[0] == key])
+        elif not hasattr(headers, "get") and hasattr(headers, "__iter__"):
+            return ",".join([item[1] for item in headers if item[0] == key])
         return headers.get(key)
 
     def _parse_tracestate(self, tracestate) -> Dict[str, str]:
