@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "apm-agen-python-3-6-none"
+  name: "apm-agen-python-{{ version }}-none"
   labels:
     repo: "apm-agent-python"
     type: "unit-test"
-    version: "3.6"
+    version: "{{ version }}"
     framework: "none"
 spec:
   ttlSecondsAfterFinished: 0
@@ -14,9 +14,8 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-      - name: "python-3-6"
-        image: "apm-agent-python-3.6"
-        command: [ "echo hi" ]
+      - name: "{{ name }}"
+        command: [ "tests/scripts/run_tests.sh" ]
         env:
         - name: WEBFRAMEWORK
           value: "none"
