@@ -132,7 +132,8 @@ class PyMongoCursorInstrumentation(AbstractInstrumentedModule):
             span_type="db",
             span_subtype="mongodb",
             span_action="query",
-            extra={"destination": {}},
+            extra=context,
+            leaf=True,
         ) as span:
             response = wrapped(*args, **kwargs)
             if span.context and instance.address:

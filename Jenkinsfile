@@ -67,35 +67,6 @@ pipeline {
             }
           }
         }
-        stage('Sanity checks') {
-          when {
-            beforeAgent true
-            allOf {
-              expression { return env.ONLY_DOCS == "false" }
-              anyOf {
-                not { changeRequest() }
-                expression { return params.Run_As_Main_Branch }
-              }
-            }
-          }
-          environment {
-            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
-          }
-          steps {
-            withGithubNotify(context: 'Sanity checks', tab: 'tests') {
-              deleteDir()
-              unstash 'source'
-              script {
-                docker.image('python:3.7-stretch').inside(){
-                  dir("${BASE_DIR}"){
-                    // registry: '' will help to disable the docker login
-                    preCommit(commit: "${GIT_BASE_COMMIT}", junit: true, registry: '')
-                  }
-                }
-              }
-            }
-          }
-        }
         /**
         Execute unit tests.
         */
