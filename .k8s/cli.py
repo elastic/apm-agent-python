@@ -3,6 +3,7 @@ import click
 from jinja2 import Template
 from pathlib import Path
 import shutil
+import subprocess
 import yaml
 
 # Variables
@@ -62,14 +63,26 @@ def generate(version, framework, exclude):
 
 @cli.command('build', short_help='Build the docker images')
 @click.option('--version', '-v', multiple=True, help="Python version to be built")
-@click.option('--extra', '-x', multiple=True, help="Extra arguments for the skaffold tool.")
-def build(version):
-    """Build docker images that contain your workspace."""
+@click.option('--repo', '-r', show_default=True, default="docker.elastic.co/beats-dev", help="Docker repository")
+@click.option('--extra', '-x', help="Extra arguments for the skaffold tool.")
+def build(version, repo, extra):
+    """Build docker images that contain your workspace and publish them to the given Docker repository."""
     # Enable the skaffold profiles matching the given version, if any
-    profiles = ''
+    profilesFlag = ''
     if version:
-        profiles = '-p ' +','.join(version)
-    click.echo(click.style(f"TBC skaffold build {profiles}", fg='red'))
+        profilesFlag = '-p ' +','.join(version)
+    defaultRepositoryFlag = ''
+    if repo:
+        defaultRepositoryFlag = f'--default-repo={repo}'
+    extraFlag = ''
+    if extra:
+        extraFlag = f'{extra}'
+    command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output=tags.json {profilesFlag}'
+    click.echo(click.style(f"TBC {command}", fg='red'))
+    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    for line in p.stdout.readlines():
+        print(line)
+    retval = p.wait()
 
 
 @cli.command('test', short_help='Test support matrix')
