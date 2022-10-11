@@ -33,9 +33,12 @@
 import atexit
 import functools
 import platform
+from typing import TypeVar
+
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
 
 
-def noop_decorator(func):
+def noop_decorator(func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         return func(*args, **kwargs)
