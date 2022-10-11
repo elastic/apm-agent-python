@@ -11,6 +11,9 @@ import yaml
 templatesLocation = '.k8s/templates'
 generatedLocation = '.k8s/generated'
 
+with open(f'{templatesLocation}/default.yaml.tmpl') as file_:
+    defaultManifestTemplate = Template(file_.read())
+
 with open(f'{templatesLocation}/manifest.yaml.tmpl') as file_:
     manifestTemplate = Template(file_.read())
 
@@ -20,6 +23,8 @@ with open(f'{templatesLocation}/framework.profile.yaml.tmpl') as file_:
 with open(f'{templatesLocation}/python.profile.yaml.tmpl') as file_:
     pythonTemplate = Template(file_.read())
 
+with open(f'{templatesLocation}/skaffold.yaml.tmpl') as file_:
+    skaffoldTemplate = Template(file_.read())
 
 @click.group()
 def cli():
@@ -28,10 +33,11 @@ def cli():
 
 
 @cli.command('generate', short_help='Generate the Skaffold context')
+@click.option('--default', '-d', show_default=True, default="python-3.10", help="Default python version")
 @click.option('--exclude', '-e', show_default=True, default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework tuples that are excluded")
 @click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
-def generate(version, framework, exclude):
+def generate(default, version, framework, exclude):
     """Generate the Skaffold files for the given python and frameworks."""
     click.echo(click.style(f"generate(exclude={exclude} framework={framework} version={version})", fg='blue'))
     # Read files
@@ -46,16 +52,27 @@ def generate(version, framework, exclude):
     Path(generatedLocation).mkdir(parents=True, exist_ok=False)
 
     click.echo(click.style("Generating kubernetes configuration on the fly...", fg='yellow'))
+
+    # Generate profiles for the given python versions
     for ver in versionFile.get('PYTHON_VERSION'):
         generateVersionProfiles(ver)
 
+    # Generate profiles for the given python and framewok versions
     for ver in versionFile.get('PYTHON_VERSION'):
         for fra in frameworkFile.get('FRAMEWORK'):
             if not isExcluded(ver, fra, excludeFile):
-                generateSkaffold(ver, fra)
+                generateSkaffoldEntries(ver, fra)
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg='yellow'))
-    filenames = [f'{templatesLocation}/skaffold.yaml', f'{generatedLocation}/profiles.tmp']
+
+    # Generate skaffold with the default python version
+    output = skaffoldTemplate.render(version=getPythonVersion(default))
+    profilesFile = f'{generatedLocation}/skaffold.yaml.tmp'
+    with open(profilesFile, 'w') as f:
+        f.write(output)
+
+    # Aggregate all the skaffold files and converge
+    filenames = [f'{generatedLocation}/skaffold.yaml.tmp', f'{generatedLocation}/profiles.tmp']
     with open('skaffold.yaml', 'w') as outfile:
         for fname in filenames:
             with open(fname) as infile:
@@ -68,7 +85,7 @@ def generate(version, framework, exclude):
 
     click.echo(click.style("Copying default yaml file...", fg='yellow'))
     # skaffold requires a default manifest ... this is the workaround for now.
-    shutil.copyfile(f'{templatesLocation}/default.yaml', f'{generatedLocation}/default.yaml')
+    generateDefaultManifest(default)
 
 
 @cli.command('build', short_help='Build the docker images')
@@ -114,7 +131,7 @@ def deploy(framework, version, extra, namespace):
     runCommand(command)
 
 
-def generateSkaffold(version, framework):
+def generateSkaffoldEntries(version, framework):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
     # print(" - generating skaffold for " + version + " and " + framework)
     pythonVersion = getPythonVersion(version)
@@ -170,6 +187,14 @@ def runCommand(cmd):
 
     if p.returncode != 0:
         raise subprocess.CalledProcessError(p.returncode, p.args)
+
+def generateDefaultManifest(version):
+    """Given the python then generate the default manifest"""
+    output = defaultManifestTemplate.render(name=version, version=getPythonVersion(version))
+
+    profilesFile = f'{generatedLocation}/default.yaml'
+    with open(profilesFile, 'w') as f:
+        f.write(output)
 
 def generateVersionProfiles(version):
     """Given the python then update the generated skaffold profiles for that version"""

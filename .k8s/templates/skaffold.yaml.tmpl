@@ -10,12 +10,12 @@ build:
   artifacts:
   # Skaffold requires a default artifacts so we can use profiles with a patch command
   # using the latest python version supported.
-  - image: apm-agent-python-3.10
+  - image: apm-agent-python-{{ version }}
     context: .
     docker:
       dockerfile: ".k8s/Dockerfile"
       buildArgs:
-        PYTHON_VERSION: "3.10"
+        PYTHON_VERSION: "{{ version }}"
 deploy:
   kubectl:
     manifests:
@@ -24,3 +24,4 @@ deploy:
 
 profiles:
 # Generated
+
