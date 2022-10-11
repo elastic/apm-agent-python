@@ -72,5 +72,7 @@ checkout, you might do something like this:
 
 [source,bash]
 ----
-$ ./scripts/compose.py start 7.3 --with-agent-python-django --with-opbeans-python --opbeans-python-agent-local-repo=~/elastic/apm-agent-python
+$ ./scripts/compose.py start 7.3 \
+    --with-agent-python-django --with-opbeans-python \
+    --opbeans-python-agent-local-repo=~/elastic/apm-agent-python
 ----
