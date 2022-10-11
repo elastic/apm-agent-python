@@ -14,8 +14,11 @@ generatedLocation = '.k8s/generated'
 with open(f'{templatesLocation}/manifest.yaml.tmpl') as file_:
     manifestTemplate = Template(file_.read())
 
-with open(f'{templatesLocation}/profile.yaml.tmpl') as file_:
-    profileTemplate = Template(file_.read())
+with open(f'{templatesLocation}/framework.profile.yaml.tmpl') as file_:
+    frameworkTemplate = Template(file_.read())
+
+with open(f'{templatesLocation}/python.profile.yaml.tmpl') as file_:
+    pythonTemplate = Template(file_.read())
 
 
 @click.group()
@@ -29,7 +32,7 @@ def cli():
 @click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
 def generate(version, framework, exclude):
-    """This script enriches Skaffold to run the given commands in K8s for the matrix support."""
+    """Generate the Skaffold files for the given python and frameworks."""
     click.echo(click.style(f"generate(exclude={exclude} framework={framework} version={version})", fg='blue'))
     # Read files
     with open(version, "r") as fp:
@@ -39,7 +42,13 @@ def generate(version, framework, exclude):
     with open(exclude, "r") as fp:
         excludeFile = yaml.safe_load(fp)
 
+    # Generate the generated folder
+    Path(generatedLocation).mkdir(parents=True, exist_ok=False)
+
     click.echo(click.style("Generating kubernetes configuration on the fly...", fg='yellow'))
+    for ver in versionFile.get('PYTHON_VERSION'):
+        generateVersionProfiles(ver)
+
     for ver in versionFile.get('PYTHON_VERSION'):
         for fra in frameworkFile.get('FRAMEWORK'):
             if not isExcluded(ver, fra, excludeFile):
@@ -105,7 +114,6 @@ def deploy(framework, version, extra, namespace):
     runCommand(command)
 
 
-
 def generateSkaffold(version, framework):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
     # print(" - generating skaffold for " + version + " and " + framework)
@@ -124,7 +132,7 @@ def generateSkaffold(version, framework):
     with open(skaffoldFile, 'w') as f:
         f.write(output)
 
-    updateProfiles(framework)
+    generateFrameworkProfiles(framework)
 
 
 ## Helper functions
@@ -163,12 +171,22 @@ def runCommand(cmd):
     if p.returncode != 0:
         raise subprocess.CalledProcessError(p.returncode, p.args)
 
-def updateProfiles(framework):
-    """Given the python and framework then update the generated skaffold profiles for that framework and version"""
+def generateVersionProfiles(version):
+    """Given the python then update the generated skaffold profiles for that version"""
+    pythonVersion = getPythonVersion(version)
+    # Render the template
+    output = pythonTemplate.render(name=version, version=pythonVersion)
+
+    profilesFile = f'{generatedLocation}/profiles.tmp'
+    with open(profilesFile, 'a') as f:
+        f.write(output)
+
+def generateFrameworkProfiles(framework):
+    """Given the framework then update the generated skaffold profiles for that framework"""
     name = getFrameworkName(framework)
     version = getFrameworkVersion(framework)
     # Render the template
-    output = profileTemplate.render(framework=framework, name=name, version=version)
+    output = frameworkTemplate.render(framework=framework, name=name, version=version)
 
     profilesFile = f'{generatedLocation}/profiles.tmp'
     with open(profilesFile, 'a') as f:
