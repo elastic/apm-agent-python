@@ -5,7 +5,7 @@ from pathlib import Path
 import shutil
 import yaml
 
-# Default values
+# Variables
 templatesLocation = '.k8s/templates'
 generatedLocation = '.k8s/generated'
 
@@ -15,13 +15,15 @@ with open(f'{templatesLocation}/manifest.yaml.tmpl') as file_:
 with open(f'{templatesLocation}/profile.yaml.tmpl') as file_:
     profileTemplate = Template(file_.read())
 
+
 @click.group()
 def cli():
     """This script enriches Skaffold to run the given commands in K8s for the matrix support."""
     pass
 
+
 @cli.command('generate', short_help='Generate the Skaffold context')
-@click.option('--exclude', '-x', show_default=True, default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework tuples that are excluded")
+@click.option('--exclude', '-e', show_default=True, default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework tuples that are excluded")
 @click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
 def generate(version, framework, exclude):
@@ -60,21 +62,33 @@ def generate(version, framework, exclude):
 
 @cli.command('build', short_help='Build the docker images')
 @click.option('--version', '-v', multiple=True, help="Python version to be built")
+@click.option('--extra', '-x', multiple=True, help="Extra arguments for the skaffold tool.")
 def build(version):
     """Build docker images that contain your workspace."""
-    click.echo('\n'.join(version))
+    # Enable the skaffold profiles matching the given version, if any
+    profiles = ''
+    if version:
+        profiles = '-p ' +','.join(version)
+    click.echo(click.style(f"TBC skaffold build {profiles}", fg='red'))
+
 
 @cli.command('test', short_help='Test support matrix')
-@click.option('--version', '-v', multiple=True, help="Python version to be tested.")
 @click.option('--framework', '-f', multiple=True, help="Framework to be tested.")
-def test(framework, version):
+@click.option('--version', '-v', multiple=True, help="Python version to be tested.")
+@click.option('--extra', '-x', help="Extra arguments for the skaffold tool.")
+def test(framework, version, extra):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
     click.echo(click.style(f"framework={framework} version={version}", fg='blue'))
-    deploy(framework, version)
+    deploy(framework, version, extra)
 
 
-def deploy(framework, version):
-    click.echo(click.style('TBC', fg='red'))
+def deploy(framework, version, extra):
+    # Enable the skaffold profiles matching the given framework and version, if any
+    profiles = ''
+    if framework or version:
+        profiles = '-p ' + ','.join(framework + version)
+    click.echo(click.style(f"TBC skaffold deploy {extra} {profiles} ", fg='red'))
+
 
 
 def generateSkaffold(version, framework):
