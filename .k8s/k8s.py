@@ -1,32 +1,35 @@
 #!/usr/bin/python
 import click
-from time import sleep
+import utils
 from kubernetes.client.rest import ApiException
 from kubernetes import client, config, watch
 
 
 def results(framework, version, namespace):
-    """Given the python and framework then gather the results when the jobs have finished"""
-    click.echo(click.style(f"TBC framework={framework} version={version}", fg='blue'))
+    """Given the python and framework tuples then gather the results when the jobs have finished"""
     config.load_kube_config()
     with client.ApiClient() as api_client:
         api_instance = client.BatchV1Api(api_client)
         try:
-            ## TOOD: label selector to be specifc!
+            ## TODO: label selector to be specifc!
             label_selector = f'repo=apm-agent-python,type=unit-test'
             result = api_instance.list_namespaced_job(namespace, label_selector=label_selector)
+
+            click.echo(click.style(f"There are {len(result.items)} jobs running ...", fg='yellow'))
+            # If there are jobs for the given selector
             if len(result.items) > 0:
                 jobs = [obj.metadata.name for obj in result.items]
-                wait_for(jobs, label_selector, namespace)
-            click.echo(click.style(f"Results are now ready...", fg='green'))
+                collect_logs(jobs, label_selector, namespace)
+                click.echo(click.style(f"Results are now ready...", fg='green'))
         except ApiException as e:
-            print("Exception when calling BatchV1Api->list_namespaced_job: %s\n" % e)
+            raise Exception("Exception when calling BatchV1Api->list_namespaced_job: %s\n" % e)
 
 
-def wait_for(jobs, label_selector, namespace):
+def collect_logs(jobs, label_selector, namespace):
+    """Given the K8s jobs then gather the results and logs"""
     w = watch.Watch()
     failed_jobs = []
-    print(f"Waiting for jobs to complete... (label_selector={label_selector})\n")
+    click.echo(click.style("Waiting for jobs to complete...", fg='yellow'))
     for event in w.stream(
         client.BatchV1Api().list_namespaced_job,
         namespace=namespace,
@@ -36,72 +39,62 @@ def wait_for(jobs, label_selector, namespace):
         o = event["object"]
 
         if o.status.succeeded:
-            print(f"{o.metadata.name} completed")
-            print(f"debug {o.metadata}")
-            gatherLogs(o.metadata.name, namespace)
+            click.echo(click.style(f"{o.metadata.name} completed", fg='green'))
+            gather_logs(o, namespace)
             jobs.remove(o.metadata.name)
             if len(jobs) == 0:
                 w.stop()
                 if len(failed_jobs) > 0:
                     raise Exception("Failed jobs " + str(failed_jobs))
-                return
             else:
-                print("   There are some jobs still running " + str(jobs))
+                click.echo(click.style(f"There are some jobs still running {str(jobs)}", fg='yellow'))
 
         if not o.status.active and o.status.failed:
-            print(f"{o.metadata.name} failed")
-            gatherLogs(o.metadata.name, namespace)
+            click.echo(click.style(f"{o.metadata.name} failed", fg='red'))
+            gather_logs(o, namespace)
             jobs.remove(o.metadata.name)
             failed_jobs.append(o.metadata.name)
             if len(jobs) == 0:
                 w.stop()
                 raise Exception("Failed jobs " + str(failed_jobs))
             else:
-                print("   There are some jobs still running " + str(jobs))
+                click.echo(click.style(f"There are some jobs still running {str(jobs)}", fg='yellow'))
 
 
-def gatherLogs(pod_name, namespace):
+def gather_logs(job, namespace):
+    try:
+        pods_list = get_pods_for_job(job, namespace)
+
+        if pods_list == None or len(pods_list.items) == 0:
+            ## TODO something went wrong
+            return
+
+        # NOTE: it assumes 1 container in the pod
+        pod_name = pods_list.items[0].metadata.name
+
+        # Gather logs
+        export_logs(job.metadata.name, pod_name, namespace)
+    except ApiException as e:
+        print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+
+
+def export_logs(job_name, pod_name, namespace):
     try:
         api_instance = client.CoreV1Api()
-        api_response = api_instance.read_namespaced_pod_log(name=pod_name, namespace=namespace)
-        print(api_response)
+        pod_log_response = api_instance.read_namespaced_pod_log(name=pod_name, namespace=namespace, _return_http_data_only=True, _preload_content=False)
+        pod_log = pod_log_response.data.decode("utf-8")
+        with open(f'{utils.Constants.BUILD}/{job_name}.log', 'w') as f:
+            f.write(pod_log)
     except ApiException as e:
-        print(f'Found exception in reading the logs {e}')
+        print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
 
-def wait_for_job(framework, version, namespace):
-    config.load_kube_config()
-    w = watch.Watch()
-    ## TODO: gather the list of jobs dynamically
-    jobs = ['apm-agen-python-3-10-django-4-0', 'apm-agen-python-3-10-none', 'apm-agen-python-3-10-django-3-1', 'apm-agen-python-3-10-django-3-2']
-    failed_jobs = []
-    label_selector = f'repo=apm-agent-python,type=unit-test'
-    print(f"Waiting for jobs to complete... (label_selector={label_selector})\n")
-    for event in w.stream(
-        client.BatchV1Api().list_namespaced_job,
-        namespace=namespace,
-        label_selector=label_selector,
-        timeout_seconds=0
-    ):
-        o = event["object"]
 
-        if o.status.succeeded:
-            print(f"{o.metadata.name} completed")
-            jobs.remove(o.metadata.name)
-            if len(jobs) == 0:
-                w.stop()
-                if len(failed_jobs) > 0:
-                    raise Exception("Failed jobs " + str(failed_jobs))
-                return
-            else:
-                print("   There are some jobs still running " + str(jobs))
-
-        if not o.status.active and o.status.failed:
-            jobs.remove(o.metadata.name)
-            failed_jobs.append(o.metadata.name)
-            print(f"{o.metadata.name} failed")
-            if len(jobs) == 0:
-                w.stop()
-                raise Exception("Failed jobs " + str(failed_jobs))
-            else:
-                print("   There are some jobs still running " + str(jobs))
-
+def get_pods_for_job(job, namespace):
+    try:
+        api_instance = client.CoreV1Api()
+        controllerUid = job.spec.template.metadata.labels["controller-uid"]
+        pod_label_selector = "controller-uid=" + controllerUid
+        return api_instance.list_namespaced_pod(namespace=namespace, label_selector=pod_label_selector, timeout_seconds=10)
+    except ApiException as e:
+        print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+        return None

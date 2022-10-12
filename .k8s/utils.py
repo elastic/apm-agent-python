@@ -8,6 +8,7 @@ class Constants:
 
     # pylint: disable=R0903
     TEMPLATES: Final[str] = ".k8s/templates"
+    BUILD: Final[str] = "build"
     GENERATED: Final[str] = ".k8s/generated"
     DEFAULT_TEMPLATE: Final[str] = f"{TEMPLATES}/default.yaml.tmpl"
     MANIFEST_TEMPLATE: Final[str] = f"{TEMPLATES}/manifest.yaml.tmpl"
@@ -53,4 +54,3 @@ def runCommand(cmd):
 
     if p.returncode != 0:
         raise subprocess.CalledProcessError(p.returncode, p.args)
-
