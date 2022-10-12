@@ -37,7 +37,7 @@ def generateSkaffoldEntries(version, framework, ttl):
     with open(skaffoldFile, 'w') as f:
         f.write(output)
 
-    generateFrameworkProfiles(framework)
+    generateFrameworkProfiles(version, framework)
 
 
 def generateSkaffoldTemplate(default):
@@ -62,12 +62,13 @@ def generateVersionProfiles(version):
     appendProfile(output)
 
 
-def generateFrameworkProfiles(framework):
+def generateFrameworkProfiles(python, framework):
     """Given the framework then update the generated skaffold profiles for that framework"""
-    name = utils.getFrameworkName(framework)
-    version = utils.getFrameworkVersion(framework)
+    frameworkName = utils.getFrameworkName(framework)
+    frameworkVersion = utils.getFrameworkVersion(framework)
+    pythonVersion = utils.getPythonVersion(python)
     # Render the template
-    output = frameworkTemplate.render(framework=framework, name=name, version=version)
+    output = frameworkTemplate.render(framework=framework, frameworkName=frameworkName, frameworkVersion=frameworkVersion, python=python, pythonVersion=pythonVersion)
     appendProfile(output)
 
 

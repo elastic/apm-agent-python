@@ -15,7 +15,7 @@ import yaml
 @click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
 @click.option('--ttl', '-t', show_default=True, default="100", help="K8s ttlSecondsAfterFinished")
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
-def generate(default, exclude,force, framework, ttl, version):
+def generate(default, exclude, force, framework, ttl, version):
     """Generate the Skaffold files for the given python and frameworks."""
     # Read files
     with open(version, "r") as fp:
@@ -100,8 +100,18 @@ def results(framework, version, namespace):
 
 def deploy(framework, version, extra, namespace):
     """Given the python and framework then run the skaffold deployment"""
-    # Enable the skaffold profiles matching the given framework and version, if any
-    profilesFlag = '-p ' + ','.join(framework + version) if (framework or version) else ''
+    profilesFlag = getProfileVersionFramework(framework, version)
     extraFlag = f'{extra}' if extra else ''
     command = f'skaffold deploy {extraFlag} --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag}'
     utils.runCommand(command)
+
+
+def getProfileVersionFramework(framework, version):
+    if (framework and version):
+        framework_versions = []
+        for v in version:
+            for f in framework:
+                framework_versions.append(f"{v}-{f}")
+        return '-p ' + ','.join(framework_versions) if (framework_versions) else ''
+    else:
+        return '-p ' + ','.join(framework + version) if (framework or version) else ''

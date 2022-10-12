@@ -1,22 +1,28 @@
-- name: {{ name }}
+- name: {{ frameworkName }}
   patches:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/**/{{ name }}/*.yaml
-{% if version %}
+      .k8s/generated/**/{{ frameworkName }}/*.yaml
+{% if frameworkVersion %}
 - name: {{ framework }}
   patches:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/**/{{ name }}/*{{ version }}.yaml
+      .k8s/generated/**/{{ frameworkName }}/*{{ frameworkVersion }}.yaml
 {% endif -%}
-{% if pythonVersion %}
+{% if python %}
+- name: {{ python }}-{{ frameworkName }}
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/{{ pythonVersion }}/{{ frameworkName }}/*.yaml
 - name: {{ python }}-{{ framework }}
   patches:
   - op: add
     path: /deploy/kubectl/manifests/1
     value:
-      .k8s/generated/{{ pythonVersion }}/{{ name }}/*{{ version }}.yaml
+      .k8s/generated/{{ pythonVersion }}/{{ frameworkName }}/*{{ frameworkVersion }}.yaml
 {% endif -%}
