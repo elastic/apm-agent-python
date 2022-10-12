@@ -67,7 +67,7 @@ class MetricsRegistry(ThreadManager):
             `metricset.__name__` to retrieve the metricset using `get_metricset`.
         :return: the metricset instance
         """
-        class_id = metricset if isinstance(metricset, str) else metricset.__name__
+        class_id = metricset if isinstance(metricset, str) else f"{metricset.__module__}.{metricset.__name__}"
         if class_id in self._metricsets:
             return self._metricsets[class_id]
         else:
@@ -82,7 +82,7 @@ class MetricsRegistry(ThreadManager):
         return self._metricsets.get(class_id)
 
     def get_metricset(self, metricset: Union[str, type]) -> "MetricSet":
-        metricset = metricset if isinstance(metricset, str) else metricset.__name__
+        metricset = metricset if isinstance(metricset, str) else f"{metricset.__module__}.{metricset.__name__}"
         try:
             return self._metricsets[metricset]
         except KeyError:
