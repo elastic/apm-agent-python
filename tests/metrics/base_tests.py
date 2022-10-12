@@ -217,3 +217,8 @@ def test_metrics_not_collected_if_zero_and_reset(elasticapm_client):
         "resetting_timer.sum.us",
     }
     assert set(more_data[0]["samples"].keys()) == {"counter", "gauge", "timer.count", "timer.sum.us"}
+
+
+def test_underscore_metrics_deprecation(elasticapm_client):
+    with pytest.warns(DeprecationWarning):
+        elasticapm_client._metrics

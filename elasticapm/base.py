@@ -682,6 +682,11 @@ class Client(object):
         lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
         return bool(gte <= self.server_version <= lte)
 
+    @property
+    def _metrics(self):
+        warnings.warn(DeprecationWarning("Use `client.metrics` instead"))
+        return self.metrics
+
 
 class DummyClient(Client):
     """Sends messages into an empty void"""
