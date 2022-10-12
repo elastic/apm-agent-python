@@ -1,0 +1,6 @@
+quart==0.6.13
+MarkupSafe<2.1
+jinja2==3.0.3
+async-asgi-testclient
+asgiref
+-r reqs-base.txt
