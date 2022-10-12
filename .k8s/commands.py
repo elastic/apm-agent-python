@@ -8,29 +8,14 @@ from pathlib import Path
 import shutil
 import yaml
 
-
-with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
-    defaultManifestTemplate = Template(file_.read())
-
-with open(utils.Constants.MANIFEST_TEMPLATE) as file_:
-    manifestTemplate = Template(file_.read())
-
-with open(utils.Constants.FRAMEWORK_TEMPLATE) as file_:
-    frameworkTemplate = Template(file_.read())
-
-with open(utils.Constants.PYTHON_TEMPLATE) as file_:
-    pythonTemplate = Template(file_.read())
-
-with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
-    skaffoldTemplate = Template(file_.read())
-
-
 @click.command('generate', short_help='Generate the Skaffold context')
 @click.option('--default', '-d', show_default=True, default="python-3.10", help="Default python version")
 @click.option('--exclude', '-e', show_default=True, default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework tuples that are excluded")
+@click.option('--force', is_flag=True, help="Whether to override the existing files")
 @click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
+@click.option('--ttl', '-t', show_default=True, default="100", help="K8s ttlSecondsAfterFinished")
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
-def generate(default, version, framework, exclude):
+def generate(default, exclude,force, framework, ttl, version):
     """Generate the Skaffold files for the given python and frameworks."""
     # Read files
     with open(version, "r") as fp:
@@ -41,7 +26,7 @@ def generate(default, version, framework, exclude):
         excludeFile = yaml.safe_load(fp)
 
     # Generate the generated folder
-    Path(utils.Constants.GENERATED).mkdir(parents=True, exist_ok=False)
+    Path(utils.Constants.GENERATED).mkdir(parents=True, exist_ok=force)
 
     click.echo(click.style("Generating kubernetes configuration on the fly...", fg='yellow'))
 
@@ -53,14 +38,13 @@ def generate(default, version, framework, exclude):
     for ver in versionFile.get('PYTHON_VERSION'):
         for fra in frameworkFile.get('FRAMEWORK'):
             if not utils.isExcluded(ver, fra, excludeFile):
-                templates.generateSkaffoldEntries(ver, fra)
+                templates.generateSkaffoldEntries(ver, fra, ttl)
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg='yellow'))
 
     # Generate skaffold with the default python version
-    output = skaffoldTemplate.render(version=utils.getPythonVersion(default))
-    with open(utils.Constants.GENERATED_SKAFFOLD, 'w') as f:
-        f.write(output)
+    # skaffold requires a default manifest ... this is the workaround for now.
+    templates.generateSkaffoldTemplate(default)
 
     # Aggregate all the skaffold files and converge (order matters!)
     filenames = [utils.Constants.GENERATED_SKAFFOLD, utils.Constants.GENERATED_PROFILE]

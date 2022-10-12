@@ -1,11 +1,7 @@
 #!/usr/bin/python
-import click
 from jinja2 import Template
 import utils
-import k8s
 from pathlib import Path
-import shutil
-import yaml
 
 
 with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
@@ -24,14 +20,13 @@ with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
     skaffoldTemplate = Template(file_.read())
 
 
-def generateSkaffoldEntries(version, framework):
+def generateSkaffoldEntries(version, framework, ttl):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
-    # print(" - generating skaffold for " + version + " and " + framework)
     pythonVersion = utils.getPythonVersion(version)
     frameworkName = utils.getFrameworkName(framework)
 
     # Render the template
-    output = manifestTemplate.render(pythonVersion=pythonVersion,framework=framework)
+    output = manifestTemplate.render(pythonVersion=pythonVersion, framework=framework, ttl=ttl)
 
     # Generate the opinionated folder structure
     skaffoldDir = f'{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}'
@@ -43,6 +38,13 @@ def generateSkaffoldEntries(version, framework):
         f.write(output)
 
     generateFrameworkProfiles(framework)
+
+
+def generateSkaffoldTemplate(default):
+    """Given the python and framework then generate the k8s manifest and skaffold profile"""
+    output = skaffoldTemplate.render(version=utils.getPythonVersion(default))
+    with open(utils.Constants.GENERATED_SKAFFOLD, 'w') as f:
+        f.write(output)
 
 
 def generateDefaultManifest(version):

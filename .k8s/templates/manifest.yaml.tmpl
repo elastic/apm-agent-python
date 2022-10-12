@@ -8,7 +8,7 @@ metadata:
     version: "{{ pythonVersion }}"
     framework: "{{ framework }}"
 spec:
-  ttlSecondsAfterFinished: 100
+  ttlSecondsAfterFinished: {{ ttl }}
   backoffLimit: 0
   template:
     spec:
