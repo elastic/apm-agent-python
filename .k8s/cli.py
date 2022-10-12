@@ -10,6 +10,7 @@ def main():
 main.add_command(commands.generate)
 main.add_command(commands.build)
 main.add_command(commands.test)
+main.add_command(commands.results)
 
 if __name__ == '__main__':
     main()
