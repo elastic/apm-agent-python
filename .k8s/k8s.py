@@ -19,8 +19,9 @@ def results(framework, version, namespace):
             # If there are jobs for the given selector
             if len(result.items) > 0:
                 jobs = [obj.metadata.name for obj in result.items]
-                collect_logs(jobs, label_selector, namespace)
+                results = collect_logs(jobs, label_selector, namespace)
                 click.echo(click.style(f"Results are now ready...", fg='green'))
+                return results
         except ApiException as e:
             raise Exception("Exception when calling BatchV1Api->list_namespaced_job: %s\n" % e)
 
@@ -28,6 +29,7 @@ def results(framework, version, namespace):
 def collect_logs(jobs, label_selector, namespace):
     """Given the K8s jobs then gather the results and logs"""
     w = watch.Watch()
+    running_jobs = jobs.copy()
     failed_jobs = []
     click.echo(click.style("Waiting for jobs to complete...", fg='yellow'))
     for event in w.stream(
@@ -41,24 +43,29 @@ def collect_logs(jobs, label_selector, namespace):
         if o.status.succeeded:
             click.echo(click.style(f"{o.metadata.name} completed", fg='green'))
             gather_logs(o, namespace)
-            jobs.remove(o.metadata.name)
-            if len(jobs) == 0:
+            running_jobs.remove(o.metadata.name)
+            if len(running_jobs) == 0:
                 w.stop()
-                if len(failed_jobs) > 0:
-                    raise Exception("Failed jobs " + str(failed_jobs))
+                return {
+                  "jobs": jobs,
+                  "failed": failed_jobs
+                }
             else:
-                click.echo(click.style(f"There are some jobs still running {str(jobs)}", fg='yellow'))
+                click.echo(click.style(f"There are {len(running_jobs)} jobs running", fg='yellow'))
 
         if not o.status.active and o.status.failed:
             click.echo(click.style(f"{o.metadata.name} failed", fg='red'))
             gather_logs(o, namespace)
-            jobs.remove(o.metadata.name)
+            running_jobs.remove(o.metadata.name)
             failed_jobs.append(o.metadata.name)
-            if len(jobs) == 0:
+            if len(running_jobs) == 0:
                 w.stop()
-                raise Exception("Failed jobs " + str(failed_jobs))
+                return {
+                  "jobs": jobs,
+                  "failed": failed_jobs
+                }
             else:
-                click.echo(click.style(f"There are some jobs still running {str(jobs)}", fg='yellow'))
+                click.echo(click.style(f"There are {len(running_jobs)} jobs running", fg='yellow'))
 
 
 def gather_logs(job, namespace):
@@ -75,6 +82,7 @@ def gather_logs(job, namespace):
         # Gather logs
         export_logs(job.metadata.name, pod_name, namespace)
     except ApiException as e:
+        ## TODO: report the error?
         print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
 
 

@@ -31,7 +31,6 @@ with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
 def generate(default, version, framework, exclude):
     """Generate the Skaffold files for the given python and frameworks."""
-    click.echo(click.style(f"generate(exclude={exclude} framework={framework} version={version})", fg='blue'))
     # Read files
     with open(version, "r") as fp:
         versionFile = yaml.safe_load(fp)
@@ -106,10 +105,9 @@ def build(version, repo, extra):
 @click.option('--namespace', '-n', show_default=True, default="default", help="Run the in the specified namespace")
 def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
-    click.echo(click.style(f"framework={framework} version={version}", fg='blue'))
     ## TODO set the --label=user.repo=git-username
     deploy(framework, version, extra, namespace)
-    #k8s.results(framework, version, namespace)
+    k8s.results(framework, version, namespace)
 
 
 @click.command('results', short_help='Query results')
@@ -118,7 +116,6 @@ def test(framework, version, extra, namespace):
 @click.option('--namespace', '-n', show_default=True, default="default", help="Run the in the specified namespace")
 def results(framework, version, namespace):
     """Query the results for the given version and frameworks or filtered by them."""
-    click.echo(click.style(f"framework={framework} version={version}", fg='blue'))
     k8s.results(framework, version, namespace)
 
 
