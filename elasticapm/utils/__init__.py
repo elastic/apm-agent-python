@@ -183,7 +183,7 @@ def read_pem_file(file_obj) -> bytes:
 
 def starmatch_to_regex(pattern: str) -> Pattern:
     options = re.DOTALL
-    # check if we are case sensitive
+    # check if we are case-sensitive
     if pattern.startswith("(?-i)"):
         pattern = pattern[5:]
     else:
