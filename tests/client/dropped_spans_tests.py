@@ -141,7 +141,7 @@ def test_transaction_fast_exit_span(elasticapm_client):
     elasticapm_client.end_transaction("foo", duration=2.2)
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
     spans = elasticapm_client.events[constants.SPAN]
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     metrics = list(breakdown.collect())
     assert len(spans) == 2
     assert transaction["span_count"]["started"] == 3
