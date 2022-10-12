@@ -41,9 +41,9 @@ def collect_logs(jobs, label_selector, namespace):
         o = event["object"]
 
         if o.status.succeeded:
-            click.echo(click.style(f"{o.metadata.name} completed. There are {len(running_jobs)} jobs running", fg='green'))
-            gather_logs(o, namespace)
             running_jobs.remove(o.metadata.name)
+            click.echo(click.style(f"\t{o.metadata.name} completed. There are {len(running_jobs)} jobs running", fg='green'))
+            gather_logs(o, namespace)
             if len(running_jobs) == 0:
                 w.stop()
                 return {
@@ -52,12 +52,12 @@ def collect_logs(jobs, label_selector, namespace):
                 }
 
         if not o.status.active and o.status.failed:
-            click.echo(click.style(f"{o.metadata.name} failed. There are {len(running_jobs)} jobs running", fg='red'))
-            gather_logs(o, namespace)
             # in some cases the job might be still there
             if o.metadata.name in running_jobs:
                 running_jobs.remove(o.metadata.name)
             failed_jobs.append(o.metadata.name)
+            click.echo(click.style(f"\t{o.metadata.name} failed. There are {len(running_jobs)} jobs running", fg='red'))
+            gather_logs(o, namespace)
             if len(running_jobs) == 0:
                 w.stop()
                 return {
