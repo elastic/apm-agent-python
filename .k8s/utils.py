@@ -1,6 +1,24 @@
 #!/usr/bin/python
 import click
 import subprocess
+from typing import Final
+
+class Constants:
+    """All constants"""
+
+    # pylint: disable=R0903
+    TEMPLATES: Final[str] = ".k8s/templates"
+    GENERATED: Final[str] = ".k8s/generated"
+    DEFAULT_TEMPLATE: Final[str] = f"{TEMPLATES}/default.yaml.tmpl"
+    MANIFEST_TEMPLATE: Final[str] = f"{TEMPLATES}/manifest.yaml.tmpl"
+    FRAMEWORK_TEMPLATE: Final[str] = f"{TEMPLATES}/framework.profile.yaml.tmpl"
+    PYTHON_TEMPLATE: Final[str] = f"{TEMPLATES}/python.profile.yaml.tmpl"
+    SKAFFOLD_TEMPLATE: Final[str] = f"{TEMPLATES}/skaffold.yaml.tmpl"
+    GENERATED_DEFAULT: Final[str] = f'{GENERATED}/default.yaml'
+    GENERATED_SKAFFOLD: Final[str] = f'{GENERATED}/skaffold.yaml.tmp'
+    GENERATED_PROFILE: Final[str] = f'{GENERATED}/profiles.tmp'
+    GENERATED_TAGS: Final[str] = f'{GENERATED}/tags.json'
+
 
 def getPythonVersion(version):
     """Given the format python-version then returns version"""
