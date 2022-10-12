@@ -108,8 +108,8 @@ def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
     click.echo(click.style(f"framework={framework} version={version}", fg='blue'))
     ## TODO set the --label=user.repo=git-username
-    #deploy(framework, version, extra, namespace)
-    results(framework, version, namespace)
+    deploy(framework, version, extra, namespace)
+    #k8s.results(framework, version, namespace)
 
 
 @click.command('results', short_help='Query results')
