@@ -12,8 +12,6 @@ GIT_USERNAME ?= $(shell git config user.name | tr -d ' '| tr '[:upper:]' '[:lowe
 
 .SILENT:
 
-# Whether to run all the python versions from the whole support matrix
-FULL ?= false
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 K8S_CLUSTER ?= observability-ci-test-k8s
 K8S_NAMESPACE ?= $(GIT_USERNAME)
@@ -25,15 +23,6 @@ GCLOUD_K8S_CLUSTER_REGION ?= us-central1-c
 GCLOUD_K8S_CLUSTER_PROJECT ?= elastic-observability
 DEFAULT_REPO ?= docker.elastic.co/beats-dev
 
-EXCLUDE = .ci/.jenkins_exclude.yml
-ifeq ($(FULL), true)
-FRAMEWORKS = .ci/.jenkins_framework_full.yml
-VERSIONS = .ci/.jenkins_python_full.yml
-else
-FRAMEWORKS = .ci/.jenkins_framework.yml
-VERSIONS = .ci/.jenkins_python.yml
-endif
-
 
 ################################
 ## Helper function
@@ -41,8 +30,6 @@ endif
 .PHONY: help
 help:
 	@echo "Environment variables:"
-	@echo ""
-	@echo 'VAULT_TOKEN=$$(cat $${HOME}/.vault-token) this token is needed for local operations'
 	@echo ""
 	@echo "Main targets:"
 	@echo ""
@@ -65,6 +52,7 @@ bin/skaffold: bin
 	chmod +x "$(SKAFFOLD)"
 
 setup: bin/kubectl bin/skaffold
+	pip3 install -r requirements.txt
 
 ################################
 ## K8s specific helper functions
