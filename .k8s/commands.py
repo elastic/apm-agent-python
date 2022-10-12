@@ -86,15 +86,9 @@ def generate(default, version, framework, exclude):
 def build(version, repo, extra):
     """Build docker images that contain your workspace and publish them to the given Docker repository."""
     # Enable the skaffold profiles matching the given version, if any
-    profilesFlag = ''
-    if version:
-        profilesFlag = '-p ' +','.join(version)
-    defaultRepositoryFlag = ''
-    if repo:
-        defaultRepositoryFlag = f'--default-repo={repo}'
-    extraFlag = ''
-    if extra:
-        extraFlag = f'{extra}'
+    profilesFlag = '-p ' +','.join(version)  if version else ''
+    defaultRepositoryFlag = f'--default-repo={repo}' if repo else ''
+    extraFlag = f'{extra}' if extra else ''
     command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output={utils.Constants.GENERATED_TAGS} {profilesFlag}'
     utils.runCommand(command)
 
@@ -123,11 +117,7 @@ def results(framework, version, namespace):
 def deploy(framework, version, extra, namespace):
     """Given the python and framework then run the skaffold deployment"""
     # Enable the skaffold profiles matching the given framework and version, if any
-    profilesFlag = ''
-    if framework or version:
-        profilesFlag = '-p ' + ','.join(framework + version)
-    extraFlag = ''
-    if extra:
-        extraFlag = f'{extra}'
+    profilesFlag = '-p ' + ','.join(framework + version) if (framework or version) else ''
+    extraFlag = f'{extra}' if extra else ''
     command = f'skaffold deploy {extraFlag} --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag}'
     utils.runCommand(command)
