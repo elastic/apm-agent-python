@@ -7,23 +7,20 @@ from pathlib import Path
 import shutil
 import yaml
 
-# Variables
-templatesLocation = '.k8s/templates'
-generatedLocation = '.k8s/generated'
 
-with open(f'{templatesLocation}/default.yaml.tmpl') as file_:
+with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
     defaultManifestTemplate = Template(file_.read())
 
-with open(f'{templatesLocation}/manifest.yaml.tmpl') as file_:
+with open(utils.Constants.MANIFEST_TEMPLATE) as file_:
     manifestTemplate = Template(file_.read())
 
-with open(f'{templatesLocation}/framework.profile.yaml.tmpl') as file_:
+with open(utils.Constants.FRAMEWORK_TEMPLATE) as file_:
     frameworkTemplate = Template(file_.read())
 
-with open(f'{templatesLocation}/python.profile.yaml.tmpl') as file_:
+with open(utils.Constants.PYTHON_TEMPLATE) as file_:
     pythonTemplate = Template(file_.read())
 
-with open(f'{templatesLocation}/skaffold.yaml.tmpl') as file_:
+with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
     skaffoldTemplate = Template(file_.read())
 
 
@@ -44,7 +41,7 @@ def generate(default, version, framework, exclude):
         excludeFile = yaml.safe_load(fp)
 
     # Generate the generated folder
-    Path(generatedLocation).mkdir(parents=True, exist_ok=False)
+    Path(utils.Constants.GENERATED).mkdir(parents=True, exist_ok=False)
 
     click.echo(click.style("Generating kubernetes configuration on the fly...", fg='yellow'))
 
@@ -62,12 +59,11 @@ def generate(default, version, framework, exclude):
 
     # Generate skaffold with the default python version
     output = skaffoldTemplate.render(version=utils.getPythonVersion(default))
-    profilesFile = f'{generatedLocation}/skaffold.yaml.tmp'
-    with open(profilesFile, 'w') as f:
+    with open(utils.Constants.GENERATED_SKAFFOLD, 'w') as f:
         f.write(output)
 
-    # Aggregate all the skaffold files and converge
-    filenames = [f'{generatedLocation}/skaffold.yaml.tmp', f'{generatedLocation}/profiles.tmp']
+    # Aggregate all the skaffold files and converge (order matters!)
+    filenames = [utils.Constants.GENERATED_SKAFFOLD, utils.Constants.GENERATED_PROFILE]
     with open('skaffold.yaml', 'w') as outfile:
         for fname in filenames:
             with open(fname) as infile:
@@ -99,7 +95,7 @@ def build(version, repo, extra):
     extraFlag = ''
     if extra:
         extraFlag = f'{extra}'
-    command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output={generatedLocation}/tags.json {profilesFlag}'
+    command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output={utils.Constants.GENERATED_TAGS} {profilesFlag}'
     utils.runCommand(command)
 
 
@@ -135,7 +131,7 @@ def deploy(framework, version, extra, namespace):
     extraFlag = ''
     if extra:
         extraFlag = f'{extra}'
-    command = f'skaffold deploy {extraFlag} --build-artifacts={generatedLocation}/tags.json -n {namespace} {profilesFlag}'
+    command = f'skaffold deploy {extraFlag} --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag}'
     utils.runCommand(command)
 
 
@@ -149,7 +145,7 @@ def generateSkaffoldEntries(version, framework):
     output = manifestTemplate.render(pythonVersion=pythonVersion,framework=framework)
 
     # Generate the opinionated folder structure
-    skaffoldDir = f'{generatedLocation}/{pythonVersion}/{frameworkName}'
+    skaffoldDir = f'{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}'
     Path(skaffoldDir).mkdir(parents=True, exist_ok=True)
 
     # Generate k8s manifest for the given python version and framework
@@ -163,9 +159,7 @@ def generateSkaffoldEntries(version, framework):
 def generateDefaultManifest(version):
     """Given the python then generate the default manifest"""
     output = defaultManifestTemplate.render(name=version, version=utils.getPythonVersion(version))
-
-    profilesFile = f'{generatedLocation}/default.yaml'
-    with open(profilesFile, 'w') as f:
+    with open(utils.Constants.GENERATED_DEFAULT, 'w') as f:
         f.write(output)
 
 
@@ -174,10 +168,8 @@ def generateVersionProfiles(version):
     pythonVersion = utils.getPythonVersion(version)
     # Render the template
     output = pythonTemplate.render(name=version, version=pythonVersion)
+    appendProfile(output)
 
-    profilesFile = f'{generatedLocation}/profiles.tmp'
-    with open(profilesFile, 'a') as f:
-        f.write(output)
 
 def generateFrameworkProfiles(framework):
     """Given the framework then update the generated skaffold profiles for that framework"""
@@ -185,7 +177,9 @@ def generateFrameworkProfiles(framework):
     version = utils.getFrameworkVersion(framework)
     # Render the template
     output = frameworkTemplate.render(framework=framework, name=name, version=version)
+    appendProfile(output)
 
-    profilesFile = f'{generatedLocation}/profiles.tmp'
-    with open(profilesFile, 'a') as f:
+
+def appendProfile(output):
+    with open(utils.Constants.GENERATED_PROFILE, 'a') as f:
         f.write(output)
