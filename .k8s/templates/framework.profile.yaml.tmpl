@@ -12,3 +12,11 @@
     value:
       .k8s/generated/**/{{ name }}/*{{ version }}.yaml
 {% endif -%}
+{% if pythonVersion %}
+- name: {{ python }}-{{ framework }}
+  patches:
+  - op: add
+    path: /deploy/kubectl/manifests/1
+    value:
+      .k8s/generated/{{ pythonVersion }}/{{ name }}/*{{ version }}.yaml
+{% endif -%}
