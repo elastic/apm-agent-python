@@ -870,12 +870,13 @@ WARNING: We recommend always including the default set of validators if you cust
                                                                   "passwd",
                                                                   "pwd",
                                                                   "secret",
-                                                                  "*key",
+                                                                  "\*key",
                                                                   "*token*",
-                                                                  "*session*",
-                                                                  "*credit*",
-                                                                  "*card*",
-                                                                  "*auth*",
+                                                                  "\*session*",
+                                                                  "\*credit*",
+                                                                  "\*card*",
+                                                                  "\*auth*",
+                                                                  "\*principal*",
                                                                   "set-cookie"]`
 |============
 
