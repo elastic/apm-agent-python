@@ -876,6 +876,7 @@ WARNING: We recommend always including the default set of validators if you cust
                                                                   "*credit*",
                                                                   "*card*",
                                                                   "*auth*",
+                                                                  "*principal*",
                                                                   "set-cookie"]`
 |============
 
@@ -1112,6 +1113,20 @@ A prefix to prepend to Prometheus metrics names.
 See <<prometheus-metricset>> for more information.
 
 NOTE: This feature is currently in beta status.
+
+[float]
+[[config-metrics_sets]]
+==== `metrics_sets`
+
+[options="header"]
+|============
+| Environment                  | Django/Flask   | Default
+| `ELASTIC_APM_METRICS_SETS`   | `METRICS_SETS` | ["elasticapm.metrics.sets.cpu.CPUMetricSet"]
+|============
+
+List of import paths for the MetricSets that should be used to collect metrics.
+
+See <<custom-metrics>> for more information.
 
 [float]
 [[config-central_config]]

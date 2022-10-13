@@ -233,7 +233,7 @@ class Transaction(BaseSpan):
         self._span_timers_lock = threading.Lock()
         self._dropped_span_statistics = defaultdict(lambda: {"count": 0, "duration.sum.us": 0})
         try:
-            self._breakdown = self.tracer._agent._metrics.get_metricset(
+            self._breakdown = self.tracer._agent.metrics.get_metricset(
                 "elasticapm.metrics.sets.breakdown.BreakdownMetricSet"
             )
         except (LookupError, AttributeError):
