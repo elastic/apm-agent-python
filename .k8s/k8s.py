@@ -79,6 +79,11 @@ def gather_logs(job, namespace):
 
         # Gather logs
         export_logs(job.metadata.name, pod_name, namespace)
+
+        # Gather junit report if any
+        # Required to use a PVC or similar since
+        # cannot exec into a container in a completed pod; current phase is Succeeded
+        #copy_test_results(pod_name, namespace)
     except ApiException as e:
         ## TODO: report the error?
         print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
@@ -93,6 +98,13 @@ def export_logs(job_name, pod_name, namespace):
             f.write(pod_log)
     except ApiException as e:
         print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+
+
+def copy_test_results(pod_name, namespace):
+    """Given the pod_name then copy the test results using the k8s CLI"""
+    location = f'{utils.Constants.BUILD}/{pod_name}.xml'
+    command = f'kubectl cp {pod_name}:/tmp/python-agent-junit.xml {location} -n {namespace}'
+    utils.runCommand(command)
 
 
 def get_pods_for_job(job, namespace):
