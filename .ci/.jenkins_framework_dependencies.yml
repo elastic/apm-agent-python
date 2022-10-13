@@ -2,6 +2,10 @@
 # the name of the framework name in the .jenkins_framework(_full)?.yml files.
 # This file is consumed by the .k8s/cli.py script
 dependencies:
+  - FRAMEWORK: aiobotocore-newest
+    DEPENDENCIES: [ localstack ]
+  - FRAMEWORK: boto3-newest
+    DEPENDENCIES: [ localstack ]
   - FRAMEWORK: cassandra-newest
     DEPENDENCIES: [ cassandra3 ]
   - FRAMEWORK: elasticsearch-2
@@ -18,6 +22,8 @@ dependencies:
     DEPENDENCIES: [ kafka ]
   - FRAMEWORK: memcached-newest
     DEPENDENCIES: [ memcached ]
+  - FRAMEWORK: mysql-connector-newest
+    DEPENDENCIES: [ mysql ]
   - FRAMEWORK: mysqlclient-newest
     DEPENDENCIES: [ mysql ]
   - FRAMEWORK: pymemcached-newest
