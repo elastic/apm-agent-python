@@ -1,8 +1,8 @@
 #!/usr/bin/python
-from jinja2 import Template
-import utils
 from pathlib import Path
 
+import utils
+from jinja2 import Template
 
 with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
     defaultManifestTemplate = Template(file_.read())
@@ -29,12 +29,12 @@ def generateSkaffoldEntries(version, framework, ttl, git_username):
     output = manifestTemplate.render(pythonVersion=pythonVersion, framework=framework, ttl=ttl, git_user=git_username)
 
     # Generate the opinionated folder structure
-    skaffoldDir = f'{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}'
+    skaffoldDir = f"{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}"
     Path(skaffoldDir).mkdir(parents=True, exist_ok=True)
 
     # Generate k8s manifest for the given python version and framework
-    skaffoldFile = f'{skaffoldDir}/{pythonVersion}-{framework}.yaml'
-    with open(skaffoldFile, 'w') as f:
+    skaffoldFile = f"{skaffoldDir}/{pythonVersion}-{framework}.yaml"
+    with open(skaffoldFile, "w") as f:
         f.write(output)
 
     generateFrameworkProfiles(version, framework)
@@ -43,14 +43,16 @@ def generateSkaffoldEntries(version, framework, ttl, git_username):
 def generateSkaffoldTemplate(default, git_username):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
     output = skaffoldTemplate.render(version=utils.getPythonVersion(default), git_user=git_username)
-    with open(utils.Constants.GENERATED_SKAFFOLD, 'w') as f:
+    with open(utils.Constants.GENERATED_SKAFFOLD, "w") as f:
         f.write(output)
 
 
 def generateDefaultManifest(version, git_username):
     """Given the python then generate the default manifest"""
-    output = defaultManifestTemplate.render(name=version, version=utils.getPythonVersion(version), git_user=git_username)
-    with open(utils.Constants.GENERATED_DEFAULT, 'w') as f:
+    output = defaultManifestTemplate.render(
+        name=version, version=utils.getPythonVersion(version), git_user=git_username
+    )
+    with open(utils.Constants.GENERATED_DEFAULT, "w") as f:
         f.write(output)
 
 
@@ -68,10 +70,16 @@ def generateFrameworkProfiles(python, framework):
     frameworkVersion = utils.getFrameworkVersion(framework)
     pythonVersion = utils.getPythonVersion(python)
     # Render the template
-    output = frameworkTemplate.render(framework=framework, frameworkName=frameworkName, frameworkVersion=frameworkVersion, python=python, pythonVersion=pythonVersion)
+    output = frameworkTemplate.render(
+        framework=framework,
+        frameworkName=frameworkName,
+        frameworkVersion=frameworkVersion,
+        python=python,
+        pythonVersion=pythonVersion,
+    )
     appendProfile(output)
 
 
 def appendProfile(output):
-    with open(utils.Constants.GENERATED_PROFILE, 'a') as f:
+    with open(utils.Constants.GENERATED_PROFILE, "a") as f:
         f.write(output)
