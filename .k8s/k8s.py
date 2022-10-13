@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import click
+from datetime import datetime, timezone
 import utils
 from kubernetes.client.rest import ApiException
 from kubernetes import client, config, watch
@@ -46,7 +47,8 @@ def collect_logs(jobs, label_selector, namespace):
             except ValueError as e:
                 # in some cases the job is not in the list ??
                 click.echo(click.style(f"\t\t{o.metadata.name} could not be found in the running jobs. {running_jobs} jobs are running", fg='red'))
-            click.echo(click.style(f"\t{o.metadata.name} completed. There are {len(running_jobs)} jobs running", fg='green'))
+            duration = get_job_duration_time(o)
+            click.echo(click.style(f"\t{o.metadata.name} completed [took {duration} seconds]. There are {len(running_jobs)} jobs running", fg='green'))
             gather_logs(o, namespace)
             if len(running_jobs) == 0:
                 w.stop()
@@ -62,7 +64,8 @@ def collect_logs(jobs, label_selector, namespace):
                 # in some cases the job is not in the list ??
                 click.echo(click.style(f"\t\t{o.metadata.name} could not be found in the running jobs. {running_jobs} jobs are running", fg='red'))
             failed_jobs.append(o.metadata.name)
-            click.echo(click.style(f"\t{o.metadata.name} failed. There are {len(running_jobs)} jobs running", fg='red'))
+            duration = get_job_duration_time(o)
+            click.echo(click.style(f"\t{o.metadata.name} failed [took {duration} seconds]. There are {len(running_jobs)} jobs running", fg='red'))
             gather_logs(o, namespace)
             if len(running_jobs) == 0:
                 w.stop()
@@ -122,3 +125,11 @@ def get_pods_for_job(job, namespace):
     except ApiException as e:
         print("Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
         return None
+
+
+def get_job_duration_time(job):
+    if job.status.completion_time:
+        return job.status.completion_time - job.status.start_time
+    # The completion time is only set when the job finishes successfully.
+    # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1JobStatus.md
+    return datetime.now(timezone.utc) - job.status.start_time.astimezone(timezone.utc)
