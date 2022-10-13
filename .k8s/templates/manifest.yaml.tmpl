@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "apm-agen-python-{{ pythonVersion | replace(".", "-") }}-{{ framework | replace(".", "-") }}"
+  name: "apm-agen-python-{{ pythonVersion | replace(".", "-") }}-{{ framework | replace(".", "-") | replace("_", "-") }}"
   labels:
     repo: "apm-agent-python"
     type: "unit-test"
