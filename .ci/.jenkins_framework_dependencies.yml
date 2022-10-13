@@ -1,0 +1,42 @@
+# This is the list of dependencies per framework, the framework name should match
+# the name of the framework name in the .jenkins_framework(_full)?.yml files.
+# This file is consumed by the .k8s/cli.py script
+dependencies:
+  - FRAMEWORK: cassandra-newest
+    DEPENDENCIES: [ cassandra3 ]
+  - FRAMEWORK: elasticsearch-2
+    DEPENDENCIES: [ elasticsearch2 ]
+  - FRAMEWORK: elasticsearch-5
+    DEPENDENCIES: [ elasticsearch5 ]
+  - FRAMEWORK: elasticsearch-6
+    DEPENDENCIES: [ elasticsearch6 ]
+  - FRAMEWORK: elasticsearch-7
+    DEPENDENCIES: [ elasticsearch7 ]
+  - FRAMEWORK: elasticsearch-8
+    DEPENDENCIES: [ elasticsearch8 ]
+  - FRAMEWORK: kafka-python-newest
+    DEPENDENCIES: [ kafka ]
+  - FRAMEWORK: memcached-newest
+    DEPENDENCIES: [ memcached ]
+  - FRAMEWORK: mysqlclient-newest
+    DEPENDENCIES: [ mysql ]
+  - FRAMEWORK: pymemcached-newest
+    DEPENDENCIES: [ memcached ]
+  - FRAMEWORK: pymysql-newest
+    DEPENDENCIES: [ mysql ]
+  - FRAMEWORK: pymongo-3.0
+    DEPENDENCIES: [ mongodb30 ]
+  - FRAMEWORK: pymongo-3.2
+    DEPENDENCIES: [ mongodb32 ]
+  - FRAMEWORK: pymongo-3.4
+    DEPENDENCIES: [ mongodb34 ]
+  - FRAMEWORK: pymongo-newest
+    DEPENDENCIES: [ mongodb36 ]
+  - FRAMEWORK: pymssql-newest
+    DEPENDENCIES: [ mssql ]
+  - FRAMEWORK: redis-3
+    DEPENDENCIES: [ redis ]
+  - FRAMEWORK: redis-2
+    DEPENDENCIES: [ redis ]
+  - FRAMEWORK: redis-newest
+    DEPENDENCIES: [ redis ]

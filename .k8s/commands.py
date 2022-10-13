@@ -10,12 +10,13 @@ import yaml
 
 @click.command('generate', short_help='Generate the Skaffold context')
 @click.option('--default', '-d', show_default=True, default="python-3.10", help="Default python version")
+@click.option('--dependencies', '-de', show_default=True, default=".ci/.jenkins_framework_dependencies.yml", help="YAML file with the dependencies for each framework")
 @click.option('--exclude', '-e', show_default=True, default=".ci/.jenkins_exclude.yml", help="YAML file with the list of version/framework tuples that are excluded")
 @click.option('--force', is_flag=True, help="Whether to override the existing files")
 @click.option('--framework', '-f', show_default=True, default=".ci/.jenkins_framework.yml", help="YAML file with the list of frameworks")
 @click.option('--ttl', '-t', show_default=True, default="100", help="K8s ttlSecondsAfterFinished")
 @click.option('--version', '-v', show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions")
-def generate(default, exclude, force, framework, ttl, version):
+def generate(default, dependencies, exclude, force, framework, ttl, version):
     """Generate the Skaffold files for the given python and frameworks."""
     # Read files
     with open(version, "r") as fp:
@@ -24,6 +25,8 @@ def generate(default, exclude, force, framework, ttl, version):
         frameworkFile = yaml.safe_load(fp)
     with open(exclude, "r") as fp:
         excludeFile = yaml.safe_load(fp)
+    with open(dependencies, "r") as fp:
+        dependenciesFile = yaml.safe_load(fp)
 
     # Generate the generated folder
     Path(utils.Constants.GENERATED).mkdir(parents=True, exist_ok=force)
@@ -38,7 +41,11 @@ def generate(default, exclude, force, framework, ttl, version):
     for ver in versionFile.get('PYTHON_VERSION'):
         for fra in frameworkFile.get('FRAMEWORK'):
             if not utils.isExcluded(ver, fra, excludeFile):
-                templates.generateSkaffoldEntries(ver, fra, ttl)
+                ## IMPORTANT: to be implemented in the future but for now
+                ## as long as we don't support dependencies within the same pod
+                ## let's skip those frameworks with dependencies
+                if not utils.isFrameworkWithDependencies(fra, dependenciesFile):
+                    templates.generateSkaffoldEntries(ver, fra, ttl)
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg='yellow'))
 

@@ -45,6 +45,20 @@ def isExcluded(version, framework, excludeFile):
             return True
     return False
 
+
+def isFrameworkWithDependencies(framework, dependenciesFile):
+    """Given the framework and the list of dependencies then it returns whether it has some dependencies"""
+    return len(getFrameworkDependencies(framework, dependenciesFile)) > 0
+
+
+def getFrameworkDependencies(framework, dependenciesFile):
+    """Given the framework and the list of dependencies then it returns its dependencies"""
+    for value in dependenciesFile.get('dependencies'):
+        if (value.get('FRAMEWORK') == framework):
+            return value.get('DEPENDENCIES')
+    return []
+
+
 def runCommand(cmd):
     """Given the command to run it runs the command and print the output"""
     click.echo(click.style(f"Running {cmd}", fg='blue'))
