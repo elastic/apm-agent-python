@@ -63,6 +63,7 @@ def http_test_data():
                     "authorization": "bearer xyz",
                     "some-header": "some-secret-value",
                     "cookie": "foo=bar; baz=foo",
+                    "Ms-Client-Principal-Id": "foo",
                 },
                 "cookies": {
                     "foo": "bar",
@@ -85,6 +86,7 @@ def http_test_data():
                     "authorization": "bearer xyz",
                     "some-header": "some-secret-value",
                     "cookie": "foo=bar; baz=foo",
+                    "Ms-Client-Principal-Id": "foo",
                 },
             },
         }
@@ -296,6 +298,7 @@ def test_sanitize_http_headers(elasticapm_client, custom_header, http_test_data)
         "password": processors.MASK,
         "secret": processors.MASK,
         "authorization": processors.MASK,
+        "Ms-Client-Principal-Id": processors.MASK,
     }
     expected.update(custom_header)
     assert result["context"]["request"]["headers"] == expected

@@ -37,6 +37,7 @@ endif::[]
 ===== Features
  * Add backend granularity data to SQL backends as well as Cassandra and pymongo {pull}1585[#1585], {pull}1639[#1639]
  * Add support for instrumenting the Elasticsearch 8 Python client {pull}1642[#1642]
+ * Add `*principal*` to default `sanitize_field_names` configuration {pull}1664[#1664]
  * Add docs and better support for custom metrics, including in AWS Lambda {pull}1643[#1643]
 
 [float]
