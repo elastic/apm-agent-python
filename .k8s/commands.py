@@ -33,9 +33,12 @@ def generate(default, dependencies, exclude, force, framework, ttl, version):
 
     click.echo(click.style("Generating kubernetes configuration on the fly...", fg='yellow'))
 
+    # To help with identifying the k8s resources
+    git_username = utils.git_username()
+
     # Generate profiles for the given python versions
     for ver in versionFile.get('PYTHON_VERSION'):
-        templates.generateVersionProfiles(ver, default)
+        templates.generateVersionProfiles(ver, default, git_username)
 
     # Generate profiles for the given python and framewok versions
     for ver in versionFile.get('PYTHON_VERSION'):
@@ -45,13 +48,13 @@ def generate(default, dependencies, exclude, force, framework, ttl, version):
                 ## as long as we don't support dependencies within the same pod
                 ## let's skip those frameworks with dependencies
                 if not utils.isFrameworkWithDependencies(fra, dependenciesFile):
-                    templates.generateSkaffoldEntries(ver, fra, ttl)
+                    templates.generateSkaffoldEntries(ver, fra, ttl, git_username)
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg='yellow'))
 
     # Generate skaffold with the default python version
     # skaffold requires a default manifest ... this is the workaround for now.
-    templates.generateSkaffoldTemplate(default)
+    templates.generateSkaffoldTemplate(default, git_username)
 
     # Aggregate all the skaffold files and converge (order matters!)
     filenames = [utils.Constants.GENERATED_SKAFFOLD, utils.Constants.GENERATED_PROFILE]
@@ -67,7 +70,7 @@ def generate(default, dependencies, exclude, force, framework, ttl, version):
 
     click.echo(click.style("Copying default yaml file...", fg='yellow'))
     # skaffold requires a default manifest ... this is the workaround for now.
-    templates.generateDefaultManifest(default)
+    templates.generateDefaultManifest(default, git_username)
 
 
 @click.command('build', short_help='Build the docker images')
@@ -80,7 +83,7 @@ def build(version, repo, extra):
     profilesFlag = '-p ' +','.join(version)  if version else ''
     defaultRepositoryFlag = f'--default-repo={repo}' if repo else ''
     extraFlag = f'{extra}' if extra else ''
-    command = f'skaffold build {extraFlag} {defaultRepositoryFlag} --file-output={utils.Constants.GENERATED_TAGS} {profilesFlag}'
+    command = f'skaffold build {defaultRepositoryFlag} --file-output={utils.Constants.GENERATED_TAGS} {profilesFlag} {extraFlag}'
     utils.runCommand(command)
 
 
@@ -91,9 +94,8 @@ def build(version, repo, extra):
 @click.option('--namespace', '-n', show_default=True, default="default", help="Run the in the specified namespace")
 def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
-    ## TODO set the --label=user.repo=git-username
     deploy(framework, version, extra, namespace)
-    k8s.results(framework, version, namespace)
+    k8s.results(framework, version, namespace, utils.git_username())
 
 
 @click.command('results', short_help='Query results')
@@ -102,14 +104,14 @@ def test(framework, version, extra, namespace):
 @click.option('--namespace', '-n', show_default=True, default="default", help="Run the in the specified namespace")
 def results(framework, version, namespace):
     """Query the results for the given version and frameworks or filtered by them."""
-    k8s.results(framework, version, namespace)
+    k8s.results(framework, version, namespace, utils.git_username())
 
 
 def deploy(framework, version, extra, namespace):
     """Given the python and framework then run the skaffold deployment"""
     profilesFlag = getProfileVersionFramework(framework, version)
     extraFlag = f'{extra}' if extra else ''
-    command = f'skaffold deploy {extraFlag} --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag}'
+    command = f'skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag} {extraFlag}'
     utils.runCommand(command)
 
 

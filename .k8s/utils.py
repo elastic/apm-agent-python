@@ -59,6 +59,11 @@ def getFrameworkDependencies(framework, dependenciesFile):
     return []
 
 
+def git_username():
+    res = subprocess.run(["git", "config", "user.name"], stdout=subprocess.PIPE)
+    return ''.join(e for e in res.stdout.strip().decode() if e.isalnum()).lower()
+
+
 def runCommand(cmd):
     """Given the command to run it runs the command and print the output"""
     click.echo(click.style(f"Running {cmd}", fg='blue'))

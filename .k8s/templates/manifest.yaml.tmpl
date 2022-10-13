@@ -1,12 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "apm-agen-python-{{ pythonVersion | replace(".", "-") }}-{{ framework | replace(".", "-") | replace("_", "-") }}"
+  name: "{{ git_user }}-apm-agen-python-{{ pythonVersion | replace(".", "-") }}-{{ framework | replace(".", "-") | replace("_", "-") }}"
   labels:
     repo: "apm-agent-python"
     type: "unit-test"
     version: "{{ pythonVersion }}"
     framework: "{{ framework }}"
+    user.repo: "{{ git_user }}"
 spec:
   ttlSecondsAfterFinished: {{ ttl }}
   backoffLimit: 0

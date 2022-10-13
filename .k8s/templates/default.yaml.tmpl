@@ -1,12 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "apm-agen-python-{{ version | replace(".", "-") }}-none"
+  name: "{{ git_user }}-apm-agen-python-{{ version | replace(".", "-") }}"
   labels:
     repo: "apm-agent-python"
     type: "unit-test"
     version: "{{ version }}"
     framework: "none"
+    user.repo: "{{ git_user }}"
 spec:
   ttlSecondsAfterFinished: 60
   backoffLimit: 0
@@ -16,7 +17,4 @@ spec:
       containers:
       - name: "{{ name | replace(".", "-") }}"
         image: "apm-agent-python-{{ version }}"
-        command: [ "tests/scripts/run_tests.sh" ]
-        env:
-        - name: WEBFRAMEWORK
-          value: "none"
+        command: [ "sleep 10" ]

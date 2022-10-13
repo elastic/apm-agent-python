@@ -1,7 +1,7 @@
 apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
-  name: apm-agent-python
+  name: {{ git_user }}-apm-agent-python
 # The list of docker images to be built and in sync with the workspace by default
 build:
   local:

@@ -20,13 +20,13 @@ with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
     skaffoldTemplate = Template(file_.read())
 
 
-def generateSkaffoldEntries(version, framework, ttl):
+def generateSkaffoldEntries(version, framework, ttl, git_username):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
     pythonVersion = utils.getPythonVersion(version)
     frameworkName = utils.getFrameworkName(framework)
 
     # Render the template
-    output = manifestTemplate.render(pythonVersion=pythonVersion, framework=framework, ttl=ttl)
+    output = manifestTemplate.render(pythonVersion=pythonVersion, framework=framework, ttl=ttl, git_user=git_username)
 
     # Generate the opinionated folder structure
     skaffoldDir = f'{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}'
@@ -40,25 +40,25 @@ def generateSkaffoldEntries(version, framework, ttl):
     generateFrameworkProfiles(version, framework)
 
 
-def generateSkaffoldTemplate(default):
+def generateSkaffoldTemplate(default, git_username):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
-    output = skaffoldTemplate.render(version=utils.getPythonVersion(default))
+    output = skaffoldTemplate.render(version=utils.getPythonVersion(default), git_user=git_username)
     with open(utils.Constants.GENERATED_SKAFFOLD, 'w') as f:
         f.write(output)
 
 
-def generateDefaultManifest(version):
+def generateDefaultManifest(version, git_username):
     """Given the python then generate the default manifest"""
-    output = defaultManifestTemplate.render(name=version, version=utils.getPythonVersion(version))
+    output = defaultManifestTemplate.render(name=version, version=utils.getPythonVersion(version), git_user=git_username)
     with open(utils.Constants.GENERATED_DEFAULT, 'w') as f:
         f.write(output)
 
 
-def generateVersionProfiles(version, default):
+def generateVersionProfiles(version, default, git_username):
     """Given the python then update the generated skaffold profiles for that version"""
     pythonVersion = utils.getPythonVersion(version)
     # Render the template
-    output = pythonTemplate.render(name=version, version=pythonVersion, default=default)
+    output = pythonTemplate.render(name=version, version=pythonVersion, default=default, git_user=git_username)
     appendProfile(output)
 
 
