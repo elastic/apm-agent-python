@@ -10,8 +10,6 @@ PATH := $(BIN_DIR):$(PATH)
 .SHELLFLAGS = -ec
 GIT_USERNAME ?= $(shell git config user.name | tr -d ' '| tr '[:upper:]' '[:lower:]')
 
-.SILENT:
-
 # TODO: allow dynamism so the cluster is defined in Vault maybe?
 K8S_CLUSTER ?= observability-ci-test-k8s
 K8S_NAMESPACE ?= $(GIT_USERNAME)
@@ -44,12 +42,12 @@ bin:
 ## @help:bin/kubectl:Install kubectl CLI in the selected binary folder.
 bin/kubectl: bin
 	curl -sSLo "$(KUBECTL)" "https://storage.googleapis.com/kubernetes-release/release/$(KUBECTL_VERSION)/bin/$(ARCH_L)/amd64/kubectl"
-	chmod +x "$(KUBECTL)
+	chmod 755 "$(KUBECTL)"
 
 ## @help:bin/skaffold:Install skaffold CLI in the selected binary folder.
 bin/skaffold: bin
 	curl -sSLo "$(SKAFFOLD)" "https://storage.googleapis.com/skaffold/releases/latest/skaffold-$(ARCH_L)-amd64"
-	chmod +x "$(SKAFFOLD)"
+	chmod 755 "$(SKAFFOLD)"
 
 setup: bin/kubectl bin/skaffold
 	pip3 install -r requirements.txt
