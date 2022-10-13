@@ -58,7 +58,7 @@ class AioPGInstrumentation(AsyncAbstractInstrumentedModule):
         else:
             raise AssertionError("call from uninstrumented method")
         async with async_capture_span(
-            name, leaf=True, span_type="db", span_subtype="postgres", span_action=action, extra=context
+            name, leaf=True, span_type="db", span_subtype="postgresql", span_action=action, extra=context
         ):
             return await wrapped(*args, **kwargs)
 

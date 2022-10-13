@@ -31,6 +31,7 @@
 import codecs
 import gzip
 import io
+import itertools
 import json
 import logging
 import logging.handlers
@@ -40,8 +41,10 @@ import socket
 import sys
 import tempfile
 import time
+import warnings
 import zlib
 from collections import defaultdict
+from typing import Optional
 
 import jsonschema
 import mock
@@ -69,6 +72,9 @@ TRANSACTIONS_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "transacti
 SPAN_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "span.json")
 METRICSET_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metricset.json")
 METADATA_SCHEMA = os.path.join(cur_dir, "upstream", "json-specs", "metadata.json")
+
+with open(os.path.join(cur_dir, "upstream", "json-specs", "span_types.json")) as f:
+    SPAN_TYPES = json.load(f)
 
 
 with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
@@ -113,6 +119,33 @@ with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
     }
 
 
+def validate_span_type_subtype(item: dict) -> Optional[str]:
+    """
+    Validate span type/subtype against spec.
+
+    At first, only warnings are issued. At a later point, it should return the message as string
+    which will cause a validation error.
+    """
+    if item["type"] not in SPAN_TYPES:
+        warnings.warn(f"Span type \"{item['type']}\" not found in JSON spec", UserWarning)
+        return
+    span_type = SPAN_TYPES[item["type"]]
+    subtypes = span_type.get("subtypes", [])
+    if not subtypes and item["subtype"] and not span_type.get("allow_unlisted_subtype", False):
+        warnings.warn(
+            f"Span type \"{item['type']}\" has no subtypes, but subtype \"{item['subtype']}\" is set", UserWarning
+        )
+        return
+    if item["subtype"] not in SPAN_TYPES[item["type"]].get("subtypes", []):
+        if not SPAN_TYPES[item["type"]].get("allow_unlisted_subtype", False):
+            warnings.warn(f"Subtype \"{item['subtype']}\" not allowed for span type \"{item['type']}\"", UserWarning)
+            return
+    else:
+        if "python" not in subtypes.get(item["subtype"], {}).get("__used_by", []):
+            warnings.warn(f"\"{item['type']}.{item['subtype']}\" not marked as used by Python", UserWarning)
+    return None
+
+
 class ValidatingWSGIApp(ContentServer):
     def __init__(self, **kwargs):
         self.skip_validate = kwargs.pop("skip_validate", False)
@@ -147,6 +180,11 @@ class ValidatingWSGIApp(ContentServer):
                 except jsonschema.ValidationError as e:
                     fail += 1
                     content += "/".join(map(str, e.absolute_schema_path)) + ": " + e.message + "\n"
+                if item_type == "span":
+                    result = validate_span_type_subtype(item)
+                    if result:
+                        fail += 1
+                        content += result
             code = 202 if not fail else 400
         response = Response(status=code)
         response.headers.clear()
@@ -199,7 +237,10 @@ def elasticapm_client(request):
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.unset_span(clear_all=True)
-    assert not client._transport.validation_errors
+    if client._transport.validation_errors:
+        pytest.fail(
+            "Validation errors:" + "\n".join(*itertools.chain(v for v in client._transport.validation_errors.values()))
+        )
 
 
 @pytest.fixture()
@@ -336,6 +377,10 @@ class DummyTransport(HTTPTransportBase):
                 validator.validate(data)
             except jsonschema.ValidationError as e:
                 self.validation_errors[event_type].append(e.message)
+            if event_type == "span":
+                result = validate_span_type_subtype(data)
+                if result:
+                    self.validation_errors[event_type].append(result)
 
     def start_thread(self, pid=None):
         # don't call the parent method, but the one from ThreadManager
