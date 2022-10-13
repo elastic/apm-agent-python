@@ -1,5 +1,6 @@
 - name: {{ name }}
   patches:
+{% if name != default %}
   - op: add
     path: /build/artifacts/1
     value:
@@ -9,6 +10,7 @@
         dockerfile: ".k8s/Dockerfile"
         buildArgs:
           PYTHON_VERSION: "{{ version }}"
+{% endif %}
   - op: add
     path: /deploy/kubectl/manifests/1
     value:

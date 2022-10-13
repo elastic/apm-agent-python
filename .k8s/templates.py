@@ -54,11 +54,11 @@ def generateDefaultManifest(version):
         f.write(output)
 
 
-def generateVersionProfiles(version):
+def generateVersionProfiles(version, default):
     """Given the python then update the generated skaffold profiles for that version"""
     pythonVersion = utils.getPythonVersion(version)
     # Render the template
-    output = pythonTemplate.render(name=version, version=pythonVersion)
+    output = pythonTemplate.render(name=version, version=pythonVersion, default=default)
     appendProfile(output)
 
 
