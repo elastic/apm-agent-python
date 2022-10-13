@@ -10,6 +10,7 @@ metadata:
 spec:
   ttlSecondsAfterFinished: {{ ttl }}
   backoffLimit: 0
+  activeDeadlineSeconds: 300
   template:
     spec:
       restartPolicy: Never
