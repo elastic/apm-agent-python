@@ -22,7 +22,7 @@ dependencies:
     DEPENDENCIES: [ kafka ]
   - FRAMEWORK: memcached-newest
     DEPENDENCIES: [ memcached ]
-  - FRAMEWORK: mysql-connector-newest
+  - FRAMEWORK: mysql_connector-newest
     DEPENDENCIES: [ mysql ]
   - FRAMEWORK: mysqlclient-newest
     DEPENDENCIES: [ mysql ]
