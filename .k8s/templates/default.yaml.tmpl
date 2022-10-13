@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ git_user }}-apm-agen-python-{{ version | replace(".", "-") }}"
+  name: "{{ git_user }}-apm-agen-python-{{ version | replace(".", "-") }}-hi"
   labels:
     repo: "apm-agent-python"
     type: "unit-test"
@@ -17,4 +17,4 @@ spec:
       containers:
       - name: "{{ name | replace(".", "-") }}"
         image: "apm-agent-python-{{ version }}"
-        command: [ "echo hi" ]
+        command: [ "echo", "hi" ]
