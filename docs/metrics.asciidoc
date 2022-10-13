@@ -11,6 +11,7 @@ These metrics will be sent regularly to the APM Server and from there to Elastic
 * <<cpu-memory-metricset>>
 * <<breakdown-metricset>>
 * <<prometheus-metricset>>
+* <<custom-metrics>>
 
 [float]
 [[cpu-memory-metricset]]
@@ -160,3 +161,55 @@ All metrics collected from `prometheus_client` are prefixed with `"prometheus.me
 [[prometheus-metricset-beta]]
 ===== Beta limitations
  * The metrics format may change without backwards compatibility in future releases.
+
+[float]
+[[custom-metrics]]
+=== Custom Metrics
+
+Custom metrics allow you to send your own metrics to Elasticsearch.
+
+The most common way to send custom metrics is with the
+<<prometheus-metricset,Prometheus metric set>>.  However, you can also use your
+own metric set. If you collect the metrics manually in your code, you can use
+the base `MetricSet` class:
+
+[source,python]
+----
+from elasticapm.metrics.base_metrics import MetricSet
+
+client = elasticapm.Client()
+metricset = client.metrics.register(MetricSet)
+
+for x in range(10):
+    metricset.counter("my_counter").inc()
+----
+
+Alternatively, you can create your own MetricSet class which inherits from the
+base class. In this case, you'll usually want to override the `before_collect`
+method, where you can gather and set metrics before they are collected and sent
+to Elasticsearch.
+
+You can add your `MetricSet` class as shown in the example above, or you can
+add an import string for your class to the <<config-metrics_sets,`metrics_sets`>>
+configuration option:
+
+[source,bash]
+----
+ELASTIC_APM_METRICS_SETS="elasticapm.metrics.sets.cpu.CPUMetricSet,myapp.metrics.MyMetricSet"
+----
+
+Your MetricSet might look something like this:
+
+[source,python]
+----
+from elasticapm.metrics.base_metrics import MetricSet
+
+class MyAwesomeMetricSet(MetricSet):
+    def before_collect(self):
+        self.gauge("my_gauge").set(myapp.some_value)
+----
+
+In the example above, the MetricSet would look up `myapp.some_value` and set
+the metric `my_gauge` to that value. This would happen whenever metrics are
+collected/sent, which is controlled by the
+<<config-metrics_interval,`metrics_interval`>> setting.
