@@ -11,7 +11,7 @@ metadata:
 spec:
   ttlSecondsAfterFinished: {{ ttl }}
   backoffLimit: 0
-  activeDeadlineSeconds: 300
+  activeDeadlineSeconds: {{ timeout }}
   template:
     spec:
       restartPolicy: Never

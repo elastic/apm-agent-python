@@ -63,11 +63,12 @@ import yaml
     default=".ci/.jenkins_framework.yml",
     help="YAML file with the list of frameworks",
 )
+@click.option("--timeout", show_default=True, default="600", help="K8s activeDeadlineSeconds")
 @click.option("--ttl", "-t", show_default=True, default="100", help="K8s ttlSecondsAfterFinished")
 @click.option(
     "--version", "-v", show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions"
 )
-def generate(default, dependencies, exclude, force, framework, ttl, version):
+def generate(default, dependencies, exclude, force, framework, timeout, ttl, version):
     """Generate the Skaffold files for the given python and frameworks."""
     # Read files
     with open(version, "r") as fp:
@@ -99,7 +100,7 @@ def generate(default, dependencies, exclude, force, framework, ttl, version):
                 # as long as we don't support dependencies within the same pod
                 # let's skip those frameworks with dependencies
                 if not utils.isFrameworkWithDependencies(fra, dependenciesFile):
-                    templates.generateSkaffoldEntries(ver, fra, ttl, git_username)
+                    templates.generateSkaffoldEntries(ver, fra, timeout, ttl, git_username)
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg="yellow"))
 
