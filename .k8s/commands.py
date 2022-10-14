@@ -81,8 +81,9 @@ def generate(default, dependencies, exclude, force, framework, timeout, ttl, ver
     with open(dependencies, "r") as fp:
         dependenciesFile = yaml.safe_load(fp)
 
-    # Generate the generated folder
+    # Generate the generated and build folders
     Path(utils.Constants.GENERATED).mkdir(parents=True, exist_ok=force)
+    Path(utils.Constants.BUILD).mkdir(parents=True, exist_ok=force)
 
     click.echo(click.style("Generating kubernetes configuration on the fly...", fg="yellow"))
 
