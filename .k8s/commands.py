@@ -34,6 +34,7 @@ import uuid
 from pathlib import Path
 
 import click
+from exceptions import ExistingFailedJobs
 import k8s
 import templates
 import utils
@@ -153,7 +154,9 @@ def test(framework, version, extra, namespace):
     Path(utils.Constants.BUILD).mkdir(parents=True, exist_ok=True)
     filter = uuid.uuid4()
     deploy(framework, version, extra, namespace, filter)
-    k8s.results(framework, version, namespace, utils.git_username(), filter)
+    results = k8s.results(framework, version, namespace, utils.git_username(), filter)
+    if results is not None and len(results.get('failed')) > 0:
+        raise ExistingFailedJobs(results.get('failed'))
 
 
 @click.command("results", short_help="Query results")
@@ -163,7 +166,9 @@ def test(framework, version, extra, namespace):
 def results(framework, version, namespace):
     """Query the results for the given version and frameworks or filtered by them."""
     Path(utils.Constants.BUILD).mkdir(parents=True, exist_ok=True)
-    k8s.results(framework, version, namespace, utils.git_username(), None)
+    results = k8s.results(framework, version, namespace, utils.git_username(), None)
+    if results is not None and len(results.get('failed')) > 0:
+        raise ExistingFailedJobs(results.get('failed'))
 
 
 def deploy(framework, version, extra, namespace, filter):
