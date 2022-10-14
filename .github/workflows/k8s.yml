@@ -9,7 +9,7 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GIT_USER: apmmachine
   GIT_EMAIL: apmmachine@users.noreply.github.com
-  PYTHON_VERSIONS: "-v python-3.10 -v python-3.6"
+  PYTHON_VERSIONS: "-v python-3.10 -v python-3.9 -v python-3.6"
   LOCATION: apm-python-agent
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
       working-directory: ${{ env.LOCATION }}
 
     - name: Generate skaffold
-      run: python .k8s/cli.py generate
+      run: python .k8s/cli.py generate --version .ci/.jenkins_python_full.yml
       working-directory: ${{ env.LOCATION }}
 
     - name: Build docker images
