@@ -37,13 +37,14 @@ from kubernetes import client, config, watch
 from kubernetes.client.rest import ApiException
 
 
-def results(framework, version, namespace, git_username):
+def results(framework, version, namespace, git_username, filter):
     """Given the python and framework tuples then gather the results when the jobs have finished"""
     config.load_kube_config()
     with client.ApiClient() as api_client:
         api_instance = client.BatchV1Api(api_client)
         try:
-            label_selector = f"repo=apm-agent-python,type=unit-test,user.repo={git_username}"
+            selector = f"repo=apm-agent-python,type=unit-test,user.repo={git_username}"
+            label_selector = f"filter={filter},{selector}" if filter else selector
             result = api_instance.list_namespaced_job(namespace, label_selector=label_selector)
 
             click.echo(click.style(f"There are {len(result.items)} jobs running ...", fg="yellow"))

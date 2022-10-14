@@ -30,6 +30,7 @@
 
 
 import shutil
+import uuid
 from pathlib import Path
 
 import click
@@ -148,8 +149,9 @@ def build(version, repo, extra):
 @click.option("--namespace", "-n", show_default=True, default="default", help="Run the in the specified namespace")
 def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
-    deploy(framework, version, extra, namespace)
-    k8s.results(framework, version, namespace, utils.git_username())
+    filter = uuid.uuid4()
+    deploy(framework, version, extra, namespace, filter)
+    k8s.results(framework, version, namespace, utils.git_username(), filter)
 
 
 @click.command("results", short_help="Query results")
@@ -158,16 +160,16 @@ def test(framework, version, extra, namespace):
 @click.option("--namespace", "-n", show_default=True, default="default", help="Run the in the specified namespace")
 def results(framework, version, namespace):
     """Query the results for the given version and frameworks or filtered by them."""
-    k8s.results(framework, version, namespace, utils.git_username())
+    k8s.results(framework, version, namespace, utils.git_username(), None)
 
 
-def deploy(framework, version, extra, namespace):
+def deploy(framework, version, extra, namespace, filter):
     """Given the python and framework then run the skaffold deployment"""
     profilesFlag = getProfileVersionFramework(framework, version)
     extraFlag = f"{extra}" if extra else ""
-    command = (
-        f"skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag} {extraFlag}"
-    )
+    filterFlag = f"--label=filter={filter}" if filter else ""
+    # TODO: filter
+    command = f"skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag} {extraFlag} {filterFlag}"
     utils.runCommand(command)
 
 
