@@ -10,6 +10,7 @@ env:
   GIT_USER: apmmachine
   GIT_EMAIL: apmmachine@users.noreply.github.com
   PYTHON_VERSIONS: "-v python-3.10 -v python-3.6"
+  LOCATION: apm-python-agent
 
 jobs:
   k8s:
@@ -18,6 +19,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        path: ${{ env.LOCATION }}
 
     - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
       with:
@@ -52,12 +55,16 @@ jobs:
         git config --global user.name "${GIT_USER}"
         git config --global user.email "${GIT_EMAIL}"
         mkdir build
+      working-directory: ${{ env.LOCATION }}
 
     - name: Generate skaffold
       run: python .k8s/cli.py generate
+      working-directory: ${{ env.LOCATION }}
 
     - name: Build docker images
       run: python .k8s/cli.py build ${{ env.PYTHON_VERSIONS }}
+      working-directory: ${{ env.LOCATION }}
 
     - name: Run tests on K8s
       run: python .k8s/cli.py test ${{ env.PYTHON_VERSIONS }}
+      working-directory: ${{ env.LOCATION }}
