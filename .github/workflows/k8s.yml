@@ -54,11 +54,10 @@ jobs:
         pip install -r .k8s/requirements.txt
         git config --global user.name "${GIT_USER}"
         git config --global user.email "${GIT_EMAIL}"
-        mkdir build
       working-directory: ${{ env.LOCATION }}
 
     - name: Generate skaffold
-      run: python .k8s/cli.py generate --version .ci/.jenkins_python_full.yml
+      run: python .k8s/cli.py generate --version .ci/.jenkins_python_full.yml --force
       working-directory: ${{ env.LOCATION }}
 
     - name: Build docker images
