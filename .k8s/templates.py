@@ -50,13 +50,15 @@ with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
     skaffoldTemplate = Template(file_.read())
 
 
-def generateSkaffoldEntries(version, framework, ttl, git_username):
+def generateSkaffoldEntries(version, framework, timeout, ttl, git_username):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
     pythonVersion = utils.getPythonVersion(version)
     frameworkName = utils.getFrameworkName(framework)
 
     # Render the template
-    output = manifestTemplate.render(pythonVersion=pythonVersion, framework=framework, ttl=ttl, git_user=git_username)
+    output = manifestTemplate.render(
+        pythonVersion=pythonVersion, framework=framework, timeout=timeout, ttl=ttl, git_user=git_username
+    )
 
     # Generate the opinionated folder structure
     skaffoldDir = f"{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}"

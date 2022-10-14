@@ -30,6 +30,7 @@
 
 
 import shutil
+import uuid
 from pathlib import Path
 
 import click
@@ -63,11 +64,12 @@ import yaml
     default=".ci/.jenkins_framework.yml",
     help="YAML file with the list of frameworks",
 )
+@click.option("--timeout", show_default=True, default="600", help="K8s activeDeadlineSeconds")
 @click.option("--ttl", "-t", show_default=True, default="100", help="K8s ttlSecondsAfterFinished")
 @click.option(
     "--version", "-v", show_default=True, default=".ci/.jenkins_python.yml", help="YAML file with the list of versions"
 )
-def generate(default, dependencies, exclude, force, framework, ttl, version):
+def generate(default, dependencies, exclude, force, framework, timeout, ttl, version):
     """Generate the Skaffold files for the given python and frameworks."""
     # Read files
     with open(version, "r") as fp:
@@ -99,7 +101,7 @@ def generate(default, dependencies, exclude, force, framework, ttl, version):
                 # as long as we don't support dependencies within the same pod
                 # let's skip those frameworks with dependencies
                 if not utils.isFrameworkWithDependencies(fra, dependenciesFile):
-                    templates.generateSkaffoldEntries(ver, fra, ttl, git_username)
+                    templates.generateSkaffoldEntries(ver, fra, timeout, ttl, git_username)
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg="yellow"))
 
@@ -147,8 +149,9 @@ def build(version, repo, extra):
 @click.option("--namespace", "-n", show_default=True, default="default", help="Run the in the specified namespace")
 def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
-    deploy(framework, version, extra, namespace)
-    k8s.results(framework, version, namespace, utils.git_username())
+    filter = uuid.uuid4()
+    deploy(framework, version, extra, namespace, filter)
+    k8s.results(framework, version, namespace, utils.git_username(), filter)
 
 
 @click.command("results", short_help="Query results")
@@ -157,16 +160,16 @@ def test(framework, version, extra, namespace):
 @click.option("--namespace", "-n", show_default=True, default="default", help="Run the in the specified namespace")
 def results(framework, version, namespace):
     """Query the results for the given version and frameworks or filtered by them."""
-    k8s.results(framework, version, namespace, utils.git_username())
+    k8s.results(framework, version, namespace, utils.git_username(), None)
 
 
-def deploy(framework, version, extra, namespace):
+def deploy(framework, version, extra, namespace, filter):
     """Given the python and framework then run the skaffold deployment"""
     profilesFlag = getProfileVersionFramework(framework, version)
     extraFlag = f"{extra}" if extra else ""
-    command = (
-        f"skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag} {extraFlag}"
-    )
+    filterFlag = f"--label=filter={filter}" if filter else ""
+    defaultCommand = f"skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS}"
+    command = f"{defaultCommand} -n {namespace} {profilesFlag} {extraFlag} {filterFlag}"
     utils.runCommand(command)
 
 
