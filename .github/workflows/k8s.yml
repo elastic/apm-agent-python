@@ -36,15 +36,15 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
     - name: Set up required tools
       run: |-
         make -C .k8s setup
         echo "${HOME}/.local/bin" >> $GITHUB_PATH
         pip install -r .k8s/requirements.txt
-
-    - uses: actions/setup-python@v4
-      with:
-        python-version: 3.9
 
     - name: Build docker images
       run: python .k8s/cli.py build
