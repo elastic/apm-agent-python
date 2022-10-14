@@ -168,8 +168,8 @@ def deploy(framework, version, extra, namespace, filter):
     profilesFlag = getProfileVersionFramework(framework, version)
     extraFlag = f"{extra}" if extra else ""
     filterFlag = f"--label=filter={filter}" if filter else ""
-    # TODO: filter
-    command = f"skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS} -n {namespace} {profilesFlag} {extraFlag} {filterFlag}"
+    defaultCommand = f"skaffold deploy --build-artifacts={utils.Constants.GENERATED_TAGS}"
+    command = f"{defaultCommand} -n {namespace} {profilesFlag} {extraFlag} {filterFlag}"
     utils.runCommand(command)
 
 
