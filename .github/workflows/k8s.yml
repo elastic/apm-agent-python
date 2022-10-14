@@ -5,7 +5,7 @@ on:
 
 env:
   GKE_ZONE: us-central1-c
-  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_CLUSTER: "${{ secrets.GKE_CLUSTER }}"
 
 jobs:
   test:
