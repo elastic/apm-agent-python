@@ -72,13 +72,8 @@ def collect_logs(jobs, label_selector, namespace):
             try:
                 running_jobs.remove(o.metadata.name)
             except ValueError:
-                # in some cases the job is not in the list ??
-                click.echo(
-                    click.style(
-                        f"\t\t{o.metadata.name} could not be found in the running jobs. {running_jobs} are running",
-                        fg="red",
-                    )
-                )
+                # sometimes events are duplicated
+                pass
             duration = get_job_duration_time(o)
             click.echo(
                 click.style(
@@ -95,13 +90,8 @@ def collect_logs(jobs, label_selector, namespace):
             try:
                 running_jobs.remove(o.metadata.name)
             except ValueError:
-                # in some cases the job is not in the list ??
-                click.echo(
-                    click.style(
-                        f"\t\t{o.metadata.name} could not be found in the running jobs. {running_jobs} are running",
-                        fg="red",
-                    )
-                )
+                # sometimes events are duplicated
+                pass
             failed_jobs.append(o.metadata.name)
             duration = get_job_duration_time(o)
             click.echo(
