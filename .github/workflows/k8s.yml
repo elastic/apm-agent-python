@@ -5,6 +5,7 @@ on:
 
 env:
   GKE_ZONE: us-central1-c
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
 
 jobs:
   test:
@@ -21,7 +22,7 @@ jobs:
 
     - uses: google-github-actions/get-gke-credentials@fb08709ba27618c31c09e014e1d8364b02e5042e
       with:
-        cluster_name: ${{ secrets.GKE_CLUSTER }}
+        cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_ZONE }}
         credentials: ${{ secrets.GKE_SA_KEY }}
 
