@@ -198,15 +198,15 @@ class Client(object):
         )
         self.include_paths_re = stacks.get_path_regex(self.config.include_paths) if self.config.include_paths else None
         self.exclude_paths_re = stacks.get_path_regex(self.config.exclude_paths) if self.config.exclude_paths else None
-        self._metrics = MetricsRegistry(self)
+        self.metrics = MetricsRegistry(self)
         for path in self.config.metrics_sets:
-            self._metrics.register(path)
+            self.metrics.register(path)
         if self.config.breakdown_metrics:
-            self._metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+            self.metrics.register("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
         if self.config.prometheus_metrics:
-            self._metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
+            self.metrics.register("elasticapm.metrics.sets.prometheus.PrometheusMetrics")
         if self.config.metrics_interval:
-            self._thread_managers["metrics"] = self._metrics
+            self._thread_managers["metrics"] = self.metrics
         compat.atexit_register(self.close)
         if self.config.central_config:
             self._thread_managers["config"] = self.config
@@ -682,6 +682,11 @@ class Client(object):
         gte = gte or (0,)
         lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
         return bool(gte <= self.server_version <= lte)
+
+    @property
+    def _metrics(self):
+        warnings.warn(DeprecationWarning("Use `client.metrics` instead"))
+        return self.metrics
 
 
 class DummyClient(Client):

@@ -81,6 +81,10 @@ class capture_serverless(object):
 
         # Disable all background threads except for transport
         kwargs["metrics_interval"] = "0ms"
+        kwargs["breakdown_metrics"] = False
+        if "metrics_sets" not in kwargs and "ELASTIC_APM_METRICS_SETS" not in os.environ:
+            # Allow users to override metrics sets
+            kwargs["metrics_sets"] = []
         kwargs["central_config"] = False
         kwargs["cloud_provider"] = "none"
         kwargs["framework_name"] = "AWS Lambda"
@@ -229,6 +233,8 @@ class capture_serverless(object):
                 elasticapm.set_transaction_outcome(outcome="failure", override=False)
 
         self.client.end_transaction()
+        # Collect any custom+prometheus metrics if enabled
+        self.client.metrics.collect()
 
         try:
             logger.debug("flushing elasticapm")

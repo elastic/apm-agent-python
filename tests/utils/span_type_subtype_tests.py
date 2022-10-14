@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2022, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,33 +28,38 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.metrics.base_metrics import MetricSet
+import pytest
 
-try:
-    import psutil
-except ImportError:
-    raise ImportError("psutil not found. Install it to get system and process metrics")
+import elasticapm
 
 
-class CPUMetricSet(MetricSet):
-    def __init__(self, registry):
-        psutil.cpu_percent(interval=None)
-        self._process = psutil.Process()
-        self._process.cpu_percent(interval=None)
-        super(CPUMetricSet, self).__init__(registry)
+def test_span_type_not_found(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with pytest.warns(UserWarning, match='Span type "bar" not found in JSON spec'):
+        with elasticapm.capture_span("foo", span_type="bar"):
+            pass
+    elasticapm_client.end_transaction("test")
 
-    def before_collect(self):
-        self.gauge("system.cpu.total.norm.pct").val = psutil.cpu_percent(interval=None) / 100.0
-        self.gauge("system.memory.actual.free").val = psutil.virtual_memory().available
-        self.gauge("system.memory.total").val = psutil.virtual_memory().total
-        p = self._process
-        if hasattr(p, "oneshot"):  # new in psutil 5.0
-            with p.oneshot():
-                memory_info = p.memory_info()
-                cpu_percent = p.cpu_percent(interval=None)
-        else:
-            memory_info = p.memory_info()
-            cpu_percent = p.cpu_percent(interval=None)
-        self.gauge("system.process.cpu.total.norm.pct").val = cpu_percent / 100.0 / psutil.cpu_count()
-        self.gauge("system.process.memory.size").val = memory_info.vms
-        self.gauge("system.process.memory.rss.bytes").val = memory_info.rss
+
+def test_span_type_no_subtypes(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with pytest.warns(UserWarning, match='Span type "process" has no subtypes, but subtype "foo" is set'):
+        with elasticapm.capture_span("foo", span_type="process", span_subtype="foo"):
+            pass
+    elasticapm_client.end_transaction("test")
+
+
+def test_span_type_subtype_not_allowed(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with pytest.warns(UserWarning, match='Subtype "anonexistingdb" not allowed for span type "db"'):
+        with elasticapm.capture_span("foo", span_type="db", span_subtype="anonexistingdb"):
+            pass
+    elasticapm_client.end_transaction("test")
+
+
+def test_span_type_not_used_by_python(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+    with pytest.warns(UserWarning, match='"json.parse" not marked as used by Python'):
+        with elasticapm.capture_span("foo", span_type="json", span_subtype="parse"):
+            pass
+    elasticapm_client.end_transaction("test")

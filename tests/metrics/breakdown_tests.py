@@ -37,7 +37,7 @@ import elasticapm
 def test_bare_transaction(elasticapm_client):
     elasticapm_client.begin_transaction("request", start=0)
     elasticapm_client.end_transaction("test", "OK", duration=5)
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
     assert len(data) == 1
     asserts = 0
@@ -56,7 +56,7 @@ def test_single_span(elasticapm_client):
     with elasticapm.capture_span("test", span_type="db", span_subtype="mysql", start=10, duration=5):
         pass
     elasticapm_client.end_transaction("test", "OK", duration=15)
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
     assert len(data) == 2
     asserts = 0
@@ -83,7 +83,7 @@ def test_nested_spans(elasticapm_client):
         with elasticapm.capture_span("test", span_type="db", span_subtype="mysql", start=15, duration=5):
             pass
     elasticapm_client.end_transaction("test", "OK", duration=25)
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
     assert len(data) == 3
     asserts = 0
@@ -112,7 +112,7 @@ def test_explicit_app_span(elasticapm_client):
     with elasticapm.capture_span("test", span_type="app"):
         pass
     elasticapm_client.end_transaction("test", "OK")
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
     assert len(data) == 1
     asserts = 0
@@ -128,7 +128,7 @@ def test_explicit_app_span(elasticapm_client):
 @pytest.mark.parametrize("elasticapm_client", [{"breakdown_metrics": False}], indirect=True)
 def test_disable_breakdowns(elasticapm_client):
     with pytest.raises(LookupError):
-        elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+        elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     with mock.patch("elasticapm.traces.BaseSpan.child_started") as mock_child_started, mock.patch(
         "elasticapm.traces.Transaction.track_span_duration"
     ) as mock_track_span_duration:
@@ -146,7 +146,7 @@ def test_metrics_reset_after_collect(elasticapm_client):
     with elasticapm.capture_span("test", span_type="db", span_subtype="mysql", duration=5):
         pass
     elasticapm_client.end_transaction("test", "OK", duration=15)
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     for labels, c in breakdown._counters.items():
         assert c.val != 0
     for labels, t in breakdown._timers.items():
@@ -165,7 +165,7 @@ def test_multiple_transactions(elasticapm_client):
             pass
         elasticapm_client.end_transaction("test", "OK", duration=10)
 
-    breakdown = elasticapm_client._metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
+    breakdown = elasticapm_client.metrics.get_metricset("elasticapm.metrics.sets.breakdown.BreakdownMetricSet")
     data = list(breakdown.collect())
     asserts = 0
     for elem in data:

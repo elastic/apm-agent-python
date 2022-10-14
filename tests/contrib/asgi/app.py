@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2022, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,33 +28,34 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.metrics.base_metrics import MetricSet
+import asyncio
 
-try:
-    import psutil
-except ImportError:
-    raise ImportError("psutil not found. Install it to get system and process metrics")
+from quart import Quart, Response, jsonify
+
+from elasticapm import async_capture_span
+
+app = Quart(__name__)
 
 
-class CPUMetricSet(MetricSet):
-    def __init__(self, registry):
-        psutil.cpu_percent(interval=None)
-        self._process = psutil.Process()
-        self._process.cpu_percent(interval=None)
-        super(CPUMetricSet, self).__init__(registry)
+@app.route("/", methods=["GET", "POST"])
+async def root():
+    async with async_capture_span("sleep"):
+        await asyncio.sleep(0.001)
+    return "OK"
 
-    def before_collect(self):
-        self.gauge("system.cpu.total.norm.pct").val = psutil.cpu_percent(interval=None) / 100.0
-        self.gauge("system.memory.actual.free").val = psutil.virtual_memory().available
-        self.gauge("system.memory.total").val = psutil.virtual_memory().total
-        p = self._process
-        if hasattr(p, "oneshot"):  # new in psutil 5.0
-            with p.oneshot():
-                memory_info = p.memory_info()
-                cpu_percent = p.cpu_percent(interval=None)
-        else:
-            memory_info = p.memory_info()
-            cpu_percent = p.cpu_percent(interval=None)
-        self.gauge("system.process.cpu.total.norm.pct").val = cpu_percent / 100.0 / psutil.cpu_count()
-        self.gauge("system.process.memory.size").val = memory_info.vms
-        self.gauge("system.process.memory.rss.bytes").val = memory_info.rss
+
+@app.route("/foo")
+async def foo():
+    resp = Response("foo")
+    resp.headers["foo"] = "bar"
+    return resp
+
+
+@app.route("/boom")
+async def boom():
+    assert False
+
+
+@app.route("/body")
+async def json():
+    return jsonify({"hello": "world"})

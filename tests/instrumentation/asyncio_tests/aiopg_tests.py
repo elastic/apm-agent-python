@@ -94,7 +94,7 @@ async def test_select_sleep(instrument, cursor, elasticapm_client):
     assert 100 < span["duration"] < 110
     assert transaction["id"] == span["transaction_id"]
     assert span["type"] == "db"
-    assert span["subtype"] == "postgres"
+    assert span["subtype"] == "postgresql"
     assert span["action"] == "query"
     assert span["sync"] == False
 

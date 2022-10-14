@@ -1,15 +1,20 @@
 ARG PYTHON_IMAGE
-FROM ${PYTHON_IMAGE}
+FROM ${PYTHON_IMAGE}-slim
 
 RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
+    build-essential \
     ca-certificates \
     curl \
+    gnupg2 \
+    libmariadb-dev \
+    libpq-dev \
+    make \
     netcat \
     odbc-postgresql \
     unixodbc-dev \
     freetds-dev \
-    libmemcached-dev &&\
-    rm -rf /var/lib/apt/lists/*
+    libmemcached-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # connection to ha.pool.sks-keyservers.net fails sometimes, so let's retry with couple different servers
 RUN for server in $(shuf -e ha.pool.sks-keyservers.net \

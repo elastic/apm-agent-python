@@ -31,6 +31,7 @@
 import threading
 import time
 from collections import defaultdict
+from typing import Union
 
 from elasticapm.conf import constants
 from elasticapm.utils.logging import get_logger
@@ -56,25 +57,36 @@ class MetricsRegistry(ThreadManager):
         self._collect_timer = None
         super(MetricsRegistry, self).__init__()
 
-    def register(self, class_path):
+    def register(self, metricset: Union[str, type]) -> "MetricSet":
         """
         Register a new metric set
-        :param class_path: a string with the import path of the metricset class
-        """
-        if class_path in self._metricsets:
-            return
-        else:
-            try:
-                class_obj = import_string(class_path)
-                self._metricsets[class_path] = class_obj(self)
-            except ImportError as e:
-                logger.warning("Could not register %s metricset: %s", class_path, str(e))
 
-    def get_metricset(self, class_path):
+        :param metricset: a string with the import path of the metricset class,
+            or a class object that can be used to instantiate the metricset.
+            If a class object is used, you can use the class object or
+            `metricset.__name__` to retrieve the metricset using `get_metricset`.
+        :return: the metricset instance
+        """
+        class_id = metricset if isinstance(metricset, str) else f"{metricset.__module__}.{metricset.__name__}"
+        if class_id in self._metricsets:
+            return self._metricsets[class_id]
+        else:
+            if isinstance(metricset, str):
+                try:
+                    class_obj = import_string(metricset)
+                    self._metricsets[metricset] = class_obj(self)
+                except ImportError as e:
+                    logger.warning("Could not register %s metricset: %s", metricset, str(e))
+            else:
+                self._metricsets[class_id] = metricset(self)
+        return self._metricsets.get(class_id)
+
+    def get_metricset(self, metricset: Union[str, type]) -> "MetricSet":
+        metricset = metricset if isinstance(metricset, str) else f"{metricset.__module__}.{metricset.__name__}"
         try:
-            return self._metricsets[class_path]
+            return self._metricsets[metricset]
         except KeyError:
-            raise MetricSetNotFound(class_path)
+            raise MetricSetNotFound(metricset)
 
     def collect(self):
         """
@@ -114,7 +126,7 @@ class MetricsRegistry(ThreadManager):
         return self.client.config.disable_metrics or []
 
 
-class MetricsSet(object):
+class MetricSet(object):
     def __init__(self, registry):
         self._lock = threading.Lock()
         self._counters = {}
@@ -282,13 +294,17 @@ class MetricsSet(object):
         pass
 
     def before_yield(self, data):
+        """
+        A method that is called right before the data is yielded to be sent
+        to Elasticsearch. Can be used to modify the data.
+        """
         return data
 
     def _labels_to_key(self, labels):
         return tuple((k, str(v)) for k, v in sorted(labels.items()))
 
 
-class SpanBoundMetricSet(MetricsSet):
+class SpanBoundMetricSet(MetricSet):
     def before_yield(self, data):
         tags = data.get("tags", None)
         if tags:
@@ -495,3 +511,9 @@ noop_metric = NoopMetric("noop")
 class MetricSetNotFound(LookupError):
     def __init__(self, class_path):
         super(MetricSetNotFound, self).__init__("%s metric set not found" % class_path)
+
+
+# This is for backwards compatibility for the brave souls who were using
+# the undocumented system for custom metrics before we fixed it up and
+# documented it.
+MetricsSet = MetricSet
