@@ -7,6 +7,8 @@ env:
   GKE_ZONE: us-central1-c
   GKE_CLUSTER: observability-ci-test-k8s
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GIT_USER: apmmachine
+  GIT_EMAIL: apmmachine@users.noreply.github.com
 
 jobs:
   test:
@@ -46,6 +48,8 @@ jobs:
         echo "$(pwd)/.k8s/bin" >> $GITHUB_PATH
         echo "$(pwd)/.k8s/bin"
         pip install -r .k8s/requirements.txt
+        git config --global user.name "${GIT_USER}"
+        git config --global user.email "${GIT_EMAIL}"
 
     - name: Generate skaffold
       run: python .k8s/cli.py generate
