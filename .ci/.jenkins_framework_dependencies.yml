@@ -8,6 +8,8 @@ dependencies:
     DEPENDENCIES: [ postgres ]
   - FRAMEWORK: aiobotocore-newest
     DEPENDENCIES: [ localstack ]
+  - FRAMEWORK: aiomysql-newest
+    DEPENDENCIES: [ mysql ]
   - FRAMEWORK: asyncpg-newest
     DEPENDENCIES: [ postgres ]
   - FRAMEWORK: boto3-newest
