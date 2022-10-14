@@ -2,6 +2,8 @@
 # the name of the framework name in the .jenkins_framework(_full)?.yml files.
 # This file is consumed by the .k8s/cli.py script
 dependencies:
+  - FRAMEWORK: aioredis-newest
+    DEPENDENCIES: [ aioredis ]
   - FRAMEWORK: aiopg-newest
     DEPENDENCIES: [ postgres ]
   - FRAMEWORK: aiobotocore-newest
