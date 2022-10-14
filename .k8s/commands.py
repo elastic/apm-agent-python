@@ -150,6 +150,7 @@ def build(version, repo, extra):
 @click.option("--namespace", "-n", show_default=True, default="default", help="Run the in the specified namespace")
 def test(framework, version, extra, namespace):
     """Run the test support matrix for the default version and frameworks or filtered by them."""
+    Path(utils.Constants.BUILD).mkdir(parents=True, exist_ok=True)
     filter = uuid.uuid4()
     deploy(framework, version, extra, namespace, filter)
     k8s.results(framework, version, namespace, utils.git_username(), filter)
@@ -161,6 +162,7 @@ def test(framework, version, extra, namespace):
 @click.option("--namespace", "-n", show_default=True, default="default", help="Run the in the specified namespace")
 def results(framework, version, namespace):
     """Query the results for the given version and frameworks or filtered by them."""
+    Path(utils.Constants.BUILD).mkdir(parents=True, exist_ok=True)
     k8s.results(framework, version, namespace, utils.git_username(), None)
 
 
