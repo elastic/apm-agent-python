@@ -1,0 +1,50 @@
+name: Test on K8s
+
+on:
+  pull_request:
+
+env:
+  GKE_ZONE: us-central1-c
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
+      with:
+        service_account_key: ${{ secrets.GKE_SA_KEY }}
+        project_id: ${{ secrets.GKE_PROJECT }}
+
+    - uses: google-github-actions/get-gke-credentials@fb08709ba27618c31c09e014e1d8364b02e5042e
+      with:
+        cluster_name: ${{ secrets.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+        credentials: ${{ secrets.GKE_SA_KEY }}
+
+    - uses: elastic/apm-pipeline-library/.github/actions/docker-login@gh_actions
+      with:
+        registry: docker.elastic.co
+        secret: secret/observability-team/ci/docker-registry/prod
+        url: ${{ secrets.VAULT_ADDR }}
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+    - name: Set up required tools
+      run: |-
+        make -C .k8s setup
+        echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        pip install -r .k8s/requirements.txt
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - name: Build docker images
+      run: python .k8s/cli.py build
+
+    - name: Run tests on K8s
+      run: python .k8s/cli.py test
