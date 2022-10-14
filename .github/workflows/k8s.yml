@@ -9,6 +9,7 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GIT_USER: apmmachine
   GIT_EMAIL: apmmachine@users.noreply.github.com
+  PYTHON_VERSIONS: "-v python-3.10 -v python-3.6"
 
 jobs:
   k8s:
@@ -56,7 +57,7 @@ jobs:
       run: python .k8s/cli.py generate
 
     - name: Build docker images
-      run: python .k8s/cli.py build
+      run: python .k8s/cli.py build ${{ env.PYTHON_VERSIONS }}
 
     - name: Run tests on K8s
-      run: python .k8s/cli.py test -v python-3.10 -v python-3.6
+      run: python .k8s/cli.py test ${{ env.PYTHON_VERSIONS }}
