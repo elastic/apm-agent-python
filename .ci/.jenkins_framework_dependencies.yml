@@ -28,6 +28,8 @@ dependencies:
     DEPENDENCIES: [ mysql ]
   - FRAMEWORK: mysqlclient-newest
     DEPENDENCIES: [ mysql ]
+  - FRAMEWORK: psycopg2-newest
+    DEPENDENCIES: [ postgres ]
   - FRAMEWORK: pymemcache-newest
     DEPENDENCIES: [ memcached ]
   - FRAMEWORK: pymysql-newest
