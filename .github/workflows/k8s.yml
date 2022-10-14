@@ -43,8 +43,12 @@ jobs:
     - name: Set up required tools
       run: |-
         make -C .k8s setup
-        echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        echo "$(pwd)/.k8s/bin" >> $GITHUB_PATH
+        echo "$(pwd)/.k8s/bin"
         pip install -r .k8s/requirements.txt
+
+    - name: Generate skaffold
+      run: python .k8s/cli.py generate
 
     - name: Build docker images
       run: python .k8s/cli.py build
