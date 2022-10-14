@@ -11,8 +11,8 @@ env:
   GIT_EMAIL: apmmachine@users.noreply.github.com
 
 jobs:
-  test:
-    name: Test
+  k8s:
+    name: k8s
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -58,4 +58,4 @@ jobs:
       run: python .k8s/cli.py build
 
     - name: Run tests on K8s
-      run: python .k8s/cli.py test
+      run: python .k8s/cli.py test -v python-3.10 -v python-3.6
