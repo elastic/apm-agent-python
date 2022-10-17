@@ -104,7 +104,11 @@ def generate(default, dependencies, exclude, force, framework, timeout, ttl, ver
                 # as long as we don't support dependencies within the same pod
                 # let's skip those frameworks with dependencies
                 if not utils.isFrameworkWithDependencies(fra, dependenciesFile):
-                    templates.generateSkaffoldEntries(ver, fra, timeout, ttl, git_username)
+                    manifest = templates.Manifest(ver, fra, timeout, ttl, git_username)
+                    manifest.generate()
+
+                    profile = templates.Profile(ver, fra)
+                    profile.generate()
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg="yellow"))
 
@@ -126,7 +130,8 @@ def generate(default, dependencies, exclude, force, framework, timeout, ttl, ver
 
     click.echo(click.style("Copying default yaml file...", fg="yellow"))
     # skaffold requires a default manifest ... this is the workaround for now.
-    templates.generateDefaultManifest(default, git_username)
+    default = templates.Default(default, git_username)
+    default.generate()
 
 
 @click.command("build", short_help="Build the docker images")

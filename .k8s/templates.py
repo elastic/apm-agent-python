@@ -34,20 +34,10 @@ from pathlib import Path
 import utils
 from jinja2 import Template
 
-with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
-    defaultManifestTemplate = Template(file_.read())
+
 
 with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
     skaffoldTemplate = Template(file_.read())
-
-
-def generateSkaffoldEntries(version, framework, timeout, ttl, git_username):
-    """Given the python and framework then generate the k8s manifest and skaffold profile"""
-    manifest = Manifest(version, framework, timeout, ttl, git_username)
-    manifest.generate()
-
-    profile = Profile(version, framework)
-    profile.generate()
 
 
 def generateSkaffoldTemplate(default, git_username):
@@ -57,13 +47,20 @@ def generateSkaffoldTemplate(default, git_username):
         f.write(output)
 
 
-def generateDefaultManifest(version, git_username):
-    """Given the python then generate the default manifest"""
-    output = defaultManifestTemplate.render(
-        name=version, version=utils.getPythonVersion(version), git_user=git_username
-    )
-    with open(utils.Constants.GENERATED_DEFAULT, "w") as f:
-        f.write(output)
+class Default:
+    def __init__(self, version, git_user):
+        self.version = version
+        self.git_user = git_user
+
+        with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
+            self.defaultManifestTemplate = Template(file_.read())
+
+    def generate(self):
+        output = self.defaultManifestTemplate.render(
+        name=self.version, version=utils.getPythonVersion(self.version), git_user=self.git_user
+        )
+        with open(utils.Constants.GENERATED_DEFAULT, "w") as f:
+            f.write(output)
 
 
 class Manifest:
