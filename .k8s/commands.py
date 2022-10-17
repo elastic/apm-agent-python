@@ -93,7 +93,8 @@ def generate(default, dependencies, exclude, force, framework, timeout, ttl, ver
 
     # Generate profiles for the given python versions
     for ver in versionFile.get("PYTHON_VERSION"):
-        templates.generateVersionProfiles(ver, default, git_username)
+        versionProfile = templates.VersionProfile(ver, default, git_username)
+        versionProfile.generate()
 
     # Generate profiles for the given python and framewok versions
     for ver in versionFile.get("PYTHON_VERSION"):

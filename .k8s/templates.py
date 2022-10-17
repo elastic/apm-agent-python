@@ -37,12 +37,6 @@ from jinja2 import Template
 with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
     defaultManifestTemplate = Template(file_.read())
 
-with open(utils.Constants.FRAMEWORK_TEMPLATE) as file_:
-    frameworkTemplate = Template(file_.read())
-
-with open(utils.Constants.PYTHON_TEMPLATE) as file_:
-    pythonTemplate = Template(file_.read())
-
 with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
     skaffoldTemplate = Template(file_.read())
 
@@ -52,7 +46,8 @@ def generateSkaffoldEntries(version, framework, timeout, ttl, git_username):
     manifest = Manifest(version, framework, timeout, ttl, git_username)
     manifest.generate()
 
-    generateFrameworkProfiles(version, framework)
+    profile = Profile(version, framework)
+    profile.generate()
 
 
 def generateSkaffoldTemplate(default, git_username):
@@ -68,35 +63,6 @@ def generateDefaultManifest(version, git_username):
         name=version, version=utils.getPythonVersion(version), git_user=git_username
     )
     with open(utils.Constants.GENERATED_DEFAULT, "w") as f:
-        f.write(output)
-
-
-def generateVersionProfiles(version, default, git_username):
-    """Given the python then update the generated skaffold profiles for that version"""
-    pythonVersion = utils.getPythonVersion(version)
-    # Render the template
-    output = pythonTemplate.render(name=version, version=pythonVersion, default=default, git_user=git_username)
-    appendProfile(output)
-
-
-def generateFrameworkProfiles(python, framework):
-    """Given the framework then update the generated skaffold profiles for that framework"""
-    frameworkName = utils.getFrameworkName(framework)
-    frameworkVersion = utils.getFrameworkVersion(framework)
-    pythonVersion = utils.getPythonVersion(python)
-    # Render the template
-    output = frameworkTemplate.render(
-        framework=framework,
-        frameworkName=frameworkName,
-        frameworkVersion=frameworkVersion,
-        python=python,
-        pythonVersion=pythonVersion,
-    )
-    appendProfile(output)
-
-
-def appendProfile(output):
-    with open(utils.Constants.GENERATED_PROFILE, "a") as f:
         f.write(output)
 
 
@@ -135,3 +101,53 @@ class Manifest:
             f.write(output)
 
         return skaffoldFile
+
+
+class Profile:
+    def __init__(self, python, framework):
+        self.python = python
+        self.framework = framework
+
+        with open(utils.Constants.FRAMEWORK_TEMPLATE) as file_:
+            self.frameworkTemplate = Template(file_.read())
+
+    def generate(self):
+        """Given the framework then update the generated skaffold profiles for that framework"""
+        frameworkName = utils.getFrameworkName(self.framework)
+        frameworkVersion = utils.getFrameworkVersion(self.framework)
+        pythonVersion = utils.getPythonVersion(self.python)
+
+        output = self.frameworkTemplate.render(
+            framework=self.framework,
+            frameworkName=frameworkName,
+            frameworkVersion=frameworkVersion,
+            python=self.python,
+            pythonVersion=pythonVersion,
+        )
+
+        with open(utils.Constants.GENERATED_PROFILE, "a") as f:
+            f.write(output)
+
+        return utils.Constants.GENERATED_PROFILE
+
+
+class VersionProfile:
+    def __init__(self, version, default, git_user):
+        self.version = version
+        self.default = default
+        self.git_user = git_user
+
+        with open(utils.Constants.PYTHON_TEMPLATE) as file_:
+            self.pythonTemplate = Template(file_.read())
+
+    def generate(self):
+        """Given the python then update the generated skaffold profiles for that version"""
+        pythonVersion = utils.getPythonVersion(self.version)
+        output = self.pythonTemplate.render(
+            name=self.version, version=pythonVersion, default=self.default, git_user=self.git_user
+        )
+
+        with open(utils.Constants.GENERATED_PROFILE, "a") as f:
+            f.write(output)
+
+        return utils.Constants.GENERATED_PROFILE
