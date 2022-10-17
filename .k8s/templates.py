@@ -37,9 +37,6 @@ from jinja2 import Template
 with open(utils.Constants.DEFAULT_TEMPLATE) as file_:
     defaultManifestTemplate = Template(file_.read())
 
-with open(utils.Constants.MANIFEST_TEMPLATE) as file_:
-    manifestTemplate = Template(file_.read())
-
 with open(utils.Constants.FRAMEWORK_TEMPLATE) as file_:
     frameworkTemplate = Template(file_.read())
 
@@ -52,22 +49,8 @@ with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
 
 def generateSkaffoldEntries(version, framework, timeout, ttl, git_username):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
-    pythonVersion = utils.getPythonVersion(version)
-    frameworkName = utils.getFrameworkName(framework)
-
-    # Render the template
-    output = manifestTemplate.render(
-        pythonVersion=pythonVersion, framework=framework, timeout=timeout, ttl=ttl, git_user=git_username
-    )
-
-    # Generate the opinionated folder structure
-    skaffoldDir = f"{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}"
-    Path(skaffoldDir).mkdir(parents=True, exist_ok=True)
-
-    # Generate k8s manifest for the given python version and framework
-    skaffoldFile = f"{skaffoldDir}/{pythonVersion}-{framework}.yaml"
-    with open(skaffoldFile, "w") as f:
-        f.write(output)
+    manifest = Manifest(version, framework, timeout, ttl, git_username)
+    manifest.export()
 
     generateFrameworkProfiles(version, framework)
 
@@ -115,3 +98,38 @@ def generateFrameworkProfiles(python, framework):
 def appendProfile(output):
     with open(utils.Constants.GENERATED_PROFILE, "a") as f:
         f.write(output)
+
+
+class Manifest:
+    def __init__(self, python, framework, timeout, ttl, git_user):
+        self.python = python
+        self.framework = framework
+        self.timeout = timeout
+        self.ttl = ttl
+        self.git_user = git_user
+
+        with open(utils.Constants.MANIFEST_TEMPLATE) as file_:
+            self.manifestTemplate = Template(file_.read())
+
+    def export(self):
+        """Given the python and framework then generate the k8s manifest and skaffold profile"""
+        pythonVersion = utils.getPythonVersion(self.python)
+        frameworkName = utils.getFrameworkName(self.framework)
+
+        # Render the template
+        output = self.manifestTemplate.render(
+            pythonVersion=pythonVersion,
+            framework=self.framework,
+            timeout=self.timeout,
+            ttl=self.ttl,
+            git_user=self.git_user,
+        )
+
+        # Generate the opinionated folder structure
+        skaffoldDir = f"{utils.Constants.GENERATED}/{pythonVersion}/{frameworkName}"
+        Path(skaffoldDir).mkdir(parents=True, exist_ok=True)
+
+        # Generate k8s manifest for the given python version and framework
+        skaffoldFile = f"{skaffoldDir}/{pythonVersion}-{self.framework}.yaml"
+        with open(skaffoldFile, "w") as f:
+            f.write(output)
