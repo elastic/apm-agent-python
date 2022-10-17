@@ -50,7 +50,7 @@ with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
 def generateSkaffoldEntries(version, framework, timeout, ttl, git_username):
     """Given the python and framework then generate the k8s manifest and skaffold profile"""
     manifest = Manifest(version, framework, timeout, ttl, git_username)
-    manifest.export()
+    manifest.generate()
 
     generateFrameworkProfiles(version, framework)
 
@@ -111,7 +111,7 @@ class Manifest:
         with open(utils.Constants.MANIFEST_TEMPLATE) as file_:
             self.manifestTemplate = Template(file_.read())
 
-    def export(self):
+    def generate(self):
         """Given the python and framework then generate the k8s manifest and skaffold profile"""
         pythonVersion = utils.getPythonVersion(self.python)
         frameworkName = utils.getFrameworkName(self.framework)
@@ -133,3 +133,5 @@ class Manifest:
         skaffoldFile = f"{skaffoldDir}/{pythonVersion}-{self.framework}.yaml"
         with open(skaffoldFile, "w") as f:
             f.write(output)
+
+        return skaffoldFile
