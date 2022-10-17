@@ -33,10 +33,10 @@ import itertools
 
 import prometheus_client
 
-from elasticapm.metrics.base_metrics import MetricsSet
+from elasticapm.metrics.base_metrics import MetricSet
 
 
-class PrometheusMetrics(MetricsSet):
+class PrometheusMetrics(MetricSet):
     def __init__(self, registry):
         super(PrometheusMetrics, self).__init__(registry)
         self._prometheus_registry = prometheus_client.REGISTRY
