@@ -88,7 +88,7 @@ class Manifest:
         return skaffoldFile
 
 
-class Profile:
+class SkaffoldProfile:
     def __init__(self, python, framework):
         self.python = python
         self.framework = framework

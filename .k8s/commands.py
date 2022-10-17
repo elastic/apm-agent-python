@@ -107,7 +107,7 @@ def generate(default, dependencies, exclude, force, framework, timeout, ttl, ver
                     manifest = templates.Manifest(ver, fra, timeout, ttl, git_username)
                     manifest.generate()
 
-                    profile = templates.Profile(ver, fra)
+                    profile = templates.SkaffoldProfile(ver, fra)
                     profile.generate()
 
     click.echo(click.style("Generating skaffold configuration on the fly...", fg="yellow"))
