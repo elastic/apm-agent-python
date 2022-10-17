@@ -114,7 +114,8 @@ def generate(default, dependencies, exclude, force, framework, timeout, ttl, ver
 
     # Generate skaffold with the default python version
     # skaffold requires a default manifest ... this is the workaround for now.
-    templates.generateSkaffoldTemplate(default, git_username)
+    skaffold = templates.Skaffold(default, git_username)
+    skaffold.generate()
 
     # Aggregate all the skaffold files and converge (order matters!)
     filenames = [utils.Constants.GENERATED_SKAFFOLD, utils.Constants.GENERATED_PROFILE]

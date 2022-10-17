@@ -35,18 +35,6 @@ import utils
 from jinja2 import Template
 
 
-
-with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
-    skaffoldTemplate = Template(file_.read())
-
-
-def generateSkaffoldTemplate(default, git_username):
-    """Given the python and framework then generate the k8s manifest and skaffold profile"""
-    output = skaffoldTemplate.render(version=utils.getPythonVersion(default), git_user=git_username)
-    with open(utils.Constants.GENERATED_SKAFFOLD, "w") as f:
-        f.write(output)
-
-
 class Default:
     def __init__(self, version, git_user):
         self.version = version
@@ -57,7 +45,7 @@ class Default:
 
     def generate(self):
         output = self.defaultManifestTemplate.render(
-        name=self.version, version=utils.getPythonVersion(self.version), git_user=self.git_user
+            name=self.version, version=utils.getPythonVersion(self.version), git_user=self.git_user
         )
         with open(utils.Constants.GENERATED_DEFAULT, "w") as f:
             f.write(output)
@@ -126,6 +114,21 @@ class Profile:
             f.write(output)
 
         return utils.Constants.GENERATED_PROFILE
+
+
+class Skaffold:
+    def __init__(self, default, git_user):
+        self.default = default
+        self.git_user = git_user
+
+        with open(utils.Constants.SKAFFOLD_TEMPLATE) as file_:
+            self.skaffoldTemplate = Template(file_.read())
+
+    def generate(self):
+        """Given the default python and git user then generate the skaffold file"""
+        output = self.skaffoldTemplate.render(version=utils.getPythonVersion(self.default), git_user=self.git_user)
+        with open(utils.Constants.GENERATED_SKAFFOLD, "w") as f:
+            f.write(output)
 
 
 class VersionProfile:
