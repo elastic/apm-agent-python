@@ -15,18 +15,6 @@ We love all our products, but sometimes we must say goodbye to a release so that
 forward on future development and innovation.
 Our https://www.elastic.co/support/eol[End of life policy] defines how long a given release is considered supported,
 as well as how long a release is considered still in active development or maintenance.
-The table below is a simplified description of this policy.
-
-[options="header"]
-|====
-|Agent version |EOL Date |Maintained until
-|1.x |2019-06-11 |2.0
-|2.x |2019-08-06 |3.0
-|3.x |2020-01-20 |4.0
-|4.x |2020-05-14 |5.0
-|5.x |2021-02-05 |6.0
-|6.x |2022-08-01 |7.0
-|====
 
 [[upgrading-6.x]]
 === Upgrading to version 6 of the agent
