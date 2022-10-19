@@ -71,9 +71,13 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
         result = wrapped(*args, **kwargs)
         if hasattr(result, "meta"):  # elasticsearch-py 8.x+
             status_code = result.meta.status
+            cluster = result.meta.headers.get("x-found-handling-cluster")
         else:
             status_code = result[0]
+            cluster = result[1].get("x-found-handling-cluster")
         span.context["http"] = {"status_code": status_code}
+        if cluster:
+            span.context["db"] = {"instance": cluster}
 
         return result
 
