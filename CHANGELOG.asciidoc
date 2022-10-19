@@ -39,6 +39,7 @@ endif::[]
  * Add support for instrumenting the Elasticsearch 8 Python client {pull}1642[#1642]
  * Add `*principal*` to default `sanitize_field_names` configuration {pull}1664[#1664]
  * Add docs and better support for custom metrics, including in AWS Lambda {pull}1643[#1643]
+ * Add support for capturing span links from AWS SQS in AWS Lambda {pull}1662[#1662]
 
 [float]
 ===== Bug fixes

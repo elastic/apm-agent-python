@@ -28,6 +28,12 @@
                     "stringListValues": [],
                     "binaryListValues": [],
                     "dataType": "String"
+                },
+                "traceparent": {
+                    "stringValue": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00",
+                    "stringListValues": [],
+                    "binaryListValues": [],
+                    "dataType": "String"
                 }
             },
             "md5OfBody": "5eb63bbbe01eeed093cb22bb8f5acdc3",

@@ -302,6 +302,7 @@ class Client(object):
         :param trace_parent: an optional TraceParent object for distributed tracing
         :param start: override the start timestamp, mostly useful for testing
         :param auto_activate: whether to set this transaction in execution_context
+        :param links: a sequence of traceparent objects to causally link this transaction with
         :return: the started transaction object
         """
         if self.config.is_recording:
