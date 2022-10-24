@@ -37,6 +37,12 @@ class StarletteServerErrorMiddlewareInstrumentation(AsyncAbstractInstrumentedMod
 
     instrument_list = [("starlette.middleware.errors", "ServerErrorMiddleware.__call__")]
 
+    # This instrumentation doesn't actually create transactions. However, it
+    # does wrap a context outside of the normal starlette transaction, so we
+    # need to make sure it always calls the wrapped version even if a sampled
+    # transaction is not active.
+    creates_transactions = True
+
     async def call(self, module, method, wrapped, instance, args, kwargs):
         try:
             return await wrapped(*args, **kwargs)
