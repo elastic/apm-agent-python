@@ -28,9 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest  # isort:skip
+from shutil import ExecError
 
 from tests.fixtures import TempStoreClient
+
+import pytest  # isort:skip
+
 
 starlette = pytest.importorskip("starlette")  # isort:skip
 
@@ -65,6 +68,12 @@ def app(elasticapm_client):
     app.mount("/sub", sub)
     sub.mount("/subsub", subsub)
 
+    @app.exception_handler(Exception)
+    async def handle_exception(request, exc):
+        transaction_id = elasticapm.get_transaction_id()
+        exc.transaction_id = transaction_id
+        return PlainTextResponse(f"{transaction_id}", status_code=500)
+
     @app.route("/", methods=["GET", "POST"])
     async def hi(request):
         body = await request.body()
@@ -87,6 +96,11 @@ def app(elasticapm_client):
     async def raise_exception(request):
         await request.body()
         raise ValueError()
+
+    @app.route("/raise-base-exception", methods=["GET", "POST"])
+    async def raise_base_exception(request):
+        await request.body()
+        raise Exception()
 
     @app.route("/hi/{name}/with/slash/", methods=["GET", "POST"])
     async def with_slash(request):
@@ -508,3 +522,15 @@ def test_websocket(app, elasticapm_client):
         assert data == "Hello, world!"
 
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 0
+
+
+def test_transaction_active_in_base_exception_handler(app, elasticapm_client):
+    client = TestClient(app)
+    try:
+        response = client.get("/raise-base-exception")
+    except Exception as exc:
+        # This is set by the exception handler -- we want to make sure the
+        # handler has access to the transaction.
+        assert exc.transaction_id
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
