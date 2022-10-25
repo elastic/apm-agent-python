@@ -35,9 +35,10 @@ https://www.python.org/dev/peps/pep-0249/
 
 import re
 
+import wrapt
+
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 from elasticapm.traces import capture_span
-from elasticapm.utils import wrapt
 from elasticapm.utils.encoding import force_text, shorten
 
 

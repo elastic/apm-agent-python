@@ -139,12 +139,10 @@ pipeline {
               deleteDir()
               unstash 'source'
               dir("${BASE_DIR}"){
-                sh script: 'pip3 install --user cibuildwheel', label: "Installing cibuildwheel"
-                sh script: 'mkdir wheelhouse', label: "creating wheelhouse"
-                // skip pypy builds with CIBW_SKIP=pp*
-                sh script: 'CIBW_SKIP="pp* cp27* cp35*" CIBW_ARCHS_LINUX="x86_64 aarch64" cibuildwheel --platform linux --output-dir wheelhouse; ls -l wheelhouse'
+                sh script: 'pip3 install --user wheel', label: "Installing wheel"
+                sh script: 'python3 setup.py bdist_wheel', label: "Building universal wheel"
               }
-              stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/wheelhouse/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
+              stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/dist/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
             }
           }
         }

@@ -36,10 +36,11 @@ import sys
 import traceback
 import warnings
 
+import wrapt
+
 from elasticapm import get_client
 from elasticapm.base import Client
 from elasticapm.traces import execution_context
-from elasticapm.utils import wrapt
 from elasticapm.utils.stacks import iter_stack_frames
 
 

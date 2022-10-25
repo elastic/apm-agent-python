@@ -41,6 +41,7 @@ import os
 
 import mock
 import urllib3
+import wrapt
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.staticfiles import StaticFiles
@@ -50,7 +51,6 @@ import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.starlette import ElasticAPM, make_apm_client
-from elasticapm.utils import wrapt
 from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.starlette]

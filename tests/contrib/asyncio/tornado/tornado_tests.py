@@ -35,13 +35,13 @@ tornado = pytest.importorskip("tornado")  # isort:skip
 import os
 
 import mock
+from wrapt import BoundFunctionWrapper
 
 import elasticapm
 from elasticapm import async_capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.tornado import ElasticAPM
 from elasticapm.utils.disttracing import TraceParent
-from elasticapm.utils.wrapt import BoundFunctionWrapper
 from tests.utils import assert_any_record_contains
 
 pytestmark = pytest.mark.tornado
