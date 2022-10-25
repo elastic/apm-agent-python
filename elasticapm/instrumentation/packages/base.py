@@ -31,8 +31,9 @@
 import functools
 import os
 
+import wrapt
+
 from elasticapm.traces import execution_context
-from elasticapm.utils import wrapt
 from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.instrument")
