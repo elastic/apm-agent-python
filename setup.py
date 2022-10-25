@@ -63,29 +63,6 @@ from setuptools.command.test import test as TestCommand
 
 pkg_resources.require("setuptools>=39.2")
 
-if sys.platform == "win32":
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
-else:
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
-
-
-class BuildExtFailed(Exception):
-    pass
-
-
-class optional_build_ext(build_ext):
-    def run(self):
-        try:
-            build_ext.run(self)
-        except DistutilsPlatformError:
-            raise BuildExtFailed()
-
-    def build_extension(self, ext):
-        try:
-            build_ext.build_extension(self, ext)
-        except build_ext_errors:
-            raise BuildExtFailed()
-
 
 class PyTest(TestCommand):
     user_options = [("pytest-args=", "a", "Arguments to pass to py.test")]
@@ -127,40 +104,4 @@ def get_version():
     return "unknown"
 
 
-setup_kwargs = dict(cmdclass={"test": PyTest}, version=get_version())
-
-
-def run_setup(with_extensions):
-    setup_kwargs_tmp = dict(setup_kwargs)
-
-    if with_extensions:
-        setup_kwargs_tmp["ext_modules"] = [
-            Extension("elasticapm.utils.wrapt._wrappers", ["elasticapm/utils/wrapt/_wrappers.c"])
-        ]
-        setup_kwargs_tmp["cmdclass"]["build_ext"] = optional_build_ext
-
-    setup(**setup_kwargs_tmp)
-
-
-# Figure out if we should build the wrapt C extensions
-
-with_extensions = os.environ.get("ELASTIC_APM_WRAPT_EXTENSIONS", None)
-
-if with_extensions:
-    if with_extensions.lower() == "true":
-        with_extensions = True
-    elif with_extensions.lower() == "false":
-        with_extensions = False
-    else:
-        with_extensions = None
-
-if hasattr(sys, "pypy_version_info"):
-    with_extensions = False
-
-if with_extensions is None:
-    with_extensions = True
-
-try:
-    run_setup(with_extensions=with_extensions)
-except BuildExtFailed:
-    run_setup(with_extensions=False)
+setup(cmdclass={"test": PyTest}, version=get_version())

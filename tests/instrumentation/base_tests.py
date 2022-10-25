@@ -31,16 +31,15 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-import types
 
 import mock
 import pytest
+import wrapt
 
 import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-from elasticapm.utils import wrapt
 from tests.utils import assert_any_record_contains
 
 
