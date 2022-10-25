@@ -33,11 +33,9 @@ FRAMEWORK:
   - twisted-16
   - twisted-15
   - requests-newest
-  - boto3-1.0
   - boto3-1.5
   - boto3-1.6
   - boto3-newest
-  - pymongo-3.0
   - pymongo-3.1
   - pymongo-3.2
   - pymongo-3.3
@@ -49,7 +47,6 @@ FRAMEWORK:
   - redis-newest
   - psycopg2-newest
   - pymssql-newest
-  - memcached-1.51
   - memcached-newest
   - pylibmc-1.4
   - pylibmc-newest

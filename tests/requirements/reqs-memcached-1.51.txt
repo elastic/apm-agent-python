@@ -1,2 +1,0 @@
-python-memcached==1.51
--r reqs-base.txt

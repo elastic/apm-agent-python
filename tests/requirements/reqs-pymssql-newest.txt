@@ -1,3 +1,3 @@
 cython ; python_version >= '3.6'
-pymssql<2.1.4
+pymssql
 -r reqs-base.txt

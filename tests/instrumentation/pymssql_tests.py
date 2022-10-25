@@ -90,7 +90,7 @@ def test_pymssql_select(instrument, pymssql_connection, elasticapm_client):
         assert span["context"]["destination"] == {
             "address": "mssql",
             "port": default_ports["mssql"],
-            "service": {"name": "", "resource": "mssql", "type": ""},
+            "service": {"name": "", "resource": "mssql/tempdb", "type": ""},
         }
         assert span["context"]["service"]["target"]["type"] == "mssql"
         assert span["context"]["service"]["target"]["name"] == "tempdb"

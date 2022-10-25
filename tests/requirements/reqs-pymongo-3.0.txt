@@ -1,2 +1,0 @@
-pymongo>=3.0,<3.1
--r reqs-base.txt
