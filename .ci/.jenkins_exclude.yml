@@ -32,6 +32,8 @@ exclude:
   - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-flask-2
   - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-django-3
+  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-django-4
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: graphene-2
@@ -48,6 +50,8 @@ exclude:
   - PYTHON_VERSION: python-3.11
     FRAMEWORK: django-2.0
   - PYTHON_VERSION: python-3.11
+    FRAMEWORK: django-2.1
+  - PYTHON_VERSION: python-3.11
     FRAMEWORK: celery-4-django-2.0
   - PYTHON_VERSION: python-3.11
     FRAMEWORK: celery-4-django-1.11
@@ -62,6 +66,10 @@ exclude:
   - PYTHON_VERSION: python-3.11
     FRAMEWORK: pymongo-3.5
   # pymongo
+  - PYTHON_VERSION: python-3.10
+    FRAMEWORK: pymongo-3.1
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.11
