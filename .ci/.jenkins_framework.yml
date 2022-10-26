@@ -13,7 +13,7 @@ FRAMEWORK:
   - jinja2-3
   - opentelemetry-newest
   - opentracing-newest
-  - twisted-18
+  - twisted-newest
   - celery-4-flask-1.0
   - celery-4-django-2.0
   - celery-5-flask-2

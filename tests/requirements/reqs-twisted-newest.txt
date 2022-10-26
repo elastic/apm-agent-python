@@ -1,2 +1,2 @@
-boto3>=1.0,<1.1
+Twisted
 -r reqs-base.txt

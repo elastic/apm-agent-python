@@ -27,6 +27,14 @@ exclude:
     FRAMEWORK: celery-4-django-2.0
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: celery-4-django-1.11
+  - PYTHON_VERSION: python-3.11 # cannot import name 'formatargspec' from 'inspect'
+    FRAMEWORK: celery-4-flask-1.0
+  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-flask-2
+  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-django-3
+  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-django-4
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: graphene-2
   - PYTHON_VERSION: python-3.10
@@ -37,117 +45,63 @@ exclude:
     FRAMEWORK: cassandra-3.4
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: pymongo-3.5
-  # requests
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: requests-1.2
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: requests-1.2
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: django-1.11
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: django-2.0
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: django-2.1
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: celery-4-django-2.0
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: celery-4-django-1.11
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: graphene-2
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: aiohttp-3.0
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: aiohttp-4.0
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: cassandra-3.4
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pymongo-3.5
   # pymongo
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: pymongo-3.0
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: pymongo-3.2
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pymongo-3.1
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: pymongo-3.3
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pymongo-3.2
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: pymongo-3.4
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pymongo-3.3
   - PYTHON_VERSION: python-3.8
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: python-3.9
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: python-3.10
+    FRAMEWORK: pymongo-3.4
+  - PYTHON_VERSION: python-3.11
     FRAMEWORK: pymongo-3.4
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
-  # python-memcached
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: memcached-1.51
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: memcached-1.51
   # pymssql
   - PYTHON_VERSION: pypy-3 # currently fails with error on pypy3
-    FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.6 # currently fails with error on python 3.6 due to cython issues
-    FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.7 # currently fails with error on python 3.7 due to cython issues
-    FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.8 # currently fails with error on python 3.8 due to cython issues
-    FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.9 # currently fails with error on python 3.8 due to cython issues
-    FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.10 # currently fails with error on python 3.8 due to cython issues
     FRAMEWORK: pymssql-newest
   # pyodbc
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
   # boto3
-  - PYTHON_VERSION: python-3.6
-    FRAMEWORK: boto3-1.0
-  - PYTHON_VERSION: python-3.7
-    FRAMEWORK: boto3-1.0
-  - PYTHON_VERSION: python-3.8
-    FRAMEWORK: boto3-1.0
-  - PYTHON_VERSION: python-3.9
-    FRAMEWORK: boto3-1.0
-  - PYTHON_VERSION: python-3.10
-    FRAMEWORK: boto3-1.0
-  - PYTHON_VERSION: pypy-3
-    FRAMEWORK: boto3-1.0
   - PYTHON_VERSION: python-3.10
     FRAMEWORK: boto3-1.5
   - PYTHON_VERSION: python-3.10
+    FRAMEWORK: boto3-1.6
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: boto3-1.5
+  - PYTHON_VERSION: python-3.11
     FRAMEWORK: boto3-1.6
   # aiohttp client, only supported in Python 3.7+
   - PYTHON_VERSION: pypy-3
@@ -199,21 +153,15 @@ exclude:
     FRAMEWORK: sanic-20.12
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: sanic-newest
-  - PYTHON_VERSION: python-3.10 # install of uvloop 0.14 fails: https://github.com/MagicStack/uvloop/issues/356
-    FRAMEWORK: sanic-20.12
   - PYTHON_VERSION: pypy-3
     # aioredis
     FRAMEWORK: aioredis-newest
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: aioredis-newest
-  - PYTHON_VERSION: python-3.10 # getting "loop argument must agree with lock" error
-    FRAMEWORK: aioredis-newest
   # aiomysql
   - PYTHON_VERSION: pypy-3
     FRAMEWORK: aiomysql-newest
   - PYTHON_VERSION: python-3.6
-    FRAMEWORK: aiomysql-newest
-  - PYTHON_VERSION: python-3.10 # getting "loop argument must agree with lock" error
     FRAMEWORK: aiomysql-newest
   # aiobotocore
   - PYTHON_VERSION: pypy-3
@@ -223,3 +171,15 @@ exclude:
   # mysql-connector-python
   - PYTHON_VERSION: python-3.6
     FRAMEWORK: mysql_connector-newest
+  # twisted
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: twisted-18
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: twisted-17
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: twisted-16
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: twisted-15
+  # pylibmc
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pylibmc-1.4
