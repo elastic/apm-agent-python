@@ -11,7 +11,7 @@ jsonschema==3.2.0 ; python_version == '3.6'
 jsonschema==4.0.1 ; python_version > '3.6'
 
 
-py==1.10.0
+py==1.11.0
 more-itertools==8.10.0
 pluggy==1.0.0
 atomicwrites==1.4.0
