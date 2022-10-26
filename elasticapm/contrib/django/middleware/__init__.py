@@ -36,6 +36,7 @@ import threading
 from types import FunctionType
 from typing import Optional
 
+import wrapt
 from django.apps import apps
 from django.conf import settings as django_settings
 from django.http import HttpRequest, HttpResponse
@@ -43,7 +44,7 @@ from django.http import HttpRequest, HttpResponse
 import elasticapm
 from elasticapm.conf import constants
 from elasticapm.contrib.django.client import client, get_client
-from elasticapm.utils import build_name_with_http_method_prefix, get_name_from_func, wrapt
+from elasticapm.utils import build_name_with_http_method_prefix, get_name_from_func
 
 try:
     from importlib import import_module
