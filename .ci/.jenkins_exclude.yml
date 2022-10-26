@@ -180,3 +180,6 @@ exclude:
     FRAMEWORK: twisted-16
   - PYTHON_VERSION: python-3.11
     FRAMEWORK: twisted-15
+  # pylibmc
+  - PYTHON_VERSION: python-3.11
+    FRAMEWORK: pylibmc-1.4
