@@ -185,6 +185,8 @@ class ElasticAPM:
         request = Request(scope, receive=_mocked_receive or receive)
         await self._request_started(request)
 
+        # We don't end the transaction here, we rely on the starlette
+        # instrumentation of ServerErrorMiddleware to end the transaction
         try:
             await self.app(scope, _request_receive or receive, wrapped_send)
             elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=False)
@@ -197,8 +199,6 @@ class ElasticAPM:
             elasticapm.set_context({"status_code": 500}, "response")
 
             raise
-        finally:
-            self.client.end_transaction()
 
     async def capture_exception(self, *args, **kwargs):
         """Captures your exception.
