@@ -131,10 +131,13 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
 def test_ping_db_instance(instrument, elasticapm_client, elasticsearch):
     # some ugly code to smuggle the "x-found-handling-cluster" header into
     # the response from Elasticsearch
-    if hasattr(elasticsearch, "transport"):
-        pool = elasticsearch.transport.connection_pool.get_connection().pool
-    else:
+    try:
+        import elastic_transport
+
         pool = elasticsearch._transport.node_pool.get().pool
+    except ImportError:
+        pool = elasticsearch.transport.connection_pool.get_connection().pool
+
     original_urlopen = pool.urlopen
 
     def wrapper(*args, **kwargs):
