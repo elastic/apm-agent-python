@@ -35,6 +35,7 @@ pytest.importorskip("elasticsearch")  # isort:skip
 import json
 import os
 import urllib.parse
+from unittest import mock
 
 from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import Elasticsearch
@@ -124,6 +125,44 @@ def test_ping(instrument, elasticapm_client, elasticsearch):
         "service": {"name": "", "resource": "elasticsearch", "type": ""},
     }
     assert span["context"]["http"]["status_code"] == 200
+
+
+@pytest.mark.integrationtest
+def test_ping_db_instance(instrument, elasticapm_client, elasticsearch):
+    # some ugly code to smuggle the "x-found-handling-cluster" header into
+    # the response from Elasticsearch
+    try:
+        import elastic_transport
+
+        pool = elasticsearch._transport.node_pool.get().pool
+    except ImportError:
+        pool = elasticsearch.transport.connection_pool.get_connection().pool
+
+    original_urlopen = pool.urlopen
+
+    def wrapper(*args, **kwargs):
+        result = original_urlopen(*args, **kwargs)
+        result.headers.update({"x-found-handling-cluster": "foo"})
+        return result
+
+    elasticapm_client.begin_transaction("test")
+    with mock.patch.object(pool, "urlopen", wraps=wrapper):
+        result = elasticsearch.ping()
+
+    elasticapm_client.end_transaction("test", "OK")
+    parsed_url = urllib.parse.urlparse(os.environ["ES_URL"])
+
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "ES HEAD /"
+    assert span["context"]["destination"] == {
+        "address": parsed_url.hostname,
+        "port": parsed_url.port,
+        "service": {"name": "", "resource": "elasticsearch/foo", "type": ""},
+    }
+    assert span["context"]["db"]["instance"] == "foo"
 
 
 @pytest.mark.integrationtest
