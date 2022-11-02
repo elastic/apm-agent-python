@@ -400,6 +400,36 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
 
 
 @pytest.mark.integrationtest
+def test_search_track_total_hits_false(instrument, elasticapm_client, elasticsearch):
+    elasticsearch.create(
+        index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola", "userid": 1})
+    )
+    elasticapm_client.begin_transaction("test")
+    search_query = {"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}
+    result = elasticsearch.search(body=search_query, track_total_hits=False)
+    elasticapm_client.end_transaction("test", "OK")
+
+    transaction = elasticapm_client.events[TRANSACTION][0]
+    assert result["hits"]["hits"][0]["_source"] == {"user": "kimchy", "text": "hola", "userid": 1}
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    # Depending on ES_VERSION, could be /_all/_search or /_search, and GET or POST
+    assert span["name"] in ("ES GET /_search", "ES GET /_all/_search", "ES POST /_search")
+    assert span["type"] == "db"
+    assert span["subtype"] == "elasticsearch"
+    assert span["action"] == "query"
+    assert span["context"]["db"]["type"] == "elasticsearch"
+    assert json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
+    ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
+        '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
+    )
+    assert "rows_affected" not in span["context"]["db"]
+    assert span["context"]["http"]["status_code"] == 200
+
+
+@pytest.mark.integrationtest
 def test_search_querystring(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(index="tweets", id="1", refresh=True, **get_kwargs({"user": "kimchy", "text": "hola"}))
     elasticapm_client.begin_transaction("test")
