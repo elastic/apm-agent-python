@@ -399,6 +399,7 @@ def test_search_body(instrument, elasticapm_client, elasticsearch):
     assert span["context"]["http"]["status_code"] == 200
 
 
+@pytest.mark.skipif(ES_VERSION[0] < 7, reason="track_total_hits unsupported")
 @pytest.mark.integrationtest
 def test_search_track_total_hits_false(instrument, elasticapm_client, elasticsearch):
     elasticsearch.create(
