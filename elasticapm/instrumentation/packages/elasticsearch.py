@@ -177,8 +177,8 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
 
     def _get_hits(self, result) -> Optional[int]:
         if getattr(result, "body", None) and "hits" in result.body:  # ES >= 8
-            return result.body["hits"]["total"]["value"]
-        elif isinstance(result, dict) and "hits" in result:
+            return result.body["hits"].get("total", {}).get("value")
+        elif isinstance(result, dict) and "hits" in result and "total" in result["hits"]:
             return (
                 result["hits"]["total"]["value"]
                 if isinstance(result["hits"]["total"], dict)

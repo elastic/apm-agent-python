@@ -29,6 +29,18 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+[float]
+===== Bug fixes
+
+* Fix elasticsearch for track_total_hits=False {pull}1687[#1687]
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
