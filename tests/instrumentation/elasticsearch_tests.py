@@ -421,11 +421,6 @@ def test_search_track_total_hits_false(instrument, elasticapm_client, elasticsea
     assert span["subtype"] == "elasticsearch"
     assert span["action"] == "query"
     assert span["context"]["db"]["type"] == "elasticsearch"
-    assert json.loads(span["context"]["db"]["statement"]) == json.loads(
-        '{"sort": ["userid"], "query": {"term": {"user": "kimchy"}}}'
-    ) or json.loads(span["context"]["db"]["statement"]) == json.loads(
-        '{"query": {"term": {"user": "kimchy"}}, "sort": ["userid"]}'
-    )
     assert "rows_affected" not in span["context"]["db"]
     assert span["context"]["http"]["status_code"] == 200
 
