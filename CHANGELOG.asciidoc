@@ -29,20 +29,16 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-//
+[[release-notes-6.13.1]]
+==== 6.13.1 - 2022-11-03
+
 [float]
 ===== Bug fixes
 
-* Fix elasticsearch for track_total_hits=False {pull}1687[#1687]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
+* Fix elasticsearch instrumentation for track_total_hits=False {pull}1687[#1687]
 
 [[release-notes-6.13.0]]
 ==== 6.13.0 - 2022-10-26
