@@ -218,11 +218,13 @@ class Transport(HTTPTransportBase):
             logger.debug("Fetched APM Server version %s", version)
             self.client.server_version = version_string_to_tuple(version)
         except (urllib3.exceptions.RequestError, urllib3.exceptions.HTTPError) as e:
-            logger.warning("HTTP error while fetching server information: %s", str(e))
+            logger.debug("HTTP error while fetching server information: %s", str(e))
         except json.JSONDecodeError as e:
-            logger.warning("JSON decoding error while fetching server information: %s", str(e))
+            logger.debug(
+                f"JSON decoding error while fetching server information. Error: {str(e)} Body: {body.decode('utf8')}"
+            )
         except (KeyError, TypeError):
-            logger.warning("No version key found in server response: %s", response.data)
+            logger.debug("No version key found in server response: %s", response.data)
 
     @property
     def cert_fingerprint(self):
