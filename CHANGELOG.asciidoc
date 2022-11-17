@@ -29,20 +29,19 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-//
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.13.2]]
+==== 6.13.2 - 2022-11-17
+
 [float]
 ===== Bug fixes
 
 * Fix error in Elasticsearch instrumentation when spans are dropped {pull}1690[#1690]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
+* Lower log level for errors in APM Server version fetching {pull}1692[#1692]
+* Fix for missing parent.id when logging from a DroppedSpan under a leaf span {pull}1695[#1695]
 
 [[release-notes-6.13.1]]
 ==== 6.13.1 - 2022-11-03
