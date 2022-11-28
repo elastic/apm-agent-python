@@ -146,6 +146,32 @@ pipeline {
             }
           }
         }
+        stage('Publish snapshot packages') {
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+            BUCKET_NAME = 'oblt-artifacts'
+            DOCKER_REGISTRY = 'docker.elastic.co'
+            DOCKER_REGISTRY_SECRET = 'secret/observability-team/ci/docker-registry/prod'
+            GCS_ACCOUNT_SECRET = 'secret/observability-team/ci/snapshoty'
+          }
+          when { branch 'main' }
+          steps {
+            withGithubNotify(context: 'Publish snapshot packages') {
+              deleteDir()
+              unstash 'source'
+              unstash 'packages'
+              dir(env.BASE_DIR) {
+                snapshoty(
+                  bucket: env.BUCKET_NAME,
+                  gcsAccountSecret: env.GCS_ACCOUNT_SECRET,
+                  dockerRegistry: env.DOCKER_REGISTRY,
+                  dockerSecret: env.DOCKER_REGISTRY_SECRET
+                )
+              }
+            }
+          }
+        }
         stage('Benchmarks') {
           agent { label 'microbenchmarks-pool' }
           options { skipDefaultCheckout() }
