@@ -38,6 +38,7 @@ import logging.handlers
 import os
 import random
 import socket
+import socketserver
 import sys
 import tempfile
 import time
@@ -298,7 +299,7 @@ def elasticapm_client_log_file(request):
 
 @pytest.fixture()
 def waiting_httpserver(httpserver):
-    wait_for_http_server(httpserver)
+    wait_for_open_port(httpserver.server_address[1])
     return httpserver
 
 
@@ -321,7 +322,7 @@ def httpsserver_custom(request):
 
 @pytest.fixture()
 def waiting_httpsserver(httpsserver_custom):
-    wait_for_http_server(httpsserver_custom)
+    wait_for_open_port(httpsserver_custom.server_address[1])
     return httpsserver_custom
 
 
@@ -331,7 +332,7 @@ def validating_httpserver(request):
     app = config.pop("app", ValidatingWSGIApp)
     server = app(**config)
     server.start()
-    wait_for_http_server(server)
+    wait_for_open_port(server.server_address[1])
     request.addfinalizer(server.stop)
     return server
 
@@ -427,13 +428,20 @@ def instrument():
     elasticapm.uninstrument()
 
 
-def wait_for_http_server(httpserver, timeout=30):
+def wait_for_open_port(port: int, host: str = "localhost", timeout: int = 30):
     start_time = time.time()
     while True:
         try:
-            sock = socket.create_connection(httpserver.server_address, timeout=0.1)
+            sock = socket.create_connection((host, port), timeout=0.1)
             sock.close()
             break
         except socket.error:
+            time.sleep(0.01)
             if time.time() - start_time > timeout:
                 raise TimeoutError()
+
+
+def get_free_port() -> int:
+    with socketserver.TCPServer(("localhost", 0), None) as s:
+        free_port = s.server_address[1]
+    return free_port

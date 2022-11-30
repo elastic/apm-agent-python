@@ -183,3 +183,8 @@ exclude:
   # pylibmc
   - PYTHON_VERSION: python-3.11
     FRAMEWORK: pylibmc-1.4
+  # grpc
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: grpc-newest
+  - PYTHON_VERSION: python-3.6
+    FRAMEWORK: grpc-1.24
