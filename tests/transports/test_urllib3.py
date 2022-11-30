@@ -440,7 +440,7 @@ def test_fetch_server_info_no_json(waiting_httpserver, caplog, elasticapm_client
     )
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("DEBUG", logger="elasticapm.transport.http"):
         transport.fetch_server_info()
     assert elasticapm_client.server_version is None
     assert_any_record_contains(caplog.records, "JSON decoding error while fetching server information")
@@ -453,7 +453,7 @@ def test_fetch_server_info_no_version(waiting_httpserver, caplog, elasticapm_cli
     )
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("DEBUG", logger="elasticapm.transport.http"):
         transport.fetch_server_info()
     assert elasticapm_client.server_version is None
     assert_any_record_contains(caplog.records, "No version key found in server response")
@@ -466,7 +466,7 @@ def test_fetch_server_info_flat_string(waiting_httpserver, caplog, elasticapm_cl
     )
     url = waiting_httpserver.url
     transport = Transport(url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client)
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("DEBUG", logger="elasticapm.transport.http"):
         transport.fetch_server_info()
     assert elasticapm_client.server_version is None
     assert_any_record_contains(caplog.records, "No version key found in server response")

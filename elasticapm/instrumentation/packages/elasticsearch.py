@@ -163,7 +163,7 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
 
             hits = self._get_hits(result_data)
             if hits:
-                span.context["db"]["rows_affected"] = hits
+                span.update_context("db", {"rows_affected": hits})
 
             return result_data
 
@@ -177,8 +177,8 @@ class ElasticsearchTransportInstrumentation(AbstractInstrumentedModule):
 
     def _get_hits(self, result) -> Optional[int]:
         if getattr(result, "body", None) and "hits" in result.body:  # ES >= 8
-            return result.body["hits"]["total"]["value"]
-        elif isinstance(result, dict) and "hits" in result:
+            return result.body["hits"].get("total", {}).get("value")
+        elif isinstance(result, dict) and "hits" in result and "total" in result["hits"]:
             return (
                 result["hits"]["total"]["value"]
                 if isinstance(result["hits"]["total"], dict)

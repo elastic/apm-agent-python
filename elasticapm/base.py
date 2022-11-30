@@ -50,7 +50,7 @@ import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
-from elasticapm.traces import Tracer, execution_context
+from elasticapm.traces import DroppedSpan, Tracer, execution_context
 from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, varmap
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
@@ -469,6 +469,8 @@ class Client(object):
         """
         transaction = execution_context.get_transaction()
         span = execution_context.get_span()
+        while isinstance(span, DroppedSpan):
+            span = span.parent
         if transaction:
             transaction_context = deepcopy(transaction.context)
         else:

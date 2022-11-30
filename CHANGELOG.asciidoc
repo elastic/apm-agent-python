@@ -29,8 +29,27 @@ endif::[]
 //===== Bug fixes
 //
 
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.13.2]]
+==== 6.13.2 - 2022-11-17
+
+[float]
+===== Bug fixes
+
+* Fix error in Elasticsearch instrumentation when spans are dropped {pull}1690[#1690]
+* Lower log level for errors in APM Server version fetching {pull}1692[#1692]
+* Fix for missing parent.id when logging from a DroppedSpan under a leaf span {pull}1695[#1695]
+
+[[release-notes-6.13.1]]
+==== 6.13.1 - 2022-11-03
+
+[float]
+===== Bug fixes
+
+* Fix elasticsearch instrumentation for track_total_hits=False {pull}1687[#1687]
 
 [[release-notes-6.13.0]]
 ==== 6.13.0 - 2022-10-26
