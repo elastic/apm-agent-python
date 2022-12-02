@@ -37,8 +37,8 @@ import grpc
 import elasticapm
 from elasticapm.contrib.grpc import GRPCApmClient
 
-from . import test_pb2 as pb2
-from . import test_pb2_grpc as pb2_grpc
+from . import testgrpc_pb2 as pb2
+from . import testgrpc_pb2_grpc as pb2_grpc
 
 elasticapm.instrument()
 

@@ -43,8 +43,8 @@ grpc = pytest.importorskip("grpc")
 pytestmark = pytest.mark.grpc
 
 
-from .grpc_app.test_pb2 import Message
-from .grpc_app.test_pb2_grpc import TestServiceStub
+from .grpc_app.testgrpc_pb2 import Message
+from .grpc_app.testgrpc_pb2_grpc import TestServiceStub
 
 
 @pytest.fixture()
