@@ -357,8 +357,14 @@ def runScript(Map params = [:]){
   unstash 'source'
   filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
     dir("${BASE_DIR}"){
-      retryWithSleep(retries: 2, seconds: 5, backoff: true) {
-        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      withEnv([
+        "LOCAL_USER_ID=${sh(script:'id -u', returnStdout: true).trim()}",
+        "LOCAL_GROUP_ID=${sh(script:'id -g', returnStdout: true).trim()}",
+        "LOCALSTACK_VOLUME_DIR=localstack_data"
+      ]) {
+        retryWithSleep(retries: 2, seconds: 5, backoff: true) {
+          sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+        }
       }
     }
   }
