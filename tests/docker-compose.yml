@@ -218,3 +218,5 @@ volumes:
     driver: local
   kafka_data:
     driver: local
+  localstack_data:
+    driver: local
