@@ -49,6 +49,11 @@ def setup():
         "--version", help="Print ElasticAPM version", action="version", version="%(prog)s " + elasticapm.VERSION
     )
 
+    parser.add_argument(
+        "--config",
+        action="append",
+        help="Config values to pass to ElasticAPM. Can be used multiple times. Ex: --config 'service_name=foo'",
+    )
     parser.add_argument("app", help="Your python application")
     parser.add_argument("app_args", nargs=argparse.REMAINDER, help="Arguments for your python application", default=[])
 
@@ -59,6 +64,10 @@ def setup():
     pythonpath = [path for path in pythonpath if path != our_path]
     pythonpath.insert(0, our_path)
     os.environ["PYTHONPATH"] = os.path.pathsep.join(pythonpath)
+
+    for config in args.config or []:
+        key, value = config.split("=", 1)
+        os.environ["ELASTIC_APM_" + key.upper()] = value
 
     if args.app:
         app = shutil.which(args.app)
