@@ -19,6 +19,8 @@ fi
 pip_cache="$HOME/.cache"
 docker_pip_cache="/tmp/cache/pip"
 TEST="${1}/${2}"
+LOCAL_USER_ID=${LOCAL_USER_ID:=$(id -u)}
+LOCAL_GROUP_ID=${LOCAL_GROUP_ID:=$(id -g)}
 
 cd tests
 
