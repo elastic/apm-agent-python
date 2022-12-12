@@ -28,6 +28,7 @@ Elastic APM can be used both in GRPC server apps, and in GRPC client apps.
 
 [float]
 [[grpc-setup-client]]
+===== GRPC Client
 
 If you use one of our <<framework-support, supported frameworks>>, no further steps are needed.
 
@@ -36,6 +37,7 @@ To ensure that our instrumentation is in place, call `elasticapm.instrument()` *
 
 [float]
 [[grpc-setup-server]]
+===== GRPC Server
 
 To set up the agent, you need to initialize it with appropriate settings.
 
@@ -59,5 +61,5 @@ client = GRPCApmClient(service_name="my-grpc-server")
 
 
 Once you have configured the agent, it will automatically track transactions
-and capture uncaught exceptions within sanic.
+and capture uncaught exceptions within GRPC requests.
 

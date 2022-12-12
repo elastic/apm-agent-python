@@ -63,6 +63,9 @@ class TestService(pb2_grpc.TestServiceServicer):
         context.set_details("Method not available")
         return pb2.MessageResponse(message="foo", received=True)
 
+    def GetServerResponseException(self, request, context):
+        raise Exception("oh no")
+
 
 def serve(port):
     apm_client = GRPCApmClient(

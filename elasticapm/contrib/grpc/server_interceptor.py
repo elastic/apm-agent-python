@@ -106,6 +106,7 @@ class _ServerInterceptor(grpc.ServerInterceptor):
                     return result
                 except Exception:
                     transaction.set_failure()
+                    client.capture_exception(handled=False)
                     raise
                 finally:
                     client.end_transaction(name=handler_call_details.method)

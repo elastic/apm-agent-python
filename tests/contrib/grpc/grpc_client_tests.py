@@ -28,11 +28,13 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import itertools
 import os
 import subprocess
 import sys
 import time
 import urllib.parse
+from collections import defaultdict
 
 import pytest
 
@@ -81,16 +83,17 @@ def test_grpc_client_server_instrumentation(instrument, sending_elasticapm_clien
         if len(sending_elasticapm_client.httpserver.payloads) > 2:
             break
         time.sleep(0.01)
-    server_meta, server_transactions, server_spans = extract_events_from_payload("grpc-server", payloads)
-    client_meta, client_transactions, client_spans = extract_events_from_payload("myapp", payloads)
+    server_meta, server_transactions, server_spans, server_errors = extract_events_from_payload("grpc-server", payloads)
+    client_meta, client_transactions, client_spans, client_errors = extract_events_from_payload("myapp", payloads)
     client_span = client_spans[0]
+    assert len(server_errors) == 0
 
     assert client_span["trace_id"] == client_transactions[0]["trace_id"] == server_transactions[0]["trace_id"]
 
     assert server_transactions[0]["name"] == "/test.TestService/GetServerResponse"
     assert server_transactions[0]["outcome"] == "success"
-    assert server_meta["metadata"]["service"]["framework"]["name"] == "grpc"
-    assert server_meta["metadata"]["service"]["framework"]["version"] == grpc.__version__
+    assert server_meta["service"]["framework"]["name"] == "grpc"
+    assert server_meta["service"]["framework"]["version"] == grpc.__version__
 
     assert client_span["id"] == server_transactions[0]["parent_id"]
     assert client_span["name"] == "/test.TestService/GetServerResponse"
@@ -112,12 +115,13 @@ def test_grpc_client_server_abort(instrument, sending_elasticapm_client, grpc_cl
     sending_elasticapm_client.close()
     payloads = sending_elasticapm_client.httpserver.payloads
     for i in range(1000):
-        if len(sending_elasticapm_client.httpserver.payloads) > 2:
+        if len(sending_elasticapm_client.httpserver.payloads) > 3:
             break
         time.sleep(0.01)
-    server_meta, server_transactions, server_spans = extract_events_from_payload("grpc-server", payloads)
-    client_meta, client_transactions, client_spans = extract_events_from_payload("myapp", payloads)
+    server_meta, server_transactions, server_spans, server_errors = extract_events_from_payload("grpc-server", payloads)
+    client_meta, client_transactions, client_spans, client_errors = extract_events_from_payload("myapp", payloads)
     client_span = client_spans[0]
+    assert len(server_errors) == 1
 
     assert client_span["trace_id"] == client_transactions[0]["trace_id"] == server_transactions[0]["trace_id"]
 
@@ -142,9 +146,10 @@ def test_grpc_client_server_status(instrument, sending_elasticapm_client, grpc_c
         if len(sending_elasticapm_client.httpserver.payloads) > 2:
             break
         time.sleep(0.01)
-    server_meta, server_transactions, server_spans = extract_events_from_payload("grpc-server", payloads)
-    client_meta, client_transactions, client_spans = extract_events_from_payload("myapp", payloads)
+    server_meta, server_transactions, server_spans, server_errors = extract_events_from_payload("grpc-server", payloads)
+    client_meta, client_transactions, client_spans, client_errors = extract_events_from_payload("myapp", payloads)
     client_span = client_spans[0]
+    assert len(server_errors) == 0
 
     assert client_span["trace_id"] == client_transactions[0]["trace_id"] == server_transactions[0]["trace_id"]
     assert server_transactions[0]["outcome"] == "failure"
@@ -153,11 +158,32 @@ def test_grpc_client_server_status(instrument, sending_elasticapm_client, grpc_c
     assert client_span["name"] == "/test.TestService/GetServerResponseUnavailable"
 
 
+def test_grpc_client_server_exception(instrument, sending_elasticapm_client, grpc_client_and_server_url):
+    grpc_client, grpc_server_url = grpc_client_and_server_url
+    grpc_server_host, grpc_server_port = grpc_server_url.split(":")
+    sending_elasticapm_client.begin_transaction("request")
+    parsed_url = urllib.parse.urlparse(sending_elasticapm_client.httpserver.url)
+    with pytest.raises(Exception):
+        response = grpc_client.GetServerResponseException(Message(message="foo"))
+    sending_elasticapm_client.end_transaction("grpc-test")
+    sending_elasticapm_client.close()
+    payloads = sending_elasticapm_client.httpserver.payloads
+    for i in range(1000):
+        if len(sending_elasticapm_client.httpserver.payloads) > 3:
+            break
+        time.sleep(0.01)
+    server_meta, server_transactions, server_spans, server_errors = extract_events_from_payload("grpc-server", payloads)
+    assert len(server_errors) == 1
+    error = server_errors[0]
+    assert error["transaction_id"] == server_transactions[0]["id"]
+
+
 def extract_events_from_payload(service_name, payloads):
-    payload = next(
+    payloads = [
         payload for payload in payloads if payload and payload[0]["metadata"]["service"]["name"] == service_name
-    )
-    meta = payload[0]
-    transactions = [event["transaction"] for event in payload if "transaction" in event]
-    spans = [event["span"] for event in payload if "span" in event]
-    return meta, transactions, spans
+    ]
+    events = defaultdict(list)
+    for event in itertools.chain(*payloads):
+        for k, v in event.items():
+            events[k].append(v)
+    return events["metadata"][0], events["transaction"], events["span"], events["error"]

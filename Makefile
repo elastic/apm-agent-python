@@ -9,7 +9,7 @@ flake8:
 
 test:
 	# delete any __pycache__ folders to avoid hard-to-debug caching issues
-	find . -name __pycache__ -type d -exec rm -r {} +
+	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 	# pypy3 should be added to the first `if` once it supports py3.7
 	if [[ "$$PYTHON_VERSION" =~ ^(3.7|3.8|3.9|3.10|3.11|nightly)$$ ]] ; then \
 		echo "Python 3.7+, with asyncio"; \

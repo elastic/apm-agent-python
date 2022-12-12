@@ -103,6 +103,8 @@ class _ClientInterceptor(
 
             return response
 
+    # TODO: instrument other types of requests once the spec is ready
+
     # def intercept_unary_stream(self, continuation, client_call_details,
     #                            request):
     #     """Intercepts a unary-stream invocation.

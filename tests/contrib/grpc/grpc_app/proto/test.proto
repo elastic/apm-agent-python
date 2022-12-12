@@ -6,6 +6,7 @@ service TestService{
  rpc GetServerResponse(Message) returns (MessageResponse) {}
  rpc GetServerResponseAbort(Message) returns (MessageResponse) {}
  rpc GetServerResponseUnavailable(Message) returns (MessageResponse) {}
+ rpc GetServerResponseException(Message) returns (MessageResponse) {}
 }
 
 message Message{

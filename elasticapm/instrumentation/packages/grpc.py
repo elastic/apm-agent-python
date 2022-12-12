@@ -63,7 +63,7 @@ class GRPCServerInstrumentation(AbstractInstrumentedModule):
     creates_transactions = True
     instrument_list = [("grpc", "server")]
 
-    def call(self, module, method, wrapper, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs):
         from elasticapm.contrib.grpc.server_interceptor import _ServerInterceptor
 
         interceptors = kwargs.get("interceptors") or (args[2] if len(args) > 2 else [])
@@ -73,4 +73,4 @@ class GRPCServerInstrumentation(AbstractInstrumentedModule):
             args[2] = interceptors
         else:
             kwargs["interceptors"] = interceptors
-        return wrapper(*args, **kwargs)
+        return wrapped(*args, **kwargs)
