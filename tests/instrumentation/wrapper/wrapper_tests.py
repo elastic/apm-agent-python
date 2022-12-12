@@ -32,7 +32,10 @@ import os
 import subprocess
 import sys
 
+import pytest
 
+
+@pytest.mark.skipif(platform.system() == "Windows", reason="Wrapper script unsupported on Windows")
 def test_wrapper_script_instrumentation():
     python = sys.executable
 
