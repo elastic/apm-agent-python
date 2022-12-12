@@ -29,15 +29,10 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-
-path = sys.argv[1]
-with open(path, "w") as f:
-    f.write("HI")
 import urllib.request
 
 assert hasattr(urllib.request.AbstractHTTPHandler.do_open, "_self_wrapper")
 import elasticapm
 
 assert elasticapm.get_client()
-with open(path, "w") as f:
-    f.write("SUCCESS")
+print("SUCCESS")

@@ -31,8 +31,6 @@
 import os
 import subprocess
 import sys
-import tempfile
-from shutil import which
 
 
 def test_wrapper_script_instrumentation():
@@ -44,22 +42,12 @@ def test_wrapper_script_instrumentation():
     pythonpath.insert(0, elasticapm_path)
     os.environ["PYTHONPATH"] = os.path.pathsep.join(pythonpath)
 
-    with tempfile.TemporaryDirectory() as d:
-        output = d + "/output"
-        result = subprocess.run(
-            [
-                python,
-                "tests/instrumentation/wrapper/testwrapper.py",
-                "python",  # Make sure we properly `which` the executable
-                "tests/instrumentation/wrapper/testapp.py",
-                output,
-            ],
-            capture_output=True,
-        )
-
-        import time
-
-        time.sleep(1)
-        with open(output, "r") as f:
-            output = f.read()
-            assert "SUCCESS" in output
+    output = subprocess.check_output(
+        [
+            python,
+            "tests/instrumentation/wrapper/testwrapper.py",
+            "python",  # Make sure we properly `which` the executable
+            "tests/instrumentation/wrapper/testapp.py",
+        ],
+    )
+    assert "SUCCESS" in output.decode("utf-8")
