@@ -28,46 +28,38 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import argparse
 import os
-import shutil
+import subprocess
+import sys
+import tempfile
+from shutil import which
 
-import elasticapm
 
+def test_wrapper_script_instrumentation():
+    python = sys.executable
 
-def setup():
-    parser = argparse.ArgumentParser(
-        prog="elasticapm-run",
-        description="""
-        %(prog)s is a wrapper script for running python applications
-        while automatically instrumenting with the Elastic APM python agent.
-        """,
-    )
-
-    parser.add_argument(
-        "--version", help="Print ElasticAPM version", action="version", version="%(prog)s " + elasticapm.VERSION
-    )
-
-    parser.add_argument(
-        "--config",
-        action="append",
-        help="Config values to pass to ElasticAPM. Can be used multiple times. Ex: --config 'service_name=foo'",
-    )
-    parser.add_argument("app", help="Your python application")
-    parser.add_argument("app_args", nargs=argparse.REMAINDER, help="Arguments for your python application", default=[])
-
-    args = parser.parse_args()
-
-    our_path = os.path.dirname(os.path.abspath(__file__))
+    elasticapm_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     pythonpath = os.environ.get("PYTHONPATH", "").split(";")
-    pythonpath = [path for path in pythonpath if path != our_path]
-    pythonpath.insert(0, our_path)
+    pythonpath = [path for path in pythonpath if path != elasticapm_path]
+    pythonpath.insert(0, elasticapm_path)
     os.environ["PYTHONPATH"] = os.path.pathsep.join(pythonpath)
 
-    for config in args.config or []:
-        key, value = config.split("=", 1)
-        os.environ["ELASTIC_APM_" + key.upper()] = value
+    with tempfile.TemporaryDirectory() as d:
+        output = d + "/output"
+        result = subprocess.run(
+            [
+                python,
+                "tests/instrumentation/wrapper/testwrapper.py",
+                "python",  # Make sure we properly `which` the executable
+                "tests/instrumentation/wrapper/testapp.py",
+                output,
+            ],
+            capture_output=True,
+        )
 
-    if args.app:
-        app = shutil.which(args.app)
-        os.execl(app, app, *args.app_args)
+        import time
+
+        time.sleep(1)
+        with open(output, "r") as f:
+            output = f.read()
+            assert "SUCCESS" in output
