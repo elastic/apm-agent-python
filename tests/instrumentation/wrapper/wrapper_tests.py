@@ -46,10 +46,11 @@ def test_wrapper_script_instrumentation():
     pythonpath.insert(0, elasticapm_path)
     os.environ["PYTHONPATH"] = os.path.pathsep.join(pythonpath)
 
+    # Raises CalledProcessError if the return code is non-zero
     output = subprocess.check_output(
         [
             python,
-            "tests/instrumentation/wrapper/testwrapper.py",
+            "elasticapm/instrumentation/wrapper/__init__.py",
             "python",  # Make sure we properly `which` the executable
             "tests/instrumentation/wrapper/testapp.py",
         ],
