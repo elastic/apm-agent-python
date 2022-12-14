@@ -67,6 +67,8 @@ _cls_register = {
     "elasticapm.instrumentation.packages.httplib2.Httplib2Instrumentation",
     "elasticapm.instrumentation.packages.azure.AzureInstrumentation",
     "elasticapm.instrumentation.packages.kafka.KafkaInstrumentation",
+    "elasticapm.instrumentation.packages.grpc.GRPCClientInstrumentation",
+    "elasticapm.instrumentation.packages.grpc.GRPCServerInstrumentation",
 }
 
 if sys.version_info >= (3, 7):

@@ -83,3 +83,5 @@ FRAMEWORK:
   - sanic-newest
   - aiobotocore-newest
   - kafka-python-newest
+  - grpc-newest
+  - grpc-1.24

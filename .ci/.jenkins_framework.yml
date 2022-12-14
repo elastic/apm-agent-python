@@ -53,3 +53,4 @@ FRAMEWORK:
   - aiomysql-newest
   - aiobotocore-newest
   - kafka-python-newest
+  - grpc-newest

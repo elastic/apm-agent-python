@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package test;
+
+service TestService{
+ rpc GetServerResponse(Message) returns (MessageResponse) {}
+ rpc GetServerResponseAbort(Message) returns (MessageResponse) {}
+ rpc GetServerResponseUnavailable(Message) returns (MessageResponse) {}
+ rpc GetServerResponseException(Message) returns (MessageResponse) {}
+}
+
+message Message{
+ string message = 1;
+}
+
+message MessageResponse{
+ string message = 1;
+ bool received = 2;
+}

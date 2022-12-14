@@ -600,7 +600,7 @@ class Span(BaseSpan):
             # otel attributes and spankind need to be top-level
             if "otel_spankind" in self.context:
                 result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
-            if elasticapm.get_client().check_server_version(gte=(7, 16)):
+            if self.tracer._agent.check_server_version(gte=(7, 16)):
                 if "otel_attributes" in self.context:
                     if "otel" not in result:
                         result["otel"] = {"attributes": self.context.pop("otel_attributes")}
