@@ -34,5 +34,8 @@ import urllib.request
 assert hasattr(urllib.request.AbstractHTTPHandler.do_open, "_self_wrapper")
 import elasticapm
 
-assert elasticapm.get_client()
+client = elasticapm.get_client()
+assert client
+assert client.activation_method == "wrapper"
+
 print("SUCCESS")
