@@ -46,6 +46,22 @@ def handler(event, context):
     return {"statusCode": r.status_code, "body": "Success!"}
 ----
 
+Note: any database or connection pool setup should go inside of your handler,
+otherwise the agent will not be able to instrument those objects and you may
+see missing spans. Example:
+
+
+[source,python]
+----
+conn = None
+
+@capture_serverless()
+def handler(event, context):
+    global conn
+    if not conn:
+        conn = pymysql.connect(host=rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+----
+
 [float]
 ==== Step 3: Configure APM on AWS Lambda
 
