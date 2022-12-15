@@ -34,6 +34,7 @@ from elasticapm import Client
 
 def setup():
     client = Client()
+    client.activation_method = "wrapper"
     if client.config.instrument and client.config.enabled:
         elasticapm.instrument()
 
