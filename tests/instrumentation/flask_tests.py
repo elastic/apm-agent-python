@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2022, Elasticsearch BV
+#  Copyright (c) 2023, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,18 +28,43 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from elasticapm.contrib.flask import ElasticAPM
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+import pytest  # isort:skip
+
+pytest.importorskip("flask")  # isort:skip
+
+import logging
+
+from flask import signals
+
+import elasticapm
+from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 
 
-class FlaskInstrumentation(AbstractInstrumentedModule):
-    name = "flask"
+@pytest.fixture()
+def flask_app_auto_instrumented(flask_app):
+    try:
+        yield flask_app
+    finally:
+        elasticapm.uninstrument()
+        client = flask_app.elasticapm_client
+        signals.request_started.disconnect(client.request_started)
+        signals.request_finished.disconnect(client.request_finished)
+        # remove logging handler if it was added
+        logger = logging.getLogger()
+        for handler in list(logger.handlers):
+            if getattr(handler, "client", None) is client.client:
+                logger.removeHandler(handler)
 
-    instrument_list = [("flask", "Flask.__init__")]
 
-    creates_transactions = True
-
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        wrapped(*args, **kwargs)
-        client = ElasticAPM(instance)
-        instance.elasticapm_client = client
+def test_flask_auto_instrumentation(instrument, elasticapm_client, flask_app_auto_instrumented):
+    """
+    Just a basic flask test, but testing without the `flask_apm_client` fixture
+    to make sure that auto instrumentation of Flask apps is working.
+    """
+    client = flask_app_auto_instrumented.test_client()
+    response = client.get("/users/")
+    response.close()
+    assert response.status_code == 200
+    assert len(elasticapm_client.events[ERROR]) == 0
+    assert len(elasticapm_client.events[TRANSACTION]) == 1
+    assert len(elasticapm_client.events[SPAN]) == 1
