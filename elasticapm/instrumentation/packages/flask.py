@@ -40,5 +40,5 @@ class FlaskInstrumentation(AbstractInstrumentedModule):
     creates_transactions = True
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        app = wrapped(*args, **kwargs)
-        ElasticAPM(app)
+        wrapped(*args, **kwargs)
+        ElasticAPM(instance)
