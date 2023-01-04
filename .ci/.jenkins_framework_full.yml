@@ -84,4 +84,4 @@ FRAMEWORK:
   - aiobotocore-newest
   - kafka-python-newest
   - grpc-newest
-  - grpc-1.24
+  #- grpc-1.24 # This appears to have problems with python>3.6?
