@@ -40,28 +40,12 @@ import elasticapm
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 
 
-@pytest.fixture()
-def flask_app_auto_instrumented(flask_app):
-    try:
-        yield flask_app
-    finally:
-        elasticapm.uninstrument()
-        client = flask_app.elasticapm_client
-        signals.request_started.disconnect(client.request_started)
-        signals.request_finished.disconnect(client.request_finished)
-        # remove logging handler if it was added
-        logger = logging.getLogger()
-        for handler in list(logger.handlers):
-            if getattr(handler, "client", None) is client.client:
-                logger.removeHandler(handler)
-
-
-def test_flask_auto_instrumentation(instrument, elasticapm_client, flask_app_auto_instrumented):
+def test_flask_auto_instrumentation(instrument, elasticapm_client, flask_app):
     """
     Just a basic flask test, but testing without the `flask_apm_client` fixture
     to make sure that auto instrumentation of Flask apps is working.
     """
-    client = flask_app_auto_instrumented.test_client()
+    client = flask_app.test_client()
     response = client.get("/users/")
     response.close()
     assert response.status_code == 200

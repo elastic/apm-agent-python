@@ -28,6 +28,8 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
 from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 
@@ -43,3 +45,26 @@ class FlaskInstrumentation(AbstractInstrumentedModule):
         wrapped(*args, **kwargs)
         client = ElasticAPM(instance)
         instance.elasticapm_client = client
+        self.instance = instance
+
+    def uninstrument(self):
+        """
+        This is mostly here for testing. If we want to support live
+        instrumenting and uninstrumenting, we'll need to also extend the
+        `instrument()` method to add the signals removed here.
+        """
+        super().uninstrument()
+
+        # Only remove signals during uninstrument if we auto-instrumented
+        flask_app = getattr(self, "instance", None)
+        if flask_app:
+            client = flask_app.elasticapm_client
+            from flask import signals
+
+            signals.request_started.disconnect(client.request_started)
+            signals.request_finished.disconnect(client.request_finished)
+            # remove logging handler if it was added
+            logger = logging.getLogger()
+            for handler in list(logger.handlers):
+                if getattr(handler, "client", None) is client.client:
+                    logger.removeHandler(handler)
