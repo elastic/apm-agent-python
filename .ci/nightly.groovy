@@ -163,9 +163,14 @@ def runScript(Map params = [:]){
   sh "mkdir ${env.PIP_CACHE}"
   unstash 'source'
   dir("${BASE_DIR}"){
-    retry(2){
-      sleep randomNumber(min:10, max: 30)
-      sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+    withEnv([
+      "LOCAL_USER_ID=${sh(script:'id -u', returnStdout: true).trim()}",
+      "LOCAL_GROUP_ID=${sh(script:'id -g', returnStdout: true).trim()}",
+      "LOCALSTACK_VOLUME_DIR=localstack_data"
+    ]) {
+      retryWithSleep(retries: 2, seconds: 5, backoff: true) {
+        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      }
     }
   }
 }

@@ -154,7 +154,7 @@ services:
       - HOST_TMP_FOLDER=${TMPDIR}
       - START_WEB=0
     volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
   zookeeper:
@@ -217,4 +217,6 @@ volumes:
   zookeeper_data:
     driver: local
   kafka_data:
+    driver: local
+  localstack_data:
     driver: local

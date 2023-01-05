@@ -146,6 +146,32 @@ pipeline {
             }
           }
         }
+        stage('Publish snapshot packages') {
+          options { skipDefaultCheckout() }
+          environment {
+            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
+            BUCKET_NAME = 'oblt-artifacts'
+            DOCKER_REGISTRY = 'docker.elastic.co'
+            DOCKER_REGISTRY_SECRET = 'secret/observability-team/ci/docker-registry/prod'
+            GCS_ACCOUNT_SECRET = 'secret/observability-team/ci/snapshoty'
+          }
+          when { branch 'main' }
+          steps {
+            withGithubNotify(context: 'Publish snapshot packages') {
+              deleteDir()
+              unstash 'source'
+              unstash 'packages'
+              dir(env.BASE_DIR) {
+                snapshoty(
+                  bucket: env.BUCKET_NAME,
+                  gcsAccountSecret: env.GCS_ACCOUNT_SECRET,
+                  dockerRegistry: env.DOCKER_REGISTRY,
+                  dockerSecret: env.DOCKER_REGISTRY_SECRET
+                )
+              }
+            }
+          }
+        }
         stage('Benchmarks') {
           agent { label 'microbenchmarks-pool' }
           options { skipDefaultCheckout() }
@@ -357,8 +383,14 @@ def runScript(Map params = [:]){
   unstash 'source'
   filebeat(output: "${label}_${framework}.log", workdir: "${env.WORKSPACE}") {
     dir("${BASE_DIR}"){
-      retryWithSleep(retries: 2, seconds: 5, backoff: true) {
-        sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+      withEnv([
+        "LOCAL_USER_ID=${sh(script:'id -u', returnStdout: true).trim()}",
+        "LOCAL_GROUP_ID=${sh(script:'id -g', returnStdout: true).trim()}",
+        "LOCALSTACK_VOLUME_DIR=localstack_data"
+      ]) {
+        retryWithSleep(retries: 2, seconds: 5, backoff: true) {
+          sh("./tests/scripts/docker/run_tests.sh ${python} ${framework}")
+        }
       }
     }
   }

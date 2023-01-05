@@ -1,0 +1,65 @@
+[[grpc-support]]
+=== GRPC Support
+
+Incorporating Elastic APM into your GRPC project only requires a few easy
+steps.
+
+NOTE: currently, only unary-unary RPC calls are instrumented. Streaming requests or responses are not captured.
+
+[float]
+[[grpc-installation]]
+==== Installation
+
+Install the Elastic APM agent using pip:
+
+[source,bash]
+----
+$ pip install elastic-apm
+----
+
+or add `elastic-apm` to your project's `requirements.txt` file.
+
+
+[float]
+[[grpc-setup]]
+==== Setup
+
+Elastic APM can be used both in GRPC server apps, and in GRPC client apps.
+
+[float]
+[[grpc-setup-client]]
+===== GRPC Client
+
+If you use one of our <<framework-support, supported frameworks>>, no further steps are needed.
+
+For other use cases, see <<instrumenting-custom-code-transactions, Creating New Transactions>>.
+To ensure that our instrumentation is in place, call `elasticapm.instrument()` *before* creating any GRPC channels.
+
+[float]
+[[grpc-setup-server]]
+===== GRPC Server
+
+To set up the agent, you need to initialize it with appropriate settings.
+
+The settings are configured either via environment variables, or as
+initialization arguments.
+
+You can find a list of all available settings in the
+<<configuration, Configuration>> page.
+
+To initialize the agent for your application using environment variables:
+
+[source,python]
+----
+import elasticapm
+from elasticapm.contrib.grpc import GRPCApmClient
+
+elasticapm.instrument()
+
+client = GRPCApmClient(service_name="my-grpc-server")
+----
+
+
+Once you have configured the agent, it will automatically track transactions
+and capture uncaught exceptions within GRPC requests.
+

@@ -19,6 +19,8 @@ fi
 pip_cache="$HOME/.cache"
 docker_pip_cache="/tmp/cache/pip"
 TEST="${1}/${2}"
+LOCAL_USER_ID=${LOCAL_USER_ID:=$(id -u)}
+LOCAL_GROUP_ID=${LOCAL_GROUP_ID:=$(id -g)}
 
 cd tests
 
@@ -48,7 +50,8 @@ fi
 docker build --build-arg PYTHON_IMAGE=${1/-/:} -t apm-agent-python:${1} . # replace - with : to get the correct docker image
 PYTHON_VERSION=${1} docker-compose run \
   -e PYTHON_FULL_VERSION=${1} \
-  -e LOCAL_USER_ID=$UID \
+  -e LOCAL_USER_ID=$LOCAL_USER_ID \
+  -e LOCAL_GROUP_ID=$LOCAL_GROUP_ID \
   -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
   -e WITH_COVERAGE=true \
   -e CASS_DRIVER_NO_EXTENSIONS=1 \
