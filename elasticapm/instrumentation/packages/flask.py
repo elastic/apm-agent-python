@@ -68,3 +68,4 @@ class FlaskInstrumentation(AbstractInstrumentedModule):
             for handler in list(logger.handlers):
                 if getattr(handler, "client", None) is client.client:
                     logger.removeHandler(handler)
+            self.instance = None

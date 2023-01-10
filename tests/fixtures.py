@@ -445,3 +445,20 @@ def get_free_port() -> int:
     with socketserver.TCPServer(("localhost", 0), None) as s:
         free_port = s.server_address[1]
     return free_port
+
+
+@pytest.fixture(autouse=True)
+def always_uninstrument():
+    """
+    It's easy to accidentally forget to uninstrument.
+
+    With no-code-changes instrumentations, we *really* need to make sure we
+    always uninstrument. This fixture will be used on every test, should be
+    applied first -- see
+    https://docs.pytest.org/en/stable/reference/fixtures.html#autouse-fixtures-are-executed-first-within-their-scope
+    -- and thus cleanup last, which will ensure we always uninstrument.
+    """
+    try:
+        yield
+    finally:
+        elasticapm.uninstrument()
