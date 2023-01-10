@@ -39,6 +39,7 @@ from urllib.request import urlopen
 
 import mock
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
@@ -260,11 +261,12 @@ def test_non_standard_http_status(flask_apm_client):
 
 
 def test_framework_name(flask_app):
-    elasticapm = ElasticAPM(app=flask_app, metrics_interval="0ms")
-    assert elasticapm.client.config.framework_name == "flask"
-    app_info = elasticapm.client.get_service_info()
+    apm = ElasticAPM(app=flask_app, metrics_interval="0ms")
+    assert apm.client.config.framework_name == "flask"
+    app_info = apm.client.get_service_info()
     assert app_info["framework"]["name"] == "flask"
-    elasticapm.client.close()
+    apm.client.close()
+    elasticapm.uninstrument()
 
 
 @pytest.mark.parametrize(
