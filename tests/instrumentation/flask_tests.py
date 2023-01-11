@@ -34,19 +34,32 @@ pytest.importorskip("flask")  # isort:skip
 
 import logging
 
-from flask import signals
+from flask import Flask, signals
 
 import elasticapm
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 
 
-def test_flask_auto_instrumentation(instrument, elasticapm_client, flask_app):
+@pytest.fixture
+def flask_app_instrumented(instrument):
+    app = Flask(__name__)
+
+    @app.route("/")
+    def hello_world():
+        with elasticapm.capture_span("test"):
+            pass
+        return "<p>Hello, World!</p>"
+
+    return app
+
+
+def test_flask_auto_instrumentation(elasticapm_client, flask_app_instrumented):
     """
     Just a basic flask test, but testing without the `flask_apm_client` fixture
     to make sure that auto instrumentation of Flask apps is working.
     """
-    client = flask_app.test_client()
-    response = client.get("/users/")
+    client = flask_app_instrumented.test_client()
+    response = client.get("/")
     response.close()
     assert response.status_code == 200
     assert len(elasticapm_client.events[ERROR]) == 0
