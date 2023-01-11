@@ -461,4 +461,7 @@ def always_uninstrument():
     try:
         yield
     finally:
-        elasticapm.uninstrument()
+        try:
+            elasticapm.uninstrument()
+        except Exception:
+            pass
