@@ -30,7 +30,6 @@
 
 import logging
 
-from elasticapm.contrib.flask import ElasticAPM
 from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
 
 
@@ -42,6 +41,8 @@ class FlaskInstrumentation(AbstractInstrumentedModule):
     creates_transactions = True
 
     def call(self, module, method, wrapped, instance, args, kwargs):
+        from elasticapm.contrib.flask import ElasticAPM
+
         wrapped(*args, **kwargs)
         client = ElasticAPM(instance)
         instance.elasticapm_client = client

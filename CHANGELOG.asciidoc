@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * GRPC support {pull}1703[#1703]
+* Wrapper script Flask support (experimental) {pull}1709[#1709]
 
 //[float]
 //===== Bug fixes
