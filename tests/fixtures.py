@@ -242,6 +242,8 @@ def elasticapm_client(request):
         pytest.fail(
             "Validation errors:" + "\n".join(*itertools.chain(v for v in client._transport.validation_errors.values()))
         )
+    logger = logging.getLogger("elasticapm")
+    logger.setLevel(logging.NOTSET)
 
 
 @pytest.fixture()
@@ -295,6 +297,8 @@ def elasticapm_client_log_file(request):
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.unset_span(clear_all=True)
+    logger = logging.getLogger("elasticapm")
+    logger.setLevel(logging.NOTSET)
 
 
 @pytest.fixture()

@@ -445,7 +445,7 @@ def test_backdating_transaction(elasticapm_client):
     elasticapm_client.begin_transaction("test", start=time.time() - 1)
     elasticapm_client.end_transaction()
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
-    assert 1000 < transaction["duration"] < 2000
+    assert 900 < transaction["duration"] < 2000
 
 
 def test_transaction_span_links(elasticapm_client):

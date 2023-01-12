@@ -395,9 +395,6 @@ def test_log_level_config(elasticapm_client, expected):
     logger = logging.getLogger("elasticapm")
     assert logger.level == expected
 
-    # Cleaning up here -- no need for a fixture since it's only this test
-    logger.setLevel(logging.NOTSET)
-
 
 def test_log_file(elasticapm_client_log_file):
     logger = logging.getLogger("elasticapm")
