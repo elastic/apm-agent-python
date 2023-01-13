@@ -20,7 +20,7 @@ installed as well. You can use this script to instrument your app (assuming it's
 
 [source,bash]
 ----
-$ elasticapm --version
+$ elasticapm-run --version
 elasticapm-run 6.14.0
 ----
 
