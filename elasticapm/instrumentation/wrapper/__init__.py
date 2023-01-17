@@ -71,7 +71,3 @@ def setup():
     if args.app:
         app = shutil.which(args.app)
         os.execl(app, app, *args.app_args)
-
-
-if __name__ == "__main__":
-    setup()

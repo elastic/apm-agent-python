@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2022, Elasticsearch BV
+#  Copyright (c) 2023, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import platform
-import subprocess
-import sys
+from . import setup
 
-import pytest
-
-
-@pytest.mark.skipif(platform.system() == "Windows", reason="Wrapper script unsupported on Windows")
-def test_wrapper_script_instrumentation():
-    python = sys.executable
-
-    elasticapm_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    pythonpath = os.environ.get("PYTHONPATH", "").split(";")
-    pythonpath = [path for path in pythonpath if path != elasticapm_path]
-    pythonpath.insert(0, elasticapm_path)
-    os.environ["PYTHONPATH"] = os.path.pathsep.join(pythonpath)
-
-    # Raises CalledProcessError if the return code is non-zero
-    output = subprocess.check_output(
-        [
-            python,
-            "-m",
-            "elasticapm.instrumentation.wrapper",
-            "python",  # Make sure we properly `which` the executable
-            "tests/instrumentation/wrapper/testapp.py",
-        ],
-    )
-    assert "SUCCESS" in output.decode("utf-8")
+if __name__ == "__main__":
+    setup()
