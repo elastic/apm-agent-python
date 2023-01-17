@@ -115,6 +115,7 @@ or whitespace-only.
 
 The URL for your APM Server.
 The URL must be fully qualified, including protocol (`http` or `https`) and port.
+Note: Do not set this if you are using APM in an AWS lambda function. APM Agents are designed to proxy their calls to the APM Server through the lambda extension. Instead, set `ELASTIC_APM_LAMBDA_APM_SERVER`. For more info, see <<lambda-support,AWS Lambda>>.
 
 [float]
 [[config-enabled]]
