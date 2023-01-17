@@ -38,8 +38,10 @@ endif::[]
 
 * GRPC support {pull}1703[#1703]
 
-//[float]
-//===== Bug fixes
+[float]
+===== Bug fixes
+
+* Fix an async issue with long elasticsearch queries {pull}1725[#1725]
 
 
 [[release-notes-6.x]]
