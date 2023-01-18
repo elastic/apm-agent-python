@@ -56,6 +56,7 @@ from werkzeug.wrappers import Request, Response
 import elasticapm
 from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
+from elasticapm.instrumentation import register
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils.threading import ThreadManager
@@ -430,6 +431,16 @@ def instrument():
     elasticapm.instrument()
     yield
     elasticapm.uninstrument()
+
+
+@pytest.fixture()
+def wrapper_instrument():
+    old_register = register._cls_register.copy()
+    register.register_wrapper()
+    elasticapm.instrument()
+    yield
+    elasticapm.uninstrument()
+    register._cls_register = old_register
 
 
 def wait_for_open_port(port: int, host: str = "localhost", timeout: int = 30):

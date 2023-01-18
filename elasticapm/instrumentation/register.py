@@ -69,7 +69,6 @@ _cls_register = {
     "elasticapm.instrumentation.packages.kafka.KafkaInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCClientInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCServerInstrumentation",
-    "elasticapm.instrumentation.packages.flask.FlaskInstrumentation",
 }
 
 if sys.version_info >= (3, 7):
@@ -95,9 +94,19 @@ if sys.version_info >= (3, 7):
         ]
     )
 
+# These instrumentations should only be enabled if we're instrumenting via the
+# wrapper script, which calls register_wrapper() below.
+_wrapper_register = {
+    "elasticapm.instrumentation.packages.flask.FlaskInstrumentation",
+}
+
 
 def register(cls):
     _cls_register.add(cls)
+
+
+def register_wrapper():
+    _cls_register.update(_wrapper_register)
 
 
 _instrumentation_singletons = {}

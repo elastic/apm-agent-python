@@ -30,11 +30,13 @@
 
 import elasticapm
 from elasticapm import Client
+from elasticapm.instrumentation.register import register_wrapper
 
 
 def setup():
     client = Client()
     client.activation_method = "wrapper"
+    register_wrapper()
     if client.config.instrument and client.config.enabled:
         elasticapm.instrument()
 

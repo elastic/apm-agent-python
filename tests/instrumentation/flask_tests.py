@@ -41,7 +41,7 @@ from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 
 
 @pytest.fixture
-def flask_app_instrumented(instrument):
+def flask_app_instrumented(wrapper_instrument):
     app = Flask(__name__)
 
     @app.route("/")
