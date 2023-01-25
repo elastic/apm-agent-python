@@ -39,7 +39,7 @@ from typing import Optional, TypeVar
 from urllib.parse import urlencode
 
 import elasticapm
-from elasticapm.base import Client
+from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
 from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
@@ -76,7 +76,6 @@ class capture_serverless(object):
         self.event = {}
         self.context = {}
         self.response = None
-        self.instrumented = False
         self.client = elasticapm_client  # elasticapm_client is intended for testing only
 
         # Disable all background threads except for transport
@@ -93,7 +92,11 @@ class capture_serverless(object):
         if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
             kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
-        self.client_kwargs = kwargs
+        self.client = get_client()
+        if not self.client:
+            self.client = Client(**kwargs)
+        if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
+            elasticapm.instrument()
 
     def __call__(self, func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
         self.name = self.name or get_name_from_func(func)
@@ -105,20 +108,6 @@ class capture_serverless(object):
                 self.event, self.context = args
             else:
                 self.event, self.context = {}, {}
-            # We delay client creation until the function is called, so that
-            # multiple @capture_serverless instances in the same file don't create
-            # multiple clients
-            if not self.client:
-                # Don't use get_client() as we may have a config mismatch due to **kwargs
-                self.client = Client(**self.client_kwargs)
-            if (
-                not self.instrumented
-                and not self.client.config.debug
-                and self.client.config.instrument
-                and self.client.config.enabled
-            ):
-                elasticapm.instrument()
-                self.instrumented = True
 
             if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
                 with self:
