@@ -436,7 +436,7 @@ def instrument():
 @pytest.fixture()
 def wrapper_instrument():
     old_register = register._cls_register.copy()
-    register.register_wrapper()
+    register.register_wrapper_instrumentations()
     elasticapm.instrument()
     yield
     elasticapm.uninstrument()
