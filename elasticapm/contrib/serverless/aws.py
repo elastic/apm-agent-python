@@ -35,6 +35,7 @@ import json
 import os
 import platform
 import time
+import warnings
 from typing import Optional, TypeVar
 from urllib.parse import urlencode
 
@@ -50,11 +51,65 @@ SERVERLESS_HTTP_REQUEST = ("api", "elb")
 logger = get_logger("elasticapm.serverless")
 
 COLD_START = True
+INSTRUMENTED = False
 
-_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
+_AWSLambdaContextT = TypeVar("_AWSLambdaContextT")
 
 
-class capture_serverless(object):
+def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
+    if not func:
+        return functools.partial(capture_serverless, **kwargs)
+
+    if kwargs:
+        warnings.warn(
+            PendingDeprecationWarning(
+                "Passing keyword arguments to capture_serverless will be deprecated in the next major release."
+            )
+        )
+
+    name = kwargs.pop("name", None)
+
+    # Disable all background threads except for transport
+    kwargs["metrics_interval"] = "0ms"
+    kwargs["breakdown_metrics"] = False
+    if "metrics_sets" not in kwargs and "ELASTIC_APM_METRICS_SETS" not in os.environ:
+        # Allow users to override metrics sets
+        kwargs["metrics_sets"] = []
+    kwargs["central_config"] = False
+    kwargs["cloud_provider"] = "none"
+    kwargs["framework_name"] = "AWS Lambda"
+    if "service_name" not in kwargs and "ELASTIC_APM_SERVICE_NAME" not in os.environ:
+        kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+    if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
+        kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
+
+    global INSTRUMENTED
+    client = get_client()
+    if not client:
+        client = Client(**kwargs)
+    if not client.config.debug and client.config.instrument and client.config.enabled and not INSTRUMENTED:
+        elasticapm.instrument()
+        INSTRUMENTED = True
+
+    @functools.wraps(func)
+    def decorated(*args, **kwds):
+        if len(args) == 2:
+            # Saving these for request context later
+            event, context = args
+        else:
+            event, context = {}, {}
+
+        if not client.config.debug and client.config.instrument and client.config.enabled:
+            with capture_serverless_context(func, name, client, event, context) as sls:
+                sls.response = func(*args, **kwds)
+                return sls.response
+        else:
+            return func(*args, **kwds)
+
+    return decorated
+
+
+class capture_serverless_context(object):
     """
     Context manager and decorator designed for instrumenting serverless
     functions.
@@ -71,52 +126,15 @@ class capture_serverless(object):
             return {"statusCode": r.status_code, "body": "Success!"}
     """
 
-    def __init__(self, name: Optional[str] = None, elasticapm_client: Optional[Client] = None, **kwargs) -> None:
-        self.name = name
-        self.event = {}
-        self.context = {}
+    def __init__(
+        self, func: callable, name: Optional[str], client: Client, event: dict, context: _AWSLambdaContextT
+    ) -> None:
+        self.func = func
+        self.name = name or get_name_from_func(func)
+        self.event = event
+        self.context = context
         self.response = None
-        self.client = elasticapm_client  # elasticapm_client is intended for testing only
-
-        # Disable all background threads except for transport
-        kwargs["metrics_interval"] = "0ms"
-        kwargs["breakdown_metrics"] = False
-        if "metrics_sets" not in kwargs and "ELASTIC_APM_METRICS_SETS" not in os.environ:
-            # Allow users to override metrics sets
-            kwargs["metrics_sets"] = []
-        kwargs["central_config"] = False
-        kwargs["cloud_provider"] = "none"
-        kwargs["framework_name"] = "AWS Lambda"
-        if "service_name" not in kwargs and "ELASTIC_APM_SERVICE_NAME" not in os.environ:
-            kwargs["service_name"] = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
-            kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
-
-        self.client = get_client()
-        if not self.client:
-            self.client = Client(**kwargs)
-        if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
-            elasticapm.instrument()
-
-    def __call__(self, func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
-        self.name = self.name or get_name_from_func(func)
-
-        @functools.wraps(func)
-        def decorated(*args, **kwds):
-            if len(args) == 2:
-                # Saving these for request context later
-                self.event, self.context = args
-            else:
-                self.event, self.context = {}, {}
-
-            if not self.client.config.debug and self.client.config.instrument and self.client.config.enabled:
-                with self:
-                    self.response = func(*args, **kwds)
-                    return self.response
-            else:
-                return func(*args, **kwds)
-
-        return decorated
+        self.client = client
 
     def __enter__(self):
         """
@@ -182,7 +200,7 @@ class capture_serverless(object):
         else:
             links = []
 
-        self.transaction = self.client.begin_transaction(transaction_type, trace_parent=trace_parent, links=links)
+        self.client.begin_transaction(transaction_type, trace_parent=trace_parent, links=links)
         elasticapm.set_transaction_name(transaction_name, override=False)
         if self.source in SERVERLESS_HTTP_REQUEST:
             elasticapm.set_context(
@@ -194,6 +212,7 @@ class capture_serverless(object):
                 "request",
             )
         self.set_metadata_and_context(cold_start)
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
