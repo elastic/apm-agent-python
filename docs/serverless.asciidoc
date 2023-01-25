@@ -41,7 +41,7 @@ import the `capture_serverless` decorator and apply it to your handler:
 ----
 from elasticapm import capture_serverless
 
-@capture_serverless()
+@capture_serverless
 def handler(event, context):
     return {"statusCode": r.status_code, "body": "Success!"}
 ----
@@ -55,7 +55,7 @@ see missing spans. Example:
 ----
 conn = None
 
-@capture_serverless()
+@capture_serverless
 def handler(event, context):
     global conn
     if not conn:

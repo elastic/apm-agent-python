@@ -42,6 +42,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix an async issue with long elasticsearch queries {pull}1725[#1725]
+* Fix a major performance issue with AWS Lambda Support {pull}1727[#1727]
 
 
 [[release-notes-6.x]]
