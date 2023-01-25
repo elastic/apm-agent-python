@@ -87,6 +87,7 @@ def flask_wsgi_server(request, flask_app, elasticapm_client):
     try:
         yield server
     finally:
+        elasticapm.uninstrument()
         server.stop()
         apm_client.client.close()
 
