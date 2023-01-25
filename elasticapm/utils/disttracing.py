@@ -199,7 +199,11 @@ class TraceParent(object):
         made up of key:value pairs, separated by semicolons. It is meant to
         be parsed into a dict.
 
-            tracestate: es=key:value;key:value...,othervendor=<opaque>
+            tracestate: es=key:value;key:value... , othervendor=<opaque>
+
+        Per https://w3c.github.io/trace-context/#tracestate-header-field-values
+        there can be optional whitespace (OWS) between the comma-separated
+        list-members.
         """
         if not tracestate:
             return {}
@@ -208,7 +212,7 @@ class TraceParent(object):
 
         ret = {}
         try:
-            state = re.search(r"(?:,|^)es=([^,]*)", tracestate).group(1).split(";")
+            state = re.search(r"(?:,|^)\s*es=([^,]*?)\s*(?:,|$)", tracestate).group(1).split(";")
         except IndexError:
             return {}
         for keyval in state:

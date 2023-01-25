@@ -125,7 +125,7 @@ def test_trace_parent_binary_invalid_length(caplog):
     "state_header",
     [
         "es=foo:bar;baz:qux,othervendor=<opaque>",
-        "snes=x:y,es=foo:bar;baz:qux,othervendor=<opaque>",
+        "snes=x:y, es=foo:bar;baz:qux ,\tothervendor=<opaque>", # whitespace (OWS)
         "othervendor=<opaque>,es=foo:bar;baz:qux",
     ],
 )
