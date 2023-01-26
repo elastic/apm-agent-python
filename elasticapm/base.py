@@ -218,6 +218,8 @@ class Client(object):
         if config.enabled:
             self.start_threads()
 
+        self.activation_method = None
+
         # Save this Client object as the global CLIENT_SINGLETON
         set_client(self)
 

@@ -38,7 +38,9 @@ import os
 from urllib.request import urlopen
 
 import mock
+from flask import signals
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, TRANSACTION
 from elasticapm.contrib.flask import ElasticAPM
@@ -260,11 +262,23 @@ def test_non_standard_http_status(flask_apm_client):
 
 
 def test_framework_name(flask_app):
-    elasticapm = ElasticAPM(app=flask_app, metrics_interval="0ms")
-    assert elasticapm.client.config.framework_name == "flask"
-    app_info = elasticapm.client.get_service_info()
+    apm = ElasticAPM(app=flask_app, metrics_interval="0ms")
+    assert apm.client.config.framework_name == "flask"
+    app_info = apm.client.get_service_info()
     assert app_info["framework"]["name"] == "flask"
-    elasticapm.client.close()
+    apm.client.close()
+
+    # Cleanup -- we don't use the flask_apm_client fixture here because it uses
+    # the elasticapm_client fixture, and so doesn't override the framework name.
+    # However, that means we have to clean up manually
+    elasticapm.uninstrument()
+    signals.request_started.disconnect(apm.request_started)
+    signals.request_finished.disconnect(apm.request_finished)
+    # remove logging handler if it was added
+    logger = logging.getLogger()
+    for handler in list(logger.handlers):
+        if getattr(handler, "client", None) is apm.client:
+            logger.removeHandler(handler)
 
 
 @pytest.mark.parametrize(

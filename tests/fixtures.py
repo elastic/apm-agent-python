@@ -56,6 +56,7 @@ from werkzeug.wrappers import Request, Response
 import elasticapm
 from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
+from elasticapm.instrumentation import register
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils.threading import ThreadManager
@@ -242,6 +243,8 @@ def elasticapm_client(request):
         pytest.fail(
             "Validation errors:" + "\n".join(*itertools.chain(v for v in client._transport.validation_errors.values()))
         )
+    logger = logging.getLogger("elasticapm")
+    logger.setLevel(logging.NOTSET)
 
 
 @pytest.fixture()
@@ -295,6 +298,8 @@ def elasticapm_client_log_file(request):
     sys.excepthook = original_exceptionhook
     execution_context.set_transaction(None)
     execution_context.unset_span(clear_all=True)
+    logger = logging.getLogger("elasticapm")
+    logger.setLevel(logging.NOTSET)
 
 
 @pytest.fixture()
@@ -428,6 +433,16 @@ def instrument():
     elasticapm.uninstrument()
 
 
+@pytest.fixture()
+def wrapper_instrument():
+    old_register = register._cls_register.copy()
+    register.register_wrapper_instrumentations()
+    elasticapm.instrument()
+    yield
+    elasticapm.uninstrument()
+    register._cls_register = old_register
+
+
 def wait_for_open_port(port: int, host: str = "localhost", timeout: int = 30):
     start_time = time.time()
     while True:
@@ -445,3 +460,23 @@ def get_free_port() -> int:
     with socketserver.TCPServer(("localhost", 0), None) as s:
         free_port = s.server_address[1]
     return free_port
+
+
+@pytest.fixture(autouse=True)
+def always_uninstrument():
+    """
+    It's easy to accidentally forget to uninstrument.
+
+    With no-code-changes instrumentations, we *really* need to make sure we
+    always uninstrument. This fixture will be used on every test, should be
+    applied first -- see
+    https://docs.pytest.org/en/stable/reference/fixtures.html#autouse-fixtures-are-executed-first-within-their-scope
+    -- and thus cleanup last, which will ensure we always uninstrument.
+    """
+    try:
+        yield
+    finally:
+        try:
+            elasticapm.uninstrument()
+        except Exception:
+            pass
