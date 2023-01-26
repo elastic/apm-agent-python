@@ -58,6 +58,8 @@ _AWSLambdaContextT = TypeVar("_AWSLambdaContextT")
 
 def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
     if not func:
+        # This allows for `@capture_serverless()` in addition to
+        # `@capture_serverless` decorator usage
         return functools.partial(capture_serverless, **kwargs)
 
     if kwargs:
