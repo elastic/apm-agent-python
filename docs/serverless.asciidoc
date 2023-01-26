@@ -34,6 +34,9 @@ you plan to deploy using pip:
 $ pip install -t <target_dir> elastic-apm
 ----
 
+Note: Please use the latest version of the APM Python agent. A performance
+issue was introduced in version 6.9.0 of the agent, and fixed in version 6.14.0.
+
 Once the library is included as a dependency in your function, you must
 import the `capture_serverless` decorator and apply it to your handler:
 
