@@ -212,7 +212,7 @@ class TraceParent(object):
 
         ret = {}
         try:
-            state = re.search(r"(?:,|^)\s*es=([^,]*?)\s*(?:,|$)", tracestate).group(1).split(";")
+            state = re.search(r"(?:,|^)\s*es=([^,]*)\s*(?:,|$)", tracestate).group(1).split(";")
         except IndexError:
             return {}
         for keyval in state:
