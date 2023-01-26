@@ -283,7 +283,7 @@ def test_capture_serverless_elb(event_elb, context, elasticapm_client):
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
 
-    assert transaction["name"] == "POST /toolz/api/v2.0/downloadPDF/PDF_2020-09-11_11-06-01.pdf"
+    assert transaction["name"] == "POST unknown route"
     assert transaction["result"] == "HTTP 2xx"
     assert transaction["span_count"]["started"] == 1
     assert transaction["context"]["request"]["method"] == "POST"
