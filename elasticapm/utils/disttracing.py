@@ -212,7 +212,7 @@ class TraceParent(object):
 
         ret = {}
         try:
-            state = re.search(r"(?:,|^)\s*es=([^,]*)\s*(?:,|$)", tracestate).group(1).strip().split(";")
+            state = re.search(r"(?:,|^)\s*es=([^,]*?)\s*(?:,|$)", tracestate).group(1).split(";")
         except IndexError:
             return {}
         for keyval in state:
@@ -234,7 +234,7 @@ class TraceParent(object):
             return elastic_state
         else:
             # Remove es=<stuff> from the tracestate, and add the new es state to the end
-            otherstate = re.sub(r"(?:,|^)\s*es=([^,]*)\s*(?:,|$)", "", self.tracestate)
+            otherstate = re.sub(r"(?:,|^)\s*es=([^,]*?)\s*(?:,|$)", "", self.tracestate)
             otherstate = otherstate.lstrip(",")  # in case `es=` was the first entry
             otherstate = re.sub(r",,", ",", otherstate)  # remove potential double commas
             # No validation of `otherstate` required, since we're downstream. We only need to check `es=`
