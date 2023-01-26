@@ -161,7 +161,7 @@ class capture_serverless_context(object):
         if self.httpmethod:  # http request
             if nested_key(self.event, "requestContext", "elb"):
                 self.source = "elb"
-                resource = nested_key(self.event, "path")
+                resource = "unknown route"
             elif nested_key(self.event, "requestContext", "httpMethod"):
                 self.source = "api"
                 # API v1
@@ -229,9 +229,12 @@ class capture_serverless_context(object):
                 try:
                     result = "HTTP {}xx".format(int(self.response["statusCode"]) // 100)
                     elasticapm.set_transaction_result(result, override=False)
+                    if result == "HTTP 5xx":
+                        elasticapm.set_transaction_outcome(outcome="failure", override=False)
                 except ValueError:
                     logger.warning("Lambda function's statusCode was not formed as an int. Assuming 5xx result.")
                     elasticapm.set_transaction_result("HTTP 5xx", override=False)
+                    elasticapm.set_transaction_outcome(outcome="failure", override=False)
         if exc_val:
             self.client.capture_exception(exc_info=(exc_type, exc_val, exc_tb), handled=False)
             if self.source in SERVERLESS_HTTP_REQUEST:
