@@ -234,8 +234,9 @@ class TraceParent(object):
             return elastic_state
         else:
             # Remove es=<stuff> from the tracestate, and add the new es state to the end
-            otherstate = re.sub(r"(?:,|^)es=([^,]*)", "", self.tracestate)
-            otherstate = otherstate.lstrip(",")
+            otherstate = re.sub(r"(?:,|^)\s*es=([^,]*)\s*(?:,|$)", "", self.tracestate)
+            otherstate = otherstate.lstrip(",")  # in case `es=` was the first entry
+            otherstate = re.sub(r",,", ",", otherstate)  # remove potential double commas
             # No validation of `otherstate` required, since we're downstream. We only need to check `es=`
             # since we introduced it, and that validation has already been done at this point.
             if otherstate:
