@@ -57,6 +57,17 @@ _AWSLambdaContextT = TypeVar("_AWSLambdaContextT")
 
 
 def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
+    """
+    Decorator for instrumenting AWS Lambda functions.
+
+    Example usage:
+
+        from elasticapm import capture_serverless
+
+        @capture_serverless
+        def handler(event, context):
+            return {"statusCode": r.status_code, "body": "Success!"}
+    """
     if not func:
         # This allows for `@capture_serverless()` in addition to
         # `@capture_serverless` decorator usage
@@ -102,7 +113,7 @@ def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
             event, context = {}, {}
 
         if not client.config.debug and client.config.instrument and client.config.enabled:
-            with capture_serverless_context(func, name, client, event, context) as sls:
+            with _lambda_transaction(func, name, client, event, context) as sls:
                 sls.response = func(*args, **kwds)
                 return sls.response
         else:
@@ -111,21 +122,12 @@ def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
     return decorated
 
 
-class capture_serverless_context(object):
+class _lambda_transaction(object):
     """
-    Context manager and decorator designed for instrumenting serverless
-    functions.
+    Context manager for creating transactions around AWS Lambda functions.
 
     Begins and ends a single transaction, waiting for the transport to flush
-    before returning from the wrapped function.
-
-    Example usage:
-
-        from elasticapm import capture_serverless
-
-        @capture_serverless()
-        def handler(event, context):
-            return {"statusCode": r.status_code, "body": "Success!"}
+    before releasing the context.
     """
 
     def __init__(
