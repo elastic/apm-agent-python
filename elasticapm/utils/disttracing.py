@@ -199,7 +199,11 @@ class TraceParent(object):
         made up of key:value pairs, separated by semicolons. It is meant to
         be parsed into a dict.
 
-            tracestate: es=key:value;key:value...,othervendor=<opaque>
+            tracestate: es=key:value;key:value... , othervendor=<opaque>
+
+        Per https://w3c.github.io/trace-context/#tracestate-header-field-values
+        there can be optional whitespace (OWS) between the comma-separated
+        list-members.
         """
         if not tracestate:
             return {}
@@ -208,7 +212,7 @@ class TraceParent(object):
 
         ret = {}
         try:
-            state = re.search(r"(?:,|^)es=([^,]*)", tracestate).group(1).split(";")
+            state = re.search(r"(?:,|^)\s*es=([^,]*?)\s*(?:,|$)", tracestate).group(1).split(";")
         except IndexError:
             return {}
         for keyval in state:
@@ -230,8 +234,9 @@ class TraceParent(object):
             return elastic_state
         else:
             # Remove es=<stuff> from the tracestate, and add the new es state to the end
-            otherstate = re.sub(r"(?:,|^)es=([^,]*)", "", self.tracestate)
-            otherstate = otherstate.lstrip(",")
+            otherstate = re.sub(r"(?:,|^)\s*es=([^,]*?)\s*(?:,|$)", "", self.tracestate)
+            otherstate = otherstate.lstrip(",")  # in case `es=` was the first entry
+            otherstate = re.sub(r",,", ",", otherstate)  # remove potential double commas
             # No validation of `otherstate` required, since we're downstream. We only need to check `es=`
             # since we introduced it, and that validation has already been done at this point.
             if otherstate:
