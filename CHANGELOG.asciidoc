@@ -43,6 +43,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix an async issue with long elasticsearch queries {pull}1725[#1725]
+* Fix a minor inconsistency with the W3C tracestate spec {pull}1728[#1728]
 
 
 [[release-notes-6.x]]
