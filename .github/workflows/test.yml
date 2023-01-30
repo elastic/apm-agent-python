@@ -14,7 +14,7 @@ jobs:
         with:
           versionsFile: .ci/.jenkins_framework.yml
           frameworksFile: .ci/.jenkins_python.yml
-          excludeFile: .ci/jenkins_exclude.yml
+          excludedFile: .ci/jenkins_exclude.yml
 
   test:
     needs: generate-matrix
