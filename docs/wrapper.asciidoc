@@ -3,8 +3,8 @@
 
 experimental::[]
 
-The following frameworks are supported using our new wrapper script for no-code-
-changes instrumentation:
+The following frameworks are supported using our new wrapper script for
+no-code-changes instrumentation:
 
  * Flask
 
