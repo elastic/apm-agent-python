@@ -29,10 +29,13 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.14.0]]
+==== 6.14.0 - 2023-01-30
+
 [float]
 ===== Features
 
@@ -46,10 +49,6 @@ endif::[]
 * Fix a minor inconsistency with the W3C tracestate spec {pull}1728[#1728]
 * Fix a performance issue with our AWS Lambda integration {pull}1727[#1727]
 * Mark `**kwargs` config usage in our AWS Lambda integration as deprecated {pull}1727[#1727]
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.13.2]]
 ==== 6.13.2 - 2022-11-17
