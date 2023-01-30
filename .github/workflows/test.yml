@@ -1,0 +1,26 @@
+name: test
+
+on:
+  pull_request: ~
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - id: generate
+        uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
+        with:
+          versionsFile: .ci/.jenkins_framework.yml
+          frameworksFile: .ci/.jenkins_python.yml
+          excludeFile: .ci/jenkins_exclude.yml
+
+  test:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.filter.outputs.matrix) }}
+    steps:
+      - run: echo ${{ matrix.VERSION }} - ${{ matrix.FRAMEWORK }}
