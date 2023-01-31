@@ -218,7 +218,7 @@ def test_publish_subscribe(instrument, elasticapm_client, redis_conn):
         {
             "span_compression_enabled": True,
             "span_compression_same_kind_max_duration": "5ms",
-            "span_compression_exact_match_max_duration": "5ms",
+            "span_compression_exact_match_max_duration": "50ms",
         }
     ],
     indirect=True,
