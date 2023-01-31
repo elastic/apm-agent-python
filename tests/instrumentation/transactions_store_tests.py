@@ -262,6 +262,7 @@ def test_get_transaction():
     requests_store = Tracer(lambda: [], lambda: [], lambda *args: None, VersionedConfig(Config(), "1"), None)
     t = requests_store.begin_transaction("test")
     assert t == execution_context.get_transaction()
+    requests_store.end_transaction(200, "test")
 
 
 def test_get_transaction_clear():
