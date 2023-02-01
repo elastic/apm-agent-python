@@ -94,7 +94,7 @@ pipeline {
                     pythonFile = '.ci/.jenkins_python_full.yml'
                   }
                   pythonTasksGen = new PythonParallelTaskGenerator(
-                    xKey: 'PYTHON_VERSION',
+                    xKey: 'VERSION',
                     yKey: 'FRAMEWORK',
                     xFile: pythonFile,
                     yFile: frameworkFile,
@@ -143,32 +143,6 @@ pipeline {
                 sh script: 'python3 setup.py bdist_wheel', label: "Building universal wheel"
               }
               stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/dist/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
-            }
-          }
-        }
-        stage('Publish snapshot packages') {
-          options { skipDefaultCheckout() }
-          environment {
-            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
-            BUCKET_NAME = 'oblt-artifacts'
-            DOCKER_REGISTRY = 'docker.elastic.co'
-            DOCKER_REGISTRY_SECRET = 'secret/observability-team/ci/docker-registry/prod'
-            GCS_ACCOUNT_SECRET = 'secret/observability-team/ci/snapshoty'
-          }
-          when { branch 'main' }
-          steps {
-            withGithubNotify(context: 'Publish snapshot packages') {
-              deleteDir()
-              unstash 'source'
-              unstash 'packages'
-              dir(env.BASE_DIR) {
-                snapshoty(
-                  bucket: env.BUCKET_NAME,
-                  gcsAccountSecret: env.GCS_ACCOUNT_SECRET,
-                  dockerRegistry: env.DOCKER_REGISTRY,
-                  dockerSecret: env.DOCKER_REGISTRY_SECRET
-                )
-              }
             }
           }
         }
@@ -270,32 +244,6 @@ pipeline {
             }
             success {
               notifyStatus(slackStatus: 'good', subject: "[${env.REPO}] Release *${env.TAG_NAME}* published", body: "Build: (<${env.RUN_DISPLAY_URL}|here>)\nRepo URL: ${env.REPO_URL?.trim()}")
-            }
-          }
-        }
-        stage('Opbeans') {
-          environment {
-            REPO_NAME = "${OPBEANS_REPO}"
-          }
-          when {
-            beforeInput true
-            anyOf {
-              tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
-              expression { return params.Run_As_Main_Branch }
-            }
-          }
-          steps {
-            deleteDir()
-            dir("${OPBEANS_REPO}"){
-              git(credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
-                  url: "git@github.com:elastic/${OPBEANS_REPO}.git",
-                  branch: 'main')
-              // It's required to transform the tag value to the artifact version
-              sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
-              // The opbeans pipeline will trigger a release for the main branch
-              gitPush()
-              // The opbeans pipeline will trigger a release for the release tag
-              gitCreateTag(tag: "${env.BRANCH_NAME}")
             }
           }
         }

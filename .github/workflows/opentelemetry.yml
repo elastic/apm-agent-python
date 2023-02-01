@@ -5,6 +5,11 @@ on:
   workflow_run:
     workflows:
       - pre-commit
+      - test
+      - test-reporter
+      - snapshoty
+      - release
+      - packages
     types: [completed]
 
 jobs:

@@ -20,7 +20,7 @@ test:
 	fi
 
 coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg --cov-branch
-coverage: export COVERAGE_FILE=.coverage.$(PYTHON_FULL_VERSION).$(WEBFRAMEWORK)
+coverage: export COVERAGE_FILE=.coverage.docker.$(PYTHON_FULL_VERSION).$(WEBFRAMEWORK)
 coverage: test
 
 docs:

@@ -1,0 +1,4 @@
+# this is a limited list of matrix builds to be used for PRs
+# see .jenkins_framework_full.yml for a full list
+FRAMEWORK:
+  - none

@@ -4,11 +4,8 @@
 :  - WEBFRAMEWORK: the framework to be installed.
 @echo on
 
-: Prepare the env context
-call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\vsdevcmd.bat" -arch=amd64
-
 : We need wheel installed to build wheels
-call %PYTHON%\python.exe -m venv "%cd%\venv"
+call python -m venv "%cd%\venv"
 set VENV_PYTHON=%cd%\venv\Scripts\
 call %VENV_PYTHON%\python.exe -m pip install -U wheel pip setuptools
 call %VENV_PYTHON%\python.exe -m pip install -r tests\requirements\reqs-%WEBFRAMEWORK%.txt

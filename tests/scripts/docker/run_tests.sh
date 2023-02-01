@@ -16,7 +16,7 @@ if [ $# -lt 2 ]; then
   exit 2
 fi
 
-pip_cache="$HOME/.cache"
+pip_cache="${PIP_CACHE:-${HOME}/.cache/}"
 docker_pip_cache="/tmp/cache/pip"
 TEST="${1}/${2}"
 LOCAL_USER_ID=${LOCAL_USER_ID:=$(id -u)}
@@ -52,10 +52,12 @@ PYTHON_VERSION=${1} docker-compose run \
   -e PYTHON_FULL_VERSION=${1} \
   -e LOCAL_USER_ID=$LOCAL_USER_ID \
   -e LOCAL_GROUP_ID=$LOCAL_GROUP_ID \
-  -e PYTHONDONTWRITEBYTECODE=1 -e WEBFRAMEWORK=$2 -e PIP_CACHE=${docker_pip_cache} \
+  -e PYTHONDONTWRITEBYTECODE=1 \
+  -e WEBFRAMEWORK=${2} \
+  -e PIP_CACHE=${docker_pip_cache} \
   -e WITH_COVERAGE=true \
   -e CASS_DRIVER_NO_EXTENSIONS=1 \
-  -e PYTEST_JUNIT="--junitxml=/app/tests/python-agent-junit.xml" \
+  -e PYTEST_JUNIT="--junitxml=/app/tests/docker-${1}-${2}-python-agent-junit.xml" \
   -v ${pip_cache}:$(dirname ${docker_pip_cache}) \
   -v "$(dirname $(pwd))":/app \
   --rm run_tests \
