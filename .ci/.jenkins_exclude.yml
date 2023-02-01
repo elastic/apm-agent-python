@@ -1,200 +1,200 @@
 exclude:
-  - PYTHON_VERSION: pypy-3 # pypy3 currently fails on CI, e.g. https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/detail/PR-1099/2/pipeline#step-3497-log-1
+  - VERSION: pypy-3 # pypy3 currently fails on CI, e.g. https://apm-ci.elastic.co/blue/organizations/jenkins/apm-agent-python%2Fapm-agent-python-mbp/detail/PR-1099/2/pipeline#step-3497-log-1
     FRAMEWORK: none
   # Django
   # Django 4.0 requires Python 3.8+
-  - PYTHON_VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
+  - VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
     FRAMEWORK: django-4.0
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: django-4.0
-  - PYTHON_VERSION: python-3.7
+  - VERSION: python-3.7
     FRAMEWORK: django-4.0
-  - PYTHON_VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
+  - VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
     FRAMEWORK: celery-5-django-4
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: celery-5-django-4
-  - PYTHON_VERSION: python-3.7
+  - VERSION: python-3.7
     FRAMEWORK: celery-5-django-4
   # Flask
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
   # Python 3.10 removed a bunch of classes from collections, now in collections.abc
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: django-1.11
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: django-2.0
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.11 # cannot import name 'formatargspec' from 'inspect'
+  - VERSION: python-3.11 # cannot import name 'formatargspec' from 'inspect'
     FRAMEWORK: celery-4-flask-1.0
-  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+  - VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-flask-2
-  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+  - VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-django-3
-  - PYTHON_VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
+  - VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-django-4
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: graphene-2
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: aiohttp-3.0
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: aiohttp-4.0
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: cassandra-3.4
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: pymongo-3.5
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: django-1.11
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: django-2.0
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: django-2.1
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: celery-4-django-2.0
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: celery-4-django-1.11
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: graphene-2
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: aiohttp-3.0
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: aiohttp-4.0
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: cassandra-3.4
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: pymongo-3.5
   # pymongo
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: pymongo-3.1
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: pymongo-3.2
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: pymongo-3.3
-  - PYTHON_VERSION: python-3.8
+  - VERSION: python-3.8
     FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: python-3.9
+  - VERSION: python-3.9
     FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: pymongo-3.4
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
   # pymssql
-  - PYTHON_VERSION: pypy-3 # currently fails with error on pypy3
+  - VERSION: pypy-3 # currently fails with error on pypy3
     FRAMEWORK: pymssql-newest
-  - PYTHON_VERSION: python-3.6 # dropped support for py3.6
+  - VERSION: python-3.6 # dropped support for py3.6
     FRAMEWORK: pymssql-newest
   # pyodbc
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: pyodbc-newest
   # boto3
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: boto3-1.5
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: boto3-1.6
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: boto3-1.5
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: boto3-1.6
   # aiohttp client, only supported in Python 3.7+
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: aiohttp-3.0
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aiohttp-3.0
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: aiohttp-4.0
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aiohttp-4.0
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: aiohttp-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aiohttp-newest
   # tornado, only supported in Python 3.7+
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: tornado-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: tornado-newest
   # Starlette, only supported in python 3.7+
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: starlette-0.13
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: starlette-0.13
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: starlette-0.14
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: starlette-0.14
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: starlette-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: starlette-newest
   # aiopg
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: aiopg-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aiopg-newest
   # asyncpg
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: asyncpg-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: asyncpg-newest
   # sanic
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: sanic-newest
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: sanic-20.12
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: sanic-20.12
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: sanic-newest
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     # aioredis
     FRAMEWORK: aioredis-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aioredis-newest
   # aiomysql
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: aiomysql-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aiomysql-newest
   # aiobotocore
-  - PYTHON_VERSION: pypy-3
+  - VERSION: pypy-3
     FRAMEWORK: aiobotocore-newest
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: aiobotocore-newest
   # mysql-connector-python
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: mysql_connector-newest
   # twisted
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: twisted-18
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: twisted-17
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: twisted-16
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: twisted-15
   # pylibmc
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: pylibmc-1.4
   # grpc
-  - PYTHON_VERSION: python-3.6
+  - VERSION: python-3.6
     FRAMEWORK: grpc-newest
-  - PYTHON_VERSION: python-3.7
+  - VERSION: python-3.7
     FRAMEWORK: grpc-1.24
-  - PYTHON_VERSION: python-3.8
+  - VERSION: python-3.8
     FRAMEWORK: grpc-1.24
-  - PYTHON_VERSION: python-3.9
+  - VERSION: python-3.9
     FRAMEWORK: grpc-1.24
-  - PYTHON_VERSION: python-3.10
+  - VERSION: python-3.10
     FRAMEWORK: grpc-1.24
-  - PYTHON_VERSION: python-3.11
+  - VERSION: python-3.11
     FRAMEWORK: grpc-1.24

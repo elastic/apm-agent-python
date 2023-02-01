@@ -60,7 +60,7 @@ pipeline {
           dir("${BASE_DIR}"){
             script {
               pythonTasksGen = new PythonParallelTaskGenerator(
-                xKey: 'PYTHON_VERSION',
+                xKey: 'VERSION',
                 yKey: 'FRAMEWORK',
                 xFile: ".ci/.jenkins_python_full.yml",
                 yFile: ".ci/.jenkins_framework_full.yml",
@@ -146,7 +146,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           } finally {
             steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              testResults: "**/*python-agent-junit.xml,**/target/**/TEST-*.xml")
           }
         }
       }
