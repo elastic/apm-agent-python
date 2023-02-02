@@ -17,7 +17,6 @@ if [%JENKINS_HOME%] == [] (
 
 call %PYTHON_EXECUTABLE% -m venv "%cd%\venv"
 
-call python -m venv "%cd%\venv"
 set VENV_PYTHON=%cd%\venv\Scripts\
 call %VENV_PYTHON%\python.exe -m pip install -U wheel pip setuptools
 call %VENV_PYTHON%\python.exe -m pip install -r tests\requirements\reqs-%WEBFRAMEWORK%.txt
