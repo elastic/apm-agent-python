@@ -45,12 +45,14 @@ jobs:
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
         env:
           LOCALSTACK_VOLUME_DIR: localstack_data
-      - name: Upload JUnit Test Results
+      - if: success() || failure()
+        name: Upload JUnit Test Results
         uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: "**/*-python-agent-junit.xml"
-      - name: Upload Coverage Reports
+      - if: success() || failure()
+        name: Upload Coverage Reports
         uses: actions/upload-artifact@v3
         with:
           name: coverage-reports
@@ -91,12 +93,14 @@ jobs:
         run: .\scripts\install-tools.bat
       - name: Run tests
         run: .\scripts\run-tests.bat
-      - name: Upload JUnit Test Results
+      - if: success() || failure()
+        name: Upload JUnit Test Results
         uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: "**/*-python-agent-junit.xml"
-      - name: Upload Coverage Reports
+      - if: success() || failure()
+        name: Upload Coverage Reports
         uses: actions/upload-artifact@v3
         with:
           name: coverage-reports
