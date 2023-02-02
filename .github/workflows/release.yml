@@ -38,7 +38,7 @@ jobs:
         env:
           REPO_URL: "https://test.pypi.org/legacy/"
       - if: always()
-        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@a3850732518748f2e71815c093d58cb071d0d8a3 #TODO: Change to @current when released
+        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
         with:
           vaultUrl: ${{ secrets.VAULT_ADDR }}
           vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
