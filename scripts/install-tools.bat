@@ -4,6 +4,9 @@
 :  - WEBFRAMEWORK: the framework to be installed.
 @echo on
 
+: Prepare the env context
+call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\vsdevcmd.bat" -arch=amd64
+
 : We need wheel installed to build wheels
 
 if [%JENKINS_HOME%] == [] (
