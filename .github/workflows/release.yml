@@ -1,9 +1,7 @@
 name: release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  pull_request: ~
 
 jobs:
   test:
@@ -24,8 +22,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/apm-team/ci/apm-agent-python-pypi-prod user | TWINE_USER ;
-            secret/apm-team/ci/apm-agent-python-pypi-prod password | TWINE_PASSWORD
+            secret/apm-team/ci/apm-agent-python-pypi-test user | TWINE_USER ;
+            secret/apm-team/ci/apm-agent-python-pypi-test password | TWINE_PASSWORD
       - uses: actions/download-artifact@v3
         with:
           name: packages
@@ -38,7 +36,7 @@ jobs:
           python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.tar.gz
           python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.whl
         env:
-          REPO_URL: "https://upload.pypi.org/legacy/"
+          REPO_URL: "https://test.pypi.org/legacy/"
       - if: always()
         uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@a3850732518748f2e71815c093d58cb071d0d8a3 #TODO: Change to @current when released
         with:
