@@ -7,9 +7,9 @@
 : We need wheel installed to build wheels
 
 if [%JENKINS_HOME%] == [] (
-set PYTHON_EXECUTABLE=%PYTHON%\python.exe
+    set PYTHON_EXECUTABLE=%PYTHON%\python.exe
 ) else (
-set PYTHON_EXECUTABLE=python
+    set PYTHON_EXECUTABLE=python
 )
 
 call %PYTHON_EXECUTABLE% -m venv "%cd%\venv"

@@ -28,7 +28,7 @@ jobs:
           # Use .ci/.jenkins_python_full.yml if it's a scheduled workflow, otherwise use .ci/.jenkins_python.yml
           versionsFile: .ci/.jenkins_python${{ github.event_name == 'schedule' && '_full' || '' }}.yml
           # Use .ci/.jenkins_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.jenkins_framework.yml
-          frameworksFile: .ci/.jenkins_framework${{ github.event_name == 'schedule' && '_full' || '_tmp' }}.yml
+          frameworksFile: .ci/.jenkins_framework${{ github.event_name == 'schedule' && '_full' || '' }}.yml
           excludedFile: .ci/.jenkins_exclude.yml
 
   docker:
