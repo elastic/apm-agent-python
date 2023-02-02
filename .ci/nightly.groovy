@@ -146,7 +146,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           } finally {
             steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              testResults: "**/*python-agent-junit.xml,**/target/**/TEST-*.xml")
           }
         }
       }
