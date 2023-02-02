@@ -39,28 +39,12 @@ jobs:
       fail-fast: false
       max-parallel: 10
       matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
-    env:
-      PIP_CACHE: ${{ github.workspace }}/.cache
     steps:
       - uses: actions/checkout@v3
-      - name: Restore PIP_CACHE
-        id: cache-pip-restore
-        uses: actions/cache/restore@v3
-        with:
-          path: ${{ env.PIP_CACHE }}
-          key: v1-pip-cache-${{ matrix.VERSION }}-${{ hashFiles('tests/requirements/*.txt') }}
-          restore-keys: |
-            v1-pip-cache-${{ matrix.version }}-
       - name: Run tests
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
         env:
           LOCALSTACK_VOLUME_DIR: localstack_data
-      - name: Save PIP_CACHE
-        id: cache-pip-save
-        uses: actions/cache/save@v3
-        with:
-          path: ${{ env.PIP_CACHE }}
-          key: ${{ steps.cache-pip-restore.outputs.cache-primary-key }}
       - name: Upload JUnit Test Results
         uses: actions/upload-artifact@v3
         with:

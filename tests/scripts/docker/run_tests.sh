@@ -16,7 +16,7 @@ if [ $# -lt 2 ]; then
   exit 2
 fi
 
-pip_cache="${PIP_CACHE:-${HOME}/.cache/}"
+pip_cache="$HOME/.cache"
 docker_pip_cache="/tmp/cache/pip"
 TEST="${1}/${2}"
 LOCAL_USER_ID=${LOCAL_USER_ID:=$(id -u)}
