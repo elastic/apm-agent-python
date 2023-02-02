@@ -311,7 +311,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.dir("${steps.env.BASE_DIR}"){
               steps.dockerLogs(step: "${label}", failNever: true)
               steps.junit(allowEmptyResults: true, keepLongStdio: true,
-                          testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+                          testResults: "**/*-python-agent-junit.xml,**/target/**/TEST-*.xml")
               steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.${x}.${y}", allowEmpty: true)
             }
           }
@@ -384,7 +384,7 @@ def generateStepForWindows(Map v = [:]){
           error(e.toString())
         } finally {
           dir("${BASE_DIR}"){
-            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
+            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/*-python-agent-junit.xml')
             stash(name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
               includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
               allowEmpty: true
