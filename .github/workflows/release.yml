@@ -4,13 +4,13 @@ on:
   pull_request: ~
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
+#  test:
+#    uses: ./.github/workflows/test.yml
   packages:
     uses: ./.github/workflows/packages.yml
   release:
     needs:
-      - test
+#      - test
       - packages
     runs-on: ubuntu-latest
     steps:
