@@ -25,11 +25,11 @@ jobs:
       - id: generate
         uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
         with:
-          # Use .ci/.jenkins_python_full.yml if it's a scheduled workflow, otherwise use .ci/.jenkins_python.yml
-          versionsFile: .ci/.jenkins_python${{ github.event_name == 'schedule' && '_full' || '' }}.yml
-          # Use .ci/.jenkins_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.jenkins_framework.yml
-          frameworksFile: .ci/.jenkins_framework${{ github.event_name == 'schedule' && '_full' || '' }}.yml
-          excludedFile: .ci/.jenkins_exclude.yml
+          # Use .ci/.matrix_python_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_python.yml
+          versionsFile: .ci/.matrix_python${{ github.event_name == 'schedule' && '_full' || '' }}.yml
+          # Use .ci/.matrix_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_framework.yml
+          frameworksFile: .ci/.matrix_framework${{ github.event_name == 'schedule' && '_full' || '' }}.yml
+          excludedFile: .ci/.matrix_exclude.yml
 
   docker:
     name: "docker (version: ${{ matrix.version }}, framework: ${{ matrix.framework }})"

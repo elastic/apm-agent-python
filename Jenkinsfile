@@ -1,6 +1,8 @@
 #!/usr/bin/env groovy
 @Library('apm@current') _
 
+// TODO: Remove this file when fully migrated to GH Actions
+
 import co.elastic.matrix.*
 import groovy.transform.Field
 
@@ -86,19 +88,19 @@ pipeline {
               dir("${BASE_DIR}"){
                 script {
                   // To enable the full test matrix upon GitHub PR comments
-                  def pythonFile = '.ci/.jenkins_python.yml'
-                  def frameworkFile = '.ci/.jenkins_framework.yml'
+                  def pythonFile = '.ci/.matrix_python.yml'
+                  def frameworkFile = '.ci/.matrix_framework.yml'
                   if (env.GITHUB_COMMENT?.contains('full')) {
                     log(level: 'INFO', text: 'Full test matrix has been enabled.')
-                    frameworkFile = '.ci/.jenkins_framework_full.yml'
-                    pythonFile = '.ci/.jenkins_python_full.yml'
+                    frameworkFile = '.ci/.matrix_framework_full.yml'
+                    pythonFile = '.ci/.matrix_python_full.yml'
                   }
                   pythonTasksGen = new PythonParallelTaskGenerator(
                     xKey: 'VERSION',
                     yKey: 'FRAMEWORK',
                     xFile: pythonFile,
                     yFile: frameworkFile,
-                    exclusionFile: ".ci/.jenkins_exclude.yml",
+                    exclusionFile: ".ci/.matrix_exclude.yml",
                     tag: "Python",
                     name: "Python",
                     steps: this
@@ -106,7 +108,7 @@ pipeline {
                   def mapParallelTasks = pythonTasksGen.generateParallelTests()
 
                   // Let's now enable the windows stages
-                  readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+                  readYaml(file: '.ci/.matrix_windows.yml')['windows'].each { v ->
                     def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
                     mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
                   }
@@ -415,7 +417,7 @@ def convergeCoverage() {
       }
     }
     // Windows coverage converge
-    readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+    readYaml(file: '.ci/.matrix_windows.yml')['windows'].each { v ->
       catchError(buildResult: 'SUCCESS') {
         unstash(
           name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"

@@ -4,6 +4,7 @@
 #  WEBFRAMEWORK: What framework to be tested. String format.
 #  ASYNCIO: Whether it's enabled or disabled. Boolean format.
 #
+# TODO: Remove this file when fully  migrated to GH Actions
 
 windows:
 #  - VERSION: "3.6"
