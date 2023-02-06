@@ -178,6 +178,24 @@ def test_grpc_client_server_exception(instrument, sending_elasticapm_client, grp
     assert error["transaction_id"] == server_transactions[0]["id"]
 
 
+def test_grpc_client_unsampled_transaction(instrument, sending_elasticapm_client, grpc_client_and_server_url):
+    grpc_client, grpc_server_url = grpc_client_and_server_url
+    grpc_server_host, grpc_server_port = grpc_server_url.split(":")
+    transaction = sending_elasticapm_client.begin_transaction("request")
+    transaction.is_sampled = False
+    parsed_url = urllib.parse.urlparse(sending_elasticapm_client.httpserver.url)
+    response = grpc_client.GetServerResponse(Message(message="foo"))
+    transaction.is_sampled = True
+    sending_elasticapm_client.end_transaction("grpc-test")
+    payloads = sending_elasticapm_client.httpserver.payloads
+    for i in range(1000):
+        if len(sending_elasticapm_client.httpserver.payloads) > 1:
+            break
+        time.sleep(0.01)
+    transaction_data = payloads[1][1]["transaction"]
+    assert transaction_data["span_count"]["started"] == 0
+
+
 def extract_events_from_payload(service_name, payloads):
     payloads = [
         payload for payload in payloads if payload and payload[0]["metadata"]["service"]["name"] == service_name
