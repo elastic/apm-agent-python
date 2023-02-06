@@ -6,7 +6,7 @@ function cleanup {
 
     if [[ $CODECOV_TOKEN ]]; then
         cd ..
-        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,WEBFRAMEWORK || true
+        bash <(curl -s https://codecov.io/bash) -e PYTHON_VERSION,FRAMEWORK || true
     fi
 }
 trap cleanup EXIT
@@ -53,7 +53,7 @@ PYTHON_VERSION=${1} docker-compose run \
   -e LOCAL_USER_ID=$LOCAL_USER_ID \
   -e LOCAL_GROUP_ID=$LOCAL_GROUP_ID \
   -e PYTHONDONTWRITEBYTECODE=1 \
-  -e WEBFRAMEWORK=${2} \
+  -e FRAMEWORK=${2} \
   -e PIP_CACHE=${docker_pip_cache} \
   -e WITH_COVERAGE=true \
   -e CASS_DRIVER_NO_EXTENSIONS=1 \

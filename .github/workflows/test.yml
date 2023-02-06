@@ -80,7 +80,7 @@ jobs:
             asyncio: true
     env:
       VERSION: ${{ matrix.version }}
-      WEBFRAMEWORK: ${{ matrix.framework }}
+      FRAMEWORK: ${{ matrix.framework }}
       ASYNCIO: ${{ matrix.asyncio }}
     steps:
       - uses: actions/checkout@v3

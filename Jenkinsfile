@@ -109,7 +109,7 @@ pipeline {
 
                   // Let's now enable the windows stages
                   readYaml(file: '.ci/.matrix_windows.yml')['windows'].each { v ->
-                    def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
+                    def description = "${v.VERSION}-${v.FRAMEWORK}"
                     mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
                   }
                   parallel(mapParallelTasks)
@@ -363,7 +363,7 @@ def releasePackages(){
 
 def generateStepForWindows(Map v = [:]){
   return {
-    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
+    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.FRAMEWORK} asyncio=${v.ASYNCIO}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
     def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
@@ -373,7 +373,7 @@ def generateStepForWindows(Map v = [:]){
       withEnv(["VERSION=${v.VERSION}",
                "PYTHON=${pythonPath}",
                "ASYNCIO=${v.ASYNCIO}",
-               "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
+               "FRAMEWORK=${v.FRAMEWORK}"]) {
         try {
           deleteDir()
           unstash 'source'
@@ -387,8 +387,8 @@ def generateStepForWindows(Map v = [:]){
         } finally {
           dir("${BASE_DIR}"){
             junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/*-python-agent-junit.xml')
-            stash(name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
-              includes: ".coverage.*.${v.VERSION}.${v.WEBFRAMEWORK}",
+            stash(name: "coverage-${v.VERSION}-${v.FRAMEWORK}",
+              includes: ".coverage.*.${v.VERSION}.${v.FRAMEWORK}",
               allowEmpty: true
             )
           }
@@ -420,7 +420,7 @@ def convergeCoverage() {
     readYaml(file: '.ci/.matrix_windows.yml')['windows'].each { v ->
       catchError(buildResult: 'SUCCESS') {
         unstash(
-          name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+          name: "coverage-${v.VERSION}-${v.FRAMEWORK}"
         )
       }
     }
