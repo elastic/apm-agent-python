@@ -130,7 +130,8 @@ def transform(value, stack=None, context=None):
         except AttributeError:
             ret = None
     elif isinstance(value, dict):
-        ret = dict((to_unicode(k), transform_rec(v)) for k, v in value.items())
+        # iterate over a copy of the dictionary to avoid "dictionary changed size during iteration" issues
+        ret = dict((to_unicode(k), transform_rec(v)) for k, v in value.copy().items())
     elif isinstance(value, str):
         ret = to_unicode(value)
     elif isinstance(value, bytes):
