@@ -1,6 +1,8 @@
 #!/usr/bin/env groovy
 @Library('apm@current') _
 
+// TODO: Remove this file when fully migrated to GH Actions
+
 import co.elastic.matrix.*
 import groovy.transform.Field
 
@@ -86,19 +88,19 @@ pipeline {
               dir("${BASE_DIR}"){
                 script {
                   // To enable the full test matrix upon GitHub PR comments
-                  def pythonFile = '.ci/.jenkins_python.yml'
-                  def frameworkFile = '.ci/.jenkins_framework.yml'
+                  def pythonFile = '.ci/.matrix_python.yml'
+                  def frameworkFile = '.ci/.matrix_framework.yml'
                   if (env.GITHUB_COMMENT?.contains('full')) {
                     log(level: 'INFO', text: 'Full test matrix has been enabled.')
-                    frameworkFile = '.ci/.jenkins_framework_full.yml'
-                    pythonFile = '.ci/.jenkins_python_full.yml'
+                    frameworkFile = '.ci/.matrix_framework_full.yml'
+                    pythonFile = '.ci/.matrix_python_full.yml'
                   }
                   pythonTasksGen = new PythonParallelTaskGenerator(
-                    xKey: 'PYTHON_VERSION',
+                    xKey: 'VERSION',
                     yKey: 'FRAMEWORK',
                     xFile: pythonFile,
                     yFile: frameworkFile,
-                    exclusionFile: ".ci/.jenkins_exclude.yml",
+                    exclusionFile: ".ci/.matrix_exclude.yml",
                     tag: "Python",
                     name: "Python",
                     steps: this
@@ -106,8 +108,8 @@ pipeline {
                   def mapParallelTasks = pythonTasksGen.generateParallelTests()
 
                   // Let's now enable the windows stages
-                  readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
-                    def description = "${v.VERSION}-${v.WEBFRAMEWORK}"
+                  readYaml(file: '.ci/.matrix_windows.yml')['windows'].each { v ->
+                    def description = "${v.VERSION}-${v.FRAMEWORK}"
                     mapParallelTasks["windows-${description}"] = generateStepForWindows(v)
                   }
                   parallel(mapParallelTasks)
@@ -143,32 +145,6 @@ pipeline {
                 sh script: 'python3 setup.py bdist_wheel', label: "Building universal wheel"
               }
               stash allowEmpty: true, name: 'packages', includes: "${BASE_DIR}/dist/*.whl,${BASE_DIR}/dist/*.tar.gz", useDefaultExcludes: false
-            }
-          }
-        }
-        stage('Publish snapshot packages') {
-          options { skipDefaultCheckout() }
-          environment {
-            PATH = "${env.WORKSPACE}/.local/bin:${env.WORKSPACE}/bin:${env.PATH}"
-            BUCKET_NAME = 'oblt-artifacts'
-            DOCKER_REGISTRY = 'docker.elastic.co'
-            DOCKER_REGISTRY_SECRET = 'secret/observability-team/ci/docker-registry/prod'
-            GCS_ACCOUNT_SECRET = 'secret/observability-team/ci/snapshoty'
-          }
-          when { branch 'main' }
-          steps {
-            withGithubNotify(context: 'Publish snapshot packages') {
-              deleteDir()
-              unstash 'source'
-              unstash 'packages'
-              dir(env.BASE_DIR) {
-                snapshoty(
-                  bucket: env.BUCKET_NAME,
-                  gcsAccountSecret: env.GCS_ACCOUNT_SECRET,
-                  dockerRegistry: env.DOCKER_REGISTRY,
-                  dockerSecret: env.DOCKER_REGISTRY_SECRET
-                )
-              }
             }
           }
         }
@@ -273,32 +249,6 @@ pipeline {
             }
           }
         }
-        stage('Opbeans') {
-          environment {
-            REPO_NAME = "${OPBEANS_REPO}"
-          }
-          when {
-            beforeInput true
-            anyOf {
-              tag pattern: 'v\\d+\\.\\d+\\.\\d+', comparator: 'REGEXP'
-              expression { return params.Run_As_Main_Branch }
-            }
-          }
-          steps {
-            deleteDir()
-            dir("${OPBEANS_REPO}"){
-              git(credentialsId: 'f6c7695a-671e-4f4f-a331-acdce44ff9ba',
-                  url: "git@github.com:elastic/${OPBEANS_REPO}.git",
-                  branch: 'main')
-              // It's required to transform the tag value to the artifact version
-              sh script: ".ci/bump-version.sh ${env.BRANCH_NAME.replaceAll('^v', '')}", label: 'Bump version'
-              // The opbeans pipeline will trigger a release for the main branch
-              gitPush()
-              // The opbeans pipeline will trigger a release for the release tag
-              gitCreateTag(tag: "${env.BRANCH_NAME}")
-            }
-          }
-        }
       }
     }
   }
@@ -363,8 +313,8 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
             steps.dir("${steps.env.BASE_DIR}"){
               steps.dockerLogs(step: "${label}", failNever: true)
               steps.junit(allowEmptyResults: true, keepLongStdio: true,
-                          testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
-              steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.${x}.${y}", allowEmpty: true)
+                          testResults: "**/*-python-agent-junit.xml,**/target/**/TEST-*.xml")
+              steps.stash(name: "coverage-${x}-${y}", includes: ".coverage.*.${x}.${y}", allowEmpty: true)
             }
           }
         }
@@ -413,7 +363,7 @@ def releasePackages(){
 
 def generateStepForWindows(Map v = [:]){
   return {
-    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.WEBFRAMEWORK} asyncio=${v.ASYNCIO}")
+    log(level: 'INFO', text: "version=${v.VERSION} framework=${v.FRAMEWORK} asyncio=${v.ASYNCIO}")
     // Python installations with choco in Windows do follow the pattern:
     //  C:\Python<Major><Minor>, for instance: C:\Python27
     def pythonPath = "C:\\Python${v.VERSION.replaceAll('\\.', '')}"
@@ -423,7 +373,7 @@ def generateStepForWindows(Map v = [:]){
       withEnv(["VERSION=${v.VERSION}",
                "PYTHON=${pythonPath}",
                "ASYNCIO=${v.ASYNCIO}",
-               "WEBFRAMEWORK=${v.WEBFRAMEWORK}"]) {
+               "FRAMEWORK=${v.FRAMEWORK}"]) {
         try {
           deleteDir()
           unstash 'source'
@@ -436,9 +386,9 @@ def generateStepForWindows(Map v = [:]){
           error(e.toString())
         } finally {
           dir("${BASE_DIR}"){
-            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/python-agent-junit.xml')
-            stash(name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}",
-              includes: ".coverage.${v.VERSION}.${v.WEBFRAMEWORK}",
+            junit(allowEmptyResults: true, keepLongStdio: true, testResults: '**/*-python-agent-junit.xml')
+            stash(name: "coverage-${v.VERSION}-${v.FRAMEWORK}",
+              includes: ".coverage.*.${v.VERSION}.${v.FRAMEWORK}",
               allowEmpty: true
             )
           }
@@ -467,10 +417,10 @@ def convergeCoverage() {
       }
     }
     // Windows coverage converge
-    readYaml(file: '.ci/.jenkins_windows.yml')['windows'].each { v ->
+    readYaml(file: '.ci/.matrix_windows.yml')['windows'].each { v ->
       catchError(buildResult: 'SUCCESS') {
         unstash(
-          name: "coverage-${v.VERSION}-${v.WEBFRAMEWORK}"
+          name: "coverage-${v.VERSION}-${v.FRAMEWORK}"
         )
       }
     }

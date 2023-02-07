@@ -4,6 +4,8 @@
 import co.elastic.matrix.*
 import groovy.transform.Field
 
+// TODO: Remove this file when fully migrated to GH Actions
+
 /**
 This is the parallel tasks generator,
 it is need as field to store the results of the tests.
@@ -60,11 +62,11 @@ pipeline {
           dir("${BASE_DIR}"){
             script {
               pythonTasksGen = new PythonParallelTaskGenerator(
-                xKey: 'PYTHON_VERSION',
+                xKey: 'VERSION',
                 yKey: 'FRAMEWORK',
-                xFile: ".ci/.jenkins_python_full.yml",
-                yFile: ".ci/.jenkins_framework_full.yml",
-                exclusionFile: ".ci/.jenkins_exclude.yml",
+                xFile: ".ci/.matrix_python_full.yml",
+                yFile: ".ci/.matrix_framework_full.yml",
+                exclusionFile: ".ci/.matrix_exclude.yml",
                 tag: "Python",
                 name: "Python",
                 steps: this
@@ -146,7 +148,7 @@ class PythonParallelTaskGenerator extends DefaultParallelTaskGenerator {
           } finally {
             steps.junit(allowEmptyResults: true,
               keepLongStdio: true,
-              testResults: "**/python-agent-junit.xml,**/target/**/TEST-*.xml")
+              testResults: "**/*python-agent-junit.xml,**/target/**/TEST-*.xml")
           }
         }
       }

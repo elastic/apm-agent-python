@@ -1,15 +1,20 @@
 : Required tools before running the tests in windows.
 : It does require the below list of environment variables:
 :  - PYTHON: the python installation path.
-:  - WEBFRAMEWORK: the framework to be installed.
+:  - FRAMEWORK: the framework to be installed.
 @echo on
 
-: Prepare the env context
-call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\vsdevcmd.bat" -arch=amd64
+
+: Backwards compatibility to Jenkins
+if [%JENKINS_HOME%] == [] (
+    set PYTHON_EXECUTABLE=python
+) else (
+    set PYTHON_EXECUTABLE=%PYTHON%\python.exe
+)
 
 : We need wheel installed to build wheels
-call %PYTHON%\python.exe -m venv "%cd%\venv"
+call %PYTHON_EXECUTABLE% -m venv "%cd%\venv"
 set VENV_PYTHON=%cd%\venv\Scripts\
 call %VENV_PYTHON%\python.exe -m pip install -U wheel pip setuptools
-call %VENV_PYTHON%\python.exe -m pip install -r tests\requirements\reqs-%WEBFRAMEWORK%.txt
+call %VENV_PYTHON%\python.exe -m pip install -r tests\requirements\reqs-%FRAMEWORK%.txt
 call %VENV_PYTHON%\python.exe -m pip install psutil

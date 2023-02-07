@@ -1,0 +1,107 @@
+name: test
+
+on:
+  workflow_call: ~
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.asciidoc'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.asciidoc'
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  create-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: generate
+        uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
+        with:
+          # Use .ci/.matrix_python_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_python.yml
+          versionsFile: .ci/.matrix_python${{ github.event_name == 'schedule' && '_full' || '' }}.yml
+          # Use .ci/.matrix_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_framework.yml
+          frameworksFile: .ci/.matrix_framework${{ github.event_name == 'schedule' && '_full' || '' }}.yml
+          excludedFile: .ci/.matrix_exclude.yml
+
+  docker:
+    name: "docker (version: ${{ matrix.version }}, framework: ${{ matrix.framework }})"
+    needs: create-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.create-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
+        env:
+          LOCALSTACK_VOLUME_DIR: localstack_data
+      - if: success() || failure()
+        name: Upload JUnit Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/*-python-agent-junit.xml"
+      - if: success() || failure()
+        name: Upload Coverage Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: "**/.coverage*"
+
+
+  windows:
+    name: "windows (version: ${{ matrix.version }}, framework: ${{ matrix.framework }}, asyncio: ${{ matrix.asyncio }})"
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          #  - version: "3.6"
+          #    framework: "none"
+          #    asyncio: "true"
+          - version: "3.7"
+            framework: none
+            asyncio: true
+          - version: "3.8"
+            framework: none
+            asyncio: true
+          - version: "3.9"  # waiting for greenlet to have binary wheels for 3.9
+            framework: none
+            asyncio: true
+    env:
+      VERSION: ${{ matrix.version }}
+      FRAMEWORK: ${{ matrix.framework }}
+      ASYNCIO: ${{ matrix.asyncio }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.version }}
+          cache: pip
+          cache-dependency-path: "tests/requirements/reqs-${{ matrix.framework }}.txt"
+      - name: Install tools
+        run: .\scripts\install-tools.bat
+      - name: Run tests
+        run: .\scripts\run-tests.bat
+      - if: success() || failure()
+        name: Upload JUnit Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/*-python-agent-junit.xml"
+      - if: success() || failure()
+        name: Upload Coverage Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: "**/.coverage*"
