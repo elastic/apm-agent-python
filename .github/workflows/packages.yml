@@ -1,0 +1,35 @@
+name: packages
+
+on:
+  workflow_call: ~
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.asciidoc'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.asciidoc'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install wheel
+        run: pip install --user wheel
+      - name: Building universal wheel
+        run: python setup.py bdist_wheel
+      - name: Upload Packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: packages
+          path: |
+            dist/*.whl
+            dist/*tar.gz
+

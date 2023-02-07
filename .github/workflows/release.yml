@@ -1,0 +1,48 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+  packages:
+    uses: ./.github/workflows/packages.yml
+  release:
+    needs:
+      - test
+      - packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/vault-action@v2.4.2
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/apm-team/ci/apm-agent-python-pypi-prod user | TWINE_USER ;
+            secret/apm-team/ci/apm-agent-python-pypi-prod password | TWINE_PASSWORD
+      - uses: actions/download-artifact@v3
+        with:
+          name: packages
+          path: dist
+      - name: Upload
+        run: |
+          python -m pip install --user twine
+          python setup.py sdist
+          echo "Uploading to ${REPO_URL} with user ${TWINE_USER}"
+          python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.tar.gz
+          python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.whl
+        env:
+          REPO_URL: "https://upload.pypi.org/legacy/"
+      - if: always()
+        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          vaultUrl: ${{ secrets.VAULT_ADDR }}
+          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
+          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
+          slackChannel: "#apm-agent-python"

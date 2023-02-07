@@ -74,4 +74,4 @@ for module, fixtures in {
 
 def pytest_report_header(config):
     if "PYTHON_VERSION" in os.environ:
-        return "matrix: {}/{}".format(os.environ.get("PYTHON_VERSION"), os.environ.get("WEBFRAMEWORK"))
+        return "matrix: {}/{}".format(os.environ.get("PYTHON_VERSION"), os.environ.get("FRAMEWORK"))
