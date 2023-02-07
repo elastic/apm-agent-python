@@ -42,7 +42,7 @@ from starlette.types import ASGIApp, Message
 
 import elasticapm
 import elasticapm.instrumentation.control
-from elasticapm.base import Client
+from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.starlette.utils import get_body, get_data_from_request, get_data_from_response
@@ -115,6 +115,8 @@ class ElasticAPM:
         if client:
             self.client = client
         else:
+            self.client = get_client()
+        if not self.client:
             self.client = make_apm_client(**kwargs)
 
         if self.client.config.instrument and self.client.config.enabled:

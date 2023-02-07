@@ -30,17 +30,22 @@ initialization arguments.
 You can find a list of all available settings in the
 <<configuration, Configuration>> page.
 
-To initialize the agent for your application using environment variables:
+To initialize the agent for your application using environment variables, add
+the ElasticAPM middleware to your Starlette application:
 
 [source,python]
 ----
 from starlette.applications import Starlette
-from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
+from elasticapm.contrib.starlette ElasticAPM
 
-apm = make_apm_client()
 app = Starlette()
-app.add_middleware(ElasticAPM, client=apm)
+app.add_middleware(ElasticAPM)
 ----
+
+WARNING: If you are using any `BaseHTTPMiddleware` middleware, you must add them
+*before* the ElasticAPM middleware. This is because `BaseHTTPMiddleware` breaks
+`contextvar` propagation, as noted
+https://www.starlette.io/middleware/#limitations[here].
 
 To configure the agent using initialization arguments:
 
@@ -67,11 +72,10 @@ is almost exactly the same as with Starlette:
 [source,python]
 ----
 from fastapi import FastAPI
-from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
+from elasticapm.contrib.starlette ElasticAPM
 
-apm = make_apm_client()
 app = FastAPI()
-app.add_middleware(ElasticAPM, client=apm)
+app.add_middleware(ElasticAPM)
 ----
 
 [float]
