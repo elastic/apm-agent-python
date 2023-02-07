@@ -109,6 +109,7 @@ class Client(object):
         self._service_info = None
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
+        self.activation_method = None
 
         self.check_python_version()
 
@@ -217,8 +218,6 @@ class Client(object):
             sys.excepthook = self._excepthook
         if config.enabled:
             self.start_threads()
-
-        self.activation_method = None
 
         # Save this Client object as the global CLIENT_SINGLETON
         set_client(self)
