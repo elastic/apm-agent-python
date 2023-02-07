@@ -59,6 +59,7 @@ def test_service_info(elasticapm_client):
     assert service_info["environment"] == elasticapm_client.config.environment == "production"
     assert service_info["language"] == {"name": "python", "version": platform.python_version()}
     assert service_info["agent"]["name"] == "python"
+    assert service_info["agent"]["activation_method"] == "unknown"
 
 
 @pytest.mark.parametrize(
