@@ -89,7 +89,7 @@ NOTE: For automatic insertion to work,
 your list of middlewares (`settings.MIDDLEWARE` or `settings.MIDDLEWARE_CLASSES`) must be of type `list` or `tuple`.
 
 In addition to broad request metrics (what will appear in the APM app as transactions),
-the agent also collects fine grained metrics on template rendering, 
+the agent also collects fine grained metrics on template rendering,
 database queries, HTTP requests, etc.
 You can find more information on what we instrument in the <<automatic-instrumentation, Automatic Instrumentation>> section.
 
@@ -363,7 +363,7 @@ Trying to send a test error using these settings:
 
 SERVICE_NAME:      <SERVICE_NAME>
 SECRET_TOKEN:      <SECRET_TOKEN>
-SERVER:            http://localhost:8200
+SERVER:            http://127.0.0.1:8200
 
 Success! We tracked the error successfully! You should be able to see it in a few seconds.
 ----
@@ -372,4 +372,4 @@ Success! We tracked the error successfully! You should be able to see it in a fe
 [[supported-django-and-python-versions]]
 ==== Supported Django and Python versions
 
-A list of supported <<supported-django,Django>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  
+A list of supported <<supported-django,Django>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.

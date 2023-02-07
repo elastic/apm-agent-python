@@ -1270,7 +1270,7 @@ def test_settings_server_url_default():
     with override_settings(ELASTIC_APM={}):
         call_command("elasticapm", "check", stdout=stdout)
     output = stdout.getvalue()
-    assert "SERVER_URL http://localhost:8200 looks fine" in output
+    assert "SERVER_URL http://127.0.0.1:8200 looks fine" in output
 
 
 def test_settings_server_url_is_empty_string():
