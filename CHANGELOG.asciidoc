@@ -33,8 +33,10 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
+[float]
+===== Features
+
+* Add `service.agent.activation_method` to the metadata {pull}1743[#1743]
 
 [float]
 ===== Bug fixes
