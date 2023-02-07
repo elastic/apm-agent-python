@@ -10,6 +10,7 @@ on:
       - snapshoty
       - release
       - packages
+      - update-specs
     types: [completed]
 
 jobs:
