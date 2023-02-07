@@ -346,13 +346,15 @@ class Client(object):
             "name": keyword_field(self.config.service_name),
             "environment": keyword_field(self.config.environment),
             "version": keyword_field(self.config.service_version),
-            "agent": {"name": "python", "version": elasticapm.VERSION},
+            "agent": {"name": "python", "version": elasticapm.VERSION, "activation_method": "unknown"},
             "language": {"name": "python", "version": keyword_field(platform.python_version())},
             "runtime": {
                 "name": keyword_field(platform.python_implementation()),
                 "version": keyword_field(runtime_version),
             },
         }
+        if self.activation_method:
+            result["agent"]["activation_method"] = self.activation_method
         if self.config.framework_name:
             result["framework"] = {
                 "name": keyword_field(self.config.framework_name),
