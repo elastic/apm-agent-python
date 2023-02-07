@@ -110,7 +110,7 @@ or whitespace-only.
 [options="header"]
 |============
 | Environment              | Django/Flask   | Default
-| `ELASTIC_APM_SERVER_URL` | `SERVER_URL`   | `'http://localhost:8200'`
+| `ELASTIC_APM_SERVER_URL` | `SERVER_URL`   | `'http://127.0.0.1:8200'`
 |============
 
 The URL for your APM Server.
