@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+      data: ${{ steps.split.outputs.data }}
+      chunks: ${{ steps.split.outputs.chunks }}
     steps:
       - uses: actions/checkout@v3
       - id: generate
@@ -30,34 +32,59 @@ jobs:
           # Use .ci/.matrix_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_framework.yml
           frameworksFile: .ci/.matrix_framework${{ github.event_name == 'schedule' && '_full' || '' }}.yml
           excludedFile: .ci/.matrix_exclude.yml
+      - name: Split matrix
+        shell: python
+        id: split
+        run: |
+          import os
+          import json
 
-  docker:
-    name: "docker (version: ${{ matrix.version }}, framework: ${{ matrix.framework }})"
-    needs: create-matrix
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 10
-      matrix: ${{ fromJson(needs.create-matrix.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run tests
-        run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
+          def split(lst, n):
+            return [lst[i::n] for i in range(n)]
+
+          matrix = json.loads(os.environ['GENERATED_MATRIX'])
+          chunks = split(matrix['include'], 4)
+
+          data = {
+            'one': chunks[0],
+            'two': chunks[1],
+            'three': chunks[2],
+            'four': chunks[3],
+          }
+
+          data_json = json.dumps(data)
+          chunks_json = json.dumps(chunks)
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            print(f'data={data_json}', file=f)
+            print(f'chunks={chunks_json}', file=f)
+
         env:
-          LOCALSTACK_VOLUME_DIR: localstack_data
-      - if: success() || failure()
-        name: Upload JUnit Test Results
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: "**/*-python-agent-junit.xml"
-      - if: success() || failure()
-        name: Upload Coverage Reports
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-reports
-          path: "**/.coverage*"
+          GENERATED_MATRIX: ${{ steps.generate.outputs.matrix }}
 
+  chunks-0:
+    needs: create-matrix
+    uses: ./.github/workflows/run-matrix.yml
+    with:
+      include: ${{ toJSON(fromJSON(needs.create-matrix.outputs.chunks)[0]) }}
+
+  chunks-1:
+    needs: create-matrix
+    uses: ./.github/workflows/run-matrix.yml
+    with:
+      include: ${{ toJSON(fromJSON(needs.create-matrix.outputs.chunks)[1]) }}
+
+  chunks-2:
+    needs: create-matrix
+    uses: ./.github/workflows/run-matrix.yml
+    with:
+      include: ${{ toJSON(fromJSON(needs.create-matrix.outputs.chunks)[2]) }}
+
+  chunks-3:
+    needs: create-matrix
+    uses: ./.github/workflows/run-matrix.yml
+    with:
+      include: ${{ toJSON(fromJSON(needs.create-matrix.outputs.chunks)[3]) }}
 
   windows:
     name: "windows (version: ${{ matrix.version }}, framework: ${{ matrix.framework }}, asyncio: ${{ matrix.asyncio }})"
