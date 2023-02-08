@@ -40,6 +40,7 @@ endif::[]
 ===== Bug fixes
 
 * Small fix to underlying Starlette logic to prevent duplicate Client objects {pull}1735[#1735]
+* Change `server_url` default to `http://127.0.0.1:8200` to avoid ipv6 ambiguity {pull}1744[#1744]
 
 
 
