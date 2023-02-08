@@ -43,6 +43,10 @@ jobs:
             return [lst[i::n] for i in range(n)]
 
           matrix = json.loads(os.environ['GENERATED_MATRIX'])
+
+          # Using the number 4 because the full matrix has roughly 400+ items
+          # Hence, it is split into chunks of size ~100
+          # We are doing this because the matrix in GH actions has a max limit of 256
           chunks = split(matrix['include'], 4)
           chunks_json = json.dumps(chunks)
 
