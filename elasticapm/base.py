@@ -109,6 +109,7 @@ class Client(object):
         self._service_info = None
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
+        self.activation_method = None
 
         self.check_python_version()
 
@@ -217,8 +218,6 @@ class Client(object):
             sys.excepthook = self._excepthook
         if config.enabled:
             self.start_threads()
-
-        self.activation_method = None
 
         # Save this Client object as the global CLIENT_SINGLETON
         set_client(self)
@@ -346,13 +345,15 @@ class Client(object):
             "name": keyword_field(self.config.service_name),
             "environment": keyword_field(self.config.environment),
             "version": keyword_field(self.config.service_version),
-            "agent": {"name": "python", "version": elasticapm.VERSION},
+            "agent": {"name": "python", "version": elasticapm.VERSION, "activation_method": "unknown"},
             "language": {"name": "python", "version": keyword_field(platform.python_version())},
             "runtime": {
                 "name": keyword_field(platform.python_implementation()),
                 "version": keyword_field(runtime_version),
             },
         }
+        if self.activation_method:
+            result["agent"]["activation_method"] = self.activation_method
         if self.config.framework_name:
             result["framework"] = {
                 "name": keyword_field(self.config.framework_name),
