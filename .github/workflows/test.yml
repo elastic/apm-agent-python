@@ -44,19 +44,9 @@ jobs:
 
           matrix = json.loads(os.environ['GENERATED_MATRIX'])
           chunks = split(matrix['include'], 4)
-
-          data = {
-            'one': chunks[0],
-            'two': chunks[1],
-            'three': chunks[2],
-            'four': chunks[3],
-          }
-
-          data_json = json.dumps(data)
           chunks_json = json.dumps(chunks)
 
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-            print(f'data={data_json}', file=f)
             print(f'chunks={chunks_json}', file=f)
 
         env:
