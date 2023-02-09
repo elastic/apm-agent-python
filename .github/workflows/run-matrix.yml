@@ -1,0 +1,37 @@
+name: run-matrix
+
+on:
+  workflow_call:
+    inputs:
+      include:
+        required: true
+        description: Matrix include JSON string
+        type: string
+
+jobs:
+  docker:
+    name: "docker (version: ${{ matrix.version }}, framework: ${{ matrix.framework }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include: ${{ fromJSON(inputs.include) }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
+        env:
+          LOCALSTACK_VOLUME_DIR: localstack_data
+      - if: success() || failure()
+        name: Upload JUnit Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/*-python-agent-junit.xml"
+      - if: success() || failure()
+        name: Upload Coverage Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: "**/.coverage*"
