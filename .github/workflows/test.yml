@@ -139,4 +139,4 @@ jobs:
       - chunks-3
       - windows
     steps:
-      - run: test $(echo '${{ toJSON(needs) }}' | jq -s 'map(.[].result == "success") | all') = 'true'
+      - run: test $(echo '${{ toJSON(needs) }}' | jq -s 'map(.[].result) | all(.=="success")') = 'true'
