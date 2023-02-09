@@ -139,5 +139,4 @@ jobs:
       - chunks-3
       - windows
     steps:
-      - run: |
-          test $(echo '${{ needs }}' | jq -s 'map(.[].result == "success") | all') = 'true'
+      - run: test $(echo '${{ needs }}' | jq -s 'map(.[].result == "success") | all') = 'true'
