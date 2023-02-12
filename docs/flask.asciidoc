@@ -23,6 +23,8 @@ NOTE: If you use Flask with uwsgi, make sure to
 http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads[enable
 threads].
 
+NOTE: If you find an error log: `Could not register elasticapm.metrics.sets.cpu.CPUMetricSet metricset: psutil not found. Install it to get system and process metrics` - Make sure to append the command `psutil` i.e. `pip install flask 'elastic-apm[flask]' psutil`
+
 [float]
 [[flask-setup]]
 ==== Setup
