@@ -1,4 +1,4 @@
-name: test
+name: test # The name must be the same as in test-docs.yml
 
 on:
   workflow_call: ~
@@ -126,3 +126,17 @@ jobs:
         with:
           name: coverage-reports
           path: "**/.coverage*"
+  # This job is here to have a single status check that can be set as required.
+  # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds
+  # If a run contains a series of jobs that need each other, a failure applies to all jobs in the dependency chain from the point of failure onwards.
+  all:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - chunks-0
+      - chunks-1
+      - chunks-2
+      - chunks-3
+      - windows
+    steps:
+      - run: test $(echo '${{ toJSON(needs) }}' | jq -s 'map(.[].result) | all(.=="success")') = 'true'
