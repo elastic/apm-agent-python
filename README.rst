@@ -1,8 +1,8 @@
 elastic-apm -- Elastic APM agent for Python
 ===========================================
 
-.. image:: https://apm-ci.elastic.co/buildStatus/icon?job=apm-agent-python%2Fapm-agent-python-mbp%2Fmain
-    :target: https://apm-ci.elastic.co/job/apm-agent-python/job/apm-agent-python-mbp/
+.. image:: https://github.com/elastic/apm-agent-python/actions/workflows/test.yml/badge.svg?branch=main
+    :target: https://github.com/elastic/apm-agent-python/actions/workflows/test.yml
     :alt: Build Status
 
 .. image:: https://img.shields.io/pypi/v/elastic-apm.svg?style=flat
