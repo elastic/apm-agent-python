@@ -9,6 +9,9 @@ on:
       - '**/*.md'
       - '**/*.asciidoc'
 
+permissions:
+  contents: read
+
 jobs:
   all:
     runs-on: ubuntu-latest
