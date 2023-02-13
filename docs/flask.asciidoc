@@ -23,6 +23,10 @@ NOTE: If you use Flask with uwsgi, make sure to
 http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads[enable
 threads].
 
+NOTE: If you see an error log that mentions `psutil not found`, you can install
+`psutil` using `pip install psutil`, or add `psutil` to your `requirements.txt`
+file.
+
 [float]
 [[flask-setup]]
 ==== Setup
