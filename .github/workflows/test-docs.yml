@@ -5,9 +5,10 @@ name: test
 
 on:
   pull_request:
-    paths:
-      - '**/*.md'
-      - '**/*.asciidoc'
+    paths-ignore: # This expression needs to match the paths ignored on test.yml.
+      - '**'
+      - '!**/*.md'
+      - '!**/*.asciidoc'
 
 permissions:
   contents: read
