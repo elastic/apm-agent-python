@@ -1,4 +1,4 @@
-name: test
+name: test # The name must be the same as in test-docs.yml
 
 on:
   workflow_call: ~
