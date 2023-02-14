@@ -422,6 +422,9 @@ Exceptions of these types will not be sent to the APM Server.
 [float]
 [[config-transaction-ignore-urls]]
 ==== `transaction_ignore_urls`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
+
 [options="header"]
 |============
 | Environment                           | Django/Flask              | Default  | Example
@@ -655,6 +658,8 @@ Setting an upper limit will prevent edge cases from overloading the agent and th
 [float]
 [[config-stack-trace-limit]]
 ==== `stack_trace_limit`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
 
 [options="header"]
 |============
@@ -1193,6 +1198,8 @@ Additionally, when this setting is set to `True`, the agent will set `elasticapm
 [float]
 [[config-trace-continuation-strategy]]
 ==== `trace_continuation_strategy`
+
+<<dynamic-configuration, image:./images/dynamic-config.svg[] >>
 
 [options="header"]
 |============
