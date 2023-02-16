@@ -43,7 +43,7 @@ endif::[]
 
 * Small fix to underlying Starlette logic to prevent duplicate Client objects {pull}1735[#1735]
 * Change `server_url` default to `http://127.0.0.1:8200` to avoid ipv6 ambiguity {pull}1744[#1744]
-
+* Fix an issue in GRPC instrumentation with unsampled transactions {pull}1740[#1740]
 
 
 [[release-notes-6.x]]

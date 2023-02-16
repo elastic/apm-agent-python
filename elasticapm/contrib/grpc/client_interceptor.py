@@ -94,6 +94,8 @@ class _ClientInterceptor(
         with elasticapm.capture_span(
             client_call_details.method, span_type="external", span_subtype="grpc", extra=self._context.copy(), leaf=True
         ) as span:
+            if not span:
+                return continuation(client_call_details, request)
             client_call_details = self.attach_traceparent(client_call_details, span)
             try:
                 response = continuation(client_call_details, request)
