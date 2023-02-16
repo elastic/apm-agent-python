@@ -29,10 +29,12 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.15.0]]
+==== 6.15.0 - 2023-02-16
+
 [float]
 ===== Features
 
@@ -45,10 +47,6 @@ endif::[]
 * Change `server_url` default to `http://127.0.0.1:8200` to avoid ipv6 ambiguity {pull}1744[#1744]
 * Fix an issue in GRPC instrumentation with unsampled transactions {pull}1740[#1740]
 * Fix error in async Elasticsearch instrumentation when spans are dropped {pull}1758[#1758]
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.14.0]]
 ==== 6.14.0 - 2023-01-30
