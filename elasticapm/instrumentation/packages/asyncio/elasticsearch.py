@@ -106,6 +106,6 @@ class ElasticsearchAsyncTransportInstrumentation(
 
             hits = self._get_hits(result_data)
             if hits:
-                span.context["db"]["rows_affected"] = hits
+                span.update_context("db", {"rows_affected": hits})
 
             return result_data
