@@ -28,4 +28,6 @@ include::./sanic.asciidoc[]
 
 include::./serverless.asciidoc[]
 
+include::./serverless-azure-functions.asciidoc[]
+
 include::./wrapper.asciidoc[]
