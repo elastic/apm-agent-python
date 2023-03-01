@@ -101,11 +101,12 @@ class _ServerInterceptor(grpc.ServerInterceptor):
                 transaction = client.begin_transaction("request", trace_parent=tp)
                 try:
                     result = behavior(request_or_iterator, _ServicerContextWrapper(context, transaction))
-                    if not transaction.outcome:
+                    if transaction and not transaction.outcome:
                         transaction.set_success()
                     return result
                 except Exception:
-                    transaction.set_failure()
+                    if transaction:
+                        transaction.set_failure()
                     client.capture_exception(handled=False)
                     raise
                 finally:
