@@ -238,15 +238,15 @@ def modify_span_sqs_post(span: SpanType, args, kwargs, result):
                 span.add_link(tp)
 
 
-def handle_default(operation_name, service, instance, args, kwargs, destination):
+def handle_default(operation_name, service, instance, args, kwargs, context):
     span_type = "aws"
     span_subtype = service.lower()
     span_action = operation_name
 
-    destination["service"] = {"name": span_subtype, "resource": span_subtype, "type": span_type}
+    context["destination"]["service"] = {"name": span_subtype, "resource": span_subtype, "type": span_type}
 
     signature = f"{service}:{operation_name}"
-    return HandlerInfo(signature, span_type, span_subtype, span_action, destination)
+    return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 
 
 handlers = {

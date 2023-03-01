@@ -39,6 +39,7 @@ endif::[]
 [float]
 ===== Bug fixes
 
+* Fix issue with botocore instrumentation creating spans with an incorrect `service.name` {pull}1765[#1765]
 * Fix a bug in the GRPC instrumentation when the agent is disabled or not recording {pull}1761[#1761]
 
 
