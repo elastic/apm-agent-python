@@ -29,6 +29,20 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+
+[float]
+===== Bug fixes
+
+* Fix issue with botocore instrumentation creating spans with an incorrect `service.name` {pull}1765[#1765]
+* Fix a bug in the GRPC instrumentation when the agent is disabled or not recording {pull}1761[#1761]
+
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 

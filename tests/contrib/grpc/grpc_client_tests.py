@@ -50,13 +50,16 @@ from .grpc_app.testgrpc_pb2_grpc import TestServiceStub
 
 
 @pytest.fixture()
-def grpc_server(validating_httpserver):
+def grpc_server(validating_httpserver, request):
+    config = getattr(request, "param", {})
+    env = {f"ELASTIC_APM_{k.upper()}": str(v) for k, v in config.items()}
+    env.setdefault("ELASTIC_APM_SERVER_URL", validating_httpserver.url)
     free_port = get_free_port()
     server_proc = subprocess.Popen(
         [os.path.join(sys.prefix, "bin", "python"), "-m", "tests.contrib.grpc.grpc_app.server", str(free_port)],
         stdout=sys.stdout,
         stderr=sys.stdout,
-        env={"ELASTIC_APM_SERVER_URL": validating_httpserver.url},
+        env=env,
     )
     wait_for_open_port(free_port)
     yield f"localhost:{free_port}"
@@ -178,7 +181,7 @@ def test_grpc_client_server_exception(instrument, sending_elasticapm_client, grp
     assert error["transaction_id"] == server_transactions[0]["id"]
 
 
-def test_grpc_client_unsampled_transaction(instrument, sending_elasticapm_client, grpc_client_and_server_url):
+def test_grpc_client_unsampled_span(instrument, sending_elasticapm_client, grpc_client_and_server_url):
     grpc_client, grpc_server_url = grpc_client_and_server_url
     grpc_server_host, grpc_server_port = grpc_server_url.split(":")
     transaction = sending_elasticapm_client.begin_transaction("request")
@@ -194,6 +197,26 @@ def test_grpc_client_unsampled_transaction(instrument, sending_elasticapm_client
         time.sleep(0.01)
     transaction_data = payloads[1][1]["transaction"]
     assert transaction_data["span_count"]["started"] == 0
+
+
+@pytest.mark.parametrize(
+    "grpc_server",
+    [
+        {
+            "recording": "False",
+        }
+    ],
+    indirect=True,
+)
+def test_grpc_client_unsampled_transaction(instrument, sending_elasticapm_client, grpc_client_and_server_url):
+    grpc_client, grpc_server_url = grpc_client_and_server_url
+    grpc_client.GetServerResponse(Message(message="foo"))
+    payloads = sending_elasticapm_client.httpserver.payloads
+    for i in range(100):
+        if len(sending_elasticapm_client.httpserver.payloads) > 1:
+            break
+        time.sleep(0.01)
+    assert len(payloads) == 1  # only the server_version request
 
 
 def extract_events_from_payload(service_name, payloads):
