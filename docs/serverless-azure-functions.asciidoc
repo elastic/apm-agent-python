@@ -6,7 +6,7 @@ Incorporating Elastic APM into your Azure Functions App is straight forward!
 [float]
 ==== Prerequisites
 
-You need an APM Server to send APM data to.
+You need an APM Server to which you can send APM data.
 Follow the {apm-guide-ref}/apm-quick-start.html[APM Quick start] if you have not set one up yet.
 For the best-possible performance, we recommend setting up APM on {ecloud} in the same Azure region as your Azure Functions app.
 
