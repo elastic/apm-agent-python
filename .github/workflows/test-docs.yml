@@ -27,7 +27,7 @@ jobs:
           cat > python-agent-junit.xml << ENDOFFILE
           <?xml version="1.0" encoding="UTF-8"?>
           <testsuites name="apm-agent-python" tests="1" failures="0" errors="0" time="1">
-            <testsuite name="apm-agent-python-docs" errors="0" failures="0" skipped="1" time="1" tests=1">
+            <testsuite name="apm-agent-python-docs" errors="0" failures="0" skipped="1" time="1" tests="1">
               <testcase classname="docs" name="Skipped test" time="0">
                 <skipped/>
               </testcase>
