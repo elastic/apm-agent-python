@@ -24,7 +24,7 @@ jobs:
       # case
       - name: Generate junit placeholder - to integrate with test-reporter
         run: |-
-          cat > python-agent-junit.xml << ENDOFFILE
+          cat > docs-python-agent-junit.xml << ENDOFFILE
           <?xml version="1.0" encoding="UTF-8"?>
           <testsuites name="apm-agent-python" tests="1" failures="0" errors="0" time="1">
             <testsuite name="apm-agent-python-docs" errors="0" failures="0" skipped="1" time="1" tests="1">
@@ -39,4 +39,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: test-results
-          path: "python-agent-junit.xml"
+          path: "docs-python-agent-junit.xml"
