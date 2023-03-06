@@ -18,3 +18,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "No build required"'
+      # As long as this workflow uses the same name than .github/workflows/test.yml and
+      # the test-reporter requires artifacts with the test results to exist.
+      # let's produce a dummy test so the test-report don't fail in this particular
+      # case
+      - name: Generate junit placeholder - to integrate with test-reporter
+        run: |-
+          cat > python-agent-junit.xml << ENDOFFILE
+          <?xml version="1.0" encoding="UTF-8"?>
+          <testsuites name="apm-agent-python" tests="1" failures="0" errors="0" time="1">
+            <testsuite name="apm-agent-python-docs" errors="0" failures="3" skipped="0" time="1" tests=1">
+              <testcase classname="docs" name="Skipped test" time="0">
+                <skipped/>
+              </testcase>
+            </testsuite>
+          </testsuites>
+          ENDOFFILE
+      - if: success() || failure()
+        name: Upload JUnit Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "python-agent-junit.xml"
