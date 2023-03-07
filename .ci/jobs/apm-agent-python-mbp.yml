@@ -19,7 +19,7 @@
         repo: apm-agent-python
         repo-owner: elastic
         credentials-id: 2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken
-        head-filter-regex: '^v[0-9].*$'
+        head-filter-regex: '^(main|PR-.*)$' # We still need this to run benchmarks on main and on PRs
         ssh-checkout:
           credentials: f6c7695a-671e-4f4f-a331-acdce44ff9ba
         build-strategies:
