@@ -53,12 +53,6 @@ pipeline {
             deleteDir()
             gitCheckout(basedir: "${BASE_DIR}", githubNotifyFirstTimeContributor: true)
             stash allowEmpty: true, name: 'source', useDefaultExcludes: false
-            script {
-              dir("${BASE_DIR}"){
-                // Skip all the stages except docs for PR's with asciidoc and md changes only
-                env.ONLY_DOCS = isGitRegionMatch(patterns: [ '.*\\.(asciidoc|md)' ], shouldMatchAll: true)
-              }
-            }
           }
         }
         stage('Benchmarks') {
