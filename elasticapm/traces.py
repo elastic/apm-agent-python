@@ -539,7 +539,7 @@ class Span(BaseSpan):
         """
         self.id = self.get_dist_tracing_id()
         self.transaction = transaction
-        self.name = name
+        self.name = name or "unnamed"
         self.context = context if context is not None else {}
         self.leaf = leaf
         # timestamp is bit of a mix of monotonic and non-monotonic time sources.
