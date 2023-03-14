@@ -152,7 +152,7 @@ class Client(object):
             "processors": self.load_processors(),
         }
         if config.transport_json_serializer:
-            transport_kwargs['json_serializer'] = config.transport_json_serializer
+            transport_kwargs["json_serializer"] = config.transport_json_serializer
 
         self._api_endpoint_url = urllib.parse.urljoin(
             self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
