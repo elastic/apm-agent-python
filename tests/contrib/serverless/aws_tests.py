@@ -96,6 +96,16 @@ def event_sns():
 
 
 @pytest.fixture
+def event_list():
+    """
+    Lambda functions can receive the raw output of Step Functions as the event.
+    Because it's any valid JSON, it can be a list as well, with no useful
+    context information.
+    """
+    return ["foo", "bar", "baz"]
+
+
+@pytest.fixture
 def context():
     return SampleContext()
 
@@ -383,3 +393,18 @@ def test_service_name_override(event_api, context, elasticapm_client):
     test_func(event_api, context)
 
     assert elasticapm_client._transport._metadata["service"]["name"] == "override"
+
+
+def test_capture_serverless_list_event(event_list, context, elasticapm_client):
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
+
+    @capture_serverless
+    def test_func(event, context):
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    test_func(event_list, context)
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+
+    assert transaction["name"] == "test_func"
