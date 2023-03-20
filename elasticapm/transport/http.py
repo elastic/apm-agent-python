@@ -112,7 +112,7 @@ class Transport(HTTPTransportBase):
                     print_trace = True
                 message += body.decode("utf8", errors="replace")[:10000]
                 raise TransportException(message, data, print_trace=print_trace)
-            return response.getheader("Location")
+            return response.headers.get("Location")
         finally:
             if response:
                 response.close()
