@@ -28,8 +28,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import codecs
-import json
 import os
 import threading
 from http.cookies import SimpleCookie
@@ -85,11 +83,13 @@ class AzureFunctionsClient(Client):
 
 
 class ElasticAPMExtension(AppExtensionBase):
-    functions = {}
     client = None
 
     @classmethod
     def init(cls):
+        """The function will be executed when the extension is loaded.
+        Happens when Azure Functions customers import the extension module.
+        """
         elasticapm.instrument()
 
     @classmethod
@@ -120,12 +120,11 @@ class ElasticAPMExtension(AppExtensionBase):
         cls.client = client
 
     @classmethod
-    def post_function_load_app_level(cls, function_name: str, function_directory: str, *args, **kwargs):
-        with codecs.open(os.path.join(function_directory, "function.json")) as f:
-            cls.functions[function_name] = json.load(f)
-
-    @classmethod
     def pre_invocation_app_level(cls, logger, context, func_args: Dict[str, object] = None, *args, **kwargs):
+        """
+        This must be implemented as a @staticmethod. It will be called right
+        before a customer's function is being executed.
+        """
         client = cls.client
         if not client:
             return
