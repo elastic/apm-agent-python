@@ -543,7 +543,7 @@ class WrapperConfig(_ConfigBase):
     instrument = _BoolConfigValue("INSTRUMENT", default=True)
 
 
-class Config(WrapperConfig):
+class Config(_ConfigBase):
     service_name = _ConfigValue(
         "SERVICE_NAME",
         validators=[RegexValidator("^[a-zA-Z0-9 _-]+$")],
@@ -653,7 +653,9 @@ class Config(WrapperConfig):
     framework_version = _ConfigValue("FRAMEWORK_VERSION")
     global_labels = _DictConfigValue("GLOBAL_LABELS")
     disable_send = _BoolConfigValue("DISABLE_SEND", default=False)
+    enabled = _BoolConfigValue("ENABLED", default=True)
     recording = _BoolConfigValue("RECORDING", default=True)
+    instrument = _BoolConfigValue("INSTRUMENT", default=True)
     enable_distributed_tracing = _BoolConfigValue("ENABLE_DISTRIBUTED_TRACING", default=True)
     capture_headers = _BoolConfigValue("CAPTURE_HEADERS", default=True)
     django_transaction_name_from_route = _BoolConfigValue("DJANGO_TRANSACTION_NAME_FROM_ROUTE", default=False)
