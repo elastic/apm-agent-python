@@ -29,6 +29,21 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+
+[float]
+===== Bug fixes
+
+* Fix spans being dropped if they don't have a name {pull}1770[#1770]
+* Fix AWS Lambda support when `event` is a list {pull}1775[#1775]
+* Fix deprecation warning with urllib3 2.0.0 pre-release versions {pull}1778[#1778]
+
+
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
