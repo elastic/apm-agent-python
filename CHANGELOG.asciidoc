@@ -35,6 +35,8 @@ endif::[]
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
 [float]
 ===== Features
+
+* Implement instrumentation of Azure Functions {pull}1766[#1766]
 * Add support for Django to wrapper script {pull}1780[#1780]
 
 [float]
