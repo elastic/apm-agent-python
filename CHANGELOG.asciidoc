@@ -33,8 +33,9 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
+[float]
+===== Features
+* Implement instrumentation of Azure Functions {pull}1766[#1766]
 
 [float]
 ===== Bug fixes
