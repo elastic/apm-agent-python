@@ -29,16 +29,17 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import elasticapm
-from elasticapm import Client
+from elasticapm.conf import WrapperConfig
 from elasticapm.instrumentation.register import register_wrapper_instrumentations
 
 
 def setup():
-    client = Client()
-    client.activation_method = "wrapper"
+    config = WrapperConfig()
     register_wrapper_instrumentations()
-    if client.config.instrument and client.config.enabled:
+    if config.instrument and config.enabled:
         elasticapm.instrument()
+    if elasticapm._activation_method is None:
+        elasticapm._activation_method = "wrapper"
 
 
 setup()

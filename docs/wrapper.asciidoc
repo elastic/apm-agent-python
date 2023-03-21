@@ -6,6 +6,7 @@ experimental::[]
 The following frameworks are supported using our new wrapper script for
 no-code-changes instrumentation:
 
+ * Django
  * Flask
 
 Please keep in mind that these instrumentations are a work in progress! We'd
