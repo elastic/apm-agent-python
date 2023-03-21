@@ -225,3 +225,12 @@ def test_transaction_outcome_override(elasticapm_client):
 
     elasticapm.set_transaction_outcome(constants.OUTCOME.SUCCESS, override=True)
     assert transaction.outcome == constants.OUTCOME.SUCCESS
+
+
+def test_empty_span_name(elasticapm_client):
+    transaction = elasticapm_client.begin_transaction("test")
+    with elasticapm.capture_span():
+        pass
+    elasticapm_client.end_transaction("test")
+
+    assert elasticapm_client.events[SPAN][0]["name"] == "unnamed"

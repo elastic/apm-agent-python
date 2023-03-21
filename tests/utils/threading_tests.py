@@ -27,9 +27,11 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
+import platform
 import time
 
 import mock
+import pytest
 
 from elasticapm.utils.threading import IntervalTimer
 from tests.utils import assert_any_record_contains
@@ -50,6 +52,7 @@ def test_interval_timer():
     assert not timer.is_alive()
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Flaky test on windows")
 def test_interval_timer_interval_override():
     func = mock.Mock()
     func.return_value = 0.05

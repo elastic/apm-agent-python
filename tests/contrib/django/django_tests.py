@@ -1333,7 +1333,7 @@ def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
 @mock.patch("elasticapm.transport.http.urllib3.PoolManager.urlopen")
 def test_test_exception(urlopen_mock):
     stdout = io.StringIO()
-    resp = mock.Mock(status=200, getheader=lambda h: "http://example.com")
+    resp = mock.Mock(status=200, headers={})
     urlopen_mock.return_value = resp
     with override_settings(
         **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
