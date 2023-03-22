@@ -41,7 +41,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix spans being dropped if they don't have a name {pull}1770[#1770]
-* Fix AWS Lambda support when `event` is a list {pull}1775[#1775]
+* Fix AWS Lambda support when `event` is not a dict {pull}1775[#1775]
 * Fix deprecation warning with urllib3 2.0.0 pre-release versions {pull}1778[#1778]
 
 
