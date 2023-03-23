@@ -1,9 +1,9 @@
 name: update-specs
-
+pipelineid: update-schema-specs
 title: synchronize schema specs
 
 scms:
-  apm-agent-python:
+  default:
     kind: github
     spec:
       user: '{{ requiredEnv "GIT_USER" }}'
@@ -44,15 +44,11 @@ sources:
     spec:
       file: https://raw.githubusercontent.com/elastic/apm-data/main/input/elasticapm/docs/spec/v2/transaction.json
 
-
-
-
-
 actions:
   pr:
     kind: "github/pullrequest"
-    scmid: "apm-agent-python"
-    sourceid: sha
+    scmid: default
+    title: '[Automation] Update JSON schema specs'
     spec:
       automerge: false
       draft: false
