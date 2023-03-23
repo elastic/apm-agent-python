@@ -64,7 +64,7 @@ actions:
 targets:
   error.json:
     name: error.json
-    scmid: apm-agent-python
+    scmid: default
     sourceid: error.json
     kind: file
     spec:
@@ -72,7 +72,7 @@ targets:
       forcecreate: true
   metadata.json:
     name: metadata.json
-    scmid: apm-agent-python
+    scmid: default
     sourceid: metadata.json
     kind: file
     spec:
@@ -80,7 +80,7 @@ targets:
       forcecreate: true
   metricset.json:
     name: metricset.json
-    scmid: apm-agent-python
+    scmid: default
     sourceid: metricset.json
     kind: file
     spec:
@@ -88,7 +88,7 @@ targets:
       forcecreate: true
   span.json:
     name: span.json
-    scmid: apm-agent-python
+    scmid: default
     sourceid: span.json
     kind: file
     spec:
@@ -96,7 +96,7 @@ targets:
       forcecreate: true
   transaction.json:
     name: transaction.json
-    scmid: apm-agent-python
+    scmid: default
     sourceid: transaction.json
     kind: file
     spec:
