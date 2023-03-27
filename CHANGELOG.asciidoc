@@ -33,8 +33,10 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
+[float]
+===== Features
+
+* Add `transport_json_serializer` configuration option {pull}1777[#1777]
 
 [float]
 ===== Bug fixes
