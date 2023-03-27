@@ -385,7 +385,8 @@ class Transaction(BaseSpan):
         return self.trace_parent.span_id
 
     def to_dict(self) -> dict:
-        self.context["tags"] = self.labels
+        context = self.context.copy()
+        context["tags"] = self.labels
         result = {
             "id": self.id,
             "trace_id": self.trace_parent.trace_id,
@@ -419,26 +420,26 @@ class Transaction(BaseSpan):
         if self.links:
             result["links"] = self.links
         # faas context belongs top-level on the transaction
-        if "faas" in self.context:
-            result["faas"] = self.context.pop("faas")
+        if "faas" in context:
+            result["faas"] = context.pop("faas")
         # otel attributes and spankind need to be top-level
-        if "otel_spankind" in self.context:
-            result["otel"] = {"span_kind": self.context.pop("otel_spankind")}
+        if "otel_spankind" in context:
+            result["otel"] = {"span_kind": context.pop("otel_spankind")}
         # Some transaction_store_tests use the Tracer without a Client -- the
         # extra check against `get_client()` is here to make those tests pass
         if elasticapm.get_client() and elasticapm.get_client().check_server_version(gte=(7, 16)):
-            if "otel_attributes" in self.context:
+            if "otel_attributes" in context:
                 if "otel" not in result:
-                    result["otel"] = {"attributes": self.context.pop("otel_attributes")}
+                    result["otel"] = {"attributes": context.pop("otel_attributes")}
                 else:
-                    result["otel"]["attributes"] = self.context.pop("otel_attributes")
+                    result["otel"]["attributes"] = context.pop("otel_attributes")
         else:
             # Attributes map to labels for older versions
-            attributes = self.context.pop("otel_attributes", {})
+            attributes = context.pop("otel_attributes", {})
             for key, value in attributes.items():
                 result["context"]["tags"][key] = value
         if self.is_sampled:
-            result["context"] = self.context
+            result["context"] = context
         return result
 
     def track_span_duration(self, span_type, span_subtype, self_duration):

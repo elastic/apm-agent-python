@@ -35,6 +35,7 @@ import json
 import os
 import platform
 import time
+import urllib
 import warnings
 from typing import Optional, TypeVar
 from urllib.parse import urlencode
@@ -42,6 +43,7 @@ from urllib.parse import urlencode
 import elasticapm
 from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
+from elasticapm.traces import execution_context
 from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
@@ -221,6 +223,7 @@ class _lambda_transaction(object):
                 "request",
             )
         self.set_metadata_and_context(cold_start)
+        self.send_partial_transaction()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -404,6 +407,41 @@ class _lambda_transaction(object):
         if message_context:
             elasticapm.set_context(message_context, "message")
         self.client._transport.add_metadata(metadata)
+
+    def send_partial_transaction(self):
+        """
+        We synchronously send the (partial) transaction to the Lambda Extension
+        so that the transaction can be reported even if the lambda runtime times
+        out before we can report the transaction.
+
+        This is pretty specific to the HTTP transport. If we ever add other
+        transports, we will need to clean this up.
+        """
+        if os.environ.get("ELASITC_APM_LAMBDA_APM_SERVER") and (
+            "localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url
+        ):
+            transport = self.client._transport
+            buffer = transport._init_buffer()
+            buffer.write(
+                (
+                    transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()}) + "\n"
+                ).encode("utf-8")
+            )
+            fileobj = buffer.fileobj
+            buffer.close()
+            data = fileobj.getbuffer()
+            partial_transaction_url = urllib.parse.urljoin(
+                self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
+                "register/transaction",
+            )
+            try:
+                self.client._transport.send(
+                    data,
+                    custom_url=partial_transaction_url,
+                    extra_headers={"x-elastic-aws-request-id": self.context.aws_request_id},
+                )
+            except Exception:
+                logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
 
 
 def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:
