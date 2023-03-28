@@ -392,7 +392,7 @@ class Transaction(BaseSpan):
             "trace_id": self.trace_parent.trace_id,
             "name": encoding.keyword_field(self.name or ""),
             "type": encoding.keyword_field(self.transaction_type),
-            "duration": self.duration.total_seconds() * 1000,
+            "duration": self.duration.total_seconds() * 1000 if self.duration else None,
             "result": encoding.keyword_field(str(self.result)),
             "timestamp": int(self.timestamp * 1_000_000),  # microseconds
             "outcome": self.outcome,
