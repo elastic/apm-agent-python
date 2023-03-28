@@ -417,7 +417,7 @@ class _lambda_transaction(object):
         This is pretty specific to the HTTP transport. If we ever add other
         transports, we will need to clean this up.
         """
-        if os.environ.get("ELASITC_APM_LAMBDA_APM_SERVER") and (
+        if os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER") and (
             "localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url
         ):
             transport = self.client._transport
