@@ -431,7 +431,9 @@ class _lambda_transaction(object):
             buffer.close()
             data = fileobj.getbuffer()
             partial_transaction_url = urllib.parse.urljoin(
-                self.config.server_url if self.config.server_url.endswith("/") else self.config.server_url + "/",
+                self.client.config.server_url
+                if self.client.config.server_url.endswith("/")
+                else self.client.config.server_url + "/",
                 "register/transaction",
             )
             try:
