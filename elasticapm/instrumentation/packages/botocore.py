@@ -123,7 +123,7 @@ def handle_s3(operation_name, service, instance, args, kwargs, context):
         bucket = ""
     signature = f"S3 {operation_name} {bucket}"
 
-    context["destination"]["service"] = {"name": span_subtype, "resource": bucket, "type": span_type}
+    context["destination"]["service"] = {"name": span_subtype, "resource": f"s3/{bucket}", "type": span_type}
 
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 

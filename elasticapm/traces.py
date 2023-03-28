@@ -452,7 +452,7 @@ class Transaction(BaseSpan):
         return self._is_sampled
 
     @is_sampled.setter
-    def is_sampled(self, is_sampled):
+    def is_sampled(self, is_sampled: bool):
         """
         This should never be called in normal operation, but often is used
         for testing. We just want to make sure our sample_rate comes out correctly

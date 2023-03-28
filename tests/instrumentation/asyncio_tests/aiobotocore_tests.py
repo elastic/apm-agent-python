@@ -119,7 +119,7 @@ async def test_s3(instrument, elasticapm_client, session):
         assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
         assert span["context"]["destination"]["service"]["name"] == "s3"
-        assert span["context"]["destination"]["service"]["resource"] == "xyz"
+        assert span["context"]["destination"]["service"]["resource"] == "s3/xyz"
         assert span["context"]["destination"]["service"]["type"] == "storage"
     assert spans[0]["name"] == "S3 CreateBucket xyz"
     assert spans[0]["action"] == "CreateBucket"

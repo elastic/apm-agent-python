@@ -10,7 +10,7 @@ on:
       - snapshoty
       - release
       - packages
-      - update-specs
+      - updatecli
     types: [completed]
 
 jobs:

@@ -222,6 +222,7 @@ def original_exception_hook(request):
 def elasticapm_client(request):
     original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
+    client_class = client_config.pop("client_class", TempStoreClient)
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
@@ -232,7 +233,7 @@ def elasticapm_client(request):
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("exit_span_min_duration", "0ms")
-    client = TempStoreClient(**client_config)
+    client = client_class(**client_config)
     yield client
     client.close()
     # clear any execution context that might linger around
