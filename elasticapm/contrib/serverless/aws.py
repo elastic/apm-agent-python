@@ -438,6 +438,16 @@ class _lambda_transaction(object):
                 )
             except Exception:
                 logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
+            transport = self.client._transport
+            buffer = transport._init_buffer()
+            transport._write_metadata(buffer)
+            fileobj = buffer.fileobj
+            buffer.close()
+            data = fileobj.getbuffer()
+            try:
+                self.client._transport.send(data)
+            except Exception:
+                logger.warning("Failed to send early metadata to APM Lambda Extension", exc_info=True)
 
 
 def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:
