@@ -54,6 +54,7 @@ logger = get_logger("elasticapm.serverless")
 
 COLD_START = True
 INSTRUMENTED = False
+REGISTER_PARTIAL_TRANSACTIONS = True
 
 _AWSLambdaContextT = TypeVar("_AWSLambdaContextT")
 
@@ -260,11 +261,11 @@ class _lambda_transaction(object):
         self.client.metrics.collect()
 
         try:
-            logger.debug("flushing elasticapm")
+            logger.debug("Flushing elasticapm data")
             self.client._transport.flush()
-            logger.debug("done flushing elasticapm")
+            logger.debug("Flush complete")
         except ValueError:
-            logger.warning("flush timed out")
+            logger.warning("Flush timed out")
 
     def set_metadata_and_context(self, coldstart: bool) -> None:
         """
@@ -417,9 +418,12 @@ class _lambda_transaction(object):
         This is pretty specific to the HTTP transport. If we ever add other
         transports, we will need to clean this up.
         """
-        if os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER") and (
-            "localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url
+        if (
+            REGISTER_PARTIAL_TRANSACTIONS
+            and os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER")
+            and ("localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url)
         ):
+            logger.debug("Sending partial transaction and early metadata to the lambda extension...")
             data = json.dumps({"transaction": execution_context.get_transaction().to_dict()})
             partial_transaction_url = urllib.parse.urljoin(
                 self.client.config.server_url
@@ -436,8 +440,16 @@ class _lambda_transaction(object):
                         "Content-Type": "application/vnd.elastic.apm.transaction+json",
                     },
                 )
-            except Exception:
-                logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
+            except Exception as e:
+                if "HTTP 404" in str(e):
+                    global REGISTER_PARTIAL_TRANSACTIONS
+                    REGISTER_PARTIAL_TRANSACTIONS = False
+                    logger.info(
+                        "APM Lambda Extension does not support partial transactions. "
+                        "Disabling partial transaction registration."
+                    )
+                else:
+                    logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
             transport = self.client._transport
             buffer = transport._init_buffer()
             transport._write_metadata(buffer)
