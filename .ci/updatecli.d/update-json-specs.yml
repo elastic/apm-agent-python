@@ -1,5 +1,6 @@
-name: update-jsons-specs
+name: update-json-specs
 pipelineid: update-json-specs
+title: synchronize json specs
 
 scms:
   default:
@@ -51,12 +52,13 @@ sources:
     kind: file
     spec:
       file: https://raw.githubusercontent.com/elastic/apm/main/tests/agents/json-specs/wildcard_matcher_tests.json
+
 actions:
   pr:
     kind: "github/pullrequest"
     scmid: default
+    title: '[Automation] Update JSON specs'
     spec:
-      title: Update JSON specs
       automerge: false
       draft: false
       labels:

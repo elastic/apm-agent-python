@@ -38,14 +38,22 @@ endif::[]
 
 * Implement instrumentation of Azure Functions {pull}1766[#1766]
 * Add support for Django to wrapper script {pull}1780[#1780]
+* Add `transport_json_serializer` configuration option {pull}1777[#1777]
 
 [float]
 ===== Bug fixes
 
 * Fix spans being dropped if they don't have a name {pull}1770[#1770]
-* Fix AWS Lambda support when `event` is a list {pull}1775[#1775]
+* Fix AWS Lambda support when `event` is not a dict {pull}1775[#1775]
 * Fix deprecation warning with urllib3 2.0.0 pre-release versions {pull}1778[#1778]
-
+* Fix span.context.destination.service.resource for S3 spans to have an "s3/" prefix. {pull}1783[#1783]
++
+*Note*: While this is considered a bugfix, it can potentially be a breaking
+change in the Kibana APM app: It can break the history of the S3-Spans / metrics
+for users relying on `context.destination.service.resource`. If users happen to
+run agents both with and without this fix (for same or different languages), the
+same S3-buckets can appear twice in the service map (with and without
+s3-prefix).
 
 
 [[release-notes-6.x]]
