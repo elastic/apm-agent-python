@@ -70,19 +70,20 @@ class Transport(HTTPTransportBase):
         self._http = None
         self._url = url
 
-    def send(self, data, forced_flush=False, custom_url=None, extra_headers=None):
+    def send(self, data, forced_flush=False, custom_url=None, override_headers=None):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        headers.update(
-            {
-                b"Content-Type": b"application/x-ndjson",
-                b"Content-Encoding": b"gzip",
-            }
-        )
-        if extra_headers:
-            headers.update(extra_headers)
+        if override_headers:
+            headers.update(override_headers)
+        else:
+            headers.update(
+                {
+                    b"Content-Type": b"application/x-ndjson",
+                    b"Content-Encoding": b"gzip",
+                }
+            )
 
         url = custom_url or self._url
         if forced_flush:

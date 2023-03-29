@@ -420,16 +420,7 @@ class _lambda_transaction(object):
         if os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER") and (
             "localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url
         ):
-            transport = self.client._transport
-            buffer = transport._init_buffer()
-            buffer.write(
-                (
-                    transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()}) + "\n"
-                ).encode("utf-8")
-            )
-            fileobj = buffer.fileobj
-            buffer.close()
-            data = fileobj.getbuffer()
+            data = json.dumps({"transaction": execution_context.get_transaction().to_dict()})
             partial_transaction_url = urllib.parse.urljoin(
                 self.client.config.server_url
                 if self.client.config.server_url.endswith("/")
@@ -440,7 +431,7 @@ class _lambda_transaction(object):
                 self.client._transport.send(
                     data,
                     custom_url=partial_transaction_url,
-                    extra_headers={
+                    override_headers={
                         "x-elastic-aws-request-id": self.context.aws_request_id,
                         "Content-Type": "application/vnd.elastic.apm.transaction+json",
                     },
