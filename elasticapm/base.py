@@ -109,7 +109,7 @@ class Client(object):
         self._service_info = None
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
-        self.activation_method = None
+        self.activation_method = elasticapm._activation_method
 
         self.check_python_version()
 

@@ -538,6 +538,11 @@ class _ConfigBase(object):
         return c
 
 
+class WrapperConfig(_ConfigBase):
+    enabled = _BoolConfigValue("ENABLED", default=True)
+    instrument = _BoolConfigValue("INSTRUMENT", default=True)
+
+
 class Config(_ConfigBase):
     service_name = _ConfigValue(
         "SERVICE_NAME",

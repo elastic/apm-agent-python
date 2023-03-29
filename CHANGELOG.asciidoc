@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Implement instrumentation of Azure Functions {pull}1766[#1766]
+* Add support for Django to wrapper script {pull}1780[#1780]
 * Add `transport_json_serializer` configuration option {pull}1777[#1777]
 
 [float]
