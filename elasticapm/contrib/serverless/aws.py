@@ -440,7 +440,10 @@ class _lambda_transaction(object):
                 self.client._transport.send(
                     data,
                     custom_url=partial_transaction_url,
-                    extra_headers={"x-elastic-aws-request-id": self.context.aws_request_id},
+                    extra_headers={
+                        "x-elastic-aws-request-id": self.context.aws_request_id,
+                        "Content-Type": "application/vnd.elastic.apm.transaction+json",
+                    },
                 )
             except Exception:
                 logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
