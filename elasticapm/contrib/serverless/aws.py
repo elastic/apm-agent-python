@@ -450,6 +450,7 @@ class _lambda_transaction(object):
                     )
                 else:
                     logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
+                return  # No need for early metadata if we can't send partial transactions
             transport = self.client._transport
             buffer = transport._init_buffer()
             transport._write_metadata(buffer)
