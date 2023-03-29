@@ -418,6 +418,7 @@ class _lambda_transaction(object):
         This is pretty specific to the HTTP transport. If we ever add other
         transports, we will need to clean this up.
         """
+        global REGISTER_PARTIAL_TRANSACTIONS
         if (
             REGISTER_PARTIAL_TRANSACTIONS
             and os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER")
@@ -442,7 +443,6 @@ class _lambda_transaction(object):
                 )
             except Exception as e:
                 if "HTTP 404" in str(e):
-                    global REGISTER_PARTIAL_TRANSACTIONS
                     REGISTER_PARTIAL_TRANSACTIONS = False
                     logger.info(
                         "APM Lambda Extension does not support partial transactions. "
