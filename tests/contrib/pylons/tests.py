@@ -31,6 +31,7 @@
 
 from __future__ import absolute_import
 
+import elasticapm
 from elasticapm.contrib.pylons import ElasticAPM
 from tests.fixtures import TempStoreClient
 
@@ -51,3 +52,4 @@ def test_init():
     assert middleware.client.config.service_name == "p" * 32
     assert middleware.client.config.secret_token == "a" * 32
     assert middleware.client.config.metrics_interval.total_seconds() == 0
+    elasticapm.get_client().close()
