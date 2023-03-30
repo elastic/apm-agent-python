@@ -355,7 +355,7 @@ class Client(object):
                 "version": keyword_field(runtime_version),
             },
         }
-        if self.activation_method:
+        if self.activation_method and self.check_server_version(gte=(8, 7, 1)):
             result["agent"]["activation_method"] = self.activation_method
         if self.config.framework_name:
             result["framework"] = {
@@ -680,7 +680,11 @@ class Client(object):
         if not self.server_version:
             return True
         gte = gte or (0,)
+        if len(gte) < 3:
+            gte = gte + (0,) * (3 - len(gte))
         lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
+        if len(lte) < 3:
+            lte = lte + (0,) * (3 - len(lte))
         return bool(gte <= self.server_version <= lte)
 
     @property
