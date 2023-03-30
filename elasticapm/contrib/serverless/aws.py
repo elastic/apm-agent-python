@@ -424,8 +424,10 @@ class _lambda_transaction(object):
             and os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER")
             and ("localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url)
         ):
+            transport = self.client._transport
             logger.debug("Sending partial transaction and early metadata to the lambda extension...")
-            data = json.dumps({"transaction": execution_context.get_transaction().to_dict()})
+            data = transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()}) + "\n"
+            data += transport._json_serializer({"metadata": transport._metadata})
             partial_transaction_url = urllib.parse.urljoin(
                 self.client.config.server_url
                 if self.client.config.server_url.endswith("/")
@@ -433,7 +435,7 @@ class _lambda_transaction(object):
                 "register/transaction",
             )
             try:
-                self.client._transport.send(
+                transport.send(
                     data,
                     custom_url=partial_transaction_url,
                     override_headers={
@@ -451,16 +453,6 @@ class _lambda_transaction(object):
                 else:
                     logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
                 return  # No need for early metadata if we can't send partial transactions
-            transport = self.client._transport
-            buffer = transport._init_buffer()
-            transport._write_metadata(buffer)
-            fileobj = buffer.fileobj
-            buffer.close()
-            data = fileobj.getbuffer()
-            try:
-                self.client._transport.send(data)
-            except Exception:
-                logger.warning("Failed to send early metadata to APM Lambda Extension", exc_info=True)
 
 
 def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:
