@@ -31,7 +31,6 @@
 
 from __future__ import absolute_import
 
-import elasticapm
 from elasticapm.contrib.pylons import ElasticAPM
 from tests.fixtures import TempStoreClient
 
