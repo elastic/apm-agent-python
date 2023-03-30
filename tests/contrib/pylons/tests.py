@@ -39,7 +39,7 @@ def example_app(environ, start_response):
     raise ValueError("hello world")
 
 
-def test_init(close_client):
+def test_init():
     config = {
         "elasticapm.server_url": "http://localhost/api/store",
         "elasticapm.service_name": "p" * 32,
