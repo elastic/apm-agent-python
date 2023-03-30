@@ -481,3 +481,18 @@ def always_uninstrument():
             elasticapm.uninstrument()
         except Exception:
             pass
+
+
+@pytest.fixture()
+def close_client():
+    """
+    Use this fixture if you create a Client as part of your test. It will
+    close the Client at the end of the test, without forcing you to wrap your
+    test in an ugly try:finally: block.
+    """
+    try:
+        yield
+    finally:
+        client = elasticapm.get_client()
+        if client:
+            client.close()

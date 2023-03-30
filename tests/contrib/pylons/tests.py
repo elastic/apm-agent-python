@@ -40,7 +40,7 @@ def example_app(environ, start_response):
     raise ValueError("hello world")
 
 
-def test_init():
+def test_init(close_client):
     config = {
         "elasticapm.server_url": "http://localhost/api/store",
         "elasticapm.service_name": "p" * 32,
@@ -52,4 +52,3 @@ def test_init():
     assert middleware.client.config.service_name == "p" * 32
     assert middleware.client.config.secret_token == "a" * 32
     assert middleware.client.config.metrics_interval.total_seconds() == 0
-    elasticapm.get_client().close()
