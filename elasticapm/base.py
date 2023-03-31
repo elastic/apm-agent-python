@@ -107,6 +107,7 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
+        self._server_version = None
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
         self.activation_method = elasticapm._activation_method
@@ -691,6 +692,17 @@ class Client(object):
     def _metrics(self):
         warnings.warn(DeprecationWarning("Use `client.metrics` instead"))
         return self.metrics
+
+    @property
+    def server_version(self):
+        return self._server_version
+
+    @server_version.setter
+    def server_version(self, new_version):
+        if new_version and len(new_version) < 3:
+            self.logger.debug("APM Server version is too short, padding with zeros")
+            new_version = new_version + (0,) * (3 - len(new_version))
+        self._server_version = new_version
 
 
 class DummyClient(Client):
