@@ -107,6 +107,7 @@ class Client(object):
         self.processors = []
         self.filter_exception_types_dict = {}
         self._service_info = None
+        self._server_version = None
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
         self.activation_method = elasticapm._activation_method
@@ -355,7 +356,7 @@ class Client(object):
                 "version": keyword_field(runtime_version),
             },
         }
-        if self.activation_method:
+        if self.activation_method and self.check_server_version(gte=(8, 7, 1)):
             result["agent"]["activation_method"] = self.activation_method
         if self.config.framework_name:
             result["framework"] = {
@@ -680,13 +681,28 @@ class Client(object):
         if not self.server_version:
             return True
         gte = gte or (0,)
+        if len(gte) < 3:
+            gte = gte + (0,) * (3 - len(gte))
         lte = lte or (2**32,)  # let's assume APM Server version will never be greater than 2^32
+        if len(lte) < 3:
+            lte = lte + (0,) * (3 - len(lte))
         return bool(gte <= self.server_version <= lte)
 
     @property
     def _metrics(self):
         warnings.warn(DeprecationWarning("Use `client.metrics` instead"))
         return self.metrics
+
+    @property
+    def server_version(self):
+        return self._server_version
+
+    @server_version.setter
+    def server_version(self, new_version):
+        if new_version and len(new_version) < 3:
+            self.logger.debug("APM Server version is too short, padding with zeros")
+            new_version = new_version + (0,) * (3 - len(new_version))
+        self._server_version = new_version
 
 
 class DummyClient(Client):
