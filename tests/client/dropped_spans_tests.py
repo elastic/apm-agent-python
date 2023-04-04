@@ -113,7 +113,9 @@ def test_transaction_max_span_dropped_statistics(elasticapm_client):
         assert entry["service_target_name"] == "foo"
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1, "server_version": (7, 15)}], indirect=True)
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"transaction_max_spans": 1, "server_version": (7, 15, 0)}], indirect=True
+)
 def test_transaction_max_span_dropped_statistics_not_collected_for_incompatible_server(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("not_dropped"):

@@ -46,6 +46,7 @@ endif::[]
 * Fix spans being dropped if they don't have a name {pull}1770[#1770]
 * Fix AWS Lambda support when `event` is not a dict {pull}1775[#1775]
 * Fix deprecation warning with urllib3 2.0.0 pre-release versions {pull}1778[#1778]
+* Fix `activation_method` to only send to APM server 8.7.1+ {pull}1787[#1787]
 * Fix span.context.destination.service.resource for S3 spans to have an "s3/" prefix. {pull}1783[#1783]
 +
 *Note*: While this is considered a bugfix, it can potentially be a breaking
