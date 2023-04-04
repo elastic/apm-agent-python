@@ -38,7 +38,9 @@ from elasticapm.utils import encoding
 from elasticapm.utils.disttracing import TraceParent
 
 
-@pytest.mark.parametrize("elasticapm_client", [{"server_version": (7, 15)}, {"server_version": (7, 16)}], indirect=True)
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"server_version": (7, 15, 0)}, {"server_version": (7, 16, 0)}], indirect=True
+)
 def test_transaction_span(elasticapm_client):
     elasticapm_client.begin_transaction("test")
     with elasticapm.capture_span("test", extra={"a": "b"}):
@@ -156,8 +158,8 @@ def test_collect_source_transactions(elasticapm_client):
 @pytest.mark.parametrize(
     "elasticapm_client",
     [
-        {"transaction_sample_rate": 0.4, "server_version": (7, 14)},
-        {"transaction_sample_rate": 0.4, "server_version": (8, 0)},
+        {"transaction_sample_rate": 0.4, "server_version": (7, 14, 0)},
+        {"transaction_sample_rate": 0.4, "server_version": (8, 0, 0)},
     ],
     indirect=True,
 )
@@ -175,7 +177,7 @@ def test_transaction_sampling(elasticapm_client, not_so_random):
 
     # seed is fixed by not_so_random fixture
     assert len([t for t in transactions if t["sampled"]]) == 3
-    if elasticapm_client.server_version < (8, 0):
+    if elasticapm_client.server_version < (8, 0, 0):
         assert len(transactions) == 10
     else:
         assert len(transactions) == 3
