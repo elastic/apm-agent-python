@@ -41,7 +41,8 @@ full_image_name="${REGISTRY}/${IMAGE_NAME}:${version}"
 for version in $versions; do
   case $ACTION in
   build)
-    docker build \
+    DOCKER_BUILDKIT=1 docker build \
+        --cache-from="${full_image_name}" \
         -f "${project_root}/tests/Dockerfile" \
         --build-arg PYTHON_IMAGE="${version/-/:}" \
         -t "${full_image_name}" \
