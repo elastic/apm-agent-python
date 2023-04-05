@@ -23,6 +23,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
+          file: tests/Dockerfile
           cache-from: elasticobservability/apm-agent-python:${{ matrix.version }}
           load: true
           tags: apm-agent-python:${{ matrix.version }}
