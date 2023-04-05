@@ -46,6 +46,7 @@ for version in $versions; do
     DOCKER_BUILDKIT=1 docker build \
         --cache-from="${full_image_name}" \
         -f "${project_root}/tests/Dockerfile" \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
         --build-arg PYTHON_IMAGE="${version/-/:}" \
         -t "${full_image_name}" \
         "${project_root}/tests"
