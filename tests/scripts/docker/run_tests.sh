@@ -48,9 +48,9 @@ fi
 # CASS_DRIVER_NO_EXTENSIONS is set so we don't build the Cassandra C-extensions,
 # as this can take several minutes
 
-DOCKER_BUILDKIT=1 docker build \
+DOCKER_BUILDKIT=1 docker build buildx \
   --progress=plain \
-  --cache-from="type=registry,ref=elasticobservability/apm-agent-python-testing:${1}" \
+  --cache-from="elasticobservability/apm-agent-python-testing:${1}" \
   --build-arg PYTHON_IMAGE="${1/-/:}" \
   --tag "apm-agent-python:${1}" \
   .
