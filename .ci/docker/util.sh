@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+export DOCKER_BUILDKIT=1
+
 project_root=$(dirname "$(dirname "$(dirname "$(realpath "$0" )")")")
 
 IMAGE_NAME="apm-agent-python-testing"
@@ -43,7 +45,7 @@ for version in $versions; do
 
   case $ACTION in
   build)
-    DOCKER_BUILDKIT=1 docker build \
+    docker build \
         --cache-from="${full_image_name}" \
         -f "${project_root}/tests/Dockerfile" \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
