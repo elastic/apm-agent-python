@@ -52,7 +52,7 @@ DOCKER_BUILDKIT=1 docker build \
   --progress=plain \
   --cache-from="elasticobservability/apm-agent-python-testing:${1}" \
   --build-arg PYTHON_IMAGE="${1/-/:}" \
-  --tag "apm-agent-python-testing:${1}" \
+  --tag "apm-agent-python:${1}" \
   .
 
 PYTHON_VERSION=${1} docker-compose run \
