@@ -36,9 +36,11 @@ while (( "$#" )); do
 done
 
 versions=$(yq '.VERSION[]' "${project_root}/.ci/.matrix_python_full.yml")
-full_image_name="${REGISTRY}/${IMAGE_NAME}:${version}"
 
 for version in $versions; do
+
+  full_image_name="${REGISTRY}/${IMAGE_NAME}:${version}"
+
   case $ACTION in
   build)
     DOCKER_BUILDKIT=1 docker build \
