@@ -36,6 +36,7 @@ while (( "$#" )); do
 done
 
 versions=$(yq '.VERSION[]' "${project_root}/.ci/.matrix_python_full.yml")
+full_image_name="${REGISTRY}/${IMAGE_NAME}:${version}"
 
 for version in $versions; do
   case $ACTION in
@@ -43,11 +44,11 @@ for version in $versions; do
     docker build \
         -f "${project_root}/tests/Dockerfile" \
         --build-arg PYTHON_IMAGE="${version/-/:}" \
-        -t "${REGISTRY}/${IMAGE_NAME}:${version}" \
+        -t "${full_image_name}" \
         "${project_root}/tests"
     ;;
   push)
-    docker push "${REGISTRY}/${IMAGE_NAME}:${version}"
+    docker push "${full_image_name}"
     ;;
   esac
 done
