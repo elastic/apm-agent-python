@@ -32,6 +32,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: PYTHON_IMAGE=${{ steps.image-name.outputs.image_name }}
           tags: "apm-agent-python:${{ matrix.version }}"
+          load: true
       - run: docker image ls
       - name: Run tests
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
