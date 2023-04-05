@@ -12,8 +12,6 @@ Utility script for building and pushing the images based on `.ci/.matrix_python_
 
 ## Usage
 
-The script must be executed from the repository root.
-
 ### Build
 
 To build the images run
