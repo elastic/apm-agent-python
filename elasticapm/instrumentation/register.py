@@ -99,6 +99,7 @@ if sys.version_info >= (3, 7):
 _wrapper_register = {
     "elasticapm.instrumentation.packages.flask.FlaskInstrumentation",
     "elasticapm.instrumentation.packages.django.DjangoAutoInstrumentation",
+    "elasticapm.instrumentation.packages.lambda.LambdaInstrumentation",
 }
 
 
