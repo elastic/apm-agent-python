@@ -22,7 +22,7 @@ To build the images run
   ./util.sh --action build
 ```
 
-You can set your own docker registry with the flag `--registry x.y.z/org`. The default is `elasticobservability.
+You can set your own docker registry with the flag `--registry x.y.z/org`. The default is `elasticobservability`.
 
 ### Push
 
