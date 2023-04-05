@@ -17,22 +17,10 @@ jobs:
       max-parallel: 5
       matrix:
         include: ${{ fromJSON(inputs.include) }}
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - uses: actions/checkout@v3
-      - id: image-name
-        run: |
-          IMAGE_NAME=${{ matrix.version }}
-          echo "image_name=${IMAGE_NAME/-/:}" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@v2
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: tests
-          file: tests/Dockerfile
-          cache-from: elasticobservability/apm-agent-python:${{ matrix.version }}
-          load: true
-          tags: elasticobservability/apm-agent-python:${{ matrix.version }}
-          build-args: PYTHON_IMAGE=${{ steps.image-name.outputs.image_name }}
       - name: Run tests
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
         env:
