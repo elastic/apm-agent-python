@@ -26,6 +26,7 @@ jobs:
           context: tests
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: PYTHON_IMAGE=${${{ matrix.version }}/-/:}
       - run: docker image ls
       - name: Run tests
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
