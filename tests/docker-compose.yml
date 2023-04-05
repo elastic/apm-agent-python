@@ -178,7 +178,7 @@ services:
       - zookeeper
 
   run_tests:
-    image: apm-agent-python:${PYTHON_VERSION}
+    image: elasticobservability/apm-agent-python:${PYTHON_VERSION}
     environment:
       ES_8_URL: 'http://elasticsearch8:9200'
       ES_7_URL: 'http://elasticsearch7:9200'
