@@ -31,7 +31,7 @@ jobs:
           file: tests/Dockerfile
           cache-from: elasticobservability/apm-agent-python:${{ matrix.version }}
           load: true
-          tags: apm-agent-python:${{ matrix.version }}
+          tags: elasticobservability/apm-agent-python:${{ matrix.version }}
           build-args: PYTHON_IMAGE=${{ steps.image-name.outputs.image_name }}
       - name: Run tests
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
