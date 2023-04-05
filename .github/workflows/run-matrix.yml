@@ -30,9 +30,7 @@ jobs:
       - uses: docker/build-push-action@v4
         with:
           context: tests
-          tags: |
-            apm-agent-python:${{ matrix.version }}
-            elasticobservability/apm-agent-python:${{ matrix.version }}
+          tags: apm-agent-python:${{ matrix.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # cache-from: type=registry,ref=elasticobservability/apm-agent-python-testing:${{ matrix.version }}
