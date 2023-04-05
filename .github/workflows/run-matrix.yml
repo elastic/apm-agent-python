@@ -31,8 +31,10 @@ jobs:
         with:
           context: tests
           tags: apm-agent-python:${{ matrix.version }}
-          cache-from: type=registry,ref=elasticobservability/apm-agent-python-testing:${{ matrix.version }}
-          cache-to: type=registry,ref=elasticobservability/apm-agent-python-testing:${{ matrix.version }},mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # cache-from: type=registry,ref=elasticobservability/apm-agent-python-testing:${{ matrix.version }}
+          # cache-to: type=registry,ref=elasticobservability/apm-agent-python-testing:${{ matrix.version }},mode=max
           file: tests/Dockerfile
           load: true
           build-args: PYTHON_IMAGE=${{ steps.image-name.outputs.image_name }}
