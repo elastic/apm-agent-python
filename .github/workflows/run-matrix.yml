@@ -19,6 +19,14 @@ jobs:
         include: ${{ fromJSON(inputs.include) }}
     steps:
       - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/build-push-action@v2
+        with:
+          file: tests/Dockerfile
+          context: tests
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - run: docker image ls
       - name: Run tests
         run: ./tests/scripts/docker/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
         env:
