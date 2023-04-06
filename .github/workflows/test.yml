@@ -16,6 +16,19 @@ on:
     - cron: '0 2 * * *'
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: >-
+          DOCKER_BUILDKIT=1 docker buildx build
+          --progress=plain
+          --cache-from="elasticobservability/apm-agent-python-testing:${PYTHON_VERSION}"
+          --file "tests/Dockerfile"
+          --build-arg PYTHON_IMAGE="${PYTHON_VERSION/-/:}"
+          --tag "elasticobservability/apm-agent-python-testing:${PYTHON_VERSION}"
+          "tests"
+        env:
+          PYTHON_VERSION: python-3.6
   create-matrix:
     runs-on: ubuntu-latest
     outputs:
