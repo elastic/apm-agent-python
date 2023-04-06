@@ -59,7 +59,7 @@ for version in $versions; do
       --cache-to=type=inline \
       --progress=plain \
       --cache-from="elasticobservability/apm-agent-python-testing:${version}" \
-      --filef "tests/Dockerfile" --build-arg PYTHON_IMAGE="${version/-/:}" \
+      --file "tests/Dockerfile" --build-arg PYTHON_IMAGE="${version/-/:}" \
       --tag "elasticobservability/apm-agent-python-testing:${version}" \
       "tests" \
        --push
