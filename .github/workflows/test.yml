@@ -19,6 +19,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - run: >-
           DOCKER_BUILDKIT=1 docker buildx build
           --progress=plain
