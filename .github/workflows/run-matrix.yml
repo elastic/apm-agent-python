@@ -17,8 +17,6 @@ jobs:
       max-parallel: 10
       matrix:
         include: ${{ fromJSON(inputs.include) }}
-    env:
-      DOCKER_BUILDKIT: 1
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
