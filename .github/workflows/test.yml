@@ -30,6 +30,7 @@ jobs:
           --file "tests/Dockerfile"
           --build-arg PYTHON_IMAGE="${PYTHON_VERSION/-/:}"
           --tag "elasticobservability/apm-agent-python-testing:${PYTHON_VERSION}"
+          --load
           "tests"
         env:
           PYTHON_VERSION: python-3.6
