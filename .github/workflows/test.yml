@@ -16,24 +16,6 @@ on:
     - cron: '0 2 * * *'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - run: >-
-          DOCKER_BUILDKIT=1 docker buildx build
-          --progress=plain
-          --cache-from="elasticobservability/apm-agent-python-testing:${PYTHON_VERSION}"
-          --cache-to=type=inline
-          --file "tests/Dockerfile"
-          --build-arg PYTHON_IMAGE="${PYTHON_VERSION/-/:}"
-          --tag "elasticobservability/apm-agent-python-testing:${PYTHON_VERSION}"
-          --load
-          "tests"
-        env:
-          PYTHON_VERSION: python-3.6
   create-matrix:
     runs-on: ubuntu-latest
     outputs:
