@@ -32,6 +32,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import shutil
+import sys
 
 
 class LambdaError(Exception):
@@ -50,3 +52,9 @@ if __name__ == "__main__":
     # replace the handler altogether and wrap it manually.
     os.environ["ELASTICAPM_ORIGINAL_HANDLER"] = original_handler
     os.environ["_HANDLER"] = "elasticapm_handler.lambda_handler"
+
+    # Invoke the runtime
+    args = sys.argv[1:]
+    runtime = shutil.which(args[0])
+    args = args[1:]
+    os.execl(runtime, runtime, *args)
