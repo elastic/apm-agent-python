@@ -426,8 +426,8 @@ class _lambda_transaction(object):
         ):
             transport = self.client._transport
             logger.debug("Sending partial transaction and early metadata to the lambda extension...")
-            data = transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()}) + "\n"
-            data += transport._json_serializer({"metadata": transport._metadata})
+            data = transport._json_serializer({"metadata": transport._metadata}) + "\n"
+            data += transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()})
             partial_transaction_url = urllib.parse.urljoin(
                 self.client.config.server_url
                 if self.client.config.server_url.endswith("/")
@@ -440,7 +440,7 @@ class _lambda_transaction(object):
                     custom_url=partial_transaction_url,
                     override_headers={
                         "x-elastic-aws-request-id": self.context.aws_request_id,
-                        "Content-Type": "application/vnd.elastic.apm.transaction+json",
+                        "Content-Type": "application/vnd.elastic.apm.transaction+ndjson",
                     },
                 )
             except Exception as e:
@@ -452,7 +452,6 @@ class _lambda_transaction(object):
                     )
                 else:
                     logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
-                return  # No need for early metadata if we can't send partial transactions
 
 
 def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:
