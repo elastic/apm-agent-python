@@ -31,13 +31,22 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import re
-import sys
+import os
 
-sys.path.insert(0, "/opt/python")
 
-from elasticapm.instrumentation.wrapper import setup  # noqa
+class LambdaError(Exception):
+    pass
+
 
 if __name__ == "__main__":
-    sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
-    sys.exit(setup())
+    original_handler = os.environ.get("_HANDLER", None)
+    if not original_handler:
+        raise LambdaError("Cannot find original handler. _HANDLER is not set correctly.")
+
+    # AWS Lambda's `/var/runtime/bootstrap.py` uses `imp.load_module` to load
+    # the handler from "_HANDLER". This means that the handler will be reloaded
+    # (even if it's already been loaded), and any instrumentation that we do
+    # will be lost. Thus, we can't use our normal wrapper script, and must
+    # replace the handler altogether and wrap it manually.
+    os.environ["ELASTICAPM_ORIGINAL_HANDLER"] = original_handler
+    os.environ["_HANDLER"] = "elasticapm_handler.lambda_handler"
