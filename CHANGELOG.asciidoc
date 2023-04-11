@@ -55,7 +55,7 @@ for users relying on `context.destination.service.resource`. If users happen to
 run agents both with and without this fix (for same or different languages), the
 same S3-buckets can appear twice in the service map (with and without
 s3-prefix).
-
+* Fix instrumentation to not bubble up exceptions during instrumentation {pull}1791[#1791]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
