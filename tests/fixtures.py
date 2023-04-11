@@ -464,20 +464,24 @@ def get_free_port() -> int:
 
 
 @pytest.fixture(autouse=True)
-def always_uninstrument():
+def always_uninstrument_and_close():
     """
-    It's easy to accidentally forget to uninstrument.
+    It's easy to accidentally forget to uninstrument, or to leave a Client open.
 
     With no-code-changes instrumentations, we *really* need to make sure we
     always uninstrument. This fixture will be used on every test, should be
     applied first -- see
     https://docs.pytest.org/en/stable/reference/fixtures.html#autouse-fixtures-are-executed-first-within-their-scope
-    -- and thus cleanup last, which will ensure we always uninstrument.
+    -- and thus cleanup last, which will ensure we always uninstrument and close
+    the Client.
     """
     try:
         yield
     finally:
         try:
             elasticapm.uninstrument()
+            client = elasticapm.get_client()
+            if client:
+                client.close()
         except Exception:
             pass
