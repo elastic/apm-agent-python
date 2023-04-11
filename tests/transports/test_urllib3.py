@@ -50,7 +50,7 @@ except ImportError:
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
-    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
     transport = Transport(
         waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
@@ -70,7 +70,7 @@ def test_send(waiting_httpserver, elasticapm_client):
 
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_timeout(mock_urlopen, elasticapm_client):
-    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
     transport = Transport("http://localhost", timeout=5, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = MaxRetryError(None, None, reason=TimeoutError())
@@ -84,7 +84,7 @@ def test_timeout(mock_urlopen, elasticapm_client):
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_http_error(waiting_httpserver, elasticapm_client):
-    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=418, content="I'm a teapot")
     transport = Transport(waiting_httpserver.url, client=elasticapm_client)
     transport.start_thread()
@@ -100,7 +100,7 @@ def test_http_error(waiting_httpserver, elasticapm_client):
 @mock.patch("urllib3.poolmanager.PoolManager.urlopen")
 def test_generic_error(mock_urlopen, elasticapm_client):
     url, status, message, body = ("http://localhost:9999", 418, "I'm a teapot", "Nothing")
-    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
     transport = Transport(url, client=elasticapm_client)
     transport.start_thread()
     mock_urlopen.side_effect = Exception("Oopsie")
@@ -156,7 +156,7 @@ def test_header_encodings(elasticapm_client):
     encoded bytestring, and explodes.
     """
     headers = {str("X"): str("V")}
-    elasticapm_client.server_version = (8, 0)  # avoid making server_info request
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
     transport = Transport("http://localhost:9999", headers=headers, client=elasticapm_client)
     transport.start_thread()
     try:
@@ -406,8 +406,8 @@ def test_use_certifi(elasticapm_client):
             (1, 2, "3alpha1"),
         ),
         (
-            "",
-            (),
+            "1.2",
+            (1, 2),
         ),
     ],
 )
@@ -415,17 +415,42 @@ def test_server_version_to_tuple(version, expected):
     assert version_string_to_tuple(version) == expected
 
 
-def test_fetch_server_info(waiting_httpserver, elasticapm_client):
+@pytest.mark.parametrize(
+    "version,expected",
+    [
+        (
+            "1.2.3",
+            (1, 2, 3),
+        ),
+        (
+            "1.2.3-alpha1",
+            (1, 2, 3, "alpha1"),
+        ),
+        (
+            "1.2.3alpha1",
+            (1, 2, "3alpha1"),
+        ),
+        (
+            "1.2",
+            (1, 2, 0),
+        ),
+        (
+            "8.0.0-alpha1",
+            (8, 0, 0, "alpha1"),
+        ),
+    ],
+)
+def test_fetch_server_info(waiting_httpserver, elasticapm_client, version, expected):
     waiting_httpserver.serve_content(
         code=200,
-        content=b'{"version": "8.0.0-alpha1"}',
+        content=f'{{"version": "{version}"}}'.encode("utf-8"),
     )
     url = waiting_httpserver.url
     transport = Transport(
         url + "/" + constants.EVENTS_API_PATH, client=elasticapm_client, headers=elasticapm_client._transport._headers
     )
     transport.fetch_server_info()
-    assert elasticapm_client.server_version == (8, 0, 0, "alpha1")
+    assert elasticapm_client.server_version == expected
     request_headers = waiting_httpserver.requests[0].headers
     assert request_headers["User-Agent"].startswith("apm-agent-python/")
     assert "Authorization" in request_headers

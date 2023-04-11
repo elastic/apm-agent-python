@@ -343,7 +343,7 @@ def test_labels_dedot(elasticapm_client):
 
 
 @pytest.mark.parametrize(
-    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+    "elasticapm_client", [{"server_version": (7, 14, 0)}], indirect=True
 )  # unsampled transactions are dropped with server 8.0+
 def test_dedot_is_not_run_when_unsampled(elasticapm_client):
     for sampled in (True, False):
@@ -425,7 +425,7 @@ def test_set_user_context_merge(elasticapm_client):
 
 
 @pytest.mark.parametrize(
-    "elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+    "elasticapm_client", [{"server_version": (7, 14, 0)}], indirect=True
 )  # unsampled transactions are dropped with server 8.0+
 def test_callable_context_ignored_when_not_sampled(elasticapm_client):
     callable_data = mock.Mock()

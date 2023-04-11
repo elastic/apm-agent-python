@@ -1,7 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2023, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,26 +26,19 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# used in base_tests
 
 
-from elasticapm import get_client
-from elasticapm.base import Client
-from elasticapm.middleware import ElasticAPM as Middleware
+class A:
+    pass
 
 
-def list_from_setting(config, setting):
-    value = config.get(setting)
-    if not value:
-        return None
-    return value.split()
+class B(A):
+    pass
 
 
-class ElasticAPM(Middleware):
-    def __init__(self, app, config, client_cls=None):
-        client_config = {key[11:]: val for key, val in config.items() if key.startswith("elasticapm.")}
-        if client_cls is None:
-            client = get_client() or Client(**client_config)
-        else:
-            # Testing case
-            client = client_cls(**client_config)
-        super(ElasticAPM, self).__init__(app, client)
+class C(A, B):  # raises TypeError
+    def foo(self):
+        pass
