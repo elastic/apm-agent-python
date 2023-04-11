@@ -38,7 +38,14 @@ from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.lambda")
 
-INSTRUMENTED = False
+# Prep client and instrument
+client_kwargs = prep_kwargs()
+client = get_client()
+if not client:
+    client = Client(**client_kwargs)
+client.activation_method = "wrapper"
+if not client.config.debug and client.config.instrument and client.config.enabled:
+    elasticapm.instrument()
 
 
 class LambdaError(Exception):
@@ -64,16 +71,7 @@ def lambda_handler(event, context):
     module = import_module(".".join(module.split("/")))
     wrapped = getattr(module, handler)
 
-    # Prep client and instrument
-    client_kwargs = prep_kwargs()
     client = get_client()
-    if not client:
-        client = Client(**client_kwargs)
-    client.activation_method = "wrapper"
-    global INSTRUMENTED
-    if not client.config.debug and client.config.instrument and client.config.enabled and not INSTRUMENTED:
-        elasticapm.instrument()
-        INSTRUMENTED = True
 
     # Run the handler
     if not client.config.debug and client.config.instrument and client.config.enabled:
