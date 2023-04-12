@@ -31,6 +31,7 @@ import os
 import urllib.parse
 
 import pytest
+import pytest_asyncio
 
 import elasticapm
 from elasticapm.conf import constants
@@ -63,7 +64,7 @@ def session():
     return aiosession.get_session()
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def dynamodb(session):
     async with session.create_client("dynamodb", endpoint_url=LOCALSTACK_ENDPOINT) as db:
         await db.create_table(
@@ -82,7 +83,7 @@ async def dynamodb(session):
         await db.delete_table(TableName="Movies")
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def sqs_client_and_queue(session):
     async with session.create_client("sqs", endpoint_url=LOCALSTACK_ENDPOINT) as sqs:
         response = await sqs.create_queue(QueueName="myqueue", Attributes={"MessageRetentionPeriod": "86400"})
