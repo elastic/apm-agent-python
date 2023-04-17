@@ -48,11 +48,14 @@ fi
 # CASS_DRIVER_NO_EXTENSIONS is set so we don't build the Cassandra C-extensions,
 # as this can take several minutes
 
-docker build \
+if ! ${CI}; then
+  DOCKER_BUILDKIT=1 docker build \
     --progress=plain \
+    --cache-from="elasticobservability/apm-agent-python-testing:${1}" \
     --build-arg PYTHON_IMAGE="${1/-/:}" \
     --tag "elasticobservability/apm-agent-python-testing:${1}" \
     .
+fi
 
 PYTHON_VERSION=${1} docker-compose run \
   -e PYTHON_FULL_VERSION=${1} \
