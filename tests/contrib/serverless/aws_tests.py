@@ -408,3 +408,22 @@ def test_capture_serverless_list_event(event_list, context, elasticapm_client):
     transaction = elasticapm_client.events[constants.TRANSACTION][0]
 
     assert transaction["name"] == "test_func"
+
+
+def test_partial_transaction(event_api, context, sending_elasticapm_client):
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
+    os.environ["ELASTIC_APM_LAMBDA_APM_SERVER"] = "http://localhost:8200"
+
+    @capture_serverless
+    def test_func(event, context):
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    test_func(event_api, context)
+
+    assert len(sending_elasticapm_client.httpserver.requests) == 2
+    request = sending_elasticapm_client.httpserver.requests[0]
+    assert request.full_path == "/register/transaction?"
+    assert request.content_type == "application/vnd.elastic.apm.transaction+ndjson"
+    assert b"metadata" in request.data
+    assert b"transaction" in request.data
+    sending_elasticapm_client.close()
