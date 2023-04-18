@@ -98,6 +98,7 @@ if sys.version_info >= (3, 7):
 # wrapper script, which calls register_wrapper_instrumentations() below.
 _wrapper_register = {
     "elasticapm.instrumentation.packages.flask.FlaskInstrumentation",
+    "elasticapm.instrumentation.packages.django.DjangoAutoInstrumentation",
 }
 
 

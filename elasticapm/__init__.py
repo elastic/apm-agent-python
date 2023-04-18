@@ -51,6 +51,8 @@ from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent
 
 __all__ = ("VERSION", "Client")
 
+_activation_method = None
+
 try:
     try:
         VERSION = __import__("importlib.metadata").metadata.version("elastic-apm")
@@ -63,4 +65,4 @@ except Exception:
 if sys.version_info <= (3, 5):
     raise DeprecationWarning("The Elastic APM agent requires Python 3.6+")
 
-from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401
+from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401 E402

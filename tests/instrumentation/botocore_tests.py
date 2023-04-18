@@ -123,6 +123,8 @@ def test_s3(instrument, elasticapm_client):
     assert spans[0]["action"] == "CreateBucket"
     assert spans[1]["name"] == "S3 PutObject xyz"
     assert spans[1]["action"] == "PutObject"
+    assert spans[1]["otel"]["attributes"]["aws.s3.bucket"] == "xyz"
+    assert spans[1]["otel"]["attributes"]["aws.s3.key"] == "abc"
     assert spans[2]["name"] == "S3 ListObjects xyz"
     assert spans[2]["action"] == "ListObjects"
 

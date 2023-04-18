@@ -538,6 +538,11 @@ class _ConfigBase(object):
         return c
 
 
+class WrapperConfig(_ConfigBase):
+    enabled = _BoolConfigValue("ENABLED", default=True)
+    instrument = _BoolConfigValue("INSTRUMENT", default=True)
+
+
 class Config(_ConfigBase):
     service_name = _ConfigValue(
         "SERVICE_NAME",
@@ -547,6 +552,7 @@ class Config(_ConfigBase):
     )
     service_node_name = _ConfigValue("SERVICE_NODE_NAME")
     environment = _ConfigValue("ENVIRONMENT")
+    transport_json_serializer = _ConfigValue("TRANSPORT_JSON_SERIALIZER")
     secret_token = _ConfigValue("SECRET_TOKEN")
     api_key = _ConfigValue("API_KEY")
     debug = _BoolConfigValue("DEBUG", default=False)
