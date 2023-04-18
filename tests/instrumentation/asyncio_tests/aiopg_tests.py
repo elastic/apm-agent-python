@@ -34,6 +34,8 @@ aiopg = pytest.importorskip("aiopg")  # isort:skip
 
 import os
 
+import pytest_asyncio
+
 from elasticapm.conf import constants
 
 try:
@@ -62,7 +64,7 @@ def dsn():
     )
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def cursor(request):
     conn = await aiopg.connect(dsn())
     cur = await conn.cursor()

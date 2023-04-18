@@ -31,6 +31,7 @@
 import os
 
 import pytest
+import pytest_asyncio
 
 from elasticapm.conf import constants
 
@@ -53,7 +54,7 @@ def dsn():
     )
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def connection(request):
     conn = await asyncpg.connect(dsn())
 

@@ -31,7 +31,8 @@
 from __future__ import absolute_import
 
 import pytest
-import webob
+import werkzeug
+from werkzeug.test import EnvironBuilder
 
 from elasticapm.conf.constants import ERROR
 from elasticapm.middleware import ElasticAPM
@@ -44,7 +45,7 @@ def example_app(environ, start_response):
 def test_error_handler(elasticapm_client):
     middleware = ElasticAPM(example_app, client=elasticapm_client)
 
-    request = webob.Request.blank("/an-error?foo=bar")
+    request = werkzeug.Request(environ=EnvironBuilder(path="an-error?foo=bar").get_environ())
     response = middleware(request.environ, lambda *args: None)
 
     with pytest.raises(ValueError):
@@ -65,7 +66,7 @@ def test_error_handler(elasticapm_client):
     assert request["method"] == "GET"
     headers = request["headers"]
     assert "host" in headers, headers.keys()
-    assert headers["host"] == "localhost:80"
+    assert headers["host"] == "localhost"
     env = request["env"]
     assert "SERVER_NAME" in env, env.keys()
     assert env["SERVER_NAME"] == "localhost"

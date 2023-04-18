@@ -38,6 +38,7 @@ import json
 import os
 import urllib.parse
 
+import pytest_asyncio
 from elasticsearch import VERSION as ES_VERSION
 from elasticsearch import AsyncElasticsearch
 
@@ -52,7 +53,7 @@ if "ES_URL" not in os.environ:
 document_type = "_doc" if ES_VERSION[0] >= 6 else "doc"
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_elasticsearch(request):
     """AsyncElasticsearch client fixture."""
     client = AsyncElasticsearch(hosts=os.environ["ES_URL"])
