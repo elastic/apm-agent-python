@@ -39,6 +39,9 @@ from elasticapm.utils.logging import get_logger
 logger = get_logger("elasticapm.lambda")
 
 # Prep client and instrument
+# For some reason, if we instrument as part of our handler, it adds 3+ seconds
+# to the cold start time. So we do it here. I still don't know why this slowdown
+# happens.
 client_kwargs = prep_kwargs()
 client = get_client()
 if not client:
