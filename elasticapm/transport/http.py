@@ -70,19 +70,22 @@ class Transport(HTTPTransportBase):
         self._http = None
         self._url = url
 
-    def send(self, data, forced_flush=False):
+    def send(self, data, forced_flush=False, custom_url=None, custom_headers=None):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        headers.update(
-            {
-                b"Content-Type": b"application/x-ndjson",
-                b"Content-Encoding": b"gzip",
-            }
-        )
+        if custom_headers:
+            headers.update(custom_headers)
+        else:
+            headers.update(
+                {
+                    b"Content-Type": b"application/x-ndjson",
+                    b"Content-Encoding": b"gzip",
+                }
+            )
 
-        url = self._url
+        url = custom_url or self._url
         if forced_flush:
             url = f"{url}?flushed=true"
         try:
@@ -146,7 +149,7 @@ class Transport(HTTPTransportBase):
                     }
                 }
         :return: a three-tuple of new version, config dictionary and validity in seconds.
-                 Any element of the tuple can be None.
+            Any element of the tuple can be None.
         """
         url = self._config_url
         data = json_encoder.dumps(keys).encode("utf-8")
