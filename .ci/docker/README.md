@@ -2,13 +2,16 @@
 
 Utility script for building and pushing the images based on `.ci/.matrix_python_full.yml`.
 
+> :information_source: This script is mainly used in [publish-docker-images](https://github.com/elastic/apm-pipeline-library/actions/workflows/publish-docker-images.yml) workflow,
+which can be triggered safely at any time.
+
 ## Options
 
-| Name     | Description                                             |
-|----------|---------------------------------------------------------|
-| name     | Name of the docker image. (<registry>/<name>:<tag>)     |
-| registry | Registry of the docker image. (<registry>/<name>:<tag>) |
-| action   | Either `build` or `push`.                               |
+| Name     | Description                                               |
+|----------|-----------------------------------------------------------|
+| name     | Name of the docker image. (`<registry>/<name>:<tag>`)     |
+| registry | Registry of the docker image. (`<registry>/<name>:<tag>`) |
+| action   | Either `build` or `push`.                                 |
 
 ## Usage
 
