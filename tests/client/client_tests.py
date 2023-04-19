@@ -508,7 +508,7 @@ def test_check_server_version(elasticapm_client):
     assert elasticapm_client.check_server_version(gte=(100, 5, 10))
     assert elasticapm_client.check_server_version(lte=(100, 5, 10))
 
-    elasticapm_client.server_version = (7, 15)
+    elasticapm_client.server_version = (7, 15, 0)
     assert elasticapm_client.check_server_version(gte=(7,))
     assert not elasticapm_client.check_server_version(gte=(8,))
     assert not elasticapm_client.check_server_version(lte=(7,))

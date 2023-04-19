@@ -1333,7 +1333,7 @@ def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
 @mock.patch("elasticapm.transport.http.urllib3.PoolManager.urlopen")
 def test_test_exception(urlopen_mock):
     stdout = io.StringIO()
-    resp = mock.Mock(status=200, getheader=lambda h: "http://example.com")
+    resp = mock.Mock(status=200, headers={})
     urlopen_mock.return_value = resp
     with override_settings(
         **middleware_setting(django.VERSION, ["foo", "elasticapm.contrib.django.middleware.TracingMiddleware"])
@@ -1633,7 +1633,7 @@ def test_transaction_name_from_route_doesnt_have_effect_in_older_django(client, 
 
 
 @pytest.mark.parametrize(
-    "django_elasticapm_client", [{"server_version": (7, 14)}], indirect=True
+    "django_elasticapm_client", [{"server_version": (7, 14, 0)}], indirect=True
 )  # unsampled transactions are dropped with server 8.0+
 def test_outcome_is_set_for_unsampled_transactions(django_elasticapm_client, client):
     with override_settings(

@@ -144,6 +144,11 @@ class _lambda_transaction(object):
         """
         Transaction setup
         """
+        if not isinstance(self.event, dict):
+            # When `event` is not a dict, it's likely the output of another AWS
+            # service like Step Functions, and is unlikely to be standardized
+            # in any way. We just have to rely on our defaults in this case.
+            self.event = {}
         trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
 
         global COLD_START

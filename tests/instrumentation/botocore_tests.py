@@ -116,13 +116,15 @@ def test_s3(instrument, elasticapm_client):
         assert span["context"]["destination"]["port"] == LOCALSTACK_ENDPOINT_URL.port
         assert span["context"]["destination"]["cloud"]["region"] == "us-east-1"
         assert span["context"]["destination"]["service"]["name"] == "s3"
-        assert span["context"]["destination"]["service"]["resource"] == "xyz"
+        assert span["context"]["destination"]["service"]["resource"] == "s3/xyz"
         assert span["context"]["destination"]["service"]["type"] == "storage"
         assert span["context"]["http"]["request"]["id"]
     assert spans[0]["name"] == "S3 CreateBucket xyz"
     assert spans[0]["action"] == "CreateBucket"
     assert spans[1]["name"] == "S3 PutObject xyz"
     assert spans[1]["action"] == "PutObject"
+    assert spans[1]["otel"]["attributes"]["aws.s3.bucket"] == "xyz"
+    assert spans[1]["otel"]["attributes"]["aws.s3.key"] == "abc"
     assert spans[2]["name"] == "S3 ListObjects xyz"
     assert spans[2]["action"] == "ListObjects"
 

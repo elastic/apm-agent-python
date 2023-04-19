@@ -116,14 +116,22 @@ def handle_s3(operation_name, service, instance, args, kwargs, context):
     span_type = "storage"
     span_subtype = "s3"
     span_action = operation_name
-    if len(args) > 1 and "Bucket" in args[1]:
-        bucket = args[1]["Bucket"]
+    if len(args) > 1:
+        bucket = args[1].get("Bucket", "")
+        key = args[1].get("Key", "")
     else:
         # TODO handle Access Points
         bucket = ""
+        key = ""
+    if bucket or key:
+        context["otel_attributes"] = {}
+        if bucket:
+            context["otel_attributes"]["aws.s3.bucket"] = bucket
+        if key:
+            context["otel_attributes"]["aws.s3.key"] = key
     signature = f"S3 {operation_name} {bucket}"
 
-    context["destination"]["service"] = {"name": span_subtype, "resource": bucket, "type": span_type}
+    context["destination"]["service"] = {"name": span_subtype, "resource": f"s3/{bucket}", "type": span_type}
 
     return HandlerInfo(signature, span_type, span_subtype, span_action, context)
 

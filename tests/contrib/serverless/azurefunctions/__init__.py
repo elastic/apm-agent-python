@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2023, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,31 +27,3 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import logging
-
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
-
-logger = logging.getLogger("elasticapm")
-
-
-class DjangoAutoInstrumentation(AbstractInstrumentedModule):
-    name = "django"
-
-    instrument_list = [("django.apps.registry", "Apps.populate")]
-
-    creates_transactions = True
-
-    def call(self, module, method, wrapped, instance, args, kwargs):
-        installed_apps = list(args[0] if args else kwargs["installed_apps"])
-        if (
-            "elasticapm.contrib.django" not in installed_apps
-            and "elasticapm.contrib.django.apps.ElasticAPMConfig" not in installed_apps
-        ):
-            logger.info("Prepending elasticapm to Django INSTALLED_APPS")
-            installed_apps.insert(0, "elasticapm.contrib.django")
-            if args:
-                args = list(args)
-                args[0] = installed_apps
-            else:
-                kwargs["installed_apps"] = installed_apps
-        wrapped(*args, **kwargs)

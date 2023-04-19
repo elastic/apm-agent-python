@@ -28,13 +28,12 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import sys
 import urllib.request
 
 assert hasattr(urllib.request.AbstractHTTPHandler.do_open, "_self_wrapper")
 import elasticapm
 
-client = elasticapm.get_client()
+client = elasticapm.Client()
 assert client
 assert client.activation_method == "wrapper"
 

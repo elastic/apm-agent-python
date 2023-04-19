@@ -222,6 +222,7 @@ def original_exception_hook(request):
 def elasticapm_client(request):
     original_exceptionhook = sys.excepthook
     client_config = getattr(request, "param", {})
+    client_class = client_config.pop("client_class", TempStoreClient)
     client_config.setdefault("service_name", "myapp")
     client_config.setdefault("secret_token", "test_key")
     client_config.setdefault("central_config", "false")
@@ -232,7 +233,7 @@ def elasticapm_client(request):
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
     client_config.setdefault("exit_span_min_duration", "0ms")
-    client = TempStoreClient(**client_config)
+    client = client_class(**client_config)
     yield client
     client.close()
     # clear any execution context that might linger around
@@ -463,20 +464,24 @@ def get_free_port() -> int:
 
 
 @pytest.fixture(autouse=True)
-def always_uninstrument():
+def always_uninstrument_and_close():
     """
-    It's easy to accidentally forget to uninstrument.
+    It's easy to accidentally forget to uninstrument, or to leave a Client open.
 
     With no-code-changes instrumentations, we *really* need to make sure we
     always uninstrument. This fixture will be used on every test, should be
     applied first -- see
     https://docs.pytest.org/en/stable/reference/fixtures.html#autouse-fixtures-are-executed-first-within-their-scope
-    -- and thus cleanup last, which will ensure we always uninstrument.
+    -- and thus cleanup last, which will ensure we always uninstrument and close
+    the Client.
     """
     try:
         yield
     finally:
         try:
             elasticapm.uninstrument()
+            client = elasticapm.get_client()
+            if client:
+                client.close()
         except Exception:
             pass

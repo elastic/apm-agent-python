@@ -65,8 +65,9 @@ def get_client():
     :return:
     :rtype: elasticapm.base.Client
     """
-    if _get_client():
-        return _get_client()
+    c = _get_client()
+    if c:
+        return c
 
     config = getattr(django_settings, "ELASTIC_APM", {})
     client = config.get("CLIENT", default_client_class)
