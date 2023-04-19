@@ -385,6 +385,8 @@ class Transaction(BaseSpan):
         return self.trace_parent.span_id
 
     def to_dict(self) -> dict:
+        # This copy() only covers top level `.pop()` calls, so if we ever start
+        # modifying nested data, we'll need to do a deep copy.
         context = self.context.copy()
         context["tags"] = self.labels
         result = {

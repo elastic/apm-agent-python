@@ -438,7 +438,7 @@ class _lambda_transaction(object):
                 transport.send(
                     data,
                     custom_url=partial_transaction_url,
-                    override_headers={
+                    custom_headers={
                         "x-elastic-aws-request-id": self.context.aws_request_id,
                         "Content-Type": "application/vnd.elastic.apm.transaction+ndjson",
                     },

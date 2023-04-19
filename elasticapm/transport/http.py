@@ -70,13 +70,13 @@ class Transport(HTTPTransportBase):
         self._http = None
         self._url = url
 
-    def send(self, data, forced_flush=False, custom_url=None, override_headers=None):
+    def send(self, data, forced_flush=False, custom_url=None, custom_headers=None):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        if override_headers:
-            headers.update(override_headers)
+        if custom_headers:
+            headers.update(custom_headers)
         else:
             headers.update(
                 {
