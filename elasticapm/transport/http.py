@@ -95,26 +95,22 @@ class Transport(HTTPTransportBase):
                 )
                 logger.debug("Sent request, url=%s size=%.2fkb status=%s", url, len(data) / 1024.0, response.status)
             except Exception as e:
-                print_trace = True
                 if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):
                     message = "Connection to APM Server timed out " "(url: %s, timeout: %s seconds)" % (
                         self._url,
                         self._timeout,
                     )
-                    print_trace = False
                 else:
                     message = "Unable to reach APM Server: %s (url: %s)" % (e, self._url)
-                raise TransportException(message, data, print_trace=print_trace)
+                raise TransportException(message, data)
             body = response.read()
             if response.status >= 400:
                 if response.status == 429:  # rate-limited
                     message = "Temporarily rate limited: "
-                    print_trace = False
                 else:
                     message = "HTTP %s: " % response.status
-                    print_trace = True
                 message += body.decode("utf8", errors="replace")[:10000]
-                raise TransportException(message, data, print_trace=print_trace)
+                raise TransportException(message, data)
             return response.headers.get("Location")
         finally:
             if response:
