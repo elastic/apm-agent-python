@@ -34,9 +34,12 @@ mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
 rm -f elastic-apm-python-lambda-layer.zip
+rm -f requirements.txt
 rm -rf package
 mkdir package
-pip install --target ./package/python "$TOP"
+cp "$TOP/dev-utils/requirements.txt" .
+echo "$TOP" >> ./requirements.txt
+pip install -r requirements.txt --target ./package/python
 cd package
 cp python/elasticapm/contrib/serverless/aws_wrapper/elasticapm-run.py ./elasticapm-run
 chmod +x ./elasticapm-run
