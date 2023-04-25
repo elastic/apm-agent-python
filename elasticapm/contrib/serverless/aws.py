@@ -35,6 +35,7 @@ import json
 import os
 import platform
 import time
+import urllib
 import warnings
 from typing import Optional, TypeVar
 from urllib.parse import urlencode
@@ -42,6 +43,7 @@ from urllib.parse import urlencode
 import elasticapm
 from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
+from elasticapm.traces import execution_context
 from elasticapm.utils import encoding, get_name_from_func, nested_key
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
@@ -52,6 +54,7 @@ logger = get_logger("elasticapm.serverless")
 
 COLD_START = True
 INSTRUMENTED = False
+REGISTER_PARTIAL_TRANSACTIONS = True
 
 _AWSLambdaContextT = TypeVar("_AWSLambdaContextT")
 
@@ -221,6 +224,7 @@ class _lambda_transaction(object):
                 "request",
             )
         self.set_metadata_and_context(cold_start)
+        self.send_partial_transaction()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -257,11 +261,11 @@ class _lambda_transaction(object):
         self.client.metrics.collect()
 
         try:
-            logger.debug("flushing elasticapm")
+            logger.debug("Flushing elasticapm data")
             self.client._transport.flush()
-            logger.debug("done flushing elasticapm")
+            logger.debug("Flush complete")
         except ValueError:
-            logger.warning("flush timed out")
+            logger.warning("Flush timed out")
 
     def set_metadata_and_context(self, coldstart: bool) -> None:
         """
@@ -404,6 +408,50 @@ class _lambda_transaction(object):
         if message_context:
             elasticapm.set_context(message_context, "message")
         self.client._transport.add_metadata(metadata)
+
+    def send_partial_transaction(self):
+        """
+        We synchronously send the (partial) transaction to the Lambda Extension
+        so that the transaction can be reported even if the lambda runtime times
+        out before we can report the transaction.
+
+        This is pretty specific to the HTTP transport. If we ever add other
+        transports, we will need to clean this up.
+        """
+        global REGISTER_PARTIAL_TRANSACTIONS
+        if (
+            REGISTER_PARTIAL_TRANSACTIONS
+            and os.environ.get("ELASTIC_APM_LAMBDA_APM_SERVER")
+            and ("localhost" in self.client.config.server_url or "127.0.0.1" in self.client.config.server_url)
+        ):
+            transport = self.client._transport
+            logger.debug("Sending partial transaction and early metadata to the lambda extension...")
+            data = transport._json_serializer({"metadata": transport._metadata}) + "\n"
+            data += transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()})
+            partial_transaction_url = urllib.parse.urljoin(
+                self.client.config.server_url
+                if self.client.config.server_url.endswith("/")
+                else self.client.config.server_url + "/",
+                "register/transaction",
+            )
+            try:
+                transport.send(
+                    data,
+                    custom_url=partial_transaction_url,
+                    custom_headers={
+                        "x-elastic-aws-request-id": self.context.aws_request_id,
+                        "Content-Type": "application/vnd.elastic.apm.transaction+ndjson",
+                    },
+                )
+            except Exception as e:
+                if "HTTP 404" in str(e):
+                    REGISTER_PARTIAL_TRANSACTIONS = False
+                    logger.info(
+                        "APM Lambda Extension does not support partial transactions. "
+                        "Disabling partial transaction registration."
+                    )
+                else:
+                    logger.warning("Failed to send partial transaction to APM Lambda Extension", exc_info=True)
 
 
 def get_data_from_request(event: dict, capture_body: bool = False, capture_headers: bool = True) -> dict:

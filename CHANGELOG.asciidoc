@@ -40,6 +40,7 @@ endif::[]
 * Add support for Django to wrapper script {pull}1780[#1780]
 * Add `transport_json_serializer` configuration option {pull}1777[#1777]
 * Add S3 bucket and key name to OTel attributes {pull}1790[#1790]
+* Implement partial transaction support in AWS lambda {pull}1784[#1784]
 
 [float]
 ===== Bug fixes
@@ -57,6 +58,7 @@ run agents both with and without this fix (for same or different languages), the
 same S3-buckets can appear twice in the service map (with and without
 s3-prefix).
 * Fix instrumentation to not bubble up exceptions during instrumentation {pull}1791[#1791]
+* Fix HTTP transport to not print useless and confusing stack trace {pull}1809[#1809]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x

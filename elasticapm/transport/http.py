@@ -70,19 +70,22 @@ class Transport(HTTPTransportBase):
         self._http = None
         self._url = url
 
-    def send(self, data, forced_flush=False):
+    def send(self, data, forced_flush=False, custom_url=None, custom_headers=None):
         response = None
 
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
-        headers.update(
-            {
-                b"Content-Type": b"application/x-ndjson",
-                b"Content-Encoding": b"gzip",
-            }
-        )
+        if custom_headers:
+            headers.update(custom_headers)
+        else:
+            headers.update(
+                {
+                    b"Content-Type": b"application/x-ndjson",
+                    b"Content-Encoding": b"gzip",
+                }
+            )
 
-        url = self._url
+        url = custom_url or self._url
         if forced_flush:
             url = f"{url}?flushed=true"
         try:
@@ -92,26 +95,22 @@ class Transport(HTTPTransportBase):
                 )
                 logger.debug("Sent request, url=%s size=%.2fkb status=%s", url, len(data) / 1024.0, response.status)
             except Exception as e:
-                print_trace = True
                 if isinstance(e, MaxRetryError) and isinstance(e.reason, TimeoutError):
                     message = "Connection to APM Server timed out " "(url: %s, timeout: %s seconds)" % (
                         self._url,
                         self._timeout,
                     )
-                    print_trace = False
                 else:
                     message = "Unable to reach APM Server: %s (url: %s)" % (e, self._url)
-                raise TransportException(message, data, print_trace=print_trace)
+                raise TransportException(message, data)
             body = response.read()
             if response.status >= 400:
                 if response.status == 429:  # rate-limited
                     message = "Temporarily rate limited: "
-                    print_trace = False
                 else:
                     message = "HTTP %s: " % response.status
-                    print_trace = True
                 message += body.decode("utf8", errors="replace")[:10000]
-                raise TransportException(message, data, print_trace=print_trace)
+                raise TransportException(message, data)
             return response.headers.get("Location")
         finally:
             if response:
@@ -146,7 +145,7 @@ class Transport(HTTPTransportBase):
                     }
                 }
         :return: a three-tuple of new version, config dictionary and validity in seconds.
-                 Any element of the tuple can be None.
+            Any element of the tuple can be None.
         """
         url = self._config_url
         data = json_encoder.dumps(keys).encode("utf-8")

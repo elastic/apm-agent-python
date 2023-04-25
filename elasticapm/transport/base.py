@@ -273,8 +273,7 @@ class Transport(ThreadManager):
             fileobj = buffer.fileobj  # get a reference to the fileobj before closing the gzip file
             buffer.close()
 
-            # StringIO on Python 2 does not have getbuffer, so we need to fall back to getvalue
-            data = fileobj.getbuffer() if hasattr(fileobj, "getbuffer") else fileobj.getvalue()
+            data = fileobj.getbuffer()
             try:
                 self.send(data, forced_flush=forced_flush)
                 self.handle_transport_success()
@@ -335,7 +334,7 @@ class Transport(ThreadManager):
         Failure handler called by the transport on send failure
         """
         message = str(exception)
-        logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
+        logger.error("Failed to submit message: %r", message, exc_info=False)
         self.state.set_fail()
 
     def handle_fork(self) -> None:
