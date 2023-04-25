@@ -135,32 +135,34 @@ class AbstractInstrumentedModule(object):
             instrumented_methods = []
 
             for module, method in instrument_list:
+                # Skip modules we already failed to load
+                if module in skipped_modules:
+                    continue
                 try:
-                    # Skip modules we already failed to load
-                    if module in skipped_modules:
-                        continue
-                    # We jump through hoop here to get the original
-                    # `module`/`method` in the call to `call_if_sampling`
                     parent, attribute, original = wrapt.resolve_path(module, method)
-                    if isinstance(original, ElasticAPMFunctionWrapper):
-                        logger.debug("%s.%s already instrumented, skipping", module, method)
-                        continue
-                    self.originals[(module, method)] = original
-                    wrapper = ElasticAPMFunctionWrapper(
-                        original, functools.partial(self.call_if_sampling, module, method)
-                    )
-                    wrapt.apply_patch(parent, attribute, wrapper)
-                    instrumented_methods.append((module, method))
                 except ImportError:
                     # Could not import module
                     logger.debug("Skipping instrumentation of %s. Module %s not found", self.name, module)
 
-                    # Keep track of modules we couldn't load so we don't
-                    # try to instrument anything in that module again
+                    # Keep track of modules we couldn't load, so we don't try to instrument anything in that module
+                    # again
                     skipped_modules.add(module)
+                    continue
                 except AttributeError as ex:
                     # Could not find thing in module
                     logger.debug("Skipping instrumentation of %s.%s: %s", module, method, ex)
+                    continue
+                except Exception as ex:
+                    # Another error occurred while importing the module.
+                    logger.debug("Skipping instrumentation of %s.%s due to unknown error: %s", module, method, ex)
+                    continue
+                if isinstance(original, ElasticAPMFunctionWrapper):
+                    logger.debug("%s.%s already instrumented, skipping", module, method)
+                    continue
+                self.originals[(module, method)] = original
+                wrapper = ElasticAPMFunctionWrapper(original, functools.partial(self.call_if_sampling, module, method))
+                wrapt.apply_patch(parent, attribute, wrapper)
+                instrumented_methods.append((module, method))
             if instrumented_methods:
                 logger.debug("Instrumented %s, %s", self.name, ", ".join(".".join(m) for m in instrumented_methods))
 

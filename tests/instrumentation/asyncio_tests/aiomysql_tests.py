@@ -31,6 +31,7 @@
 import os
 
 import pytest
+import pytest_asyncio
 
 from elasticapm.conf.constants import TRANSACTION
 from elasticapm.utils import default_ports
@@ -44,7 +45,7 @@ if "MYSQL_HOST" not in os.environ:
     pytestmark.append(pytest.mark.skip("Skipping aiomysql tests, no MYSQL_HOST environment variable set"))
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def aiomysql_connection(request, event_loop):
     assert event_loop.is_running()
     pool = await aiomysql.create_pool(

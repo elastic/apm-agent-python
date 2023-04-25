@@ -58,6 +58,11 @@ class _TestInstrumentNonExistingMethod(AbstractInstrumentedModule):
     instrument_list = [("logging", "Logger.non_existing_method")]
 
 
+class _TestInstrumentBrokenModule(AbstractInstrumentedModule):
+    name = "test_non_existing_method_instrumentation"
+    instrument_list = [("tests.instrumentation.broken_class", "C.foo")]
+
+
 class _TestDummyInstrumentation(AbstractInstrumentedModule):
     name = "test_dummy_instrument"
 
@@ -78,6 +83,12 @@ def test_instrument_nonexisting_method(caplog):
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         _TestInstrumentNonExistingMethod().instrument()
     assert_any_record_contains(caplog.records, "has no attribute", "elasticapm.instrument")
+
+
+def test_instrument_broken_module(caplog):
+    with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
+        _TestInstrumentBrokenModule().instrument()
+    assert_any_record_contains(caplog.records, "due to unknown error", "elasticapm.instrument")
 
 
 def test_double_instrument(elasticapm_client):
