@@ -334,7 +334,7 @@ class Transport(ThreadManager):
         Failure handler called by the transport on send failure
         """
         message = str(exception)
-        logger.error("Failed to submit message: %r", message, exc_info=getattr(exception, "print_trace", True))
+        logger.error("Failed to submit message: %r", message, exc_info=False)
         self.state.set_fail()
 
     def handle_fork(self) -> None:
