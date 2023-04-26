@@ -31,10 +31,10 @@
 from __future__ import absolute_import
 
 from elasticapm.contrib.asyncio.traces import async_capture_span
-from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 
 
-class RedisAsyncioInstrumentation(AbstractInstrumentedModule):
+class RedisAsyncioInstrumentation(AsyncAbstractInstrumentedModule):
     name = "redis"
 
     instrument_list = [
@@ -42,7 +42,7 @@ class RedisAsyncioInstrumentation(AbstractInstrumentedModule):
         ("redis.asyncio.client", "PubSub.execute_command"),
     ]
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
+    async def call(self, module, method, wrapped, instance, args, kwargs):
         if len(args) > 0:
             wrapped_name = args[0]
             if isinstance(wrapped_name, bytes):
@@ -50,30 +50,30 @@ class RedisAsyncioInstrumentation(AbstractInstrumentedModule):
         else:
             wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with async_capture_span(
+        async with async_capture_span(
             wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
         ) as span:
             if span.context is not None:
                 span.context["destination"] = _get_destination_info(instance)
 
-            return wrapped(*args, **kwargs)
+            return await wrapped(*args, **kwargs)
 
 
-class RedisPipelineInstrumentation(AbstractInstrumentedModule):
+class RedisPipelineInstrumentation(AsyncAbstractInstrumentedModule):
     name = "redis"
 
     instrument_list = [("redis.asyncio.client", "Pipeline.execute")]
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
+    async def call(self, module, method, wrapped, instance, args, kwargs):
         wrapped_name = self.get_wrapped_name(wrapped, instance, method)
 
-        with async_capture_span(
+        async with async_capture_span(
             wrapped_name, span_type="db", span_subtype="redis", span_action="query", leaf=True
         ) as span:
             if span.context is not None:
                 span.context["destination"] = _get_destination_info(instance)
 
-            return wrapped(*args, **kwargs)
+            return await wrapped(*args, **kwargs)
 
 
 def _get_destination_info(connection):
