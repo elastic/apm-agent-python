@@ -41,6 +41,7 @@ endif::[]
 * Add `transport_json_serializer` configuration option {pull}1777[#1777]
 * Add S3 bucket and key name to OTel attributes {pull}1790[#1790]
 * Implement partial transaction support in AWS lambda {pull}1784[#1784]
+* Add instrumentation for redis.asyncio {pull}1807[#1807]
 
 [float]
 ===== Bug fixes
