@@ -95,7 +95,8 @@ jobs:
     if: always()
     needs:
       - publish-lambda-layers
-      - release
+      - publish-pypi
+      - github-draft
     steps:
       - id: check
         uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
