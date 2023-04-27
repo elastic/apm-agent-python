@@ -81,7 +81,8 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: arn-file
-      - run: >- 
+      - name: Create GitHub Draft Release
+        run: >- 
           gh release create "${GITHUB_REF_NAME}"
           --title="${GITHUB_REF_NAME}"
           --generate-notes
