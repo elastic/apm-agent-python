@@ -8,9 +8,11 @@ on:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+
   packages:
     uses: ./.github/workflows/packages.yml
-  release:
+
+  publish-pypi:
     needs:
       - test
       - packages
@@ -39,9 +41,56 @@ jobs:
           python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.whl
         env:
           REPO_URL: "https://upload.pypi.org/legacy/"
-      - if: always()
-        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+
+  publish-lambda-layers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build lambda layer zip
+        run: ./dev-utils/make-distribution.sh
+      - name: Publish lambda layers to AWS
+        run: |
+          # Convert v1.2.3 to ver-1-2-3
+          VERSION=${GITHUB_REF_NAME/v/ver-}
+          VERSION=${VERSION//./-}
+        
+          ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
+      - uses: actions/upload-artifact@v3
         with:
+          name: arn-file
+          path: ".arn-file.md"
+          if-no-files-found: error
+
+  github-draft:
+    needs:
+      - publish-lambda-layers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: arn-file
+      - run: >- 
+          gh release create "${GITHUB_REF_NAME}"
+          --title="${GITHUB_REF_NAME}"
+          --generate-notes
+          --notes-file=".arn-file.md"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - publish-lambda-layers
+      - release
+    steps:
+      - id: check
+        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        with:
+          needs: ${{ toJSON(needs) }}
+      - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          status: ${{ steps.check.outputs.status }}
           vaultUrl: ${{ secrets.VAULT_ADDR }}
           vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
           vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
