@@ -74,6 +74,7 @@ jobs:
           --title="${GITHUB_REF_NAME}"
           --generate-notes
           --notes-file=".arn-file.md"
+          --draft
         env:
           GH_TOKEN: ${{ github.token }}
 
