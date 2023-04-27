@@ -39,7 +39,7 @@ for region in $ALL_AWS_REGIONS; do
     --region="${region}" \
     --layer-name="${FULL_LAYER_NAME}" \
     --description="AWS Lambda Extension Layer for the Elastic APM Python Agent" \
-    --license="Apache-2.0" \
+    --license-info="BSD-3-Clause" \
     --zip-file="fileb://${zip_file}")
   echo "${publish_output}" > "${AWS_FOLDER}/${region}"
   layer_version=$(echo "${publish_output}" | jq '.Version')
