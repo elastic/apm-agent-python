@@ -168,9 +168,9 @@ class Transport(ThreadManager):
                     max_flush_time,
                 )
                 flush = True
-            elif self._max_buffer_size and queue_size > self._max_buffer_size:
+            elif self._max_buffer_size and buffer.size > self._max_buffer_size:
                 logger.debug(
-                    "flushing since queue size %d bytes > max_queue_size %d bytes", queue_size, self._max_buffer_size
+                    "flushing since buffer size %d bytes > max_queue_size %d bytes", buffer.size, self._max_buffer_size
                 )
                 flush = True
             if flush:
