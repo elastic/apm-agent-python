@@ -18,7 +18,7 @@ jsonschema==3.2.0 ; python_version == '3.6'
 jsonschema==4.17.3 ; python_version > '3.6'
 
 
-urllib3
+urllib3<2.0
 certifi
 Logbook
 mock
