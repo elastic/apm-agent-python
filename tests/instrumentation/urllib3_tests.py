@@ -31,6 +31,7 @@ import urllib.parse
 
 import pytest
 import urllib3
+from urllib3._version import __version__ as urllib3_version
 
 from elasticapm.conf import constants
 from elasticapm.conf.constants import SPAN, TRANSACTION
@@ -273,7 +274,10 @@ def test_instance_headers_are_respected(
         headers={"instance": "true"} if instance_headers else None,
     )
     if header_arg:
-        args = ("GET", url, None, {"args": "true"})
+        if urllib3_version.startswith("2"):
+            args = ("GET", url, None, None, {"args": "true"})
+        else:
+            args = ("GET", url, None, {"args": "true"})
     else:
         args = ("GET", url)
     if header_kwarg:
