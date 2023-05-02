@@ -122,7 +122,12 @@ def test_message_event(elasticapm_client):
     assert "stacktrace" in event["log"]
     # check that only frames from `tests` module are not marked as library frames
     for frame in event["log"]["stacktrace"]:
-        assert frame["library_frame"] or frame["module"].startswith(("tests", "__main__")), (
+        # vscode's python extension runs tests using libraries from the
+        # extension's dir, which results in false positives here. This is where
+        # runpy, _pydevd, and debugpy come from.
+        assert frame["library_frame"] or frame["module"].startswith(
+            ("tests", "__main__", "runpy", "_pydevd", "debugpy")
+        ), (
             frame["module"],
             frame["abs_path"],
         )
