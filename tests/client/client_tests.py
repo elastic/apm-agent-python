@@ -530,7 +530,7 @@ def test_check_server_version(elasticapm_client):
     indirect=["elasticapm_client"],
 )
 def test_user_agent(elasticapm_client, expected):
-    assert elasticapm_client.get_user_agent() == "apm-agent-python/unknown (myapp{})".format(expected)
+    assert elasticapm_client.get_user_agent() == "apm-agent-python/{} (myapp{})".format(elasticapm.VERSION, expected)
 
 
 def test_label_without_client():
