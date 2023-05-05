@@ -27,7 +27,7 @@ include::./starlette.asciidoc[]
 
 include::./sanic.asciidoc[]
 
-include::./serverless.asciidoc[]
+include::./serverless-lambda.asciidoc[]
 
 include::./serverless-azure-functions.asciidoc[]
 

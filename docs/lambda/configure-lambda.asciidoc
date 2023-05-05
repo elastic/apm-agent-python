@@ -9,9 +9,10 @@ To configure APM through the AWS Management Console:
 
 [source,bash]
 ----
-ELASTIC_APM_LAMBDA_APM_SERVER = <YOUR-APM-SERVER-URL>     # this is your APM Server URL
-ELASTIC_APM_SECRET_TOKEN      = <YOUR-APM-SECRET-TOKEN>   # this is your APM secret token
-ELASTIC_APM_SEND_STRATEGY     = background                <1>
+AWS_LAMBDA_EXEC_WRAPPER       = /opt/python/bin/elasticapm-lambda  # use this exact fixed value
+ELASTIC_APM_LAMBDA_APM_SERVER = <YOUR-APM-SERVER-URL>              # this is your APM Server URL
+ELASTIC_APM_SECRET_TOKEN      = <YOUR-APM-SECRET-TOKEN>            # this is your APM secret token
+ELASTIC_APM_SEND_STRATEGY     = background                         <1>
 ----
 
 --
@@ -27,7 +28,7 @@ To configure APM through the AWS command line interface execute the following co
 [source,bash]
 ----
 aws lambda update-function-configuration --function-name yourLambdaFunctionName \
-    --environment "Variables={ELASTIC_APM_LAMBDA_APM_SERVER=<YOUR-APM-SERVER-URL>,ELASTIC_APM_SECRET_TOKEN=<YOUR-APM-SECRET-TOKEN>,ELASTIC_APM_SEND_STRATEGY=background}" <1>
+    --environment "Variables={AWS_LAMBDA_EXEC_WRAPPER=/opt/python/bin/elasticapm-lambda,ELASTIC_APM_LAMBDA_APM_SERVER=<YOUR-APM-SERVER-URL>,ELASTIC_APM_SECRET_TOKEN=<YOUR-APM-SECRET-TOKEN>,ELASTIC_APM_SEND_STRATEGY=background}" <1>
 ----
 
 // end::cli-extension-only[]
@@ -46,6 +47,7 @@ Resources:
       ...
       Environment:
           Variables:
+            AWS_LAMBDA_EXEC_WRAPPER: /opt/python/bin/elasticapm-lambda
             ELASTIC_APM_LAMBDA_APM_SERVER: <YOUR-APM-SERVER-URL>
             ELASTIC_APM_SECRET_TOKEN: <YOUR-APM-SECRET-TOKEN>
             ELASTIC_APM_SEND_STRATEGY: background <1>
@@ -65,6 +67,7 @@ functions:
   yourLambdaFunction:
     ...
     environment:
+      AWS_LAMBDA_EXEC_WRAPPER: /opt/python/bin/elasticapm-lambda
       ELASTIC_APM_LAMBDA_APM_SERVER: <YOUR-APM-SERVER-URL>
       ELASTIC_APM_SECRET_TOKEN: <YOUR-APM-SECRET-TOKEN>
       ELASTIC_APM_SEND_STRATEGY: background <1>
@@ -83,6 +86,7 @@ resource "aws_lambda_function" "your_lambda_function" {
   ...
   environment {
     variables = {
+      AWS_LAMBDA_EXEC_WRAPPER       = /opt/python/bin/elasticapm-lambda
       ELASTIC_APM_LAMBDA_APM_SERVER = "<YOUR-APM-SERVER-URL>"
       ELASTIC_APM_SECRET_TOKEN      = "<YOUR-APM-SECRET-TOKEN>"
       ELASTIC_APM_SEND_STRATEGY     = "background" <1>
@@ -100,6 +104,7 @@ You can use one of the other options (through AWS Web Console, AWS CLI, etc.) to
 
 [source,bash]
 ----
+AWS_LAMBDA_EXEC_WRAPPER       = /opt/python/bin/elasticapm-lambda  # use this exact fixed value
 ELASTIC_APM_LAMBDA_APM_SERVER = <YOUR-APM-SERVER-URL>     # this is your APM Server URL
 ELASTIC_APM_SECRET_TOKEN      = <YOUR-APM-SECRET-TOKEN>   # this is your APM secret token
 ELASTIC_APM_SEND_STRATEGY     = background <1>
