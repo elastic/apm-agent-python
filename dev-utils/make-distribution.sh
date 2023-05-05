@@ -41,8 +41,9 @@ cp "$TOP/dev-utils/requirements.txt" .
 echo "$TOP" >> ./requirements.txt
 pip install -r requirements.txt --target ./package/python
 cd package
-cp python/elasticapm/contrib/serverless/aws_wrapper/elasticapm-run.py ./elasticapm-run
-chmod +x ./elasticapm-run
+cp python/elasticapm/contrib/serverless/aws_wrapper/elasticapm-lambda.py ./elasticapm-lambda
+cp python/bin/elasticapm-run ./elasticapm-run
+chmod +x ./elasticapm-*
 cp python/elasticapm/contrib/serverless/aws_wrapper/elasticapm_handler.py ./python/
 cp "$TOP/elasticapm/contrib/serverless/aws_wrapper/NOTICE.md" ./python/
 
