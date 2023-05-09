@@ -34,6 +34,7 @@ import functools
 import json
 import os
 import platform
+import re
 import time
 import urllib
 import warnings
@@ -453,7 +454,7 @@ class _lambda_transaction(object):
                     },
                 )
             except Exception as e:
-                if "HTTP 404" in str(e):
+                if re.match(r"HTTP [4,5]\d\d", str(e)):
                     REGISTER_PARTIAL_TRANSACTIONS = False
                     logger.info(
                         "APM Lambda Extension does not support partial transactions. "
