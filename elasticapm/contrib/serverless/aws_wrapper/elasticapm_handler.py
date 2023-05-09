@@ -71,7 +71,7 @@ def lambda_handler(event, context):
         raise LambdaError(f"ELASTICAPM_ORIGINAL_HANDLER is not set correctly: {original_handler}")
 
     # Import handler
-    module = import_module(".".join(module.split("/")))
+    module = import_module(module.replace("/", "."))
     wrapped = getattr(module, handler)
 
     client = get_client()
