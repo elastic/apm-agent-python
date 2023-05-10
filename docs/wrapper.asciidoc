@@ -8,6 +8,7 @@ no-code-changes instrumentation:
 
  * Django
  * Flask
+ * Starlette
 
 Please keep in mind that these instrumentations are a work in progress! We'd
 love to have feedback on our
