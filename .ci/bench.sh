@@ -10,6 +10,10 @@ if [ "$CI" == "true" ] ; then
 		HOME=$(realpath ~)
 		export HOME
 	fi
+
+	# Consumed in scripts/run-benchmarks.sh
+	BRANCH_NAME=${GITHUB_REF##*/}
+	export BRANCH_NAME
 fi
 
 ## Bench specific

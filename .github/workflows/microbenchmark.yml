@@ -35,6 +35,7 @@ jobs:
             script=scripts/ci/bench.sh
             repo=apm-agent-python
             sha=${{ github.sha }}
+            GITHUB_REF=${{ env.GITHUB_REF }}
 
       - if: ${{ failure() }}
         uses: elastic/apm-pipeline-library/.github/actions/slack-message@current
