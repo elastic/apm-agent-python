@@ -14,6 +14,10 @@ if [ "$CI" == "true" ] ; then
 	# Consumed in scripts/run-benchmarks.sh
 	BRANCH_NAME=${GITHUB_REF##*/}
 	export BRANCH_NAME
+
+	# required when running the benchmark
+	PATH=$PATH:$HOME/.local/bin
+	export PATH
 fi
 
 ## Bench specific
