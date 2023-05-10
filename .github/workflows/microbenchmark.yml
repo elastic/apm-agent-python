@@ -5,12 +5,9 @@ on:
   push:
     branches:
       - main
-      - feature/use-gh-actions-only
     paths-ignore:
       - '**.md'
       - '**.asciidoc'
-    tags:
-      - "v*.*.*"
 
 # limit the access of the generated GITHUB_TOKEN
 permissions:
