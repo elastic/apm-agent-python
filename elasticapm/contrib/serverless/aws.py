@@ -34,6 +34,7 @@ import functools
 import json
 import os
 import platform
+import re
 import time
 import urllib
 import warnings
@@ -85,6 +86,38 @@ def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
 
     name = kwargs.pop("name", None)
 
+    kwargs = prep_kwargs(kwargs)
+
+    global INSTRUMENTED
+    client = get_client()
+    if not client:
+        client = Client(**kwargs)
+    if not client.config.debug and client.config.instrument and client.config.enabled and not INSTRUMENTED:
+        elasticapm.instrument()
+        INSTRUMENTED = True
+
+    @functools.wraps(func)
+    def decorated(*args, **kwds):
+        if len(args) >= 2:
+            # Saving these for request context later
+            event, context = args[0:2]
+        else:
+            event, context = {}, {}
+
+        if not client.config.debug and client.config.instrument and client.config.enabled:
+            with _lambda_transaction(func, name, client, event, context) as sls:
+                sls.response = func(*args, **kwds)
+                return sls.response
+        else:
+            return func(*args, **kwds)
+
+    return decorated
+
+
+def prep_kwargs(kwargs=None):
+    if kwargs is None:
+        kwargs = {}
+
     # Disable all background threads except for transport
     kwargs["metrics_interval"] = "0ms"
     kwargs["breakdown_metrics"] = False
@@ -99,30 +132,7 @@ def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
     if "service_version" not in kwargs and "ELASTIC_APM_SERVICE_VERSION" not in os.environ:
         kwargs["service_version"] = os.environ.get("AWS_LAMBDA_FUNCTION_VERSION")
 
-    global INSTRUMENTED
-    client = get_client()
-    if not client:
-        client = Client(**kwargs)
-    if not client.config.debug and client.config.instrument and client.config.enabled and not INSTRUMENTED:
-        elasticapm.instrument()
-        INSTRUMENTED = True
-
-    @functools.wraps(func)
-    def decorated(*args, **kwds):
-        if len(args) == 2:
-            # Saving these for request context later
-            event, context = args
-        else:
-            event, context = {}, {}
-
-        if not client.config.debug and client.config.instrument and client.config.enabled:
-            with _lambda_transaction(func, name, client, event, context) as sls:
-                sls.response = func(*args, **kwds)
-                return sls.response
-        else:
-            return func(*args, **kwds)
-
-    return decorated
+    return kwargs
 
 
 class _lambda_transaction(object):
@@ -444,7 +454,7 @@ class _lambda_transaction(object):
                     },
                 )
             except Exception as e:
-                if "HTTP 404" in str(e):
+                if re.match(r"HTTP [4,5]\d\d", str(e)):
                     REGISTER_PARTIAL_TRANSACTIONS = False
                     logger.info(
                         "APM Lambda Extension does not support partial transactions. "

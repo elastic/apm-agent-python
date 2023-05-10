@@ -1,0 +1,12 @@
+---
+version: 2
+updates:
+  # Enable version updates for python
+  - package-ecosystem: "pip"
+    # Look for `requirements.txt` file in the `dev-utils` directory
+    directory: "/dev-utils/"
+    # Check for updates once a week
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "elastic/apm-agent-python"
