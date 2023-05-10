@@ -141,12 +141,12 @@ In this example, we will create an instrumentation for the "foo" database, by in
 
        export PYTEST_MARKER="-m foo"
 
-1. Add entries in `.ci/jenkins_framework.yml` (for pull requests) and `.ci/jenkins_framework_full.yml` (for nightly builds).
+1. Add entries in `.ci/matrix_framework.yml` (for pull requests) and `.ci/matrix_framework_full.yml` (for nightly builds).
    Generally, we only test the newest version of an instrumentation with every pull request:
 
        - foo-newest
 
-   To test other versions in the nightly build, add them to `.ci/jenkins_framework_full.yml`.
+   To test other versions in the nightly build, add them to `.ci/matrix_framework_full.yml`.
 
 1. OPTIONAL: If you need a real service to test against (e.g. an actual foo database), add an entry in `tests/docker-compose.yml` under `services`:
 
@@ -160,7 +160,7 @@ In this example, we will create an instrumentation for the "foo" database, by in
        DOCKER_DEPS="foo"
        FOO_CONNECTION_URL="http://foo:4711"
 
-1. OPTIONAL: If your instrumented package does not support all Python versions we test with, you can exclude certain combinations by adding them to `.ci/jenkins_exclude.yml`:
+1. OPTIONAL: If your instrumented package does not support all Python versions we test with, you can exclude certain combinations by adding them to `.ci/matrix_exclude.yml`:
 
        - PYTHON_VERSION: python-3.5  # foo doesn't support Python 3.5
          FRAMEWORK: foo-newest
