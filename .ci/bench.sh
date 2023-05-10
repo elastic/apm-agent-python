@@ -22,4 +22,5 @@ LC_ALL="${LANG}"
 export LANG
 export LC_ALL
 
-./scripts/run-benchmarks.sh "$(realpath ~)" "${APM_AGENT_GO_ES_URL}" "${APM_AGENT_GO_ES_USER}" "${APM_AGENT_GO_ES_PASS}"
+# APM_AGENT_PYTHON* env variables are provided by the Buildkite hooks.
+./scripts/run-benchmarks.sh "$(pwd)" "${APM_AGENT_PYTHON_ES_URL_SECRET}" "${APM_AGENT_PYTHON_ES_USER_SECRET}" "${APM_AGENT_PYTHON_ES_PASS_SECRET}"
