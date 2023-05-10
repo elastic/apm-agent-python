@@ -3,11 +3,11 @@ set -exo pipefail
 
 ## Buildkite specific configuration
 if [ "$CI" == "true" ] ; then
-	# If HOME is not set then use the current directory
+	# If HOME is not set then use the Buildkite workspace
 	# that's normally happening when running in the CI
 	# owned by Elastic.
 	if [ -z "$HOME" ] ; then
-		HOME=$(realpath ~)
+		HOME=$BUILDKITE_BUILD_CHECKOUT_PATH
 		export HOME
 	fi
 
