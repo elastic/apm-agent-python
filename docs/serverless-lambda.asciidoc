@@ -1,6 +1,6 @@
 [[lambda-support]]
 === Monitoring AWS Lambda Python Functions
-:layer-section-type: extension-only
+:layer-section-type: with-agent
 :apm-aws-repo-dir: ./lambda
 
 The Python APM Agent can be used with AWS Lambda to monitor the execution of your AWS Lambda functions.
