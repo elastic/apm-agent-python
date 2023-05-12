@@ -11,11 +11,6 @@ if [ "$CI" == "true" ] ; then
 		export HOME
 	fi
 
-	# Consumed in scripts/run-benchmarks.sh
-	# GITHUB_REF_NAME is the short ref name of the branch or tag that triggered the workflow run
-	BRANCH_NAME=${GITHUB_REF_NAME##*/}
-	export BRANCH_NAME
-
 	# required when running the benchmark
 	PATH=$PATH:$HOME/.local/bin
 	export PATH
