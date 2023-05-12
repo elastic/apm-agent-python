@@ -1,4 +1,4 @@
-// tag::console-extension-only[]
+// tag::console-with-agent[]
 
 To configure APM through the AWS Management Console:
 
@@ -19,9 +19,9 @@ ELASTIC_APM_SEND_STRATEGY     = background                         <1>
 include::{apm-aws-lambda-root}/docs/images/images.asciidoc[tag=python-env-vars]
 --
 
-// end::console-extension-only[]
+// end::console-with-agent[]
 
-// tag::cli-extension-only[]
+// tag::cli-with-agent[]
 
 To configure APM through the AWS command line interface execute the following command:
 
@@ -31,9 +31,9 @@ aws lambda update-function-configuration --function-name yourLambdaFunctionName 
     --environment "Variables={AWS_LAMBDA_EXEC_WRAPPER=/opt/python/bin/elasticapm-lambda,ELASTIC_APM_LAMBDA_APM_SERVER=<YOUR-APM-SERVER-URL>,ELASTIC_APM_SECRET_TOKEN=<YOUR-APM-SECRET-TOKEN>,ELASTIC_APM_SEND_STRATEGY=background}" <1>
 ----
 
-// end::cli-extension-only[]
+// end::cli-with-agent[]
 
-// tag::sam-extension-only[]
+// tag::sam-with-agent[]
 
 In your SAM `template.yml` file configure the following environment variables:
 
@@ -54,9 +54,9 @@ Resources:
 ...
 ----
 
-// end::sam-extension-only[]
+// end::sam-with-agent[]
 
-// tag::serverless-extension-only[]
+// tag::serverless-with-agent[]
 
 In your `serverless.yml` file configure the following environment variables:
 
@@ -74,9 +74,9 @@ functions:
 ...
 ----
 
-// end::serverless-extension-only[]
+// end::serverless-with-agent[]
 
-// tag::terraform-extension-only[]
+// tag::terraform-with-agent[]
 In your Terraform file configure the following environment variables:
 
 [source,terraform]
@@ -96,9 +96,9 @@ resource "aws_lambda_function" "your_lambda_function" {
 ...
 ----
 
-// end::terraform-extension-only[]
+// end::terraform-with-agent[]
 
-// tag::container-extension-only[]
+// tag::container-with-agent[]
 Environment variables configured for an AWS Lambda function are passed to the container running the lambda function.
 You can use one of the other options (through AWS Web Console, AWS CLI, etc.) to configure the following environment variables:
 
@@ -110,4 +110,4 @@ ELASTIC_APM_SECRET_TOKEN      = <YOUR-APM-SECRET-TOKEN>   # this is your APM sec
 ELASTIC_APM_SEND_STRATEGY     = background <1>
 ----
 
-// end::container-extension-only[]
+// end::container-with-agent[]
