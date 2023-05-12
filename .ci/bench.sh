@@ -12,7 +12,8 @@ if [ "$CI" == "true" ] ; then
 	fi
 
 	# Consumed in scripts/run-benchmarks.sh
-	BRANCH_NAME=${GITHUB_REF##*/}
+	# GITHUB_REF_NAME is the short ref name of the branch or tag that triggered the workflow run
+	BRANCH_NAME=${GITHUB_REF_NAME##*/}
 	export BRANCH_NAME
 
 	# required when running the benchmark

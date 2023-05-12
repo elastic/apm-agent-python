@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/use-gh-actions-only
     paths-ignore:
       - '**.md'
       - '**.asciidoc'
@@ -19,6 +20,7 @@ jobs:
     # wait up to 1 hour
     timeout-minutes: 60
     steps:
+      - run: env | sort
       - id: buildkite
         name: Run buildkite pipeline
         uses: elastic/apm-pipeline-library/.github/actions/buildkite@current
@@ -33,7 +35,7 @@ jobs:
             script=.ci/bench.sh
             repo=apm-agent-python
             sha=${{ github.sha }}
-            GITHUB_REF=${{ env.GITHUB_REF }}
+            GITHUB_REF_NAME=${{ env.GITHUB_REF_NAME }}
 
       - if: ${{ failure() }}
         uses: elastic/apm-pipeline-library/.github/actions/slack-message@current
