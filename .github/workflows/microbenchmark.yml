@@ -20,7 +20,6 @@ jobs:
     # wait up to 1 hour
     timeout-minutes: 60
     steps:
-      - run: env | sort
       - id: buildkite
         name: Run buildkite pipeline
         uses: elastic/apm-pipeline-library/.github/actions/buildkite@current
@@ -35,7 +34,7 @@ jobs:
             script=.ci/bench.sh
             repo=apm-agent-python
             sha=${{ github.sha }}
-            GITHUB_REF_NAME=${{ env.GITHUB_REF_NAME }}
+            GITHUB_REF_NAME=${{ github.ref_name }}
 
       - if: ${{ failure() }}
         uses: elastic/apm-pipeline-library/.github/actions/slack-message@current
