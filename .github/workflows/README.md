@@ -47,7 +47,7 @@ Every time there is a merge to main or any release branches the whole workflow w
 ### Release process
 
 This process has been fully automated and it gets triggered when a tag release has been created.
-The tag release follows the naming convention: `v.<major>.<minor>.<patch>`, where `<major>`, `<minor>` and `<patch>` numbers as defined [here](https://github.com/elastic/apm-agent-python/blob/1e38ec53115edc70c36c6485259733a8cde02ed9/.github/workflows/release.yml#L5-L6C1)
+The tag release follows the naming convention: `v.<major>.<minor>.<patch>`, where `<major>`, `<minor>` and `<patch>` are numbers as defined [here](https://github.com/elastic/apm-agent-python/blob/1e38ec53115edc70c36c6485259733a8cde02ed9/.github/workflows/release.yml#L5-L6C1)
 
 ### OpenTelemetry
 
