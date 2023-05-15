@@ -48,19 +48,7 @@ jobs:
           REPO_URL: "https://upload.pypi.org/legacy/"
 
   build-distribution:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Build lambda layer zip
-        run: ./dev-utils/make-distribution.sh
-      - uses: actions/upload-artifact@v3
-        with:
-          name: build-distribution
-          path: ./build/
-          if-no-files-found: error
+    uses: ./.github/workflows/build-distribution.yml
 
   publish-lambda-layers:
     needs:
