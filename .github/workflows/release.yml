@@ -5,16 +5,23 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: read
+
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+
   packages:
     uses: ./.github/workflows/packages.yml
-  release:
+
+  publish-pypi:
     needs:
       - test
       - packages
     runs-on: ubuntu-latest
+    env:
+      PYPI_SECRET_PATH: secret/apm-team/ci/apm-agent-python-pypi-prod
     steps:
       - uses: actions/checkout@v3
       - uses: hashicorp/vault-action@v2.4.2
@@ -24,8 +31,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/apm-team/ci/apm-agent-python-pypi-prod user | TWINE_USER ;
-            secret/apm-team/ci/apm-agent-python-pypi-prod password | TWINE_PASSWORD
+            ${{ env.PYPI_SECRET_PATH }} user | TWINE_USER ;
+            ${{ env.PYPI_SECRET_PATH }} password | TWINE_PASSWORD
       - uses: actions/download-artifact@v3
         with:
           name: packages
@@ -39,9 +46,104 @@ jobs:
           python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.whl
         env:
           REPO_URL: "https://upload.pypi.org/legacy/"
-      - if: always()
-        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+
+  build-distribution:
+    uses: ./.github/workflows/build-distribution.yml
+
+  publish-lambda-layers:
+    needs:
+      - build-distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/vault-action@v2.5.0
         with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/observability-team/ci/service-account/apm-agent-python access_key_id | AWS_ACCESS_KEY_ID ;
+            secret/observability-team/ci/service-account/apm-agent-python secret_access_key | AWS_SECRET_ACCESS_KEY
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-distribution
+          path: ./build
+      - name: Publish lambda layers to AWS
+        run: |
+          # Convert v1.2.3 to ver-1-2-3
+          VERSION=${GITHUB_REF_NAME/v/ver-}
+          VERSION=${VERSION//./-}
+        
+          ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
+      - uses: actions/upload-artifact@v3
+        with:
+          name: arn-file
+          path: ".arn-file.md"
+          if-no-files-found: error
+
+  publish-docker:
+    needs:
+      - build-distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: elastic/apm-pipeline-library/.github/actions/docker-login@current
+        with:
+          registry: docker.elastic.co
+          secret: secret/observability-team/ci/docker-registry/prod
+          url: ${{ secrets.VAULT_ADDR }}
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-distribution
+          path: ./build
+      - name: Docker build
+        run: >-
+          docker build
+          -t docker.elastic.co/observability/apm-agent-python:${GITHUB_REF_NAME/v/}
+          --build-arg AGENT_DIR=./build/dist/package/python
+      - name: Docker push
+        run: docker push docker.elastic.co/observability/apm-agent-python:${GITHUB_REF_NAME/v/}
+
+  github-draft:
+    permissions:
+      contents: write
+    needs:
+      - publish-lambda-layers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: arn-file
+      - name: Create GitHub Draft Release
+        run: >- 
+          gh release create "${GITHUB_REF_NAME}"
+          --title="${GITHUB_REF_NAME}"
+          --generate-notes
+          --notes-file=".arn-file.md"
+          --draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - publish-lambda-layers
+      - publish-pypi
+      - publish-docker
+      - github-draft
+    steps:
+      - id: check
+        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        with:
+          needs: ${{ toJSON(needs) }}
+      - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          status: ${{ steps.check.outputs.status }}
           vaultUrl: ${{ secrets.VAULT_ADDR }}
           vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
           vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}

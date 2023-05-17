@@ -32,3 +32,5 @@ tests/*-junit.xml
 .pytest_cache/
 .python-version
 .env
+.aws
+.arn-file.md
