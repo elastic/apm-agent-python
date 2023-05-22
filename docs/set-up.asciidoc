@@ -10,6 +10,7 @@ To get you off the ground, we’ve prepared guides for setting up the Agent with
  * <<starlette-support,Starlette/FastAPI>>
  * <<sanic-support,Sanic>>
  * <<lambda-support,AWS Lambda>>
+ * <<azure-functions-support,Azure Functions>>
  * <<wrapper-support,Wrapper (Experimental)>>
 
 For custom instrumentation, see <<instrumenting-custom-code, Instrumenting Custom Code>>.
@@ -26,7 +27,7 @@ include::./starlette.asciidoc[]
 
 include::./sanic.asciidoc[]
 
-include::./serverless.asciidoc[]
+include::./serverless-lambda.asciidoc[]
 
 include::./serverless-azure-functions.asciidoc[]
 
