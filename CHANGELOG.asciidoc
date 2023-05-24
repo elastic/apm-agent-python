@@ -36,6 +36,7 @@ endif::[]
 [float]
 ===== Features
 
+* Add lambda layer for instrumenting AWS Lambda functions {pull}1826[#1826]
 * Implement instrumentation of Azure Functions {pull}1766[#1766]
 * Add support for Django to wrapper script {pull}1780[#1780]
 * Add `transport_json_serializer` configuration option {pull}1777[#1777]
@@ -43,6 +44,7 @@ endif::[]
 * Implement partial transaction support in AWS lambda {pull}1784[#1784]
 * Add instrumentation for redis.asyncio {pull}1807[#1807]
 * Add support for urllib3 v2.0.1+ {pull}1822[#1822]
+* Add `service.environment` to log correlation {pull}1833[#1833]
 
 [float]
 ===== Bug fixes

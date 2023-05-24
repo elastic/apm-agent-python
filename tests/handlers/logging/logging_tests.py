@@ -266,6 +266,7 @@ def test_logging_filter_no_span(elasticapm_client):
     f.filter(record)
     assert record.elasticapm_transaction_id == transaction.id
     assert record.elasticapm_service_name == transaction.tracer.config.service_name
+    assert record.elasticapm_service_environment == transaction.tracer.config.environment
     assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
     assert record.elasticapm_span_id is None
     assert record.elasticapm_labels
@@ -289,6 +290,7 @@ def test_logging_filter_span(elasticapm_client):
         f.filter(record)
         assert record.elasticapm_transaction_id == transaction.id
         assert record.elasticapm_service_name == transaction.tracer.config.service_name
+        assert record.elasticapm_service_environment == transaction.tracer.config.environment
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
@@ -304,6 +306,7 @@ def test_logging_filter_span(elasticapm_client):
         f.filter(record)
         assert record.elasticapm_transaction_id == transaction.id
         assert record.elasticapm_service_name == transaction.tracer.config.service_name
+        assert record.elasticapm_service_environment == transaction.tracer.config.environment
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id is None
         assert record.elasticapm_labels
@@ -317,6 +320,7 @@ def test_structlog_processor_span(elasticapm_client):
         new_dict = structlog_processor(None, None, event_dict)
         assert new_dict["transaction.id"] == transaction.id
         assert new_dict["service.name"] == transaction.tracer.config.service_name
+        assert new_dict["service.environment"] == transaction.tracer.config.environment
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert new_dict["span.id"] == span.id
 
@@ -331,6 +335,7 @@ def test_structlog_processor_span(elasticapm_client):
         new_dict = structlog_processor(None, None, event_dict)
         assert new_dict["transaction.id"] == transaction.id
         assert new_dict["service.name"] == transaction.tracer.config.service_name
+        assert new_dict["service.environment"] == transaction.tracer.config.environment
         assert new_dict["trace.id"] == transaction.trace_parent.trace_id
         assert "span.id" not in new_dict
 
@@ -346,6 +351,7 @@ def test_automatic_log_record_factory_install(elasticapm_client):
         record = record_factory(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
         assert record.elasticapm_transaction_id == transaction.id
         assert record.elasticapm_service_name == transaction.tracer.config.service_name
+        assert record.elasticapm_service_environment == transaction.tracer.config.environment
         assert record.elasticapm_trace_id == transaction.trace_parent.trace_id
         assert record.elasticapm_span_id == span.id
         assert record.elasticapm_labels
@@ -358,11 +364,13 @@ def test_formatter():
     assert "| elasticapm" in formatted_record
     assert hasattr(record, "elasticapm_transaction_id")
     assert hasattr(record, "elasticapm_service_name")
+    assert hasattr(record, "elasticapm_service_environment")
     record = logging.LogRecord(__name__, logging.DEBUG, __file__, 252, "dummy_msg", [], None)
     formatted_time = formatter.formatTime(record)
     assert formatted_time
     assert hasattr(record, "elasticapm_transaction_id")
     assert hasattr(record, "elasticapm_service_name")
+    assert hasattr(record, "elasticapm_service_environment")
 
 
 def test_logging_handler_no_client(recwarn):
