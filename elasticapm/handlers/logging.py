@@ -232,11 +232,15 @@ def _add_attributes_to_log_record(record):
     service_name = client.config.service_name if client else None
     record.elasticapm_service_name = service_name
 
+    service_environment = client.config.environment if client else None
+    record.elasticapm_service_environment = service_environment
+
     record.elasticapm_labels = {
         "transaction.id": transaction_id,
         "trace.id": trace_id,
         "span.id": span_id,
         "service.name": service_name,
+        "service.environment": service_environment,
     }
 
     return record
@@ -273,6 +277,7 @@ class Formatter(logging.Formatter):
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
             record.elasticapm_service_name = None
+            record.elasticapm_service_environment = None
         return super(Formatter, self).format(record=record)
 
     def formatTime(self, record, datefmt=None):
@@ -281,4 +286,5 @@ class Formatter(logging.Formatter):
             record.elasticapm_trace_id = None
             record.elasticapm_span_id = None
             record.elasticapm_service_name = None
+            record.elasticapm_service_environment = None
         return super(Formatter, self).formatTime(record=record, datefmt=datefmt)
