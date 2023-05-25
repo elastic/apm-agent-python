@@ -1,26 +1,28 @@
 [[logs]]
 == Logs
 
-Log correlation allows you to navigate to all logs belonging to a particular trace, and vice-versa -- for a specific log, see in which context it has been logged, and which parameters the user provided.
+Elastic Python APM Agent provides the following log features:
+
+- <<log-correlation-ids>> : Automatically inject correlation IDs that allow navigation between logs, traces and services.
+- <<log-reformatting>> : Automatically reformat plaintext logs in {ecs-logging-ref}/intro.html[ECS logging] format.
+
+Those features are part of {observability-guide}/application-logs.html[Application log ingestion strategies].
+
+The {ecs-logging-python-ref}/intro.html[`ecs-logging-python`] library can also be used to use the ECS logging format without an APM agent.
+When deployed with the Python APM agent, the agent will provide <<log-correlation-ids,log correlation>> IDs.
+
+[float]
+[[log-correlation-ids]]
+=== Log correlation
+
+{apm-guide-ref}/log-correlation.html[Log correlation] allows you to navigate to all logs belonging to a particular trace
+and vice-versa: for a specific log, see in which context it has been logged and which parameters the user provided.
 
 The Agent provides integrations with both the default Python logging library,
 as well as http://www.structlog.org/en/stable/[`structlog`].
 
 * <<logging-integrations>>
 * <<log-correlation-in-es>>
-
-[float]
-[[log-correlation-ids]]
-=== Log correlation
-
-The easiest way to integrate your logs with APM is to use the
-https://github.com/elastic/ecs-logging-python[`ecs-logging`] library, which
-is also provided by Elastic. This library provides formatters for both `logging`
-and `structlog` which create ECS-compatible logs and will include the tracing
-information required for log correlation in kibana. Coupled with something like
-https://www.elastic.co/beats/filebeat[Filebeat], it is the easiest way to get
-logs into Elasticsearch.
-
 
 [float]
 [[logging-integrations]]
@@ -174,3 +176,15 @@ Then, you could use a grok pattern like this (for the
   ]
 }
 ----
+
+[float]
+[[log-reformatting]]
+=== Log reformatting (experimental)
+
+The agent can automatically reformat application logs to ECS format, without adding a dependency to `ecs-logging-python`, modifying the application
+logging configuration and making the application always use ECS log format. In short, it provides the benefits of ECS logging at runtime without any 
+change to the application.
+
+Log reformatting is controlled by the <<config-log-ecs-reformatting, `log_ecs_reformatting`>> configuration option, and is disabled by default.
+
+The reformatted logs will include both the <<log-correlation-ids, trace and service correlation>> IDs.
