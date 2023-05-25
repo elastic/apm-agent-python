@@ -185,6 +185,6 @@ The agent can automatically reformat application logs to ECS format, without add
 logging configuration and making the application always use ECS log format. In short, it provides the benefits of ECS logging at runtime without any 
 change to the application.
 
-Log reformatting is controlled by the <<config-log-ecs-reformatting, `log_ecs_reformatting`>> configuration option, and is disabled by default.
+Log reformatting is controlled by the <<config-log_ecs_reformatting, `log_ecs_reformatting`>> configuration option, and is disabled by default.
 
 The reformatted logs will include both the <<log-correlation-ids, trace and service correlation>> IDs.
