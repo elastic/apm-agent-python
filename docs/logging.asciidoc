@@ -1,5 +1,5 @@
-[[log-correlation]]
-== Log correlation
+[[logs]]
+== Logs
 
 Log correlation allows you to navigate to all logs belonging to a particular trace, and vice-versa -- for a specific log, see in which context it has been logged, and which parameters the user provided.
 
@@ -10,8 +10,8 @@ as well as http://www.structlog.org/en/stable/[`structlog`].
 * <<log-correlation-in-es>>
 
 [float]
-[[ecs-logging]]
-=== `ecs-logging`
+[[log-correlation-ids]]
+=== Log correlation
 
 The easiest way to integrate your logs with APM is to use the
 https://github.com/elastic/ecs-logging-python[`ecs-logging`] library, which
@@ -24,11 +24,11 @@ logs into Elasticsearch.
 
 [float]
 [[logging-integrations]]
-=== Logging integrations
+==== Logging integrations
 
 [float]
 [[logging]]
-==== `logging`
+===== `logging`
 
 For Python 3.2+, we use https://docs.python.org/3/library/logging.html#logging.setLogRecordFactory[`logging.setLogRecordFactory()`]
 to decorate the default LogRecordFactory to automatically add new attributes to
@@ -66,7 +66,7 @@ your log handlers, as handlers are propagated, along with their attached filters
 
 [float]
 [[structlog]]
-==== `structlog`
+===== `structlog`
 
 We provide a http://www.structlog.org/en/stable/processors.html[processor] for
 http://www.structlog.org/en/stable/[`structlog`] which will add three new keys
