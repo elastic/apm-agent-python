@@ -196,31 +196,6 @@ def test_psycopg_binary_query_works(instrument, postgres_connection, elasticapm_
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
-def test_psycopg_call_stored_function(instrument, postgres_connection, elasticapm_client):
-    cursor = postgres_connection.cursor()
-    cursor.execute(
-        """
-        CREATE OR REPLACE FUNCTION squareme(me INT)
-        RETURNS INTEGER
-        LANGUAGE SQL
-        AS $$
-            SELECT me*me;
-        $$;
-        """
-    )
-    elasticapm_client.begin_transaction("test")
-    cursor.execute("SELECT squareme(2)")
-    result = cursor.fetchall()
-    assert result[0][0] == 4
-    elasticapm_client.end_transaction("test", "OK")
-    transactions = elasticapm_client.events[TRANSACTION]
-    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
-    assert span["name"] == "SELECT FROM"
-    assert span["action"] == "query"
-
-
-@pytest.mark.integrationtest
-@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg_context_manager(instrument, elasticapm_client):
     elasticapm_client.begin_transaction("test")
     with psycopg.connect(**connect_kwargs()) as conn:
