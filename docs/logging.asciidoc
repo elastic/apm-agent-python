@@ -1,7 +1,22 @@
-[[log-correlation]]
-== Log correlation
+[[logs]]
+== Logs
 
-Log correlation allows you to navigate to all logs belonging to a particular trace, and vice-versa -- for a specific log, see in which context it has been logged, and which parameters the user provided.
+Elastic Python APM Agent provides the following log features:
+
+- <<log-correlation-ids>> : Automatically inject correlation IDs that allow navigation between logs, traces and services.
+- <<log-reformatting>> : Automatically reformat plaintext logs in {ecs-logging-ref}/intro.html[ECS logging] format.
+
+Those features are part of {observability-guide}/application-logs.html[Application log ingestion strategies].
+
+The {ecs-logging-python-ref}/intro.html[`ecs-logging-python`] library can also be used to use the {ecs-logging-ref}/intro.html[ECS logging] format without an APM agent.
+When deployed with the Python APM agent, the agent will provide <<log-correlation-ids,log correlation>> IDs.
+
+[float]
+[[log-correlation-ids]]
+=== Log correlation
+
+{apm-guide-ref}/log-correlation.html[Log correlation] allows you to navigate to all logs belonging to a particular trace
+and vice-versa: for a specific log, see in which context it has been logged and which parameters the user provided.
 
 The Agent provides integrations with both the default Python logging library,
 as well as http://www.structlog.org/en/stable/[`structlog`].
@@ -10,25 +25,12 @@ as well as http://www.structlog.org/en/stable/[`structlog`].
 * <<log-correlation-in-es>>
 
 [float]
-[[ecs-logging]]
-=== `ecs-logging`
-
-The easiest way to integrate your logs with APM is to use the
-https://github.com/elastic/ecs-logging-python[`ecs-logging`] library, which
-is also provided by Elastic. This library provides formatters for both `logging`
-and `structlog` which create ECS-compatible logs and will include the tracing
-information required for log correlation in kibana. Coupled with something like
-https://www.elastic.co/beats/filebeat[Filebeat], it is the easiest way to get
-logs into Elasticsearch.
-
-
-[float]
 [[logging-integrations]]
-=== Logging integrations
+==== Logging integrations
 
 [float]
 [[logging]]
-==== `logging`
+===== `logging`
 
 For Python 3.2+, we use https://docs.python.org/3/library/logging.html#logging.setLogRecordFactory[`logging.setLogRecordFactory()`]
 to decorate the default LogRecordFactory to automatically add new attributes to
@@ -66,7 +68,7 @@ your log handlers, as handlers are propagated, along with their attached filters
 
 [float]
 [[structlog]]
-==== `structlog`
+===== `structlog`
 
 We provide a http://www.structlog.org/en/stable/processors.html[processor] for
 http://www.structlog.org/en/stable/[`structlog`] which will add three new keys
@@ -174,3 +176,13 @@ Then, you could use a grok pattern like this (for the
   ]
 }
 ----
+
+[float]
+[[log-reformatting]]
+=== Log reformatting (experimental)
+
+The agent can automatically reformat application to ECS format when the application includes the `ecs-logging-python` library in its dependencies.
+
+Log reformatting is controlled by the <<config-log_ecs_reformatting, `log_ecs_reformatting`>> configuration option, and is disabled by default.
+
+The reformatted logs will include both the <<log-correlation-ids, trace and service correlation>> IDs.
