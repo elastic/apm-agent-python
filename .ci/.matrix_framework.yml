@@ -24,6 +24,7 @@ FRAMEWORK:
   - redis-newest
   - aioredis-newest
   #- aioredis-2  # not supported yet
+  - psycopg-newest
   - psycopg2-newest
   - pymssql-newest
   - pyodbc-newest

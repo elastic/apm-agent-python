@@ -46,6 +46,7 @@ FRAMEWORK:
   - redis-3
   - redis-2
   - redis-newest
+  - psycopg-newest
   - psycopg2-newest
   - pymssql-newest
   - memcached-newest
