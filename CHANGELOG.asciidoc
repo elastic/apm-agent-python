@@ -47,6 +47,7 @@ endif::[]
 * Add support for urllib3 v2.0.1+ {pull}1822[#1822]
 * Add `service.environment` to log correlation {pull}1833[#1833]
 * Add `ecs_logging` as a dependency {pull}1840[#1840]
+* Add support for synchronous psycopg3 {pull}1841[#1841]
 
 [float]
 ===== Bug fixes
