@@ -181,7 +181,9 @@ Then, you could use a grok pattern like this (for the
 [[log-reformatting]]
 === Log reformatting (experimental)
 
-The agent can automatically reformat application to ECS format when the application includes the `ecs-logging-python` library in its dependencies.
+Starting in version 6.16.0, the agent can automatically reformat application
+logs to ECS format with no changes to dependencies. Prior versions must install
+the `ecs_logging` dependency.
 
 Log reformatting is controlled by the <<config-log_ecs_reformatting, `log_ecs_reformatting`>> configuration option, and is disabled by default.
 
