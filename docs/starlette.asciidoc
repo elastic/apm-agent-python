@@ -72,7 +72,7 @@ is almost exactly the same as with Starlette:
 [source,python]
 ----
 from fastapi import FastAPI
-from elasticapm.contrib.starlette ElasticAPM
+from elasticapm.contrib.starlette import ElasticAPM
 
 app = FastAPI()
 app.add_middleware(ElasticAPM)
