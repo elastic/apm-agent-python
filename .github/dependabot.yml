@@ -10,3 +10,6 @@ updates:
       interval: "weekly"
     reviewers:
       - "elastic/apm-agent-python"
+    ignore:
+      - dependency-name: "urllib3" # ignore until lambda runtimes use OpenSSL 1.1.1+
+        versions: [">=2.0.0"]
