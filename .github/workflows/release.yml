@@ -104,6 +104,7 @@ jobs:
           docker build
           -t docker.elastic.co/observability/apm-agent-python:${GITHUB_REF_NAME/v/}
           --build-arg AGENT_DIR=./build/dist/package/python
+          .
       - name: Docker push
         run: docker push docker.elastic.co/observability/apm-agent-python:${GITHUB_REF_NAME/v/}
 

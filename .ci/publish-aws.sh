@@ -8,6 +8,12 @@ set -euo pipefail
 # AWS_FOLDER is used for temporary output of publishing layers used to create the arn table. (Optional)
 # ELASTIC_LAYER_NAME is the name of the lambda layer e.g. elastic-apm-python-ver-3-44-1 for the git tag v3.44.1 (Required)
 
+
+# This needs to be set in GH actions
+# https://dotjoeblog.wordpress.com/2021/03/14/github-actions-aws-error-exit-code-255/
+# eu-west-1 is just a random region
+export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-eu-west-1}
+
 export AWS_FOLDER=${AWS_FOLDER:-.aws}
 FULL_LAYER_NAME=${ELASTIC_LAYER_NAME:?layer name not provided}
 ALL_AWS_REGIONS=$(aws ec2 describe-regions --output json --no-cli-pager | jq -r '.Regions[].RegionName')
