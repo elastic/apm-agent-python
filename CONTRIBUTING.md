@@ -37,10 +37,10 @@ Once your changes are ready to submit for review:
 
     This project uses several tools to maintain a consistent code style:
 
-    - the automatic code formatter [black](https://black.readthedocs.io/en/stable/)
-    - sorting of imports via [isort](https://isort.readthedocs.io/en/latest/)
-    - [flake8](http://flake8.pycqa.org/en/latest/)
-    - License header check via custom script
+    -   the automatic code formatter [black](https://black.readthedocs.io/en/stable/)
+    -   sorting of imports via [isort](https://isort.readthedocs.io/en/latest/)
+    -   [flake8](http://flake8.pycqa.org/en/latest/)
+    -   License header check via custom script
 
     The easiest way to make sure your pull request adheres to the code style
     is to install [pre-commit](https://pre-commit.com/).
@@ -161,8 +161,8 @@ In this example, we will create an instrumentation for the "foo" database, by in
 
 1.  OPTIONAL: If your instrumented package does not support all Python versions we test with, you can exclude certain combinations by adding them to `.ci/matrix_exclude.yml`:
 
-    - PYTHON_VERSION: python-3.5 # foo doesn't support Python 3.5
-      FRAMEWORK: foo-newest
+    -   PYTHON_VERSION: python-3.5 # foo doesn't support Python 3.5
+        FRAMEWORK: foo-newest
 
 ### Workflow
 
@@ -184,7 +184,7 @@ If you have commit access, the process is as follows:
    where `X.Y.Z` is the version in `elasticapm/version.py`
 1. Open a PR against `main` with these changes
 1. Once the PR is merged, fetch and checkout `upstream/main`
-1. Tag the commit with `git tag -a vX.Y.Z`, for example `git tag -a v1.2.3`.
+1. Tag the commit with `git tag -s vX.Y.Z`, for example `git tag -s v1.2.3`.
    Copy the changelog for the release to the tag message, removing any leading `#`.
 1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current main, e.g. `git branch -f 1.x main`
 1. Push tag upstream with `git push upstream --tags` (and optionally to your own fork as well)
