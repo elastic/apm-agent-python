@@ -99,14 +99,27 @@ jobs:
         with:
           name: build-distribution
           path: ./build
+      - id: setup-docker
+        name: Set up docker variables
+        run: |-
+          # version without v prefix (e.g. 1.2.3)
+          echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
+          echo "name=docker.elastic.co/observability/apm-agent-python" >> "${GITHUB_OUTPUT}"
       - name: Docker build
         run: >-
           docker build
-          -t docker.elastic.co/observability/apm-agent-python:${GITHUB_REF_NAME/v/}
+          -t ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
           --build-arg AGENT_DIR=./build/dist/package/python
           .
+      - name: Docker retag
+        run: >-
+          docker tag 
+          ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
+          ${{ steps.setup-docker.outputs.name }}:latest
       - name: Docker push
-        run: docker push docker.elastic.co/observability/apm-agent-python:${GITHUB_REF_NAME/v/}
+        run: |-
+          docker push ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
+          docker push ${{ steps.setup-docker.outputs.name }}:latest
 
   github-draft:
     permissions:
