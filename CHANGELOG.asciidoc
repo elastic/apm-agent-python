@@ -40,6 +40,7 @@ endif::[]
 ===== Bug fixes
 
 * Fix compatibility issue with older versions of OpenSSL in lambda runtimes {pull}1847[#1847]
+* Add `latest` tag to docker images {pull}1848[#1848]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
