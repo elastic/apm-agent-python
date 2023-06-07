@@ -102,6 +102,7 @@ jobs:
       - id: setup-docker
         name: Set up docker variables
         run: |-
+          # version without v prefix (e.g. 1.2.3)
           echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
           echo "name=docker.elastic.co/observability/apm-agent-python" >> "${GITHUB_OUTPUT}"
       - name: Docker build
