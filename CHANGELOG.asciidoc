@@ -34,8 +34,9 @@ endif::[]
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
 //[float]
-//===== Features
-//
+===== Features
+ * Add `server_ca_cert_file` option to provide custom CA certificate {pull}1852[#1852]
+
 [float]
 ===== Bug fixes
 
