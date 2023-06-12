@@ -44,11 +44,13 @@ class HTTPTransportBase(Transport):
         headers=None,
         timeout=None,
         server_cert=None,
+        server_ca_cert_file=None,
         **kwargs
     ):
         self._url = url
         self._verify_server_cert = verify_server_cert
         self._server_cert = server_cert
+        self._server_ca_cert_file = server_ca_cert_file
         self._timeout = timeout
         self._headers = {
             k.encode("ascii") if isinstance(k, str) else k: v.encode("ascii") if isinstance(v, str) else v
