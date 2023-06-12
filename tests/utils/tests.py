@@ -204,12 +204,12 @@ def test_starmatch_to_regex(pattern, input, match):
 
 def test_url_sanitization():
     sanitized = sanitize_url("http://user:pass@localhost:123/foo?bar=baz#bazzinga")
-    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK_URL
 
 
 def test_url_sanitization_urlencoded_password():
     sanitized = sanitize_url("http://user:%F0%9F%9A%B4@localhost:123/foo?bar=baz#bazzinga")
-    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK_URL
 
 
 @pytest.mark.parametrize(
