@@ -233,7 +233,7 @@ def test_url_to_destination_bad_port():
 def test_read_pem_file():
     with open(os.path.join(os.path.dirname(__file__), "..", "ca", "ca.crt"), mode="rb") as f:
         result = read_pem_file(f)
-        assert result.startswith(b"0\x82\x02\xcc0\x82\x01\xb4\x02\t\x00\xb8\x1c\xac\x04Q04Y0\r\x06")
+        assert result.startswith(b"0\x82\x05{0\x82\x03c\xa0\x03\x02\x01\x02\x02\x14`c\xd8:\xe7")
 
 
 def test_read_pem_file_chain():
