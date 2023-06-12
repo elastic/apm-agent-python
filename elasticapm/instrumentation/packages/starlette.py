@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2022, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,5 +28,28 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = (6, 16, 1)
-VERSION = ".".join(map(str, __version__))
+import weakref
+from typing import TYPE_CHECKING
+
+from elasticapm.instrumentation.packages.base import AbstractInstrumentedModule
+
+if TYPE_CHECKING:
+    from starlette.applications import Starlette
+
+
+class StarletteInstrumentation(AbstractInstrumentedModule):
+    name = "starlette"
+
+    instrument_list = [("starlette.applications", "Starlette.build_middleware_stack")]
+
+    instrumented_apps = []
+
+    creates_transactions = True
+
+    def call(self, module, method, wrapped, instance: "Starlette", args, kwargs):
+        from elasticapm.contrib.starlette import ElasticAPM
+
+        if ElasticAPM not in instance.user_middleware:
+            instance.add_middleware(ElasticAPM, client=None)
+            self.instrumented_apps.append(weakref.ref(instance))
+        return wrapped(*args, **kwargs)

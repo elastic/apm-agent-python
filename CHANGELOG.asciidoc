@@ -33,18 +33,44 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+[float]
+===== Bug fixes
+
+* Fix compatibility issue with older versions of OpenSSL in lambda runtimes {pull}1847[#1847]
+* Add `latest` tag to docker images {pull}1848[#1848]
+
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.16.1]]
+==== 6.16.1 - 2023-06-06
+
+[float]
+===== Bug fixes
+
+* Fix release process for docker and the lambda layer {pull}1845[#1845]
+
+[[release-notes-6.16.0]]
+==== 6.16.0 - 2023-06-05
+
 [float]
 ===== Features
 
 * Add lambda layer for instrumenting AWS Lambda functions {pull}1826[#1826]
 * Implement instrumentation of Azure Functions {pull}1766[#1766]
 * Add support for Django to wrapper script {pull}1780[#1780]
+* Add support for Starlette to wrapper script {pull}1830[#1830]
 * Add `transport_json_serializer` configuration option {pull}1777[#1777]
 * Add S3 bucket and key name to OTel attributes {pull}1790[#1790]
 * Implement partial transaction support in AWS lambda {pull}1784[#1784]
 * Add instrumentation for redis.asyncio {pull}1807[#1807]
 * Add support for urllib3 v2.0.1+ {pull}1822[#1822]
 * Add `service.environment` to log correlation {pull}1833[#1833]
+* Add `ecs_logging` as a dependency {pull}1840[#1840]
+* Add support for synchronous psycopg3 {pull}1841[#1841]
 
 [float]
 ===== Bug fixes
@@ -63,9 +89,6 @@ same S3-buckets can appear twice in the service map (with and without
 s3-prefix).
 * Fix instrumentation to not bubble up exceptions during instrumentation {pull}1791[#1791]
 * Fix HTTP transport to not print useless and confusing stack trace {pull}1809[#1809]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.15.1]]
 ==== 6.15.1 - 2023-03-06

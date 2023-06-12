@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import gzip
+import platform
 import random
 import string
 import time
@@ -266,6 +267,7 @@ def test_flushed_arg(sending_elasticapm_client):
     assert sending_elasticapm_client.httpserver.requests[0].args["flushed"] == "true"
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Flaky test on windows")
 @pytest.mark.flaky(reruns=3)  # Trying to test automatic flushes is inherently flaky
 @pytest.mark.parametrize("sending_elasticapm_client", [{"api_request_time": "100ms"}], indirect=True)
 def test_flushed_arg_with_wait(sending_elasticapm_client):

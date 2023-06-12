@@ -1,6 +1,6 @@
 #  BSD 3-Clause License
 #
-#  Copyright (c) 2019, Elasticsearch BV
+#  Copyright (c) 2023, Elasticsearch BV
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,5 +28,35 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = (6, 16, 1)
-VERSION = ".".join(map(str, __version__))
+import pytest  # isort:skip
+
+pytest.importorskip("starlette")  # isort:skip
+
+from starlette.applications import Starlette
+from starlette.responses import PlainTextResponse
+from starlette.routing import Route
+from starlette.testclient import TestClient
+
+from elasticapm import async_capture_span
+from elasticapm.conf import constants
+from elasticapm.contrib.starlette import ElasticAPM
+
+
+def test_starlette_app_instrumented(wrapper_instrument, elasticapm_client):
+    async def hi(request):
+        body = await request.body()
+        with async_capture_span("test"):
+            pass
+        return PlainTextResponse(str(len(body)))
+
+    routes = [Route("/", hi)]
+    app = Starlette(routes=routes)
+    test_client = TestClient(app)
+
+    app.build_middleware_stack()
+    assert any(middleware.cls is ElasticAPM for middleware in app.user_middleware)
+    test_client.get("/")
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    assert transaction["name"] == "GET /"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"

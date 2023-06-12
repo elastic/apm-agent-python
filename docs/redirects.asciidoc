@@ -7,3 +7,8 @@ The following pages have moved or been deleted.
 === OpenTracing API
 
 Refer to <<opentelemetry-bridge>> instead.
+
+[role="exclude",id="log-correlation"]
+=== Log correlation
+
+Refer to <<logs>> instead.

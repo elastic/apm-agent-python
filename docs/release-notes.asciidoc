@@ -5,6 +5,7 @@
 
 All notable changes to this project will be documented here.
 
+* <<release-notes-6.x>>
 * <<release-notes-5.x>>
 * <<release-notes-4.x>>
 * <<release-notes-3.x>>
