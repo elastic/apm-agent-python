@@ -29,21 +29,19 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-//
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.16.2]]
+==== 6.16.2 - 2023-06-12
+
 [float]
 ===== Bug fixes
 
 * Fix compatibility issue with older versions of OpenSSL in lambda runtimes {pull}1847[#1847]
 * Add `latest` tag to docker images {pull}1848[#1848]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
+* Fix issue with redacting `user:pass` in URLs in Python 3.11.4 {pull}1850[#1850]
 
 [[release-notes-6.16.1]]
 ==== 6.16.1 - 2023-06-06
