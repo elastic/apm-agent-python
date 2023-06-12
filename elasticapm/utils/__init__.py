@@ -132,7 +132,7 @@ def sanitize_url(url: str) -> str:
     if "@" not in url:
         return url
     parts = urllib.parse.urlparse(url)
-    return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK))
+    return url.replace("%s:%s" % (parts.username, parts.password), "%s:%s" % (parts.username, constants.MASK_URL))
 
 
 def get_host_from_url(url: str) -> str:

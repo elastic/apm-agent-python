@@ -50,7 +50,6 @@ def test_urllib(instrument, elasticapm_client, waiting_httpserver):
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
-
         url = "http://{0}/hello_world".format(parsed_url.netloc)
         r = urlopen(url)
 
@@ -93,7 +92,6 @@ def test_urllib_error(instrument, elasticapm_client, waiting_httpserver, status_
     elasticapm_client.begin_transaction("transaction")
     expected_sig = "GET {0}".format(parsed_url.netloc)
     with capture_span("test_name", "test_type"):
-
         url = "http://{0}/hello_world".format(parsed_url.netloc)
         try:
             r = urlopen(url)
@@ -257,4 +255,4 @@ def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
 
     assert "pass" not in span["context"]["http"]["url"]
-    assert constants.MASK in span["context"]["http"]["url"]
+    assert constants.MASK_URL in span["context"]["http"]["url"]
