@@ -112,7 +112,7 @@ client.capture_message(param_message={
  * `date`: A `datetime.datetime` object representing the occurrence time of the error.
    If left empty, it defaults to `datetime.datetime.utcnow()`.
  * `context`: A dictionary with contextual information. This dictionary must follow the
-    {apm-guide-ref}/api-events.html#events-api-errors[Context] schema definition.
+    {apm-guide-ref}/api-error.html[Context] schema definition.
  * `custom`: A dictionary of custom data you want to attach to the event.
 
 Returns the id of the message as a string.
