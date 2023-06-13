@@ -7,7 +7,7 @@ automatic instrumentations, while keeping custom instrumentations vendor neutral
 
 If a span is created while there is no transaction active, it will result in an
 Elastic APM {apm-guide-ref}/data-model-transactions.html[`Transaction`]. Inner spans
-are mapped to Elastic APM {apm-guide-ref}/data-model-spans.html.html[`Span`].
+are mapped to Elastic APM {apm-guide-ref}/data-model-spans.html[`Span`].
 
 [float]
 [[opentelemetry-getting-started]]
