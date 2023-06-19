@@ -147,7 +147,7 @@ def test_url_sanitization(instrument, elasticapm_client, waiting_httpserver):
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
 
     assert "pass" not in span["context"]["http"]["url"]
-    assert constants.MASK in span["context"]["http"]["url"]
+    assert constants.MASK_URL in span["context"]["http"]["url"]
 
 
 @pytest.mark.parametrize("status_code", [400, 500])

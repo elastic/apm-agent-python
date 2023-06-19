@@ -6,8 +6,8 @@ using the OpenTelemetry API. This allows users to utilize the Elastic APM agent'
 automatic instrumentations, while keeping custom instrumentations vendor neutral.
 
 If a span is created while there is no transaction active, it will result in an
-Elastic APM {apm-guide-ref}/transactions.html[`Transaction`]. Inner spans
-are mapped to Elastic APM {apm-guide-ref}/transaction-spans.html[`Span`].
+Elastic APM {apm-guide-ref}/data-model-transactions.html[`Transaction`]. Inner spans
+are mapped to Elastic APM {apm-guide-ref}/data-model-spans.html[`Span`].
 
 [float]
 [[opentelemetry-getting-started]]
@@ -74,4 +74,3 @@ Additionally, due to implementation details, the global context API only works
 when a span is included in the activated context, and tokens are not used.
 Instead, the global context works as a stack, and when a context is detached the
 previously-active context will automatically be activated.
-
