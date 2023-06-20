@@ -558,6 +558,7 @@ class Config(_ConfigBase):
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://127.0.0.1:8200", required=True)
     server_cert = _ConfigValue("SERVER_CERT", validators=[FileIsReadableValidator()])
+    server_ca_cert_file = _ConfigValue("SERVER_CA_CERT_FILE", validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     use_certifi = _BoolConfigValue("USE_CERTIFI", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")

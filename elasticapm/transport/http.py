@@ -243,9 +243,11 @@ class Transport(HTTPTransportBase):
     @property
     def ca_certs(self):
         """
-        Return location of certificate store. If it is available and not disabled via setting,
-        this will return the location of the certifi certificate store.
+        Return location of certificate store. If the server_ca_cert_file config option is set,
+        its value is returned. Otherwise, the certifi store is used, unless it is disabled or not installed.
         """
+        if self._server_ca_cert_file:
+            return self._server_ca_cert_file
         return certifi.where() if (certifi and self.client.config.use_certifi) else None
 
 

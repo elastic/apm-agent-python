@@ -149,6 +149,7 @@ class Client(object):
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
+            "server_ca_cert_file": self.config.server_ca_cert_file,
             "timeout": self.config.server_timeout,
             "processors": self.load_processors(),
         }

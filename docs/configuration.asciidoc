@@ -1007,8 +1007,6 @@ By default, the agent verifies the SSL certificate if an HTTPS connection to the
 Verification can be disabled by changing this setting to `False`.
 This setting is ignored when <<config-server-cert,`server_cert`>> is set.
 
-NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python 3.4.3+.
-
 [float]
 [[config-server-cert]]
 ==== `server_cert`
@@ -1019,9 +1017,29 @@ NOTE: SSL certificate verification is only available in Python 2.7.9+ and Python
 | `ELASTIC_APM_SERVER_CERT`  | `SERVER_CERT` | `None`
 |============
 
-If you have configured your APM Server with a self signed TLS certificate, or you
+If you have configured your APM Server with a self-signed TLS certificate, or you
 just wish to pin the server certificate, you can specify the path to the PEM-encoded
 certificate via the `ELASTIC_APM_SERVER_CERT` configuration.
+
+NOTE: If this option is set, the agent only verifies that the certificate provided by the APM Server is
+identical to the one configured here. Validity of the certificate is not checked.
+
+[float]
+[[config-server-ca-cert-file]]
+==== `server_ca_cert_file`
+
+[options="header"]
+|============
+| Environment                        | Django/Flask          | Default
+| `ELASTIC_APM_SERVER_CA_CERT_FILE`  | `SERVER_CA_CERT_FILE` | `None`
+|============
+
+By default, the agent will validate the TLS/SSL certificate of the APM Server using the well-known CAs curated by Mozilla,
+and provided by the https://pypi.org/project/certifi/[`certifi`] package.
+
+You can set this option to the path of a file containing a CA certificate that will be used instead.
+
+Specifying this option is required when using self-signed certificates, unless server certificate validation is disabled.
 
 [float]
 [[config-use-certifi]]

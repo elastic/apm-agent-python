@@ -47,6 +47,8 @@ try:
 except ImportError:
     from urllib import parse as urlparse
 
+CUR_DIR = os.path.dirname(os.path.realpath(__file__))
+
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_send(waiting_httpserver, elasticapm_client):
@@ -237,10 +239,9 @@ def test_ssl_cert_pinning_http(waiting_httpserver, elasticapm_client):
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
 def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
     waiting_httpsserver.serve_content(code=202, content="", headers={"Location": "https://example.com/foo"})
-    cur_dir = os.path.dirname(os.path.realpath(__file__))
     transport = Transport(
         waiting_httpsserver.url,
-        server_cert=os.path.join(cur_dir, "..", "ca/server.pem"),
+        server_cert=os.path.join(CUR_DIR, "..", "ca/server.pem"),
         verify_server_cert=True,
         client=elasticapm_client,
     )
@@ -250,6 +251,19 @@ def test_ssl_cert_pinning(waiting_httpsserver, elasticapm_client):
         assert url == "https://example.com/foo"
     finally:
         transport.close()
+
+
+@pytest.mark.parametrize(
+    "sending_elasticapm_client",
+    [{"server_ca_cert_file": os.path.normpath(os.path.join(CUR_DIR, "..", "ca/ca.crt"))}],
+    indirect=True,
+)
+def test_custom_ca_cert(sending_elasticapm_client):
+    ca_cert = os.path.normpath(os.path.join(CUR_DIR, "..", "ca/ca.crt"))
+    pool = sending_elasticapm_client._transport.http
+    assert pool.connection_pool_kw["ca_certs"] == ca_cert
+    conn = pool.connection_from_url("https://localhost")
+    assert conn.ca_certs == ca_cert
 
 
 @pytest.mark.flaky(reruns=3)  # test is flaky on Windows
