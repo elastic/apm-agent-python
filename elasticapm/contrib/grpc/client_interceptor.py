@@ -35,7 +35,7 @@ from grpc._interceptor import _ClientCallDetails
 
 import elasticapm
 from elasticapm.conf import constants
-from elasticapm.traces import Span
+from elasticapm.traces import DroppedSpan, SpanType
 from elasticapm.utils import default_ports
 
 
@@ -193,8 +193,8 @@ class _ClientInterceptor(
     #       Future interface, though it may not.
     #     """
 
-    def attach_traceparent(self, client_call_details: _ClientCallDetails, span: Span):
-        if not span.transaction:
+    def attach_traceparent(self, client_call_details: _ClientCallDetails, span: SpanType) -> _ClientCallDetails:
+        if isinstance(span, DroppedSpan) or not span.transaction:
             return client_call_details
         meta = list(client_call_details.metadata) if client_call_details.metadata else []
         if constants.TRACEPARENT_HEADER_NAME not in meta:
