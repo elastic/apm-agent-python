@@ -37,9 +37,9 @@ endif::[]
 ==== Features
  * Add `server_ca_cert_file` option to provide custom CA certificate {pull}1852[#1852]
 
-// [float]
-// ===== Bug fixes
-
+[float]
+===== Bug fixes
+* Fix a bug in the GRPC instrumentation when reaching the maximum amount of spans per transaction {pull}1861[#1861]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
