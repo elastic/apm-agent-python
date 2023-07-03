@@ -189,6 +189,6 @@ If you have commit access, the process is as follows:
 1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current main, e.g. `git branch -f 1.x main`
 1. Push tag upstream with `git push upstream --tags` (and optionally to your own fork as well)
 1. Update major branch, e.g. `1.x` on upstream with `git push upstream 1.x`
-1. After tests pass, Jenkins will automatically build a source package, as well as binary wheels.
-1. Create a [Github release](https://github.com/elastic/apm-agent-python/releases)
-   targeting the new tag. Copy the changelog into the body of the release.
+1. After tests pass, Github Actions will automatically build and push the new release to PyPI.
+1. Edit and publish the [draft Github release](https://github.com/elastic/apm-agent-python/releases)
+   created by Github Actions. Copy the changelog into the body of the release.
