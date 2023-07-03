@@ -29,20 +29,21 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.17.0]]
+==== 6.17.0 - 2023-07-03
+
 [float]
 ==== Features
- * Add `server_ca_cert_file` option to provide custom CA certificate {pull}1852[#1852]
+* Add `server_ca_cert_file` option to provide custom CA certificate {pull}1852[#1852]
+* Add `include_process_args` option to allow users to opt-in to collecting process args {pull}1867[#1867]
 
 [float]
 ===== Bug fixes
 * Fix a bug in the GRPC instrumentation when reaching the maximum amount of spans per transaction {pull}1861[#1861]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.16.2]]
 ==== 6.16.2 - 2023-06-12
