@@ -370,12 +370,14 @@ class Client(object):
         return result
 
     def get_process_info(self):
-        return {
+        result = {
             "pid": os.getpid(),
             "ppid": os.getppid() if hasattr(os, "getppid") else None,
-            "argv": sys.argv,
             "title": None,  # Note: if we implement this, the value needs to be wrapped with keyword_field
         }
+        if self.config.include_process_args:
+            result["argv"] = sys.argv
+        return result
 
     def get_system_info(self):
         system_data = {

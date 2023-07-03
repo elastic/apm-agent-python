@@ -691,6 +691,7 @@ class Config(_ConfigBase):
         ],
         default=TRACE_CONTINUATION_STRATEGY.CONTINUE,
     )
+    include_process_args = _BoolConfigValue("INCLUDE_PROCESS_ARGS", default=False)
 
     @property
     def is_recording(self):
