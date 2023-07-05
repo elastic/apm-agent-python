@@ -29,6 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import grpc
+import inspect
 import wrapt
 
 import elasticapm
@@ -62,6 +63,19 @@ def _wrap_rpc_behavior(handler, continuation):
     )
 
 
+def get_trace_parent(handler_call_details):
+    traceparent, tracestate = None, None
+    for metadata in handler_call_details.invocation_metadata:
+        if metadata.key == "traceparent":
+            traceparent = metadata.value
+        elif metadata.key == "tracestate":
+            tracestate = metadata.key
+    if traceparent:
+        return TraceParent.from_string(traceparent, tracestate)
+    else:
+        return None
+
+
 class _ServicerContextWrapper(wrapt.ObjectProxy):
     def __init__(self, wrapped, transaction):
         self._self_transaction = transaction
@@ -87,16 +101,7 @@ class _ServerInterceptor(grpc.ServerInterceptor):
             def _interceptor(request_or_iterator, context):
                 if request_streaming or response_streaming:  # only unary-unary is supported
                     return behavior(request_or_iterator, context)
-                traceparent, tracestate = None, None
-                for metadata in handler_call_details.invocation_metadata:
-                    if metadata.key == "traceparent":
-                        traceparent = metadata.value
-                    elif metadata.key == "tracestate":
-                        tracestate = metadata.key
-                if traceparent:
-                    tp = TraceParent.from_string(traceparent, tracestate)
-                else:
-                    tp = None
+                tp = get_trace_parent(handler_call_details)
                 client = elasticapm.get_client()
                 transaction = client.begin_transaction("request", trace_parent=tp)
                 try:
@@ -115,3 +120,35 @@ class _ServerInterceptor(grpc.ServerInterceptor):
             return _interceptor
 
         return _wrap_rpc_behavior(continuation(handler_call_details), transaction_wrapper)
+
+
+class _AsyncServerInterceptor(grpc.ServerInterceptor):
+    async def intercept_service(self, continuation, handler_call_details):
+        def transaction_wrapper(behavior, request_streaming, response_streaming):
+            async def _interceptor(request_or_iterator, context):
+                if request_streaming or response_streaming:  # only unary-unary is supported
+                    return behavior(request_or_iterator, context)
+                tp = get_trace_parent(handler_call_details)
+                client = elasticapm.get_client()
+                transaction = client.begin_transaction("request", trace_parent=tp)
+                try:
+                    result = behavior(request_or_iterator, _ServicerContextWrapper(context, transaction))
+
+                    # This is so we can support both sync and async rpc functions
+                    if inspect.isawaitable(result):
+                        result = await result
+
+                    if transaction and not transaction.outcome:
+                        transaction.set_success()
+                    return result
+                except Exception:
+                    if transaction:
+                        transaction.set_failure()
+                    client.capture_exception(handled=False)
+                    raise
+                finally:
+                    client.end_transaction(name=handler_call_details.method)
+
+            return _interceptor
+
+        return _wrap_rpc_behavior(await continuation(handler_call_details), transaction_wrapper)

@@ -70,6 +70,7 @@ _cls_register = {
     "elasticapm.instrumentation.packages.kafka.KafkaInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCClientInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCServerInstrumentation",
+    "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
 }
 
 if sys.version_info >= (3, 7):
