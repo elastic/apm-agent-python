@@ -93,7 +93,7 @@ class GRPCAsyncServerInstrumentation(AbstractInstrumentedModule):
             return []
 
     def call(self, module, method, wrapped, instance, args, kwargs):
-        from elasticapm.contrib.grpc.server_interceptor import _AsyncServerInterceptor
+        from elasticapm.contrib.grpc.async_server_interceptor import _AsyncServerInterceptor
 
         interceptors = kwargs.get("interceptors") or (args[2] if len(args) > 2 else [])
         interceptors.insert(0, _AsyncServerInterceptor())
