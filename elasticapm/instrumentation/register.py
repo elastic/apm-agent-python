@@ -70,7 +70,6 @@ _cls_register = {
     "elasticapm.instrumentation.packages.kafka.KafkaInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCClientInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCServerInstrumentation",
-    "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
 }
 
 if sys.version_info >= (3, 7):
@@ -95,6 +94,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.starlette.StarletteServerErrorMiddlewareInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisAsyncioInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisPipelineInstrumentation",
+            "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
         ]
     )
 
