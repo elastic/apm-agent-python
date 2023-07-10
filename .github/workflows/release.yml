@@ -20,32 +20,19 @@ jobs:
       - test
       - packages
     runs-on: ubuntu-latest
-    env:
-      PYPI_SECRET_PATH: secret/apm-team/ci/apm-agent-python-pypi-prod
+    environment: release
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
       - uses: actions/checkout@v3
-      - uses: hashicorp/vault-action@v2.4.2
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            ${{ env.PYPI_SECRET_PATH }} user | TWINE_USER ;
-            ${{ env.PYPI_SECRET_PATH }} password | TWINE_PASSWORD
       - uses: actions/download-artifact@v3
         with:
           name: packages
           path: dist
       - name: Upload
-        run: |
-          python -m pip install --user twine
-          python setup.py sdist
-          echo "Uploading to ${REPO_URL} with user ${TWINE_USER}"
-          python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.tar.gz
-          python -m twine upload --username "${TWINE_USER}" --password "${TWINE_PASSWORD}" --skip-existing --repository-url ${REPO_URL} dist/*.whl
-        env:
-          REPO_URL: "https://upload.pypi.org/legacy/"
+        uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
+        with:
+          repository-url: https://upload.pypi.org/legacy/
 
   build-distribution:
     uses: ./.github/workflows/build-distribution.yml
@@ -56,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: hashicorp/vault-action@v2.5.0
+      - uses: hashicorp/vault-action@v2.7.2
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -74,7 +61,7 @@ jobs:
           # Convert v1.2.3 to ver-1-2-3
           VERSION=${GITHUB_REF_NAME/v/ver-}
           VERSION=${VERSION//./-}
-        
+
           ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
       - uses: actions/upload-artifact@v3
         with:
@@ -113,7 +100,7 @@ jobs:
           .
       - name: Docker retag
         run: >-
-          docker tag 
+          docker tag
           ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
           ${{ steps.setup-docker.outputs.name }}:latest
       - name: Docker push
@@ -133,7 +120,7 @@ jobs:
         with:
           name: arn-file
       - name: Create GitHub Draft Release
-        run: >- 
+        run: >-
           gh release create "${GITHUB_REF_NAME}"
           --title="${GITHUB_REF_NAME}"
           --generate-notes
