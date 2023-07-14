@@ -29,8 +29,6 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from pkg_resources import parse_version
-
 from elasticapm.instrumentation.packages.asyncio.base import AbstractInstrumentedModule
 from elasticapm.utils.logging import get_logger
 
@@ -81,19 +79,7 @@ class GRPCServerInstrumentation(AbstractInstrumentedModule):
 class GRPCAsyncServerInstrumentation(AbstractInstrumentedModule):
     name = "grpc_async_server_instrumentation"
     creates_transactions = True
-    instrument_list = [("grpc", "aio.server")]
-
-    def get_instrument_list(self):
-        try:
-            import grpc
-
-            # Check against the oldest version that I believe has the expected API
-            if parse_version(grpc.__version__) >= parse_version("1.33.1") and hasattr(grpc, "aio"):
-                return super().get_instrument_list()
-            else:
-                return []
-        except ImportError:
-            return []
+    instrument_list = [("grpc.aio", "server")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         from elasticapm.contrib.grpc.async_server_interceptor import _AsyncServerInterceptor
