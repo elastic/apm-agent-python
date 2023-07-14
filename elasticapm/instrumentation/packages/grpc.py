@@ -84,12 +84,15 @@ class GRPCAsyncServerInstrumentation(AbstractInstrumentedModule):
     instrument_list = [("grpc", "aio.server")]
 
     def get_instrument_list(self):
-        import grpc
+        try:
+            import grpc
 
-        # Check against the oldest version that I believe has the expected API
-        if parse_version(grpc.__version__) >= parse_version("1.33.1") and hasattr(grpc, "aio"):
-            return super().get_instrument_list()
-        else:
+            # Check against the oldest version that I believe has the expected API
+            if parse_version(grpc.__version__) >= parse_version("1.33.1") and hasattr(grpc, "aio"):
+                return super().get_instrument_list()
+            else:
+                return []
+        except ImportError:
             return []
 
     def call(self, module, method, wrapped, instance, args, kwargs):
