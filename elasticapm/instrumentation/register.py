@@ -94,6 +94,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.starlette.StarletteServerErrorMiddlewareInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisAsyncioInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisPipelineInstrumentation",
+            "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
         ]
     )
 
