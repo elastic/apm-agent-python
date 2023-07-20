@@ -38,9 +38,10 @@ endif::[]
 
 * Add support for grpc aio server interceptor {pull}1870[#1870]
 
-//[float]
-//===== Bug fixes
-//
+[float]
+===== Bug fixes
+
+* Fix a bug in the Elasticsearch client instrumentation which was causing loss of database context (including statement) when interacting with Elastic Cloud {pull}1878[#1878]
 
 
 [[release-notes-6.x]]
