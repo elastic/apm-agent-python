@@ -1,2 +1,2 @@
-aiohttp==3.0.8
+aiohttp>=3,<4
 -r reqs-base.txt
