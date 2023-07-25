@@ -29,10 +29,14 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.18.0]]
+==== 6.18.0 - 2023-07-25
+
 [float]
 ===== Features
 
@@ -42,10 +46,6 @@ endif::[]
 ===== Bug fixes
 
 * Fix a bug in the Elasticsearch client instrumentation which was causing loss of database context (including statement) when interacting with Elastic Cloud {pull}1878[#1878]
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.17.0]]
 ==== 6.17.0 - 2023-07-03
