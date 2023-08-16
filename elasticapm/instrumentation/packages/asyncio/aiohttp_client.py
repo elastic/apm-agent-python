@@ -28,8 +28,10 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import json
+
 from elasticapm import async_capture_span
-from elasticapm.conf import constants
+from elasticapm.conf import Config, constants
 from elasticapm.instrumentation.packages.asyncio.base import AsyncAbstractInstrumentedModule
 from elasticapm.traces import DroppedSpan, execution_context
 from elasticapm.utils import get_host_from_url, sanitize_url
@@ -50,11 +52,19 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
         url = sanitize_url(url)
         transaction = execution_context.get_transaction()
 
+        extra_http = {"url": url}
+
+        if Config.capture_body:
+            if "data" in kwargs and isinstance(kwargs["data"], bytes):
+                extra_http["body"] = kwargs["data"].decode("UTF-8")
+            if "json" in kwargs:
+                extra_http["body"] = json.dumps(kwargs["json"])
+
         async with async_capture_span(
             signature,
             span_type="external",
             span_subtype="http",
-            extra={"http": {"url": url}},
+            extra={"http": extra_http},
             leaf=True,
         ) as span:
             leaf_span = span

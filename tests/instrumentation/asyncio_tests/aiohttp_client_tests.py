@@ -73,6 +73,78 @@ async def test_http_get(instrument, event_loop, elasticapm_client, waiting_https
     assert spans[0]["outcome"] == "success"
 
 
+@pytest.mark.parametrize("use_yarl", [True, False])
+async def test_http_post_with_data(instrument, event_loop, elasticapm_client, waiting_httpserver, use_yarl):
+    assert event_loop.is_running()
+    elasticapm_client.config.update(elasticapm_client.server_version, capture_body="all")
+    elasticapm_client.begin_transaction("test")
+
+    url = waiting_httpserver.url
+    url = yarl.URL(url) if use_yarl else url
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(waiting_httpserver.url, data=b"""{"hello": "world"}""") as resp:
+            status = resp.status
+            text = await resp.text()
+
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "POST %s:%s" % waiting_httpserver.server_address
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
+    assert span["sync"] is False
+    assert span["context"]["http"]["url"] == waiting_httpserver.url
+    assert span["context"]["http"]["status_code"] == 204
+    assert span["context"]["http"]["body"] == """{"hello": "world"}"""
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "",
+        "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
+        "type": "",
+    }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{waiting_httpserver.server_address[1]}"
+    assert spans[0]["outcome"] == "success"
+
+
+@pytest.mark.parametrize("use_yarl", [True, False])
+async def test_http_post_with_json(instrument, event_loop, elasticapm_client, waiting_httpserver, use_yarl):
+    assert event_loop.is_running()
+    elasticapm_client.config.update(elasticapm_client.server_version, capture_body="all")
+    elasticapm_client.begin_transaction("test")
+
+    url = waiting_httpserver.url
+    url = yarl.URL(url) if use_yarl else url
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(waiting_httpserver.url, json={"test": "object"}) as resp:
+            status = resp.status
+            text = await resp.text()
+
+    elasticapm_client.end_transaction()
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 1
+    span = spans[0]
+    assert span["name"] == "POST %s:%s" % waiting_httpserver.server_address
+    assert span["type"] == "external"
+    assert span["subtype"] == "http"
+    assert span["sync"] is False
+    assert span["context"]["http"]["url"] == waiting_httpserver.url
+    assert span["context"]["http"]["status_code"] == 204
+    assert span["context"]["http"]["body"] == """{"test": "object"}"""
+    assert spans[0]["context"]["destination"]["service"] == {
+        "name": "",
+        "resource": "127.0.0.1:%d" % waiting_httpserver.server_address[1],
+        "type": "",
+    }
+    assert spans[0]["context"]["service"]["target"]["type"] == "http"
+    assert spans[0]["context"]["service"]["target"]["name"] == f"127.0.0.1:{waiting_httpserver.server_address[1]}"
+    assert spans[0]["outcome"] == "success"
+
+
 @pytest.mark.parametrize("status_code", [400, 500])
 async def test_http_get_error(instrument, event_loop, elasticapm_client, waiting_httpserver, status_code):
     assert event_loop.is_running()
