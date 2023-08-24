@@ -74,3 +74,21 @@ class GRPCServerInstrumentation(AbstractInstrumentedModule):
         else:
             kwargs["interceptors"] = interceptors
         return wrapped(*args, **kwargs)
+
+
+class GRPCAsyncServerInstrumentation(AbstractInstrumentedModule):
+    name = "grpc_async_server_instrumentation"
+    creates_transactions = True
+    instrument_list = [("grpc.aio", "server")]
+
+    def call(self, module, method, wrapped, instance, args, kwargs):
+        from elasticapm.contrib.grpc.async_server_interceptor import _AsyncServerInterceptor
+
+        interceptors = kwargs.get("interceptors") or (args[2] if len(args) > 2 else [])
+        interceptors.insert(0, _AsyncServerInterceptor())
+        if len(args) > 2:
+            args = list(args)
+            args[2] = interceptors
+        else:
+            kwargs["interceptors"] = interceptors
+        return wrapped(*args, **kwargs)

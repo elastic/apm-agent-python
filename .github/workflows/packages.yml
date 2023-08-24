@@ -25,6 +25,8 @@ jobs:
         run: pip install --user wheel
       - name: Building universal wheel
         run: python setup.py bdist_wheel
+      - name: Building source distribution
+        run: python setup.py sdist
       - name: Upload Packages
         uses: actions/upload-artifact@v3
         with:
