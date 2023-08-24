@@ -381,12 +381,16 @@ class Client(object):
 
     def get_system_info(self):
         system_data = {
-            "hostname": keyword_field(self.config.hostname),
+            "detected_hostname": keyword_field(self.config.detected_hostname),
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }
+        if self.config.hostname:
+            system_data["configured_hostname"] = keyword_field(self.config.hostname)
         system_data.update(cgroup.get_cgroup_container_metadata())
-        pod_name = os.environ.get("KUBERNETES_POD_NAME") or system_data["hostname"]
+        pod_name = os.environ.get("KUBERNETES_POD_NAME") or keyword_field(
+            self.config.hostname or self.config.detected_hostname
+        )
         changed = False
         if "kubernetes" in system_data:
             k8s = system_data["kubernetes"]

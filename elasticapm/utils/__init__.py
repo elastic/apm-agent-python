@@ -31,6 +31,7 @@
 import base64
 import os
 import re
+import socket
 import urllib.parse
 from functools import partial
 from types import FunctionType
@@ -49,6 +50,7 @@ except ImportError:
 
 
 default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
+fqdn = None
 
 
 def varmap(func, var, context=None, name=None, **kwargs):
@@ -221,3 +223,28 @@ def nested_key(d: dict, *args):
             d = None
             break
     return d
+
+
+def getfqdn():
+    """
+    socket.getfqdn() has some issues. For one, it's slow (may do a DNS lookup).
+    For another, it can return `localhost.localdomain`[1], which is less useful
+    than socket.gethostname().
+
+    This function handles the fallbacks and also ensures we don't try to lookup
+    the fqdn more than once.
+
+    [1]: https://stackoverflow.com/a/43330159
+    """
+    global fqdn
+    if not fqdn:
+        fqdn = socket.getfqdn()
+        if fqdn == "localhost.localdomain":
+            fqdn = socket.gethostname()
+        if not fqdn:
+            fqdn = os.environ.get("HOSTNAME")
+        if not fqdn:
+            fqdn = os.environ.get("HOST")
+        if fqdn is None:
+            fqdn = ""
+        fqdn = fqdn.lower().strip()
