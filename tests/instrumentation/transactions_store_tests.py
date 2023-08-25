@@ -187,7 +187,6 @@ def test_leaf_tracing(tracer):
 
     with capture_span("root", "custom"):
         with capture_span("child1-leaf", "custom", leaf=True):
-
             # These two spans should not show up
             with capture_span("ignored-child1", "custom", leaf=True, duration=0.01):
                 pass
@@ -399,6 +398,31 @@ def test_set_transaction_custom_data_merge(elasticapm_client):
     transactions = elasticapm_client.events[TRANSACTION]
 
     assert transactions[0]["context"]["custom"] == {"foo": "bar", "bar": "bie", "boo": "biz"}
+
+
+def test_set_span_custom_data(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+
+    with capture_span("test_span"):
+        elasticapm.set_custom_span_context({"foo": "bar"})
+
+    elasticapm_client.end_transaction("foo", 200)
+    span = elasticapm_client.events[SPAN][0]
+
+    assert span["context"]["custom"] == {"foo": "bar"}
+
+
+def test_set_span_custom_data_merge(elasticapm_client):
+    elasticapm_client.begin_transaction("test")
+
+    with capture_span("test_span"):
+        elasticapm.set_custom_span_context({"foo": "bar", "bar": "baz"})
+        elasticapm.set_custom_span_context({"bar": "bie", "boo": "biz"})
+
+    elasticapm_client.end_transaction("foo", 200)
+    span = elasticapm_client.events[SPAN][0]
+
+    assert span["context"]["custom"] == {"foo": "bar", "bar": "bie", "boo": "biz"}
 
 
 def test_set_user_context(elasticapm_client):

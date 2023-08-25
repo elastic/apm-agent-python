@@ -39,7 +39,7 @@ import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import elasticapm
 from elasticapm.conf import constants
@@ -1266,7 +1266,34 @@ def set_context(data, key="custom"):
         transaction.context[key] = data
 
 
+def set_span_context(data: dict | Callable, key: str = "custom") -> None:
+    """
+    Attach contextual data to the current span.
+
+    If the parent transaction is not sampled, this function becomes a no-op.
+
+    :param data: a dictionary, or a callable that returns a dictionary
+    :param key: the namespace for this data
+    """
+    span = execution_context.get_span()
+    if isinstance(span, DroppedSpan):
+        return
+    if callable(data):
+        data = data()
+
+    # remove invalid characters from key names
+    for k in list(data.keys()):
+        if LABEL_RE.search(k):
+            data[LABEL_RE.sub("_", k)] = data.pop(k)
+
+    if key in span.context:
+        span.context[key].update(data)
+    else:
+        span.context[key] = data
+
+
 set_custom_context = functools.partial(set_context, key="custom")
+set_custom_span_context = functools.partial(set_span_context, key="custom")
 
 
 def set_user_context(username=None, email=None, user_id=None):
