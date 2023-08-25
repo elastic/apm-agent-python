@@ -1266,7 +1266,7 @@ def set_context(data, key="custom"):
         transaction.context[key] = data
 
 
-def set_span_context(data: dict | Callable, key: str = "custom") -> None:
+def set_span_context(data: Union[dict, Callable], key: str = "custom") -> None:
     """
     Attach contextual data to the current span.
 
