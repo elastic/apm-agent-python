@@ -43,7 +43,9 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
         method = kwargs.get("method", args[0])
-        url = str(kwargs.get("url", kwargs.get("str_or_url", args[1])))
+        url = str(kwargs.get("url", kwargs.get("str_or_url", None)))
+        if url is None:
+            url = args[1]
 
         signature = " ".join([method.upper(), get_host_from_url(url)])
         url = sanitize_url(url)
