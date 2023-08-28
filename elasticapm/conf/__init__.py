@@ -34,7 +34,6 @@ import logging.handlers
 import math
 import os
 import re
-import socket
 import threading
 from datetime import timedelta
 
@@ -572,7 +571,7 @@ class Config(_ConfigBase):
         ],
         default=5,
     )
-    hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
+    hostname = _ConfigValue("HOSTNAME", default=None)
     auto_log_stacks = _BoolConfigValue("AUTO_LOG_STACKS", default=True)
     transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.Transport", required=True)
     processors = _ListConfigValue(
