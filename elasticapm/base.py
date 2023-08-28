@@ -391,7 +391,7 @@ class Client(object):
             system_data["hostname"] = system_data.get("configured_hostname", system_data["detected_hostname"])
         system_data.update(cgroup.get_cgroup_container_metadata())
         pod_name = os.environ.get("KUBERNETES_POD_NAME") or keyword_field(
-            self.config.hostname or self.config.detected_hostname
+            self.config.hostname or self.config.detected_hostname.split(".")[0]
         )
         changed = False
         if "kubernetes" in system_data:
