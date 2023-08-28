@@ -117,7 +117,7 @@ def test_docker_kubernetes_system_info(elasticapm_client):
         mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
         system_info = elasticapm_client.get_system_info()
     assert system_info["container"] == {"id": "123"}
-    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": elasticapm.utils.getfqdn()}}
+    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": elasticapm.utils.getfqdn().split(".")[0]}}
 
 
 @mock.patch.dict(
@@ -186,7 +186,7 @@ def test_docker_kubernetes_system_info_except_hostname_from_environ():
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
     assert system_info["kubernetes"] == {
-        "pod": {"name": elasticapm.utils.getfqdn()},
+        "pod": {"name": elasticapm.utils.getfqdn().split(".")[0]},
         "namespace": "namespace",
     }
 
