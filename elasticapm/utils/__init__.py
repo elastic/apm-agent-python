@@ -225,7 +225,7 @@ def nested_key(d: dict, *args):
     return d
 
 
-def getfqdn():
+def getfqdn() -> str:
     """
     socket.getfqdn() has some issues. For one, it's slow (may do a DNS lookup).
     For another, it can return `localhost.localdomain`[1], which is less useful
@@ -248,3 +248,4 @@ def getfqdn():
         if fqdn is None:
             fqdn = ""
         fqdn = fqdn.lower().strip()
+    return fqdn

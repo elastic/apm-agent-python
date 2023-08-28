@@ -38,7 +38,7 @@ import threading
 from datetime import timedelta
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, TRACE_CONTINUATION_STRATEGY
-from elasticapm.utils import compat, getfqdn, starmatch_to_regex
+from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
 from elasticapm.utils.threading import IntervalTimer, ThreadManager
 
@@ -572,7 +572,6 @@ class Config(_ConfigBase):
         default=5,
     )
     hostname = _ConfigValue("HOSTNAME", default=None)
-    detected_hostname = _ConfigValue("DETECTED_HOSTNAME", default=getfqdn())
     auto_log_stacks = _BoolConfigValue("AUTO_LOG_STACKS", default=True)
     transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.Transport", required=True)
     processors = _ListConfigValue(

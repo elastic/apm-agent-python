@@ -95,7 +95,7 @@ def test_system_info(elasticapm_client):
         mocked.return_value = {}
         system_info = elasticapm_client.get_system_info()
     assert {"detected_hostname", "architecture", "platform"} == set(system_info.keys())
-    assert system_info["detected_hostname"] == elasticapm_client.config.detected_hostname
+    assert system_info["detected_hostname"] == elasticapm.utils.getfqdn()
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"hostname": "my_custom_hostname"}], indirect=True)
@@ -117,7 +117,7 @@ def test_docker_kubernetes_system_info(elasticapm_client):
         mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
         system_info = elasticapm_client.get_system_info()
     assert system_info["container"] == {"id": "123"}
-    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": elasticapm_client.config.detected_hostname}}
+    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": elasticapm.utils.getfqdn()}}
 
 
 @mock.patch.dict(
@@ -186,7 +186,7 @@ def test_docker_kubernetes_system_info_except_hostname_from_environ():
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
     assert system_info["kubernetes"] == {
-        "pod": {"name": elasticapm_client.config.detected_hostname},
+        "pod": {"name": elasticapm.utils.getfqdn()},
         "namespace": "namespace",
     }
 
