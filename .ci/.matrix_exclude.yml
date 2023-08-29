@@ -250,3 +250,22 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.12-rc
     FRAMEWORK: grpc-1.24
+  # py3.12
+  - VERSION: python-3.12-rc
+    FRAMEWORK: pymssql-newest  # no wheels available yet
+  - VERSION: python-3.12-rc
+    FRAMEWORK: cassandra-newest  # no wheels available yet
+  - VERSION: python-3.12-rc
+    FRAMEWORK: aiohttp-newest  # no wheels available yet
+  - VERSION: python-3.12-rc
+    FRAMEWORK: elasticsearch-7  # relies on aiohttp
+  - VERSION: python-3.12-rc
+    FRAMEWORK: elasticsearch-8  # relies on aiohttp
+  - VERSION: python-3.12-rc
+    FRAMEWORK: aiobotocore-newest  # relies on aiohttp
+  - VERSION: python-3.12-rc
+    FRAMEWORK: sanic-20.12  # no wheels available yet
+  - VERSION: python-3.12-rc
+    FRAMEWORK: sanic-newest  # no wheels available yet
+  - VERSION: python-3.12-rc
+    FRAMEWORK: grpc-newest  # no wheels available yet
