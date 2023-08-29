@@ -128,7 +128,6 @@ def test_config_inline_dict():
             "secret_token": "bar",
             "server_url": "http://example.com:1234",
             "service_version": "1",
-            "hostname": "localhost",
             "api_request_time": "5s",
         }
     )
@@ -137,7 +136,7 @@ def test_config_inline_dict():
     assert config.secret_token == "bar"
     assert config.server_url == "http://example.com:1234"
     assert config.service_version == "1"
-    assert config.hostname == "localhost"
+    assert config.hostname is None
     assert config.api_request_time.total_seconds() == 5
 
 
