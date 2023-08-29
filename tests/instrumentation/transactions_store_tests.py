@@ -400,31 +400,6 @@ def test_set_transaction_custom_data_merge(elasticapm_client):
     assert transactions[0]["context"]["custom"] == {"foo": "bar", "bar": "bie", "boo": "biz"}
 
 
-def test_set_span_custom_data(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-
-    with capture_span("test_span"):
-        elasticapm.set_custom_span_context({"foo": "bar"})
-
-    elasticapm_client.end_transaction("foo", 200)
-    span = elasticapm_client.events[SPAN][0]
-
-    assert span["context"]["custom"] == {"foo": "bar"}
-
-
-def test_set_span_custom_data_merge(elasticapm_client):
-    elasticapm_client.begin_transaction("test")
-
-    with capture_span("test_span"):
-        elasticapm.set_custom_span_context({"foo": "bar", "bar": "baz"})
-        elasticapm.set_custom_span_context({"bar": "bie", "boo": "biz"})
-
-    elasticapm_client.end_transaction("foo", 200)
-    span = elasticapm_client.events[SPAN][0]
-
-    assert span["context"]["custom"] == {"foo": "bar", "bar": "bie", "boo": "biz"}
-
-
 def test_set_user_context(elasticapm_client):
     elasticapm_client.begin_transaction("test")
 

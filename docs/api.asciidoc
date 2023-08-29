@@ -441,31 +441,6 @@ following the `update()` semantics of Python dictionaries.
 
 
 [float]
-[[api-set-custom-span-context]]
-==== `elasticapm.set_custom_span_context()`
-
-[small]#Added in v6.19.0.#
-
-Attach custom contextual data to the current span.
-
-Example:
-
-[source,python]
-----
-import elasticapm
-
-elasticapm.set_custom_span_context({'billing_amount': product.price * item_count})
-----
-
- * `data`: (*required*) A dictionary with the data to be attached. This should be a flat key/value `dict` object.
-
-NOTE: `.`, `*`, and `"` are invalid characters for key names and will be replaced with `_`.
-
-You can call this function multiple times, new context data will be merged with existing data,
-following the `update()` semantics of Python dictionaries.
-
-
-[float]
 [[api-capture-span]]
 ==== `elasticapm.capture_span`
 
