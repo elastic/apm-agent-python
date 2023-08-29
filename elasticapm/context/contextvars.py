@@ -32,15 +32,19 @@
 from __future__ import absolute_import
 
 import contextvars
+from typing import TYPE_CHECKING
 
 from elasticapm.context.base import BaseContext
+
+if TYPE_CHECKING:
+    import elasticapm.traces
 
 
 class ContextVarsContext(BaseContext):
     elasticapm_transaction_var = contextvars.ContextVar("elasticapm_transaction_var")
     elasticapm_spans_var = contextvars.ContextVar("elasticapm_spans_var", default=())
 
-    def get_transaction(self, clear=False):
+    def get_transaction(self, clear: bool = False) -> "elasticapm.traces.Transaction":
         """
         Get the transaction for the current execution context
 
@@ -55,20 +59,20 @@ class ContextVarsContext(BaseContext):
         except LookupError:
             return None
 
-    def set_transaction(self, transaction):
+    def set_transaction(self, transaction: "elasticapm.traces.Transaction") -> None:
         """
         Set the transaction for the current execution context
         """
         self.elasticapm_transaction_var.set(transaction)
 
-    def get_span(self):
+    def get_span(self) -> "elasticapm.traces.Span":
         """
         Get the active span for the current execution context.
         """
         spans = self.elasticapm_spans_var.get()
         return spans[-1] if spans else None
 
-    def set_span(self, span):
+    def set_span(self, span: "elasticapm.traces.Span") -> None:
         """
         Set the active span for the current execution context.
 
@@ -77,7 +81,7 @@ class ContextVarsContext(BaseContext):
         spans = self.elasticapm_spans_var.get()
         self.elasticapm_spans_var.set(spans + (span,))
 
-    def unset_span(self, clear_all=False):
+    def unset_span(self, clear_all: bool = False) -> "elasticapm.traces.Span":
         """
         De-activate the current span. If a span was previously active, it will
         become active again.
