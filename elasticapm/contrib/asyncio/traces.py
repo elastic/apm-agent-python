@@ -30,7 +30,7 @@
 
 import functools
 from types import TracebackType
-from typing import Optional, Type, TypeVar, Callable, Awaitable, Any
+from typing import Any, Awaitable, Callable, Optional, Type, TypeVar
 
 from elasticapm.conf.constants import LABEL_RE
 from elasticapm.traces import SpanType, capture_span, execution_context

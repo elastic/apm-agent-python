@@ -39,7 +39,7 @@ import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import elasticapm
 from elasticapm.conf import constants
