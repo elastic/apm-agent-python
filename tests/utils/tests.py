@@ -29,14 +29,17 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import socket
 from functools import partial
 
 import pytest
 
+import elasticapm.utils
 from elasticapm.conf import constants
 from elasticapm.utils import (
     get_name_from_func,
     get_url_dict,
+    getfqdn,
     nested_key,
     read_pem_file,
     sanitize_url,
@@ -259,3 +262,12 @@ def test_nested_key(data, key, expected):
         assert r is expected
     else:
         assert r == expected
+
+
+def test_getfqdn(invalidate_fqdn_cache):
+    assert getfqdn() == socket.getfqdn()
+
+
+def test_getfqdn_caches(invalidate_fqdn_cache):
+    elasticapm.utils.fqdn = "foo"
+    assert getfqdn() == "foo"

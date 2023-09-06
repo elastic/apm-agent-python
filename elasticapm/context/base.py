@@ -28,15 +28,20 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import elasticapm.traces
+
 
 class BaseContext(object):
-    def set_transaction(self, transaction):
+    def set_transaction(self, transaction: "elasticapm.traces.Transaction") -> None:
         """
         Set the transaction for the current execution context
         """
         raise NotImplementedError
 
-    def get_transaction(self, clear=False):
+    def get_transaction(self, clear: bool = False) -> "elasticapm.traces.Transaction":
         """
         Get the transaction for the current execution context
 
@@ -45,7 +50,7 @@ class BaseContext(object):
         """
         raise NotImplementedError
 
-    def set_span(self, span):
+    def set_span(self, span: "elasticapm.traces.Span") -> None:
         """
         Set the active span for the current execution context.
 
@@ -53,13 +58,13 @@ class BaseContext(object):
         """
         raise NotImplementedError
 
-    def get_span(self):
+    def get_span(self) -> "elasticapm.traces.Span":
         """
         Get the active span for the current execution context.
         """
         raise NotImplementedError
 
-    def unset_span(self, clear_all=False):
+    def unset_span(self, clear_all: bool = False) -> "elasticapm.traces.Span":
         """
         De-activate the current span. If a span was previously active, it will
         become active again.

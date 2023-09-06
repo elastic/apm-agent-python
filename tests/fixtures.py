@@ -485,3 +485,11 @@ def always_uninstrument_and_close():
                 client.close()
         except Exception:
             pass
+
+
+@pytest.fixture()
+def invalidate_fqdn_cache():
+    fqdn = elasticapm.utils.fqdn
+    elasticapm.utils.fqdn = None
+    yield
+    elasticapm.utils.fqdn = fqdn

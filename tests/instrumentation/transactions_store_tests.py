@@ -187,7 +187,6 @@ def test_leaf_tracing(tracer):
 
     with capture_span("root", "custom"):
         with capture_span("child1-leaf", "custom", leaf=True):
-
             # These two spans should not show up
             with capture_span("ignored-child1", "custom", leaf=True, duration=0.01):
                 pass

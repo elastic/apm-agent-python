@@ -39,7 +39,7 @@ import warnings
 from collections import defaultdict
 from datetime import timedelta
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import elasticapm
 from elasticapm.conf import constants
@@ -62,7 +62,9 @@ _time_func = timeit.default_timer
 execution_context = init_execution_context()
 
 SpanType = Union["Span", "DroppedSpan"]
-_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
+
+FuncType = Callable[..., Any]
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT", bound=FuncType)
 
 
 class ChildDuration(object):
