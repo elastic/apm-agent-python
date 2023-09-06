@@ -42,8 +42,10 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("aiohttp.client", "ClientSession._request")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        method = kwargs["method"] if "method" in kwargs else args[0]
-        url = kwargs["url"] if "url" in kwargs else args[1]
+        method = kwargs.get("method", args[0])
+        url = kwargs.get("url", kwargs.get("str_or_url", None))
+        if url is None:
+            url = args[1]
         url = str(url)
 
         signature = " ".join([method.upper(), get_host_from_url(url)])
