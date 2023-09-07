@@ -165,14 +165,14 @@ def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
         with caplog.at_level("DEBUG", "elasticapm.transport"):
             # we need to add lots of uncompressible data to fill up the gzip-internal buffer
             for i in range(12):
-                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(4000)))
             transport._flushed.wait(timeout=0.1)
         assert mock_flush.call_count == 1
-        elasticapm_client.config.update(version="1", api_request_size="1mb")
+        elasticapm_client.config.update(version="1", api_request_size="10mb")
         with caplog.at_level("DEBUG", "elasticapm.transport"):
             # we need to add lots of uncompressible data to fill up the gzip-internal buffer
             for i in range(12):
-                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(4000)))
             transport._flushed.wait(timeout=0.1)
         # Should be unchanged because our buffer limit is much higher.
         assert mock_flush.call_count == 1
@@ -189,7 +189,7 @@ def test_flush_time_size(mock_flush, caplog, elasticapm_client):
         with caplog.at_level("DEBUG", "elasticapm.transport"):
             # we need to add lots of uncompressible data to fill up the gzip-internal buffer
             for i in range(12):
-                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(4000)))
             transport._flushed.wait(timeout=0.1)
         assert mock_flush.call_count == 1
     finally:
