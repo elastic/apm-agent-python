@@ -250,7 +250,7 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.12-rc
     FRAMEWORK: grpc-1.24
-  # py3.12
+  # TODO py3.12
   - VERSION: python-3.12-rc
     FRAMEWORK: pymssql-newest  # no wheels available yet
   - VERSION: python-3.12-rc
