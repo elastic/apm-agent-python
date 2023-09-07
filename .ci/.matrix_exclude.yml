@@ -250,7 +250,7 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.12-rc
     FRAMEWORK: grpc-1.24
-  # py3.12
+  # TODO py3.12
   - VERSION: python-3.12-rc
     FRAMEWORK: pymssql-newest  # no wheels available yet
   - VERSION: python-3.12-rc
@@ -269,3 +269,6 @@ exclude:
     FRAMEWORK: sanic-newest  # no wheels available yet
   - VERSION: python-3.12-rc
     FRAMEWORK: grpc-newest  # no wheels available yet
+  - VERSION: python-3.12-rc
+    FRAMEWORK: kafka-python-newest  # https://github.com/dpkp/kafka-python/pull/2376
+
