@@ -162,7 +162,7 @@ class _lambda_transaction(object):
             # service like Step Functions, and is unlikely to be standardized
             # in any way. We just have to rely on our defaults in this case.
             self.event = {}
-        trace_parent = TraceParent.from_headers(self.event.get("headers", {}))
+        trace_parent = TraceParent.from_headers(self.event.get("headers") or {})
 
         global COLD_START
         cold_start = COLD_START
@@ -525,7 +525,7 @@ def get_url_dict(event: dict) -> dict:
     """
     Reconstruct URL from API Gateway
     """
-    headers = event.get("headers", {})
+    headers = event.get("headers") or {}
     protocol = headers.get("X-Forwarded-Proto", headers.get("x-forwarded-proto", "https"))
     host = headers.get("Host", headers.get("host", ""))
     stage = nested_key(event, "requestContext", "stage") or ""
