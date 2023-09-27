@@ -54,21 +54,6 @@ class Literal(object):
         return "<Literal {}{}{}>".format(self.literal_type, self.content, self.literal_type)
 
 
-def skip_to(start, tokens, value_sequence):
-    i = start
-    while i < len(tokens):
-        for idx, token in enumerate(value_sequence):
-            if tokens[i + idx] != token:
-                break
-        else:
-            # Match
-            return tokens[start : i + len(value_sequence)]
-        i += 1
-
-    # Not found
-    return None
-
-
 def look_for_table(sql, keyword):
     tokens = tokenize(sql)
     table_name = _scan_for_table_with_tokens(tokens, keyword)
@@ -109,7 +94,6 @@ def scan(tokens):
                 prev_was_escape = False
                 lexeme.append(token)
             else:
-
                 if token == literal_started:
                     if literal_started == "'" and len(tokens) > i + 1 and tokens[i + 1] == "'":  # double quotes
                         i += 1
@@ -133,14 +117,30 @@ def scan(tokens):
                 # Postgres can use arbitrary characters between two $'s as a
                 # literal separation token, e.g.: $fish$ literal $fish$
                 # This part will detect that and skip over the literal.
-                skipped_token = skip_to(i + 1, tokens, "$")
-                if skipped_token is not None:
-                    dollar_token = ["$"] + skipped_token
-
-                    skipped = skip_to(i + len(dollar_token), tokens, dollar_token)
-                    if skipped:  # end wasn't found.
-                        yield i, Literal("".join(dollar_token), "".join(skipped[: -len(dollar_token)]))
-                        i = i + len(skipped) + len(dollar_token)
+                try:
+                    # Closing dollar of the opening quote,
+                    # i.e. the second $ in the first $fish$
+                    closing_dollar_idx = tokens.index("$", i + 1)
+                except ValueError:
+                    pass
+                else:
+                    quote = tokens[i : closing_dollar_idx + 1]
+                    length = len(quote)
+                    # Opening dollar of the closing quote,
+                    # i.e. the first $ in the second $fish$
+                    closing_quote_idx = closing_dollar_idx + 1
+                    while True:
+                        try:
+                            closing_quote_idx = tokens.index("$", closing_quote_idx)
+                        except ValueError:
+                            break
+                        if tokens[closing_quote_idx : closing_quote_idx + length] == quote:
+                            yield i, Literal(
+                                "".join(quote), "".join(tokens[closing_dollar_idx + 1 : closing_quote_idx])
+                            )
+                            i = closing_quote_idx + length
+                            break
+                        closing_quote_idx += 1
             else:
                 if token != " ":
                     yield i, token

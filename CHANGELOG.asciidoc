@@ -37,6 +37,7 @@ endif::[]
 ===== Features
 
 * Collect the `configured_hostname` and `detected_hostname` separately, and switch to FQDN for the `detected_hostname`. {pull}1891[#1891]
+* Improve postgres dollar-quote detection to be much faster {pull}1905[#1905]
 
 [float]
 ===== Bug fixes

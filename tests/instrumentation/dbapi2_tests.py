@@ -27,6 +27,7 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import pytest
 
 from elasticapm.instrumentation.packages.dbapi2 import Literal, extract_signature, scan, tokenize
 
@@ -68,6 +69,36 @@ def test_scan_double_quotes_at_end():
     tokens = tokenize(sql)
     actual = [t[1] for t in scan(tokens)]
     expected = ["Hello", "Peter", "Pan", "at", "Disney", Literal("'", "World")]
+    assert actual == expected
+
+
+@pytest.mark.parametrize("quote", ["$$", "$q$"])
+@pytest.mark.parametrize(
+    "content",
+    [
+        "",
+        "q",
+        "Peter q Pan",
+        "Peter $ Pan",
+        "Peter $q Pan",
+        "Peter q$ Pan",
+        "Peter $q q$ $q q$ Pan Peter $q q$ $q q$ Pan",
+        "Peter $qq$ Pan",
+    ],
+)
+def test_scan_dollar_quote(quote, content):
+    sql = f"Hello {quote}{content}{quote} at Disney World"
+    tokens = tokenize(sql)
+    actual = [t[1] for t in scan(tokens)]
+    expected = ["Hello", Literal(quote, content), "at", "Disney", "World"]
+    assert actual == expected
+
+
+def test_dollar_quote_containing_double_dollar():
+    sql = "Hello $q$Peter $$ Pan$q$ at Disney World"
+    tokens = tokenize(sql)
+    actual = [t[1] for t in scan(tokens)]
+    expected = ["Hello", Literal("$q$", "Peter $$ Pan"), "at", "Disney", "World"]
     assert actual == expected
 
 
