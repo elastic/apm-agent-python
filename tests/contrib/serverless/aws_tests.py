@@ -455,3 +455,18 @@ def test_partial_transaction_failure(event_api, context, sending_elasticapm_clie
     assert b"metadata" in request.data
     assert b"transaction" in request.data
     sending_elasticapm_client.close()
+
+
+def test_with_headers_as_none(event_api2, context, elasticapm_client):
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
+
+    @capture_serverless
+    def test_func(event, context):
+        with capture_span("test_span"):
+            time.sleep(0.01)
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    event_api2["headers"] = None
+
+    test_func(event_api2, context)
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
