@@ -93,9 +93,9 @@ jobs:
           #  - version: "3.6"
           #    framework: "none"
           #    asyncio: "true"
-          - version: "3.7"
-            framework: none
-            asyncio: true
+          #  - version: "3.7"
+          #    framework: none
+          #    asyncio: true
           - version: "3.8"
             framework: none
             asyncio: true
