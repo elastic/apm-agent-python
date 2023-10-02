@@ -254,8 +254,6 @@ exclude:
   - VERSION: python-3.12-rc
     FRAMEWORK: pymssql-newest  # no wheels available yet
   - VERSION: python-3.12-rc
-    FRAMEWORK: cassandra-newest  # no wheels available yet
-  - VERSION: python-3.12-rc
     FRAMEWORK: aiohttp-newest  # no wheels available yet
   - VERSION: python-3.12-rc
     FRAMEWORK: elasticsearch-7  # relies on aiohttp
@@ -267,8 +265,6 @@ exclude:
     FRAMEWORK: sanic-20.12  # no wheels available yet
   - VERSION: python-3.12-rc
     FRAMEWORK: sanic-newest  # no wheels available yet
-  - VERSION: python-3.12-rc
-    FRAMEWORK: grpc-newest  # no wheels available yet
   - VERSION: python-3.12-rc
     FRAMEWORK: kafka-python-newest  # https://github.com/dpkp/kafka-python/pull/2376
 
