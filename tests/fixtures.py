@@ -165,7 +165,7 @@ class ValidatingWSGIApp(ContentServer):
         elif request.content_encoding == "gzip":
             with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
                 data = f.read()
-        data = data.decode(request.charset)
+        data = data.decode("utf-8")
         if request.content_type == "application/x-ndjson":
             data = [json.loads(line) for line in data.split("\n") if line]
         self.payloads.append(data)
