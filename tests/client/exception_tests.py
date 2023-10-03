@@ -92,7 +92,7 @@ def test_exception_event(elasticapm_client):
     )
 
 
-def test_sending_exception(sending_elasticapm_client):
+def test_sending_exception(sending_elasticapm_client: elasticapm.Client):
     try:
         1 / 0
     except Exception:
