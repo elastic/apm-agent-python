@@ -206,7 +206,7 @@ class AbstractInstrumentedModule(object):
         transaction = execution_context.get_transaction()
         if not transaction:
             return wrapped(*args, **kwargs)
-        elif not transaction.is_sampled:
+        elif not transaction.is_sampled or transaction.pause_sampling:
             args, kwargs = self.mutate_unsampled_call_args(module, method, wrapped, instance, args, kwargs, transaction)
             return wrapped(*args, **kwargs)
         else:

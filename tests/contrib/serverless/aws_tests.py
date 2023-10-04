@@ -424,6 +424,11 @@ def test_partial_transaction(event_api, context, sending_elasticapm_client):
     test_func(event_api, context)
 
     assert len(sending_elasticapm_client.httpserver.requests) == 2
+
+    # There should be no spans from the partial transaction
+    for payload in sending_elasticapm_client.httpserver.payloads[1]:
+        assert "span" not in payload
+
     request = sending_elasticapm_client.httpserver.requests[0]
     assert request.full_path == "/register/transaction?"
     assert request.content_type == "application/vnd.elastic.apm.transaction+ndjson"
