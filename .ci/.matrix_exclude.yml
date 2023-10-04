@@ -250,6 +250,14 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.12
     FRAMEWORK: grpc-1.24
+  - VERSION: python-3.7
+    FRAMEWORK: flask-1.0
+  - VERSION: python-3.7
+    FRAMEWORK: flask-1.1
+  - VERSION: python-3.7
+    FRAMEWORK: jinja2-2
+  - VERSION: python-3.7
+    FRAMEWORK: celery-4-flask-1.0
   # TODO py3.12
   - VERSION: python-3.12
     FRAMEWORK: pymssql-newest  # no wheels available yet
