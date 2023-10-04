@@ -275,4 +275,7 @@ exclude:
     FRAMEWORK: sanic-newest  # no wheels available yet
   - VERSION: python-3.12
     FRAMEWORK: kafka-python-newest  # https://github.com/dpkp/kafka-python/pull/2376
-
+  - VERSION: python-3.12
+    FRAMEWORK: pyodbc-newest  # error on wheel
+  - VERSION: python-3.12
+    FRAMEWORK: cassandra-newest  # c extension issue
