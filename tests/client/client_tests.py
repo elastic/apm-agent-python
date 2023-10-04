@@ -446,11 +446,17 @@ def test_server_url_joining(elasticapm_client, expected):
 def test_python_version_deprecation(mock_python_version_tuple, version):
     warnings.simplefilter("always")
 
+    client_config = {}
+    client_config["central_config"] = "false"
+    client_config["cloud_provider"] = False
+    client_config["transport_class"] = "tests.fixtures.DummyTransport"
+    client_config["metrics_interval"] = "0ms"
+
     mock_python_version_tuple.return_value = version
     e = None
     with pytest.warns(DeprecationWarning, match="agent only supports"):
         try:
-            e = elasticapm.Client()
+            e = elasticapm.Client(**client_config)
         finally:
             if e:
                 e.close()

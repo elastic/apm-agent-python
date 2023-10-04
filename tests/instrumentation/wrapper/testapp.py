@@ -38,3 +38,5 @@ assert client
 assert client.activation_method == "wrapper"
 
 print("SUCCESS")
+
+client.close()
