@@ -428,6 +428,7 @@ def test_partial_transaction(event_api, context, sending_elasticapm_client):
     assert request.full_path == "/register/transaction?"
     assert request.content_type == "application/vnd.elastic.apm.transaction+ndjson"
     assert b"metadata" in request.data
+    assert b"AWS Lambda" in request.data
     assert b"transaction" in request.data
     sending_elasticapm_client.close()
 
@@ -453,6 +454,7 @@ def test_partial_transaction_failure(event_api, context, sending_elasticapm_clie
     assert request.full_path == "/register/transaction?"
     assert request.content_type == "application/vnd.elastic.apm.transaction+ndjson"
     assert b"metadata" in request.data
+    assert b"AWS Lambda" in request.data
     assert b"transaction" in request.data
     sending_elasticapm_client.close()
 
