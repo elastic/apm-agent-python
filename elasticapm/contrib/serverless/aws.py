@@ -400,10 +400,9 @@ class _lambda_transaction(object):
         metadata["service"]["node"] = {"configured_name": os.environ.get("AWS_LAMBDA_LOG_STREAM_NAME")}
         # This is the one piece of metadata that requires deep merging. We add it manually
         # here to avoid having to deep merge in _transport.add_metadata()
-        if self.client._transport._metadata:
-            node_name = nested_key(self.client._transport._metadata, "service", "node", "name")
-            if node_name:
-                metadata["service"]["node"]["name"] = node_name
+        node = nested_key(self.client.get_service_info(), "node")
+        if node:
+            metadata["service"]["node"] = node
 
         metadata["cloud"] = {}
         metadata["cloud"]["provider"] = "aws"
@@ -417,7 +416,7 @@ class _lambda_transaction(object):
         elasticapm.set_context(faas, "faas")
         if message_context:
             elasticapm.set_context(message_context, "message")
-        self.client._transport.add_metadata(metadata)
+        self.client.add_extra_metadata(metadata)
 
     def send_partial_transaction(self):
         """
@@ -436,7 +435,7 @@ class _lambda_transaction(object):
         ):
             transport = self.client._transport
             logger.debug("Sending partial transaction and early metadata to the lambda extension...")
-            data = transport._json_serializer({"metadata": transport._metadata}) + "\n"
+            data = transport._json_serializer({"metadata": self.client.build_metadata()}) + "\n"
             data += transport._json_serializer({"transaction": execution_context.get_transaction().to_dict()})
             partial_transaction_url = urllib.parse.urljoin(
                 self.client.config.server_url
