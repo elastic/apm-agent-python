@@ -35,7 +35,7 @@ import shutil
 import elasticapm
 
 
-def setup():
+def setup() -> None:
     parser = argparse.ArgumentParser(
         prog="elasticapm-run",
         description="""

@@ -110,7 +110,7 @@ class Httplib2Instrumentation(AbstractInstrumentedModule):
         self._set_disttracing_headers(params["headers"], trace_parent, transaction)
         return args, kwargs
 
-    def _set_disttracing_headers(self, headers, trace_parent, transaction):
+    def _set_disttracing_headers(self, headers, trace_parent, transaction) -> None:
         trace_parent_str = trace_parent.to_string()
         headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent_str
         if transaction.tracer.config.use_elastic_traceparent_header:

@@ -237,7 +237,7 @@ class _lambda_transaction(object):
         self.send_partial_transaction()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """
         Transaction teardown
         """
@@ -419,7 +419,7 @@ class _lambda_transaction(object):
             elasticapm.set_context(message_context, "message")
         self.client._transport.add_metadata(metadata)
 
-    def send_partial_transaction(self):
+    def send_partial_transaction(self) -> None:
         """
         We synchronously send the (partial) transaction to the Lambda Extension
         so that the transaction can be reported even if the lambda runtime times

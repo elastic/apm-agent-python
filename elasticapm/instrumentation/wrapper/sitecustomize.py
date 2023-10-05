@@ -33,7 +33,7 @@ from elasticapm.conf import WrapperConfig
 from elasticapm.instrumentation.register import register_wrapper_instrumentations
 
 
-def setup():
+def setup() -> None:
     config = WrapperConfig()
     register_wrapper_instrumentations()
     if config.instrument and config.enabled:

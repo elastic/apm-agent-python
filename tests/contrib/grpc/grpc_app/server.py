@@ -46,7 +46,7 @@ elasticapm.instrument()
 
 
 class TestService(pb2_grpc.TestServiceServicer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         pass
 
     def GetServerResponse(self, request, context):
@@ -56,7 +56,7 @@ class TestService(pb2_grpc.TestServiceServicer):
 
         return pb2.MessageResponse(**result)
 
-    def GetServerResponseAbort(self, request, context):
+    def GetServerResponseAbort(self, request, context) -> None:
         context.abort(grpc.StatusCode.INTERNAL, "foo")
 
     def GetServerResponseUnavailable(self, request, context):
@@ -70,7 +70,7 @@ class TestService(pb2_grpc.TestServiceServicer):
 
 
 class TestServiceAsync(pb2_grpc.TestServiceServicer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         pass
 
     async def GetServerResponse(self, request, context):
@@ -80,7 +80,7 @@ class TestServiceAsync(pb2_grpc.TestServiceServicer):
 
         return pb2.MessageResponse(**result)
 
-    async def GetServerResponseAbort(self, request, context):
+    async def GetServerResponseAbort(self, request, context) -> None:
         await context.abort(grpc.StatusCode.INTERNAL, "foo")
 
     async def GetServerResponseUnavailable(self, request, context):
@@ -93,7 +93,7 @@ class TestServiceAsync(pb2_grpc.TestServiceServicer):
         raise Exception("oh no")
 
 
-def serve(port):
+def serve(port) -> None:
     apm_client = GRPCApmClient(
         service_name="grpc-server", disable_metrics="*", api_request_time="100ms", central_config="False"
     )
@@ -104,7 +104,7 @@ def serve(port):
     server.wait_for_termination()
 
 
-async def serve_async(port):
+async def serve_async(port) -> None:
     apm_client = GRPCApmClient(
         service_name="grpc-server", disable_metrics="*", api_request_time="100ms", central_config="False"
     )

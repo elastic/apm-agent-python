@@ -149,7 +149,7 @@ def validate_span_type_subtype(item: dict) -> Optional[str]:
 
 
 class ValidatingWSGIApp(ContentServer):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.skip_validate = kwargs.pop("skip_validate", False)
         super(ValidatingWSGIApp, self).__init__(**kwargs)
         self.payloads = []
@@ -368,12 +368,12 @@ def sending_elasticapm_client(request, validating_httpserver):
 
 
 class DummyTransport(HTTPTransportBase):
-    def __init__(self, url, *args, **kwargs):
+    def __init__(self, url, *args, **kwargs) -> None:
         super(DummyTransport, self).__init__(url, *args, **kwargs)
         self.events = defaultdict(list)
         self.validation_errors = defaultdict(list)
 
-    def queue(self, event_type, data, flush=False):
+    def queue(self, event_type, data, flush=False) -> None:
         self._flushed.clear()
         data = self._process_event(event_type, data)
         self.events[event_type].append(data)
@@ -389,11 +389,11 @@ class DummyTransport(HTTPTransportBase):
                 if result:
                     self.validation_errors[event_type].append(result)
 
-    def start_thread(self, pid=None):
+    def start_thread(self, pid=None) -> None:
         # don't call the parent method, but the one from ThreadManager
         ThreadManager.start_thread(self, pid=pid)
 
-    def stop_thread(self):
+    def stop_thread(self) -> None:
         pass
 
     def get_config(self, current_version=None, keys=None):
@@ -401,7 +401,7 @@ class DummyTransport(HTTPTransportBase):
 
 
 class TempStoreClient(Client):
-    def __init__(self, config=None, **inline):
+    def __init__(self, config=None, **inline) -> None:
         inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
         super(TempStoreClient, self).__init__(config, **inline)
 

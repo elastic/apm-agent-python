@@ -70,20 +70,20 @@ _AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT", bound=FuncType)
 class ChildDuration(object):
     __slots__ = ("obj", "_nesting_level", "_start", "_duration", "_lock")
 
-    def __init__(self, obj: "BaseSpan"):
+    def __init__(self, obj: "BaseSpan") -> None:
         self.obj = obj
         self._nesting_level: int = 0
         self._start: float = 0
         self._duration: timedelta = timedelta(seconds=0)
         self._lock = threading.Lock()
 
-    def start(self, timestamp: float):
+    def start(self, timestamp: float) -> None:
         with self._lock:
             self._nesting_level += 1
             if self._nesting_level == 1:
                 self._start = timestamp
 
-    def stop(self, timestamp: float):
+    def stop(self, timestamp: float) -> None:
         with self._lock:
             self._nesting_level -= 1
             if self._nesting_level == 0:
@@ -95,7 +95,7 @@ class ChildDuration(object):
 
 
 class BaseSpan(object):
-    def __init__(self, labels=None, start=None, links: Optional[Sequence[TraceParent]] = None):
+    def __init__(self, labels=None, start=None, links: Optional[Sequence[TraceParent]] = None) -> None:
         self._child_durations = ChildDuration(self)
         self.labels = {}
         self.outcome: Optional[str] = None
@@ -111,10 +111,10 @@ class BaseSpan(object):
         if labels:
             self.label(**labels)
 
-    def child_started(self, timestamp):
+    def child_started(self, timestamp) -> None:
         self._child_durations.start(timestamp)
 
-    def child_ended(self, child: SpanType):
+    def child_ended(self, child: SpanType) -> None:
         with self.compression_buffer_lock:
             if not child.is_compression_eligible():
                 if self.compression_buffer:
@@ -127,7 +127,7 @@ class BaseSpan(object):
                 self.compression_buffer.report()
                 self.compression_buffer = child
 
-    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None) -> None:
         self.ended_time = _time_func()
         self.duration = duration if duration is not None else timedelta(seconds=self.ended_time - self.start_time)
         if self.compression_buffer:
@@ -137,7 +137,7 @@ class BaseSpan(object):
     def to_dict(self) -> dict:
         raise NotImplementedError()
 
-    def label(self, **labels):
+    def label(self, **labels) -> None:
         """
         Label this span with one or multiple key/value labels. Keys should be strings, values can be strings, booleans,
         or numerical values (int, float, Decimal)
@@ -160,10 +160,10 @@ class BaseSpan(object):
             self.links = []
         self.links.append({"trace_id": trace_parent.trace_id, "span_id": trace_parent.span_id})
 
-    def set_success(self):
+    def set_success(self) -> None:
         self.outcome = constants.OUTCOME.SUCCESS
 
-    def set_failure(self):
+    def set_failure(self) -> None:
         self.outcome = constants.OUTCOME.FAILURE
 
     @staticmethod
@@ -185,7 +185,7 @@ class Transaction(BaseSpan):
         start: Optional[float] = None,
         sample_rate: Optional[float] = None,
         links: Optional[Sequence[TraceParent]] = None,
-    ):
+    ) -> None:
         """
         tracer
             Tracer object
@@ -245,7 +245,7 @@ class Transaction(BaseSpan):
             for trace_parent in links:
                 self.add_link(trace_parent)
 
-    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[timedelta] = None) -> None:
         super().end(skip_frames, duration)
         if self._breakdown:
             for (span_type, span_subtype), timer in self._span_timers.items():
@@ -446,7 +446,7 @@ class Transaction(BaseSpan):
             result["context"] = context
         return result
 
-    def track_span_duration(self, span_type, span_subtype, self_duration):
+    def track_span_duration(self, span_type, span_subtype, self_duration) -> None:
         # TODO: once asynchronous spans are supported, we should check if the transaction is already finished
         # TODO: and, if it has, exit without tracking.
         with self._span_timers_lock:
@@ -457,7 +457,7 @@ class Transaction(BaseSpan):
         return self._is_sampled
 
     @is_sampled.setter
-    def is_sampled(self, is_sampled: bool):
+    def is_sampled(self, is_sampled: bool) -> None:
         """
         This should never be called in normal operation, but often is used
         for testing. We just want to make sure our sample_rate comes out correctly
@@ -473,7 +473,7 @@ class Transaction(BaseSpan):
     def tracer(self) -> "Tracer":
         return self._tracer
 
-    def track_dropped_span(self, span: SpanType):
+    def track_dropped_span(self, span: SpanType) -> None:
         with self._span_timers_lock:
             try:
                 resource = span.context["destination"]["service"]["resource"]
@@ -526,7 +526,7 @@ class Span(BaseSpan):
         sync: Optional[bool] = None,
         start: Optional[int] = None,
         links: Optional[Sequence[TraceParent]] = None,
-    ):
+    ) -> None:
         """
         Create a new Span
 
@@ -668,7 +668,7 @@ class Span(BaseSpan):
     def discardable(self) -> bool:
         return self.leaf and not self.dist_tracing_propagated and self.outcome == constants.OUTCOME.SUCCESS
 
-    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None) -> None:
         """
         End this span and queue it for sending.
 
@@ -760,7 +760,7 @@ class Span(BaseSpan):
             return "same_kind"
         return None
 
-    def update_context(self, key, data):
+    def update_context(self, key, data) -> None:
         """
         Update the context data for given key
         :param key: the key, e.g. "db"
@@ -771,7 +771,7 @@ class Span(BaseSpan):
         current.update(data)
         self.context[key] = current
 
-    def autofill_resource_context(self):
+    def autofill_resource_context(self) -> None:
         """Automatically fills "resource" fields based on other fields"""
         if self.context:
             resource = nested_key(self.context, "destination", "service", "resource")
@@ -799,7 +799,7 @@ class Span(BaseSpan):
                 if "type" not in self.context["destination"]["service"]:
                     self.context["destination"]["service"]["type"] = ""
 
-    def autofill_service_target(self):
+    def autofill_service_target(self) -> None:
         if self.leaf:
             service_target = nested_key(self.context, "service", "target") or {}
 
@@ -845,7 +845,7 @@ class Span(BaseSpan):
 class DroppedSpan(BaseSpan):
     __slots__ = ("leaf", "parent", "id", "context", "outcome", "dist_tracing_propagated")
 
-    def __init__(self, parent, leaf=False, start=None, context=None):
+    def __init__(self, parent, leaf=False, start=None, context=None) -> None:
         self.parent = parent
         self.leaf = leaf
         self.id = None
@@ -854,20 +854,20 @@ class DroppedSpan(BaseSpan):
         self.outcome = constants.OUTCOME.UNKNOWN
         super(DroppedSpan, self).__init__(start=start)
 
-    def end(self, skip_frames: int = 0, duration: Optional[float] = None):
+    def end(self, skip_frames: int = 0, duration: Optional[float] = None) -> None:
         super().end(skip_frames, duration)
         execution_context.unset_span()
 
-    def child_started(self, timestamp):
+    def child_started(self, timestamp) -> None:
         pass
 
-    def child_ended(self, child: SpanType):
+    def child_ended(self, child: SpanType) -> None:
         pass
 
-    def update_context(self, key, data):
+    def update_context(self, key, data) -> None:
         pass
 
-    def report(self):
+    def report(self) -> None:
         pass
 
     def try_to_compress(self, sibling: SpanType) -> bool:
@@ -894,7 +894,7 @@ class DroppedSpan(BaseSpan):
 
 
 class Tracer(object):
-    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client"):
+    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client") -> None:
         self.config = config
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
@@ -1039,7 +1039,7 @@ class capture_span(object):
         duration: Optional[Union[float, timedelta]] = None,
         sync: Optional[bool] = None,
         links: Optional[Sequence[TraceParent]] = None,
-    ):
+    ) -> None:
         self.name = name
         if span_subtype is None and "." in span_type:
             # old style dotted type, let's split it up
@@ -1121,7 +1121,7 @@ class capture_span(object):
                 logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
-def label(**labels):
+def label(**labels) -> None:
     """
     Labels current transaction. Keys should be strings, values can be strings, booleans,
     or numerical values (int, float, Decimal)
@@ -1152,7 +1152,7 @@ def set_transaction_name(name: str, override: bool = True) -> None:
         transaction.name = str(name)
 
 
-def set_transaction_result(result, override=True):
+def set_transaction_result(result, override=True) -> None:
     """
     Sets the result of the transaction. The result could be e.g. the HTTP status class (e.g "HTTP 5xx") for
     HTTP requests, or "success"/"failure" for background tasks.
@@ -1169,7 +1169,7 @@ def set_transaction_result(result, override=True):
         transaction.result = result
 
 
-def set_transaction_outcome(outcome=None, http_status_code=None, override=True):
+def set_transaction_outcome(outcome=None, http_status_code=None, override=True) -> None:
     """
     Set the outcome of the transaction. This should only be done at the end of a transaction
     after the outcome is determined.
@@ -1242,7 +1242,7 @@ def get_span_id():
     return span.id
 
 
-def set_context(data, key="custom"):
+def set_context(data, key="custom") -> None:
     """
     Attach contextual data to the current transaction and errors that happen during the current transaction.
 
@@ -1271,7 +1271,7 @@ def set_context(data, key="custom"):
 set_custom_context = functools.partial(set_context, key="custom")
 
 
-def set_user_context(username=None, email=None, user_id=None):
+def set_user_context(username=None, email=None, user_id=None) -> None:
     data = {}
     if username is not None:
         data["username"] = encoding.keyword_field(username)

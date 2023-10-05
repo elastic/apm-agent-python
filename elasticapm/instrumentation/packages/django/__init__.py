@@ -41,7 +41,7 @@ class DjangoAutoInstrumentation(AbstractInstrumentedModule):
 
     creates_transactions = True
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs) -> None:
         installed_apps = list(args[0] if args else kwargs["installed_apps"])
         if (
             "elasticapm.contrib.django" not in installed_apps

@@ -46,7 +46,7 @@ class HTTPTransportBase(Transport):
         server_cert=None,
         server_ca_cert_file=None,
         **kwargs
-    ):
+    ) -> None:
         self._url = url
         self._verify_server_cert = verify_server_cert
         self._server_cert = server_cert

@@ -98,7 +98,7 @@ class AbstractInstrumentedModule(object):
         # ("requests.sessions", "Session.send"),
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.originals = {}
         self.instrumented = False
 
@@ -121,7 +121,7 @@ class AbstractInstrumentedModule(object):
     def get_instrument_list(self):
         return self.instrument_list
 
-    def instrument(self):
+    def instrument(self) -> None:
         if self.instrumented:
             return
 
@@ -170,7 +170,7 @@ class AbstractInstrumentedModule(object):
             logger.debug("Skipping instrumentation of %s. %s", self.name, ex)
         self.instrumented = True
 
-    def uninstrument(self):
+    def uninstrument(self) -> None:
         if not self.instrumented or not self.originals:
             return
         uninstrumented_methods = []

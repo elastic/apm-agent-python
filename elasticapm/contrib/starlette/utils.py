@@ -96,7 +96,7 @@ async def get_data_from_response(message: dict, config: Config, event_type: str)
     return result
 
 
-async def set_body(request: Request, body: bytes):
+async def set_body(request: Request, body: bytes) -> None:
     """Overwrites body in Starlette.
 
     Args:

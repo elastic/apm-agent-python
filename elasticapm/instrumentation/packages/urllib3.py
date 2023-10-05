@@ -37,7 +37,7 @@ from elasticapm.utils import default_ports
 from elasticapm.utils.disttracing import TracingOptions
 
 
-def _set_disttracing_headers(headers, trace_parent, transaction):
+def _set_disttracing_headers(headers, trace_parent, transaction) -> None:
     trace_parent_str = trace_parent.to_string()
     headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent_str
     if transaction.tracer.config.use_elastic_traceparent_header:

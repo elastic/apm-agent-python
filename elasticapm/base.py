@@ -93,7 +93,7 @@ class Client(object):
 
     logger = get_logger("elasticapm")
 
-    def __init__(self, config=None, **inline):
+    def __init__(self, config=None, **inline) -> None:
         # configure loggers first
         cls = self.__class__
         self.logger = get_logger("%s.%s" % (cls.__module__, cls.__name__))
@@ -227,7 +227,7 @@ class Client(object):
         # Save this Client object as the global CLIENT_SINGLETON
         set_client(self)
 
-    def start_threads(self):
+    def start_threads(self) -> None:
         current_pid = os.getpid()
         if self._pid != current_pid:
             with self._thread_starter_lock:
@@ -284,7 +284,7 @@ class Client(object):
         """
         return self.capture("Exception", exc_info=exc_info, handled=handled, **kwargs)
 
-    def queue(self, event_type, data, flush=False):
+    def queue(self, event_type, data, flush=False) -> None:
         if self.config.disable_send:
             return
         self.start_threads()
@@ -330,7 +330,7 @@ class Client(object):
         transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 
-    def close(self):
+    def close(self) -> None:
         if self.config.enabled:
             with self._thread_starter_lock:
                 for _, manager in sorted(self._thread_managers.items(), key=lambda item: item[1].start_stop_order):
@@ -636,7 +636,7 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
-    def _excepthook(self, type_, value, traceback):
+    def _excepthook(self, type_, value, traceback) -> None:
         try:
             self.original_excepthook(type_, value, traceback)
         except Exception:
@@ -672,7 +672,7 @@ class Client(object):
                     return True
         return False
 
-    def check_python_version(self):
+    def check_python_version(self) -> None:
         v = tuple(map(int, platform.python_version_tuple()[:2]))
         if v < (3, 6):
             warnings.warn("The Elastic APM agent only supports Python 3.6+", DeprecationWarning)
@@ -707,7 +707,7 @@ class Client(object):
         return self._server_version
 
     @server_version.setter
-    def server_version(self, new_version):
+    def server_version(self, new_version) -> None:
         if new_version and len(new_version) < 3:
             self.logger.debug("APM Server version is too short, padding with zeros")
             new_version = new_version + (0,) * (3 - len(new_version))
@@ -725,7 +725,7 @@ def get_client() -> Client:
     return CLIENT_SINGLETON
 
 
-def set_client(client: Client):
+def set_client(client: Client) -> None:
     global CLIENT_SINGLETON
     if CLIENT_SINGLETON:
         logger = get_logger("elasticapm")

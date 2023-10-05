@@ -205,7 +205,7 @@ def handle_sqs(operation_name, service, instance, args, kwargs, context):
     return HandlerInfo(signature, span_type, span_subtype, op["span_action"], context)
 
 
-def modify_span_sqs_pre(span, args, kwargs):
+def modify_span_sqs_pre(span, args, kwargs) -> None:
     operation_name = kwargs.get("operation_name", args[0])
     if span.id:
         trace_parent = span.transaction.trace_parent.copy_from(span_id=span.id)
@@ -235,7 +235,7 @@ def modify_span_sqs_pre(span, args, kwargs):
                 message_attributes.extend([constants.TRACEPARENT_HEADER_NAME, constants.TRACESTATE_HEADER_NAME])
 
 
-def modify_span_sqs_post(span: SpanType, args, kwargs, result):
+def modify_span_sqs_post(span: SpanType, args, kwargs, result) -> None:
     operation_name = kwargs.get("operation_name", args[0])
     if operation_name == "ReceiveMessage" and "Messages" in result:
         for message in result["Messages"][:1000]:  # only up to 1000 span links are recorded

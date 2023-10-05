@@ -36,5 +36,5 @@ def any_record_contains(records, message, logger=None):
     )
 
 
-def assert_any_record_contains(records, message, logger=None):
+def assert_any_record_contains(records, message, logger=None) -> None:
     assert any_record_contains(records, message, logger=logger)

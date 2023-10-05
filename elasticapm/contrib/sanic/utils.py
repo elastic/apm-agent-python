@@ -44,7 +44,7 @@ from elasticapm.utils import get_url_dict
 
 
 class SanicAPMConfig(dict):
-    def __init__(self, app: Sanic):
+    def __init__(self, app: Sanic) -> None:
         super(SanicAPMConfig, self).__init__()
         for _key, _v in app.config.items():
             if _key.startswith("ELASTIC_APM_"):

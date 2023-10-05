@@ -107,11 +107,11 @@ _wrapper_register = {
 }
 
 
-def register(cls):
+def register(cls) -> None:
     _cls_register.add(cls)
 
 
-def register_wrapper_instrumentations():
+def register_wrapper_instrumentations() -> None:
     _cls_register.update(_wrapper_register)
 
 

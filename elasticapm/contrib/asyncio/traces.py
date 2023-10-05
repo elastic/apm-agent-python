@@ -56,11 +56,11 @@ class async_capture_span(capture_span):
 
     async def __aexit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
-    ):
+    ) -> None:
         self.handle_exit(exc_type, exc_val, exc_tb)
 
 
-async def set_context(data, key="custom"):
+async def set_context(data, key="custom") -> None:
     """
     Asynchronous copy of elasticapm.traces.set_context().
     Attach contextual data to the current transaction and errors that happen during the current transaction.

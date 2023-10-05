@@ -32,7 +32,7 @@ from elasticapm import Client
 
 
 class GRPCApmClient(Client):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         import grpc
 
         kwargs["framework_name"] = "grpc"

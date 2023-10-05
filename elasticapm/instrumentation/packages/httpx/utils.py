@@ -77,7 +77,7 @@ def get_status(response) -> int:
     return status_code
 
 
-def set_disttracing_headers(headers, trace_parent, transaction):
+def set_disttracing_headers(headers, trace_parent, transaction) -> None:
     trace_parent_str = trace_parent.to_string()
     headers.append((bytes(constants.TRACEPARENT_HEADER_NAME, "utf-8"), bytes(trace_parent_str, "utf-8")))
     if transaction.tracer.config.use_elastic_traceparent_header:

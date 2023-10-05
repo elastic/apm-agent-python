@@ -44,7 +44,7 @@ DISTINCT_LABEL_LIMIT = 1000
 
 
 class MetricsRegistry(ThreadManager):
-    def __init__(self, client, tags=None):
+    def __init__(self, client, tags=None) -> None:
         """
         Creates a new metric registry
 
@@ -88,7 +88,7 @@ class MetricsRegistry(ThreadManager):
         except KeyError:
             raise MetricSetNotFound(metricset)
 
-    def collect(self):
+    def collect(self) -> None:
         """
         Collect metrics from all registered metric sets and queues them for sending
         :return:
@@ -100,7 +100,7 @@ class MetricsRegistry(ThreadManager):
                 for data in metricset.collect():
                     self.client.queue(constants.METRICSET, data)
 
-    def start_thread(self, pid=None):
+    def start_thread(self, pid=None) -> None:
         super(MetricsRegistry, self).start_thread(pid=pid)
         if self.client.config.metrics_interval:
             self._collect_timer = IntervalTimer(
@@ -109,7 +109,7 @@ class MetricsRegistry(ThreadManager):
             logger.debug("Starting metrics collect timer")
             self._collect_timer.start()
 
-    def stop_thread(self):
+    def stop_thread(self) -> None:
         if self._collect_timer and self._collect_timer.is_alive():
             logger.debug("Cancelling collect timer")
             self._collect_timer.cancel()
@@ -127,7 +127,7 @@ class MetricsRegistry(ThreadManager):
 
 
 class MetricSet(object):
-    def __init__(self, registry):
+    def __init__(self, registry) -> None:
         self._lock = threading.Lock()
         self._counters = {}
         self._gauges = {}
@@ -286,7 +286,7 @@ class MetricSet(object):
                     result["tags"] = {k: v for k, v in labels}
                 yield self.before_yield(result)
 
-    def before_collect(self):
+    def before_collect(self) -> None:
         """
         A method that is called right before collection. Can be used to gather metrics.
         :return:
@@ -320,7 +320,7 @@ class SpanBoundMetricSet(MetricSet):
 class BaseMetric(object):
     __slots__ = ("name", "reset_on_collect")
 
-    def __init__(self, name, reset_on_collect=False, **kwargs):
+    def __init__(self, name, reset_on_collect=False, **kwargs) -> None:
         self.name = name
         self.reset_on_collect = reset_on_collect
 
@@ -328,7 +328,7 @@ class BaseMetric(object):
 class Counter(BaseMetric):
     __slots__ = BaseMetric.__slots__ + ("_lock", "_initial_value", "_val")
 
-    def __init__(self, name, initial_value=0, reset_on_collect=False, unit=None):
+    def __init__(self, name, initial_value=0, reset_on_collect=False, unit=None) -> None:
         """
         Creates a new counter
         :param name: name of the counter
@@ -374,7 +374,7 @@ class Counter(BaseMetric):
         return self._val
 
     @val.setter
-    def val(self, value):
+    def val(self, value) -> None:
         with self._lock:
             self._val = value
 
@@ -382,7 +382,7 @@ class Counter(BaseMetric):
 class Gauge(BaseMetric):
     __slots__ = BaseMetric.__slots__ + ("_val",)
 
-    def __init__(self, name, reset_on_collect=False, unit=None):
+    def __init__(self, name, reset_on_collect=False, unit=None) -> None:
         """
         Creates a new gauge
         :param name: label of the gauge
@@ -396,29 +396,29 @@ class Gauge(BaseMetric):
         return self._val
 
     @val.setter
-    def val(self, value):
+    def val(self, value) -> None:
         self._val = value
 
-    def reset(self):
+    def reset(self) -> None:
         self._val = 0
 
 
 class Timer(BaseMetric):
     __slots__ = BaseMetric.__slots__ + ("_val", "_count", "_lock", "_unit")
 
-    def __init__(self, name=None, reset_on_collect=False, unit=None):
+    def __init__(self, name=None, reset_on_collect=False, unit=None) -> None:
         self._val: float = 0
         self._count: int = 0
         self._unit = unit
         self._lock = threading.Lock()
         super(Timer, self).__init__(name, reset_on_collect=reset_on_collect)
 
-    def update(self, duration, count=1):
+    def update(self, duration, count=1) -> None:
         with self._lock:
             self._val += duration
             self._count += count
 
-    def reset(self):
+    def reset(self) -> None:
         with self._lock:
             self._val = 0
             self._count = 0
@@ -429,7 +429,7 @@ class Timer(BaseMetric):
             return self._val, self._count
 
     @val.setter
-    def val(self, value):
+    def val(self, value) -> None:
         with self._lock:
             self._val, self._count = value
 
@@ -439,7 +439,7 @@ class Histogram(BaseMetric):
 
     __slots__ = BaseMetric.__slots__ + ("_lock", "_buckets", "_counts", "_lock", "_unit")
 
-    def __init__(self, name=None, reset_on_collect=False, unit=None, buckets=None):
+    def __init__(self, name=None, reset_on_collect=False, unit=None, buckets=None) -> None:
         self._lock = threading.Lock()
         self._buckets = buckets or Histogram.DEFAULT_BUCKETS
         if self._buckets[-1] != float("inf"):
@@ -448,7 +448,7 @@ class Histogram(BaseMetric):
         self._unit = unit
         super(Histogram, self).__init__(name, reset_on_collect=reset_on_collect)
 
-    def update(self, value, count=1):
+    def update(self, value, count=1) -> None:
         pos = 0
         while value > self._buckets[pos]:
             pos += 1
@@ -461,7 +461,7 @@ class Histogram(BaseMetric):
             return self._counts
 
     @val.setter
-    def val(self, value):
+    def val(self, value) -> None:
         with self._lock:
             self._counts = value
 
@@ -469,7 +469,7 @@ class Histogram(BaseMetric):
     def buckets(self):
         return self._buckets
 
-    def reset(self):
+    def reset(self) -> None:
         with self._lock:
             self._counts = [0] * len(self._buckets)
 
@@ -481,7 +481,7 @@ class NoopMetric(object):
     Note that even when using a no-op metric, the value itself will still be calculated.
     """
 
-    def __init__(self, label, initial_value=0):
+    def __init__(self, label, initial_value=0) -> None:
         return
 
     @property
@@ -489,19 +489,19 @@ class NoopMetric(object):
         return None
 
     @val.setter
-    def val(self, value):
+    def val(self, value) -> None:
         return
 
-    def inc(self, delta=1):
+    def inc(self, delta=1) -> None:
         return
 
-    def dec(self, delta=-1):
+    def dec(self, delta=-1) -> None:
         return
 
-    def update(self, duration, count=1):
+    def update(self, duration, count=1) -> None:
         return
 
-    def reset(self):
+    def reset(self) -> None:
         return
 
 
@@ -509,7 +509,7 @@ noop_metric = NoopMetric("noop")
 
 
 class MetricSetNotFound(LookupError):
-    def __init__(self, class_path):
+    def __init__(self, class_path) -> None:
         super(MetricSetNotFound, self).__init__("%s metric set not found" % class_path)
 
 

@@ -44,7 +44,7 @@ class ElasticAPM(object):
     >>> application = ElasticAPM(application, Client())
     """
 
-    def __init__(self, application, client):
+    def __init__(self, application, client) -> None:
         self.application = application
         self.client = client
 

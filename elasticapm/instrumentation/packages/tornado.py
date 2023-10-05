@@ -41,7 +41,7 @@ logger = get_logger("elasticapm.instrument")
 
 
 class TornadoBaseInstrumentedModule(AbstractInstrumentedModule):
-    def instrument(self):
+    def instrument(self) -> None:
         try:
             import tornado
 
