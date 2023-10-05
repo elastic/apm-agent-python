@@ -32,14 +32,11 @@ import pytest  # isort:skip
 
 import json
 import os
-import platform
 import time
 
 from elasticapm import capture_span
 from elasticapm.conf import constants
 from elasticapm.contrib.serverless.aws import capture_serverless, get_data_from_request, get_data_from_response
-
-pytestmark = pytest.mark.skipif(platform.system() == "Windows", reason="AWS Lambda does not support Windows")
 
 
 @pytest.fixture
