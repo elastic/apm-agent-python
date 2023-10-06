@@ -894,7 +894,9 @@ class DroppedSpan(BaseSpan):
 
 
 class Tracer(object):
-    def __init__(self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client") -> None:
+    def __init__(
+        self, frames_collector_func, frames_processing_func, queue_func, config, agent: "elasticapm.Client"
+    ) -> None:
         self.config = config
         self.queue_func = queue_func
         self.frames_processing_func = frames_processing_func
