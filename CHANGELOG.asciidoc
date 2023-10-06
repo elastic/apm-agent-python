@@ -44,6 +44,8 @@ endif::[]
 
 * Fix url argument fetching in aiohttp_client instrumentation {pull}1890[#1890]
 * Fix a bug in the AWS Lambda instrumentation when `event["headers"] is None` {pull}1907[#1907]
+* Fix a bug in AWS Lambda where metadata could be incomplete, causing validation errors with the APM Server {pull}1914[#1914]
+* Fix a bug in AWS Lambda where sending the partial transaction would be recorded as an extra span {pull}1914[#1914]
 
 
 

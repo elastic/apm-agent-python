@@ -210,6 +210,13 @@ class Transaction(BaseSpan):
         if not trace_parent:
             trace_parent = TraceParent.new(self.id, is_sampled)
 
+        # While this is set to True, underlying instrumentations will not create
+        # spans. The same outcome could be reached via `is_sampled`, but
+        # that requires a user to correctly restore the previous value. This
+        # setting works independent of the is_sampled setting, and is assumed to
+        # be False unless a user sets it to True.
+        self.pause_sampling = False
+
         self.trace_parent: TraceParent = trace_parent
         self.timestamp = start if start is not None else time.time()
         self.name: Optional[str] = None

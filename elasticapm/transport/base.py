@@ -226,25 +226,6 @@ class Transport(ThreadManager):
         data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
         buffer.write(data)
 
-    def add_metadata(self, data) -> None:
-        """
-        Add additional metadata do the dictionary
-
-        Only used in specific instances where metadata relies on data we only
-        have at request time, such as for lambda metadata
-
-        Metadata is only merged one key deep.
-        """
-        if self._metadata is not None:
-            # Merge one key deep
-            for key, val in data.items():
-                if isinstance(val, dict) and key in self._metadata and isinstance(self._metadata[key], dict):
-                    self._metadata[key].update(val)
-                else:
-                    self._metadata[key] = val
-        else:
-            self._metadata = data
-
     def _init_event_queue(self, chill_until, max_chill_time):
         # some libraries like eventlet monkeypatch queue.Queue and switch out the implementation.
         # In those cases we can't rely on internals of queue.Queue to be there, so we simply use

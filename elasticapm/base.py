@@ -111,6 +111,7 @@ class Client(object):
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
         self.activation_method = elasticapm._activation_method
+        self._extra_metadata = {}
 
         self.check_python_version()
 
@@ -475,7 +476,35 @@ class Client(object):
             data.pop("cloud")
         if self.config.global_labels:
             data["labels"] = enforce_label_format(self.config.global_labels)
+        if self._extra_metadata:
+            # Merge one key deep
+            for key, val in self._extra_metadata.items():
+                if isinstance(val, dict) and key in data and isinstance(data[key], dict):
+                    data[key].update(val)
+                else:
+                    data[key] = val
         return data
+
+    def add_extra_metadata(self, data):
+        """
+        Add additional metadata to future metadata dictionaries.
+
+        Only used in specific instances where metadata relies on data we only
+        have at request time, such as for lambda metadata.
+
+        Metadata is only merged one key deep at build time.
+        """
+        # Merge one key deep
+        for key, val in data.items():
+            if isinstance(val, dict) and key in self._extra_metadata and isinstance(self._extra_metadata[key], dict):
+                self._extra_metadata[key].update(val)
+            else:
+                self._extra_metadata[key] = val
+
+        # Ensure that the extra metadata is added, even if we've already
+        # generated metadata for this process
+        if self._transport._metadata:
+            self._transport._metadata = self.build_metadata()
 
     def _build_msg_for_logging(
         self, event_type, date=None, context=None, custom=None, stack=None, handled=True, **kwargs
