@@ -38,7 +38,7 @@ from elasticapm.contrib.django.client import DjangoClient
 
 
 class TempStoreClient(DjangoClient):
-    def __init__(self, **inline):
+    def __init__(self, **inline) -> None:
         inline.setdefault("transport_class", "tests.fixtures.DummyTransport")
         super(TempStoreClient, self).__init__(**inline)
 

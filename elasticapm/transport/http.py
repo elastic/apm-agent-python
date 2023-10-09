@@ -200,12 +200,12 @@ class Transport(HTTPTransportBase):
                 logger.debug("Could not parse Cache-Control header: %s", response_headers["Cache-Control"])
         return max_age
 
-    def _process_queue(self):
+    def _process_queue(self) -> None:
         if not self.client.server_version:
             self.fetch_server_info()
         super()._process_queue()
 
-    def fetch_server_info(self):
+    def fetch_server_info(self) -> None:
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
         headers[b"accept"] = b"text/plain"

@@ -66,7 +66,7 @@ logger = logging.getLogger("elasticapm.metrics.cpu_linux")
 
 
 class CGroupFiles(object):
-    def __init__(self, limit, usage, stat):
+    def __init__(self, limit, usage, stat) -> None:
         self.limit = limit if os.access(limit, os.R_OK) else None
         self.usage = usage if os.access(usage, os.R_OK) else None
         self.stat = stat if os.access(stat, os.R_OK) else None
@@ -81,7 +81,7 @@ class CPUMetricSet(MetricSet):
         memory_stats_file=MEM_STATS,
         proc_self_cgroup=PROC_SELF_CGROUP,
         mount_info=PROC_SELF_MOUNTINFO,
-    ):
+    ) -> None:
         self.page_size = resource.getpagesize()
         self.previous = {}
         self._read_data_lock = threading.Lock()
@@ -175,7 +175,7 @@ class CPUMetricSet(MetricSet):
         except IOError:
             pass
 
-    def before_collect(self):
+    def before_collect(self) -> None:
         new = self.read_process_stats()
         new.update(self.read_system_stats())
         with self._read_data_lock:

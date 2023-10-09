@@ -42,7 +42,7 @@ def list_from_setting(config, setting):
 
 
 class ElasticAPM(Middleware):
-    def __init__(self, app, config, client_cls=None):
+    def __init__(self, app, config, client_cls=None) -> None:
         client_config = {key[11:]: val for key, val in config.items() if key.startswith("elasticapm.")}
         if client_cls is None:
             client = get_client() or Client(**client_config)

@@ -43,7 +43,7 @@ from elasticapm.utils.encoding import force_text, shorten
 
 
 class Literal(object):
-    def __init__(self, literal_type, content):
+    def __init__(self, literal_type, content) -> None:
         self.literal_type = literal_type
         self.content = content
 
@@ -200,7 +200,7 @@ class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
     DML_QUERIES = ("INSERT", "DELETE", "UPDATE")
 
-    def __init__(self, wrapped, destination_info=None):
+    def __init__(self, wrapped, destination_info=None) -> None:
         super(CursorProxy, self).__init__(wrapped)
         self._self_destination_info = destination_info or {}
 
@@ -259,7 +259,7 @@ class CursorProxy(wrapt.ObjectProxy):
 class ConnectionProxy(wrapt.ObjectProxy):
     cursor_proxy = CursorProxy
 
-    def __init__(self, wrapped, destination_info=None):
+    def __init__(self, wrapped, destination_info=None) -> None:
         super(ConnectionProxy, self).__init__(wrapped)
         self._self_destination_info = destination_info
 

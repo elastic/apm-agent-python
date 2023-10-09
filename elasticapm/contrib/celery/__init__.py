@@ -46,10 +46,10 @@ class CeleryFilter(object):
             return 1
 
 
-def register_exception_tracking(client):
+def register_exception_tracking(client) -> None:
     dispatch_uid = "elasticapm-exc-tracking"
 
-    def process_failure_signal(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
+    def process_failure_signal(sender, task_id, exception, args, kwargs, traceback, einfo, **kw) -> None:
         client.capture_exception(
             extra={"task_id": task_id, "task": sender, "args": args, "kwargs": kwargs}, handled=False
         )
@@ -59,7 +59,7 @@ def register_exception_tracking(client):
     _register_worker_signals(client)
 
 
-def set_celery_headers(headers=None, **kwargs):
+def set_celery_headers(headers=None, **kwargs) -> None:
     """
     Add elasticapm specific information to celery headers
     """
@@ -94,14 +94,14 @@ def get_trace_parent(celery_task):
     return None
 
 
-def register_instrumentation(client):
-    def begin_transaction(*args, **kwargs):
+def register_instrumentation(client) -> None:
+    def begin_transaction(*args, **kwargs) -> None:
         task = kwargs["task"]
 
         trace_parent = get_trace_parent(task)
         client.begin_transaction("celery", trace_parent=trace_parent)
 
-    def end_transaction(task_id, task, *args, **kwargs):
+    def end_transaction(task_id, task, *args, **kwargs) -> None:
         name = get_name_from_func(task)
         state = kwargs.get("state", "None")
         if state == states.SUCCESS:
@@ -127,11 +127,11 @@ def register_instrumentation(client):
     _register_worker_signals(client)
 
 
-def _register_worker_signals(client):
-    def worker_shutdown(*args, **kwargs):
+def _register_worker_signals(client) -> None:
+    def worker_shutdown(*args, **kwargs) -> None:
         client.close()
 
-    def connect_worker_process_init(*args, **kwargs):
+    def connect_worker_process_init(*args, **kwargs) -> None:
         signals.worker_process_shutdown.connect(worker_shutdown, dispatch_uid="elasticapm-shutdown-worker", weak=False)
 
     signals.worker_init.connect(

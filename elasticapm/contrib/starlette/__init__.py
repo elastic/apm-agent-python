@@ -105,7 +105,7 @@ class ElasticAPM:
     >>> elasticapm.capture_message('hello, world!')
     """
 
-    def __init__(self, app: ASGIApp, client: Optional[Client], **kwargs):
+    def __init__(self, app: ASGIApp, client: Optional[Client], **kwargs) -> None:
         """
 
         Args:
@@ -139,7 +139,7 @@ class ElasticAPM:
             return
 
         @functools.wraps(send)
-        async def wrapped_send(message):
+        async def wrapped_send(message) -> None:
             if message.get("type") == "http.response.start":
                 await set_context(
                     lambda: get_data_from_response(message, self.client.config, constants.TRANSACTION), "response"
@@ -202,7 +202,7 @@ class ElasticAPM:
 
             raise
 
-    async def capture_exception(self, *args, **kwargs):
+    async def capture_exception(self, *args, **kwargs) -> None:
         """Captures your exception.
 
         Args:
@@ -211,7 +211,7 @@ class ElasticAPM:
         """
         self.client.capture_exception(*args, **kwargs)
 
-    async def capture_message(self, *args, **kwargs):
+    async def capture_message(self, *args, **kwargs) -> None:
         """Captures your message.
 
         Args:
@@ -220,7 +220,7 @@ class ElasticAPM:
         """
         self.client.capture_message(*args, **kwargs)
 
-    async def _request_started(self, request: Request):
+    async def _request_started(self, request: Request) -> None:
         """Captures the begin of the request processing to APM.
 
         Args:

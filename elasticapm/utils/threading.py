@@ -47,7 +47,7 @@ class IntervalTimer(threading.Thread):
 
     def __init__(
         self, function, interval, name=None, args=(), kwargs=None, daemon=None, evaluate_function_interval=False
-    ):
+    ) -> None:
         """
 
         :param function: the function to run
@@ -68,7 +68,7 @@ class IntervalTimer(threading.Thread):
         self._interval_done = threading.Event()
         self._evaluate_function_interval = evaluate_function_interval
 
-    def run(self):
+    def run(self) -> None:
         execution_time = 0
         interval_override = None
         while True:
@@ -91,16 +91,16 @@ class IntervalTimer(threading.Thread):
 
             execution_time = default_timer() - start
 
-    def cancel(self):
+    def cancel(self) -> None:
         self._interval_done.set()
 
 
 class ThreadManager(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.pid = None
         self.start_stop_order = 100
 
-    def start_thread(self, pid=None):
+    def start_thread(self, pid=None) -> None:
         if not pid:
             pid = os.getpid()
         self.pid = pid

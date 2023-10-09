@@ -84,7 +84,7 @@ class ElasticAPM(object):
     >>> elasticapm.capture_message('hello, world!')
     """
 
-    def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults):
+    def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults) -> None:
         self.app = app
         self.logging = logging
         self.client = client or get_client()
@@ -93,7 +93,7 @@ class ElasticAPM(object):
         if app:
             self.init_app(app, **defaults)
 
-    def handle_exception(self, *args, **kwargs):
+    def handle_exception(self, *args, **kwargs) -> None:
         if not self.client:
             return
 
@@ -114,7 +114,7 @@ class ElasticAPM(object):
         elasticapm.set_transaction_outcome(outcome=constants.OUTCOME.FAILURE, override=False)
         self.client.end_transaction(result="HTTP 5xx")
 
-    def init_app(self, app, **defaults):
+    def init_app(self, app, **defaults) -> None:
         self.app = app
         if not self.client:
             config = self.app.config.get("ELASTIC_APM", {})
@@ -174,7 +174,7 @@ class ElasticAPM(object):
                 }
             return {}
 
-    def request_started(self, app):
+    def request_started(self, app) -> None:
         if (not self.app.debug or self.client.config.debug) and not self.client.should_ignore_url(request.path):
             trace_parent = TraceParent.from_headers(request.headers)
             self.client.begin_transaction("request", trace_parent=trace_parent)
@@ -185,7 +185,7 @@ class ElasticAPM(object):
             rule = build_name_with_http_method_prefix(rule, request)
             elasticapm.set_transaction_name(rule, override=False)
 
-    def request_finished(self, app, response):
+    def request_finished(self, app, response) -> None:
         if not self.app.debug or self.client.config.debug:
             elasticapm.set_context(
                 lambda: get_data_from_response(response, self.client.config, constants.TRANSACTION), "response"

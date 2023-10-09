@@ -36,7 +36,7 @@ from elasticapm.instrumentation import register
 _lock = threading.Lock()
 
 
-def instrument():
+def instrument() -> None:
     """
     Instruments all registered methods/functions with a wrapper
     """
@@ -45,7 +45,7 @@ def instrument():
             obj.instrument()
 
 
-def uninstrument():
+def uninstrument() -> None:
     """
     If present, removes instrumentation and replaces it with the original method/function
     """

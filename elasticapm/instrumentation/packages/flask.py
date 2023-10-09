@@ -40,7 +40,7 @@ class FlaskInstrumentation(AbstractInstrumentedModule):
 
     creates_transactions = True
 
-    def call(self, module, method, wrapped, instance, args, kwargs):
+    def call(self, module, method, wrapped, instance, args, kwargs) -> None:
         from elasticapm.contrib.flask import ElasticAPM
 
         wrapped(*args, **kwargs)
@@ -48,7 +48,7 @@ class FlaskInstrumentation(AbstractInstrumentedModule):
         instance.elasticapm_client = client
         self.instance = instance
 
-    def uninstrument(self):
+    def uninstrument(self) -> None:
         """
         This is mostly here for testing. If we want to support live
         instrumenting and uninstrumenting, we'll need to also extend the

@@ -45,7 +45,7 @@ logger = get_logger("elasticapm.logging")
 
 
 class LoggingHandler(BaseLoggingHandler):
-    def __init__(self, level=logging.NOTSET):
+    def __init__(self, level=logging.NOTSET) -> None:
         # skip initialization of BaseLoggingHandler
         logging.Handler.__init__(self, level=level)
 
@@ -64,7 +64,7 @@ class LoggingHandler(BaseLoggingHandler):
 
 
 def exception_handler(client, request=None, **kwargs):
-    def actually_do_stuff(request=None, **kwargs):
+    def actually_do_stuff(request=None, **kwargs) -> None:
         exc_info = sys.exc_info()
         try:
             if (django_settings.DEBUG and not client.config.debug) or getattr(exc_info[1], "skip_elasticapm", False):

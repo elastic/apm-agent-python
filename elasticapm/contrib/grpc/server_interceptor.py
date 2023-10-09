@@ -76,7 +76,7 @@ def get_trace_parent(handler_call_details):
 
 
 class _ServicerContextWrapper(wrapt.ObjectProxy):
-    def __init__(self, wrapped, transaction):
+    def __init__(self, wrapped, transaction) -> None:
         self._self_transaction = transaction
         super().__init__(wrapped)
 

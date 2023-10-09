@@ -59,7 +59,7 @@ class Span(oteltrace.Span):
         elastic_span: elasticapm.traces.BaseSpan,
         set_status_on_exception: Optional[bool] = None,
         client: Optional[elasticapm.Client] = None,
-    ):
+    ) -> None:
         self.elastic_span = elastic_span
         self.otel_context = Context({_SPAN_KEY: self})
         elastic_span.otel_wrapper = self
@@ -200,7 +200,7 @@ class Span(oteltrace.Span):
 
         self.end()
 
-    def _set_types(self):
+    def _set_types(self) -> None:
         """
         Set the types and subtypes for the underlying Elastic transaction/span
         """

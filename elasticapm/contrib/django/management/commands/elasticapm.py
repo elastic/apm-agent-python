@@ -62,12 +62,12 @@ class TestException(Exception):
 
 
 class ColoredLogger(object):
-    def __init__(self, stream):
+    def __init__(self, stream) -> None:
         self.stream = stream
         self.errors = []
         self.color = color_style()
 
-    def log(self, level, *args, **kwargs):
+    def log(self, level, *args, **kwargs) -> None:
         style = kwargs.pop("style", self.color.NOTICE)
         msg = " ".join((level.upper(), args[0] % args[1:], "\n"))
         if OutputWrapper is None:
@@ -75,16 +75,16 @@ class ColoredLogger(object):
         else:
             self.stream.write(msg, style_func=style)
 
-    def error(self, *args, **kwargs):
+    def error(self, *args, **kwargs) -> None:
         kwargs["style"] = red
         self.log("error", *args, **kwargs)
         self.errors.append((args,))
 
-    def warning(self, *args, **kwargs):
+    def warning(self, *args, **kwargs) -> None:
         kwargs["style"] = yellow
         self.log("warning", *args, **kwargs)
 
-    def info(self, *args, **kwargs):
+    def info(self, *args, **kwargs) -> None:
         kwargs["style"] = green
         self.log("info", *args, **kwargs)
 
@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
     args = "test check"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser) -> None:
         parser.add_argument("subcommand")
         for args, kwargs in self.arguments:
             parser.add_argument(*args, **kwargs)
@@ -135,11 +135,11 @@ class Command(BaseCommand):
         # can't be async for testing
 
         class LogCaptureHandler(logging.Handler):
-            def __init__(self, level=logging.NOTSET):
+            def __init__(self, level=logging.NOTSET) -> None:
                 self.logs = []
                 super(LogCaptureHandler, self).__init__(level)
 
-            def handle(self, record):
+            def handle(self, record) -> None:
                 self.logs.append(record)
 
         handler = LogCaptureHandler()
@@ -303,7 +303,7 @@ class Command(BaseCommand):
         client.close()
         return passed
 
-    def handle_command_not_found(self, message):
+    def handle_command_not_found(self, message) -> None:
         self.write(message, red, ending="")
         self.write(" Please use one of the following commands:\n\n", red)
         self.write("".join(" * %s\t%s\n" % (k.ljust(8), v.__doc__) for k, v in self.dispatch.items()))
@@ -311,7 +311,7 @@ class Command(BaseCommand):
         argv = self._get_argv()
         self.write("Usage:\n\t%s elasticapm <command>" % (" ".join(argv[: argv.index("elasticapm")])))
 
-    def write(self, msg, style_func=None, ending=None, stream=None):
+    def write(self, msg, style_func=None, ending=None, stream=None) -> None:
         """
         wrapper around self.stdout/stderr to ensure Django 1.4 compatibility
         """
