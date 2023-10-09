@@ -37,18 +37,18 @@ from elasticapm.metrics.base_metrics import MetricSet
 
 
 class PrometheusMetrics(MetricSet):
-    def __init__(self, registry):
+    def __init__(self, registry) -> None:
         super(PrometheusMetrics, self).__init__(registry)
         self._prometheus_registry = prometheus_client.REGISTRY
 
-    def before_collect(self):
+    def before_collect(self) -> None:
         for metric in self._prometheus_registry.collect():
             metric_type = self.METRIC_MAP.get(metric.type, None)
             if not metric_type:
                 continue
             metric_type(self, metric.name, metric.samples, metric.unit)
 
-    def _prom_counter_handler(self, name, samples, unit):
+    def _prom_counter_handler(self, name, samples, unit) -> None:
         # Counters can be converted 1:1 from Prometheus to our
         # format. Each pair of samples represents a distinct labelset for a
         # given name. The pair consists of the value, and a "created" timestamp.
@@ -58,7 +58,7 @@ class PrometheusMetrics(MetricSet):
                 self._registry.client.config.prometheus_metrics_prefix + name, **total_sample.labels
             ).val = total_sample.value
 
-    def _prom_gauge_handler(self, name, samples, unit):
+    def _prom_gauge_handler(self, name, samples, unit) -> None:
         # Counters can be converted 1:1 from Prometheus to our
         # format. Each sample represents a distinct labelset for a
         # given name
@@ -67,7 +67,7 @@ class PrometheusMetrics(MetricSet):
                 self._registry.client.config.prometheus_metrics_prefix + name, **sample.labels
             ).val = sample.value
 
-    def _prom_summary_handler(self, name, samples, unit):
+    def _prom_summary_handler(self, name, samples, unit) -> None:
         # Prometheus Summaries are analogous to our Timers, having
         # a count and a sum. A prometheus summary is represented by
         # three values. The list of samples for a given name can be
@@ -79,7 +79,7 @@ class PrometheusMetrics(MetricSet):
                 count_sample.value,
             )
 
-    def _prom_histogram_handler(self, name, samples, unit):
+    def _prom_histogram_handler(self, name, samples, unit) -> None:
         # Prometheus histograms are structured as a series of counts
         # with an "le" label. The count of each label signifies all
         # observations with a lower-or-equal value with respect to

@@ -66,7 +66,7 @@ class Transport(ThreadManager):
         queue_chill_time=1.0,
         processors=None,
         **kwargs
-    ):
+    ) -> None:
         """
         Create a new Transport instance
 
@@ -99,7 +99,7 @@ class Transport(ThreadManager):
     def _max_buffer_size(self):
         return self.client.config.api_request_size if self.client else None
 
-    def queue(self, event_type, data, flush=False):
+    def queue(self, event_type, data, flush=False) -> None:
         try:
             self._flushed.clear()
             kwargs = {"chill": not (event_type == "close" or flush)} if self._is_chilled_queue else {}
@@ -108,7 +108,7 @@ class Transport(ThreadManager):
         except _queue.Full:
             logger.debug("Event of type %s dropped due to full event queue", event_type)
 
-    def _process_queue(self):
+    def _process_queue(self) -> None:
         # Rebuild the metadata to capture new process information
         if self.client:
             self._metadata = self.client.build_metadata()
@@ -222,7 +222,7 @@ class Transport(ThreadManager):
         buffer = gzip.GzipFile(fileobj=io.BytesIO(), mode="w", compresslevel=self._compress_level)
         return buffer
 
-    def _write_metadata(self, buffer):
+    def _write_metadata(self, buffer) -> None:
         data = (self._json_serializer({"metadata": self._metadata}) + "\n").encode("utf-8")
         buffer.write(data)
 
@@ -243,7 +243,7 @@ class Transport(ThreadManager):
         else:
             return _queue.Queue(maxsize=10000)
 
-    def _flush(self, buffer, forced_flush=False):
+    def _flush(self, buffer, forced_flush=False) -> None:
         """
         Flush the queue. This method should only be called from the event processing queue
         :return: None
@@ -261,7 +261,7 @@ class Transport(ThreadManager):
             except Exception as e:
                 self.handle_transport_fail(e)
 
-    def start_thread(self, pid=None):
+    def start_thread(self, pid=None) -> None:
         super(Transport, self).start_thread(pid=pid)
         if (not self._thread or self.pid != self._thread.pid) and not self._closed:
             self.handle_fork()
@@ -280,7 +280,7 @@ class Transport(ThreadManager):
         """
         raise NotImplementedError
 
-    def close(self):
+    def close(self) -> None:
         """
         Cleans up resources and closes connection
         :return:
@@ -304,13 +304,13 @@ class Transport(ThreadManager):
         if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             raise ValueError("flush timed out")
 
-    def handle_transport_success(self, **kwargs):
+    def handle_transport_success(self, **kwargs) -> None:
         """
         Success handler called by the transport on successful send
         """
         self.state.set_success()
 
-    def handle_transport_fail(self, exception=None, **kwargs):
+    def handle_transport_fail(self, exception=None, **kwargs) -> None:
         """
         Failure handler called by the transport on send failure
         """
@@ -331,7 +331,7 @@ class TransportState(object):
     ONLINE = 1
     ERROR = 0
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = -1
@@ -344,12 +344,12 @@ class TransportState(object):
 
         return timeit.default_timer() - self.last_check > interval
 
-    def set_fail(self):
+    def set_fail(self) -> None:
         self.status = self.ERROR
         self.retry_number += 1
         self.last_check = timeit.default_timer()
 
-    def set_success(self):
+    def set_success(self) -> None:
         self.status = self.ONLINE
         self.last_check = None
         self.retry_number = -1
@@ -366,7 +366,7 @@ class ChilledQueue(_queue.Queue, object):
     be removed once we stop support for Python 2
     """
 
-    def __init__(self, maxsize=0, chill_until=100, max_chill_time=1.0):
+    def __init__(self, maxsize=0, chill_until=100, max_chill_time=1.0) -> None:
         self._chill_until = chill_until
         self._max_chill_time = max_chill_time
         self._last_unchill = time.time()

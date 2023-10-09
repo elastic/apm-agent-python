@@ -37,13 +37,13 @@ except ImportError:
 
 
 class CPUMetricSet(MetricSet):
-    def __init__(self, registry):
+    def __init__(self, registry) -> None:
         psutil.cpu_percent(interval=None)
         self._process = psutil.Process()
         self._process.cpu_percent(interval=None)
         super(CPUMetricSet, self).__init__(registry)
 
-    def before_collect(self):
+    def before_collect(self) -> None:
         self.gauge("system.cpu.total.norm.pct").val = psutil.cpu_percent(interval=None) / 100.0
         self.gauge("system.memory.actual.free").val = psutil.virtual_memory().available
         self.gauge("system.memory.total").val = psutil.virtual_memory().total

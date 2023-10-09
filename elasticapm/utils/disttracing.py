@@ -52,7 +52,7 @@ class TraceParent(object):
         trace_options: "TracingOptions",
         tracestate: Optional[str] = None,
         is_legacy: bool = False,
-    ):
+    ) -> None:
         self.version: int = version
         self.trace_id: str = trace_id
         self.span_id: str = span_id
@@ -244,7 +244,7 @@ class TraceParent(object):
             else:
                 return elastic_state
 
-    def add_tracestate(self, key, val):
+    def add_tracestate(self, key, val) -> None:
         """
         Add key/value pair to the tracestate.
 
@@ -285,7 +285,7 @@ class TracingOptions(ctypes.Union):
     _anonymous_ = ("bit",)
     _fields_ = [("bit", TracingOptions_bits), ("asByte", ctypes.c_uint8)]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super(TracingOptions, self).__init__()
         for k, v in kwargs.items():
             setattr(self, k, v)

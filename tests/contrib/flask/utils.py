@@ -37,7 +37,7 @@ from flask import template_rendered
 def captured_templates(app):
     recorded = []
 
-    def record(sender, template, context, **extra):
+    def record(sender, template, context, **extra) -> None:
         recorded.append((template, context))
 
     template_rendered.connect(record, app)

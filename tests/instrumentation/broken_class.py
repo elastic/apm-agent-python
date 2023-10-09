@@ -40,5 +40,5 @@ class B(A):
 
 
 class C(A, B):  # raises TypeError
-    def foo(self):
+    def foo(self) -> None:
         pass

@@ -61,7 +61,7 @@ class Tracer(oteltrace.Tracer):
 
     def __init__(
         self, *args, elasticapm_client: Optional[Client] = None, config: Optional[Mapping] = None, **kwargs
-    ):  # type: ignore
+    ) -> None:  # type: ignore
         self.client = elasticapm_client
         if not self.client:
             self.client = elasticapm.get_client()

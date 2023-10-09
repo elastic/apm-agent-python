@@ -44,7 +44,7 @@ class ElasticAPM(ElasticAPMBase):
     >>> application = ElasticAPM(application)
     """
 
-    def __init__(self, application):
+    def __init__(self, application) -> None:
         self.application = application
 
     @property

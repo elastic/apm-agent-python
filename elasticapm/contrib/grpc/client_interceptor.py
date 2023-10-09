@@ -45,7 +45,7 @@ class _ClientInterceptor(
     # grpc.StreamUnaryClientInterceptor,
     # grpc.StreamStreamClientInterceptor,
 ):
-    def __init__(self, host: Optional[str], port: Optional[str], secure: bool):
+    def __init__(self, host: Optional[str], port: Optional[str], secure: bool) -> None:
         self.host: str = host
         self.port: str = port
         self.secure: bool = secure

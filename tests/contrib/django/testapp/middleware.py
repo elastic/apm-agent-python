@@ -52,7 +52,7 @@ class BrokenViewMiddleware(MiddlewareMixin):
 
 
 class SetTransactionUnsampled(MiddlewareMixin):
-    def process_request(self, request):
+    def process_request(self, request) -> None:
         from elasticapm.traces import execution_context
 
         transaction = execution_context.get_transaction()

@@ -35,7 +35,7 @@ from elasticapm import Client
 
 
 class ElasticAPM:
-    def __init__(self, app, client=None):
+    def __init__(self, app, client=None) -> None:
         if not client:
             config = app.get("ELASTIC_APM", {})
             config.setdefault("framework_name", "aiohttp")
@@ -45,7 +45,7 @@ class ElasticAPM:
         self.client = client
         self.install_tracing(app, client)
 
-    def install_tracing(self, app, client):
+    def install_tracing(self, app, client) -> None:
         from elasticapm.contrib.aiohttp.middleware import tracing_middleware
 
         app.middlewares.insert(0, tracing_middleware(app, client))
