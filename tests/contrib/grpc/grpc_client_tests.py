@@ -239,13 +239,13 @@ def test_grpc_client_unsampled_transaction(instrument, sending_elasticapm_client
     assert len(payloads) == 1  # only the server_version request
 
 
-@pytest.mark.parametrize("sending_elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
-def test_grpc_client_max_spans(instrument, sending_elasticapm_client, grpc_client_and_server_url):
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
+def test_grpc_client_max_spans(instrument, elasticapm_client, grpc_client_and_server_url):
     grpc_client, _ = grpc_client_and_server_url
-    transaction = sending_elasticapm_client.begin_transaction("request")
+    transaction = elasticapm_client.begin_transaction("request")
     _ = grpc_client.GetServerResponse(Message(message="foo"))
     _ = grpc_client.GetServerResponse(Message(message="bar"))
-    sending_elasticapm_client.end_transaction("grpc-test")
+    elasticapm_client.end_transaction("grpc-test")
     assert transaction.dropped_spans == 1
 
 
