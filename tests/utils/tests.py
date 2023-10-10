@@ -265,7 +265,7 @@ def test_nested_key(data, key, expected):
 
 
 def test_getfqdn(invalidate_fqdn_cache):
-    assert getfqdn() == socket.getfqdn()
+    assert getfqdn() == socket.getfqdn().lower()
 
 
 def test_getfqdn_caches(invalidate_fqdn_cache):

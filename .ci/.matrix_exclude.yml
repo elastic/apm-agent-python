@@ -250,6 +250,14 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.12
     FRAMEWORK: grpc-1.24
+  - VERSION: python-3.7
+    FRAMEWORK: flask-1.0
+  - VERSION: python-3.7
+    FRAMEWORK: flask-1.1
+  - VERSION: python-3.7
+    FRAMEWORK: jinja2-2
+  - VERSION: python-3.7
+    FRAMEWORK: celery-4-flask-1.0
   # TODO py3.12
   - VERSION: python-3.12
     FRAMEWORK: pymssql-newest  # no wheels available yet
@@ -267,4 +275,7 @@ exclude:
     FRAMEWORK: sanic-newest  # no wheels available yet
   - VERSION: python-3.12
     FRAMEWORK: kafka-python-newest  # https://github.com/dpkp/kafka-python/pull/2376
-
+  - VERSION: python-3.12
+    FRAMEWORK: pyodbc-newest  # error on wheel
+  - VERSION: python-3.12
+    FRAMEWORK: cassandra-newest  # c extension issue

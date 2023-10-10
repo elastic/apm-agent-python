@@ -59,7 +59,7 @@ class IntervalTimer(threading.Thread):
         :param evaluate_function_interval: if set to True, and the function returns a number,
                it will be used as the next interval
         """
-        super(IntervalTimer, self).__init__(name=name)
+        super(IntervalTimer, self).__init__(name=name, daemon=daemon)
         self.daemon = daemon
         self._args = args
         self._kwargs = kwargs if kwargs is not None else {}
@@ -75,8 +75,8 @@ class IntervalTimer(threading.Thread):
             real_interval = (interval_override if interval_override is not None else self._interval) - execution_time
             interval_completed = True
             if real_interval:
-                interval_completed = not self._interval_done.wait(real_interval)
-            if not interval_completed:
+                interval_completed = self._interval_done.wait(real_interval)
+            if interval_completed:
                 # we've been cancelled, time to go home
                 return
             start = default_timer()
