@@ -138,74 +138,26 @@ apm.capture_message('hello, world!')
 [[flask-logging]]
 ==== Shipping Logs to Elasticsearch
 
-Enable automatic log shipping by passing `logging=LEVEL` to the ElasticAPM
-constructor. The agent will then ship all log messages with the given
-log-level or higher, from Python's built-in `logging` module to
-Elasticsearch. `LEVEL` must be one of the levels defined in the
-https://docs.python.org/3/library/logging.html#logging-levels[`logging`]
-module.
+This feature has been deprecated and will be removed in a future version.
+
+Please see our <<logs,Logging>> documentation for other supported ways to ship
+logs to Elasticsearch.
+
+Note that you can always send exceptions and messages to the APM Server with
+<<client-api-capture-exception,`capture_exception`>> and and
+<<client-api-capture-message,`capture_message`>>.
 
 [source,python]
 ----
-import logging
+from elasticapm import get_client
 
-from elasticapm.contrib.flask import ElasticAPM
-
-apm = ElasticAPM(app, logging=logging.ERROR)
-----
-
-To ship all log messages independent of log levels to Elastic APM, pass
-`logging=True` to the constructor:
-
-[source,python]
-----
-from elasticapm.contrib.flask import ElasticAPM
-
-apm = ElasticAPM(app, logging=True)
-----
-
-NOTE: using `logging=True` can lead to high number of logs being sent to Elastic APM.
-We recommend to always limit logging with Elastic APM to a high level (`WARNING` or `ERROR`).
-For shipping of less urgent logs, we recommend to use {filebeat-ref}[filebeat].
-
-For fine-grained control, you can initialize a logging handler and add it,
-just as you would with any other handler.
-
-For information on how to increase the log verbosity from the APM agent, see
-<<agent-logging,troubleshooting agent logging>>.
-
-[source,python]
-----
-from flask import Flask
-
-from elasticapm.contrib.flask import ElasticAPM
-from elasticapm.handlers.logging import LoggingHandler
-
-app = Flask(__name__)
-
-apm = ElasticAPM(app)
-
-if __name__ == '__main__':
-    # Create a logging handler and attach it.
-    handler = LoggingHandler(client=apm.client)
-    handler.setLevel(logging.WARN)
-    app.logger.addHandler(handler)
-----
-
-You can also capture exceptions and send them explicitly:
-
-[source,python]
-----
 @app.route('/')
 def bar():
     try:
         1 / 0
     except ZeroDivisionError:
-        app.logger.error( 'I cannot math', exc_info=True)
+        get_client().capture_exception()
 ----
-
-NOTE: `exc_info=True` adds the exception info to the data that gets sent to the APM Server.
-Without it, only the message is sent.
 
 [float]
 [[flask-extra-data]]
