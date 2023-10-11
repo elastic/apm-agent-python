@@ -32,6 +32,7 @@
 from __future__ import absolute_import
 
 import logging
+import warnings
 
 import flask
 from flask import request, signals
@@ -68,10 +69,6 @@ class ElasticAPM(object):
 
     >>> elasticapm = ElasticAPM(app, client=client)
 
-    Automatically configure logging::
-
-    >>> elasticapm = ElasticAPM(app, logging=True)
-
     Capture an exception::
 
     >>> try:
@@ -87,6 +84,11 @@ class ElasticAPM(object):
     def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults) -> None:
         self.app = app
         self.logging = logging
+        if self.logging:
+            warnings.warn(
+                "Flask log shipping is deprecated. See the Flask docs for more info and alternatives.",
+                PendingDeprecationWarning,
+            )
         self.client = client or get_client()
         self.client_cls = client_cls
 
