@@ -29,10 +29,13 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.19.0]]
+==== 6.19.0 - 2023-10-11
+
 [float]
 ===== Features
 
@@ -53,11 +56,6 @@ recorded as an extra span {pull}1914[#1914]
 ===== Pending Deprecations
 
 * The log shipping feature in the Flask instrumentation will be removed in version 7.0.0 of the agent.
-
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.18.0]]
 ==== 6.18.0 - 2023-07-25
