@@ -46,6 +46,13 @@ from elasticapm.utils.stacks import iter_stack_frames
 
 class LoggingHandler(logging.Handler):
     def __init__(self, *args, **kwargs) -> None:
+        warnings.warn(
+            "The LoggingHandler will be deprecated in v7.0 of the agent. "
+            "Please use `log_ecs_reformatting` and ship the logs with Elastic "
+            "Agent or Filebeat instead. "
+            "https://www.elastic.co/guide/en/apm/agent/python/current/logs.html",
+            PendingDeprecationWarning,
+        )
         self.client = None
         if "client" in kwargs:
             self.client = kwargs.pop("client")

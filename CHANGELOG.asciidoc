@@ -29,6 +29,21 @@ endif::[]
 //===== Bug fixes
 //
 
+=== Unreleased
+
+// Unreleased changes go here
+// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+//[float]
+//===== Bug fixes
+
+[float]
+===== Pending Deprecations
+
+* The log shipping LoggingHandler will be removed in version 7.0.0 of the agent.
+
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
