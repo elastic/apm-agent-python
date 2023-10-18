@@ -46,6 +46,13 @@ logger = get_logger("elasticapm.logging")
 
 class LoggingHandler(BaseLoggingHandler):
     def __init__(self, level=logging.NOTSET) -> None:
+        warnings.warn(
+            "The LoggingHandler will be deprecated in v7.0 of the agent. "
+            "Please use `log_ecs_reformatting` and ship the logs with Elastic "
+            "Agent or Filebeat instead. "
+            "https://www.elastic.co/guide/en/apm/agent/python/current/logs.html",
+            PendingDeprecationWarning,
+        )
         # skip initialization of BaseLoggingHandler
         logging.Handler.__init__(self, level=level)
 
