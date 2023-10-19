@@ -12,6 +12,7 @@ To get you off the ground, we’ve prepared guides for setting up the Agent with
  * <<lambda-support,AWS Lambda>>
  * <<azure-functions-support,Azure Functions>>
  * <<wrapper-support,Wrapper (Experimental)>>
+ * <<asgi-middleware,ASGI Middleware>>
 
 For custom instrumentation, see <<instrumenting-custom-code, Instrumenting Custom Code>>.
 
@@ -32,3 +33,5 @@ include::./serverless-lambda.asciidoc[]
 include::./serverless-azure-functions.asciidoc[]
 
 include::./wrapper.asciidoc[]
+
+include::./asgi-middleware.asciidoc[]
