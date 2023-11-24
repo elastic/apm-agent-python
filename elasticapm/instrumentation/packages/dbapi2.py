@@ -203,6 +203,13 @@ def extract_signature(sql):
 
 QUERY_ACTION = "query"
 EXEC_ACTION = "exec"
+PROCEDURE_STATEMENTS = ["EXEC", "EXECUTE", "CALL"]
+
+
+def extract_action_from_signature(signature, default):
+    if signature.split(" ")[0] in PROCEDURE_STATEMENTS:
+        return EXEC_ACTION
+    return default
 
 
 class CursorProxy(wrapt.ObjectProxy):
@@ -235,6 +242,7 @@ class CursorProxy(wrapt.ObjectProxy):
             signature = sql_string + "()"
         else:
             signature = self.extract_signature(sql_string)
+            action = extract_action_from_signature(signature, action)
 
         # Truncate sql_string to 10000 characters to prevent large queries from
         # causing an error to APM server.

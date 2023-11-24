@@ -29,7 +29,13 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-from elasticapm.instrumentation.packages.dbapi2 import Literal, extract_signature, scan, tokenize
+from elasticapm.instrumentation.packages.dbapi2 import (
+    Literal,
+    extract_action_from_signature,
+    extract_signature,
+    scan,
+    tokenize,
+)
 
 
 def test_scan_simple():
@@ -133,4 +139,18 @@ def test_extract_signature_bytes():
 )
 def test_extract_signature_for_procedure_call(sql, expected):
     actual = extract_signature(sql)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    ["sql", "expected"],
+    [
+        ("SELECT FROM table", "query"),
+        ("EXEC sp_who", "exec"),
+        ("EXECUTE sp_updatestats", "exec"),
+        ("CALL me_maybe", "exec"),
+    ],
+)
+def test_extract_action_from_signature(sql, expected):
+    actual = extract_action_from_signature(sql, "query")
     assert actual == expected
