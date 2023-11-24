@@ -114,3 +114,23 @@ def test_extract_signature_bytes():
     actual = extract_signature(sql)
     expected = "HELLO"
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    ["sql", "expected"],
+    [
+        (
+            "EXEC AdventureWorks2022.dbo.uspGetEmployeeManagers 50;",
+            "EXECUTE AdventureWorks2022.dbo.uspGetEmployeeManagers",
+        ),
+        ("EXECUTE sp_who2", "EXECUTE sp_who2"),
+        ("EXEC sp_updatestats @@all_schemas = 'true'", "EXECUTE sp_updatestats"),
+        ("CALL get_car_stats_by_year(2017, @number, @min, @avg, @max);", "CALL get_car_stats_by_year()"),
+        ("CALL get_car_stats_by_year", "CALL get_car_stats_by_year()"),
+        ("CALL get_car_stats_by_year;", "CALL get_car_stats_by_year()"),
+        ("CALL get_car_stats_by_year();", "CALL get_car_stats_by_year()"),
+    ],
+)
+def test_extract_signature_for_procedure_call(sql, expected):
+    actual = extract_signature(sql)
+    assert actual == expected

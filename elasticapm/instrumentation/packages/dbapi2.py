@@ -170,25 +170,34 @@ def extract_signature(sql):
         keyword = "INTO" if sql_type == "INSERT" else "FROM"
         sql_type = sql_type + " " + keyword
 
-        table_name = look_for_table(sql, keyword)
+        object_name = look_for_table(sql, keyword)
     elif sql_type in ["CREATE", "DROP"]:
         # 2nd word is part of SQL type
         sql_type = sql_type + sql[first_space:second_space]
-        table_name = ""
+        object_name = ""
     elif sql_type == "UPDATE":
-        table_name = look_for_table(sql, "UPDATE")
+        object_name = look_for_table(sql, "UPDATE")
     elif sql_type == "SELECT":
         # Name is first table
         try:
             sql_type = "SELECT FROM"
-            table_name = look_for_table(sql, "FROM")
+            object_name = look_for_table(sql, "FROM")
         except Exception:
-            table_name = ""
+            object_name = ""
+    elif sql_type in ["EXEC", "EXECUTE"]:
+        sql_type = "EXECUTE"
+        end = second_space if second_space > first_space else len(sql)
+        object_name = sql[first_space + 1 : end]
+    elif sql_type == "CALL":
+        first_paren = sql.find("(", first_space)
+        end = first_paren if first_paren > first_space else len(sql)
+        procedure_name = sql[first_space + 1 : end].rstrip(";")
+        object_name = procedure_name + "()"
     else:
         # No name
-        table_name = ""
+        object_name = ""
 
-    signature = " ".join(filter(bool, [sql_type, table_name]))
+    signature = " ".join(filter(bool, [sql_type, object_name]))
     return signature
 
 
