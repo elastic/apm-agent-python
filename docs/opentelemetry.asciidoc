@@ -36,7 +36,7 @@ pip install opentelemetry-api opentelemetry-sdk
 ----
 from elasticapm.contrib.opentelemetry import Tracer
 
-tracer = Tracer(__name__);
+tracer = Tracer(__name__)
 with tracer.start_as_current_span("test"):
     # Do some work
 ----
