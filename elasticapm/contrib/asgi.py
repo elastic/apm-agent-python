@@ -92,12 +92,14 @@ class ASGITracingMiddleware:
                 body = str(body_raw, errors="ignore")
 
                 # Dispatch to the ASGI callable
-                async def wrapped_receive():
+                async def new_wrapped_receive():
                     if messages:
                         return messages.pop(0)
 
                     # Once that's done we can just await any other messages.
                     return await receive()
+
+                wrapped_receive = new_wrapped_receive
 
             await set_context(lambda: self.get_data_from_request(scope, constants.TRANSACTION, body), "request")
 
