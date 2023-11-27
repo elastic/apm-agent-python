@@ -11,7 +11,7 @@ repos:
         language_version: python3
         exclude: "(tests/utils/stacks/linenos.py|tests/utils/stacks/linenos2.py|tests/contrib/grpc/grpc_app/.*pb2.*.py)"
 -   repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 6.1.0
     hooks:
     -   id: flake8
         exclude: "(tests/utils/stacks/linenos.py|tests/utils/stacks/linenos2.py|tests/contrib/grpc/grpc_app/.*pb2.*.py)"
