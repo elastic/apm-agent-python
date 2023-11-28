@@ -1,4 +1,4 @@
-include setup.py README.rst MANIFEST.in LICENSE
+include setup.py README.rst MANIFEST.in LICENSE elasticapm/py.typed
 global-exclude *~
 recursive-exclude * __pycache__
 prune tests

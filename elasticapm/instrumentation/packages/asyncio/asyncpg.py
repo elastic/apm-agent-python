@@ -55,14 +55,17 @@ class AsyncPGInstrumentation(AsyncAbstractInstrumentedModule):
         ("asyncpg.protocol.protocol", "Protocol.copy_out"),
     ]
 
-    def get_query(self, method, args):
+    def get_query(self, method, args, kwargs=None):
         if method in ["Protocol.query", "Protocol.copy_in", "Protocol.copy_out"]:
             return args[0]
-        else:
+        elif args:
             return args[0].query
+        else:
+            # asyncpg>=0.29 pass data as kwargs
+            return kwargs["state"].query
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        query = self.get_query(method, args)
+        query = self.get_query(method, args, kwargs)
         name = extract_signature(query)
         sql_string = shorten(query, string_length=10000)
         context = {"db": {"type": "sql", "statement": sql_string}}
