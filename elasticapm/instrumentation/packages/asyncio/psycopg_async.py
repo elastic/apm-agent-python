@@ -88,7 +88,7 @@ class AsyncPsycopgInstrumentation(AsyncDbApi2Instrumentation):
 
         host, port = get_destination_info(kwargs.get("host"), kwargs.get("port"))
         database = kwargs.get("dbname")
-        signature = f"{signature} {host}: {port}"
+        signature = f"{signature} {host}:{port}"  # noqa: E231
         destination_info = {
             "address": host,
             "port": port,
