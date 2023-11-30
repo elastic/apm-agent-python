@@ -34,8 +34,8 @@ from elasticapm.instrumentation.packages.asyncio.dbapi2_asyncio import (
     AsyncConnectionProxy,
     AsyncCursorProxy,
     AsyncDbApi2Instrumentation,
-    extract_signature,
 )
+from elasticapm.instrumentation.packages.dbapi2 import extract_signature
 from elasticapm.instrumentation.packages.psycopg2 import get_destination_info
 
 
