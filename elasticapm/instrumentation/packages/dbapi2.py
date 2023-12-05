@@ -76,8 +76,8 @@ def _scan_for_table_with_tokens(tokens, keyword):
 
 
 def tokenize(sql):
-    # split on anything that is not a word character, excluding dots
-    return [t for t in re.split(r"([^\w.])", sql) if t != ""]
+    # split on anything that is not a word character or a square bracket, excluding dots
+    return [t for t in re.split(r"([^\w.\[\]])", sql) if t != ""]
 
 
 def scan(tokens):

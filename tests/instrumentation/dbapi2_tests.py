@@ -154,3 +154,18 @@ def test_extract_signature_for_procedure_call(sql, expected):
 def test_extract_action_from_signature(sql, expected):
     actual = extract_action_from_signature(sql, "query")
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    ["sql", "expected"],
+    [
+        ("SELECT username FROM user", "SELECT FROM user"),
+        ("SELECT username FROM [user]", "SELECT FROM [user]"),
+        ("SELECT username FROM [db].[user]", "SELECT FROM [db].[user]"),
+        ("SELECT username FROM db.[user]", "SELECT FROM db.[user]"),
+        ("SELECT username FROM [db].user", "SELECT FROM [db].user"),
+    ],
+)
+def test_extract_signature_when_using_square_brackets(sql, expected):
+    actual = extract_signature(sql)
+    assert actual == expected
