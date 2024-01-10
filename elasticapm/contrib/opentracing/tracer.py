@@ -43,7 +43,7 @@ from elasticapm.utils import disttracing
 
 
 class Tracer(TracerBase):
-    def __init__(self, client_instance=None, config=None, scope_manager=None):
+    def __init__(self, client_instance=None, config=None, scope_manager=None) -> None:
         self._agent = client_instance or get_client() or elasticapm.Client(config=config)
         if scope_manager and not isinstance(scope_manager, ThreadLocalScopeManager):
             warnings.warn(

@@ -28,7 +28,9 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import asyncio
 import logging
+import os
 import sys
 from concurrent import futures
 
@@ -44,7 +46,7 @@ elasticapm.instrument()
 
 
 class TestService(pb2_grpc.TestServiceServicer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         pass
 
     def GetServerResponse(self, request, context):
@@ -54,7 +56,7 @@ class TestService(pb2_grpc.TestServiceServicer):
 
         return pb2.MessageResponse(**result)
 
-    def GetServerResponseAbort(self, request, context):
+    def GetServerResponseAbort(self, request, context) -> None:
         context.abort(grpc.StatusCode.INTERNAL, "foo")
 
     def GetServerResponseUnavailable(self, request, context):
@@ -67,7 +69,31 @@ class TestService(pb2_grpc.TestServiceServicer):
         raise Exception("oh no")
 
 
-def serve(port):
+class TestServiceAsync(pb2_grpc.TestServiceServicer):
+    def __init__(self, *args, **kwargs) -> None:
+        pass
+
+    async def GetServerResponse(self, request, context):
+        message = request.message
+        result = f'Hello I am up and running received "{message}" message from you'
+        result = {"message": result, "received": True}
+
+        return pb2.MessageResponse(**result)
+
+    async def GetServerResponseAbort(self, request, context) -> None:
+        await context.abort(grpc.StatusCode.INTERNAL, "foo")
+
+    async def GetServerResponseUnavailable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNAVAILABLE)
+        context.set_details("Method not available")
+        return pb2.MessageResponse(message="foo", received=True)
+
+    async def GetServerResponseException(self, request, context):
+        raise Exception("oh no")
+
+
+def serve(port) -> None:
     apm_client = GRPCApmClient(
         service_name="grpc-server", disable_metrics="*", api_request_time="100ms", central_config="False"
     )
@@ -78,10 +104,24 @@ def serve(port):
     server.wait_for_termination()
 
 
+async def serve_async(port) -> None:
+    apm_client = GRPCApmClient(
+        service_name="grpc-server", disable_metrics="*", api_request_time="100ms", central_config="False"
+    )
+    server = grpc.aio.server()
+    pb2_grpc.add_TestServiceServicer_to_server(TestServiceAsync(), server)
+    server.add_insecure_port(f"[::]:{port}")
+    await server.start()
+    await server.wait_for_termination()
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         port = sys.argv[1]
     else:
         port = "50051"
     logging.basicConfig()
-    serve(port)
+    if os.environ.get("GRPC_SERVER_ASYNC") == "1":
+        asyncio.run(serve_async(port))
+    else:
+        serve(port)

@@ -55,7 +55,7 @@ def time_to_perf_counter(timestamp: float) -> float:
     return timestamp + CLOCK_DIFF
 
 
-def _calculate_clock_diff():
+def _calculate_clock_diff() -> None:
     """
     Calculate the difference between `time.perf_counter()` and `time.time()`
 

@@ -54,10 +54,10 @@ class LogObserver(object):
         log.failure("Math is hard!")
     """
 
-    def __init__(self, client=None, **kwargs):
+    def __init__(self, client=None, **kwargs) -> None:
         self.client = client or Client(**kwargs)
 
-    def __call__(self, event):
+    def __call__(self, event) -> None:
         failure = event.get("log_failure")
         if failure is not None:
             self.client.capture_exception(

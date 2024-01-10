@@ -86,14 +86,14 @@ class ElasticAPMExtension(AppExtensionBase):
     client = None
 
     @classmethod
-    def init(cls):
+    def init(cls) -> None:
         """The function will be executed when the extension is loaded.
         Happens when Azure Functions customers import the extension module.
         """
         elasticapm.instrument()
 
     @classmethod
-    def configure(cls, client_class=AzureFunctionsClient, **kwargs):
+    def configure(cls, client_class=AzureFunctionsClient, **kwargs) -> None:
         client = elasticapm.get_client()
         if not client:
             kwargs["metrics_interval"] = "0ms"
@@ -120,7 +120,7 @@ class ElasticAPMExtension(AppExtensionBase):
         cls.client = client
 
     @classmethod
-    def pre_invocation_app_level(cls, logger, context, func_args: Dict[str, object] = None, *args, **kwargs):
+    def pre_invocation_app_level(cls, logger, context, func_args: Dict[str, object] = None, *args, **kwargs) -> None:
         """
         This must be implemented as a @staticmethod. It will be called right
         before a customer's function is being executed.
@@ -158,7 +158,7 @@ class ElasticAPMExtension(AppExtensionBase):
     @classmethod
     def post_invocation_app_level(
         cls, logger, context, func_args: Dict[str, object] = None, func_ret=Optional[object], *args, **kwargs
-    ):
+    ) -> None:
         client = cls.client
         if isinstance(func_ret, func.HttpResponse):
             elasticapm.set_context(lambda: get_data_from_response(func_ret, client.config.capture_headers), "response")

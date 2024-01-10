@@ -30,13 +30,14 @@
 
 import functools
 from types import TracebackType
-from typing import Optional, Type, TypeVar
+from typing import Any, Awaitable, Callable, Optional, Type, TypeVar
 
 from elasticapm.conf.constants import LABEL_RE
 from elasticapm.traces import SpanType, capture_span, execution_context
 from elasticapm.utils import get_name_from_func
 
-_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
+FuncType = Callable[..., Awaitable[Any]]
+_AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT", bound=FuncType)
 
 
 class async_capture_span(capture_span):
@@ -55,11 +56,11 @@ class async_capture_span(capture_span):
 
     async def __aexit__(
         self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
-    ):
+    ) -> None:
         self.handle_exit(exc_type, exc_val, exc_tb)
 
 
-async def set_context(data, key="custom"):
+async def set_context(data, key="custom") -> None:
     """
     Asynchronous copy of elasticapm.traces.set_context().
     Attach contextual data to the current transaction and errors that happen during the current transaction.

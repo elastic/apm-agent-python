@@ -170,7 +170,7 @@ class ElasticAPM:
         assert self._client, "capture_message called before application configuration is initialized"
         return self._client.capture_message(message=message, param_message=param_message, **kwargs)
 
-    def _setup_client_config(self, config: APMConfigType = None):
+    def _setup_client_config(self, config: APMConfigType = None) -> None:
         app_based_config = SanicAPMConfig(self._app)
         if dict(app_based_config):
             self._client_config = dict(app_based_config)
@@ -235,7 +235,7 @@ class ElasticAPM:
     async def _setup_default_custom_context(self, request: Request) -> CustomInfoType:
         return request.match_info
 
-    def setup_middleware(self, entity: ExtendableMiddlewareGroup):
+    def setup_middleware(self, entity: ExtendableMiddlewareGroup) -> None:
         """
         Adhoc registration of the middlewares for Blueprint and BlueprintGroup if you don't want to instrument
         your entire application. Only part of it can be done.
@@ -254,7 +254,7 @@ class ElasticAPM:
         """
 
         @entity.middleware("request")
-        async def _instrument_request(request: Request):
+        async def _instrument_request(request: Request) -> None:
             if not self._client.should_ignore_url(url=request.path):
                 trace_parent = TraceParent.from_headers(headers=request.headers)
                 self._client.begin_transaction("request", trace_parent=trace_parent)
@@ -277,7 +277,7 @@ class ElasticAPM:
 
         # noinspection PyUnusedLocal
         @entity.middleware("response")
-        async def _instrument_response(request: Request, response: HTTPResponse):
+        async def _instrument_response(request: Request, response: HTTPResponse) -> None:
             await set_context(
                 lambda: get_response_info(
                     config=self._client.config, response=response, event_type=constants.TRANSACTION
@@ -304,21 +304,21 @@ class ElasticAPM:
         if name:
             set_transaction_name(name, override=False)
 
-    async def _setup_custom_context(self, request: Request):
+    async def _setup_custom_context(self, request: Request) -> None:
         if self._custom_context_callback:
             set_custom_context(data=await self._custom_context_callback(request))
         else:
             set_custom_context(data=await self._setup_default_custom_context(request=request))
 
     # noinspection PyBroadException,PyProtectedMember
-    def _setup_exception_manager(self):
+    def _setup_exception_manager(self) -> None:
         """
         Setup global exception handler where all unhandled exception can be caught and tracked to APM server
         :return:
         """
 
         # noinspection PyUnusedLocal
-        async def _handler(request: Request, exception: BaseException):
+        async def _handler(request: Request, exception: BaseException) -> None:
             if not self._client:
                 return
 

@@ -41,7 +41,7 @@ from elasticapm import Client
 
 
 class ElasticAPM:
-    def __init__(self, app, client=None, **config):
+    def __init__(self, app, client=None, **config) -> None:
         """
         Create the elasticapm Client object and store in the app for later
         use.

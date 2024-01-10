@@ -4,16 +4,16 @@ on:
   workflow_call: ~
   pull_request:
     paths-ignore:
-      - '**/*.md'
-      - '**/*.asciidoc'
+      - "**/*.md"
+      - "**/*.asciidoc"
   push:
     branches:
       - main
     paths-ignore:
-      - '**/*.md'
-      - '**/*.asciidoc'
+      - "**/*.md"
+      - "**/*.asciidoc"
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
 
 jobs:
   build-distribution:
@@ -93,13 +93,13 @@ jobs:
           #  - version: "3.6"
           #    framework: "none"
           #    asyncio: "true"
-          - version: "3.7"
-            framework: none
-            asyncio: true
+          #  - version: "3.7"
+          #    framework: none
+          #    asyncio: true
           - version: "3.8"
             framework: none
             asyncio: true
-          - version: "3.9"  # waiting for greenlet to have binary wheels for 3.9
+          - version: "3.9" # waiting for greenlet to have binary wheels for 3.9
             framework: none
             asyncio: true
     env:
@@ -181,4 +181,4 @@ jobs:
           path: htmlcov
       - uses: geekyeggo/delete-artifact@54ab544f12cdb7b71613a16a2b5a37a9ade990af
         with:
-            name: coverage-reports
+          name: coverage-reports

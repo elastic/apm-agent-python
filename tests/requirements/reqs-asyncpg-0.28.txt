@@ -1,2 +1,2 @@
-sanic<20.13
+asyncpg==0.28
 -r reqs-base.txt

@@ -86,7 +86,7 @@ def sanitize_stacktrace_locals(client, event):
     :return: The modified event
     """
 
-    def func(frame):
+    def func(frame) -> None:
         if "vars" in frame:
             frame["vars"] = varmap(_sanitize, frame["vars"], sanitize_field_names=client.config.sanitize_field_names)
 

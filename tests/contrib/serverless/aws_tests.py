@@ -392,7 +392,7 @@ def test_service_name_override(event_api, context, elasticapm_client):
 
     test_func(event_api, context)
 
-    assert elasticapm_client._transport._metadata["service"]["name"] == "override"
+    assert elasticapm_client.build_metadata()["service"]["name"] == "override"
 
 
 def test_capture_serverless_list_event(event_list, context, elasticapm_client):
@@ -424,10 +424,16 @@ def test_partial_transaction(event_api, context, sending_elasticapm_client):
     test_func(event_api, context)
 
     assert len(sending_elasticapm_client.httpserver.requests) == 2
+
+    # There should be no spans from the partial transaction
+    for payload in sending_elasticapm_client.httpserver.payloads[1]:
+        assert "span" not in payload
+
     request = sending_elasticapm_client.httpserver.requests[0]
     assert request.full_path == "/register/transaction?"
     assert request.content_type == "application/vnd.elastic.apm.transaction+ndjson"
     assert b"metadata" in request.data
+    assert b"AWS Lambda" in request.data
     assert b"transaction" in request.data
     sending_elasticapm_client.close()
 
@@ -453,5 +459,21 @@ def test_partial_transaction_failure(event_api, context, sending_elasticapm_clie
     assert request.full_path == "/register/transaction?"
     assert request.content_type == "application/vnd.elastic.apm.transaction+ndjson"
     assert b"metadata" in request.data
+    assert b"AWS Lambda" in request.data
     assert b"transaction" in request.data
     sending_elasticapm_client.close()
+
+
+def test_with_headers_as_none(event_api2, context, elasticapm_client):
+    os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "test_func"
+
+    @capture_serverless
+    def test_func(event, context):
+        with capture_span("test_span"):
+            time.sleep(0.01)
+        return {"statusCode": 200, "headers": {"foo": "bar"}}
+
+    event_api2["headers"] = None
+
+    test_func(event_api2, context)
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1

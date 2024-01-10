@@ -108,7 +108,7 @@ def test_gcp_metadata(mock_socket, monkeypatch):
     assert metadata == {
         "provider": "gcp",
         "instance": {"id": "4306570268266786072", "name": "basepi-test"},
-        "project": {"id": "513326162531", "name": "elastic-apm"},
+        "project": {"id": "elastic-apm"},
         "availability_zone": "us-west3-a",
         "region": "us-west3",
         "machine": {"type": "n1-standard-1"},

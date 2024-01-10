@@ -46,7 +46,7 @@ def noop_decorator(func: _AnnotatedFunctionT) -> _AnnotatedFunctionT:
     return wrapped
 
 
-def atexit_register(func):
+def atexit_register(func) -> None:
     """
     Uses either uwsgi's atexit mechanism, or atexit from the stdlib.
 
@@ -59,7 +59,7 @@ def atexit_register(func):
 
         orig = getattr(uwsgi, "atexit", None)
 
-        def uwsgi_atexit():
+        def uwsgi_atexit() -> None:
             if callable(orig):
                 orig()
             func()

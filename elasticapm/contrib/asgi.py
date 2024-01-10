@@ -45,7 +45,7 @@ from elasticapm.utils.disttracing import TraceParent
 
 def wrap_send(send, middleware):
     @functools.wraps(send)
-    async def wrapped_send(message):
+    async def wrapped_send(message) -> None:
         if message.get("type") == "http.response.start":
             await set_context(lambda: middleware.get_data_from_response(message, constants.TRANSACTION), "response")
             result = "HTTP {}xx".format(message["status"] // 100)
@@ -92,12 +92,14 @@ class ASGITracingMiddleware:
                 body = str(body_raw, errors="ignore")
 
                 # Dispatch to the ASGI callable
-                async def wrapped_receive():
+                async def new_wrapped_receive():
                     if messages:
                         return messages.pop(0)
 
                     # Once that's done we can just await any other messages.
                     return await receive()
+
+                wrapped_receive = new_wrapped_receive
 
             await set_context(lambda: self.get_data_from_request(scope, constants.TRANSACTION, body), "request")
 
@@ -218,7 +220,7 @@ class ASGITracingMiddleware:
 
         return result
 
-    def set_transaction_name(self, method: str, url: str):
+    def set_transaction_name(self, method: str, url: str) -> None:
         """
         Default implementation sets transaction name to "METHOD unknown route".
         Subclasses may add framework specific naming.

@@ -53,7 +53,7 @@ class CustomException(Exception):
 
 
 class CustomErrorHandler(ErrorHandler):
-    def __init__(self):
+    def __init__(self) -> None:
         super(CustomErrorHandler, self).__init__()
 
     def default(self, request, exception):

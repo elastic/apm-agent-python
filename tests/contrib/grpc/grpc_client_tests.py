@@ -49,11 +49,14 @@ from .grpc_app.testgrpc_pb2 import Message
 from .grpc_app.testgrpc_pb2_grpc import TestServiceStub
 
 
-@pytest.fixture()
-def grpc_server(validating_httpserver, request):
+def setup_env(request, validating_httpserver):
     config = getattr(request, "param", {})
     env = {f"ELASTIC_APM_{k.upper()}": str(v) for k, v in config.items()}
     env.setdefault("ELASTIC_APM_SERVER_URL", validating_httpserver.url)
+    return env
+
+
+def setup_grpc_server(env):
     free_port = get_free_port()
     server_proc = subprocess.Popen(
         [os.path.join(sys.prefix, "bin", "python"), "-m", "tests.contrib.grpc.grpc_app.server", str(free_port)],
@@ -62,15 +65,32 @@ def grpc_server(validating_httpserver, request):
         env=env,
     )
     wait_for_open_port(free_port)
-    yield f"localhost:{free_port}"
-    server_proc.terminate()
+    return server_proc, free_port
 
 
 @pytest.fixture()
-def grpc_client_and_server_url(grpc_server):
-    test_channel = grpc.insecure_channel(grpc_server)
+def env_fixture(validating_httpserver, request):
+    env = setup_env(request, validating_httpserver)
+    return env
+
+
+if hasattr(grpc, "aio"):
+    grpc_server_fixture_params = ["async", "sync"]
+else:
+    grpc_server_fixture_params = ["sync"]
+
+
+@pytest.fixture(params=grpc_server_fixture_params)
+def grpc_client_and_server_url(env_fixture, request):
+    env = {k: v for k, v in env_fixture.items()}
+    if request.param == "async":
+        env["GRPC_SERVER_ASYNC"] = "1"
+    server_proc, free_port = setup_grpc_server(env)
+    server_addr = f"localhost:{free_port}"
+    test_channel = grpc.insecure_channel(server_addr)
     test_client = TestServiceStub(test_channel)
-    yield test_client, grpc_server
+    yield test_client, server_addr
+    server_proc.terminate()
 
 
 def test_grpc_client_server_instrumentation(instrument, sending_elasticapm_client, grpc_client_and_server_url):
@@ -200,7 +220,7 @@ def test_grpc_client_unsampled_span(instrument, sending_elasticapm_client, grpc_
 
 
 @pytest.mark.parametrize(
-    "grpc_server",
+    "env_fixture",
     [
         {
             "recording": "False",
@@ -219,13 +239,13 @@ def test_grpc_client_unsampled_transaction(instrument, sending_elasticapm_client
     assert len(payloads) == 1  # only the server_version request
 
 
-@pytest.mark.parametrize("sending_elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
-def test_grpc_client_max_spans(instrument, sending_elasticapm_client, grpc_client_and_server_url):
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 1}], indirect=True)
+def test_grpc_client_max_spans(instrument, elasticapm_client, grpc_client_and_server_url):
     grpc_client, _ = grpc_client_and_server_url
-    transaction = sending_elasticapm_client.begin_transaction("request")
+    transaction = elasticapm_client.begin_transaction("request")
     _ = grpc_client.GetServerResponse(Message(message="foo"))
     _ = grpc_client.GetServerResponse(Message(message="bar"))
-    sending_elasticapm_client.end_transaction("grpc-test")
+    elasticapm_client.end_transaction("grpc-test")
     assert transaction.dropped_spans == 1
 
 

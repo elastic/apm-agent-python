@@ -42,8 +42,10 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
     instrument_list = [("aiohttp.client", "ClientSession._request")]
 
     async def call(self, module, method, wrapped, instance, args, kwargs):
-        method = kwargs["method"] if "method" in kwargs else args[0]
-        url = kwargs["url"] if "url" in kwargs else args[1]
+        method = kwargs.get("method", args[0])
+        url = kwargs.get("url", kwargs.get("str_or_url", None))
+        if url is None:
+            url = args[1]
         url = str(url)
 
         signature = " ".join([method.upper(), get_host_from_url(url)])
@@ -86,7 +88,7 @@ class AioHttpClientInstrumentation(AsyncAbstractInstrumentedModule):
         kwargs["headers"] = headers
         return args, kwargs
 
-    def _set_disttracing_headers(self, headers, trace_parent, transaction):
+    def _set_disttracing_headers(self, headers, trace_parent, transaction) -> None:
         trace_parent_str = trace_parent.to_string()
         headers[constants.TRACEPARENT_HEADER_NAME] = trace_parent_str
         if transaction.tracer.config.use_elastic_traceparent_header:
