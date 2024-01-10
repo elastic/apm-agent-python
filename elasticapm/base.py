@@ -93,7 +93,7 @@ class Client(object):
 
     logger = get_logger("elasticapm")
 
-    def __init__(self, config=None, **inline):
+    def __init__(self, config=None, **inline) -> None:
         # configure loggers first
         cls = self.__class__
         self.logger = get_logger("%s.%s" % (cls.__module__, cls.__name__))
@@ -111,6 +111,7 @@ class Client(object):
         # setting server_version here is mainly used for testing
         self.server_version = inline.pop("server_version", None)
         self.activation_method = elasticapm._activation_method
+        self._extra_metadata = {}
 
         self.check_python_version()
 
@@ -149,6 +150,7 @@ class Client(object):
             "headers": headers,
             "verify_server_cert": self.config.verify_server_cert,
             "server_cert": self.config.server_cert,
+            "server_ca_cert_file": self.config.server_ca_cert_file,
             "timeout": self.config.server_timeout,
             "processors": self.load_processors(),
         }
@@ -226,7 +228,7 @@ class Client(object):
         # Save this Client object as the global CLIENT_SINGLETON
         set_client(self)
 
-    def start_threads(self):
+    def start_threads(self) -> None:
         current_pid = os.getpid()
         if self._pid != current_pid:
             with self._thread_starter_lock:
@@ -283,7 +285,7 @@ class Client(object):
         """
         return self.capture("Exception", exc_info=exc_info, handled=handled, **kwargs)
 
-    def queue(self, event_type, data, flush=False):
+    def queue(self, event_type, data, flush=False) -> None:
         if self.config.disable_send:
             return
         self.start_threads()
@@ -329,7 +331,7 @@ class Client(object):
         transaction = self.tracer.end_transaction(result, name, duration=duration)
         return transaction
 
-    def close(self):
+    def close(self) -> None:
         if self.config.enabled:
             with self._thread_starter_lock:
                 for _, manager in sorted(self._thread_managers.items(), key=lambda item: item[1].start_stop_order):
@@ -369,21 +371,29 @@ class Client(object):
         return result
 
     def get_process_info(self):
-        return {
+        result = {
             "pid": os.getpid(),
             "ppid": os.getppid() if hasattr(os, "getppid") else None,
-            "argv": sys.argv,
             "title": None,  # Note: if we implement this, the value needs to be wrapped with keyword_field
         }
+        if self.config.include_process_args:
+            result["argv"] = sys.argv
+        return result
 
     def get_system_info(self):
         system_data = {
-            "hostname": keyword_field(self.config.hostname),
+            "detected_hostname": keyword_field(elasticapm.utils.getfqdn()),
             "architecture": platform.machine(),
             "platform": platform.system().lower(),
         }
+        if self.config.hostname:
+            system_data["configured_hostname"] = keyword_field(self.config.hostname)
+        if not self.check_server_version(gte=(7, 4, 0)):
+            system_data["hostname"] = system_data.get("configured_hostname", system_data["detected_hostname"])
         system_data.update(cgroup.get_cgroup_container_metadata())
-        pod_name = os.environ.get("KUBERNETES_POD_NAME") or system_data["hostname"]
+        pod_name = os.environ.get("KUBERNETES_POD_NAME") or keyword_field(
+            self.config.hostname or elasticapm.utils.getfqdn().split(".")[0]
+        )
         changed = False
         if "kubernetes" in system_data:
             k8s = system_data["kubernetes"]
@@ -466,7 +476,35 @@ class Client(object):
             data.pop("cloud")
         if self.config.global_labels:
             data["labels"] = enforce_label_format(self.config.global_labels)
+        if self._extra_metadata:
+            # Merge one key deep
+            for key, val in self._extra_metadata.items():
+                if isinstance(val, dict) and key in data and isinstance(data[key], dict):
+                    data[key].update(val)
+                else:
+                    data[key] = val
         return data
+
+    def add_extra_metadata(self, data):
+        """
+        Add additional metadata to future metadata dictionaries.
+
+        Only used in specific instances where metadata relies on data we only
+        have at request time, such as for lambda metadata.
+
+        Metadata is only merged one key deep at build time.
+        """
+        # Merge one key deep
+        for key, val in data.items():
+            if isinstance(val, dict) and key in self._extra_metadata and isinstance(self._extra_metadata[key], dict):
+                self._extra_metadata[key].update(val)
+            else:
+                self._extra_metadata[key] = val
+
+        # Ensure that the extra metadata is added, even if we've already
+        # generated metadata for this process
+        if self._transport._metadata:
+            self._transport._metadata = self.build_metadata()
 
     def _build_msg_for_logging(
         self, event_type, date=None, context=None, custom=None, stack=None, handled=True, **kwargs
@@ -627,7 +665,7 @@ class Client(object):
             locals_processor_func=locals_processor_func,
         )
 
-    def _excepthook(self, type_, value, traceback):
+    def _excepthook(self, type_, value, traceback) -> None:
         try:
             self.original_excepthook(type_, value, traceback)
         except Exception:
@@ -663,7 +701,7 @@ class Client(object):
                     return True
         return False
 
-    def check_python_version(self):
+    def check_python_version(self) -> None:
         v = tuple(map(int, platform.python_version_tuple()[:2]))
         if v < (3, 6):
             warnings.warn("The Elastic APM agent only supports Python 3.6+", DeprecationWarning)
@@ -698,7 +736,7 @@ class Client(object):
         return self._server_version
 
     @server_version.setter
-    def server_version(self, new_version):
+    def server_version(self, new_version) -> None:
         if new_version and len(new_version) < 3:
             self.logger.debug("APM Server version is too short, padding with zeros")
             new_version = new_version + (0,) * (3 - len(new_version))
@@ -716,7 +754,7 @@ def get_client() -> Client:
     return CLIENT_SINGLETON
 
 
-def set_client(client: Client):
+def set_client(client: Client) -> None:
     global CLIENT_SINGLETON
     if CLIENT_SINGLETON:
         logger = get_logger("elasticapm")

@@ -200,12 +200,12 @@ class Transport(HTTPTransportBase):
                 logger.debug("Could not parse Cache-Control header: %s", response_headers["Cache-Control"])
         return max_age
 
-    def _process_queue(self):
+    def _process_queue(self) -> None:
         if not self.client.server_version:
             self.fetch_server_info()
         super()._process_queue()
 
-    def fetch_server_info(self):
+    def fetch_server_info(self) -> None:
         headers = self._headers.copy() if self._headers else {}
         headers.update(self.auth_headers)
         headers[b"accept"] = b"text/plain"
@@ -243,9 +243,11 @@ class Transport(HTTPTransportBase):
     @property
     def ca_certs(self):
         """
-        Return location of certificate store. If it is available and not disabled via setting,
-        this will return the location of the certifi certificate store.
+        Return location of certificate store. If the server_ca_cert_file config option is set,
+        its value is returned. Otherwise, the certifi store is used, unless it is disabled or not installed.
         """
+        if self._server_ca_cert_file:
+            return self._server_ca_cert_file
         return certifi.where() if (certifi and self.client.config.use_certifi) else None
 
 

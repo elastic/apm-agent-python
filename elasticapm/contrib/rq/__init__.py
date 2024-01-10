@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def register_elasticapm(client, worker):
+def register_elasticapm(client, worker) -> None:
     """Given an ElasticAPM client and an RQ worker, registers exception handlers
     with the worker so exceptions are logged to the apm server.
 
@@ -44,7 +44,7 @@ def register_elasticapm(client, worker):
 
     """
 
-    def send_to_server(job, *exc_info):
+    def send_to_server(job, *exc_info) -> None:
         client.capture_exception(
             exc_info=exc_info,
             extra={

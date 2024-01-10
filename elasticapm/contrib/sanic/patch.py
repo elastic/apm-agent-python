@@ -45,18 +45,18 @@ class ElasticAPMPatchedErrorHandler(ErrorHandler):
     chain the exception down to the original handler so that we don't get in the way of standard exception handling.
     """
 
-    def __init__(self, current_handler: ErrorHandler):
+    def __init__(self, current_handler: ErrorHandler) -> None:
         super(ElasticAPMPatchedErrorHandler, self).__init__()
         self._current_handler = current_handler  # type: ErrorHandler
         self._apm_handler = None  # type: ApmHandlerType
 
-    def add(self, exception, handler, *args, **kwargs):
+    def add(self, exception, handler, *args, **kwargs) -> None:
         self._current_handler.add(exception, handler, *args, **kwargs)
 
     def lookup(self, exception, *args, **kwargs):
         return self._current_handler.lookup(exception, *args, **kwargs)
 
-    def setup_apm_handler(self, apm_handler: ApmHandlerType, force: bool = False):
+    def setup_apm_handler(self, apm_handler: ApmHandlerType, force: bool = False) -> None:
         if self._apm_handler is None or force:
             self._apm_handler = apm_handler
 

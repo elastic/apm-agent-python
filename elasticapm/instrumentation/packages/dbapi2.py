@@ -43,7 +43,7 @@ from elasticapm.utils.encoding import force_text, shorten
 
 
 class Literal(object):
-    def __init__(self, literal_type, content):
+    def __init__(self, literal_type, content) -> None:
         self.literal_type = literal_type
         self.content = content
 
@@ -52,21 +52,6 @@ class Literal(object):
 
     def __repr__(self):
         return "<Literal {}{}{}>".format(self.literal_type, self.content, self.literal_type)
-
-
-def skip_to(start, tokens, value_sequence):
-    i = start
-    while i < len(tokens):
-        for idx, token in enumerate(value_sequence):
-            if tokens[i + idx] != token:
-                break
-        else:
-            # Match
-            return tokens[start : i + len(value_sequence)]
-        i += 1
-
-    # Not found
-    return None
 
 
 def look_for_table(sql, keyword):
@@ -91,8 +76,8 @@ def _scan_for_table_with_tokens(tokens, keyword):
 
 
 def tokenize(sql):
-    # split on anything that is not a word character, excluding dots
-    return [t for t in re.split(r"([^\w.])", sql) if t != ""]
+    # split on anything that is not a word character or a square bracket, excluding dots
+    return [t for t in re.split(r"([^\w.\[\]])", sql) if t != ""]
 
 
 def scan(tokens):
@@ -109,7 +94,6 @@ def scan(tokens):
                 prev_was_escape = False
                 lexeme.append(token)
             else:
-
                 if token == literal_started:
                     if literal_started == "'" and len(tokens) > i + 1 and tokens[i + 1] == "'":  # double quotes
                         i += 1
@@ -133,14 +117,30 @@ def scan(tokens):
                 # Postgres can use arbitrary characters between two $'s as a
                 # literal separation token, e.g.: $fish$ literal $fish$
                 # This part will detect that and skip over the literal.
-                skipped_token = skip_to(i + 1, tokens, "$")
-                if skipped_token is not None:
-                    dollar_token = ["$"] + skipped_token
-
-                    skipped = skip_to(i + len(dollar_token), tokens, dollar_token)
-                    if skipped:  # end wasn't found.
-                        yield i, Literal("".join(dollar_token), "".join(skipped[: -len(dollar_token)]))
-                        i = i + len(skipped) + len(dollar_token)
+                try:
+                    # Closing dollar of the opening quote,
+                    # i.e. the second $ in the first $fish$
+                    closing_dollar_idx = tokens.index("$", i + 1)
+                except ValueError:
+                    pass
+                else:
+                    quote = tokens[i : closing_dollar_idx + 1]
+                    length = len(quote)
+                    # Opening dollar of the closing quote,
+                    # i.e. the first $ in the second $fish$
+                    closing_quote_idx = closing_dollar_idx + 1
+                    while True:
+                        try:
+                            closing_quote_idx = tokens.index("$", closing_quote_idx)
+                        except ValueError:
+                            break
+                        if tokens[closing_quote_idx : closing_quote_idx + length] == quote:
+                            yield i, Literal(
+                                "".join(quote), "".join(tokens[closing_dollar_idx + 1 : closing_quote_idx])
+                            )
+                            i = closing_quote_idx + length
+                            break
+                        closing_quote_idx += 1
             else:
                 if token != " ":
                     yield i, token
@@ -170,37 +170,53 @@ def extract_signature(sql):
         keyword = "INTO" if sql_type == "INSERT" else "FROM"
         sql_type = sql_type + " " + keyword
 
-        table_name = look_for_table(sql, keyword)
+        object_name = look_for_table(sql, keyword)
     elif sql_type in ["CREATE", "DROP"]:
         # 2nd word is part of SQL type
         sql_type = sql_type + sql[first_space:second_space]
-        table_name = ""
+        object_name = ""
     elif sql_type == "UPDATE":
-        table_name = look_for_table(sql, "UPDATE")
+        object_name = look_for_table(sql, "UPDATE")
     elif sql_type == "SELECT":
         # Name is first table
         try:
             sql_type = "SELECT FROM"
-            table_name = look_for_table(sql, "FROM")
+            object_name = look_for_table(sql, "FROM")
         except Exception:
-            table_name = ""
+            object_name = ""
+    elif sql_type in ["EXEC", "EXECUTE"]:
+        sql_type = "EXECUTE"
+        end = second_space if second_space > first_space else len(sql)
+        object_name = sql[first_space + 1 : end]
+    elif sql_type == "CALL":
+        first_paren = sql.find("(", first_space)
+        end = first_paren if first_paren > first_space else len(sql)
+        procedure_name = sql[first_space + 1 : end].rstrip(";")
+        object_name = procedure_name + "()"
     else:
         # No name
-        table_name = ""
+        object_name = ""
 
-    signature = " ".join(filter(bool, [sql_type, table_name]))
+    signature = " ".join(filter(bool, [sql_type, object_name]))
     return signature
 
 
 QUERY_ACTION = "query"
 EXEC_ACTION = "exec"
+PROCEDURE_STATEMENTS = ["EXEC", "EXECUTE", "CALL"]
+
+
+def extract_action_from_signature(signature, default):
+    if signature.split(" ")[0] in PROCEDURE_STATEMENTS:
+        return EXEC_ACTION
+    return default
 
 
 class CursorProxy(wrapt.ObjectProxy):
     provider_name = None
     DML_QUERIES = ("INSERT", "DELETE", "UPDATE")
 
-    def __init__(self, wrapped, destination_info=None):
+    def __init__(self, wrapped, destination_info=None) -> None:
         super(CursorProxy, self).__init__(wrapped)
         self._self_destination_info = destination_info or {}
 
@@ -226,6 +242,7 @@ class CursorProxy(wrapt.ObjectProxy):
             signature = sql_string + "()"
         else:
             signature = self.extract_signature(sql_string)
+            action = extract_action_from_signature(signature, action)
 
         # Truncate sql_string to 10000 characters to prevent large queries from
         # causing an error to APM server.
@@ -259,7 +276,7 @@ class CursorProxy(wrapt.ObjectProxy):
 class ConnectionProxy(wrapt.ObjectProxy):
     cursor_proxy = CursorProxy
 
-    def __init__(self, wrapped, destination_info=None):
+    def __init__(self, wrapped, destination_info=None) -> None:
         super(ConnectionProxy, self).__init__(wrapped)
         self._self_destination_info = destination_info
 

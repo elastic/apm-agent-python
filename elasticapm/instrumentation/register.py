@@ -94,6 +94,8 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.starlette.StarletteServerErrorMiddlewareInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisAsyncioInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisPipelineInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.psycopg_async.AsyncPsycopgInstrumentation",
+            "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
         ]
     )
 
@@ -106,11 +108,11 @@ _wrapper_register = {
 }
 
 
-def register(cls):
+def register(cls) -> None:
     _cls_register.add(cls)
 
 
-def register_wrapper_instrumentations():
+def register_wrapper_instrumentations() -> None:
     _cls_register.update(_wrapper_register)
 
 

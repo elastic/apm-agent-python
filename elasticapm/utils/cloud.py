@@ -114,7 +114,7 @@ def gcp_metadata():
         return {
             "provider": "gcp",
             "instance": {"id": str(metadata["instance"]["id"]), "name": metadata["instance"]["name"]},
-            "project": {"id": str(metadata["project"]["numericProjectId"]), "name": metadata["project"]["projectId"]},
+            "project": {"id": metadata["project"]["projectId"]},
             "availability_zone": availability_zone,
             "region": availability_zone.rsplit("-", 1)[0],
             "machine": {"type": metadata["instance"]["machineType"].split("/")[-1]},

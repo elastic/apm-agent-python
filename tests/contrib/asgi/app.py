@@ -52,7 +52,7 @@ async def foo():
 
 
 @app.route("/boom")
-async def boom():
+async def boom() -> None:
     assert False
 
 

@@ -57,11 +57,11 @@ class ElasticAPMConfig(AppConfig):
     label = "elasticapm"
     verbose_name = "ElasticAPM"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super(ElasticAPMConfig, self).__init__(*args, **kwargs)
         self.client = None
 
-    def ready(self):
+    def ready(self) -> None:
         self.client = get_client()
         if self.client.config.autoinsert_django_middleware:
             self.insert_middleware(django_settings)
@@ -72,7 +72,7 @@ class ElasticAPMConfig(AppConfig):
             self.client.logger.debug("Skipping instrumentation. INSTRUMENT is set to False.")
 
     @staticmethod
-    def insert_middleware(settings):
+    def insert_middleware(settings) -> None:
         if hasattr(settings, "MIDDLEWARE"):
             middleware_list = settings.MIDDLEWARE
             middleware_attr = "MIDDLEWARE"
@@ -97,7 +97,7 @@ class ElasticAPMConfig(AppConfig):
             setattr(settings, middleware_attr, middleware_list)
 
 
-def register_handlers(client):
+def register_handlers(client) -> None:
     from django.core.signals import got_request_exception, request_finished, request_started
 
     from elasticapm.contrib.django.handlers import exception_handler
@@ -132,7 +132,7 @@ def register_handlers(client):
         client.logger.debug("Not instrumenting Celery, couldn't import")
 
 
-def _request_started_handler(client, sender, *args, **kwargs):
+def _request_started_handler(client, sender, *args, **kwargs) -> None:
     if not _should_start_transaction(client):
         return
     # try to find trace id
@@ -160,7 +160,7 @@ def _request_started_handler(client, sender, *args, **kwargs):
     client.begin_transaction("request", trace_parent=trace_parent)
 
 
-def instrument(client):
+def instrument(client) -> None:
     """
     Auto-instruments code to get nice spans
     """

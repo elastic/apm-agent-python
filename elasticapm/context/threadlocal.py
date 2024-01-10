@@ -30,8 +30,12 @@
 
 
 import threading
+from typing import TYPE_CHECKING
 
 from elasticapm.context.base import BaseContext
+
+if TYPE_CHECKING:
+    import elasticapm.traces
 
 
 class ThreadLocalContext(BaseContext):
@@ -40,7 +44,7 @@ class ThreadLocalContext(BaseContext):
     thread_local.transaction = None
     thread_local.spans = ()
 
-    def get_transaction(self, clear=False):
+    def get_transaction(self, clear: bool = False) -> "elasticapm.traces.Transaction":
         """
         Get the transaction for the current execution context
 
@@ -52,13 +56,13 @@ class ThreadLocalContext(BaseContext):
             self.thread_local.transaction = None
         return transaction
 
-    def set_transaction(self, transaction):
+    def set_transaction(self, transaction: "elasticapm.traces.Transaction") -> None:
         """
         Set the transaction for the current execution context
         """
         self.thread_local.transaction = transaction
 
-    def get_span(self):
+    def get_span(self) -> "elasticapm.traces.Span":
         """
         Get the active span for the current execution context.
         """
@@ -68,7 +72,7 @@ class ThreadLocalContext(BaseContext):
             span = spans[-1]
         return span
 
-    def set_span(self, span):
+    def set_span(self, span: "elasticapm.traces.Span") -> None:
         """
         Set the active span for the current execution context.
 
@@ -76,7 +80,7 @@ class ThreadLocalContext(BaseContext):
         """
         self.thread_local.spans = getattr(self.thread_local, "spans", ()) + (span,)
 
-    def unset_span(self, clear_all=False):
+    def unset_span(self, clear_all: bool = False) -> "elasticapm.traces.Span":
         """
         De-activate the current span. If a span was previously active, it will
         become active again.

@@ -75,14 +75,17 @@ def test_service_info_node_name(elasticapm_client):
 
 
 def test_process_info(elasticapm_client):
-    with mock.patch.object(sys, "argv", ["a", "b", "c"]):
-        process_info = elasticapm_client.get_process_info()
+    process_info = elasticapm_client.get_process_info()
     assert process_info["pid"] == os.getpid()
     if hasattr(os, "getppid"):
         assert process_info["ppid"] == os.getppid()
     else:
         # Windows + Python 2.7
         assert process_info["ppid"] is None
+    assert "argv" not in process_info
+    elasticapm_client.config.update("1", include_process_args=True)
+    with mock.patch.object(sys, "argv", ["a", "b", "c"]):
+        process_info = elasticapm_client.get_process_info()
     assert process_info["argv"] == ["a", "b", "c"]
 
 
@@ -91,15 +94,15 @@ def test_system_info(elasticapm_client):
     with mock.patch("elasticapm.utils.cgroup.get_cgroup_container_metadata") as mocked:
         mocked.return_value = {}
         system_info = elasticapm_client.get_system_info()
-    assert {"hostname", "architecture", "platform"} == set(system_info.keys())
-    assert system_info["hostname"] == socket.gethostname()
+    assert {"detected_hostname", "architecture", "platform"} == set(system_info.keys())
+    assert system_info["detected_hostname"] == elasticapm.utils.getfqdn()
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"hostname": "my_custom_hostname"}], indirect=True)
 def test_system_info_hostname_configurable(elasticapm_client):
     # mock docker/kubernetes data here to get consistent behavior if test is run in docker
     system_info = elasticapm_client.get_system_info()
-    assert system_info["hostname"] == "my_custom_hostname"
+    assert system_info["configured_hostname"] == "my_custom_hostname"
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"global_labels": "az=us-east-1,az.rack=8"}], indirect=True)
@@ -114,7 +117,7 @@ def test_docker_kubernetes_system_info(elasticapm_client):
         mock_metadata.return_value = {"container": {"id": "123"}, "kubernetes": {"pod": {"uid": "456"}}}
         system_info = elasticapm_client.get_system_info()
     assert system_info["container"] == {"id": "123"}
-    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": socket.gethostname()}}
+    assert system_info["kubernetes"] == {"pod": {"uid": "456", "name": elasticapm.utils.getfqdn().split(".")[0]}}
 
 
 @mock.patch.dict(
@@ -182,7 +185,10 @@ def test_docker_kubernetes_system_info_except_hostname_from_environ():
         mock_gethostname.return_value = "foo"
         system_info = elasticapm_client.get_system_info()
     assert "kubernetes" in system_info
-    assert system_info["kubernetes"] == {"pod": {"name": socket.gethostname()}, "namespace": "namespace"}
+    assert system_info["kubernetes"] == {
+        "pod": {"name": elasticapm.utils.getfqdn().split(".")[0]},
+        "namespace": "namespace",
+    }
 
 
 def test_config_by_environment():
@@ -440,11 +446,17 @@ def test_server_url_joining(elasticapm_client, expected):
 def test_python_version_deprecation(mock_python_version_tuple, version):
     warnings.simplefilter("always")
 
+    client_config = {}
+    client_config["central_config"] = "false"
+    client_config["cloud_provider"] = False
+    client_config["transport_class"] = "tests.fixtures.DummyTransport"
+    client_config["metrics_interval"] = "0ms"
+
     mock_python_version_tuple.return_value = version
     e = None
     with pytest.warns(DeprecationWarning, match="agent only supports"):
         try:
-            e = elasticapm.Client()
+            e = elasticapm.Client(**client_config)
         finally:
             if e:
                 e.close()

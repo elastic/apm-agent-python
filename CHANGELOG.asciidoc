@@ -33,6 +33,91 @@ endif::[]
 
 // Unreleased changes go here
 // When the next release happens, nest these changes under the "Python Agent version 6.x" heading
+//[float]
+//===== Features
+//
+//[float]
+//===== Bug fixes
+
+[float]
+===== Pending Deprecations
+
+* The log shipping LoggingHandler will be removed in version 7.0.0 of the agent.
+
+
+[[release-notes-6.x]]
+=== Python Agent version 6.x
+
+[[release-notes-6.19.0]]
+==== 6.19.0 - 2023-10-11
+
+[float]
+===== Features
+
+* Add Python 3.12 support
+* Collect the `configured_hostname` and `detected_hostname` separately, and switch to FQDN for the `detected_hostname`. {pull}1891[#1891]
+* Improve postgres dollar-quote detection to be much faster {pull}1905[#1905]
+
+[float]
+===== Bug fixes
+
+* Fix url argument fetching in aiohttp_client instrumentation {pull}1890[#1890]
+* Fix a bug in the AWS Lambda instrumentation when `event["headers"] is None` {pull}1907[#1907]
+* Fix a bug in AWS Lambda where metadata could be incomplete, causing validation errors with the APM Server {pull}1914[#1914]
+* Fix a bug in AWS Lambda where sending the partial transaction would be
+recorded as an extra span {pull}1914[#1914]
+
+[float]
+===== Pending Deprecations
+
+* The log shipping feature in the Flask instrumentation will be removed in version 7.0.0 of the agent.
+
+[[release-notes-6.18.0]]
+==== 6.18.0 - 2023-07-25
+
+[float]
+===== Features
+
+* Add support for grpc aio server interceptor {pull}1870[#1870]
+
+[float]
+===== Bug fixes
+
+* Fix a bug in the Elasticsearch client instrumentation which was causing loss of database context (including statement) when interacting with Elastic Cloud {pull}1878[#1878]
+
+[[release-notes-6.17.0]]
+==== 6.17.0 - 2023-07-03
+
+[float]
+==== Features
+* Add `server_ca_cert_file` option to provide custom CA certificate {pull}1852[#1852]
+* Add `include_process_args` option to allow users to opt-in to collecting process args {pull}1867[#1867]
+
+[float]
+===== Bug fixes
+* Fix a bug in the GRPC instrumentation when reaching the maximum amount of spans per transaction {pull}1861[#1861]
+
+[[release-notes-6.16.2]]
+==== 6.16.2 - 2023-06-12
+
+[float]
+===== Bug fixes
+
+* Fix compatibility issue with older versions of OpenSSL in lambda runtimes {pull}1847[#1847]
+* Add `latest` tag to docker images {pull}1848[#1848]
+* Fix issue with redacting `user:pass` in URLs in Python 3.11.4 {pull}1850[#1850]
+
+[[release-notes-6.16.1]]
+==== 6.16.1 - 2023-06-06
+
+[float]
+===== Bug fixes
+
+* Fix release process for docker and the lambda layer {pull}1845[#1845]
+
+[[release-notes-6.16.0]]
+==== 6.16.0 - 2023-06-05
+
 [float]
 ===== Features
 
@@ -66,9 +151,6 @@ same S3-buckets can appear twice in the service map (with and without
 s3-prefix).
 * Fix instrumentation to not bubble up exceptions during instrumentation {pull}1791[#1791]
 * Fix HTTP transport to not print useless and confusing stack trace {pull}1809[#1809]
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.15.1]]
 ==== 6.15.1 - 2023-03-06

@@ -34,7 +34,6 @@ import logging.handlers
 import math
 import os
 import re
-import socket
 import threading
 from datetime import timedelta
 
@@ -62,7 +61,7 @@ logfile_set_up = False
 
 
 class ConfigurationError(ValueError):
-    def __init__(self, msg, field_name):
+    def __init__(self, msg, field_name) -> None:
         self.field_name = field_name
         super(ValueError, self).__init__(msg)
 
@@ -121,7 +120,7 @@ class _ConfigValue(object):
         callbacks_on_default=True,
         default=None,
         required=False,
-    ):
+    ) -> None:
         self.type = type
         self.dict_key = dict_key
         self.validators = validators
@@ -139,7 +138,7 @@ class _ConfigValue(object):
         else:
             return self.default
 
-    def __set__(self, config_instance, value):
+    def __set__(self, config_instance, value) -> None:
         value = self._validate(config_instance, value)
         self._callback_if_changed(config_instance, value)
         config_instance._values[self.dict_key] = value
@@ -160,7 +159,7 @@ class _ConfigValue(object):
         instance._errors.pop(self.dict_key, None)
         return value
 
-    def _callback_if_changed(self, instance, new_value):
+    def _callback_if_changed(self, instance, new_value) -> None:
         """
         If the value changed (checked against instance._values[self.dict_key]),
         then run the callback function (if defined)
@@ -185,11 +184,11 @@ class _ConfigValue(object):
 
 
 class _ListConfigValue(_ConfigValue):
-    def __init__(self, dict_key, list_separator=",", **kwargs):
+    def __init__(self, dict_key, list_separator=",", **kwargs) -> None:
         self.list_separator = list_separator
         super(_ListConfigValue, self).__init__(dict_key, **kwargs)
 
-    def __set__(self, instance, value):
+    def __set__(self, instance, value) -> None:
         if isinstance(value, str):
             value = value.split(self.list_separator)
         elif value is not None:
@@ -201,12 +200,12 @@ class _ListConfigValue(_ConfigValue):
 
 
 class _DictConfigValue(_ConfigValue):
-    def __init__(self, dict_key, item_separator=",", keyval_separator="=", **kwargs):
+    def __init__(self, dict_key, item_separator=",", keyval_separator="=", **kwargs) -> None:
         self.item_separator = item_separator
         self.keyval_separator = keyval_separator
         super(_DictConfigValue, self).__init__(dict_key, **kwargs)
 
-    def __set__(self, instance, value):
+    def __set__(self, instance, value) -> None:
         if isinstance(value, str):
             items = (item.split(self.keyval_separator) for item in value.split(self.item_separator))
             value = {key.strip(): self.type(val.strip()) for key, val in items}
@@ -218,12 +217,12 @@ class _DictConfigValue(_ConfigValue):
 
 
 class _BoolConfigValue(_ConfigValue):
-    def __init__(self, dict_key, true_string="true", false_string="false", **kwargs):
+    def __init__(self, dict_key, true_string="true", false_string="false", **kwargs) -> None:
         self.true_string = true_string
         self.false_string = false_string
         super(_BoolConfigValue, self).__init__(dict_key, **kwargs)
 
-    def __set__(self, instance, value):
+    def __set__(self, instance, value) -> None:
         if isinstance(value, str):
             if value.lower() == self.true_string:
                 value = True
@@ -241,7 +240,7 @@ class _DurationConfigValue(_ConfigValue):
         ("m", 60),
     )
 
-    def __init__(self, dict_key, allow_microseconds=False, unitless_factor=None, **kwargs):
+    def __init__(self, dict_key, allow_microseconds=False, unitless_factor=None, **kwargs) -> None:
         self.type = None  # no type coercion
         used_units = self.units if allow_microseconds else self.units[1:]
         pattern = "|".join(unit[0] for unit in used_units)
@@ -259,7 +258,7 @@ class _DurationConfigValue(_ConfigValue):
         validators.insert(0, duration_validator)
         super().__init__(dict_key, validators=validators, **kwargs)
 
-    def __set__(self, config_instance, value):
+    def __set__(self, config_instance, value) -> None:
         value = self._validate(config_instance, value)
         value = timedelta(seconds=float(value))
         self._callback_if_changed(config_instance, value)
@@ -267,7 +266,7 @@ class _DurationConfigValue(_ConfigValue):
 
 
 class RegexValidator(object):
-    def __init__(self, regex, verbose_pattern=None):
+    def __init__(self, regex, verbose_pattern=None) -> None:
         self.regex = regex
         self.verbose_pattern = verbose_pattern or regex
 
@@ -280,7 +279,7 @@ class RegexValidator(object):
 
 
 class UnitValidator(object):
-    def __init__(self, regex, verbose_pattern, unit_multipliers):
+    def __init__(self, regex, verbose_pattern, unit_multipliers) -> None:
         self.regex = regex
         self.verbose_pattern = verbose_pattern
         self.unit_multipliers = unit_multipliers
@@ -308,7 +307,7 @@ class PrecisionValidator(object):
     begin with), use the minimum instead.
     """
 
-    def __init__(self, precision=0, minimum=None):
+    def __init__(self, precision=0, minimum=None) -> None:
         self.precision = precision
         self.minimum = minimum
 
@@ -330,7 +329,7 @@ size_validator = UnitValidator(
 
 
 class ExcludeRangeValidator(object):
-    def __init__(self, range_start, range_end, range_desc):
+    def __init__(self, range_start, range_end, range_desc) -> None:
         self.range_start = range_start
         self.range_end = range_end
         self.range_desc = range_desc
@@ -364,7 +363,7 @@ class EnumerationValidator(object):
     of valid string options.
     """
 
-    def __init__(self, valid_values, case_sensitive=False):
+    def __init__(self, valid_values, case_sensitive=False) -> None:
         """
         valid_values
             List of valid string values for the config value
@@ -390,7 +389,7 @@ class EnumerationValidator(object):
         return ret
 
 
-def _log_level_callback(dict_key, old_value, new_value, config_instance):
+def _log_level_callback(dict_key, old_value, new_value, config_instance) -> None:
     elasticapm_logger = logging.getLogger("elasticapm")
     elasticapm_logger.setLevel(log_levels_map.get(new_value, 100))
 
@@ -409,7 +408,7 @@ def _log_level_callback(dict_key, old_value, new_value, config_instance):
         elasticapm_logger.addHandler(filehandler)
 
 
-def _log_ecs_reformatting_callback(dict_key, old_value, new_value, config_instance):
+def _log_ecs_reformatting_callback(dict_key, old_value, new_value, config_instance) -> None:
     """
     If ecs_logging is installed and log_ecs_reformatting is set to "override", we should
     set the ecs_logging.StdlibFormatter as the formatted for every handler in
@@ -440,7 +439,7 @@ def _log_ecs_reformatting_callback(dict_key, old_value, new_value, config_instan
 class _ConfigBase(object):
     _NO_VALUE = object()  # sentinel object
 
-    def __init__(self, config_dict=None, env_dict=None, inline_dict=None, copy=False):
+    def __init__(self, config_dict=None, env_dict=None, inline_dict=None, copy=False) -> None:
         """
         config_dict
             Configuration dict as is common for frameworks such as flask and django.
@@ -468,7 +467,7 @@ class _ConfigBase(object):
         if not copy:
             self.update(config_dict, env_dict, inline_dict, initial=True)
 
-    def update(self, config_dict=None, env_dict=None, inline_dict=None, initial=False):
+    def update(self, config_dict=None, env_dict=None, inline_dict=None, initial=False) -> None:
         if config_dict is None:
             config_dict = {}
         if env_dict is None:
@@ -509,7 +508,7 @@ class _ConfigBase(object):
                 )
         self.call_pending_callbacks()
 
-    def call_pending_callbacks(self):
+    def call_pending_callbacks(self) -> None:
         """
         Call callbacks for config options matching list of tuples:
 
@@ -524,7 +523,7 @@ class _ConfigBase(object):
         return self._values
 
     @values.setter
-    def values(self, values):
+    def values(self, values) -> None:
         self._values = values
 
     @property
@@ -558,6 +557,7 @@ class Config(_ConfigBase):
     debug = _BoolConfigValue("DEBUG", default=False)
     server_url = _ConfigValue("SERVER_URL", default="http://127.0.0.1:8200", required=True)
     server_cert = _ConfigValue("SERVER_CERT", validators=[FileIsReadableValidator()])
+    server_ca_cert_file = _ConfigValue("SERVER_CA_CERT_FILE", validators=[FileIsReadableValidator()])
     verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
     use_certifi = _BoolConfigValue("USE_CERTIFI", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
@@ -571,7 +571,7 @@ class Config(_ConfigBase):
         ],
         default=5,
     )
-    hostname = _ConfigValue("HOSTNAME", default=socket.gethostname())
+    hostname = _ConfigValue("HOSTNAME", default=None)
     auto_log_stacks = _BoolConfigValue("AUTO_LOG_STACKS", default=True)
     transport_class = _ConfigValue("TRANSPORT_CLASS", default="elasticapm.transport.http.Transport", required=True)
     processors = _ListConfigValue(
@@ -690,6 +690,7 @@ class Config(_ConfigBase):
         ],
         default=TRACE_CONTINUATION_STRATEGY.CONTINUE,
     )
+    include_process_args = _BoolConfigValue("INCLUDE_PROCESS_ARGS", default=False)
 
     @property
     def is_recording(self):
@@ -716,7 +717,7 @@ class VersionedConfig(ThreadManager):
         "start_stop_order",
     )
 
-    def __init__(self, config_object, version, transport=None):
+    def __init__(self, config_object, version, transport=None) -> None:
         """
         Create a new VersionedConfig with an initial Config object
         :param config_object: the initial Config object
@@ -747,7 +748,7 @@ class VersionedConfig(ThreadManager):
         else:
             return new_config.errors
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Reset state to the original configuration
 
@@ -775,7 +776,7 @@ class VersionedConfig(ThreadManager):
     def __getattr__(self, item):
         return getattr(self._config, item)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name, value) -> None:
         if name not in self.__slots__:
             setattr(self._config, name, value)
         else:
@@ -811,14 +812,14 @@ class VersionedConfig(ThreadManager):
 
         return next_run
 
-    def start_thread(self, pid=None):
+    def start_thread(self, pid=None) -> None:
         self._update_thread = IntervalTimer(
             self.update_config, 1, "eapm conf updater", daemon=True, evaluate_function_interval=True
         )
         self._update_thread.start()
         super(VersionedConfig, self).start_thread(pid=pid)
 
-    def stop_thread(self):
+    def stop_thread(self) -> None:
         if self._update_thread:
             self._update_thread.cancel()
             self._update_thread = None

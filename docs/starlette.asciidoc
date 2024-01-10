@@ -57,6 +57,7 @@ from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
 apm = make_apm_client({
     'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
+    'SERVER_URL': '<SERVER-URL>',    
 })
 app = Starlette()
 app.add_middleware(ElasticAPM, client=apm)
@@ -93,14 +94,14 @@ Capture an arbitrary exception by calling
 try:
     1 / 0
 except ZeroDivisionError:
-    apm.client.capture_exception()
+    apm.capture_exception()
 ----
 
 Log a generic message with <<client-api-capture-message,`capture_message`>>:
 
 [source,python]
 ----
-apm.client.capture_message('hello, world!')
+apm.capture_message('hello, world!')
 ----
 
 [float]

@@ -50,7 +50,7 @@ logger = get_logger("elasticapm.contrib.opentracing")
 
 
 class OTSpan(OTSpanBase):
-    def __init__(self, tracer, context, elastic_apm_ref):
+    def __init__(self, tracer, context, elastic_apm_ref) -> None:
         super(OTSpan, self).__init__(tracer, context)
         self.elastic_apm_ref = elastic_apm_ref
         self.is_transaction = isinstance(elastic_apm_ref, traces.Transaction)
@@ -123,7 +123,7 @@ class OTSpan(OTSpanBase):
                 self.elastic_apm_ref.label(**{key: value})
         return self
 
-    def finish(self, finish_time=None):
+    def finish(self, finish_time=None) -> None:
         if self.is_transaction:
             self.tracer._agent.end_transaction()
         elif not self.is_dropped:
@@ -131,6 +131,6 @@ class OTSpan(OTSpanBase):
 
 
 class OTSpanContext(OTSpanContextBase):
-    def __init__(self, trace_parent, span=None):
+    def __init__(self, trace_parent, span=None) -> None:
         self.trace_parent = trace_parent
         self.span = span

@@ -33,6 +33,6 @@
 
 
 class TransportException(Exception):
-    def __init__(self, message, data=None):
+    def __init__(self, message, data=None) -> None:
         super(TransportException, self).__init__(message)
         self.data = data

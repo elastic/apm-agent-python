@@ -29,14 +29,17 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import socket
 from functools import partial
 
 import pytest
 
+import elasticapm.utils
 from elasticapm.conf import constants
 from elasticapm.utils import (
     get_name_from_func,
     get_url_dict,
+    getfqdn,
     nested_key,
     read_pem_file,
     sanitize_url,
@@ -204,12 +207,12 @@ def test_starmatch_to_regex(pattern, input, match):
 
 def test_url_sanitization():
     sanitized = sanitize_url("http://user:pass@localhost:123/foo?bar=baz#bazzinga")
-    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK_URL
 
 
 def test_url_sanitization_urlencoded_password():
     sanitized = sanitize_url("http://user:%F0%9F%9A%B4@localhost:123/foo?bar=baz#bazzinga")
-    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK
+    assert sanitized == "http://user:%s@localhost:123/foo?bar=baz#bazzinga" % constants.MASK_URL
 
 
 @pytest.mark.parametrize(
@@ -233,7 +236,7 @@ def test_url_to_destination_bad_port():
 def test_read_pem_file():
     with open(os.path.join(os.path.dirname(__file__), "..", "ca", "ca.crt"), mode="rb") as f:
         result = read_pem_file(f)
-        assert result.startswith(b"0\x82\x05{0\x82\x03c\xa0\x03\x02\x01\x02\x02\x14")
+        assert result.startswith(b"0\x82\x05{0\x82\x03c\xa0\x03\x02\x01\x02\x02\x14`c\xd8:\xe7")
 
 
 def test_read_pem_file_chain():
@@ -259,3 +262,12 @@ def test_nested_key(data, key, expected):
         assert r is expected
     else:
         assert r == expected
+
+
+def test_getfqdn(invalidate_fqdn_cache):
+    assert getfqdn() == socket.getfqdn().lower()
+
+
+def test_getfqdn_caches(invalidate_fqdn_cache):
+    elasticapm.utils.fqdn = "foo"
+    assert getfqdn() == "foo"

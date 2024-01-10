@@ -81,7 +81,7 @@ def get_client():
 class DjangoClient(Client):
     logger = get_logger("elasticapm.errors.client.django")
 
-    def __init__(self, config=None, **inline):
+    def __init__(self, config=None, **inline) -> None:
         if config is None:
             config = getattr(django_settings, "ELASTIC_APM", {})
         if "framework_name" not in inline:

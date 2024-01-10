@@ -75,13 +75,13 @@ class ElasticsearchConnectionInstrumentation(AbstractInstrumentedModule):
         else:
             status_code = result[0]
             cluster = result[1].get("x-found-handling-cluster")
-        span.context["http"] = {"status_code": status_code}
+        span.update_context("http", {"status_code": status_code})
         if cluster:
-            span.context["db"] = {"instance": cluster}
+            span.update_context("db", {"instance": cluster})
 
         return result
 
-    def _update_context_by_request_data(self, context, instance, args, kwargs):
+    def _update_context_by_request_data(self, context, instance, args, kwargs) -> None:
         args_len = len(args)
         url = args[1] if args_len > 1 else kwargs.get("url")
         params = args[2] if args_len > 2 else kwargs.get("params")

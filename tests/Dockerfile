@@ -7,9 +7,10 @@ RUN apt-get -qq update && apt-get -qq -y --no-install-recommends install \
     curl \
     gnupg2 \
     libmariadb-dev \
+    pkg-config \
     libpq-dev \
     make \
-    netcat \
+    netcat-traditional \
     odbc-postgresql \
     unixodbc-dev \
     freetds-dev \

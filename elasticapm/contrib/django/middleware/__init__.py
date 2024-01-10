@@ -133,7 +133,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
     _elasticapm_instrumented = False
     _instrumenting_lock = threading.Lock()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super(TracingMiddleware, self).__init__(*args, **kwargs)
         if not self._elasticapm_instrumented:
             with self._instrumenting_lock:
@@ -143,7 +143,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
 
                     TracingMiddleware._elasticapm_instrumented = True
 
-    def instrument_middlewares(self):
+    def instrument_middlewares(self) -> None:
         middlewares = getattr(django_settings, "MIDDLEWARE", None) or getattr(
             django_settings, "MIDDLEWARE_CLASSES", None
         )
@@ -163,7 +163,7 @@ class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
                 except ImportError:
                     client.logger.warning("Can't instrument middleware %s", middleware_path)
 
-    def process_view(self, request: HttpRequest, view_func: FunctionType, view_args: list, view_kwargs: dict):
+    def process_view(self, request: HttpRequest, view_func: FunctionType, view_args: list, view_kwargs: dict) -> None:
         elasticapm.set_transaction_name(self.get_transaction_name(request, view_func), override=False)
         request._elasticapm_name_set = True
 
@@ -217,5 +217,5 @@ class LogMiddleware(MiddlewareMixin):
     # Create a thread local variable to store the session in for logging
     thread = threading.local()
 
-    def process_request(self, request):
+    def process_request(self, request) -> None:
         self.thread.request = request
