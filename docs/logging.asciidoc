@@ -6,6 +6,10 @@ Elastic Python APM Agent provides the following log features:
 - <<log-correlation-ids>> : Automatically inject correlation IDs that allow navigation between logs, traces and services.
 - <<log-reformatting>> : Automatically reformat plaintext logs in {ecs-logging-ref}/intro.html[ECS logging] format.
 
+NOTE: Elastic Python APM Agent does not send the logs to Elasticsearch. It only
+injects correlation IDs and reformats the logs. You must use another ingestion
+strategy.  We recommend https://www.elastic.co/beats/filebeat[Filebeat] for that purpose.
+
 Those features are part of {observability-guide}/application-logs.html[Application log ingestion strategies].
 
 The {ecs-logging-python-ref}/intro.html[`ecs-logging-python`] library can also be used to use the {ecs-logging-ref}/intro.html[ECS logging] format without an APM agent.
