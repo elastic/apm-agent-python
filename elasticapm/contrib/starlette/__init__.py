@@ -105,7 +105,7 @@ class ElasticAPM:
     >>> elasticapm.capture_message('hello, world!')
     """
 
-    def __init__(self, app: ASGIApp, client: Optional[Client], **kwargs) -> None:
+    def __init__(self, app: ASGIApp, client: Optional[Client] = None, **kwargs) -> None:
         """
 
         Args:
