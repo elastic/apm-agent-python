@@ -534,3 +534,11 @@ def test_transaction_active_in_base_exception_handler(app, elasticapm_client):
         assert exc.transaction_id
 
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+
+def test_middleware_without_client_arg():
+    with mock.patch.dict("os.environ", {"ELASTIC_APM_SERVICE_NAME": "foo"}):
+        app = Starlette()
+        elasticapm = ElasticAPM(app)
+
+    assert elasticapm.client.config.service_name == "foo"
