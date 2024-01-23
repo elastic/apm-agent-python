@@ -43,7 +43,7 @@ app.add_middleware(ElasticAPM)
 ----
 
 WARNING: If you are using any `BaseHTTPMiddleware` middleware, you must add them
-*before* the ElasticAPM middleware. This is because `BaseHTTPMiddleware` breaks
+*after* the ElasticAPM middleware. This is because `BaseHTTPMiddleware` breaks
 `contextvar` propagation, as noted
 https://www.starlette.io/middleware/#limitations[here].
 
