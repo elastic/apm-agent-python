@@ -39,6 +39,7 @@ Once a PR has been opened then there are two different ways you can trigger buil
 
 1. Commit based
 1. UI based, any Elasticians can force a build through the GitHub UI
+1. PR review comment based, any Elasticians can force a full matrix test run through a PR review comment with the following syntax: `/test matrix`.
 
 #### Branches
 
