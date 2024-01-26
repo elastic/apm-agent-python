@@ -1,7 +1,12 @@
 name: test # The name must be the same as in test-docs.yml
 
 on:
-  workflow_call: ~
+  workflow_call:
+    inputs:
+      full_matrix:
+        description: "Run the full matrix"
+        required: true
+        type: boolean
   pull_request:
     paths-ignore:
       - "**/*.md"
@@ -14,6 +19,12 @@ on:
       - "**/*.asciidoc"
   schedule:
     - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      full_matrix:
+        description: "Run the full matrix"
+        required: true
+        type: boolean
 
 jobs:
   build-distribution:
@@ -31,9 +42,9 @@ jobs:
         uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
         with:
           # Use .ci/.matrix_python_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_python.yml
-          versionsFile: .ci/.matrix_python${{ github.event_name == 'schedule' && '_full' || '' }}.yml
+          versionsFile: .ci/.matrix_python${{ (github.event_name == 'schedule' || inputs.full_matrix) && '_full' || '' }}.yml
           # Use .ci/.matrix_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_framework.yml
-          frameworksFile: .ci/.matrix_framework${{ github.event_name == 'schedule' && '_full' || '' }}.yml
+          frameworksFile: .ci/.matrix_framework${{ (github.event_name == 'schedule' || inputs.full_matrix) && '_full' || '' }}.yml
           excludedFile: .ci/.matrix_exclude.yml
       - name: Split matrix
         shell: python
