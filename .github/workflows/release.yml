@@ -11,8 +11,6 @@ permissions:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
-    with:
-      full-matrix: true
 
   packages:
     uses: ./.github/workflows/packages.yml
