@@ -148,7 +148,19 @@ jobs:
       - chunks-3
       - windows
     steps:
-      - run: test $(echo '${{ toJSON(needs) }}' | jq -s 'map(.[].result) | all(.=="success")') = 'true'
+      - id: check
+        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        with:
+          needs: ${{ toJSON(needs) }}
+      - run: ${{ steps.check.outputs.isSuccess }}
+      - if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
+        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          status: ${{ steps.check.outputs.status }}
+          vaultUrl: ${{ secrets.VAULT_ADDR }}
+          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
+          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
+          slackChannel: "#apm-agent-python"
 
   coverage:
     name: Combine & check coverage.
