@@ -1,7 +1,16 @@
 name: test # The name must be the same as in test-docs.yml
 
 on:
-  workflow_call: ~
+  workflow_call:
+    inputs:
+      full-matrix:
+        description: "Run the full matrix"
+        required: true
+        type: boolean
+      ref:
+        description: "The git ref of elastic/apm-agent-python to run test workflow from."
+        required: false
+        type: string
   pull_request:
     paths-ignore:
       - "**/*.md"
@@ -32,7 +41,9 @@ jobs:
       data: ${{ steps.split.outputs.data }}
       chunks: ${{ steps.split.outputs.chunks }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - id: generate
         uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
         with:
@@ -113,7 +124,9 @@ jobs:
       FRAMEWORK: ${{ matrix.framework }}
       ASYNCIO: ${{ matrix.asyncio }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.version }}
@@ -168,7 +181,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: actions/setup-python@v4
         with:
