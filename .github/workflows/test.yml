@@ -8,7 +8,7 @@ on:
         required: true
         type: boolean
       ref:
-        description: "The git ref of elastic/apm-agent-python to build the image from. (Default: default branch)"
+        description: "The git ref of elastic/apm-agent-python to run test workflow from."
         required: false
         type: string
   pull_request:
