@@ -147,7 +147,7 @@ jobs:
         with:
           needs: ${{ toJSON(needs) }}
       - run: ${{ steps.check.outputs.isSuccess }}
-      - if: failure() && github.event_name == 'schedule'
+      - if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
         uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
         with:
           status: ${{ steps.check.outputs.status }}
