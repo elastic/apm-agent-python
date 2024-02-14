@@ -33,20 +33,18 @@ import inspect
 import grpc
 
 import elasticapm
-from elasticapm.contrib.grpc.server_interceptor import _ServicerContextWrapper, _wrap_rpc_behavior, get_trace_parent
+from elasticapm.contrib.grpc.server_interceptor import _ServicerContextWrapper, get_trace_parent
 
 
 class _AsyncServerInterceptor(grpc.aio.ServerInterceptor):
     async def intercept_service(self, continuation, handler_call_details):
-        def transaction_wrapper(behavior, request_streaming, response_streaming):
-            async def _interceptor(request_or_iterator, context):
-                if request_streaming or response_streaming:  # only unary-unary is supported
-                    return behavior(request_or_iterator, context)
+        def wrap_unary_unary(behavior):
+            async def _interceptor(request, context):
                 tp = get_trace_parent(handler_call_details)
                 client = elasticapm.get_client()
                 transaction = client.begin_transaction("request", trace_parent=tp)
                 try:
-                    result = behavior(request_or_iterator, _ServicerContextWrapper(context, transaction))
+                    result = behavior(request, _ServicerContextWrapper(context, transaction))
 
                     # This is so we can support both sync and async rpc functions
                     if inspect.isawaitable(result):
@@ -65,4 +63,12 @@ class _AsyncServerInterceptor(grpc.aio.ServerInterceptor):
 
             return _interceptor
 
-        return _wrap_rpc_behavior(await continuation(handler_call_details), transaction_wrapper)
+        handler = await continuation(handler_call_details)
+        if handler.request_streaming or handler.response_streaming:
+            return handler
+
+        return grpc.unary_unary_rpc_method_handler(
+            wrap_unary_unary(handler.unary_unary),
+            request_deserializer=handler.request_deserializer,
+            response_serializer=handler.response_serializer,
+        )
