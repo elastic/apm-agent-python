@@ -24,13 +24,13 @@ jobs:
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: packages
           path: dist
       - name: Upload
-        uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
         with:
           repository-url: https://upload.pypi.org/legacy/
 
@@ -42,8 +42,8 @@ jobs:
       - build-distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: hashicorp/vault-action@v2.7.2
+      - uses: actions/checkout@v4
+      - uses: hashicorp/vault-action@v2.8.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -52,7 +52,7 @@ jobs:
           secrets: |
             secret/observability-team/ci/service-account/apm-agent-python access_key_id | AWS_ACCESS_KEY_ID ;
             secret/observability-team/ci/service-account/apm-agent-python secret_access_key | AWS_SECRET_ACCESS_KEY
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: build-distribution
           path: ./build
@@ -63,7 +63,7 @@ jobs:
           VERSION=${VERSION//./-}
 
           ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: arn-file
           path: ".arn-file.md"
@@ -74,7 +74,7 @@ jobs:
       - build-distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: elastic/apm-pipeline-library/.github/actions/docker-login@current
         with:
           registry: docker.elastic.co
@@ -82,7 +82,7 @@ jobs:
           url: ${{ secrets.VAULT_ADDR }}
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: build-distribution
           path: ./build
@@ -115,8 +115,8 @@ jobs:
       - publish-lambda-layers
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: arn-file
       - name: Create GitHub Draft Release
