@@ -67,6 +67,7 @@ FRAMEWORK:
   - aiohttp-3.0
   - aiohttp-newest
   - aiopg-newest
+  - asyncpg-0.28
   - asyncpg-newest
   - tornado-newest
   - starlette-0.13

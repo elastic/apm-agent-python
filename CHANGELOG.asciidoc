@@ -29,24 +29,29 @@ endif::[]
 //===== Bug fixes
 //
 
-=== Unreleased
+[[release-notes-6.x]]
+=== Python Agent version 6.x
 
-// Unreleased changes go here
-// When the next release happens, nest these changes under the "Python Agent version 6.x" heading
-//[float]
-//===== Features
-//
-//[float]
-//===== Bug fixes
+[[release-notes-6.20.0]]
+==== 6.20.0 - 2024-01-10
+
+[float]
+===== Features
+
+* Async support for dbapi2 (starting with psycopg) {pull}1944[#1944]
+* Add object name to procedure call spans in dbapi2 {pull}1938[#1938]
+* Add support for python 3.10 and 3.11 lambda runtimes
+
+[float]
+===== Bug fixes
+
+* Fix asyncpg support for 0.29+ {pull}1935[#1935]
+* Fix dbapi2 signature extraction to handle square brackets in table name {pull}1947[#1947]
 
 [float]
 ===== Pending Deprecations
 
 * The log shipping LoggingHandler will be removed in version 7.0.0 of the agent.
-
-
-[[release-notes-6.x]]
-=== Python Agent version 6.x
 
 [[release-notes-6.19.0]]
 ==== 6.19.0 - 2023-10-11

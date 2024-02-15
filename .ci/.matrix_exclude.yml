@@ -184,8 +184,12 @@ exclude:
   # asyncpg
   - VERSION: pypy-3
     FRAMEWORK: asyncpg-newest
+  - VERSION: pypy-3
+    FRAMEWORK: asyncpg-0.28
   - VERSION: python-3.6
     FRAMEWORK: asyncpg-newest
+  - VERSION: python-3.6
+    FRAMEWORK: asyncpg-0.28
   # sanic
   - VERSION: pypy-3
     FRAMEWORK: sanic-newest
@@ -279,3 +283,9 @@ exclude:
     FRAMEWORK: pyodbc-newest  # error on wheel
   - VERSION: python-3.12
     FRAMEWORK: cassandra-newest  # c extension issue
+  - VERSION: python-3.12
+    FRAMEWORK: starlette-newest  # waiting for 3.12.2 for this fix: https://github.com/python/cpython/pull/111221
+  - VERSION: python-3.12
+    FRAMEWORK: starlette-0.14  # waiting for 3.12.2 for this fix: https://github.com/python/cpython/pull/111221
+  - VERSION: python-3.12
+    FRAMEWORK: starlette-0.13  # waiting for 3.12.2 for this fix: https://github.com/python/cpython/pull/111221
