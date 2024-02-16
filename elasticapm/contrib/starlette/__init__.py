@@ -36,6 +36,7 @@ import functools
 from typing import Dict, Optional
 
 import starlette
+from starlette.datastructures import Headers
 from starlette.requests import Request
 from starlette.routing import Match, Mount
 from starlette.types import ASGIApp, Message
@@ -151,6 +152,10 @@ class ElasticAPM:
         _mocked_receive = None
         _request_receive = None
 
+        # begin the transaction before capturing the body to get that time accounted
+        trace_parent = TraceParent.from_headers(dict(Headers(scope=scope)))
+        self.client.begin_transaction("request", trace_parent=trace_parent)
+
         if self.client.config.capture_body != "off":
 
             # When we consume the body from receive, we replace the streaming
@@ -233,9 +238,6 @@ class ElasticAPM:
         # `capture_body` settings, we will have access to the body if we need it.
         if self.client.config.capture_body != "off":
             await get_body(request)
-
-        trace_parent = TraceParent.from_headers(dict(request.headers))
-        self.client.begin_transaction("request", trace_parent=trace_parent)
 
         await set_context(lambda: get_data_from_request(request, self.client.config, constants.TRANSACTION), "request")
         transaction_name = self.get_route_name(request) or request.url.path
