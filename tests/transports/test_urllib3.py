@@ -115,38 +115,46 @@ def test_generic_error(mock_urlopen, elasticapm_client):
 
 
 def test_http_proxy_environment_variable(elasticapm_client):
-    with mock.patch.dict("os.environ", {"HTTP_PROXY": "http://example.com"}):
+    with mock.patch.dict("os.environ", {"HTTP_PROXY": "http://example.com"}, clear=True):
         transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.ProxyManager)
 
 
 def test_https_proxy_environment_variable(elasticapm_client):
-    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com"}):
+    with mock.patch.dict(
+        "os.environ",
+        {
+            "HTTPS_PROXY": "https://example.com",
+        },
+        clear=True,
+    ):
         transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
 def test_https_proxy_environment_variable_is_preferred(elasticapm_client):
-    with mock.patch.dict("os.environ", {"https_proxy": "https://example.com", "HTTP_PROXY": "http://example.com"}):
+    with mock.patch.dict(
+        "os.environ", {"https_proxy": "https://example.com", "HTTP_PROXY": "http://example.com"}, clear=True
+    ):
         transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert isinstance(transport.http, urllib3.poolmanager.ProxyManager)
         assert transport.http.proxy.scheme == "https"
 
 
 def test_no_proxy_star(elasticapm_client):
-    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}, clear=True):
         transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
 def test_no_proxy_host(elasticapm_client):
-    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "localhost"}):
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "localhost"}, clear=True):
         transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
 
 def test_no_proxy_all(elasticapm_client):
-    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}):
+    with mock.patch.dict("os.environ", {"HTTPS_PROXY": "https://example.com", "NO_PROXY": "*"}, clear=True):
         transport = Transport("http://localhost:9999", client=elasticapm_client)
         assert not isinstance(transport.http, urllib3.poolmanager.ProxyManager)
 
