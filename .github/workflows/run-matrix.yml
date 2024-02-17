@@ -8,6 +8,9 @@ on:
         description: Matrix include JSON string
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   docker:
     name: "docker (version: ${{ matrix.version }}, framework: ${{ matrix.framework }})"
