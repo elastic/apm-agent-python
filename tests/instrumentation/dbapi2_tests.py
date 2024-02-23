@@ -122,6 +122,20 @@ def test_extract_signature_bytes():
     assert actual == expected
 
 
+def test_extract_signature_pathological():
+    # tune for performance testing
+    multiplier = 10
+    values = []
+    for chunk in range(multiplier):
+        i = chunk * 3
+        values.append(f" (${1+i}::varchar, ${2+i}::varchar, ${3+i}::varchar), ")
+
+    sql = f"SELECT * FROM (VALUES {''.join(values)})\n"
+    actual = extract_signature(sql)
+    expected = "SELECT FROM"
+    assert actual == expected
+
+
 @pytest.mark.parametrize(
     ["sql", "expected"],
     [
