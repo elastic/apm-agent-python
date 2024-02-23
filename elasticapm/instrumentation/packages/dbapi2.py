@@ -34,6 +34,7 @@ https://www.python.org/dev/peps/pep-0249/
 """
 
 import re
+import string
 
 import wrapt
 
@@ -85,6 +86,7 @@ def scan(tokens):
     literal_started = None
     prev_was_escape = False
     lexeme = []
+    digits = set(string.digits)
 
     i = 0
     while i < len(tokens):
@@ -114,6 +116,11 @@ def scan(tokens):
                 literal_start_idx = i
                 literal_started = token
             elif token == "$":
+                # exclude query parameters that have a digit following the dollar
+                if True and len(tokens) > i + 1 and tokens[i + 1] in digits:
+                    yield i, token
+                    i += 1
+                    continue
                 # Postgres can use arbitrary characters between two $'s as a
                 # literal separation token, e.g.: $fish$ literal $fish$
                 # This part will detect that and skip over the literal.
