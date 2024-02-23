@@ -30,7 +30,7 @@
 
 import os
 import socket
-from functools import partial
+from functools import partial, partialmethod
 
 import pytest
 
@@ -47,12 +47,6 @@ from elasticapm.utils import (
     url_to_destination_resource,
 )
 from elasticapm.utils.deprecation import deprecated
-
-try:
-    from functools import partialmethod
-except ImportError:
-    # Python 2
-    partialmethod = None
 
 
 @deprecated("alternative")
@@ -164,7 +158,6 @@ def test_get_name_from_func_partial():
     assert "partial(tests.utils.tests.x)" == get_name_from_func(p)
 
 
-@pytest.mark.skipif(partialmethod is None, reason="partialmethod not available on Python 2")
 def test_get_name_from_func_partialmethod_unbound():
     class X(object):
         def x(self, x):
@@ -175,7 +168,6 @@ def test_get_name_from_func_partialmethod_unbound():
     assert "partial(tests.utils.tests.x)" == get_name_from_func(X.p)
 
 
-@pytest.mark.skipif(partialmethod is None, reason="partialmethod not available on Python 2")
 def test_get_name_from_func_partialmethod_bound():
     class X(object):
         def x(self, x):
