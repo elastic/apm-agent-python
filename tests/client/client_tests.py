@@ -77,11 +77,7 @@ def test_service_info_node_name(elasticapm_client):
 def test_process_info(elasticapm_client):
     process_info = elasticapm_client.get_process_info()
     assert process_info["pid"] == os.getpid()
-    if hasattr(os, "getppid"):
-        assert process_info["ppid"] == os.getppid()
-    else:
-        # Windows + Python 2.7
-        assert process_info["ppid"] is None
+    assert process_info["ppid"] == os.getppid()
     assert "argv" not in process_info
     elasticapm_client.config.update("1", include_process_args=True)
     with mock.patch.object(sys, "argv", ["a", "b", "c"]):

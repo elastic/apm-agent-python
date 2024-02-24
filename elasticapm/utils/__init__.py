@@ -33,20 +33,14 @@ import os
 import re
 import socket
 import urllib.parse
-from functools import partial
+from functools import partial, partialmethod
 from types import FunctionType
 from typing import Pattern
 
 from elasticapm.conf import constants
 from elasticapm.utils import encoding
 
-try:
-    from functools import partialmethod
-
-    partial_types = (partial, partialmethod)
-except ImportError:
-    # Python 2
-    partial_types = (partial,)
+partial_types = (partial, partialmethod)
 
 
 default_ports = {"https": 443, "http": 80, "postgresql": 5432, "mysql": 3306, "mssql": 1433}
