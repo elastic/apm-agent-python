@@ -264,28 +264,8 @@ exclude:
     FRAMEWORK: celery-4-flask-1.0
   # TODO py3.12
   - VERSION: python-3.12
-    FRAMEWORK: pymssql-newest  # no wheels available yet
-  - VERSION: python-3.12
-    FRAMEWORK: aiohttp-newest  # no wheels available yet
-  - VERSION: python-3.12
-    FRAMEWORK: elasticsearch-7  # relies on aiohttp
-  - VERSION: python-3.12
-    FRAMEWORK: elasticsearch-8  # relies on aiohttp
-  - VERSION: python-3.12
-    FRAMEWORK: aiobotocore-newest  # relies on aiohttp
-  - VERSION: python-3.12
     FRAMEWORK: sanic-20.12  # no wheels available yet
-  - VERSION: python-3.12
-    FRAMEWORK: sanic-newest  # no wheels available yet
   - VERSION: python-3.12
     FRAMEWORK: kafka-python-newest  # https://github.com/dpkp/kafka-python/pull/2376
   - VERSION: python-3.12
-    FRAMEWORK: pyodbc-newest  # error on wheel
-  - VERSION: python-3.12
     FRAMEWORK: cassandra-newest  # c extension issue
-  - VERSION: python-3.12
-    FRAMEWORK: starlette-newest  # waiting for 3.12.2 for this fix: https://github.com/python/cpython/pull/111221
-  - VERSION: python-3.12
-    FRAMEWORK: starlette-0.14  # waiting for 3.12.2 for this fix: https://github.com/python/cpython/pull/111221
-  - VERSION: python-3.12
-    FRAMEWORK: starlette-0.13  # waiting for 3.12.2 for this fix: https://github.com/python/cpython/pull/111221
