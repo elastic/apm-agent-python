@@ -114,7 +114,7 @@ def test_urllib_error(instrument, elasticapm_client, waiting_httpserver, status_
 @mock.patch(request_method)
 @mock.patch(getresponse_method)
 def test_urllib_standard_port(mock_getresponse, mock_request, instrument, elasticapm_client):
-    # "code" is needed for Python 3, "status" for Python 2
+    # Python internally used both "code" and "status"
     mock_getresponse.return_value = mock.Mock(code=200, status=200)
 
     url = "http://example.com/"

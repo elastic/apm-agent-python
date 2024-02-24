@@ -46,6 +46,7 @@ import warnings
 import zlib
 from collections import defaultdict
 from typing import Optional
+from urllib.request import pathname2url
 
 import jsonschema
 import mock
@@ -60,12 +61,6 @@ from elasticapm.instrumentation import register
 from elasticapm.traces import execution_context
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils.threading import ThreadManager
-
-try:
-    from urllib.request import pathname2url
-except ImportError:
-    # Python 2
-    from urllib import pathname2url
 
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 
