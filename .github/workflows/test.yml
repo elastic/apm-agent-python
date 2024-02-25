@@ -138,13 +138,13 @@ jobs:
         run: .\scripts\run-tests.bat
       - if: success() || failure()
         name: Upload JUnit Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: "**/*-python-agent-junit.xml"
       - if: success() || failure()
         name: Upload Coverage Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: "**/.coverage*"
@@ -192,7 +192,7 @@ jobs:
 
       - run: python -Im pip install --upgrade coverage[toml]
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: coverage-reports
 

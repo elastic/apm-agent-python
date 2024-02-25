@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/vault-action@v2.8.0
+      - uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
