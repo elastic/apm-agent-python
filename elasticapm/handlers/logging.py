@@ -194,6 +194,16 @@ class LoggingFilter(logging.Filter):
     automatically.
     """
 
+    def __init__(self, name=""):
+        super().__init__(name=name)
+        warnings.warn(
+            "The LoggingFilter is deprecated and will be removed in v7.0 of "
+            "the agent. On Python 3.2+ by default we Rdd a LogRecordFactory to "
+            "your root logger automatically"
+            "https://www.elastic.co/guide/en/apm/agent/python/current/logs.html",
+            PendingDeprecationWarning,
+        )
+
     def filter(self, record):
         """
         Add elasticapm attributes to `record`.
