@@ -36,7 +36,12 @@ import time
 
 from elasticapm import capture_span
 from elasticapm.conf import constants
-from elasticapm.contrib.serverless.aws import capture_serverless, get_data_from_request, get_data_from_response
+from elasticapm.contrib.serverless.aws import (
+    capture_serverless,
+    get_data_from_request,
+    get_data_from_response,
+    should_normalize_headers,
+)
 
 
 @pytest.fixture
@@ -300,6 +305,7 @@ def test_capture_serverless_elb(event_elb, context, elasticapm_client):
     assert transaction["context"]["request"]["headers"]
     assert transaction["context"]["response"]["status_code"] == 200
     assert transaction["context"]["service"]["origin"]["name"] == "lambda-279XGJDqGZ5rsrHC2Fjr"
+    assert transaction["trace_id"] == "12345678901234567890123456789012"
 
 
 def test_capture_serverless_s3(event_s3, context, elasticapm_client):
@@ -477,3 +483,17 @@ def test_with_headers_as_none(event_api2, context, elasticapm_client):
 
     test_func(event_api2, context)
     assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+
+
+def test_should_normalize_headers_true(event_api, event_elb):
+    assert should_normalize_headers(event_api) is True
+    assert should_normalize_headers(event_elb) is True
+
+
+def test_should_normalize_headers_false(event_api2, event_lurl, event_s3, event_s3_batch, event_sqs, event_sns):
+    assert should_normalize_headers(event_api2) is False
+    assert should_normalize_headers(event_lurl) is False
+    assert should_normalize_headers(event_s3) is False
+    assert should_normalize_headers(event_s3_batch) is False
+    assert should_normalize_headers(event_sqs) is False
+    assert should_normalize_headers(event_sns) is False
