@@ -10,6 +10,8 @@ FRAMEWORK:
   - django-3.1
   - django-3.2
   - django-4.0
+  - django-4.2
+  - django-5.0
     #  - django-master
   - flask-0.10
   - flask-0.11
@@ -25,6 +27,7 @@ FRAMEWORK:
   - celery-5-flask-2
   - celery-5-django-3
   - celery-5-django-4
+  - celery-5-django-5
   - opentelemetry-newest
   - opentracing-newest
   - opentracing-2.0
