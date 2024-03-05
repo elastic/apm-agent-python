@@ -135,6 +135,18 @@ def prep_kwargs(kwargs=None):
     return kwargs
 
 
+def should_normalize_headers(event: dict) -> bool:
+    """
+    Helper to decide if we should normalize headers or not depending on the event
+
+    Even if the documentation says that headers are lowercased it's not always the case for format version 1.0
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
+    """
+
+    request_context = event.get("requestContext", {})
+    return ("elb" in request_context or "requestId" in request_context) and "http" not in request_context
+
+
 class _lambda_transaction(object):
     """
     Context manager for creating transactions around AWS Lambda functions.
@@ -162,7 +174,13 @@ class _lambda_transaction(object):
             # service like Step Functions, and is unlikely to be standardized
             # in any way. We just have to rely on our defaults in this case.
             self.event = {}
-        trace_parent = TraceParent.from_headers(self.event.get("headers") or {})
+
+        headers = self.event.get("headers") or {}
+        if headers and should_normalize_headers(self.event):
+            normalized_headers = {k.lower(): v for k, v in headers.items()}
+        else:
+            normalized_headers = headers
+        trace_parent = TraceParent.from_headers(normalized_headers)
 
         global COLD_START
         cold_start = COLD_START

@@ -15,6 +15,7 @@
         "connection": "Keep-Alive",
         "host": "blabla.com",
         "user-agent": "Apache-HttpClient/4.5.13 (Java/11.0.15)",
+        "TraceParent": "00-12345678901234567890123456789012-1234567890123456-01",
         "x-amzn-trace-id": "Root=1-xxxxxxxxxxxxxx",
         "x-forwarded-for": "199.99.99.999",
         "x-forwarded-port": "443",
