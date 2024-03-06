@@ -174,6 +174,11 @@ should "Squash and merge".
 
 ### Releasing
 
+Releases tags are signed so you need to have a PGP key set up, you can follow Github documentation on [creating a key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) and
+on [telling git about it](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key). Alternatively you can sign with a SSH key, remember you have to upload your key
+again even if you want to use the same key you are using for authorization.
+Then make sure you have SSO figured out for the key you are using to push to github, see [Github documentation](https://docs.github.com/articles/authenticating-to-a-github-organization-with-saml-single-sign-on/).
+
 If you have commit access, the process is as follows:
 
 1. Update the version in `elasticapm/version.py` according to the scale of the change. (major, minor or patch)
@@ -182,13 +187,14 @@ If you have commit access, the process is as follows:
 1. For Majors: Add the new major version to `conf.yaml` in the [elastic/docs](https://github.com/elastic/docs) repo.
 1. Commit changes with message `update CHANGELOG and bump version to X.Y.Z`
    where `X.Y.Z` is the version in `elasticapm/version.py`
-1. Open a PR against `main` with these changes
+1. Open a PR against `main` with these changes leaving the body empty
 1. Once the PR is merged, fetch and checkout `upstream/main`
 1. Tag the commit with `git tag -s vX.Y.Z`, for example `git tag -s v1.2.3`.
    Copy the changelog for the release to the tag message, removing any leading `#`.
-1. Reset the current major branch (`1.x`, `2.x` etc) to point to the current main, e.g. `git branch -f 1.x main`
 1. Push tag upstream with `git push upstream --tags` (and optionally to your own fork as well)
-1. Update major branch, e.g. `1.x` on upstream with `git push upstream 1.x`
+1. Open a PR from `main` to the major branch, e.g. `1.x` to update it. In order to keep history you may want to
+   merge with the `rebase` strategy. It is crucial that `main` and the major branch have the same content.
 1. After tests pass, Github Actions will automatically build and push the new release to PyPI.
 1. Edit and publish the [draft Github release](https://github.com/elastic/apm-agent-python/releases)
-   created by Github Actions. Copy the changelog into the body of the release.
+   created by Github Actions. Substitute the generated changelog with one hand written into the body of the
+   release and move the agent layer ARNs under a `<details>` block with a `summary`.
