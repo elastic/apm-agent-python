@@ -6,6 +6,7 @@ on:
       - "v*.*.*"
     branches:
       - main
+      - test/release
 
 permissions:
   contents: read
