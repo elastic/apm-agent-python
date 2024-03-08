@@ -151,7 +151,7 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    if: ${{ always() }}
+    if: always()
     needs:
       - publish-lambda-layers
       - publish-pypi
