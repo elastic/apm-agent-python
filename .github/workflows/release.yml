@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*.*.*"
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -31,10 +33,16 @@ jobs:
         with:
           name: packages
           path: dist
-      - name: Upload
+      - name: Upload pipy
+        if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
         with:
           repository-url: https://upload.pypi.org/legacy/
+      - name: Upload pipy test
+        if: github.ref == 'refs/heads/main'
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
   build-distribution:
     uses: ./.github/workflows/build-distribution.yml
@@ -59,6 +67,7 @@ jobs:
           name: build-distribution
           path: ./build
       - name: Publish lambda layers to AWS
+        if: startsWith(github.ref, 'refs/tags')
         run: |
           # Convert v1.2.3 to ver-1-2-3
           VERSION=${GITHUB_REF_NAME/v/ver-}
@@ -66,6 +75,7 @@ jobs:
 
           ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
       - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags')
         with:
           name: arn-file
           path: ".arn-file.md"
@@ -106,6 +116,7 @@ jobs:
           ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
           ${{ steps.setup-docker.outputs.name }}:latest
       - name: Docker push
+        if: startsWith(github.ref, 'refs/tags')
         run: |-
           docker push ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
           docker push ${{ steps.setup-docker.outputs.name }}:latest
@@ -115,6 +126,7 @@ jobs:
       contents: write
     needs:
       - publish-lambda-layers
+    if: startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -133,7 +145,7 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() && startsWith(github.ref, 'refs/tags') }}
     needs:
       - publish-lambda-layers
       - publish-pypi
