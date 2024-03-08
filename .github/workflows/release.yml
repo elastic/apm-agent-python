@@ -85,6 +85,8 @@ jobs:
     needs:
       - build-distribution
     runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE_NAME: docker.elastic.co/observability/apm-agent-python
     steps:
       - uses: actions/checkout@v4
       - uses: elastic/apm-pipeline-library/.github/actions/docker-login@current
@@ -101,25 +103,29 @@ jobs:
       - id: setup-docker
         name: Set up docker variables
         run: |-
-          # version without v prefix (e.g. 1.2.3)
-          echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
-          echo "name=docker.elastic.co/observability/apm-agent-python" >> "${GITHUB_OUTPUT}"
+          if [ "${{ startsWith(github.ref, 'refs/tags') }}" == "false" ] ; then
+            # for testing purposes
+            echo "tag=test" >> "${GITHUB_OUTPUT}"
+          else
+            # version without v prefix (e.g. 1.2.3)
+            echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
+          fi
       - name: Docker build
         run: >-
           docker build
-          -t ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
+          -t ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
           --build-arg AGENT_DIR=./build/dist/package/python
           .
       - name: Docker retag
         run: >-
           docker tag
-          ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
-          ${{ steps.setup-docker.outputs.name }}:latest
+          ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
+          ${{ env.DOCKER_IMAGE_NAME }}:latest
       - name: Docker push
         if: startsWith(github.ref, 'refs/tags')
         run: |-
-          docker push ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
-          docker push ${{ steps.setup-docker.outputs.name }}:latest
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
 
   github-draft:
     permissions:
