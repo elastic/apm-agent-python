@@ -13,11 +13,17 @@ permissions:
 
 jobs:
 
+  test:
+    uses: ./.github/workflows/test.yml
+    with:
+      full-matrix: true
+
   packages:
     uses: ./.github/workflows/packages.yml
 
   publish-pypi:
     needs:
+      - test
       - packages
     runs-on: ubuntu-latest
     environment: release
@@ -29,12 +35,12 @@ jobs:
         with:
           name: packages
           path: dist
-      - name: Upload pipy
+      - name: Upload pypi.org
         if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
         with:
           repository-url: https://upload.pypi.org/legacy/
-      - name: Upload pipy test
+      - name: Upload test.pypi.org
         if: ${{ ! startsWith(github.ref, 'refs/tags') }}
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
         with:
@@ -147,7 +153,7 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    if: ${{ always() && startsWith(github.ref, 'refs/tags') }}
+    if: ${{ always() }}
     needs:
       - publish-lambda-layers
       - publish-pypi
@@ -159,6 +165,7 @@ jobs:
         with:
           needs: ${{ toJSON(needs) }}
       - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        if: startsWith(github.ref, 'refs/tags')
         with:
           status: ${{ steps.check.outputs.status }}
           vaultUrl: ${{ secrets.VAULT_ADDR }}
