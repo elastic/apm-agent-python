@@ -103,7 +103,7 @@ def get_version():
             version_str = ".".join(map(str, version_tuple))
             local_version = os.getenv("ELASTIC_CI_LOCAL_VERSION")
             if local_version:
-                return f"{version_str}+{local_version}"
+                return f"{version_str}-dev{local_version}"
             return version_str
     return "unknown"
 
