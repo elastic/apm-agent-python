@@ -1,0 +1,26 @@
+name: test-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      full-matrix:
+        description: "Run the full matrix"
+        required: true
+        type: boolean
+      enabled:
+        description: "Whether to run the workfow"
+        required: true
+        type: boolean
+
+jobs:
+  test:
+    if: ${{ inputs.enabled }}
+    uses: ./.github/workflows/test.yml
+    with:
+      full-matrix: ${{ inputs.full-matrix }}
+
+  run-if-disabled:
+    if: ${{ ! inputs.enabled }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "do something to help with the reusable workflows with needs"
