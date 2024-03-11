@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   test:
+    if: startsWith(github.ref, 'refs/tags')
     uses: ./.github/workflows/test.yml
     with:
       full-matrix: true
