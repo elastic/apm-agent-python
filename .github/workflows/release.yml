@@ -35,7 +35,6 @@ jobs:
         with:
           name: packages
           path: dist
-      - run: echo "ELASTIC_CI_LOCAL_VERSION=${{ env.ELASTIC_CI_LOCAL_VERSION }}"
       - name: Upload pypi.org
         if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf
