@@ -101,9 +101,9 @@ def get_version():
         if line.startswith("__version__"):
             version_tuple = ast.literal_eval(line.split(" = ")[1])
             version_str = ".".join(map(str, version_tuple))
-            local_version = os.getenv("ELASTIC_CI_LOCAL_VERSION")
-            if local_version:
-                return f"{version_str}-dev{local_version}"
+            post_version = os.getenv("ELASTIC_CI_POST_VERSION")
+            if post_version:
+                return f"{version_str}.post{post_version}"
             return version_str
     return "unknown"
 
