@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/tags')
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/test-release.yml
     with:
       full-matrix: true
+      enabled: ${{ startsWith(github.ref, 'refs/tags') }}
 
   packages:
     uses: ./.github/workflows/packages.yml
