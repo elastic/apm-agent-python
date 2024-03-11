@@ -1,6 +1,20 @@
 name: test-release
 
 on:
+  workflow_call:
+    inputs:
+      full-matrix:
+        description: "Run the full matrix"
+        required: true
+        type: boolean
+      ref:
+        description: "The git ref of elastic/apm-agent-python to run test workflow from."
+        required: false
+        type: string
+      enabled:
+        description: "Whether to run the workfow"
+        required: true
+        type: boolean
   workflow_dispatch:
     inputs:
       full-matrix:
