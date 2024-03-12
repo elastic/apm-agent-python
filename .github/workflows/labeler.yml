@@ -8,6 +8,8 @@ env:
   MY_GITHUB_TOKEN: ${{ secrets.APM_TECH_USER_TOKEN }}
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   triage:
