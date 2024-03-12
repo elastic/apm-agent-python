@@ -61,12 +61,7 @@ def update_headers(args, kwargs, instance, transaction, trace_parent):
     :param trace_parent: the TraceParent object
     :return: an (args, kwargs) tuple
     """
-    from urllib3._version import __version__ as urllib3_version
-
-    if urllib3_version.startswith("2") and len(args) >= 5 and args[4]:
-        headers = args[4].copy()
-        args = tuple(itertools.chain((args[:4]), (headers,), args[5:]))
-    elif len(args) >= 4 and args[3]:
+    if len(args) >= 4 and args[3]:
         headers = args[3].copy()
         args = tuple(itertools.chain((args[:3]), (headers,), args[4:]))
     elif "headers" in kwargs and kwargs["headers"]:
