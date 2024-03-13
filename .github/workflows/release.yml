@@ -125,8 +125,7 @@ jobs:
       - name: Docker push
         if: startsWith(github.ref, 'refs/tags')
         run: |-
-          docker push ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
-          docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
+          docker push --all-tags ${{ env.DOCKER_IMAGE_NAME }}
 
   github-draft:
     permissions:
