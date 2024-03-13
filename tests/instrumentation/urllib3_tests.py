@@ -294,3 +294,20 @@ def test_instance_headers_are_respected(
         assert "kwargs" in request_headers
     if instance_headers and not (header_arg or header_kwarg):
         assert "instance" in request_headers
+
+
+def test_connection_pool_urlopen_does_not_crash_with_many_args(instrument, elasticapm_client, waiting_httpserver):
+    """Mimics ConnectionPool.urlopen error path with broken connection, see #1928"""
+    waiting_httpserver.serve_content("")
+    url = waiting_httpserver.url + "/hello_world"
+    parsed_url = urllib.parse.urlparse(url)
+    pool = urllib3.HTTPConnectionPool(
+        parsed_url.hostname,
+        parsed_url.port,
+        maxsize=1,
+        block=True,
+    )
+    retry = urllib3.util.Retry(10)
+    elasticapm_client.begin_transaction("transaction")
+    r = pool.urlopen("GET", url, None, {"args": "true"}, retry, False, False)
+    assert r.status == 200
