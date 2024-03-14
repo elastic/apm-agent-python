@@ -5,7 +5,7 @@ endif::[]
 
 ////
 [[release-notes-x.x.x]]
-==== x.x.x - YYYY/MM/DD
+==== x.x.x - YYYY-MM-DD
 
 [float]
 ===== Breaking changes
@@ -31,6 +31,44 @@ endif::[]
 
 [[release-notes-6.x]]
 === Python Agent version 6.x
+
+[[release-notes-6.21.3]]
+==== 6.21.3 - 2024-03-08
+
+[float]
+===== Bug fixes
+
+* Fix artifacts download in CI workflows {pull}1996[#1996]
+
+[[release-notes-6.21.2]]
+==== 6.21.2 - 2024-03-07
+
+[float]
+===== Bug fixes
+
+* Fix artifacts upload in CI build-distribution workflow {pull}1993[#1993]
+
+[[release-notes-6.21.1]]
+==== 6.21.1 - 2024-03-07
+
+[float]
+===== Bug fixes
+
+* Fix CI release workflow {pull}1990[#1990]
+
+[[release-notes-6.21.0]]
+==== 6.21.0 - 2024-03-06
+
+[float]
+===== Bug fixes
+
+* Fix starlette middleware setup without client argument {pull}1952[#1952]
+* Fix blocking of gRPC stream-to-stream requests {pull}1967[#1967]
+* Always take into account body reading time for starlette requests {pull}1970[#1970]
+* Make urllib3 transport tests more robust against local env {pull}1969[#1969]
+* Clarify starlette integration documentation {pull}1956[#1956]
+* Make dbapi2 query scanning for dollar quotes a bit more correct {pull}1976[#1976]
+* Normalize headers in AWS Lambda integration on API Gateway v1 requests {pull}1982[#1982]
 
 [[release-notes-6.20.0]]
 ==== 6.20.0 - 2024-01-10

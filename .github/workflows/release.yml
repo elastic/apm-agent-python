@@ -4,13 +4,18 @@ on:
   push:
     tags:
       - "v*.*.*"
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   test:
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/test-release.yml
+    with:
+      full-matrix: true
+      enabled: ${{ startsWith(github.ref, 'refs/tags') }}
 
   packages:
     uses: ./.github/workflows/packages.yml
@@ -24,15 +29,21 @@ jobs:
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: packages
           path: dist
-      - name: Upload
-        uses: pypa/gh-action-pypi-publish@f5622bde02b04381239da3573277701ceca8f6a0
+      - name: Upload pypi.org
+        if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
         with:
           repository-url: https://upload.pypi.org/legacy/
+      - name: Upload test.pypi.org
+        if: ${{ ! startsWith(github.ref, 'refs/tags') }}
+        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
   build-distribution:
     uses: ./.github/workflows/build-distribution.yml
@@ -42,8 +53,8 @@ jobs:
       - build-distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: hashicorp/vault-action@v2.7.2
+      - uses: actions/checkout@v4
+      - uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -57,13 +68,15 @@ jobs:
           name: build-distribution
           path: ./build
       - name: Publish lambda layers to AWS
+        if: startsWith(github.ref, 'refs/tags')
         run: |
           # Convert v1.2.3 to ver-1-2-3
           VERSION=${GITHUB_REF_NAME/v/ver-}
           VERSION=${VERSION//./-}
 
           ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags')
         with:
           name: arn-file
           path: ".arn-file.md"
@@ -73,8 +86,10 @@ jobs:
     needs:
       - build-distribution
     runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE_NAME: docker.elastic.co/observability/apm-agent-python
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: elastic/apm-pipeline-library/.github/actions/docker-login@current
         with:
           registry: docker.elastic.co
@@ -89,34 +104,39 @@ jobs:
       - id: setup-docker
         name: Set up docker variables
         run: |-
-          # version without v prefix (e.g. 1.2.3)
-          echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
-          echo "name=docker.elastic.co/observability/apm-agent-python" >> "${GITHUB_OUTPUT}"
+          if [ "${{ startsWith(github.ref, 'refs/tags') }}" == "false" ] ; then
+            # for testing purposes
+            echo "tag=test" >> "${GITHUB_OUTPUT}"
+          else
+            # version without v prefix (e.g. 1.2.3)
+            echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
+          fi
       - name: Docker build
         run: >-
           docker build
-          -t ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
+          -t ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
           --build-arg AGENT_DIR=./build/dist/package/python
           .
       - name: Docker retag
         run: >-
           docker tag
-          ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
-          ${{ steps.setup-docker.outputs.name }}:latest
+          ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
+          ${{ env.DOCKER_IMAGE_NAME }}:latest
       - name: Docker push
+        if: startsWith(github.ref, 'refs/tags')
         run: |-
-          docker push ${{ steps.setup-docker.outputs.name }}:${{ steps.setup-docker.outputs.tag }}
-          docker push ${{ steps.setup-docker.outputs.name }}:latest
+          docker push --all-tags ${{ env.DOCKER_IMAGE_NAME }}
 
   github-draft:
     permissions:
       contents: write
     needs:
       - publish-lambda-layers
+    if: startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: arn-file
       - name: Create GitHub Draft Release
@@ -143,6 +163,7 @@ jobs:
         with:
           needs: ${{ toJSON(needs) }}
       - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        if: startsWith(github.ref, 'refs/tags')
         with:
           status: ${{ steps.check.outputs.status }}
           vaultUrl: ${{ secrets.VAULT_ADDR }}

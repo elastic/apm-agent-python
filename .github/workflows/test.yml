@@ -130,7 +130,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.version }}
           cache: pip
@@ -188,7 +188,7 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           # Use latest Python, so it understands all syntax.
           python-version: 3.11
@@ -211,10 +211,10 @@ jobs:
           python -Im coverage report --fail-under=84
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html-coverage-report
           path: htmlcov
-      - uses: geekyeggo/delete-artifact@54ab544f12cdb7b71613a16a2b5a37a9ade990af
+      - uses: geekyeggo/delete-artifact@65041433121f7239077fa20be14c0690f70569de
         with:
           name: coverage-reports

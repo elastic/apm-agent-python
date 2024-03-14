@@ -16,12 +16,16 @@ on:
 permissions:
   contents: read
 
+# Override the version if there is no tag release.
+env:
+  ELASTIC_CI_POST_VERSION: ${{ startsWith(github.ref, 'refs/tags') && '' || github.run_id }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install wheel
@@ -31,7 +35,7 @@ jobs:
       - name: Building source distribution
         run: python setup.py sdist
       - name: Upload Packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: packages
           path: |

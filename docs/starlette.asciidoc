@@ -42,10 +42,12 @@ app = Starlette()
 app.add_middleware(ElasticAPM)
 ----
 
-WARNING: If you are using any `BaseHTTPMiddleware` middleware, you must add them
-*before* the ElasticAPM middleware. This is because `BaseHTTPMiddleware` breaks
-`contextvar` propagation, as noted
-https://www.starlette.io/middleware/#limitations[here].
+WARNING: `BaseHTTPMiddleware` breaks `contextvar` propagation, as noted
+https://www.starlette.io/middleware/#limitations[here]. This means the
+ElasticAPM middleware must be above any `BaseHTTPMiddleware` in the final
+middleware list. If you're calling `add_middleware` repeatedly, add the
+ElasticAPM middleware last. If you're passing in a list of middleware,
+ElasticAPM should be first on that list.
 
 To configure the agent using initialization arguments:
 

@@ -100,7 +100,11 @@ def get_version():
     for line in version_file:
         if line.startswith("__version__"):
             version_tuple = ast.literal_eval(line.split(" = ")[1])
-            return ".".join(map(str, version_tuple))
+            version_str = ".".join(map(str, version_tuple))
+            post_version = os.getenv("ELASTIC_CI_POST_VERSION")
+            if post_version:
+                return f"{version_str}.post{post_version}"
+            return version_str
     return "unknown"
 
 
