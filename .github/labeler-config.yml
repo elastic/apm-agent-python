@@ -1,3 +1,0 @@
-# add 'agent-python' label to all new issues
-agent-python:
-  - '.*'
