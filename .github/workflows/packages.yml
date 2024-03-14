@@ -13,6 +13,9 @@ on:
       - '**/*.md'
       - '**/*.asciidoc'
 
+permissions:
+  contents: read
+
 # Override the version if there is no tag release.
 env:
   ELASTIC_CI_POST_VERSION: ${{ startsWith(github.ref, 'refs/tags') && '' || github.run_id }}
