@@ -76,7 +76,7 @@ apm = ElasticAPM(app, service_name='<APP-ID>', secret_token='<SECRET-TOKEN>')
 ===== Debug mode
 
 NOTE: Please note that errors and transactions will only be sent to the APM Server if your app is *not* in
-http://flask.pocoo.org/docs/2.3.x/quickstart/#debug-mode[Flask debug mode].
+https://flask.palletsprojects.com/en/3.0.x/quickstart/#debug-mode[Flask debug mode].
 
 To force the agent to send data while the app is in debug mode,
 set the value of `DEBUG` in the `ELASTIC_APM` dictionary to `True`:
