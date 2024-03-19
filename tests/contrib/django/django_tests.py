@@ -270,25 +270,7 @@ def test_user_info_with_custom_user_non_string_username(django_elasticapm_client
         assert user_info["username"] == "1"
 
 
-@pytest.mark.skipif(django.VERSION > (1, 9), reason="MIDDLEWARE_CLASSES removed in Django 2.0")
 def test_user_info_with_non_django_auth(django_elasticapm_client, client):
-    with override_settings(
-        INSTALLED_APPS=[app for app in settings.INSTALLED_APPS if app != "django.contrib.auth"]
-    ) and override_settings(
-        MIDDLEWARE_CLASSES=[
-            m for m in settings.MIDDLEWARE_CLASSES if m != "django.contrib.auth.middleware.AuthenticationMiddleware"
-        ]
-    ):
-        with pytest.raises(Exception):
-            resp = client.get(reverse("elasticapm-raise-exc"))
-
-    assert len(django_elasticapm_client.events[ERROR]) == 1
-    event = django_elasticapm_client.events[ERROR][0]
-    assert event["context"]["user"] == {}
-
-
-@pytest.mark.skipif(django.VERSION < (1, 10), reason="MIDDLEWARE new in Django 1.10")
-def test_user_info_with_non_django_auth_django_2(django_elasticapm_client, client):
     with override_settings(
         INSTALLED_APPS=[app for app in settings.INSTALLED_APPS if app != "django.contrib.auth"]
     ) and override_settings(
@@ -303,22 +285,7 @@ def test_user_info_with_non_django_auth_django_2(django_elasticapm_client, clien
     assert event["context"]["user"] == {}
 
 
-@pytest.mark.skipif(django.VERSION > (1, 9), reason="MIDDLEWARE_CLASSES removed in Django 2.0")
 def test_user_info_without_auth_middleware(django_elasticapm_client, client):
-    with override_settings(
-        MIDDLEWARE_CLASSES=[
-            m for m in settings.MIDDLEWARE_CLASSES if m != "django.contrib.auth.middleware.AuthenticationMiddleware"
-        ]
-    ):
-        with pytest.raises(Exception):
-            client.get(reverse("elasticapm-raise-exc"))
-    assert len(django_elasticapm_client.events[ERROR]) == 1
-    event = django_elasticapm_client.events[ERROR][0]
-    assert event["context"]["user"] == {}
-
-
-@pytest.mark.skipif(django.VERSION < (1, 10), reason="MIDDLEWARE new in Django 1.10")
-def test_user_info_without_auth_middleware_django_2(django_elasticapm_client, client):
     with override_settings(
         MIDDLEWARE_CLASSES=None,
         MIDDLEWARE=[m for m in settings.MIDDLEWARE if m != "django.contrib.auth.middleware.AuthenticationMiddleware"],
@@ -614,8 +581,7 @@ def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     assert_any_record_contains(caplog.records, "Can't capture request body: foobar")
 
 
-@pytest.mark.skipif(django.VERSION < (1, 9), reason="get-raw-uri-not-available")
-def test_disallowed_hosts_error_django_19(django_elasticapm_client):
+def test_disallowed_hosts_error(django_elasticapm_client):
     request = WSGIRequest(
         environ={
             "wsgi.input": io.BytesIO(),
@@ -632,26 +598,6 @@ def test_disallowed_hosts_error_django_19(django_elasticapm_client):
         django_elasticapm_client.capture("Message", message="foo", request=request)
     event = django_elasticapm_client.events[ERROR][0]
     assert event["context"]["request"]["url"]["full"] == "http://testserver/"
-
-
-@pytest.mark.skipif(django.VERSION >= (1, 9), reason="get-raw-uri-available")
-def test_disallowed_hosts_error_django_18(django_elasticapm_client):
-    request = WSGIRequest(
-        environ={
-            "wsgi.input": io.BytesIO(),
-            "wsgi.url_scheme": "http",
-            "REQUEST_METHOD": "POST",
-            "SERVER_NAME": "testserver",
-            "SERVER_PORT": "80",
-            "CONTENT_TYPE": "application/json",
-            "ACCEPT": "application/json",
-        }
-    )
-    with override_settings(ALLOWED_HOSTS=["example.com"]):
-        # this should not raise a DisallowedHost exception
-        django_elasticapm_client.capture("Message", message="foo", request=request)
-    event = django_elasticapm_client.events[ERROR][0]
-    assert event["context"]["request"]["url"] == {"full": "DisallowedHost"}
 
 
 @pytest.mark.parametrize(
@@ -1196,16 +1142,6 @@ def test_stacktrace_filtered_for_elasticapm(client, django_elasticapm_client):
     assert spans[1]["stacktrace"][0]["module"].startswith("django.template"), spans[1]["stacktrace"][0]["function"]
 
 
-@pytest.mark.skipif(django.VERSION > (1, 7), reason="argparse raises CommandError in this case")
-@mock.patch("elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv")
-def test_subcommand_not_set(argv_mock):
-    stdout = io.StringIO()
-    argv_mock.return_value = ["manage.py", "elasticapm"]
-    call_command("elasticapm", stdout=stdout)
-    output = stdout.getvalue()
-    assert "No command specified" in output
-
-
 @mock.patch("elasticapm.contrib.django.management.commands.elasticapm.Command._get_argv")
 def test_subcommand_not_known(argv_mock):
     stdout = io.StringIO()
@@ -1317,8 +1253,8 @@ def test_settings_server_url_with_credentials():
 
 
 @pytest.mark.skipif(
-    not ((1, 10) <= django.VERSION < (2, 0)),
-    reason="only needed in 1.10 and 1.11 when both middleware settings are valid",
+    django.VERSION >= (2, 0),
+    reason="only needed in 1.11 when both middleware settings are valid",
 )
 def test_django_1_10_uses_deprecated_MIDDLEWARE_CLASSES():
     stdout = io.StringIO()
