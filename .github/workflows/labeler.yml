@@ -5,7 +5,7 @@ on:
   pull_request_target:
     types: [opened]
 
-# 'issues: write' for https://docs.github.com/en/rest/issues/labels?apiVersion=2022-11-28#add-labels-to-an-issue
+# '*: write' permissions for https://docs.github.com/en/rest/issues/labels?apiVersion=2022-11-28#add-labels-to-an-issue
 permissions:
   contents: read
   issues: write
@@ -28,6 +28,6 @@ jobs:
       if: contains(steps.is_elastic_member.outputs.result, 'false') && github.actor != 'dependabot[bot]' && github.actor != 'apmmachine'
       uses: actions-ecosystem/action-add-labels@v1
       with:
-        labels:
-          - community
-          - triage
+        labels: |
+          community
+          triage
