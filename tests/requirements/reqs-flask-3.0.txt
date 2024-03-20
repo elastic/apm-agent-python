@@ -1,4 +1,3 @@
-Flask>=2.0,<2.1
-blinker>=1.1
+Flask>=3.0,<3.1
 itsdangerous
 -r reqs-base.txt

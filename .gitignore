@@ -3,6 +3,7 @@
 *.egg
 *.db
 *.pid
+*.swp
 .coverage*
 .DS_Store
 .idea
