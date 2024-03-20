@@ -64,7 +64,7 @@ Once your changes are ready to submit for review:
 
 1.  Submit a pull request
 
-    Push your local changes to your forked copy of the repository and [submit a pull request](https://help.github.com/articles/using-pull-requests).
+    Push your local changes to your forked copy of the repository and [submit a pull request](https://help.github.com/articles/using-pull-requests) to the `main` branch.
     In the pull request,
     choose a title which sums up the changes that you have made,
     and in the body provide more details about what your changes do.
