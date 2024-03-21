@@ -1,4 +1,4 @@
-Flask>=2.0,<2.1
+Flask>=2.3,<3
 blinker>=1.1
 itsdangerous
 -r reqs-base.txt
