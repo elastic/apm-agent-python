@@ -31,12 +31,8 @@
 
 import datetime
 import decimal
+import json
 import uuid
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
 
 
 class BetterJSONEncoder(json.JSONEncoder):
