@@ -1,0 +1,170 @@
+name: sbom
+
+on:
+  push:
+    branches:
+      - feature/sbom
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: ./.github/workflows/test-release.yml
+    with:
+      full-matrix: true
+      enabled: ${{ startsWith(github.ref, 'refs/tags') }}
+
+  packages:
+    uses: ./.github/workflows/packages.yml
+
+  publish-pypi:
+    needs:
+      - test
+      - packages
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+      - name: Upload pypi.org
+        if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+      - name: Upload test.pypi.org
+        if: ${{ ! startsWith(github.ref, 'refs/tags') }}
+        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  build-distribution:
+    uses: ./.github/workflows/build-distribution.yml
+
+  publish-lambda-layers:
+    needs:
+      - build-distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/observability-team/ci/service-account/apm-agent-python access_key_id | AWS_ACCESS_KEY_ID ;
+            secret/observability-team/ci/service-account/apm-agent-python secret_access_key | AWS_SECRET_ACCESS_KEY
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-distribution
+          path: ./build
+      - name: Publish lambda layers to AWS
+        if: startsWith(github.ref, 'refs/tags')
+        run: |
+          # Convert v1.2.3 to ver-1-2-3
+          VERSION=${GITHUB_REF_NAME/v/ver-}
+          VERSION=${VERSION//./-}
+
+          ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags')
+        with:
+          name: arn-file
+          path: ".arn-file.md"
+          if-no-files-found: error
+
+  publish-docker:
+    needs:
+      - build-distribution
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE_NAME: docker.elastic.co/observability/apm-agent-python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: elastic/apm-pipeline-library/.github/actions/docker-login@current
+        with:
+          registry: docker.elastic.co
+          secret: secret/observability-team/ci/docker-registry/prod
+          url: ${{ secrets.VAULT_ADDR }}
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-distribution
+          path: ./build
+      - id: setup-docker
+        name: Set up docker variables
+        run: |-
+          if [ "${{ startsWith(github.ref, 'refs/tags') }}" == "false" ] ; then
+            # for testing purposes
+            echo "tag=test" >> "${GITHUB_OUTPUT}"
+          else
+            # version without v prefix (e.g. 1.2.3)
+            echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Docker build
+        run: >-
+          docker build
+          -t ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
+          --build-arg AGENT_DIR=./build/dist/package/python
+          .
+      - name: Docker retag
+        run: >-
+          docker tag
+          ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
+          ${{ env.DOCKER_IMAGE_NAME }}:latest
+      - name: Docker push
+        if: startsWith(github.ref, 'refs/tags')
+        run: |-
+          docker push --all-tags ${{ env.DOCKER_IMAGE_NAME }}
+
+  github-draft:
+    permissions:
+      contents: write
+    needs:
+      - publish-lambda-layers
+    if: startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: arn-file
+      - name: Create GitHub Draft Release
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          --title="${GITHUB_REF_NAME}"
+          --generate-notes
+          --notes-file=".arn-file.md"
+          --draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - publish-lambda-layers
+      - publish-pypi
+      - publish-docker
+      - github-draft
+    steps:
+      - id: check
+        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        with:
+          needs: ${{ toJSON(needs) }}
+      - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        if: startsWith(github.ref, 'refs/tags')
+        with:
+          status: ${{ steps.check.outputs.status }}
+          vaultUrl: ${{ secrets.VAULT_ADDR }}
+          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
+          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
+          slackChannel: "#apm-agent-python"
