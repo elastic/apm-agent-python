@@ -50,4 +50,4 @@ jobs:
         uses: github-early-access/generate-build-provenance@main
         with:
           github-token: ${{ secrets.token }}
-          subject-path: "${{ github.workspace }}/dist"
+          subject-path: "${{ github.workspace }}/dist/*"
