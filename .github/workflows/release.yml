@@ -107,7 +107,7 @@ jobs:
           secrets: |
             secret/observability-team/ci/service-account/apm-agent-python access_key_id | AWS_ACCESS_KEY_ID ;
             secret/observability-team/ci/service-account/apm-agent-python secret_access_key | AWS_SECRET_ACCESS_KEY
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: build-distribution
           path: ./build
@@ -130,6 +130,9 @@ jobs:
     needs:
       - build-distribution
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
     env:
       DOCKER_IMAGE_NAME: docker.elastic.co/observability/apm-agent-python
     steps:
