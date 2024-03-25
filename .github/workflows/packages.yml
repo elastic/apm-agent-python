@@ -1,7 +1,10 @@
 name: packages
 
 on:
-  workflow_call: ~
+  workflow_call:
+    secrets:
+      token:
+        required: false
   pull_request:
     paths-ignore:
       - '**/*.md'
@@ -45,4 +48,5 @@ jobs:
         if: ${{ contains(github.ref, 'feature/sbom') }}
         uses: github-early-access/generate-build-provenance@main
         with:
+          github-token: ${{ secrets.token }}
           subject-path: "${{ github.workspace }}/dist"

@@ -20,6 +20,8 @@ jobs:
       id-token: write
       contents: write
     uses: ./.github/workflows/packages.yml
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
 
   publish-pypi:
     needs:
