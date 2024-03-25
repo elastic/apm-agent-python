@@ -151,25 +151,30 @@ jobs:
           if [ "${{ startsWith(github.ref, 'refs/tags') }}" == "false" ] ; then
             # for testing purposes
             echo "tag=test" >> "${GITHUB_OUTPUT}"
+            echo "latest=test-latest" >> "${GITHUB_OUTPUT}"
           else
             # version without v prefix (e.g. 1.2.3)
             echo "tag=${GITHUB_REF_NAME/v/}" >> "${GITHUB_OUTPUT}"
+            echo "latest=latest" >> "${GITHUB_OUTPUT}"
           fi
-      - name: Docker build
-        run: >-
-          docker build
-          -t ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
-          --build-arg AGENT_DIR=./build/dist/package/python
-          .
-      - name: Docker retag
-        run: >-
-          docker tag
-          ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
-          ${{ env.DOCKER_IMAGE_NAME }}:latest
-      - name: Docker push
-        if: startsWith(github.ref, 'refs/tags')
-        run: |-
-          docker push --all-tags ${{ env.DOCKER_IMAGE_NAME }}
+      - name: Build and push image
+        id: push
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.latest }}
+          build-args: |
+            AGENT_DIR=./build/dist/package/python
+
+      - name: Attest image
+        uses: github-early-access/generate-build-provenance@main
+        with:
+          subject-name: "${{ env.DOCKER_IMAGE_NAME }}:${{ steps.setup-docker.outputs.tag }}"
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: false
 
   github-draft:
     permissions:
