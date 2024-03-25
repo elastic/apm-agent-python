@@ -17,8 +17,7 @@ on:
       - '**/*.asciidoc'
 
 permissions:
-  id-token: write
-  contents: write
+  contents: read
 
 # Override the version if there is no tag release.
 env:
@@ -32,12 +31,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Install wheel
-        run: pip install --user wheel
-      - name: Building universal wheel
-        run: python setup.py bdist_wheel
-      - name: Building source distribution
-        run: python setup.py sdist
+      - name: Build packages
+        run: ./dev-utils/make-packages.sh
       - name: Upload Packages
         uses: actions/upload-artifact@v4
         with:
@@ -45,9 +40,3 @@ jobs:
           path: |
             dist/*.whl
             dist/*tar.gz
-      - name: generate build provenance
-        if: ${{ contains(github.ref, 'feature/sbom') }}
-        uses: github-early-access/generate-build-provenance@main
-        with:
-          github-token: ${{ secrets.token }}
-          subject-path: "${{ github.workspace }}/dist/*"
