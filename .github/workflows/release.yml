@@ -90,7 +90,7 @@ jobs:
       - name: generate build provenance
         uses: github-early-access/generate-build-provenance@main
         with:
-          subject-path: "${{ github.workspace }}/build/*"
+          subject-path: "${{ github.workspace }}/build/dist/**/*"
 
   publish-lambda-layers:
     needs:
