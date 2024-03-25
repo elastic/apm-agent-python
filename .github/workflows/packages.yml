@@ -17,7 +17,8 @@ on:
       - '**/*.asciidoc'
 
 permissions:
-  contents: read
+  id-token: write
+  contents: write
 
 # Override the version if there is no tag release.
 env:
