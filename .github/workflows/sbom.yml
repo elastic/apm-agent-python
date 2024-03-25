@@ -18,6 +18,9 @@ jobs:
       enabled: ${{ startsWith(github.ref, 'refs/tags') }}
 
   packages:
+    permissions:
+      id-token: write
+      contents: write
     uses: ./.github/workflows/packages.yml
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
