@@ -6,6 +6,7 @@ on:
       - "v*.*.*"
     branches:
       - main
+      - feature/sbom
 
 permissions:
   contents: read
@@ -18,7 +19,31 @@ jobs:
       enabled: ${{ startsWith(github.ref, 'refs/tags') }}
 
   packages:
-    uses: ./.github/workflows/packages.yml
+    permissions:
+      id-token: write
+      contents: write
+    runs-on: ubuntu-latest
+    # Override the version if there is no tag release.
+    env:
+      ELASTIC_CI_POST_VERSION: ${{ startsWith(github.ref, 'refs/tags') && '' || github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Build packages
+        run: ./dev-utils/make-packages.sh
+      - name: Upload Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: |
+            dist/*.whl
+            dist/*tar.gz
+      - name: generate build provenance
+        uses: github-early-access/generate-build-provenance@main
+        with:
+          subject-path: "${{ github.workspace }}/dist/*"
 
   publish-pypi:
     needs:
