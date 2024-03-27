@@ -6,6 +6,7 @@ on:
       - "v*.*.*"
     branches:
       - main
+      - test-release
 
 permissions:
   contents: read
@@ -29,6 +30,8 @@ jobs:
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
+      - name: Debug env variables
+        run: env | sort
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
