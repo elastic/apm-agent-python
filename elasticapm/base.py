@@ -44,13 +44,14 @@ import urllib.parse
 import warnings
 from copy import deepcopy
 from datetime import timedelta
-from typing import Optional, Sequence, Tuple
+from types import TracebackType
+from typing import Any, Optional, Sequence, Tuple, Type, Union
 
 import elasticapm
 from elasticapm.conf import Config, VersionedConfig, constants
 from elasticapm.conf.constants import ERROR
 from elasticapm.metrics.base_metrics import MetricsRegistry
-from elasticapm.traces import DroppedSpan, Tracer, execution_context
+from elasticapm.traces import DroppedSpan, Tracer, Transaction, execution_context
 from elasticapm.utils import cgroup, cloud, compat, is_master_process, stacks, varmap
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.encoding import enforce_label_format, keyword_field, shorten, transform
@@ -261,7 +262,7 @@ class Client(object):
             self.queue(ERROR, data, flush=not handled)
             return data["id"]
 
-    def capture_message(self, message=None, param_message=None, **kwargs):
+    def capture_message(self, message: Optional[str] = None, param_message=None, **kwargs: Any) -> str:
         """
         Creates an event from ``message``.
 
@@ -269,7 +270,14 @@ class Client(object):
         """
         return self.capture("Message", message=message, param_message=param_message, **kwargs)
 
-    def capture_exception(self, exc_info=None, handled=True, **kwargs):
+    def capture_exception(
+        self,
+        exc_info: Union[
+            None, bool, Tuple[Optional[Type[BaseException]], Optional[BaseException], Optional[TracebackType]]
+        ] = None,
+        handled: bool = True,
+        **kwargs: Any
+    ) -> str:
         """
         Creates an event from an exception.
 
@@ -317,7 +325,9 @@ class Client(object):
                 transaction_type, trace_parent=trace_parent, start=start, auto_activate=auto_activate, links=links
             )
 
-    def end_transaction(self, name=None, result="", duration=None):
+    def end_transaction(
+        self, name: Optional[str] = None, result: str = "", duration: Optional[Union[float, timedelta]] = None
+    ) -> Transaction:
         """
         End the current transaction.
 
