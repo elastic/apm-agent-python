@@ -35,6 +35,13 @@ jobs:
         run: python setup.py bdist_wheel
       - name: Building source distribution
         run: python setup.py sdist
+
+      - name: Debug env variables
+        run: |
+          env | sort
+          echo "$ELASTIC_CI_POST_VERSION"
+          echo "$GITHUB_REF"
+          ls -l ./dist
       - name: Upload Packages
         uses: actions/upload-artifact@v4
         with:
