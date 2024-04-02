@@ -233,7 +233,7 @@ def test_custom_transport(elasticapm_client):
     assert isinstance(elasticapm_client._transport, DummyTransport)
 
 
-@pytest.mark.skipIf(simplejson_dumps is None)
+@pytest.mark.skipif(simplejson_dumps is None, reason="no test without simplejson")
 @pytest.mark.parametrize(
     "elasticapm_client", [{"transport_json_serializer": "elasticapm.utils.simplejson_encoder.dumps"}], indirect=True
 )
