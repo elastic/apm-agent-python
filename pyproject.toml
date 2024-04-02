@@ -7,7 +7,6 @@ exclude = '''
   | _build
   | build
   | dist
-  | elasticapm/utils/wrapt
 
   # The following are specific to Black, you probably don't want those.
   | blib2to3
