@@ -108,7 +108,7 @@ that is a fixture which is defined
 #### Adding new instrumentations to the matrix build
 
 For tests that require external dependencies like databases, or for testing different versions of the same library,
-we use a matrix build that leverages Docker and docker-compose.
+we use a matrix build that leverages Docker.
 
 The setup requires a little bit of boilerplate to get started.
 In this example, we will create an instrumentation for the "foo" database, by instrumenting its Python driver, `foodriver`.
@@ -153,7 +153,7 @@ In this example, we will create an instrumentation for the "foo" database, by in
              image: foobase:latest
 
     You'll also have to add a `DOCKER_DEPS` environment variable to `tests/scripts/envs/foo.sh` which tells the matrix
-    to spin up the given docker-compose service before running your tests.
+    to spin up the given Docker compose service before running your tests.
     You may also need to add things like hostname configuration here.
 
         DOCKER_DEPS="foo"
