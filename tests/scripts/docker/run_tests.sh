@@ -2,7 +2,7 @@
 set -ex
 
 function cleanup {
-    PYTHON_VERSION=${1} docker-compose down -v
+    PYTHON_VERSION=${1} docker compose down -v
 
     if [[ $CODECOV_TOKEN ]]; then
         cd ..
@@ -42,7 +42,7 @@ echo "Running tests for ${1}/${2}"
 
 if [[ -n $DOCKER_DEPS ]]
 then
-    PYTHON_VERSION=${1} docker-compose up -d ${DOCKER_DEPS}
+    PYTHON_VERSION=${1} docker compose up -d ${DOCKER_DEPS}
 fi
 
 # CASS_DRIVER_NO_EXTENSIONS is set so we don't build the Cassandra C-extensions,
@@ -57,7 +57,7 @@ if ! ${CI}; then
     .
 fi
 
-PYTHON_VERSION=${1} docker-compose run \
+PYTHON_VERSION=${1} docker compose run \
   -e PYTHON_FULL_VERSION=${1} \
   -e LOCAL_USER_ID=$LOCAL_USER_ID \
   -e LOCAL_GROUP_ID=$LOCAL_GROUP_ID \
