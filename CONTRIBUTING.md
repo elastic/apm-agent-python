@@ -192,7 +192,8 @@ If you have commit access, the process is as follows:
 1. Tag the commit with `git tag -s vX.Y.Z`, for example `git tag -s v1.2.3`.
    Copy the changelog for the release to the tag message, removing any leading `#`.
 1. Push tag upstream with `git push upstream --tags` (and optionally to your own fork as well)
-1. Open a PR from `main` to the major branch, e.g. `1.x` to update it. In order to keep history you may want to
+1. Open a PR from `main` to the major branch, e.g. `1.x` to update it. In order to keep history create a
+   branch from the `main` branch, rebase it on top of the major branch to drop duplicated commits and then
    merge with the `rebase` strategy. It is crucial that `main` and the major branch have the same content.
 1. After tests pass, Github Actions will automatically build and push the new release to PyPI.
 1. Edit and publish the [draft Github release](https://github.com/elastic/apm-agent-python/releases)
