@@ -43,3 +43,16 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/.github/actions/build-distribution"
+    reviewers:
+      - "elastic/observablt-ci"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "22:00"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

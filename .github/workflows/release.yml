@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/packages/action.yml
+      - uses: ./.github/actions/packages
 
       - name: generate build provenance
         uses: github-early-access/generate-build-provenance@main
@@ -65,16 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Build lambda layer zip
-        run: ./dev-utils/make-distribution.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-distribution
-          path: ./build/
-          if-no-files-found: error
+      - uses: ./.github/actions/build-distribution
       - name: generate build provenance
         uses: github-early-access/generate-build-provenance@main
         with:
