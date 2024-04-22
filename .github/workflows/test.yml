@@ -215,6 +215,6 @@ jobs:
         with:
           name: html-coverage-report
           path: htmlcov
-      - uses: geekyeggo/delete-artifact@65041433121f7239077fa20be14c0690f70569de
+      - uses: geekyeggo/delete-artifact@24928e75e6e6590170563b8ddae9fac674508aa1
         with:
           name: coverage-reports

@@ -16,10 +16,6 @@ on:
 permissions:
   contents: read
 
-# Override the version if there is no tag release.
-env:
-  ELASTIC_CI_POST_VERSION: ${{ startsWith(github.ref, 'refs/tags') && '' || github.run_id }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,6 +24,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+      - name: Override the version if there is no tag release.
+        run: |
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            echo "ELASTIC_CI_POST_VERSION=${{ github.run_id }}" >> "${GITHUB_ENV}"
+          fi
       - name: Build packages
         run: ./dev-utils/make-packages.sh
       - name: Upload Packages
@@ -37,4 +38,3 @@ jobs:
           path: |
             dist/*.whl
             dist/*tar.gz
-

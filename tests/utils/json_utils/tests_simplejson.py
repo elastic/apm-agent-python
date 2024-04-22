@@ -30,15 +30,15 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import absolute_import
-
 import datetime
 import decimal
 import uuid
 
 import pytest
 
-from elasticapm.utils import json_encoder as json
+simplejson = pytest.importorskip("simplejson")
+
+from elasticapm.utils import simplejson_encoder as json
 
 
 def test_uuid():
@@ -73,7 +73,12 @@ def test_decimal():
 
 @pytest.mark.parametrize("res", [float("nan"), float("+inf"), float("-inf")])
 def test_float_invalid_json(res):
-    assert json.dumps(res) != "null"
+    assert json.dumps(res) == "null"
+
+
+def test_float():
+    res = 1.0
+    assert json.dumps(res) == "1.0"
 
 
 def test_unsupported():

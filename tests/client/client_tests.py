@@ -48,6 +48,11 @@ from pytest_localserver.https import DEFAULT_CERTIFICATE
 import elasticapm
 from elasticapm.base import Client
 from elasticapm.conf.constants import ERROR
+
+try:
+    from elasticapm.utils.simplejson_encoder import dumps as simplejson_dumps
+except ImportError:
+    simplejson_dumps = None
 from tests.fixtures import DummyTransport, TempStoreClient
 from tests.utils import assert_any_record_contains
 
@@ -226,6 +231,14 @@ def test_config_non_string_types():
 @pytest.mark.parametrize("elasticapm_client", [{"transport_class": "tests.fixtures.DummyTransport"}], indirect=True)
 def test_custom_transport(elasticapm_client):
     assert isinstance(elasticapm_client._transport, DummyTransport)
+
+
+@pytest.mark.skipif(simplejson_dumps is None, reason="no test without simplejson")
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"transport_json_serializer": "elasticapm.utils.simplejson_encoder.dumps"}], indirect=True
+)
+def test_custom_transport_json_serializer(elasticapm_client):
+    assert elasticapm_client._transport._json_serializer == simplejson_dumps
 
 
 @pytest.mark.parametrize("elasticapm_client", [{"processors": []}], indirect=True)

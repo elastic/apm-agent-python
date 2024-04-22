@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 #  BSD 3-Clause License
 #
+#  Copyright (c) 2012, the Sentry Team, see AUTHORS for more details
 #  Copyright (c) 2019, Elasticsearch BV
 #  All rights reserved.
 #
@@ -28,54 +27,32 @@
 #  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from __future__ import absolute_import
-
-import datetime
-import decimal
-import uuid
-
-import pytest
-
-from elasticapm.utils import json_encoder as json
 
 
-def test_uuid():
-    res = uuid.uuid4()
-    assert json.dumps(res) == '"%s"' % res.hex
+import simplejson as json
+
+from elasticapm.utils.json_encoder import BetterJSONEncoder
 
 
-def test_datetime():
-    res = datetime.datetime(day=1, month=1, year=2011, hour=1, minute=1, second=1)
-    assert json.dumps(res) == '"2011-01-01T01:01:01.000000Z"'
+class BetterSimpleJSONEncoder(json.JSONEncoder):
+    ENCODERS = BetterJSONEncoder.ENCODERS
+
+    def default(self, obj):
+        if type(obj) in self.ENCODERS:
+            return self.ENCODERS[type(obj)](obj)
+        try:
+            return super(BetterSimpleJSONEncoder, self).default(obj)
+        except TypeError:
+            return str(obj)
 
 
-def test_set():
-    res = set(["foo", "bar"])
-    assert json.dumps(res) in ('["foo", "bar"]', '["bar", "foo"]')
+def better_decoder(data):
+    return data
 
 
-def test_frozenset():
-    res = frozenset(["foo", "bar"])
-    assert json.dumps(res) in ('["foo", "bar"]', '["bar", "foo"]')
+def dumps(value, **kwargs):
+    return json.dumps(value, cls=BetterSimpleJSONEncoder, ignore_nan=True, **kwargs)
 
 
-def test_bytes():
-    res = bytes("foobar", encoding="ascii")
-    assert json.dumps(res) == '"foobar"'
-
-
-def test_decimal():
-    res = decimal.Decimal("1.0")
-    assert json.dumps(res) == "1.0"
-
-
-@pytest.mark.parametrize("res", [float("nan"), float("+inf"), float("-inf")])
-def test_float_invalid_json(res):
-    assert json.dumps(res) != "null"
-
-
-def test_unsupported():
-    res = object()
-    assert json.dumps(res).startswith('"<object object at')
+def loads(value, **kwargs):
+    return json.loads(value, object_hook=better_decoder)
