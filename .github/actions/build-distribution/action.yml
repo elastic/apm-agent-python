@@ -12,6 +12,7 @@ runs:
 
     - name: Build lambda layer zip
       run: ./dev-utils/make-distribution.sh
+      shell: bash
 
     - uses: actions/upload-artifact@v4
       with:
