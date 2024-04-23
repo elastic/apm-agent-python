@@ -25,13 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: ./.github/actions/packages
-
-      - name: generate build provenance
-        uses: github-early-access/generate-build-provenance@main
-        with:
-          subject-path: "${{ github.workspace }}/dist/*"
 
   publish-pypi:
     needs:
