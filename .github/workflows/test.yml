@@ -35,7 +35,11 @@ permissions:
 
 jobs:
   build-distribution:
-    uses: ./.github/workflows/build-distribution.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-distribution
+
 
   create-matrix:
     runs-on: ubuntu-latest
