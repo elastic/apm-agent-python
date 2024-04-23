@@ -6,7 +6,6 @@ on:
       - "v*.*.*"
     branches:
       - main
-      - feature/sbom
 
 permissions:
   contents: read
