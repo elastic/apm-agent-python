@@ -25,7 +25,3 @@ runs:
         path: |
           dist/*.whl
           dist/*tar.gz
-    - name: generate build provenance
-      uses: github-early-access/generate-build-provenance@main
-      with:
-        subject-path: "${{ github.workspace }}/dist/*"
