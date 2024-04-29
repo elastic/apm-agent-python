@@ -136,7 +136,7 @@ jobs:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: |
             type=raw,value=latest,prefix=test-,enable={{is_default_branch}}
-            type=raw,value=latest,prefix=test-,enable=${{ github.ref == format('refs/heads/{0}', 'test-docker-metadata') }}
+            type=raw,value=latest,prefix=test-,enable=${{ github.ref == format('refs/heads/{0}', 'test-provenance-docker') }}
             type=ref,event=tag,prefix=,suffix=
 
       - name: Build and push image
