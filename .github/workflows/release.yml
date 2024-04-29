@@ -5,7 +5,7 @@ on:
     tags:
       - "v*.*.*"
     branches:
-      - main
+      - test-provenance-docker
 
 permissions:
   contents: read
@@ -136,6 +136,7 @@ jobs:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: |
             type=raw,value=latest,prefix=test-,enable={{is_default_branch}}
+            type=raw,value=latest,prefix=test-,enable=${{ github.ref == format('refs/heads/{0}', 'test-docker-metadata') }}
             type=ref,event=tag,prefix=,suffix=
 
       - name: Build and push image
