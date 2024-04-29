@@ -136,7 +136,7 @@ jobs:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: |
             type=raw,value=latest,prefix=test-,enable={{is_default_branch}}
-            type=ref,event=tag,prefix=,suffix=
+            type=semver,pattern={{version}}
 
       - name: Build and push image
         id: push
