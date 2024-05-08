@@ -130,7 +130,7 @@ services:
       - pymssqldata:/var/opt/mssql
 
   mysql:
-    image: mysql
+    image: mysql:8.0
     command: --default-authentication-plugin=mysql_native_password --log_error_verbosity=3
     environment:
       - MYSQL_DATABASE=eapm_tests
