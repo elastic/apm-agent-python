@@ -5,7 +5,7 @@ on:
     tags:
       - "v*.*.*"
     branches:
-      - main
+      - tests/docker-images-wolfi
 
 permissions:
   contents: read
@@ -139,7 +139,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,prefix=test-,enable={{is_default_branch}}
+            type=raw,value=latest,prefix=test-,enable=true
             type=semver,pattern={{version}}
           flavor: |
             suffix=${{ contains(matrix.dockerfile, 'wolfi') && '-wolfi' || '' }}
@@ -198,11 +198,3 @@ jobs:
         uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
         with:
           needs: ${{ toJSON(needs) }}
-      - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
-        if: startsWith(github.ref, 'refs/tags')
-        with:
-          status: ${{ steps.check.outputs.status }}
-          vaultUrl: ${{ secrets.VAULT_ADDR }}
-          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
-          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
-          slackChannel: "#apm-agent-python"
