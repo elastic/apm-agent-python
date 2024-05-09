@@ -5,7 +5,7 @@ on:
     tags:
       - "v*.*.*"
     branches:
-      - tests/docker-images-wolfi
+      - test/docker-images-wolfi
 
 permissions:
   contents: read
