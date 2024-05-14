@@ -374,7 +374,7 @@ class Client(object):
     def get_process_info(self):
         result = {
             "pid": os.getpid(),
-            "ppid": os.getppid() if hasattr(os, "getppid") else None,
+            "ppid": os.getppid(),
             "title": None,  # Note: if we implement this, the value needs to be wrapped with keyword_field
         }
         if self.config.include_process_args:
