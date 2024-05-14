@@ -112,6 +112,10 @@ jobs:
       attestations: write
       id-token: write
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [ 'Dockerfile', 'Dockerfile.wolfi' ]
     env:
       DOCKER_IMAGE_NAME: docker.elastic.co/observability/apm-agent-python
     steps:
@@ -137,6 +141,8 @@ jobs:
           tags: |
             type=raw,value=latest,prefix=test-,enable={{is_default_branch}}
             type=semver,pattern={{version}}
+          flavor: |
+            suffix=${{ contains(matrix.dockerfile, 'wolfi') && '-wolfi' || '' }}
 
       - name: Build and push image
         id: push
@@ -144,6 +150,7 @@ jobs:
         with:
           context: .
           push: true
+          file: ${{ matrix.dockerfile }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           build-args: |
