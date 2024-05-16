@@ -43,8 +43,6 @@ from elasticapm.utils import get_url_dict
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.logging import get_logger
 
-SERVERLESS_HTTP_REQUEST = ("api", "elb")
-
 logger = get_logger("elasticapm.serverless")
 
 _AnnotatedFunctionT = TypeVar("_AnnotatedFunctionT")
