@@ -32,6 +32,14 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.22.1]]
+==== 6.22.1 - 2024-05-17
+
+[float]
+===== Features
+
+* Relax wrapt dependency to only exclude 1.15.0 {pull}2005[#2005]
+
 [[release-notes-6.22.0]]
 ==== 6.22.0 - 2024-04-03
 
