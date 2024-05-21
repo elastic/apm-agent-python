@@ -1,4 +1,4 @@
 starlette>=0.13,<0.14
 aiofiles==0.7.0
-requests==2.31.0
+requests==2.32.0
 -r reqs-base.txt
