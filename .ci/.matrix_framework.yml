@@ -45,6 +45,8 @@ FRAMEWORK:
   - aiopg-newest
   - asyncpg-newest
   - tornado-newest
+  # this has a dependency on requests, run it to catch update issues before merging. Drop after baseline > 0.21.0
+  - starlette-0.14
   - starlette-newest
   - pymemcache-newest
   - graphene-2
