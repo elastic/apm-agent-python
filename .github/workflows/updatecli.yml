@@ -14,12 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: elastic/oblt-actions/updatecli/run-and-notify@v1
+      - uses: elastic/oblt-actions/updatecli/run@v1
         with:
           command: "apply --config .ci/updatecli/updatecli.d --values .ci/updatecli/values.yml"
-          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          slack-channel-id: "#apm-agent-python"
-          slack-message: ":traffic_cone: updatecli failed for `${{ github.repository }}@${{ github.ref_name }}`, @robots-ci please look what's going on <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>"
-          slack-send-when: 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.UPDATECLI_GH_TOKEN }}
+
+      - if: failure()
+        uses: elastic/oblt-actions/slack/send@v1
+        with:
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: "#apm-agent-python"
+          message: ":traffic_cone: updatecli failed for `${{ github.repository }}@${{ github.ref_name }}`, @robots-ci please look what's going on <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>"
