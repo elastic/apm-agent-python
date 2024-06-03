@@ -1,4 +1,4 @@
 # These are the pinned requirements for the lambda layer/docker image
-certifi==2024.2.2
+certifi==2024.6.2
 urllib3==1.26.18
 wrapt==1.14.1
