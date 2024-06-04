@@ -198,11 +198,9 @@ jobs:
         uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
         with:
           needs: ${{ toJSON(needs) }}
-      - uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
-        if: startsWith(github.ref, 'refs/tags')
+      - if: startsWith(github.ref, 'refs/tags')
+        uses: elastic/oblt-actions/slack/notify-result@v1
         with:
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: "#apm-agent-python"
           status: ${{ steps.check.outputs.status }}
-          vaultUrl: ${{ secrets.VAULT_ADDR }}
-          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
-          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
-          slackChannel: "#apm-agent-python"
