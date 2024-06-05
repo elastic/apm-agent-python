@@ -199,7 +199,7 @@ jobs:
         with:
           needs: ${{ toJSON(needs) }}
       - if: startsWith(github.ref, 'refs/tags')
-        uses: elastic/oblt-actions/slack/notify-result@v1
+        uses: elastic/oblt-actions/slack/notify-result@v1.7.0
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: "#apm-agent-python"
