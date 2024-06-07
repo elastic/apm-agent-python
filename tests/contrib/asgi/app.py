@@ -59,3 +59,8 @@ async def boom() -> None:
 @app.route("/body")
 async def json():
     return jsonify({"hello": "world"})
+
+
+@app.route("/500", methods=["GET"])
+async def error():
+    return "KO", 500
