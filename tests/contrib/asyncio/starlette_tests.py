@@ -110,6 +110,10 @@ def app(elasticapm_client):
     async def without_slash(request):
         return PlainTextResponse("Hi {}".format(request.path_params["name"]))
 
+    @app.route("/500/", methods=["GET"])
+    async def with_500_status_code(request):
+        return PlainTextResponse("Oops", status_code=500)
+
     @sub.route("/hi")
     async def hi_from_sub(request):
         return PlainTextResponse("sub")
@@ -234,6 +238,27 @@ def test_exception(app, elasticapm_client):
     assert error["transaction_id"] == transaction["id"]
     assert error["exception"]["type"] == "ValueError"
     assert error["context"]["request"] == transaction["context"]["request"]
+
+
+def test_failure_outcome_with_500_status_code(app, elasticapm_client):
+    client = TestClient(app)
+
+    client.get("/500/")
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.spans_for_transaction(transaction)
+    assert len(spans) == 0
+
+    assert transaction["name"] == "GET /500/"
+    assert transaction["result"] == "HTTP 5xx"
+    assert transaction["outcome"] == "failure"
+    assert transaction["type"] == "request"
+    request = transaction["context"]["request"]
+    assert request["method"] == "GET"
+    assert transaction["context"]["response"]["status_code"] == 500
+
+    assert len(elasticapm_client.events[constants.ERROR]) == 0
 
 
 @pytest.mark.parametrize("header_name", [constants.TRACEPARENT_HEADER_NAME, constants.TRACEPARENT_LEGACY_HEADER_NAME])

@@ -147,6 +147,7 @@ class ElasticAPM:
                 )
                 result = "HTTP {}xx".format(message["status"] // 100)
                 elasticapm.set_transaction_result(result, override=False)
+                elasticapm.set_transaction_outcome(http_status_code=message["status"], override=False)
             await send(message)
 
         _mocked_receive = None
