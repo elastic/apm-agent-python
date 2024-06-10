@@ -50,6 +50,7 @@ def wrap_send(send, middleware):
             await set_context(lambda: middleware.get_data_from_response(message, constants.TRANSACTION), "response")
             result = "HTTP {}xx".format(message["status"] // 100)
             elasticapm.set_transaction_result(result, override=False)
+            elasticapm.set_transaction_outcome(http_status_code=message["status"], override=False)
         await send(message)
 
     return wrapped_send
