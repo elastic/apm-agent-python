@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/packages
       - name: generate build provenance
-        uses: actions/attest-build-provenance@49df96e17e918a15956db358890b08e61c704919  # v1.2.0
+        uses: actions/attest-build-provenance@534b352d658f90498fd148d231fdbf88f3886a3a  # v1.3.1
         with:
           subject-path: "${{ github.workspace }}/dist/*"
 
@@ -47,12 +47,12 @@ jobs:
           path: dist
       - name: Upload pypi.org
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
+        uses: pypa/gh-action-pypi-publish@ec4db0b4ddc65acdf4bff5fa45ac92d78b56bdf0
         with:
           repository-url: https://upload.pypi.org/legacy/
       - name: Upload test.pypi.org
         if: ${{ ! startsWith(github.ref, 'refs/tags') }}
-        uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
+        uses: pypa/gh-action-pypi-publish@ec4db0b4ddc65acdf4bff5fa45ac92d78b56bdf0
         with:
           repository-url: https://test.pypi.org/legacy/
 
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-distribution
       - name: generate build provenance
-        uses: actions/attest-build-provenance@49df96e17e918a15956db358890b08e61c704919  # v1.2.0
+        uses: actions/attest-build-provenance@534b352d658f90498fd148d231fdbf88f3886a3a  # v1.3.1
         with:
           subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
 
@@ -141,7 +141,7 @@ jobs:
 
       - name: Build and push image
         id: push
-        uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0  # v5.3.0
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v5.4.0
         with:
           context: .
           push: true
@@ -152,7 +152,7 @@ jobs:
             AGENT_DIR=./build/dist/package/python
 
       - name: generate build provenance (containers)
-        uses: actions/attest-build-provenance@49df96e17e918a15956db358890b08e61c704919  # v1.2.0
+        uses: actions/attest-build-provenance@534b352d658f90498fd148d231fdbf88f3886a3a  # v1.3.1
         with:
           subject-name: "${{ env.DOCKER_IMAGE_NAME }}"
           subject-digest: ${{ steps.push.outputs.digest }}
