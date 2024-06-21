@@ -1,4 +1,0 @@
-celery>4.0,<5
-# including future as it was missing in celery 4.4.4, see https://github.com/celery/celery/issues/6145
-future>=0.18.0
-importlib-metadata<5.0; python_version<"3.8"

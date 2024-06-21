@@ -25,9 +25,6 @@ FRAMEWORK:
   - flask-3.0
   - jinja2-2
   - jinja2-3
-  - celery-4-flask-1.0
-  - celery-4-django-1.11
-  - celery-4-django-2.0
   - celery-5-flask-2
   - celery-5-django-3
   - celery-5-django-4
