@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/packages
       - name: generate build provenance
-        uses: actions/attest-build-provenance@534b352d658f90498fd148d231fdbf88f3886a3a  # v1.3.1
+        uses: actions/attest-build-provenance@bdd51370e0416ac948727f861e03c2f05d32d78e  # v1.3.2
         with:
           subject-path: "${{ github.workspace }}/dist/*"
 
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-distribution
       - name: generate build provenance
-        uses: actions/attest-build-provenance@534b352d658f90498fd148d231fdbf88f3886a3a  # v1.3.1
+        uses: actions/attest-build-provenance@bdd51370e0416ac948727f861e03c2f05d32d78e  # v1.3.2
         with:
           subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
 
@@ -141,7 +141,7 @@ jobs:
 
       - name: Build and push image
         id: push
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v5.4.0
+        uses: docker/build-push-action@31159d49c0d4756269a0940a750801a1ea5d7003  # v6.1.0
         with:
           context: .
           push: true
@@ -152,7 +152,7 @@ jobs:
             AGENT_DIR=./build/dist/package/python
 
       - name: generate build provenance (containers)
-        uses: actions/attest-build-provenance@534b352d658f90498fd148d231fdbf88f3886a3a  # v1.3.1
+        uses: actions/attest-build-provenance@bdd51370e0416ac948727f861e03c2f05d32d78e  # v1.3.2
         with:
           subject-name: "${{ env.DOCKER_IMAGE_NAME }}"
           subject-digest: ${{ steps.push.outputs.digest }}
