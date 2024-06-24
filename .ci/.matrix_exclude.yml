@@ -57,20 +57,12 @@ exclude:
     FRAMEWORK: django-1.11
   - VERSION: python-3.10
     FRAMEWORK: django-2.0
-  - VERSION: python-3.10
-    FRAMEWORK: celery-4-django-2.0
-  - VERSION: python-3.10
-    FRAMEWORK: celery-4-django-1.11
-  - VERSION: python-3.11 # cannot import name 'formatargspec' from 'inspect'
-    FRAMEWORK: celery-4-flask-1.0
   - VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-flask-2
   - VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-django-3
   - VERSION: python-3.11 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-django-4
-  - VERSION: python-3.12 # cannot import name 'formatargspec' from 'inspect'
-    FRAMEWORK: celery-4-flask-1.0
   - VERSION: python-3.12 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-flask-2
   - VERSION: python-3.12 # https://github.com/celery/billiard/issues/377
@@ -94,10 +86,6 @@ exclude:
   - VERSION: python-3.11
     FRAMEWORK: django-2.1
   - VERSION: python-3.11
-    FRAMEWORK: celery-4-django-2.0
-  - VERSION: python-3.11
-    FRAMEWORK: celery-4-django-1.11
-  - VERSION: python-3.11
     FRAMEWORK: graphene-2
   - VERSION: python-3.11
     FRAMEWORK: aiohttp-3.0
@@ -113,10 +101,6 @@ exclude:
     FRAMEWORK: django-2.0
   - VERSION: python-3.12
     FRAMEWORK: django-2.1
-  - VERSION: python-3.12
-    FRAMEWORK: celery-4-django-2.0
-  - VERSION: python-3.12
-    FRAMEWORK: celery-4-django-1.11
   - VERSION: python-3.12
     FRAMEWORK: graphene-2
   - VERSION: python-3.12
@@ -294,8 +278,6 @@ exclude:
     FRAMEWORK: flask-1.1
   - VERSION: python-3.7
     FRAMEWORK: jinja2-2
-  - VERSION: python-3.7
-    FRAMEWORK: celery-4-flask-1.0
   # TODO py3.12
   - VERSION: python-3.12
     FRAMEWORK: sanic-20.12  # no wheels available yet
