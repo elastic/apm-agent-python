@@ -128,8 +128,8 @@ The Python APM agent comes with automatic instrumentation of various 3rd party m
 
 We support these Celery versions:
 
-* 3.x
-* 4.x
+* 4.x (deprecated)
+* 5.x
 
 Celery tasks will be recorded automatically with Django and Flask only.
 
