@@ -71,6 +71,9 @@ jobs:
           subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
 
   publish-lambda-layers:
+    permissions:
+      contents: read
+      id-token: write
     needs:
       - build-distribution
     runs-on: ubuntu-latest
