@@ -74,16 +74,15 @@ jobs:
     needs:
       - build-distribution
     runs-on: ubuntu-latest
-    env:
-      # TODO: use keyless
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: build-distribution
           path: ./build
+      - uses: elastic/oblt-actions/aws/auth@v1
+        with:
+          aws-account-id: "267093732750"
       - name: Publish lambda layers to AWS
         if: startsWith(github.ref, 'refs/tags')
         run: |
