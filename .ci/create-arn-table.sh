@@ -10,7 +10,8 @@ AWS_FOLDER=${AWS_FOLDER?:No aws folder provided}
 ARN_FILE=".arn-file.md"
 
 {
-	echo "### Elastic APM Python agent layer ARNs"
+	echo "<details>"
+	echo "<summary>Elastic APM Python agent layer ARNs</summary>"
 	echo ''
 	echo '|Region|ARN|'
 	echo '|------|---|'
@@ -22,4 +23,8 @@ for f in $(ls "${AWS_FOLDER}"); do
 	echo "|${f}|${LAYER_VERSION_ARN}|" >> "${ARN_FILE}"
 done
 
-echo '' >> "${ARN_FILE}"
+{
+	echo ''
+	echo '</details>'
+	echo ''
+} >> "${ARN_FILE}"

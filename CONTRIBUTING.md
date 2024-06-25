@@ -198,4 +198,4 @@ If you have commit access, the process is as follows:
 1. After tests pass, Github Actions will automatically build and push the new release to PyPI.
 1. Edit and publish the [draft Github release](https://github.com/elastic/apm-agent-python/releases)
    created by Github Actions. Substitute the generated changelog with one hand written into the body of the
-   release and move the agent layer ARNs under a `<details>` block with a `summary`.
+   release.
