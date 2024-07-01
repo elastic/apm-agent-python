@@ -87,7 +87,7 @@ class ElasticAPM(object):
         if self.logging:
             warnings.warn(
                 "Flask log shipping is deprecated. See the Flask docs for more info and alternatives.",
-                PendingDeprecationWarning,
+                DeprecationWarning,
             )
         self.client = client or get_client()
         self.client_cls = client_cls

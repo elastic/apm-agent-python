@@ -51,7 +51,7 @@ class LoggingHandler(logging.Handler):
             "the agent. Please use `log_ecs_reformatting` and ship the logs "
             "with Elastic Agent or Filebeat instead. "
             "https://www.elastic.co/guide/en/apm/agent/python/current/logs.html",
-            PendingDeprecationWarning,
+            DeprecationWarning,
         )
         self.client = None
         if "client" in kwargs:
@@ -66,12 +66,9 @@ class LoggingHandler(logging.Handler):
             if client_cls:
                 self.client = client_cls(*args, **kwargs)
             else:
-                # In 6.0, this should raise a ValueError
                 warnings.warn(
-                    "LoggingHandler requires a Client instance. No Client was "
-                    "received. This will result in an error starting in v6.0 "
-                    "of the agent",
-                    PendingDeprecationWarning,
+                    "LoggingHandler requires a Client instance. No Client was received.",
+                    DeprecationWarning,
                 )
                 self.client = Client(*args, **kwargs)
         logging.Handler.__init__(self, level=kwargs.get("level", logging.NOTSET))
@@ -201,7 +198,7 @@ class LoggingFilter(logging.Filter):
             "the agent. On Python 3.2+, by default we add a LogRecordFactory to "
             "your root logger automatically"
             "https://www.elastic.co/guide/en/apm/agent/python/current/logs.html",
-            PendingDeprecationWarning,
+            DeprecationWarning,
         )
 
     def filter(self, record):
