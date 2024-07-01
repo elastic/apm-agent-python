@@ -143,7 +143,8 @@ class KafkaInstrumentation(AbstractInstrumentedModule):
                     try:
                         result = wrapped(*args, **kwargs)
                     except StopIteration:
-                        span.cancel()
+                        if span:
+                            span.cancel()
                         raise
                     if span and not isinstance(span, DroppedSpan):
                         topic = result[0]
