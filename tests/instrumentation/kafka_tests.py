@@ -45,10 +45,9 @@ from kafka.admin import KafkaAdminClient, NewTopic
 
 pytestmark = [pytest.mark.kafka]
 
-if "KAFKA_HOST" not in os.environ:
+KAFKA_HOST = os.environ.get("KAFKA_HOST")
+if not KAFKA_HOST:
     pytestmark.append(pytest.mark.skip("Skipping kafka tests, no KAFKA_HOST environment variable set"))
-
-KAFKA_HOST = os.environ["KAFKA_HOST"]
 
 
 @pytest.fixture(scope="function")
@@ -230,6 +229,25 @@ def test_kafka_poll_unsampled_transaction(instrument, elasticapm_client, consume
     transaction_object = elasticapm_client.begin_transaction("transaction")
     transaction_object.is_sampled = False
     consumer.poll(timeout_ms=50)
+    elasticapm_client.end_transaction("foo")
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 0
+
+
+def test_kafka_consumer_unsampled_transaction_handles_stop_iteration(
+    instrument, elasticapm_client, producer, consumer, topics
+):
+    def delayed_send():
+        time.sleep(0.2)
+        producer.send("test", key=b"foo", value=b"bar")
+
+    thread = threading.Thread(target=delayed_send)
+    thread.start()
+    transaction = elasticapm_client.begin_transaction("foo")
+    transaction.is_sampled = False
+    for item in consumer:
+        pass
+    thread.join()
     elasticapm_client.end_transaction("foo")
     spans = elasticapm_client.events[SPAN]
     assert len(spans) == 0
