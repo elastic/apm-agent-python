@@ -380,7 +380,7 @@ def test_logging_handler_no_client(recwarn):
     while True:
         # If we never find our desired warning this will eventually throw an
         # AssertionError
-        w = recwarn.pop(PendingDeprecationWarning)
+        w = recwarn.pop(DeprecationWarning)
         if "LoggingHandler requires a Client instance" in w.message.args[0]:
             return True
 

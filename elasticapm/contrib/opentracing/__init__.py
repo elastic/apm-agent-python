@@ -36,8 +36,8 @@ from .tracer import Tracer  # noqa: F401
 
 warnings.warn(
     (
-        "The OpenTracing bridge will be deprecated in the next major release. "
+        "The OpenTracing bridge is deprecated and will be removed in the next major release. "
         "Please migrate to the OpenTelemetry bridge."
     ),
-    PendingDeprecationWarning,
+    DeprecationWarning,
 )
