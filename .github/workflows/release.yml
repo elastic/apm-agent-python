@@ -109,7 +109,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,prefix=test-,enable={{is_default_branch}}
+            type=raw,value=latest,prefix=test-,enable=true
             type=semver,pattern={{version}}
           flavor: |
             suffix=${{ contains(matrix.dockerfile, 'wolfi') && '-wolfi' || '' }}
