@@ -71,6 +71,9 @@ def capture_serverless(func: Optional[callable] = None, **kwargs) -> callable:
         @capture_serverless
         def handler(event, context):
             return {"statusCode": r.status_code, "body": "Success!"}
+
+    Please note that when using the APM Layer and setting AWS_LAMBDA_EXEC_WRAPPER this is not required and
+    the handler would be instrumented automatically.
     """
     if not func:
         # This allows for `@capture_serverless()` in addition to
