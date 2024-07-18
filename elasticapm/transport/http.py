@@ -32,6 +32,7 @@
 
 import hashlib
 import json
+import os
 import re
 import ssl
 import urllib.parse
@@ -249,6 +250,23 @@ class Transport(HTTPTransportBase):
         if self._server_ca_cert_file:
             return self._server_ca_cert_file
         return certifi.where() if (certifi and self.client.config.use_certifi) else None
+
+    def close(self):
+        """
+        Take care of being able to shutdown cleanly
+        :return:
+        """
+        if self._closed or (not self._thread or self._thread.pid != os.getpid()):
+            return
+
+        self._closed = True
+        # we are racing against urllib3 ConnectionPool weakref finalizer that would lead to having them closed
+        # and we hanging waiting for send any eventual queued data
+        # Force the creation of a new PoolManager so that we are always able to flush
+        self._http = None
+        self.queue("close", None)
+        if not self._flushed.wait(timeout=self._max_flush_time_seconds):
+            logger.error("Closing the transport connection timed out.")
 
 
 def version_string_to_tuple(version):
