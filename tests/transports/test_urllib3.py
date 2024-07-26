@@ -30,6 +30,7 @@
 
 
 import os
+import time
 
 import certifi
 import mock
@@ -517,3 +518,90 @@ def test_fetch_server_info_flat_string(waiting_httpserver, caplog, elasticapm_cl
         transport.fetch_server_info()
     assert elasticapm_client.server_version is None
     assert_any_record_contains(caplog.records, "No version key found in server response")
+
+
+def test_close(waiting_httpserver, elasticapm_client):
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(
+        waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
+    transport.start_thread()
+
+    transport.close()
+
+    assert transport._closed is True
+    assert transport._flushed.is_set() is True
+
+
+def test_close_does_nothing_if_called_from_another_pid(waiting_httpserver, caplog, elasticapm_client):
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(
+        waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
+    transport.start_thread()
+
+    with mock.patch("os.getpid") as getpid_mock:
+        getpid_mock.return_value = 0
+        transport.close()
+
+    assert transport._closed is False
+
+    transport.close()
+
+
+def test_close_can_be_called_multiple_times(waiting_httpserver, caplog, elasticapm_client):
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(
+        waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
+    transport.start_thread()
+
+    with caplog.at_level("INFO", logger="elasticapm.transport.http"):
+        transport.close()
+
+    assert transport._closed is True
+
+    transport.close()
+
+
+def test_close_timeout_error_without_flushing(waiting_httpserver, caplog, elasticapm_client):
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+
+    with caplog.at_level("INFO", logger="elasticapm.transport.http"):
+        with mock.patch.object(Transport, "_max_flush_time_seconds", 0):
+            with mock.patch.object(Transport, "_flush") as flush_mock:
+                # sleep more that the timeout
+                flush_mock.side_effect = lambda x: time.sleep(0.1)
+                transport = Transport(
+                    waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+                )
+                transport.start_thread()
+                # need to write something to the buffer to have _flush() called
+                transport.queue("error", {"an": "error"})
+                transport.close()
+
+    assert transport._flushed.is_set() is False
+    assert transport._closed is True
+    record = caplog.records[-1]
+    assert "Closing the transport connection timed out." in record.msg
+
+
+def test_http_pool_manager_is_recycled_at_stop_thread(waiting_httpserver, caplog, elasticapm_client):
+    elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(
+        waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
+    transport.start_thread()
+    pool_manager = transport.http
+
+    with caplog.at_level("INFO", logger="elasticapm.transport.http"):
+        transport.stop_thread()
+
+    assert transport._flushed.is_set() is True
+    assert pool_manager != transport._http
+    assert not caplog.records
