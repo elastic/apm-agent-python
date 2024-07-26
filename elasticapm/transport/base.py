@@ -292,7 +292,8 @@ class Transport(ThreadManager):
         if not self._flushed.wait(timeout=self._max_flush_time_seconds):
             logger.error("Closing the transport connection timed out.")
 
-    stop_thread = close
+    def stop_thread(self) -> None:
+        self.close()
 
     def flush(self):
         """
