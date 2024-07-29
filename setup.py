@@ -43,12 +43,9 @@ full out-of-the-box support for many of the popular frameworks, including
 import ast
 import codecs
 import os
-import sys
-from distutils.command.build_ext import build_ext
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
 import pkg_resources
-from setuptools import Extension, setup
+from setuptools import setup
 
 pkg_resources.require("setuptools>=39.2")
 
