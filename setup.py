@@ -40,48 +40,14 @@ full out-of-the-box support for many of the popular frameworks, including
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Hack to prevent stupid "TypeError: 'NoneType' object is not callable" error
-# in multiprocessing/util.py _exit_function when running `python
-# setup.py test` (see
-# http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html)
-for m in ("multiprocessing", "billiard"):
-    try:
-        __import__(m)
-    except ImportError:
-        pass
-
 import ast
 import codecs
 import os
-import sys
-from distutils.command.build_ext import build_ext
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
 import pkg_resources
-from setuptools import Extension, setup
-from setuptools.command.test import test as TestCommand
+from setuptools import setup
 
 pkg_resources.require("setuptools>=39.2")
-
-
-class PyTest(TestCommand):
-    user_options = [("pytest-args=", "a", "Arguments to pass to py.test")]
-
-    def initialize_options(self) -> None:
-        TestCommand.initialize_options(self)
-        self.pytest_args = []
-
-    def finalize_options(self) -> None:
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self) -> None:
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
 
 
 def get_version():
@@ -108,4 +74,4 @@ def get_version():
     return "unknown"
 
 
-setup(cmdclass={"test": PyTest}, version=get_version())
+setup(version=get_version())
