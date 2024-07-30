@@ -32,6 +32,30 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.23.0]]
+==== 6.23.0 - 2024-07-30
+
+[float]
+===== Features
+
+* Make published Docker images multi-platform with the addition of linux/arm64 {pull}2080[#2080]
+
+[float]
+===== Bug fixes
+
+* Fix handling consumer iteration if transaction not sampled in kafka instrumentation {pull}2075[#2075]
+* Fix race condition with urllib3 at shutdown {pull}2085[#2085]
+* Fix compatibility with setuptools>=72 that removed test command {pull}2090[#2090]
+
+===== Deprecations
+
+* Python 3.6 support will be removed in version 7.0.0 of the agent
+* The log shipping LoggingHandler will be removed in version 7.0.0 of the agent.
+* The log shipping feature in the Flask instrumentation will be removed in version 7.0.0 of the agent.
+* The log shipping feature in the Django instrumentation will be removed in version 7.0.0 of the agent.
+* The OpenTracing bridge will be removed in version 7.0.0 of the agent.
+* Celery 4.0 support is deprecated because it's not installable anymore with a modern pip
+
 [[release-notes-6.22.3]]
 ==== 6.22.3 - 2024-06-10
 
