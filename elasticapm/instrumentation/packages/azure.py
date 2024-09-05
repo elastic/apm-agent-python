@@ -300,9 +300,12 @@ def handle_azuretable(request, hostname, path, query_params, service, service_ty
     account_name = hostname.split(".")[0]
     method = request.method
     body = request.body
-    try:
-        body = json.loads(body)
-    except json.decoder.JSONDecodeError:  # str not bytes
+    if body:
+        try:
+            body = json.loads(body)
+        except json.decoder.JSONDecodeError:  # str not bytes
+            body = {}
+    else:
         body = {}
     # /tablename(PartitionKey='<partition-key>',RowKey='<row-key>')
     resource_name = path.split("/", 1)[1] if "/" in path else path
