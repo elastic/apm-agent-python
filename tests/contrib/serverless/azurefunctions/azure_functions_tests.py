@@ -29,7 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-azure = pytest.importorskip("azure-functions")
+azure = pytest.importorskip("azure.functions")
 
 import datetime
 import os
