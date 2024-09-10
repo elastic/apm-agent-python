@@ -149,12 +149,14 @@ jobs:
         with:
           name: test-results-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/*-python-agent-junit.xml"
+          retention-days: 1
       - if: success() || failure()
         name: Upload Coverage Reports
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/.coverage*"
+          retention-days: 1
   # This job is here to have a single status check that can be set as required.
   # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds
   # If a run contains a series of jobs that need each other, a failure applies to all jobs in the dependency chain from the point of failure onwards.
@@ -218,6 +220,6 @@ jobs:
         with:
           name: html-coverage-report
           path: htmlcov
-      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # 5.1.0
         with:
-          name: coverage-reports
+          name: coverage-reports-*
