@@ -145,15 +145,15 @@ jobs:
         run: .\scripts\run-tests.bat
       - if: success() || failure()
         name: Upload JUnit Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.framework }}-${{ matrix.version }}
           path: "**/*-python-agent-junit.xml"
       - if: success() || failure()
         name: Upload Coverage Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports
+          name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}
           path: "**/.coverage*"
   # This job is here to have a single status check that can be set as required.
   # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds
@@ -197,9 +197,10 @@ jobs:
 
       - run: python -Im pip install --upgrade coverage[toml]
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: coverage-reports
+          pattern: coverage-reports-*
+          merge-multiple: true
 
       - name: Combine coverage & fail if it's <84%.
         run: |
