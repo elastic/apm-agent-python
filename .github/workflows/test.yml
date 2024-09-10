@@ -147,13 +147,13 @@ jobs:
         name: Upload JUnit Test Results
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.framework }}-${{ matrix.version }}
+          name: test-results-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/*-python-agent-junit.xml"
       - if: success() || failure()
         name: Upload Coverage Reports
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}
+          name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/.coverage*"
   # This job is here to have a single status check that can be set as required.
   # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds
