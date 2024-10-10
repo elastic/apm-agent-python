@@ -307,9 +307,7 @@ class UnitValidator(object):
         try:
             val = int(val) * self.unit_multipliers[unit]
         except KeyError:
-            raise ConfigurationError(
-                "{}={} is not a supported unit".format(field_name, unit), field_name
-            )
+            raise ConfigurationError("{}={} is not a supported unit".format(field_name, unit), field_name)
         return val
 
 
@@ -331,9 +329,7 @@ class PrecisionValidator(object):
         try:
             value = float(value)
         except ValueError:
-            raise ConfigurationError(
-                "{}={} is not a float".format(field_name, value), field_name
-            )
+            raise ConfigurationError("{}={} is not a float".format(field_name, value), field_name)
         multiplier = 10**self.precision
         rounded = math.floor(value * multiplier + 0.5) / multiplier
         if rounded == 0 and self.minimum and value != 0:
@@ -358,9 +354,7 @@ class ExcludeRangeValidator(object):
                 "{}={} cannot be in range: {}".format(
                     field_name,
                     value,
-                    self.range_desc.format(
-                        **{"range_start": self.range_start, "range_end": self.range_end}
-                    ),
+                    self.range_desc.format(**{"range_start": self.range_start, "range_end": self.range_end}),
                 ),
                 field_name,
             )
@@ -371,17 +365,11 @@ class FileIsReadableValidator(object):
     def __call__(self, value, field_name):
         value = os.path.normpath(value)
         if not os.path.exists(value):
-            raise ConfigurationError(
-                "{}={} does not exist".format(field_name, value), field_name
-            )
+            raise ConfigurationError("{}={} does not exist".format(field_name, value), field_name)
         elif not os.path.isfile(value):
-            raise ConfigurationError(
-                "{}={} is not a file".format(field_name, value), field_name
-            )
+            raise ConfigurationError("{}={} is not a file".format(field_name, value), field_name)
         elif not os.access(value, os.R_OK):
-            raise ConfigurationError(
-                "{}={} is not readable".format(field_name, value), field_name
-            )
+            raise ConfigurationError("{}={} is not readable".format(field_name, value), field_name)
         return value
 
 
