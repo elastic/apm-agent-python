@@ -196,9 +196,9 @@ jobs:
       - github-draft
     steps:
       - id: check
-        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        uses: elastic/oblt-actions/check-dependent-jobs@v1
         with:
-          needs: ${{ toJSON(needs) }}
+          jobs: ${{ toJSON(needs) }}
       - if: startsWith(github.ref, 'refs/tags')
         uses: elastic/oblt-actions/slack/notify-result@v1
         with:
