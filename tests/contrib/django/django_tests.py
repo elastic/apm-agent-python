@@ -1318,6 +1318,21 @@ def test_capture_post_errors_dict(client, django_elasticapm_client):
         assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize(
+    "django_sending_elasticapm_client",
+    [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],
+    indirect=True,
+)
+def test_capture_django_orm_timeout_error(client, django_sending_elasticapm_client):
+    with pytest.raises(DatabaseError):
+        client.get(reverse("elasticapm-django-orm-exc"))
+
+    errors = django_sending_elasticapm_client.httpserver.payloads
+    if django_sending_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
+        stacktrace = errors[0][1]["error"]["exception"]["stacktrace"]
+        assert "'qs': '[]'" in str(stacktrace)
+
+
 def test_capture_body_config_is_dynamic_for_errors(client, django_elasticapm_client):
     django_elasticapm_client.config.update(version="1", capture_body="all")
     with pytest.raises(MyException):

@@ -34,7 +34,6 @@ from __future__ import absolute_import
 import django
 from django.conf import settings as django_settings
 from django.db import DatabaseError
-from django.db.models.query import QuerySet
 from django.http import HttpRequest
 
 try:
@@ -196,14 +195,6 @@ class DjangoClient(Client):
 
         return result
 
-    @staticmethod
-    def _disable_querysets_evaluation(var):
-        """Overriding queryset result cache to avoid making any queries"""
-        if isinstance(var, QuerySet):
-            var._result_cache = []
-        return var
-
-
     def _get_stack_info_for_trace(
         self,
         frames,
@@ -214,13 +205,6 @@ class DjangoClient(Client):
     ):
         """If the stacktrace originates within the elasticapm module, it will skip
         frames until some other module comes up."""
-
-        # Overriding processor func for django to avoid making queries to db through QuerySet objects
-        if locals_processor_func is not None:
-            locals_processor_func = lambda v: self._disable_querysets_evaluation(locals_processor_func(v))
-        else:
-            locals_processor_func = lambda v: self._disable_querysets_evaluation(v)
-
         return list(
             iterate_with_template_sources(
                 frames,

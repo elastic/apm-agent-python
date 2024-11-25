@@ -37,6 +37,8 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views import View
+from django.db.models import QuerySet
+from django.db import DatabaseError
 
 import elasticapm
 
@@ -69,6 +71,18 @@ def fake_login(request):
 def django_exc(request):
     return get_object_or_404(MyException, pk=1)
 
+
+def django_queryset_error(request):
+    """Simulation of django ORM timeout"""
+    class CustomQuerySet(QuerySet):
+        def all(self):
+            raise DatabaseError()
+        
+        def __repr__(self) -> str:
+            return str(self._result_cache)
+
+    qs = CustomQuerySet()
+    list(qs.all())
 
 def raise_exc(request):
     raise MyException(request.GET.get("message", "view exception"))

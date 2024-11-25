@@ -62,6 +62,7 @@ urlpatterns = (
     re_path(r"^trigger-500-ioerror$", views.raise_ioerror, name="elasticapm-raise-ioerror"),
     re_path(r"^trigger-500-decorated$", views.decorated_raise_exc, name="elasticapm-raise-exc-decor"),
     re_path(r"^trigger-500-django$", views.django_exc, name="elasticapm-django-exc"),
+    re_path(r"^trigger-500-django-orm-exc$", views.django_queryset_error, name="elasticapm-django-orm-exc"),
     re_path(r"^trigger-500-template$", views.template_exc, name="elasticapm-template-exc"),
     re_path(r"^trigger-500-log-request$", views.logging_request_exc, name="elasticapm-log-request-exc"),
     re_path(r"^streaming$", views.streaming_view, name="elasticapm-streaming-view"),
