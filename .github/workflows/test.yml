@@ -52,13 +52,13 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
       - id: generate
-        uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
+        uses: elastic/oblt-actions/version-framework@v1
         with:
           # Use .ci/.matrix_python_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_python.yml
-          versionsFile: .ci/.matrix_python${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
+          versions-file: .ci/.matrix_python${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
           # Use .ci/.matrix_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_framework.yml
-          frameworksFile: .ci/.matrix_framework${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
-          excludedFile: .ci/.matrix_exclude.yml
+          frameworks-file: .ci/.matrix_framework${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
+          excluded-file: .ci/.matrix_exclude.yml
       - name: Split matrix
         shell: python
         id: split
@@ -171,10 +171,10 @@ jobs:
       - windows
     steps:
       - id: check
-        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        uses: elastic/oblt-actions/check-dependent-jobs@v1
         with:
-          needs: ${{ toJSON(needs) }}
-      - run: ${{ steps.check.outputs.isSuccess }}
+          jobs: ${{ toJSON(needs) }}
+      - run: ${{ steps.check.outputs.is-success }}
       - if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
         uses: elastic/oblt-actions/slack/notify-result@v1
         with:
