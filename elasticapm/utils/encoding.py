@@ -36,6 +36,7 @@ import itertools
 import uuid
 from decimal import Decimal
 
+from django.db.models import QuerySet
 from elasticapm.conf.constants import KEYWORD_MAX_LENGTH, LABEL_RE, LABEL_TYPES, LONG_FIELD_MAX_LENGTH
 
 PROTECTED_TYPES = (int, type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
@@ -144,6 +145,9 @@ def transform(value, stack=None, context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
+    elif isinstance(value, QuerySet):
+        value._result_cache = []
+        ret = repr(value)
     elif value is not None:
         try:
             ret = transform(repr(value))
