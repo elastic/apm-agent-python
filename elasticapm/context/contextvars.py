@@ -78,7 +78,7 @@ class ContextVarsContext(BaseContext):
 
         The previously-activated span will be saved to be re-activated later.
         """
-        spans = self.elasticapm_spans_var.get()
+        spans: tuple = self.elasticapm_spans_var.get() or ()
         self.elasticapm_spans_var.set(spans + (span,))
 
     def unset_span(self, clear_all: bool = False) -> "elasticapm.traces.Span":
