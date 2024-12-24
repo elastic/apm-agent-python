@@ -265,7 +265,6 @@ def test_data_table(instrument, elasticapm_client, data_table_service):
     assert span["type"] == "storage"
     assert span["subtype"] == "azuretable"
     assert span["action"] == "Delete"
-    
 
 def test_table(instrument, elasticapm_client, table_service):
     table_name = table_service.table_name
