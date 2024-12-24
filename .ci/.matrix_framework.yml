@@ -56,3 +56,4 @@ FRAMEWORK:
   - kafka-python-newest
   - grpc-newest
   - azurefunctions-newest
+  - azure-newest
