@@ -43,9 +43,11 @@ from elasticapm.conf import (
     Config,
     ConfigurationError,
     EnumerationValidator,
+    ExcludeRangeValidator,
     FileIsReadableValidator,
     PrecisionValidator,
     RegexValidator,
+    UnitValidator,
     VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
@@ -450,3 +452,38 @@ def test_config_all_upper_case():
         if not isinstance(config_value, _ConfigValue):
             continue
         assert config_value.env_key == config_value.env_key.upper()
+
+
+def test_regex_validator_without_match():
+    validator = RegexValidator("\d")
+    with pytest.raises(ConfigurationError) as e:
+        validator("foo", "field")
+    assert "does not match pattern" in e.value.args[0]
+
+
+def test_unit_validator_without_match():
+    validator = RegexValidator("ms")
+    with pytest.raises(ConfigurationError) as e:
+        validator("s", "field")
+    assert "does not match pattern" in e.value.args[0]
+
+
+def test_unit_validator_with_unsupported_unit():
+    validator = UnitValidator("(\d+)(s)", "secs", {})
+    with pytest.raises(ConfigurationError) as e:
+        validator("10s", "field")
+    assert "is not a supported unit" in e.value.args[0]
+
+
+def test_precision_validator_not_a_float():
+    validator = PrecisionValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator("notafloat", "field")
+    assert "is not a float" in e.value.args[0]
+
+
+def test_exclude_range_validator_not_in_range():
+    validator = ExcludeRangeValidator(1, 100, "desc")
+    with pytest.raises(ConfigurationError) as e:
+        validator(10, "field")
+    assert "cannot be in range" in e.value.args[0]
