@@ -43,8 +43,8 @@ azuredatatable = pytest.importorskip("azure.data.tables")
 azurefile = pytest.importorskip("azure.storage.fileshare")
 pytestmark = [pytest.mark.azurestorage]
 
-from azure.data.tables import TableServiceClient as DataTableServiceClient
 from azure.cosmosdb.table.tableservice import TableService
+from azure.data.tables import TableServiceClient as DataTableServiceClient
 from azure.storage.blob import BlobServiceClient
 from azure.storage.fileshare import ShareClient
 from azure.storage.queue import QueueClient
@@ -213,6 +213,7 @@ def test_data_table_create(instrument, elasticapm_client):
     assert span["subtype"] == "azuretable"
     assert span["action"] == "Create"
 
+
 def test_table_create(instrument, elasticapm_client):
     table_name = "apmagentpythonci" + str(uuid.uuid4().hex)
     table_service = TableService(connection_string=CONNECTION_STRING)
@@ -228,6 +229,7 @@ def test_table_create(instrument, elasticapm_client):
     assert span["type"] == "storage"
     assert span["subtype"] == "azuretable"
     assert span["action"] == "Create"
+
 
 def test_data_table(instrument, elasticapm_client, data_table_service):
     table_name = data_table_service.table_name
@@ -263,6 +265,7 @@ def test_data_table(instrument, elasticapm_client, data_table_service):
     assert span["type"] == "storage"
     assert span["subtype"] == "azuretable"
     assert span["action"] == "Delete"
+    
 
 def test_table(instrument, elasticapm_client, table_service):
     table_name = table_service.table_name
