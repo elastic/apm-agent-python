@@ -148,4 +148,12 @@ def make_client(client_cls=Client, **defaults) -> Client:
 
 def _transform_response_cookie(cookies: CookieJar) -> Dict[str, str]:
     """Transform the Sanic's CookieJar instance into a Normal dictionary to build the context"""
-    return {k: {"value": v.value, "path": v["path"]} for k, v in cookies.items()}
+    # old sanic versions used to have an items() method
+    if hasattr(cookies, "items"):
+        return {k: {"value": v.value, "path": v["path"]} for k, v in cookies.items()}
+
+    try:
+        return {cookie.key: {"value": cookie.value, "path": cookie.path} for cookie in cookies.cookies}
+    except KeyError:
+        # cookies.cookies assumes Set-Cookie header will be there
+        return {}

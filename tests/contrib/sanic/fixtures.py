@@ -155,6 +155,12 @@ def sanic_elastic_app(elasticapm_client):
         async def custom_headers(request):
             return json({"data": "message"}, headers={"sessionid": 1234555})
 
+        @app.get("/add-cookies")
+        async def add_cookies(request):
+            response = json({"data": "message"}, headers={"sessionid": 1234555})
+            response.add_cookie("some", "cookie")
+            return response
+
         try:
             yield app, apm
         finally:
