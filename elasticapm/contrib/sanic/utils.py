@@ -33,7 +33,7 @@ from typing import Dict
 
 from sanic import Sanic
 from sanic import __version__ as version
-from sanic.cookies import CookieJar
+from sanic.cookies import Cookie, CookieJar
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
@@ -120,7 +120,14 @@ async def get_response_info(config: Config, response: HTTPResponse, event_type: 
         result["status_code"] = response.status
 
     if config.capture_headers:
-        result["headers"] = dict(response.headers)
+
+        def normalize(v):
+            # we are getting entries for Set-Cookie headers as Cookie instances
+            if isinstance(v, Cookie):
+                return str(v)
+            return v
+
+        result["headers"] = {k: normalize(v) for k, v in response.headers.items()}
 
     if config.capture_body in ("all", event_type) and "octet-stream" not in response.content_type:
         result["body"] = response.body.decode("utf-8")
