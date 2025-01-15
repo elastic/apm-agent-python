@@ -158,7 +158,10 @@ def sanic_elastic_app(elasticapm_client):
         @app.get("/add-cookies")
         async def add_cookies(request):
             response = json({"data": "message"}, headers={"sessionid": 1234555})
-            response.add_cookie("some", "cookie")
+            if hasattr(response, "add_cookie"):
+                response.add_cookie("some", "cookie")
+            else:
+                response.cookies["some"] = "cookie"
             return response
 
         try:

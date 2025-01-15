@@ -199,6 +199,7 @@ def test_cookies_normalization(sanic_elastic_app, elasticapm_client):
     _, resp = sanic_app.test_client.get(
         "/add-cookies",
     )
+    assert resp.status_code == 200
     assert len(apm._client.events[constants.TRANSACTION]) == 1
     transaction = apm._client.events[constants.TRANSACTION][0]
     assert transaction["context"]["response"]["cookies"] == {"some": {"value": "cookie", "path": "/"}}
