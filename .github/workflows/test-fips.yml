@@ -47,7 +47,9 @@ jobs:
         run: |
           python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
       - name: Run tests
-        run: ./tests/scripts/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
+        run: ./tests/scripts/run_tests.sh
+        env:
+          FRAMEWORK: ${{ matrix.framework }}
 
   notify-on-failure:
     if: always()
