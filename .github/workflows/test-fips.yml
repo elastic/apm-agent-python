@@ -1,0 +1,66 @@
+
+# run test suite inside a FIPS 140 container
+name: test-fips
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'
+  pull_request:
+    # FIXME: REMOVE ME
+
+permissions:
+  contents: read
+
+jobs:
+  create-matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: generate
+        uses: elastic/oblt-actions/version-framework@v1
+        with:
+          versions-file: .ci/.matrix_python_fips.yml
+          frameworks-file: .ci/.matrix_framework.yml
+          excluded-file: .ci/.matrix_exclude.yml
+
+  test-fips:
+    needs: create-matrix
+    runs-on: ubuntu-24.04
+    # https://docs.github.com/en/actions/writing-workflows/choosing-where-your-workflow-runs/running-jobs-in-a-container
+    # docker run -it --rm --name fipsy docker.elastic.co/wolfi/chainguard-python-fips:3.12
+    container:
+      image: docker.elastic.co/wolfi/chainguard-python-fips:3.12-dev
+      credentials:
+        username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
+        password: ${{ secrets.ELASTIC_DOCKER_PASSWORD }}
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJSON(needs.create-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: check that python has fips mode enabled
+        run: |
+          python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
+      - name: Run tests
+        run: ./tests/scripts/run_tests.sh ${{ matrix.version }} ${{ matrix.framework }}
+
+  notify-on-failure:
+    if: always()
+    runs-on: ubuntu-24.04
+    needs: test-fips
+    steps:
+      - id: check
+        uses: elastic/oblt-actions/check-dependent-jobs@v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+      - name: Notify in Slack
+        if: steps.check.outputs.status == 'failure'
+        uses: elastic/oblt-actions/slack/notify-result@v1
+        with:
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          status: ${{ steps.check.outputs.status }}
+          channel-id: "#apm-agent-python"
