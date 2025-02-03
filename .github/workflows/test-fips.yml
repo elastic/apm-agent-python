@@ -33,6 +33,7 @@ jobs:
     # docker run -it --rm --name fipsy docker.elastic.co/wolfi/python-fips:3.12
     container:
       image: docker.elastic.co/wolfi/python-fips:3.12-dev
+      options: --user root
       credentials:
         username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
         password: ${{ secrets.ELASTIC_DOCKER_PASSWORD }}
