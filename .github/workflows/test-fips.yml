@@ -37,6 +37,7 @@ jobs:
       credentials:
         username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
         password: ${{ secrets.ELASTIC_DOCKER_PASSWORD }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       max-parallel: 10
@@ -46,6 +47,8 @@ jobs:
       - name: check that python has fips mode enabled
         run: |
           python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
+      - name: install run_tests.sh requirements
+        run: apk install netcat-openbsd
       - name: Run tests
         run: ./tests/scripts/run_tests.sh
         env:
