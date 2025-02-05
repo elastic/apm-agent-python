@@ -46,6 +46,8 @@ jobs:
       - name: check that python has fips mode enabled
         run: |
           python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
+      - run: |
+          python3 -c 'from zoneinfo import ZoneInfo ; assert ZoneInfo("America/Chicago")'
       - name: install run_tests.sh requirements
         run: apk install netcat-openbsd
       - name: Run tests
