@@ -23,8 +23,7 @@ jobs:
         uses: elastic/oblt-actions/version-framework@v1
         with:
           versions-file: .ci/.matrix_python_fips.yml
-          frameworks-file: .ci/.matrix_framework.yml
-          excluded-file: .ci/.matrix_exclude.yml
+          frameworks-file: .ci/.matrix_framework_fips.yml
 
   test-fips:
     needs: create-matrix
