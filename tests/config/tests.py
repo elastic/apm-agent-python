@@ -278,7 +278,10 @@ def test_file_is_readable_validator_not_a_file(tmpdir):
     assert "is not a file" in e.value.args[0]
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="os.access() doesn't seem to work as we expect on Windows")
+@pytest.mark.skipif(
+    platform.system() == "Windows" or os.getuid() == 0,
+    reason="os.access() doesn't seem to work as we expect on Windows and test will fail as root user",
+)
 def test_file_is_readable_validator_not_readable(tmpdir):
     p = tmpdir.join("nonreadable")
     p.write("")

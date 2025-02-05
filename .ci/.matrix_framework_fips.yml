@@ -1,0 +1,23 @@
+# this is a limited list of matrix builds to be used for PRs
+# see .matrix_framework_full.yml for a full list
+FRAMEWORK:
+  - none
+  - django-5.0
+  - flask-3.0
+  - jinja2-3
+  - opentelemetry-newest
+  - opentracing-newest
+  - twisted-newest
+  - celery-5-flask-2
+  - celery-5-django-5
+  - requests-newest
+  - psutil-newest
+  - gevent-newest
+  - aiohttp-newest
+  - tornado-newest
+  - starlette-newest
+  - graphene-2
+  - httpx-newest
+  - httplib2-newest
+  - prometheus_client-newest
+  - sanic-newest
