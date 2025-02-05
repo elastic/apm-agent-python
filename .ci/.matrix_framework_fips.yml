@@ -11,8 +11,6 @@ FRAMEWORK:
   - celery-5-flask-2
   - celery-5-django-5
   - requests-newest
-  - boto3-newest
-  - cassandra-newest
   - psutil-newest
   - gevent-newest
   - aiohttp-newest
@@ -23,4 +21,3 @@ FRAMEWORK:
   - httplib2-newest
   - prometheus_client-newest
   - sanic-newest
-  - kafka-python-newest
