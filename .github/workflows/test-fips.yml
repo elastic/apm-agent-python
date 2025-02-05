@@ -6,8 +6,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 4 * * 1'
-  pull_request:
-    # FIXME: REMOVE ME
 
 permissions:
   contents: read
