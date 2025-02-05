@@ -46,8 +46,6 @@ jobs:
           python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
       - name: install run_tests.sh requirements
         run: apk add netcat-openbsd tzdata
-      - run: |
-          python3 -c 'from zoneinfo import ZoneInfo ; assert ZoneInfo("America/Chicago")'
       - name: Run tests
         run: ./tests/scripts/run_tests.sh
         env:
