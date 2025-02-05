@@ -52,13 +52,13 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
       - id: generate
-        uses: elastic/apm-pipeline-library/.github/actions/version-framework@current
+        uses: elastic/oblt-actions/version-framework@v1
         with:
           # Use .ci/.matrix_python_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_python.yml
-          versionsFile: .ci/.matrix_python${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
+          versions-file: .ci/.matrix_python${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
           # Use .ci/.matrix_framework_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_framework.yml
-          frameworksFile: .ci/.matrix_framework${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
-          excludedFile: .ci/.matrix_exclude.yml
+          frameworks-file: .ci/.matrix_framework${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
+          excluded-file: .ci/.matrix_exclude.yml
       - name: Split matrix
         shell: python
         id: split
@@ -145,16 +145,18 @@ jobs:
         run: .\scripts\run-tests.bat
       - if: success() || failure()
         name: Upload JUnit Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/*-python-agent-junit.xml"
+          retention-days: 1
       - if: success() || failure()
         name: Upload Coverage Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports
+          name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/.coverage*"
+          retention-days: 1
   # This job is here to have a single status check that can be set as required.
   # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds
   # If a run contains a series of jobs that need each other, a failure applies to all jobs in the dependency chain from the point of failure onwards.
@@ -169,10 +171,10 @@ jobs:
       - windows
     steps:
       - id: check
-        uses: elastic/apm-pipeline-library/.github/actions/check-dependent-jobs@current
+        uses: elastic/oblt-actions/check-dependent-jobs@v1
         with:
-          needs: ${{ toJSON(needs) }}
-      - run: ${{ steps.check.outputs.isSuccess }}
+          jobs: ${{ toJSON(needs) }}
+      - run: ${{ steps.check.outputs.is-success }}
       - if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
         uses: elastic/oblt-actions/slack/notify-result@v1
         with:
@@ -197,9 +199,10 @@ jobs:
 
       - run: python -Im pip install --upgrade coverage[toml]
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: coverage-reports
+          pattern: coverage-reports-*
+          merge-multiple: true
 
       - name: Combine coverage & fail if it's <84%.
         run: |
@@ -217,6 +220,6 @@ jobs:
         with:
           name: html-coverage-report
           path: htmlcov
-      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # 5.1.0
         with:
-          name: coverage-reports
+          name: coverage-reports-*

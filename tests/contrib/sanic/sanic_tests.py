@@ -194,6 +194,17 @@ def test_header_field_sanitization(sanic_elastic_app, elasticapm_client):
     assert transaction["context"]["request"]["headers"]["api_key"] == "[REDACTED]"
 
 
+def test_cookies_normalization(sanic_elastic_app, elasticapm_client):
+    sanic_app, apm = next(sanic_elastic_app(elastic_client=elasticapm_client))
+    _, resp = sanic_app.test_client.get(
+        "/add-cookies",
+    )
+    assert resp.status_code == 200
+    assert len(apm._client.events[constants.TRANSACTION]) == 1
+    transaction = apm._client.events[constants.TRANSACTION][0]
+    assert transaction["context"]["response"]["cookies"] == {"some": {"value": "cookie", "path": "/"}}
+
+
 def test_custom_callback_handlers(sanic_elastic_app, elasticapm_client):
     def _custom_transaction_callback(request):
         return "my-custom-name"
