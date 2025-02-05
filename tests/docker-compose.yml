@@ -46,6 +46,13 @@ services:
     volumes:
       - pymongodata36:/data/db
 
+  mongodb40:
+    image: mongo:4.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - pymongodata40:/data/db
+
   memcached:
     image: memcached
 
@@ -197,6 +204,8 @@ volumes:
   pymongodata34:
     driver: local
   pymongodata36:
+    driver: local
+  pymongodata40:
     driver: local
   pyesdata7:
     driver: local
