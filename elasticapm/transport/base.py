@@ -153,7 +153,7 @@ class Transport(ThreadManager):
                     buffer_written = True
                     self._counts[event_type] += 1
 
-            queue_size = 0 if buffer.fileobj is None else buffer.fileobj.tell()
+            queue_size = 0 if buffer is None else buffer.tell()
 
             forced_flush = flush
             if forced_flush:
@@ -219,7 +219,7 @@ class Transport(ThreadManager):
         return data
 
     def _init_buffer(self):
-        buffer = gzip.GzipFile(fileobj=io.BytesIO(), mode="w", compresslevel=self._compress_level)
+        buffer = io.BytesIO()
         return buffer
 
     def _write_metadata(self, buffer) -> None:
@@ -251,10 +251,7 @@ class Transport(ThreadManager):
         if not self.state.should_try():
             logger.error("dropping flushed data due to transport failure back-off")
         else:
-            fileobj = buffer.fileobj  # get a reference to the fileobj before closing the gzip file
-            buffer.close()
-
-            data = fileobj.getbuffer()
+            data = gzip.compress(buffer.getvalue(), compresslevel=self._compress_level)
             try:
                 self.send(data, forced_flush=forced_flush)
                 self.handle_transport_success()
