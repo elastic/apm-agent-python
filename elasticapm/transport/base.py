@@ -250,6 +250,7 @@ class Transport(ThreadManager):
         """
         if not self.state.should_try():
             logger.error("dropping flushed data due to transport failure back-off")
+            buffer.close()
         else:
             fileobj = buffer.fileobj  # get a reference to the fileobj before closing the gzip file
             buffer.close()
@@ -260,6 +261,8 @@ class Transport(ThreadManager):
                 self.handle_transport_success()
             except Exception as e:
                 self.handle_transport_fail(e)
+
+            data.release()
 
     def start_thread(self, pid=None) -> None:
         super(Transport, self).start_thread(pid=pid)

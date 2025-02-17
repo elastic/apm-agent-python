@@ -107,18 +107,25 @@ def test_empty_queue_flush(mock_send, elasticapm_client):
         transport.close()
 
 
-@mock.patch("elasticapm.transport.base.Transport.send")
+@mock.patch("elasticapm.transport.base.Transport._flush")
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
-def test_metadata_prepended(mock_send, elasticapm_client):
+def test_metadata_prepended(mock_flush, elasticapm_client):
     transport = Transport(client=elasticapm_client, compress_level=0)
     transport.start_thread()
     transport.queue("error", {}, flush=True)
     transport.close()
-    assert mock_send.call_count == 1
-    args, kwargs = mock_send.call_args
-    data = gzip.decompress(args[0])
+    assert mock_flush.call_count == 1
+    args, kwargs = mock_flush.call_args
+    buffer = args[0]
+    # this test used to mock send but after we fixed a leak for not releasing the memoryview containing
+    # the gzipped data we cannot read it anymore. So reimplement _flush and read the data ourselves
+    fileobj = buffer.fileobj
+    buffer.close()
+    compressed_data = fileobj.getbuffer()
+    data = gzip.decompress(compressed_data)
     data = data.decode("utf-8").split("\n")
     assert "metadata" in data[0]
+    compressed_data.release()
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
