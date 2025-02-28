@@ -215,7 +215,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                                 'COPY --from=python-agent /opt/python/ /opt/python/');
 });
 </script>
-Both the [{{apm-lambda-ext}}](apm-aws-lambda://docs/reference/index.md) and the Python APM Agent are added to your Lambda function as [AWS Lambda Layers](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.md). Therefore, you need to add the corresponding Layer ARNs (identifiers) to your Lambda function.
+Both the [{{apm-lambda-ext}}](apm-aws-lambda://reference/index.md) and the Python APM Agent are added to your Lambda function as [AWS Lambda Layers](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.md). Therefore, you need to add the corresponding Layer ARNs (identifiers) to your Lambda function.
 
 :::::::{tab-set}
 
@@ -308,7 +308,7 @@ The {{apm-lambda-ext}} and the APM Python agent are configured through environme
 
 For the minimal configuration, you will need the *APM Server URL* to set the destination for APM data and an *{{apm-guide-ref}}/secret-token.html[APM Secret Token]*. If you prefer to use an [APM API key](docs-content://solutions/observability/apps/api-keys.md) instead of the APM secret token, use the `ELASTIC_APM_API_KEY` environment variable instead of `ELASTIC_APM_SECRET_TOKEN` in the following configuration.
 
-For production environments, we recommend [using the AWS Secrets Manager to store your APM authentication key](apm-aws-lambda://docs/reference/aws-lambda-secrets-manager.md) instead of providing the secret value as plaintext in the environment variables.
+For production environments, we recommend [using the AWS Secrets Manager to store your APM authentication key](apm-aws-lambda://reference/aws-lambda-secrets-manager.md) instead of providing the secret value as plaintext in the environment variables.
 
 :::::::{tab-set}
 
@@ -330,7 +330,7 @@ ELASTIC_APM_SEND_STRATEGY     = background                         <4>
 1. Use this exact fixed value.
 2. This is your APM Server URL.
 3. This is your APM secret token.
-4. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://docs/reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
+4. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
 
 ![Python environment variables configuration section in AWS Console](../images/python-lambda-env-vars.png "")
 ::::::
@@ -363,7 +363,7 @@ Resources:
 ...
 ```
 
-1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://docs/reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
+1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
 
 ::::::
 
@@ -383,7 +383,7 @@ functions:
 ...
 ```
 
-1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://docs/reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
+1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
 
 ::::::
 
@@ -406,7 +406,7 @@ resource "aws_lambda_function" "your_lambda_function" {
 ...
 ```
 
-1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://docs/reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
+1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
 
 ::::::
 
@@ -423,13 +423,13 @@ ELASTIC_APM_SEND_STRATEGY     = background                         <4>
 1. Use this exact fixed value.
 2. This is your APM Server URL.
 3. This is your APM secret token.
-4. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://docs/reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
+4. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
 
 ::::::
 
 :::::::
 
-You can optionally [fine-tune the Python agent](/reference/configuration.md) or the [configuration of the {{apm-lambda-ext}}](apm-aws-lambda://docs/reference/aws-lambda-config-options.md).
+You can optionally [fine-tune the Python agent](/reference/configuration.md) or the [configuration of the {{apm-lambda-ext}}](apm-aws-lambda://reference/aws-lambda-config-options.md).
 
 That’s it. After following the steps above, you’re ready to go!  Your Lambda function invocations should be traced from now on.  Spans will be captured for [supported technologies](/reference/supported-technologies.md). You can also use [`capture_span`](/reference/api-reference.md#api-capture-span) to capture custom spans, and you can retrieve the `Client` object for capturing exceptions/messages using [`get_client`](/reference/api-reference.md#api-get-client).
 

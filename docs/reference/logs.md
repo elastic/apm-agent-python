@@ -8,7 +8,7 @@ mapped_pages:
 Elastic Python APM Agent provides the following log features:
 
 * [Log correlation](#log-correlation-ids) : Automatically inject correlation IDs that allow navigation between logs, traces and services.
-* [Log reformatting (experimental)](#log-reformatting) : Automatically reformat plaintext logs in [ECS logging](ecs-logging://docs/reference/intro.md) format.
+* [Log reformatting (experimental)](#log-reformatting) : Automatically reformat plaintext logs in [ECS logging](ecs-logging://reference/intro.md) format.
 
 ::::{note}
 Elastic Python APM Agent does not send the logs to Elasticsearch. It only injects correlation IDs and reformats the logs. You must use another ingestion strategy.  We recommend [Filebeat](https://www.elastic.co/beats/filebeat) for that purpose.
@@ -17,7 +17,7 @@ Elastic Python APM Agent does not send the logs to Elasticsearch. It only inject
 
 Those features are part of [Application log ingestion strategies](docs-content://solutions/observability/logs/stream-application-logs.md).
 
-The [`ecs-logging-python`](ecs-logging-python://docs/reference/index.md) library can also be used to use the [ECS logging](ecs-logging://docs/reference/intro.md) format without an APM agent. When deployed with the Python APM agent, the agent will provide [log correlation](#log-correlation-ids) IDs.
+The [`ecs-logging-python`](ecs-logging-python://reference/index.md) library can also be used to use the [ECS logging](ecs-logging://reference/intro.md) format without an APM agent. When deployed with the Python APM agent, the agent will provide [log correlation](#log-correlation-ids) IDs.
 
 
 ## Log correlation [log-correlation-ids]
@@ -41,7 +41,7 @@ We use [`logging.setLogRecordFactory()`](https://docs.python.org/3/library/loggi
 * `elasticapm_trace_id`
 * `elasticapm_span_id`
 
-This factory also adds these fields to a dictionary attribute, `elasticapm_labels`, using the official ECS [tracing fields](ecs://docs/reference/ecs-tracing.md).
+This factory also adds these fields to a dictionary attribute, `elasticapm_labels`, using the official ECS [tracing fields](ecs://reference/ecs-tracing.md).
 
 You can disable this automatic behavior by using the [`disable_log_record_factory`](/reference/configuration.md#config-generic-disable-log-record-factory) setting in your configuration.
 
@@ -81,7 +81,7 @@ In order to correlate logs from your app with transactions captured by the Elast
 
 If you’re using structured logging, either [with a custom solution](https://docs.python.org/3/howto/logging-cookbook.md#implementing-structured-logging) or with [structlog](http://www.structlog.org/en/stable/) (recommended), then this is fairly easy. Throw the [JSONRenderer](http://www.structlog.org/en/stable/api.md#structlog.processors.JSONRenderer) in, and use [Filebeat](https://www.elastic.co/blog/structured-logging-filebeat) to pull these logs into Elasticsearch.
 
-Without structured logging the task gets a little trickier. Here we recommend first making sure your LogRecord objects have the elasticapm attributes (see [`logging`](#logging)), and then you’ll want to combine some specific formatting with a Grok pattern, either in Elasticsearch using [the grok processor](elasticsearch://docs/reference/ingestion-tools/enrich-processor/grok-processor.md), or in [logstash with a plugin](logstash://docs/reference/plugins-filters-grok.md).
+Without structured logging the task gets a little trickier. Here we recommend first making sure your LogRecord objects have the elasticapm attributes (see [`logging`](#logging)), and then you’ll want to combine some specific formatting with a Grok pattern, either in Elasticsearch using [the grok processor](elasticsearch://reference/ingestion-tools/enrich-processor/grok-processor.md), or in [logstash with a plugin](logstash://reference/plugins-filters-grok.md).
 
 Say you have a [Formatter](https://docs.python.org/3/library/logging.md#logging.Formatter) that looks like this:
 
@@ -114,7 +114,7 @@ formatstring = formatstring + " | elasticapm " \
                               "span.id=%(elasticapm_span_id)s"
 ```
 
-Then, you could use a grok pattern like this (for the [Elasticsearch Grok Processor](elasticsearch://docs/reference/ingestion-tools/enrich-processor/grok-processor.md)):
+Then, you could use a grok pattern like this (for the [Elasticsearch Grok Processor](elasticsearch://reference/ingestion-tools/enrich-processor/grok-processor.md)):
 
 ```json
 {

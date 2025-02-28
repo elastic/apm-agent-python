@@ -206,7 +206,7 @@ elasticApm.init({
 })
 ```
 
-See the [JavaScript RUM agent documentation](apm-agent-rum-js://docs/reference/index.md) for more information.
+See the [JavaScript RUM agent documentation](apm-agent-rum-js://reference/index.md) for more information.
 
 
 ## Supported Flask and Python versions [supported-flask-and-python-versions]

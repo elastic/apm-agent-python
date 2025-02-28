@@ -3,6 +3,7 @@ cross_links:
   - apm-agent-rum-js
   - apm-aws-lambda
   - beats
+  - docs-content
   - ecs
   - ecs-logging
   - ecs-logging-python

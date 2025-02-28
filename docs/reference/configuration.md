@@ -189,7 +189,7 @@ For base `logging` from the standard library, the agent will get the root logger
 
 If `structlog` is installed, the agent will override any configured processors with `ecs_logging.StructlogFormatter()`.
 
-Note that this is a very blunt instrument that could have unintended side effects. If problems arise, please apply these formatters manually and leave this setting as `"off"`. See the [`ecs_logging` docs](ecs-logging-python://docs/reference/installation.md) for more information about using these formatters.
+Note that this is a very blunt instrument that could have unintended side effects. If problems arise, please apply these formatters manually and leave this setting as `"off"`. See the [`ecs_logging` docs](ecs-logging-python://reference/installation.md) for more information about using these formatters.
 
 Also note that this setting does not facilitate shipping logs to Elasticsearch. We recommend [Filebeat](https://www.elastic.co/beats/filebeat) for that purpose.
 
