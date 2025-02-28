@@ -29,7 +29,7 @@ jobs:
     # https://docs.github.com/en/actions/writing-workflows/choosing-where-your-workflow-runs/running-jobs-in-a-container
     # docker run -it --rm --name fipsy docker.elastic.co/wolfi/python-fips:3.12
     container:
-      image: docker.elastic.co/wolfi/python-fips:3.12-dev
+      image: docker.elastic.co/wolfi/python-fips:3.13.1-r1-dev@sha256:607490d7da8d78a189e98b3e026f9160180d937efd4afc40ac41a9e59031db35
       options: --user root
       credentials:
         username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
