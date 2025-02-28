@@ -54,7 +54,7 @@ class GRPCClientInstrumentation(AbstractInstrumentedModule):
             except ValueError:
                 port = None
         else:
-            host, port = target, None
+            host, port = target, None 
         return grpc.intercept_channel(result, _ClientInterceptor(host, port, secure=method == "secure_channel"))
 
 
