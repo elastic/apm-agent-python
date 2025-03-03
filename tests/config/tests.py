@@ -460,7 +460,7 @@ def test_config_all_upper_case():
 
 
 def test_regex_validator_without_match():
-    validator = RegexValidator("\d")
+    validator = RegexValidator(r"\d")
     with pytest.raises(ConfigurationError) as e:
         validator("foo", "field")
     assert "does not match pattern" in e.value.args[0]
@@ -474,7 +474,7 @@ def test_unit_validator_without_match():
 
 
 def test_unit_validator_with_unsupported_unit():
-    validator = UnitValidator("(\d+)(s)", "secs", {})
+    validator = UnitValidator(r"(\d+)(s)", "secs", {})
     with pytest.raises(ConfigurationError) as e:
         validator("10s", "field")
     assert "is not a supported unit" in e.value.args[0]
