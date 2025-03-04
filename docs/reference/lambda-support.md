@@ -14,7 +14,7 @@ Note: The Centralized Agent Configuration on the Elasticsearch APM currently doe
 
 ## Prerequisites [_prerequisites]
 
-You need an APM Server to send APM data to. Follow the [APM Quick start](docs-content://solutions/observability/apps/get-started-with-apm.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same AWS region as your AWS Lambda functions.
+You need an APM Server to send APM data to. Follow the [APM Quick start](docs-content://solutions/observability/apps/application-performance-monitoring-apm.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same AWS region as your AWS Lambda functions.
 
 
 ## Step 1: Select the AWS Region and Architecture [_step_1_select_the_aws_region_and_architecture]

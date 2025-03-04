@@ -140,7 +140,7 @@ The `logging.logLevel` at which the `elasticapm` logger will log. The available 
 
 Options are case-insensitive
 
-Note that this option doesn’t do anything with logging handlers. In order for any logs to be visible, you must either configure a handler ([`logging.basicConfig`](https://docs.python.org/3/library/logging.md#logging.basicConfig) will do this for you) or set [`log_file`](#config-log_file). This will also override any log level your app has set for the `elasticapm` logger.
+Note that this option doesn’t do anything with logging handlers. In order for any logs to be visible, you must either configure a handler ([`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig) will do this for you) or set [`log_file`](#config-log_file). This will also override any log level your app has set for the `elasticapm` logger.
 
 
 ### `log_file` [config-log_file]

@@ -24,7 +24,7 @@ For apm-server 6.2+, make sure you use version 2.0 or higher of `elastic-apm`.
 
 
 ::::{note}
-If you use Django with uwsgi, make sure to [enable threads](http://uwsgi-docs.readthedocs.org/en/latest/Options.md#enable-threads).
+If you use Django with uwsgi, make sure to [enable threads](http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads).
 ::::
 
 

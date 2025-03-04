@@ -462,7 +462,7 @@ Instrumented methods:
 
 * `kafka.KafkaProducer.send`,
 * `kafka.KafkaConsumer.poll`,
-* `kafka.KafkaConsumer.\\__next__`
+* `kafka.KafkaConsumer.\__next__`
 
 Collected trace data:
 
