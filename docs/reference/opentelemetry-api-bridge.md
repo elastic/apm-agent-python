@@ -50,7 +50,7 @@ with tracer.start_as_current_span("test"):
 * `elasticapm_client`: an already instantiated Elastic APM client
 * `config`: a configuration dictionary, which will be used to instantiate a new Elastic APM client, e.g. `{"SERVER_URL": "https://example.org"}`. See [configuration](/reference/configuration.md) for more information.
 
-The `Tracer` object mirrors the upstream interface on the [OpenTelemetry `Tracer` object.](https://opentelemetry-python.readthedocs.io/en/latest/api/trace.md#opentelemetry.trace.Tracer)
+The `Tracer` object mirrors the upstream interface on the [OpenTelemetry `Tracer` object.](https://opentelemetry-python.readthedocs.io/en/latest/api/trace.html#opentelemetry.trace.Tracer)
 
 
 ## Caveats [opentelemetry-caveats]

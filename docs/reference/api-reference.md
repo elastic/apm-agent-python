@@ -62,7 +62,7 @@ except ValueError:
     client.capture_exception()
 ```
 
-* `exc_info`: A `(type, value, traceback)` tuple as returned by [`sys.exc_info()`](https://docs.python.org/3/library/sys.md#sys.exc_info). If not provided, it will be captured automatically.
+* `exc_info`: A `(type, value, traceback)` tuple as returned by [`sys.exc_info()`](https://docs.python.org/3/library/sys.html#sys.exc_info). If not provided, it will be captured automatically.
 * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
 * `context`: A dictionary with contextual information. This dictionary must follow the [Context](docs-content://solutions/observability/apps/elastic-apm-events-intake-api.md#apm-api-error) schema definition.
 * `custom`: A dictionary of custom data you want to attach to the event.
@@ -92,7 +92,7 @@ client.capture_message('Billing process succeeded.')
     ```
 
 * `stack`: If set to `True` (the default), a stacktrace from the call site will be captured.
-* `exc_info`: A `(type, value, traceback)` tuple as returned by [`sys.exc_info()`](https://docs.python.org/3/library/sys.md#sys.exc_info). If not provided, it will be captured automatically, if `capture_message()` was called in an `except` block.
+* `exc_info`: A `(type, value, traceback)` tuple as returned by [`sys.exc_info()`](https://docs.python.org/3/library/sys.html#sys.exc_info). If not provided, it will be captured automatically, if `capture_message()` was called in an `except` block.
 * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
 * `context`: A dictionary with contextual information. This dictionary must follow the [Context](docs-content://solutions/observability/apps/elastic-apm-events-intake-api.md#apm-api-error) schema definition.
 * `custom`: A dictionary of custom data you want to attach to the event.

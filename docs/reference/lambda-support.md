@@ -215,7 +215,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                                 'COPY --from=python-agent /opt/python/ /opt/python/');
 });
 </script>
-Both the [{{apm-lambda-ext}}](apm-aws-lambda://reference/index.md) and the Python APM Agent are added to your Lambda function as [AWS Lambda Layers](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.md). Therefore, you need to add the corresponding Layer ARNs (identifiers) to your Lambda function.
+Both the [{{apm-lambda-ext}}](apm-aws-lambda://reference/index.md) and the Python APM Agent are added to your Lambda function as [AWS Lambda Layers](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). Therefore, you need to add the corresponding Layer ARNs (identifiers) to your Lambda function.
 
 :::::::{tab-set}
 

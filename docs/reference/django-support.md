@@ -263,7 +263,7 @@ except MyModel.DoesNotExist:
 
 ## Celery integration [django-celery-integration]
 
-For a general guide on how to set up Django with Celery, head over to Celery’s [Django documentation](http://celery.readthedocs.org/en/latest/django/first-steps-with-django.md#django-first-steps).
+For a general guide on how to set up Django with Celery, head over to Celery’s [Django documentation](http://celery.readthedocs.org/en/latest/django/first-steps-with-django.html#django-first-steps).
 
 Elastic APM will automatically log errors from your celery tasks, record performance data and keep the trace.id when the task is launched from an already started Elastic transaction.
 

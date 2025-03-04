@@ -35,7 +35,7 @@ The Agent provides integrations with both the default Python logging library, as
 
 #### `logging` [logging]
 
-We use [`logging.setLogRecordFactory()`](https://docs.python.org/3/library/logging.md#logging.setLogRecordFactory) to decorate the default LogRecordFactory to automatically add new attributes to each LogRecord object:
+We use [`logging.setLogRecordFactory()`](https://docs.python.org/3/library/logging.html#logging.setLogRecordFactory) to decorate the default LogRecordFactory to automatically add new attributes to each LogRecord object:
 
 * `elasticapm_transaction_id`
 * `elasticapm_trace_id`
@@ -48,7 +48,7 @@ You can disable this automatic behavior by using the [`disable_log_record_factor
 
 #### `structlog` [structlog]
 
-We provide a [processor](http://www.structlog.org/en/stable/processors.md) for [`structlog`](http://www.structlog.org/en/stable/) which will add three new keys to the event_dict of any processed event:
+We provide a [processor](http://www.structlog.org/en/stable/processors.html) for [`structlog`](http://www.structlog.org/en/stable/) which will add three new keys to the event_dict of any processed event:
 
 * `transaction.id`
 * `trace.id`
@@ -79,11 +79,11 @@ In order to correlate logs from your app with transactions captured by the Elast
 * `trace.id`
 * `span.id`
 
-If you’re using structured logging, either [with a custom solution](https://docs.python.org/3/howto/logging-cookbook.md#implementing-structured-logging) or with [structlog](http://www.structlog.org/en/stable/) (recommended), then this is fairly easy. Throw the [JSONRenderer](http://www.structlog.org/en/stable/api.md#structlog.processors.JSONRenderer) in, and use [Filebeat](https://www.elastic.co/blog/structured-logging-filebeat) to pull these logs into Elasticsearch.
+If you’re using structured logging, either [with a custom solution](https://docs.python.org/3/howto/logging-cookbook.html#implementing-structured-logging) or with [structlog](http://www.structlog.org/en/stable/) (recommended), then this is fairly easy. Throw the [JSONRenderer](http://www.structlog.org/en/stable/api.html#structlog.processors.JSONRenderer) in, and use [Filebeat](https://www.elastic.co/blog/structured-logging-filebeat) to pull these logs into Elasticsearch.
 
 Without structured logging the task gets a little trickier. Here we recommend first making sure your LogRecord objects have the elasticapm attributes (see [`logging`](#logging)), and then you’ll want to combine some specific formatting with a Grok pattern, either in Elasticsearch using [the grok processor](elasticsearch://reference/ingestion-tools/enrich-processor/grok-processor.md), or in [logstash with a plugin](logstash://reference/plugins-filters-grok.md).
 
-Say you have a [Formatter](https://docs.python.org/3/library/logging.md#logging.Formatter) that looks like this:
+Say you have a [Formatter](https://docs.python.org/3/library/logging.html#logging.Formatter) that looks like this:
 
 ```python
 import logging

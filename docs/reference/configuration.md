@@ -699,7 +699,7 @@ This setting will be automatically rounded to 4 decimals of precision.
 | `ELASTIC_APM_INCLUDE_PATHS` | `INCLUDE_PATHS` | `[]` |
 | multiple values separated by commas, without spaces |  |  |
 
-A set of paths, optionally using shell globs (see [`fnmatch`](https://docs.python.org/3/library/fnmatch.md) for a description of the syntax). These are matched against the absolute filename of every frame, and if a pattern matches, the frame is considered to be an "in-app frame".
+A set of paths, optionally using shell globs (see [`fnmatch`](https://docs.python.org/3/library/fnmatch.html) for a description of the syntax). These are matched against the absolute filename of every frame, and if a pattern matches, the frame is considered to be an "in-app frame".
 
 `include_paths` **takes precedence** over `exclude_paths`.
 
@@ -711,7 +711,7 @@ A set of paths, optionally using shell globs (see [`fnmatch`](https://docs.pytho
 | `ELASTIC_APM_EXCLUDE_PATHS` | `EXCLUDE_PATHS` | Varies on Python version and implementation |
 | multiple values separated by commas, without spaces |  |  |
 
-A set of paths, optionally using shell globs (see [`fnmatch`](https://docs.python.org/3/library/fnmatch.md) for a description of the syntax). These are matched against the absolute filename of every frame, and if a pattern matches, the frame is considered to be a "library frame".
+A set of paths, optionally using shell globs (see [`fnmatch`](https://docs.python.org/3/library/fnmatch.html) for a description of the syntax). These are matched against the absolute filename of every frame, and if a pattern matches, the frame is considered to be a "library frame".
 
 `include_paths` **takes precedence** over `exclude_paths`.
 
@@ -1018,7 +1018,7 @@ This is useful if `HTTP_PROXY` / `HTTPS_PROXY` is set for other reasons than age
 
 ### `SSL_CERT_FILE` and `SSL_CERT_DIR` [config-ssl-cert-file]
 
-To tell the agent to use a different SSL certificate, you can use these environment variables. See also [OpenSSL docs](https://www.openssl.org/docs/manmaster/man7/openssl-env.md#SSL_CERT_DIR-SSL_CERT_FILE).
+To tell the agent to use a different SSL certificate, you can use these environment variables. See also [OpenSSL docs](https://www.openssl.org/docs/manmaster/man7/openssl-env.html#SSL_CERT_DIR-SSL_CERT_FILE).
 
 Please note that these variables may apply to other SSL/TLS communication in your service, not just related to the APM agent.
 
