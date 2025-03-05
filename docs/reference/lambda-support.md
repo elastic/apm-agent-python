@@ -114,7 +114,7 @@ resource "aws_lambda_function" "your_lambda_function" {
 To add the {{apm-lambda-ext}} and the APM agent to your container-based function extend the Dockerfile of your function image as follows:
 
 ```Dockerfile
-FROM docker.elastic.co/observability/apm-lambda-extension-IMAGE_ARCH:latest AS lambda-extension
+FROM docker.elastic.co/observability/apm-lambda-extension-{IMAGE_ARCH}:latest AS lambda-extension <1>
 FROM docker.elastic.co/observability/apm-agent-python:latest AS python-agent
 
 # FROM ...  <-- this is the base image of your Lambda function
@@ -124,6 +124,7 @@ COPY --from=python-agent /opt/python/ /opt/python/
 
 # ...
 ```
+1. Replace `{IMAGE_ARCH}` with the architecture of the image.
 ::::::
 
 :::::::
