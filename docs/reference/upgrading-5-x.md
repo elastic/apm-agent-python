@@ -1,9 +1,9 @@
 ---
 mapped_pages:
-  - https://www.elastic.co/guide/en/apm/agent/python/current/upgrading-5.x.html
+  - https://www.elastic.co/guide/en/apm/agent/python/current/upgrading-5-x.html
 ---
 
-# Upgrading to version 5 of the agent [upgrading-5.x]
+# Upgrading to version 5 of the agent [upgrading-5-x]
 
 ## APM Server 7.3 required for some features [_apm_server_7_3_required_for_some_features]
 

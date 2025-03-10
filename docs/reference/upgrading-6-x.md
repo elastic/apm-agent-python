@@ -1,9 +1,9 @@
 ---
 mapped_pages:
-  - https://www.elastic.co/guide/en/apm/agent/python/current/upgrading-6.x.html
+  - https://www.elastic.co/guide/en/apm/agent/python/current/upgrading-6-x.html
 ---
 
-# Upgrading to version 6 of the agent [upgrading-6.x]
+# Upgrading to version 6 of the agent [upgrading-6-x]
 
 ## Python 2 no longer supported [_python_2_no_longer_supported]
 

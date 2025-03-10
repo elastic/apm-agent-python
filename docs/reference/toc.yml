@@ -28,6 +28,6 @@ toc:
   - file: performance-tuning.md
   - file: upgrading.md
     children:
-      - file: upgrading-6.x.md
-      - file: upgrading-5.x.md
-      - file: upgrading-4.x.md
+      - file: upgrading-6-x.md
+      - file: upgrading-5-x.md
+      - file: upgrading-4-x.md
