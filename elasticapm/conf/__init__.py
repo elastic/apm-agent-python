@@ -37,6 +37,8 @@ import re
 import threading
 from datetime import timedelta
 
+import _hashlib
+
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, TRACE_CONTINUATION_STRATEGY
 from elasticapm.utils import compat, starmatch_to_regex
 from elasticapm.utils.logging import get_logger
@@ -220,6 +222,8 @@ class _BoolConfigValue(_ConfigValue):
     def __init__(self, dict_key, true_string="true", false_string="false", **kwargs) -> None:
         self.true_string = true_string
         self.false_string = false_string
+        # this is necessary to have the bool type preserved in _validate
+        kwargs["type"] = bool
         super(_BoolConfigValue, self).__init__(dict_key, **kwargs)
 
     def __set__(self, instance, value) -> None:
@@ -228,6 +232,7 @@ class _BoolConfigValue(_ConfigValue):
                 value = True
             elif value.lower() == self.false_string:
                 value = False
+        value = self._validate(instance, value)
         self._callback_if_changed(instance, value)
         instance._values[self.dict_key] = bool(value)
 
@@ -370,6 +375,30 @@ class FileIsReadableValidator(object):
             raise ConfigurationError("{}={} is not a file".format(field_name, value), field_name)
         elif not os.access(value, os.R_OK):
             raise ConfigurationError("{}={} is not readable".format(field_name, value), field_name)
+        return value
+
+
+def _in_fips_mode():
+    try:
+        return _hashlib.get_fips_mode() == 1
+    except AttributeError:
+        # versions older of Python3.9 do not have the helper
+        return False
+
+
+class SupportedValueInFipsModeValidator(object):
+    """If FIPS mode is enabled only supported_value is accepted"""
+
+    def __init__(self, supported_value) -> None:
+        self.supported_value = supported_value
+
+    def __call__(self, value, field_name):
+        if _in_fips_mode():
+            if value != self.supported_value:
+                raise ConfigurationError(
+                    "{}={} must be set to {} if FIPS mode is enabled".format(field_name, value, self.supported_value),
+                    field_name,
+                )
         return value
 
 
@@ -579,7 +608,9 @@ class Config(_ConfigBase):
     server_url = _ConfigValue("SERVER_URL", default="http://127.0.0.1:8200", required=True)
     server_cert = _ConfigValue("SERVER_CERT", validators=[FileIsReadableValidator()])
     server_ca_cert_file = _ConfigValue("SERVER_CA_CERT_FILE", validators=[FileIsReadableValidator()])
-    verify_server_cert = _BoolConfigValue("VERIFY_SERVER_CERT", default=True)
+    verify_server_cert = _BoolConfigValue(
+        "VERIFY_SERVER_CERT", default=True, validators=[SupportedValueInFipsModeValidator(supported_value=True)]
+    )
     use_certifi = _BoolConfigValue("USE_CERTIFI", default=True)
     include_paths = _ListConfigValue("INCLUDE_PATHS")
     exclude_paths = _ListConfigValue("EXCLUDE_PATHS", default=compat.get_default_library_patters())
