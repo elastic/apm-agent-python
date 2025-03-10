@@ -1,0 +1,5 @@
+azure-storage-blob
+azure-storage-queue
+azure-data-tables
+azure-storage-file-share
+-r reqs-base.txt
