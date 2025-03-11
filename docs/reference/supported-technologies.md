@@ -153,7 +153,7 @@ Collected trace data:
 * the response status code
 * the count of affected rows (if available)
 
-We recommend using keyword arguments only with elasticsearch-py, as recommended by [the elasticsearch-py docs](https://elasticsearch-py.readthedocs.io/en/master/api.html#api-documentation). If you are using positional arguments, we will be unable to gather the `query` element from the request body.
+We recommend using keyword arguments only with elasticsearch-py, as recommended by [the elasticsearch-py docs](https://elasticsearch-py.readthedocs.io/en/latest/api.html#api-documentation). If you are using positional arguments, we will be unable to gather the `query` element from the request body.
 
 
 #### SQLite [automatic-instrumentation-db-sqlite]

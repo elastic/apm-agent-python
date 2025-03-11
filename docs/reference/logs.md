@@ -22,7 +22,7 @@ The [`ecs-logging-python`](ecs-logging-python://reference/index.md) library can 
 
 ## Log correlation [log-correlation-ids]
 
-[Log correlation](docs-content://solutions/observability/apps/logs.md) allows you to navigate to all logs belonging to a particular trace and vice-versa: for a specific log, see in which context it has been logged and which parameters the user provided.
+[Log correlation](docs-content://solutions/observability/logs/stream-application-logs.md) allows you to navigate to all logs belonging to a particular trace and vice-versa: for a specific log, see in which context it has been logged and which parameters the user provided.
 
 The Agent provides integrations with both the default Python logging library, as well as [`structlog`](http://www.structlog.org/en/stable/).
 

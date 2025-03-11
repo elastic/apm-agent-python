@@ -5,7 +5,7 @@ navigation_title: "Elastic APM Python Agent"
 # Elastic APM Python Agent breaking changes [elastic-apm-python-agent-breaking-changes]
 Before you upgrade, carefully review the Elastic APM RPython Agent breaking changes and take the necessary steps to mitigate any issues.
 
-To learn how to upgrade, check out <uprade docs>.
+% To learn how to upgrade, check out <upgrade docs>.
 
 % ## Next version [elastic-apm-python-agent-nextversion-breaking-changes]
 % **Release date:** Month day, year

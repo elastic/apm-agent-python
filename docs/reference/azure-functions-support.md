@@ -8,7 +8,7 @@ mapped_pages:
 
 ## Prerequisites [_prerequisites_2]
 
-You need an APM Server to which you can send APM data. Follow the [APM Quick start](docs-content://solutions/observability/apps/get-started-with-apm.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same Azure region as your Azure Functions app.
+You need an APM Server to which you can send APM data. Follow the [APM Quick start](docs-content://solutions/observability/apps/fleet-managed-apm-server.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same Azure region as your Azure Functions app.
 
 ::::{note}
 Currently, only HTTP and timer triggers are supported. Other trigger types may be captured as well, but the amount of captured contextual data may differ.

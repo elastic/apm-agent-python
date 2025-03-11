@@ -17,7 +17,7 @@ The Centralized Agent Configuration on the Elasticsearch APM currently does NOT 
 
 ## Prerequisites [_prerequisites]
 
-You need an APM Server to send APM data to. Follow the [APM Quick start](docs-content://solutions/observability/apps/application-performance-monitoring-apm.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same AWS region as your AWS Lambda functions.
+You need an APM Server to send APM data to. Follow the [APM Quick start](docs-content://solutions/observability/apps/fleet-managed-apm-server.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same AWS region as your AWS Lambda functions.
 
 ## Step 1: Add the APM Layers to your Lambda function [add_the_apm_layers_to_your_lambda_function]
 
@@ -167,8 +167,9 @@ To configure APM through the AWS command line interface execute the following co
 
 ```bash
 aws lambda update-function-configuration --function-name yourLambdaFunctionName \
-    --environment "Variables={AWS_LAMBDA_EXEC_WRAPPER=/opt/python/bin/elasticapm-lambda,ELASTIC_APM_LAMBDA_APM_SERVER=<YOUR-APM-SERVER-URL>,ELASTIC_APM_SECRET_TOKEN=<YOUR-APM-SECRET-TOKEN>,ELASTIC_APM_SEND_STRATEGY=background}"
+    --environment "Variables={AWS_LAMBDA_EXEC_WRAPPER=/opt/python/bin/elasticapm-lambda,ELASTIC_APM_LAMBDA_APM_SERVER=<YOUR-APM-SERVER-URL>,ELASTIC_APM_SECRET_TOKEN=<YOUR-APM-SECRET-TOKEN>,ELASTIC_APM_SEND_STRATEGY=background}" <1>
 ```
+1. The [ELASTIC_APM_SEND_STRATEGY](apm-aws-lambda://reference/aws-lambda-config-options.md#_elastic_apm_send_strategy) defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the background strategy in production environments with steady load scenarios.
 ::::::
 
 ::::::{tab-item} SAM

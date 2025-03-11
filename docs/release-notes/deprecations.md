@@ -5,7 +5,7 @@ navigation_title: "Elastic APM Python Agent"
 # Elastic APM Python Agent deprecations [elastic-apm-python-agent-deprecations]
 Review the deprecated functionality for your Elastic APM Python Agent version. While deprecations have no immediate impact, we strongly encourage you update your implementation after you upgrade.
 
-To learn how to upgrade, check out <uprade docs>.
+% To learn how to upgrade, check out <upgrade docs>.
 
 % ## Next version
 % **Release date:** Month day, year
@@ -13,7 +13,7 @@ To learn how to upgrade, check out <uprade docs>.
 % ::::{dropdown} Deprecation title
 % Description of the deprecation.
 % For more information, check [PR #](PR link).
-% **Impact**<br> Impact of deprecation. 
+% **Impact**<br> Impact of deprecation.
 % **Action**<br> Steps for mitigating deprecation impact.
 % ::::
 
