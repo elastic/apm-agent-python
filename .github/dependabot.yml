@@ -30,6 +30,12 @@ updates:
         patterns:
           - "*"
 
+  # docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
   # GitHub composite actions
   - package-ecosystem: "github-actions"
     directory: "/.github/actions/packages"
