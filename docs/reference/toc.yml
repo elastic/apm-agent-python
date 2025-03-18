@@ -1,0 +1,33 @@
+project: 'APM Python agent reference'
+toc:
+  - file: index.md
+  - file: set-up-apm-python-agent.md
+    children:
+      - file: django-support.md
+      - file: flask-support.md
+      - file: aiohttp-server-support.md
+      - file: tornado-support.md
+      - file: starlette-support.md
+      - file: sanic-support.md
+      - file: lambda-support.md
+      - file: azure-functions-support.md
+      - file: wrapper-support.md
+      - file: asgi-middleware.md
+  - file: supported-technologies.md
+  - file: configuration.md
+  - file: advanced-topics.md
+    children:
+      - file: instrumenting-custom-code.md
+      - file: sanitizing-data.md
+      - file: how-agent-works.md
+      - file: run-tests-locally.md
+  - file: api-reference.md
+  - file: metrics.md
+  - file: opentelemetry-api-bridge.md
+  - file: logs.md
+  - file: performance-tuning.md
+  - file: upgrading.md
+    children:
+      - file: upgrading-6-x.md
+      - file: upgrading-5-x.md
+      - file: upgrading-4-x.md
