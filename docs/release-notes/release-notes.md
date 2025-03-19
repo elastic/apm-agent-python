@@ -4,9 +4,8 @@ mapped_pages:
   - https://www.elastic.co/guide/en/apm/agent/python/current/release-notes-6.x.html
 ---
 
-# Elastic APM Python Agent release notes [elastic-apm-python-agent-release-notes]
-
-Review the changes, fixes, and more in each version of Elastic APM Python Agent. 
+# {{apm-py-agent}} release notes [elastic-apm-python-agent-release-notes]
+Review the changes, fixes, and more in each version of {{apm-py-agent}}. 
 
 To check for security updates, go to [Security announcements for the Elastic stack](https://discuss.elastic.co/c/announcements/security-announcements/31).
 
