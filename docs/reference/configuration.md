@@ -29,7 +29,7 @@ ELASTIC_APM = {
 
 The precedence is as follows:
 
-* [Central configuration](#config-central_config) (supported options are marked with [![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration))
+* [Central configuration](#config-central_config) (supported options are marked with [![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration))
 * Environment variables
 * Inline configuration
 * Framework-specific configuration
