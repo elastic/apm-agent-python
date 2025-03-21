@@ -16,9 +16,9 @@ jobs:
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - id: generate
-        uses: elastic/oblt-actions/version-framework@v1
+        uses: elastic/oblt-actions/version-framework@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
         with:
           versions-file: .ci/.matrix_python_fips.yml
           frameworks-file: .ci/.matrix_framework_fips.yml
@@ -40,7 +40,7 @@ jobs:
       max-parallel: 10
       matrix: ${{ fromJSON(needs.create-matrix.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: check that python has fips mode enabled
         run: |
           python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
@@ -57,12 +57,12 @@ jobs:
     needs: test-fips
     steps:
       - id: check
-        uses: elastic/oblt-actions/check-dependent-jobs@v1
+        uses: elastic/oblt-actions/check-dependent-jobs@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
         with:
           jobs: ${{ toJSON(needs) }}
       - name: Notify in Slack
         if: steps.check.outputs.status == 'failure'
-        uses: elastic/oblt-actions/slack/notify-result@v1
+        uses: elastic/oblt-actions/slack/notify-result@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           status: ${{ steps.check.outputs.status }}

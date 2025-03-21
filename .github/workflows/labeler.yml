@@ -26,18 +26,18 @@ jobs:
             "members": "read"
           }
     - name: Add agent-python label
-      uses: actions-ecosystem/action-add-labels@v1
+      uses: actions-ecosystem/action-add-labels@18f1af5e3544586314bbe15c0273249c770b2daf # v1
       with:
         labels: agent-python
     - id: is_elastic_member
-      uses: elastic/oblt-actions/github/is-member-of@v1
+      uses: elastic/oblt-actions/github/is-member-of@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
       with:
         github-org: "elastic"
         github-user: ${{ github.actor }}
         github-token: ${{ steps.get_token.outputs.token }}
     - name: Add community and triage labels
       if: contains(steps.is_elastic_member.outputs.result, 'false') && github.actor != 'dependabot[bot]' && github.actor != 'elastic-observability-automation[bot]'
-      uses: actions-ecosystem/action-add-labels@v1
+      uses: actions-ecosystem/action-add-labels@18f1af5e3544586314bbe15c0273249c770b2daf # v1
       with:
         labels: |
           community
