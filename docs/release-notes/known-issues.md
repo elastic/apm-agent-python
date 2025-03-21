@@ -1,5 +1,5 @@
 ---
-navigation_title: "Elastic APM Python Agent"
+navigation_title: "Known issues"
 ---
 
 # Elastic APM Python Agent known issues [elastic-apm-python-agent-known-issues]

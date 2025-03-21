@@ -1,5 +1,5 @@
 ---
-navigation_title: "Elastic APM Python Agent"
+navigation_title: "Deprecations"
 ---
 
 # Elastic APM Python Agent deprecations [elastic-apm-python-agent-deprecations]
