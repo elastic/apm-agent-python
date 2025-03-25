@@ -78,6 +78,8 @@ def get_name_from_func(func: FunctionType) -> str:
         return "partial({})".format(get_name_from_func(func.func))
     elif hasattr(func, "_partialmethod") and hasattr(func._partialmethod, "func"):
         return "partial({})".format(get_name_from_func(func._partialmethod.func))
+    elif hasattr(func, "__partialmethod__") and hasattr(func.__partialmethod__, "func"):
+        return "partial({})".format(get_name_from_func(func.__partialmethod__.func))
 
     module = func.__module__
 
