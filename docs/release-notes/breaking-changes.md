@@ -1,5 +1,5 @@
 ---
-navigation_title: "Elastic APM Python Agent"
+navigation_title: "Breaking changes"
 ---
 
 # Elastic APM Python Agent breaking changes [elastic-apm-python-agent-breaking-changes]

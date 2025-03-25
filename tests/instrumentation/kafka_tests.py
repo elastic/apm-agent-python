@@ -54,9 +54,18 @@ if not KAFKA_HOST:
 def topics():
     topics = ["test", "foo", "bar"]
     admin_client = KafkaAdminClient(bootstrap_servers=[f"{KAFKA_HOST}:9092"])
-    admin_client.create_topics([NewTopic(name, num_partitions=1, replication_factor=1) for name in topics])
+    # since kafka-python 2.1.0 we started to get failures in create_topics because topics were already there despite
+    # calls to delete_topics. In the meantime we found a proper fix use a big hammer and catch topics handling failures
+    # https://github.com/dpkp/kafka-python/issues/2557
+    try:
+        admin_client.create_topics([NewTopic(name, num_partitions=1, replication_factor=1) for name in topics])
+    except Exception:
+        pass
     yield topics
-    admin_client.delete_topics(topics)
+    try:
+        admin_client.delete_topics(topics)
+    except Exception:
+        pass
 
 
 @pytest.fixture()
