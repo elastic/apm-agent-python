@@ -29,7 +29,7 @@ ELASTIC_APM = {
 
 The precedence is as follows:
 
-* [Central configuration](#config-central_config) (supported options are marked with [![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration))
+* [Central configuration](#config-central_config) (supported options are marked with [![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration))
 * Environment variables
 * Inline configuration
 * Framework-specific configuration
@@ -38,7 +38,7 @@ The precedence is as follows:
 
 ## Dynamic configuration [dynamic-configuration]
 
-Configuration options marked with the ![dynamic config](../images/dynamic-config.svg "") badge can be changed at runtime when set from a supported source.
+Configuration options marked with the ![dynamic config](/reference/images/dynamic-config.svg "") badge can be changed at runtime when set from a supported source.
 
 The Python Agent supports [Central configuration](docs-content://solutions/observability/apps/apm-agent-central-configuration.md), which allows you to fine-tune certain configurations from in the APM app. This feature is enabled in the Agent by default with [`central_config`](#config-central_config).
 
@@ -108,7 +108,7 @@ Enable or disable the agent. When set to false, the agent will not collect any d
 
 ## `recording` [config-recording]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -122,7 +122,7 @@ Enable or disable recording of events. If set to false, then the Python agent do
 
 ### `log_level` [config-log_level]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -320,7 +320,7 @@ A list of exception types to be filtered. Exceptions of these types will not be 
 
 ### `transaction_ignore_urls` [config-transaction-ignore-urls]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default | Example |
 | --- | --- | --- | --- |
@@ -460,7 +460,7 @@ Especially for spans, collecting source code can have a large impact on storage 
 
 ### `capture_body` [config-capture-body]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -482,7 +482,7 @@ Request bodies often contain sensitive values like passwords and credit card num
 
 ### `capture_headers` [config-capture-headers]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -500,7 +500,7 @@ Request headers often contain sensitive values like session IDs and cookies. See
 
 ### `transaction_max_spans` [config-transaction-max-spans]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -511,7 +511,7 @@ This limits the amount of spans that are recorded per transaction. This is helpf
 
 ### `stack_trace_limit` [config-stack-trace-limit]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -524,7 +524,7 @@ Setting the limit to `0` will disable stack trace collection, while any positive
 
 ### `span_stack_trace_min_duration` [config-span-stack-trace-min-duration]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -541,7 +541,7 @@ Except for the special values `-1` and `0`, this setting should be provided in *
 
 ### `span_frames_min_duration` [config-span-frames-min-duration]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -555,7 +555,7 @@ This config value is being deprecated. Use [`span_stack_trace_min_duration`](#co
 
 ### `span_compression_enabled` [config-span-compression-enabled]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -568,7 +568,7 @@ If enabled, the agent will compress very short, repeated spans into a single spa
 
 ### `span_compression_exact_match_max_duration` [config-span-compression-exact-match-max_duration]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -581,7 +581,7 @@ Two spans are considered exact matches if the following attributes are identical
 
 ### `span_compression_same_kind_max_duration` [config-span-compression-same-kind-max-duration]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -594,7 +594,7 @@ Two spans are considered to be of the same kind if the following attributes are 
 
 ### `exit_span_min_duration` [config-exit-span-min-duration]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -612,7 +612,7 @@ if a span propagates distributed tracing IDs, it will not be ignored, even if it
 
 ### `api_request_size` [config-api-request-size]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -630,7 +630,7 @@ Due to internal buffering of gzip, the actual request size can be a few kilobyte
 
 ### `api_request_time` [config-api-request-time]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -662,7 +662,7 @@ We recommend always including the default set of validators if you customize thi
 
 ### `sanitize_field_names` [config-sanitize-field-names]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -678,7 +678,7 @@ We recommend always including the default set of field name matches if you custo
 
 ### `transaction_sample_rate` [config-transaction-sample-rate]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -930,7 +930,7 @@ Additionally, when this setting is set to `True`, the agent will set `elasticapm
 
 ### `trace_continuation_strategy` [config-trace-continuation-strategy]
 
-[![dynamic config](../images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |

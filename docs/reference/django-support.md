@@ -171,7 +171,7 @@ ELASTIC_APM = {
 To easily send Python `logging` messages as "error" objects to Elasticsearch, we provide a `LoggingHandler` which you can use in your logging setup. The log messages will be enriched with a stack trace, data from the request, and more.
 
 ::::{note}
-the intended use case for this handler is to send high priority log messages (e.g. log messages with level `ERROR`) to Elasticsearch. For normal log shipping, we recommend using [filebeat](beats://reference/filebeat/filebeat-overview.md).
+the intended use case for this handler is to send high priority log messages (e.g. log messages with level `ERROR`) to Elasticsearch. For normal log shipping, we recommend using [filebeat](beats://reference/filebeat/index.md).
 ::::
 
 
