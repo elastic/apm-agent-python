@@ -1,5 +1,12 @@
 ---
 version: 2
+registries:
+  docker-elastic:
+    type: docker-registry
+    url: https://docker.elastic.co
+    username: ${{secrets.ELASTIC_DOCKER_USERNAME}}
+    password: ${{secrets.ELASTIC_DOCKER_PASSWORD}}
+
 updates:
   # Enable version updates for python
   - package-ecosystem: "pip"
