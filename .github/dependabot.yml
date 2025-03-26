@@ -1,0 +1,42 @@
+---
+version: 2
+updates:
+  # Enable version updates for python
+  - package-ecosystem: "pip"
+    # Look for `requirements.txt` file in the `dev-utils` directory
+    directory: "/dev-utils/"
+    # Check for updates once a week
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "22:00"
+    reviewers:
+      - "elastic/apm-agent-python"
+    ignore:
+      - dependency-name: "urllib3" # ignore until lambda runtimes use OpenSSL 1.1.1+
+        versions: [">=2.0.0"]
+
+  # GitHub actions
+  - package-ecosystem: "github-actions"
+    directories:
+      - '/'
+      - '/.github/actions/*'
+    reviewers:
+      - "elastic/observablt-ci"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "22:00"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "docker"
+    directories:
+      - '/'
+    reviewers:
+      - "elastic/apm-agent-python"
+    registries: "*"
+    schedule:
+      interval: "daily"
