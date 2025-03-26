@@ -81,7 +81,7 @@ In order to correlate logs from your app with transactions captured by the Elast
 
 If you’re using structured logging, either [with a custom solution](https://docs.python.org/3/howto/logging-cookbook.html#implementing-structured-logging) or with [structlog](http://www.structlog.org/en/stable/) (recommended), then this is fairly easy. Throw the [JSONRenderer](http://www.structlog.org/en/stable/api.html#structlog.processors.JSONRenderer) in, and use [Filebeat](https://www.elastic.co/blog/structured-logging-filebeat) to pull these logs into Elasticsearch.
 
-Without structured logging the task gets a little trickier. Here we recommend first making sure your LogRecord objects have the elasticapm attributes (see [`logging`](#logging)), and then you’ll want to combine some specific formatting with a Grok pattern, either in Elasticsearch using [the grok processor](elasticsearch://reference/ingestion-tools/enrich-processor/grok-processor.md), or in [logstash with a plugin](logstash://reference/plugins-filters-grok.md).
+Without structured logging the task gets a little trickier. Here we recommend first making sure your LogRecord objects have the elasticapm attributes (see [`logging`](#logging)), and then you’ll want to combine some specific formatting with a Grok pattern, either in Elasticsearch using [the grok processor](elasticsearch://reference/enrich-processor/grok-processor.md), or in [logstash with a plugin](logstash-docs-md://lsr/plugins-filters-grok.md).
 
 Say you have a [Formatter](https://docs.python.org/3/library/logging.html#logging.Formatter) that looks like this:
 

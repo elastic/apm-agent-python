@@ -8,7 +8,7 @@ cross_links:
   - ecs-logging
   - ecs-logging-python
   - elasticsearch
-  - logstash
+  - logstash-docs-md
 toc:
   - toc: reference
   - toc: release-notes
