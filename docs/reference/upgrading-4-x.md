@@ -1,6 +1,6 @@
 ---
 mapped_pages:
-  - https://www.elastic.co/guide/en/apm/agent/python/current/upgrading-4-x.html
+  - https://www.elastic.co/guide/en/apm/agent/python/current/upgrading-4.x.html
 ---
 
 # Upgrading to version 4 of the agent [upgrading-4-x]
