@@ -134,7 +134,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
         with:
           python-version: ${{ matrix.version }}
           cache: pip
@@ -145,14 +145,14 @@ jobs:
         run: .\scripts\run-tests.bat
       - if: success() || failure()
         name: Upload JUnit Test Results
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-results-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/*-python-agent-junit.xml"
           retention-days: 1
       - if: success() || failure()
         name: Upload Coverage Reports
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/.coverage*"
@@ -192,14 +192,14 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
         with:
           # Use latest Python, so it understands all syntax.
           python-version: 3.11
 
       - run: python -Im pip install --upgrade coverage[toml]
 
-      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4
         with:
           pattern: coverage-reports-*
           merge-multiple: true
@@ -216,7 +216,7 @@ jobs:
           python -Im coverage report --fail-under=84
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: html-coverage-report
           path: htmlcov
