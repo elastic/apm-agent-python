@@ -114,7 +114,7 @@ formatstring = formatstring + " | elasticapm " \
                               "span.id=%(elasticapm_span_id)s"
 ```
 
-Then, you could use a grok pattern like this (for the [Elasticsearch Grok Processor](elasticsearch://reference/ingestion-tools/enrich-processor/grok-processor.md)):
+Then, you could use a grok pattern like this (for the [Elasticsearch Grok Processor](elasticsearch://reference/enrich-processor/grok-processor.md)):
 
 ```json
 {
