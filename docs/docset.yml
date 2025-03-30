@@ -1,0 +1,17 @@
+project: 'APM Python agent docs'
+cross_links:
+  - apm-agent-rum-js
+  - apm-aws-lambda
+  - beats
+  - docs-content
+  - ecs
+  - ecs-logging
+  - ecs-logging-python
+  - elasticsearch
+  - logstash-docs-md
+toc:
+  - toc: reference
+  - toc: release-notes
+subs:
+  ecloud:   "Elastic Cloud"
+  apm-lambda-ext:   "Elastic APM AWS Lambda extension"
