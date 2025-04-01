@@ -37,4 +37,5 @@ jobs:
         github-user: ${{ github.actor }}
         github-token: ${{ steps.get_token.outputs.token }}
     - name: Add community and triage labels
+      if: contains(steps.is_elastic_member.outputs.result, 'false') && github.actor != 'dependabot[bot]' && github.actor != 'elastic-observability-automation[bot]'
       run: gh issue edit "$NUMBER" --add-label "community,triage"
