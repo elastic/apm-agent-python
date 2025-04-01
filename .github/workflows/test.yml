@@ -37,7 +37,7 @@ jobs:
   build-distribution:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/build-distribution
 
 
@@ -48,11 +48,11 @@ jobs:
       data: ${{ steps.split.outputs.data }}
       chunks: ${{ steps.split.outputs.chunks }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
       - id: generate
-        uses: elastic/oblt-actions/version-framework@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
+        uses: elastic/oblt-actions/version-framework@v1
         with:
           # Use .ci/.matrix_python_full.yml if it's a scheduled workflow, otherwise use .ci/.matrix_python.yml
           versions-file: .ci/.matrix_python${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.full-matrix) && '_full' || '' }}.yml
@@ -131,10 +131,10 @@ jobs:
       FRAMEWORK: ${{ matrix.framework }}
       ASYNCIO: ${{ matrix.asyncio }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.version }}
           cache: pip
@@ -145,14 +145,14 @@ jobs:
         run: .\scripts\run-tests.bat
       - if: success() || failure()
         name: Upload JUnit Test Results
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/*-python-agent-junit.xml"
           retention-days: 1
       - if: success() || failure()
         name: Upload Coverage Reports
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}-asyncio-${{ matrix.asyncio }}
           path: "**/.coverage*"
@@ -171,12 +171,12 @@ jobs:
       - windows
     steps:
       - id: check
-        uses: elastic/oblt-actions/check-dependent-jobs@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
+        uses: elastic/oblt-actions/check-dependent-jobs@v1
         with:
           jobs: ${{ toJSON(needs) }}
       - run: ${{ steps.check.outputs.is-success }}
       - if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
-        uses: elastic/oblt-actions/slack/notify-result@31e93d1dfb82adc106fc7820f505db1afefe43b1 # v1
+        uses: elastic/oblt-actions/slack/notify-result@v1
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           status: ${{ steps.check.outputs.status }}
@@ -188,18 +188,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+      - uses: actions/setup-python@v5
         with:
           # Use latest Python, so it understands all syntax.
           python-version: 3.11
 
       - run: python -Im pip install --upgrade coverage[toml]
 
-      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+      - uses: actions/download-artifact@v4
         with:
           pattern: coverage-reports-*
           merge-multiple: true
@@ -216,10 +216,10 @@ jobs:
           python -Im coverage report --fail-under=84
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@v4
         with:
           name: html-coverage-report
           path: htmlcov
-      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # 5.1.0
         with:
           name: coverage-reports-*
