@@ -15,7 +15,7 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     env:
-      NUMBER: ${{ github.event.issue.number }}
+      NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - name: Get token
