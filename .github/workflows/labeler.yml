@@ -15,7 +15,7 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     env:
-      NUMBER: ${{ github.event.issue.number }}
+      NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - name: Get token
@@ -29,7 +29,7 @@ jobs:
             "members": "read"
           }
     - name: Add agent-python label
-      run: gh issue edit "$NUMBER" --add-label "agent-python"
+      run: gh issue edit "$NUMBER" --add-label "agent-python" --repo "${{ github.repository }}"
     - id: is_elastic_member
       uses: elastic/oblt-actions/github/is-member-of@v1
       with:
@@ -38,4 +38,4 @@ jobs:
         github-token: ${{ steps.get_token.outputs.token }}
     - name: Add community and triage labels
       if: contains(steps.is_elastic_member.outputs.result, 'false') && github.actor != 'dependabot[bot]' && github.actor != 'elastic-observability-automation[bot]'
-      run: gh issue edit "$NUMBER" --add-label "community,triage"
+      run: gh issue edit "$NUMBER" --add-label "community,triage" --repo "${{ github.repository }}"
