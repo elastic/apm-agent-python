@@ -35,5 +35,5 @@ jobs:
       - run: ./util.sh --action build
         working-directory: .ci/docker
 
-      #- run: ./util.sh --action push
-      # working-directory: .ci/docker
+      - run: ./util.sh --action push
+        working-directory: .ci/docker
