@@ -1,10 +1,9 @@
 ---
-# This workflow publishes docker images base on .ci/.docker-images.yml`.
-# See docs/INTERNAL_DOCKER_IMAGES.md for further information.
-name: publish-docker-images
+name: build-images
 
 on:
-  workflow_dispatch:
+  pull_request: ~
+  workflow_dispatch: ~
 
 env:
   DOCKER_BUILDKIT: 1
