@@ -2,7 +2,7 @@
 navigation_title: "Elastic APM Python Agent"
 mapped_pages:
   - https://www.elastic.co/guide/en/apm/agent/python/current/release-notes-6.x.html
-  - https://www.elastic.co/guide/en/apm/agent/python/current/index.html
+  - https://www.elastic.co/guide/en/apm/agent/python/current/release-notes.html
 ---
 
 # Elastic APM Python Agent release notes [elastic-apm-python-agent-release-notes]
