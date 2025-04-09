@@ -1,0 +1,41 @@
+---
+# This workflow publishes docker images base on .ci/.docker-images.yml`.
+# See docs/INTERNAL_DOCKER_IMAGES.md for further information.
+name: publish-docker-images
+
+on:
+  workflow_dispatch:
+
+env:
+  DOCKER_BUILDKIT: 1
+
+permissions:
+  contents: read
+
+jobs:
+
+  build-test-push:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+          
+      - name: Login to docker.elastic.co
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ secrets.ELASTIC_DOCKER_REGISTRY }}
+          username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
+          password: ${{ secrets.ELASTIC_DOCKER_PASSWORD }}
+
+      - name: Login to dockerhub
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ secrets.DOCKERHUB_REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - run: ./util.sh --action build
+        working-directory: .ci/docker
+
+      #- run: ./util.sh --action push
+      # working-directory: .ci/docker
