@@ -2,6 +2,9 @@
 name: build-images
 
 on:
+  push:
+    branches:
+      - test/workflow-build-images
   workflow_dispatch: ~
 
 env:
