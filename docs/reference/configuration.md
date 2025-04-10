@@ -40,7 +40,7 @@ The precedence is as follows:
 
 Configuration options marked with the ![dynamic config](/reference/images/dynamic-config.svg "") badge can be changed at runtime when set from a supported source.
 
-The Python Agent supports [Central configuration](docs-content://solutions/observability/apps/apm-agent-central-configuration.md), which allows you to fine-tune certain configurations from in the APM app. This feature is enabled in the Agent by default with [`central_config`](#config-central_config).
+The Python Agent supports [Central configuration](docs-content://solutions/observability/apm/apm-agent-central-configuration.md), which allows you to fine-tune certain configurations from in the APM app. This feature is enabled in the Agent by default with [`central_config`](#config-central_config).
 
 
 ## Django [django-configuration]
@@ -225,7 +225,7 @@ This option allows you to set the node name manually to ensure it is unique and 
 
 The name of the environment this service is deployed in, e.g. "production" or "staging".
 
-Environments allow you to easily filter data on a global level in the APM app. It’s important to be consistent when naming environments across agents. See [environment selector](docs-content://solutions/observability/apps/filter-application-data.md#apm-filter-your-data-service-environment-filter) in the APM app for more information.
+Environments allow you to easily filter data on a global level in the APM app. It’s important to be consistent when naming environments across agents. See [environment selector](docs-content://solutions/observability/apm/filter-data.md#apm-filter-your-data-service-environment-filter) in the APM app for more information.
 
 ::::{note}
 This feature is fully supported in the APM app in Kibana versions >= 7.2. You must use the query bar to filter for a specific environment in versions prior to 7.2.
@@ -273,7 +273,7 @@ This functionality is in technical preview and may be changed or removed in a fu
 ::::
 
 
-This base64-encoded string is used to ensure that only your agents can send data to your APM Server. The API key must be created using the [APM server command-line tool](docs-content://solutions/observability/apps/api-keys.md).
+This base64-encoded string is used to ensure that only your agents can send data to your APM Server. The API key must be created using the [APM server command-line tool](docs-content://solutions/observability/apm/api-keys.md).
 
 ::::{warning}
 API keys only provide any real security if your APM Server uses TLS.
@@ -923,7 +923,7 @@ By default in python 3, the agent installs a [LogRecord factory](/reference/logs
 | --- | --- | --- |
 | `ELASTIC_APM_USE_ELASTIC_TRACEPARENT_HEADER` | `USE_ELASTIC_TRACEPARENT_HEADER` | `True` |
 
-To enable [distributed tracing](docs-content://solutions/observability/apps/traces.md), the agent sets a number of HTTP headers to outgoing requests made with [instrumented HTTP libraries](/reference/supported-technologies.md#automatic-instrumentation-http). These headers (`traceparent` and `tracestate`) are defined in the [W3C Trace Context](https://www.w3.org/TR/trace-context-1/) specification.
+To enable [distributed tracing](docs-content://solutions/observability/apm/traces.md), the agent sets a number of HTTP headers to outgoing requests made with [instrumented HTTP libraries](/reference/supported-technologies.md#automatic-instrumentation-http). These headers (`traceparent` and `tracestate`) are defined in the [W3C Trace Context](https://www.w3.org/TR/trace-context-1/) specification.
 
 Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
 
