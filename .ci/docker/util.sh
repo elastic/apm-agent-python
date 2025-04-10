@@ -41,6 +41,8 @@ for version in $versions; do
 
   full_image_name="${REGISTRY}/${IMAGE_NAME}:${version}"
 
+  echo "$full_image_name"
+
   case $ACTION in
   build)
     DOCKER_BUILDKIT=1 docker build \
