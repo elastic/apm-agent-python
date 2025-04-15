@@ -29,7 +29,7 @@ ELASTIC_APM = {
 
 The precedence is as follows:
 
-* [Central configuration](#config-central_config) (supported options are marked with [![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration))
+* [Central configuration](#config-central_config) (supported options are marked with [![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration))
 * Environment variables
 * Inline configuration
 * Framework-specific configuration
@@ -38,7 +38,7 @@ The precedence is as follows:
 
 ## Dynamic configuration [dynamic-configuration]
 
-Configuration options marked with the ![dynamic config](/reference/images/dynamic-config.svg "") badge can be changed at runtime when set from a supported source.
+Configuration options marked with the ![dynamic config](images/dynamic-config.svg "") badge can be changed at runtime when set from a supported source.
 
 The Python Agent supports [Central configuration](docs-content://solutions/observability/apm/apm-agent-central-configuration.md), which allows you to fine-tune certain configurations from in the APM app. This feature is enabled in the Agent by default with [`central_config`](#config-central_config).
 
@@ -94,7 +94,7 @@ The service name must conform to this regular expression: `^[a-zA-Z0-9 _-]+$`. I
 | --- | --- | --- |
 | `ELASTIC_APM_SERVER_URL` | `SERVER_URL` | `'http://127.0.0.1:8200'` |
 
-The URL for your APM Server. The URL must be fully qualified, including protocol (`http` or `https`) and port. Note: Do not set this if you are using APM in an AWS lambda function. APM Agents are designed to proxy their calls to the APM Server through the lambda extension. Instead, set `ELASTIC_APM_LAMBDA_APM_SERVER`. For more info, see [AWS Lambda](/reference/lambda-support.md).
+The URL for your APM Server. The URL must be fully qualified, including protocol (`http` or `https`) and port. Note: Do not set this if you are using APM in an AWS lambda function. APM Agents are designed to proxy their calls to the APM Server through the lambda extension. Instead, set `ELASTIC_APM_LAMBDA_APM_SERVER`. For more info, see [AWS Lambda](lambda-support.md).
 
 
 ## `enabled` [config-enabled]
@@ -108,7 +108,7 @@ Enable or disable the agent. When set to false, the agent will not collect any d
 
 ## `recording` [config-recording]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -122,7 +122,7 @@ Enable or disable recording of events. If set to false, then the Python agent do
 
 ### `log_level` [config-log_level]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -320,7 +320,7 @@ A list of exception types to be filtered. Exceptions of these types will not be 
 
 ### `transaction_ignore_urls` [config-transaction-ignore-urls]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default | Example |
 | --- | --- | --- | --- |
@@ -460,7 +460,7 @@ Especially for spans, collecting source code can have a large impact on storage 
 
 ### `capture_body` [config-capture-body]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -482,7 +482,7 @@ Request bodies often contain sensitive values like passwords and credit card num
 
 ### `capture_headers` [config-capture-headers]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -493,14 +493,14 @@ For transactions and errors that happen due to HTTP requests, the Python agent c
 Possible values: `true`, `false`
 
 ::::{warning}
-Request headers often contain sensitive values like session IDs and cookies. See [sanitizing data](/reference/sanitizing-data.md) for more information on how to filter out sensitive data.
+Request headers often contain sensitive values like session IDs and cookies. See [sanitizing data](sanitizing-data.md) for more information on how to filter out sensitive data.
 ::::
 
 
 
 ### `transaction_max_spans` [config-transaction-max-spans]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -511,7 +511,7 @@ This limits the amount of spans that are recorded per transaction. This is helpf
 
 ### `stack_trace_limit` [config-stack-trace-limit]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -524,7 +524,7 @@ Setting the limit to `0` will disable stack trace collection, while any positive
 
 ### `span_stack_trace_min_duration` [config-span-stack-trace-min-duration]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -541,7 +541,7 @@ Except for the special values `-1` and `0`, this setting should be provided in *
 
 ### `span_frames_min_duration` [config-span-frames-min-duration]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -555,7 +555,7 @@ This config value is being deprecated. Use [`span_stack_trace_min_duration`](#co
 
 ### `span_compression_enabled` [config-span-compression-enabled]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -568,7 +568,7 @@ If enabled, the agent will compress very short, repeated spans into a single spa
 
 ### `span_compression_exact_match_max_duration` [config-span-compression-exact-match-max_duration]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -581,7 +581,7 @@ Two spans are considered exact matches if the following attributes are identical
 
 ### `span_compression_same_kind_max_duration` [config-span-compression-same-kind-max-duration]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -594,7 +594,7 @@ Two spans are considered to be of the same kind if the following attributes are 
 
 ### `exit_span_min_duration` [config-exit-span-min-duration]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -612,7 +612,7 @@ if a span propagates distributed tracing IDs, it will not be ignored, even if it
 
 ### `api_request_size` [config-api-request-size]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -630,7 +630,7 @@ Due to internal buffering of gzip, the actual request size can be a few kilobyte
 
 ### `api_request_time` [config-api-request-time]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -652,7 +652,7 @@ The actual time will vary between 90-110% of the given value, to avoid stampedes
 | --- | --- | --- |
 | `ELASTIC_APM_PROCESSORS` | `PROCESSORS` | `['elasticapm.processors.sanitize_stacktrace_locals',                                              'elasticapm.processors.sanitize_http_request_cookies',                                              'elasticapm.processors.sanitize_http_headers',                                              'elasticapm.processors.sanitize_http_wsgi_env',                                              'elasticapm.processors.sanitize_http_request_body']` |
 
-A list of processors to process transactions and errors. For more information, see [Sanitizing Data](/reference/sanitizing-data.md).
+A list of processors to process transactions and errors. For more information, see [Sanitizing Data](sanitizing-data.md).
 
 ::::{warning}
 We recommend always including the default set of validators if you customize this setting.
@@ -662,13 +662,13 @@ We recommend always including the default set of validators if you customize thi
 
 ### `sanitize_field_names` [config-sanitize-field-names]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
 | `ELASTIC_APM_SANITIZE_FIELD_NAMES` | `SANITIZE_FIELD_NAMES` | `["password",                                                                  "passwd",                                                                  "pwd",                                                                  "secret",                                                                  "*key",                                                                  "*token*",                                                                  "*session*",                                                                  "*credit*",                                                                  "*card*",                                                                  "*auth*",                                                                  "*principal*",                                                                  "set-cookie"]` |
 
-A list of glob-matched field names to match and mask when using processors. For more information, see [Sanitizing Data](/reference/sanitizing-data.md).
+A list of glob-matched field names to match and mask when using processors. For more information, see [Sanitizing Data](sanitizing-data.md).
 
 ::::{warning}
 We recommend always including the default set of field name matches if you customize this setting.
@@ -678,7 +678,7 @@ We recommend always including the default set of field name matches if you custo
 
 ### `transaction_sample_rate` [config-transaction-sample-rate]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
@@ -843,7 +843,7 @@ This feature requires APM Server and Kibana >= 7.3.
 
 Enable/disable the tracking and collection of metrics from `prometheus_client`.
 
-See [Prometheus metric set (beta)](/reference/metrics.md#prometheus-metricset) for more information.
+See [Prometheus metric set (beta)](metrics.md#prometheus-metricset) for more information.
 
 ::::{note}
 This feature is currently in beta status.
@@ -859,7 +859,7 @@ This feature is currently in beta status.
 
 A prefix to prepend to Prometheus metrics names.
 
-See [Prometheus metric set (beta)](/reference/metrics.md#prometheus-metricset) for more information.
+See [Prometheus metric set (beta)](metrics.md#prometheus-metricset) for more information.
 
 ::::{note}
 This feature is currently in beta status.
@@ -875,7 +875,7 @@ This feature is currently in beta status.
 
 List of import paths for the MetricSets that should be used to collect metrics.
 
-See [Custom Metrics](/reference/metrics.md#custom-metrics) for more information.
+See [Custom Metrics](metrics.md#custom-metrics) for more information.
 
 
 ### `central_config` [config-central_config]
@@ -914,7 +914,7 @@ This feature requires APM Server >= 7.2.
 | --- | --- | --- |
 | `ELASTIC_APM_DISABLE_LOG_RECORD_FACTORY` | `DISABLE_LOG_RECORD_FACTORY` | `False` |
 
-By default in python 3, the agent installs a [LogRecord factory](/reference/logs.md#logging) that automatically adds tracing fields to your log records. Disable this behavior by setting this to `True`.
+By default in python 3, the agent installs a [LogRecord factory](logs.md#logging) that automatically adds tracing fields to your log records. Disable this behavior by setting this to `True`.
 
 
 ### `use_elastic_traceparent_header` [config-use-elastic-traceparent-header]
@@ -923,14 +923,14 @@ By default in python 3, the agent installs a [LogRecord factory](/reference/logs
 | --- | --- | --- |
 | `ELASTIC_APM_USE_ELASTIC_TRACEPARENT_HEADER` | `USE_ELASTIC_TRACEPARENT_HEADER` | `True` |
 
-To enable [distributed tracing](docs-content://solutions/observability/apm/traces.md), the agent sets a number of HTTP headers to outgoing requests made with [instrumented HTTP libraries](/reference/supported-technologies.md#automatic-instrumentation-http). These headers (`traceparent` and `tracestate`) are defined in the [W3C Trace Context](https://www.w3.org/TR/trace-context-1/) specification.
+To enable [distributed tracing](docs-content://solutions/observability/apm/traces.md), the agent sets a number of HTTP headers to outgoing requests made with [instrumented HTTP libraries](supported-technologies.md#automatic-instrumentation-http). These headers (`traceparent` and `tracestate`) are defined in the [W3C Trace Context](https://www.w3.org/TR/trace-context-1/) specification.
 
 Additionally, when this setting is set to `True`, the agent will set `elasticapm-traceparent` for backwards compatibility.
 
 
 ### `trace_continuation_strategy` [config-trace-continuation-strategy]
 
-[![dynamic config](/reference/images/dynamic-config.svg "") ](#dynamic-configuration)
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
 
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
