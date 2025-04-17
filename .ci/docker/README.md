@@ -2,7 +2,7 @@
 
 Utility script for building and pushing the images based on `.ci/.matrix_python_full.yml`.
 
-> :information_source: This script is mainly used in [publish-docker-images](https://github.com/elastic/apm-pipeline-library/actions/workflows/publish-docker-images.yml) workflow,
+> :information_source: This script is mainly used in [publish-docker-images](https://github.com/elastic/apm-agent-python/actions/workflows/build-images.yml) workflow,
 which can be triggered safely at any time.
 
 ## Options
