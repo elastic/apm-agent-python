@@ -60,7 +60,7 @@ if ! ${CI}; then
     .
 fi
 
-PYTHON_VERSION=${1} docker compose run \
+PYTHON_VERSION=${1} docker compose run --quiet-pull \
   -e PYTHON_FULL_VERSION=${1} \
   -e LOCAL_USER_ID=$LOCAL_USER_ID \
   -e LOCAL_GROUP_ID=$LOCAL_GROUP_ID \
