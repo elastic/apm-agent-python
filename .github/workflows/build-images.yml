@@ -28,8 +28,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: ./util.sh --action build --registry ${{ env.REGISTRY }} --image-name ${{ env.IMAGE_NAME }}
+      - run: ./util.sh --action build --registry ${{ env.REGISTRY }} --name ${{ env.IMAGE_NAME }}
         working-directory: .ci/docker
 
-      - run: ./util.sh --action push --registry ${{ env.REGISTRY }} --image-name ${{ env.IMAGE_NAME }}
+      - run: ./util.sh --action push --registry ${{ env.REGISTRY }} --name ${{ env.IMAGE_NAME }}
         working-directory: .ci/docker
