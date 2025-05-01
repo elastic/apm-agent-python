@@ -44,4 +44,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /app
 
+# configure the label to help with the GitHub container registry
+LABEL org.opencontainers.image.source https://github.com/elastic/apm-agent-python
+
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

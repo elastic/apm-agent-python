@@ -8,7 +8,7 @@ mapped_pages:
 
 ## Prerequisites [_prerequisites_2]
 
-You need an APM Server to which you can send APM data. Follow the [APM Quick start](docs-content://solutions/observability/apps/fleet-managed-apm-server.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same Azure region as your Azure Functions app.
+You need an APM Server to which you can send APM data. Follow the [APM Quick start](docs-content://solutions/observability/apm/get-started-fleet-managed-apm-server.md) if you have not set one up yet. For the best-possible performance, we recommend setting up APM on {{ecloud}} in the same Azure region as your Azure Functions app.
 
 ::::{note}
 Currently, only HTTP and timer triggers are supported. Other trigger types may be captured as well, but the amount of captured contextual data may differ.
@@ -40,7 +40,7 @@ You need to add `elastic-apm` as a dependency for your Functions app. Simply add
 
 The APM Python agent is configured through [App Settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings?tabs=portal#settings). These are then picked up by the agent as environment variables.
 
-For the minimal configuration, you will need the [`ELASTIC_APM_SERVER_URL`](/reference/configuration.md#config-server-url) to set the destination for APM data and a [`ELASTIC_APM_SECRET_TOKEN`](/reference/configuration.md#config-secret-token). If you prefer to use an [APM API key](docs-content://solutions/observability/apps/api-keys.md) instead of the APM secret token, use the [`ELASTIC_APM_API_KEY`](/reference/configuration.md#config-api-key) environment variable instead of `ELASTIC_APM_SECRET_TOKEN` in the following example configuration.
+For the minimal configuration, you will need the [`ELASTIC_APM_SERVER_URL`](/reference/configuration.md#config-server-url) to set the destination for APM data and a [`ELASTIC_APM_SECRET_TOKEN`](/reference/configuration.md#config-secret-token). If you prefer to use an [APM API key](docs-content://solutions/observability/apm/api-keys.md) instead of the APM secret token, use the [`ELASTIC_APM_API_KEY`](/reference/configuration.md#config-api-key) environment variable instead of `ELASTIC_APM_SECRET_TOKEN` in the following example configuration.
 
 ```bash
 $ az functionapp config appsettings set --settings ELASTIC_APM_SERVER_URL=https://example.apm.northeurope.azure.elastic-cloud.com:443

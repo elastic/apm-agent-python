@@ -24,5 +24,5 @@ More detailed information on how the Agent works can be found in the [advanced t
 
 ## Additional components [additional-components]
 
-APM Agents work in conjunction with the [APM Server](docs-content://solutions/observability/apps/application-performance-monitoring-apm.md), [Elasticsearch](docs-content://get-started/introduction.md#what-is-es), and [Kibana](docs-content://get-started/introduction.md#what-is-kib). The [APM documentation](docs-content://solutions/observability/apps/application-performance-monitoring-apm.md) provides details on how these components work together, and provides a matrix outlining [Agent and Server compatibility](docs-content://solutions/observability/apps/apm-agent-compatibility.md).
+APM Agents work in conjunction with the [APM Server](docs-content://solutions/observability/apm/index.md), [Elasticsearch](docs-content://get-started/introduction.md#what-is-es), and [Kibana](docs-content://get-started/introduction.md#what-is-kib). The [APM documentation](docs-content://solutions/observability/apm/index.md) provides details on how these components work together, and provides a matrix outlining [Agent and Server compatibility](docs-content://solutions/observability/apm/apm-agent-compatibility.md).
 

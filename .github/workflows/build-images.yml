@@ -7,31 +7,32 @@ on:
       - test/workflow-build-images
   workflow_dispatch: ~
 
-env:
-  DOCKER_BUILDKIT: 1
-
 permissions:
   contents: read
 
 jobs:
 
-  build-test-push:
+  build-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/apm-agent-python-testing
     steps:
 
       - uses: actions/checkout@v4
 
-      - name: Login to dockerhub
+      - name: Login to ghcr.io
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
-          registry: ${{ secrets.DOCKERHUB_REGISTRY }}
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: ./util.sh --action build --registry "elasticobservability"
+      - run: ./util.sh --action build --registry ${{ env.REGISTRY }} --image-name ${{ env.IMAGE_NAME }}
         working-directory: .ci/docker
 
-      - run: docker images
-
-      - run: ./util.sh --action push --registry "elasticobservability"
+      - run: ./util.sh --action push --registry ${{ env.REGISTRY }} --image-name ${{ env.IMAGE_NAME }}
         working-directory: .ci/docker
