@@ -40,11 +40,11 @@ else
     fi
 fi
 
-echo "Running tests for ${1}/${2}"
+echo "Running tests for ${TEST}"
 
 if [[ -n $DOCKER_DEPS ]]
 then
-    PYTHON_VERSION=${1} REGISTRY=${REGISTRY} IMAGE_NAME=${IMAGE_NAME} docker compose up -d ${DOCKER_DEPS}
+    PYTHON_VERSION=${1} REGISTRY=${REGISTRY} IMAGE_NAME=${IMAGE_NAME} docker compose up --quiet-pull -d ${DOCKER_DEPS}
 fi
 
 # CASS_DRIVER_NO_EXTENSIONS is set so we don't build the Cassandra C-extensions,

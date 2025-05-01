@@ -44,6 +44,7 @@ for version in $versions; do
   case $ACTION in
   build)
     DOCKER_BUILDKIT=1 docker build \
+        --progress=plain \
         --cache-from="${full_image_name}" \
         -f "${project_root}/tests/Dockerfile" \
         --build-arg PYTHON_IMAGE="${version/-/:}" \
