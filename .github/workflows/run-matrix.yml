@@ -20,6 +20,10 @@ jobs:
       max-parallel: 10
       matrix:
         include: ${{ fromJSON(inputs.include) }}
+    env:
+      # These env variables are used in the docker-compose.yml and the run_tests.sh script.
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/apm-agent-python-testing
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
