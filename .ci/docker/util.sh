@@ -43,9 +43,13 @@ for version in $versions; do
 
   case $ACTION in
   build)
+    cache_image="${full_image_name}"
+    # check that we have an image before using it as a cache
+    docker manifest inspect "${full_image_name}" || cache_image=
+
     DOCKER_BUILDKIT=1 docker build \
         --progress=plain \
-        --cache-from="${full_image_name}" \
+        --cache-from="${cache_image}" \
         -f "${project_root}/tests/Dockerfile" \
         --build-arg PYTHON_IMAGE="${version/-/:}" \
         -t "${full_image_name}" \
