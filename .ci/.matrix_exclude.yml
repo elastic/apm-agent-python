@@ -107,6 +107,10 @@ exclude:
     FRAMEWORK: django-2.0
   - VERSION: python-3.12
     FRAMEWORK: django-2.1
+  - VERSION: python-3.13
+    FRAMEWORK: django-3.2
+  - VERSION: python-3.13
+    FRAMEWORK: django-4.0
   - VERSION: python-3.12
     FRAMEWORK: graphene-2
   - VERSION: python-3.12
