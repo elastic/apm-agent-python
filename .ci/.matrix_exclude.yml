@@ -107,10 +107,6 @@ exclude:
     FRAMEWORK: django-2.0
   - VERSION: python-3.12
     FRAMEWORK: django-2.1
-  - VERSION: python-3.13
-    FRAMEWORK: django-3.2
-  - VERSION: python-3.13
-    FRAMEWORK: django-4.0
   - VERSION: python-3.12
     FRAMEWORK: graphene-2
   - VERSION: python-3.12
@@ -127,6 +123,16 @@ exclude:
     FRAMEWORK: django-2.0
   - VERSION: python-3.13
     FRAMEWORK: django-2.1
+  - VERSION: python-3.13
+    FRAMEWORK: django-2.2
+  - VERSION: python-3.13
+    FRAMEWORK: django-3.0
+  - VERSION: python-3.13
+    FRAMEWORK: django-3.1
+  - VERSION: python-3.13
+    FRAMEWORK: django-3.2
+  - VERSION: python-3.13
+    FRAMEWORK: django-4.0
   - VERSION: python-3.13
     FRAMEWORK: graphene-2
   - VERSION: python-3.13
@@ -246,6 +252,8 @@ exclude:
     FRAMEWORK: asyncpg-newest
   - VERSION: python-3.6
     FRAMEWORK: asyncpg-0.28
+  - VERSION: python-3.13
+    FRAMEWORK: asyncpg-0.28
   # sanic
   - VERSION: pypy-3
     FRAMEWORK: sanic-newest
@@ -257,8 +265,10 @@ exclude:
     FRAMEWORK: sanic-newest
   - VERSION: python-3.8
     FRAMEWORK: sanic-newest
+  - VERSION: python-3.13
+    FRAMEWORK: sanic-20.12
+  # aioredis
   - VERSION: pypy-3
-    # aioredis
     FRAMEWORK: aioredis-newest
   - VERSION: python-3.6
     FRAMEWORK: aioredis-newest
@@ -335,3 +345,10 @@ exclude:
     FRAMEWORK: sanic-20.12  # no wheels available yet
   - VERSION: python-3.13
     FRAMEWORK: cassandra-newest  # c extension issue
+  # httpx
+  - VERSION: python-3.13
+    FRAMEWORK: httpx-0.13
+  - VERSION: python-3.13
+    FRAMEWORK: httpx-0.14
+  - VERSION: python-3.13
+    FRAMEWORK: httpx-0.21
