@@ -146,6 +146,11 @@ class Transport(ThreadManager):
             if data is not None:
                 data = self._process_event(event_type, data)
                 if data is not None:
+                    if isinstance(data, dict):
+                        _trace_id = data.get("trace_id", 0)
+                        _span_id = data.get("id", 0)
+                        _ts = data.get("timestamp", 0)
+                        logger.debug("Queued event! trace_id: %s id: %s timestamp: %s", _trace_id, _span_id, _ts)
                     if not buffer_written:
                         # Write metadata just in time to allow for late metadata changes (such as in lambda)
                         self._write_metadata(buffer)
