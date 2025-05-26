@@ -17,8 +17,6 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "22:00"
-    reviewers:
-      - "elastic/apm-agent-python"
     ignore:
       - dependency-name: "urllib3" # ignore until lambda runtimes use OpenSSL 1.1.1+
         versions: [">=2.0.0"]
@@ -28,8 +26,6 @@ updates:
     directories:
       - '/'
       - '/.github/actions/*'
-    reviewers:
-      - "elastic/observablt-ci"
     schedule:
       interval: "weekly"
       day: "sunday"
@@ -42,8 +38,6 @@ updates:
   - package-ecosystem: "docker"
     directories:
       - '/'
-    reviewers:
-      - "elastic/apm-agent-python"
     registries: "*"
     schedule:
       interval: "daily"
