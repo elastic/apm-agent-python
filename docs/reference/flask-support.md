@@ -24,7 +24,7 @@ For apm-server 6.2+, make sure you use version 2.0 or higher of `elastic-apm`.
 
 
 ::::{note}
-If you use Flask with uwsgi, make sure to [enable threads](http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads).
+If you use Flask with uwsgi, make sure to [enable threads](http://uwsgi-docs.readthedocs.org/en/latest/Options.html#enable-threads) (enabled by default since 2.0.27) and [py-call-uwsgi-fork-hooks](https://uwsgi-docs.readthedocs.io/en/latest/Options.html#py-call-uwsgi-fork-hooks).
 ::::
 
 
