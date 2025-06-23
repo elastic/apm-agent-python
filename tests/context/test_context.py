@@ -30,10 +30,13 @@
 
 import sys
 
+import mock
 import pytest
 
 import elasticapm.context
+from elasticapm.context.contextvars import ContextVarsContext
 from elasticapm.context.threadlocal import ThreadLocalContext
+from elasticapm.traces import Span
 
 
 def test_execution_context_backing():
@@ -63,3 +66,12 @@ def test_execution_context_monkeypatched(monkeypatch):
 
     # Should always use ThreadLocalContext when thread local is monkey patched
     assert isinstance(execution_context, ThreadLocalContext)
+
+
+def test_none_spans_should_not_raise_a_type_error_on_set_span():
+    context = ContextVarsContext()
+    context.elasticapm_spans_var.set(None)
+
+    context.set_span(mock.MagicMock(spec=Span))
+
+    assert context.get_span() is not None
