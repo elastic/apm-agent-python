@@ -243,7 +243,7 @@ class CursorProxy(wrapt.ObjectProxy):
         """
         return sql
 
-    def _trace_sql(self, method, sql, params, action=QUERY_ACTION):
+    def _trace_sql(self, method, sql, params, action=QUERY_ACTION, **kwargs):
         sql_string = self._bake_sql(sql)
         if action == EXEC_ACTION:
             signature = sql_string + "()"
@@ -268,9 +268,9 @@ class CursorProxy(wrapt.ObjectProxy):
             leaf=True,
         ) as span:
             if params is None:
-                result = method(sql)
+                result = method(sql, **kwargs)
             else:
-                result = method(sql, params)
+                result = method(sql, params, **kwargs)
             # store "rows affected", but only for DML queries like insert/update/delete
             if span and self.rowcount not in (-1, None) and signature.startswith(self.DML_QUERIES):
                 span.update_context("db", {"rows_affected": self.rowcount})

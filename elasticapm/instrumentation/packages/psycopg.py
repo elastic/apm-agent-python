@@ -55,6 +55,12 @@ class PGCursorProxy(CursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    def execute(self, query, params=None, *, prepare=None, binary=None, **kwargs):
+        return self._trace_sql(self.__wrapped__.execute, query, params, prepare=prepare, binary=binary, **kwargs)
+
+    def executemany(self, query, params_seq, **kwargs):
+        return self._trace_sql(self.__wrapped__.executemany, query, params_seq, **kwargs)
+
     def __enter__(self):
         return PGCursorProxy(self.__wrapped__.__enter__(), destination_info=self._self_destination_info)
 
