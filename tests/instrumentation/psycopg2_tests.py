@@ -270,8 +270,10 @@ def test_fully_qualified_table_name():
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_cursor_execute_signature(instrument, postgres_connection, elasticapm_client):
     cursor = postgres_connection.cursor()
-    res = cursor.execute(query="SELECT 1", vars=None)
-    assert res
+    cursor.execute(query="SELECT 1", vars=None)
+    row = cursor.fetchone()
+
+    assert row
 
 
 @pytest.mark.integrationtest
