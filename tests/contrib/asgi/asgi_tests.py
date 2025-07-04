@@ -45,7 +45,7 @@ def instrumented_app(elasticapm_client):
 
 
 @pytest.mark.asyncio
-async def test_transaction_span(instrumented_app, elasticapm_client):
+async def test_transaction_span_success(instrumented_app, elasticapm_client):
     async with async_asgi_testclient.TestClient(instrumented_app) as client:
         resp = await client.get("/")
         assert resp.status_code == 200
@@ -67,7 +67,7 @@ async def test_transaction_span(instrumented_app, elasticapm_client):
 
 
 @pytest.mark.asyncio
-async def test_transaction_span(instrumented_app, elasticapm_client):
+async def test_transaction_span_failure(instrumented_app, elasticapm_client):
     async with async_asgi_testclient.TestClient(instrumented_app) as client:
         resp = await client.get("/500")
         assert resp.status_code == 500
@@ -81,6 +81,30 @@ async def test_transaction_span(instrumented_app, elasticapm_client):
     assert transaction["outcome"] == "failure"
     assert transaction["context"]["request"]["url"]["full"] == "/500"
     assert transaction["context"]["response"]["status_code"] == 500
+
+
+@pytest.mark.asyncio
+async def test_transaction_traceparent(instrumented_app, elasticapm_client):
+    async with async_asgi_testclient.TestClient(instrumented_app) as client:
+        resp = await client.get("/", headers={"traceparent": "00-12345678901234567890123456789012-1234567890123456-01"})
+        assert resp.status_code == 200
+        assert resp.text == "OK"
+
+    assert len(elasticapm_client.events[constants.TRANSACTION]) == 1
+    assert len(elasticapm_client.events[constants.SPAN]) == 1
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    span = elasticapm_client.events[constants.SPAN][0]
+    assert transaction["name"] == "GET unknown route"
+    assert transaction["result"] == "HTTP 2xx"
+    assert transaction["outcome"] == "success"
+    assert transaction["context"]["request"]["url"]["full"] == "/"
+    assert transaction["context"]["response"]["status_code"] == 200
+
+    assert transaction["trace_id"] == "12345678901234567890123456789012"
+
+    assert span["name"] == "sleep"
+    assert span["outcome"] == "success"
+    assert span["sync"] == False
 
 
 @pytest.mark.asyncio
