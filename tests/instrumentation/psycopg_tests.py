@@ -47,6 +47,8 @@ pytestmark = pytest.mark.psycopg
 
 has_postgres_configured = "POSTGRES_DB" in os.environ
 
+PSYCOPG_VERSION = tuple([int(x) for x in psycopg.version.__version__.split() if x.isdigit()])
+
 
 def connect_kwargs():
     return {
@@ -86,10 +88,14 @@ def test_cursor_execute_signature(instrument, postgres_connection, elasticapm_cl
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_cursor_executemany_signature(instrument, postgres_connection, elasticapm_client):
     cursor = postgres_connection.cursor()
+    if PSYCOPG_VERSION < (3, 1, 0):
+        kwargs = {}
+    else:
+        kwargs = {"returning": False}
     res = cursor.executemany(
         query="INSERT INTO test VALUES (%s, %s)",
         params_seq=((4, "four"),),
-        returning=False,
+        **kwargs,
     )
     assert res is None
 
