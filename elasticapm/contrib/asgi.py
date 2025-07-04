@@ -77,9 +77,8 @@ class ASGITracingMiddleware:
         url, url_dict = self.get_url(scope)
         body = None
         if not self.client.should_ignore_url(url):
-            self.client.begin_transaction(
-                transaction_type="request", trace_parent=TraceParent.from_headers(scope["headers"])
-            )
+            headers = self.get_headers(scope)
+            self.client.begin_transaction(transaction_type="request", trace_parent=TraceParent.from_headers(headers))
             self.set_transaction_name(scope["method"], url)
             if scope["method"] in constants.HTTP_WITH_BODY and self.client.config.capture_body != "off":
                 messages = []
