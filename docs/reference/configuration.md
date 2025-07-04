@@ -268,12 +268,7 @@ Secret tokens only provide any security if your APM Server uses TLS.
 | --- | --- | --- | --- |
 | `ELASTIC_APM_API_KEY` | `API_KEY` | `None` | A base64-encoded string |
 
-::::{warning}
-This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
-::::
-
-
-This base64-encoded string is used to ensure that only your agents can send data to your APM Server. The API key must be created using the [APM server command-line tool](docs-content://solutions/observability/apm/api-keys.md).
+This base64-encoded string is used to ensure that only your agents can send data to your APM Server. The API key can be created in the [Applications UI](docs-content://solutions/observability/apm/api-keys.md#apm-create-an-api-key).
 
 ::::{warning}
 API keys only provide any real security if your APM Server uses TLS.
