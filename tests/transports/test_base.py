@@ -107,18 +107,25 @@ def test_empty_queue_flush(mock_send, elasticapm_client):
         transport.close()
 
 
-@mock.patch("elasticapm.transport.base.Transport.send")
+@mock.patch("elasticapm.transport.base.Transport._flush")
 @pytest.mark.parametrize("elasticapm_client", [{"api_request_time": "5s"}], indirect=True)
-def test_metadata_prepended(mock_send, elasticapm_client):
+def test_metadata_prepended(mock_flush, elasticapm_client):
     transport = Transport(client=elasticapm_client, compress_level=0)
     transport.start_thread()
     transport.queue("error", {}, flush=True)
     transport.close()
-    assert mock_send.call_count == 1
-    args, kwargs = mock_send.call_args
-    data = gzip.decompress(args[0])
+    assert mock_flush.call_count == 1
+    args, kwargs = mock_flush.call_args
+    buffer = args[0]
+    # this test used to mock send but after we fixed a leak for not releasing the memoryview containing
+    # the gzipped data we cannot read it anymore. So reimplement _flush and read the data ourselves
+    fileobj = buffer.fileobj
+    buffer.close()
+    compressed_data = fileobj.getbuffer()
+    data = gzip.decompress(compressed_data)
     data = data.decode("utf-8").split("\n")
     assert "metadata" in data[0]
+    compressed_data.release()
 
 
 @mock.patch("elasticapm.transport.base.Transport.send")
@@ -157,24 +164,26 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
     assert mock_send.call_count == 0
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 12), reason="Failing locally on 3.12.0rc1")  # TODO py3.12
+def _cleanup_flush_mock_buffers(mock_flush):
+    args, kwargs = mock_flush.call_args
+    buffer = args[0]
+    buffer.close()
+
+
 @mock.patch("elasticapm.transport.base.Transport._flush")
 def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
-    elasticapm_client.config.update(version="1", api_request_size="100b")
+    elasticapm_client.config.update(version="1", api_request_size="9b")
     transport = Transport(client=elasticapm_client, queue_chill_count=1)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
-            # we need to add lots of uncompressible data to fill up the gzip-internal buffer
-            for i in range(12):
-                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+            transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
             transport._flushed.wait(timeout=0.1)
+        _cleanup_flush_mock_buffers(mock_flush)
         assert mock_flush.call_count == 1
         elasticapm_client.config.update(version="1", api_request_size="1mb")
         with caplog.at_level("DEBUG", "elasticapm.transport"):
-            # we need to add lots of uncompressible data to fill up the gzip-internal buffer
-            for i in range(12):
-                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+            transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
             transport._flushed.wait(timeout=0.1)
         # Should be unchanged because our buffer limit is much higher.
         assert mock_flush.call_count == 1
@@ -182,18 +191,16 @@ def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
         transport.close()
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 12), reason="Failing locally on 3.12.0rc1")  # TODO py3.12
 @mock.patch("elasticapm.transport.base.Transport._flush")
-@pytest.mark.parametrize("elasticapm_client", [{"api_request_size": "100b"}], indirect=True)
+@pytest.mark.parametrize("elasticapm_client", [{"api_request_size": "9b"}], indirect=True)
 def test_flush_time_size(mock_flush, caplog, elasticapm_client):
     transport = Transport(client=elasticapm_client, queue_chill_count=1)
     transport.start_thread()
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
-            # we need to add lots of uncompressible data to fill up the gzip-internal buffer
-            for i in range(12):
-                transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
+            transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
             transport._flushed.wait(timeout=0.1)
+        _cleanup_flush_mock_buffers(mock_flush)
         assert mock_flush.call_count == 1
     finally:
         transport.close()

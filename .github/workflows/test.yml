@@ -109,7 +109,7 @@ jobs:
 
   windows:
     name: "windows (version: ${{ matrix.version }}, framework: ${{ matrix.framework }}, asyncio: ${{ matrix.asyncio }})"
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:

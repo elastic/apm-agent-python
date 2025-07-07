@@ -39,13 +39,17 @@ from datetime import timedelta
 import mock
 import pytest
 
+import elasticapm.conf
 from elasticapm.conf import (
     Config,
     ConfigurationError,
     EnumerationValidator,
+    ExcludeRangeValidator,
     FileIsReadableValidator,
     PrecisionValidator,
     RegexValidator,
+    SupportedValueInFipsModeValidator,
+    UnitValidator,
     VersionedConfig,
     _BoolConfigValue,
     _ConfigBase,
@@ -276,7 +280,10 @@ def test_file_is_readable_validator_not_a_file(tmpdir):
     assert "is not a file" in e.value.args[0]
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="os.access() doesn't seem to work as we expect on Windows")
+@pytest.mark.skipif(
+    platform.system() == "Windows" or os.getuid() == 0,
+    reason="os.access() doesn't seem to work as we expect on Windows and test will fail as root user",
+)
 def test_file_is_readable_validator_not_readable(tmpdir):
     p = tmpdir.join("nonreadable")
     p.write("")
@@ -450,3 +457,71 @@ def test_config_all_upper_case():
         if not isinstance(config_value, _ConfigValue):
             continue
         assert config_value.env_key == config_value.env_key.upper()
+
+
+def test_regex_validator_without_match():
+    validator = RegexValidator(r"\d")
+    with pytest.raises(ConfigurationError) as e:
+        validator("foo", "field")
+    assert "does not match pattern" in e.value.args[0]
+
+
+def test_unit_validator_without_match():
+    validator = RegexValidator("ms")
+    with pytest.raises(ConfigurationError) as e:
+        validator("s", "field")
+    assert "does not match pattern" in e.value.args[0]
+
+
+def test_unit_validator_with_unsupported_unit():
+    validator = UnitValidator(r"(\d+)(s)", "secs", {})
+    with pytest.raises(ConfigurationError) as e:
+        validator("10s", "field")
+    assert "is not a supported unit" in e.value.args[0]
+
+
+def test_precision_validator_not_a_float():
+    validator = PrecisionValidator()
+    with pytest.raises(ConfigurationError) as e:
+        validator("notafloat", "field")
+    assert "is not a float" in e.value.args[0]
+
+
+def test_exclude_range_validator_not_in_range():
+    validator = ExcludeRangeValidator(1, 100, "desc")
+    with pytest.raises(ConfigurationError) as e:
+        validator(10, "field")
+    assert "cannot be in range" in e.value.args[0]
+
+
+def test_supported_value_in_fips_mode_validator_in_fips_mode_with_invalid_value(monkeypatch):
+    monkeypatch.setattr(elasticapm.conf, "_in_fips_mode", lambda: True)
+    exception_message = "VERIFY_SERVER_CERT=False must be set to True if FIPS mode is enabled"
+    validator = SupportedValueInFipsModeValidator(supported_value=True)
+    with pytest.raises(ConfigurationError) as e:
+        validator(False, "VERIFY_SERVER_CERT")
+    assert exception_message == e.value.args[0]
+
+    config = Config({"VERIFY_SERVER_CERT": False})
+    assert config.errors["VERIFY_SERVER_CERT"] == exception_message
+
+
+def test_supported_value_in_fips_mode_validator_in_fips_mode_with_valid_value(monkeypatch):
+    monkeypatch.setattr(elasticapm.conf, "_in_fips_mode", lambda: True)
+    validator = SupportedValueInFipsModeValidator(supported_value=True)
+    assert validator(True, "VERIFY_SERVER_CERT") == True
+    config = Config({"VERIFY_SERVER_CERT": True})
+    assert config.verify_server_cert == True
+    assert "VERIFY_SERVER_CERT" not in config.errors
+
+
+def test_supported_value_in_fips_mode_validator_not_in_fips_mode(monkeypatch):
+    monkeypatch.setattr(elasticapm.conf, "_in_fips_mode", lambda: False)
+    validator = SupportedValueInFipsModeValidator(supported_value=True)
+    assert validator(True, "field") == True
+    assert validator(False, "field") == False
+
+    config = Config({"VERIFY_SERVER_CERT": False})
+    assert not config.errors
+    config = Config({"VERIFY_SERVER_CERT": True})
+    assert not config.errors

@@ -1,3 +1,4 @@
 sanic
 sanic-testing
+tracerite==1.1.1 ; python_version < '3.8'
 -r reqs-base.txt

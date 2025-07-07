@@ -1,0 +1,35 @@
+---
+name: build-images
+
+on:
+  workflow_dispatch: ~
+
+permissions:
+  contents: read
+
+jobs:
+
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/apm-agent-python-testing
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: ./util.sh --action build --registry ${{ env.REGISTRY }} --name ${{ env.IMAGE_NAME }}
+        working-directory: .ci/docker
+
+      - run: ./util.sh --action push --registry ${{ env.REGISTRY }} --name ${{ env.IMAGE_NAME }}
+        working-directory: .ci/docker

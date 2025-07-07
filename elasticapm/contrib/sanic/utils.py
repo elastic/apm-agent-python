@@ -33,7 +33,7 @@ from typing import Dict
 
 from sanic import Sanic
 from sanic import __version__ as version
-from sanic.cookies import CookieJar
+from sanic.cookies import Cookie, CookieJar
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
@@ -120,7 +120,14 @@ async def get_response_info(config: Config, response: HTTPResponse, event_type: 
         result["status_code"] = response.status
 
     if config.capture_headers:
-        result["headers"] = dict(response.headers)
+
+        def normalize(v):
+            # we are getting entries for Set-Cookie headers as Cookie instances
+            if isinstance(v, Cookie):
+                return str(v)
+            return v
+
+        result["headers"] = {k: normalize(v) for k, v in response.headers.items()}
 
     if config.capture_body in ("all", event_type) and "octet-stream" not in response.content_type:
         result["body"] = response.body.decode("utf-8")
@@ -148,4 +155,12 @@ def make_client(client_cls=Client, **defaults) -> Client:
 
 def _transform_response_cookie(cookies: CookieJar) -> Dict[str, str]:
     """Transform the Sanic's CookieJar instance into a Normal dictionary to build the context"""
-    return {k: {"value": v.value, "path": v["path"]} for k, v in cookies.items()}
+    # old sanic versions used to have an items() method
+    if hasattr(cookies, "items"):
+        return {k: {"value": v.value, "path": v["path"]} for k, v in cookies.items()}
+
+    try:
+        return {cookie.key: {"value": cookie.value, "path": cookie.path} for cookie in cookies.cookies}
+    except KeyError:
+        # cookies.cookies assumes Set-Cookie header will be there
+        return {}
