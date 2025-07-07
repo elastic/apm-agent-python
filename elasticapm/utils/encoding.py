@@ -155,7 +155,7 @@ def transform(value, stack=None, context=None):
         and getattr(value, "_result_cache", True) is None
     ):
         # if we have a Django QuerySet a None result cache it may mean that the underlying query failed
-        # so represent it as an empty list instead of retrying the query again
+        # so represent it as unevaluated instead of retrying the query again
         ret = "<%s `unevaluated`>" % (value.__class__.__name__)
     elif value is not None:
         try:
