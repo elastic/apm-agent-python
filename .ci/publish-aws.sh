@@ -46,7 +46,7 @@ for region in $ALL_AWS_REGIONS; do
     --layer-name="${FULL_LAYER_NAME}" \
     --description="AWS Lambda Extension Layer for the Elastic APM Python Agent" \
     --license-info="BSD-3-Clause" \
-    --compatible-runtimes python3.7 python3.8 python3.9 python3.10 python3.11 python3.12 python3.13\
+    --compatible-runtimes python3.8 python3.9 python3.10 python3.11 python3.12 python3.13\
     --zip-file="fileb://${zip_file}")
   echo "${publish_output}" > "${AWS_FOLDER}/${region}"
   layer_version=$(echo "${publish_output}" | jq '.Version')
