@@ -37,6 +37,7 @@ import os
 import azure.functions as func
 import mock
 
+import elasticapm
 from elasticapm.conf import constants
 from elasticapm.contrib.serverless.azure import AzureFunctionsClient, ElasticAPMExtension, get_faas_data
 from tests.fixtures import TempStoreClient
@@ -95,11 +96,33 @@ def test_extension_configure():
             ElasticAPMExtension.configure(client_class=AzureFunctionsTestClient)
         client = ElasticAPMExtension.client
         assert client.config.metrics_interval == datetime.timedelta(0)
+        assert client.config.breakdown_metrics is False
         assert client.config.central_config is False
         assert client.config.cloud_provider == "none"
         assert client.config.framework_name == "Azure Functions"
         assert client.config.service_name == "foo"
         assert client.config.environment == "prod"
+    finally:
+        if ElasticAPMExtension.client:
+            ElasticAPMExtension.client.close()
+            ElasticAPMExtension.client = None
+
+
+def test_extension_configure_with_kwargs():
+    try:
+        ElasticAPMExtension.configure(
+            client_class=AzureFunctionsTestClient, metrics_sets=["foo"], service_name="foo", environment="bar"
+        )
+        client = ElasticAPMExtension.client
+
+        assert client.config.metrics_interval == datetime.timedelta(0)
+        assert client.config.breakdown_metrics is False
+        assert client.config.central_config is False
+        assert client.config.cloud_provider == "none"
+        assert client.config.framework_name == "Azure Functions"
+        assert client.config.service_name == "foo"
+        assert client.config.environment == "bar"
+        assert client.config.metrics_sets == ["foo"]
     finally:
         if ElasticAPMExtension.client:
             ElasticAPMExtension.client.close()
@@ -122,8 +145,7 @@ def test_pre_post_invocation_app_level_request(elasticapm_client):
             body=b"",
         )
         response = func.HttpResponse("", status_code=200, headers={}, mimetype="text/html")
-        context = mock.Mock(function_name="foo")
-        context.function_name = "foo_function"
+        context = mock.Mock(function_name="foo_function", invocation_id="fooid")
         ElasticAPMExtension.pre_invocation_app_level(None, context, {"request": request})
         ElasticAPMExtension.post_invocation_app_level(None, context, func_ret=response)
         transaction = elasticapm_client.events[constants.TRANSACTION][0]
