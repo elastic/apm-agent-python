@@ -65,7 +65,7 @@ class AsyncCursorProxy(wrapt.ObjectProxy):
         """
         return sql
 
-    async def _trace_sql(self, method, sql, params, action=QUERY_ACTION):
+    async def _trace_sql(self, method, sql, params, action=QUERY_ACTION, **kwargs):
         sql_string = self._bake_sql(sql)
         if action == EXEC_ACTION:
             signature = sql_string + "()"
@@ -89,9 +89,9 @@ class AsyncCursorProxy(wrapt.ObjectProxy):
             leaf=True,
         ) as span:
             if params is None:
-                result = await method(sql)
+                result = await method(sql, **kwargs)
             else:
-                result = await method(sql, params)
+                result = await method(sql, params, **kwargs)
             # store "rows affected", but only for DML queries like insert/update/delete
             if span and self.rowcount not in (-1, None) and signature.startswith(self.DML_QUERIES):
                 span.update_context("db", {"rows_affected": self.rowcount})

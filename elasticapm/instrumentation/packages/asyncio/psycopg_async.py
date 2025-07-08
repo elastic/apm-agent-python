@@ -55,11 +55,20 @@ class PGAsyncCursorProxy(AsyncCursorProxy):
     def extract_signature(self, sql):
         return extract_signature(sql)
 
+    async def execute(self, query, params=None, *, prepare=None, binary=None, **kwargs):
+        return await self._trace_sql(self.__wrapped__.execute, query, params, prepare=prepare, binary=binary, **kwargs)
+
+    async def executemany(self, query, params_seq, **kwargs):
+        return await self._trace_sql(self.__wrapped__.executemany, query, params_seq, **kwargs)
+
     async def __aenter__(self):
         return PGAsyncCursorProxy(await self.__wrapped__.__aenter__(), destination_info=self._self_destination_info)
 
     async def __aexit__(self, *args):
         return PGAsyncCursorProxy(await self.__wrapped__.__aexit__(*args), destination_info=self._self_destination_info)
+
+    def __aiter__(self):
+        return self.__wrapped__.__aiter__()
 
     @property
     def _self_database(self):
