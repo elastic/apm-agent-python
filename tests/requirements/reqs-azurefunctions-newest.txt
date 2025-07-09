@@ -1,0 +1,2 @@
+azure-functions
+-r reqs-base.txt
