@@ -56,3 +56,4 @@ FRAMEWORK:
   - aiobotocore-newest
   - kafka-python-newest
   - grpc-newest
+  - azurefunctions-newest
