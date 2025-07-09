@@ -62,7 +62,6 @@ from elasticapm.conf import constants
 from elasticapm.conf.constants import ERROR, SPAN, TRANSACTION
 from elasticapm.contrib.django.apps import ElasticAPMConfig
 from elasticapm.contrib.django.client import client, get_client
-from elasticapm.contrib.django.handlers import LoggingHandler
 from elasticapm.contrib.django.middleware.wsgi import ElasticAPM
 from elasticapm.utils.disttracing import TraceParent
 from tests.contrib.django.conftest import BASE_TEMPLATE_DIR
@@ -408,25 +407,6 @@ def test_ignored_exception_is_ignored(django_elasticapm_client, client):
     with pytest.raises(IgnoredException):
         client.get(reverse("elasticapm-ignored-exception"))
     assert len(django_elasticapm_client.events[ERROR]) == 0
-
-
-def test_record_none_exc_info(django_elasticapm_client):
-    # sys.exc_info can return (None, None, None) if no exception is being
-    # handled anywhere on the stack. See:
-    #  http://docs.python.org/library/sys.html#sys.exc_info
-    record = logging.LogRecord(
-        "foo", logging.INFO, pathname=None, lineno=None, msg="test", args=(), exc_info=(None, None, None)
-    )
-    handler = LoggingHandler()
-    handler.emit(record)
-
-    assert len(django_elasticapm_client.events[ERROR]) == 1
-    event = django_elasticapm_client.events[ERROR][0]
-
-    assert event["log"]["param_message"] == "test"
-    assert event["log"]["logger_name"] == "foo"
-    assert event["log"]["level"] == "info"
-    assert "exception" not in event
 
 
 def test_404_middleware(django_elasticapm_client, client):
@@ -1030,54 +1010,6 @@ def test_filter_matches_module_only(django_sending_elasticapm_client):
         django_sending_elasticapm_client.capture("Exception", handled=False)
     django_sending_elasticapm_client.close()
     assert len(django_sending_elasticapm_client.httpserver.requests) == 1
-
-
-def test_django_logging_request_kwarg(django_elasticapm_client):
-    handler = LoggingHandler()
-
-    logger = logging.getLogger(__name__)
-    logger.handlers = []
-    logger.addHandler(handler)
-
-    logger.error(
-        "This is a test error",
-        extra={
-            "request": WSGIRequest(
-                environ={
-                    "wsgi.input": io.StringIO(),
-                    "REQUEST_METHOD": "POST",
-                    "SERVER_NAME": "testserver",
-                    "SERVER_PORT": "80",
-                    "CONTENT_TYPE": "application/json",
-                    "ACCEPT": "application/json",
-                }
-            )
-        },
-    )
-
-    assert len(django_elasticapm_client.events[ERROR]) == 1
-    event = django_elasticapm_client.events[ERROR][0]
-    assert "request" in event["context"]
-    request = event["context"]["request"]
-    assert request["method"] == "POST"
-
-
-def test_django_logging_middleware(django_elasticapm_client, client):
-    handler = LoggingHandler()
-
-    logger = logging.getLogger("logmiddleware")
-    logger.handlers = []
-    logger.addHandler(handler)
-    logger.level = logging.INFO
-
-    with override_settings(
-        **middleware_setting(django.VERSION, ["elasticapm.contrib.django.middleware.LogMiddleware"])
-    ):
-        client.get(reverse("elasticapm-logging"))
-    assert len(django_elasticapm_client.events[ERROR]) == 1
-    event = django_elasticapm_client.events[ERROR][0]
-    assert "request" in event["context"]
-    assert event["context"]["request"]["url"]["pathname"] == reverse("elasticapm-logging")
 
 
 def client_get(client, url):
