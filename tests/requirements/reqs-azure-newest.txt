@@ -2,4 +2,5 @@ azure-storage-blob
 azure-storage-queue
 azure-data-tables
 azure-storage-file-share
+azure-cosmosdb-table
 -r reqs-base.txt
