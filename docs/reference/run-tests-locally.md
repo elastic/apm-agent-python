@@ -53,7 +53,7 @@ $ ./tests/scripts/docker/run_tests.sh python-version framework-version <pip-cach
 ```
 
 ::::{note}
-The `python-version` must be of format `python-version`, e.g. `python-3.6` or `pypy-2`. The `framework` must be of format `framework-version`, e.g. `django-1.10` or `flask-0.12`.
+The `python-version` must be of format `python-version`, e.g. `python-3.8` or `pypy-3`. The `framework` must be of format `framework-version`, e.g. `django-1.10` or `flask-0.12`.
 ::::
 
 

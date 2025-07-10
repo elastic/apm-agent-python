@@ -531,7 +531,7 @@ class Span(BaseSpan):
         span_subtype: Optional[str] = None,
         span_action: Optional[str] = None,
         sync: Optional[bool] = None,
-        start: Optional[int] = None,
+        start: Optional[float] = None,
         links: Optional[Sequence[TraceParent]] = None,
     ) -> None:
         """
@@ -1044,7 +1044,7 @@ class capture_span(object):
         labels: Optional[dict] = None,
         span_subtype: Optional[str] = None,
         span_action: Optional[str] = None,
-        start: Optional[int] = None,
+        start: Optional[float] = None,
         duration: Optional[Union[float, timedelta]] = None,
         sync: Optional[bool] = None,
         links: Optional[Sequence[TraceParent]] = None,

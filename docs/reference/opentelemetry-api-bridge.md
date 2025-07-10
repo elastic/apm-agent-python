@@ -7,7 +7,7 @@ mapped_pages:
 
 The Elastic APM OpenTelemetry bridge allows you to create Elastic APM `Transactions` and `Spans`, using the OpenTelemetry API. This allows users to utilize the Elastic APM agent’s automatic instrumentations, while keeping custom instrumentations vendor neutral.
 
-If a span is created while there is no transaction active, it will result in an Elastic APM [`Transaction`](docs-content://solutions/observability/apps/transactions.md). Inner spans are mapped to Elastic APM [`Span`](docs-content://solutions/observability/apps/spans.md).
+If a span is created while there is no transaction active, it will result in an Elastic APM [`Transaction`](docs-content://solutions/observability/apm/transactions.md). Inner spans are mapped to Elastic APM [`Span`](docs-content://solutions/observability/apm/spans.md).
 
 
 ## Getting started [opentelemetry-getting-started]

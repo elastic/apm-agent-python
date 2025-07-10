@@ -268,6 +268,27 @@ def test_fully_qualified_table_name():
 
 @pytest.mark.integrationtest
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_cursor_execute_signature(instrument, postgres_connection, elasticapm_client):
+    cursor = postgres_connection.cursor()
+    cursor.execute(query="SELECT 1", vars=None)
+    row = cursor.fetchone()
+
+    assert row
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_cursor_executemany_signature(instrument, postgres_connection, elasticapm_client):
+    cursor = postgres_connection.cursor()
+    res = cursor.executemany(
+        query="INSERT INTO test VALUES (%s, %s)",
+        vars_list=((4, "four"),),
+    )
+    assert res is None
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_destination(instrument, postgres_connection, elasticapm_client):
     elasticapm_client.begin_transaction("test")
     cursor = postgres_connection.cursor()

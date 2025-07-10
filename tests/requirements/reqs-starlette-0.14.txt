@@ -1,5 +1,5 @@
 starlette>=0.14,<0.15
-requests==2.32.1; python_version >= '3.8'
+requests==2.32.4; python_version >= '3.8'
 requests==2.31.0; python_version < '3.8'
 aiofiles
 -r reqs-base.txt

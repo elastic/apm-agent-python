@@ -1,9 +1,8 @@
 VERSION:
-  - python-3.6
-  - python-3.7
   - python-3.8
   - python-3.9
   - python-3.10
   - python-3.11
   - python-3.12
+  - python-3.13
 #  - pypy-3  # excluded due to build issues with SQLite/Django

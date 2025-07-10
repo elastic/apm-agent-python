@@ -64,7 +64,7 @@ except ValueError:
 
 * `exc_info`: A `(type, value, traceback)` tuple as returned by [`sys.exc_info()`](https://docs.python.org/3/library/sys.html#sys.exc_info). If not provided, it will be captured automatically.
 * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
-* `context`: A dictionary with contextual information. This dictionary must follow the [Context](docs-content://solutions/observability/apps/elastic-apm-events-intake-api.md#apm-api-error) schema definition.
+* `context`: A dictionary with contextual information. This dictionary must follow the [Context](docs-content://solutions/observability/apm/elastic-apm-events-intake-api.md#apm-api-error) schema definition.
 * `custom`: A dictionary of custom data you want to attach to the event.
 * `handled`: A boolean to indicate if this exception was handled or not.
 
@@ -94,7 +94,7 @@ client.capture_message('Billing process succeeded.')
 * `stack`: If set to `True` (the default), a stacktrace from the call site will be captured.
 * `exc_info`: A `(type, value, traceback)` tuple as returned by [`sys.exc_info()`](https://docs.python.org/3/library/sys.html#sys.exc_info). If not provided, it will be captured automatically, if `capture_message()` was called in an `except` block.
 * `date`: A `datetime.datetime` object representing the occurrence time of the error. If left empty, it defaults to `datetime.datetime.utcnow()`.
-* `context`: A dictionary with contextual information. This dictionary must follow the [Context](docs-content://solutions/observability/apps/elastic-apm-events-intake-api.md#apm-api-error) schema definition.
+* `context`: A dictionary with contextual information. This dictionary must follow the [Context](docs-content://solutions/observability/apm/elastic-apm-events-intake-api.md#apm-api-error) schema definition.
 * `custom`: A dictionary of custom data you want to attach to the event.
 
 Returns the id of the message as a string.
@@ -321,7 +321,7 @@ Added in v2.0.0.
 Attach custom contextual data to the current transaction and errors. Supported frameworks will automatically attach information about the HTTP request and the logged in user. You can attach further data using this function.
 
 ::::{tip}
-Before using custom context, ensure you understand the different types of [metadata](docs-content://solutions/observability/apps/metadata.md) that are available.
+Before using custom context, ensure you understand the different types of [metadata](docs-content://solutions/observability/apm/metadata.md) that are available.
 ::::
 
 
@@ -440,7 +440,7 @@ Added in v5.0.0.
 Attach labels to the the current transaction and errors.
 
 ::::{tip}
-Before using custom labels, ensure you understand the different types of [metadata](docs-content://solutions/observability/apps/metadata.md) that are available.
+Before using custom labels, ensure you understand the different types of [metadata](docs-content://solutions/observability/apm/metadata.md) that are available.
 ::::
 
 

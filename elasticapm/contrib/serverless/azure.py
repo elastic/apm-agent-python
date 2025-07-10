@@ -96,7 +96,7 @@ class ElasticAPMExtension(AppExtensionBase):
         if not client:
             kwargs["metrics_interval"] = "0ms"
             kwargs["breakdown_metrics"] = "false"
-            if "metric_sets" not in kwargs and "ELASTIC_APM_METRICS_SETS" not in os.environ:
+            if "metrics_sets" not in kwargs and "ELASTIC_APM_METRICS_SETS" not in os.environ:
                 # Allow users to override metrics sets
                 kwargs["metrics_sets"] = []
             kwargs["central_config"] = "false"
@@ -114,7 +114,7 @@ class ElasticAPMExtension(AppExtensionBase):
                 and "AZURE_FUNCTIONS_ENVIRONMENT" in os.environ
             ):
                 kwargs["environment"] = os.environ["AZURE_FUNCTIONS_ENVIRONMENT"]
-            client = AzureFunctionsClient(**kwargs)
+            client = client_class(**kwargs)
         cls.client = client
 
     @classmethod

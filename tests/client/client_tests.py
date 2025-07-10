@@ -47,6 +47,7 @@ from pytest_localserver.https import DEFAULT_CERTIFICATE
 
 import elasticapm
 from elasticapm.base import Client
+from elasticapm.conf import _in_fips_mode
 from elasticapm.conf.constants import ERROR
 
 try:
@@ -350,6 +351,7 @@ def test_call_end_twice(elasticapm_client):
     elasticapm_client.end_transaction("test-transaction", 200)
 
 
+@pytest.mark.skipif(_in_fips_mode() is True, reason="cannot disable verify_server_cert in fips mode")
 @pytest.mark.parametrize("elasticapm_client", [{"verify_server_cert": False}], indirect=True)
 def test_client_disables_ssl_verification(elasticapm_client):
     assert not elasticapm_client.config.verify_server_cert
