@@ -427,10 +427,6 @@ async def coffee_maker(strength):
 * `span_action`: (**optional**) action of the span, e.g. `query`. Defaults to `None`.
 * `links`: (**optional**) A list of `TraceParent` objects to which this span is causally linked.
 
-::::{note}
-`asyncio` is only supported for Python 3.7+.
-::::
-
 
 
 ### `elasticapm.label()` [api-label]

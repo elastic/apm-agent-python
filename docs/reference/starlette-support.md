@@ -120,8 +120,4 @@ This would ignore any requests using the `GET /secret` route and any requests co
 
 A list of supported [Starlette](/reference/supported-technologies.md#supported-starlette) and [Python](/reference/supported-technologies.md#supported-python) versions can be found on our [Supported Technologies](/reference/supported-technologies.md) page.
 
-::::{note}
-Elastic APM only supports `asyncio` when using Python 3.7+
-::::
-
 

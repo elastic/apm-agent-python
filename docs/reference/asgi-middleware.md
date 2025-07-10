@@ -59,8 +59,4 @@ Currently, the agent doesn’t support automatic capturing of exceptions. You ca
 
 A list of supported [Python](/reference/supported-technologies.md#supported-python) versions can be found on our [Supported Technologies](/reference/supported-technologies.md) page.
 
-::::{note}
-Elastic APM only supports `asyncio` when using Python 3.7+
-::::
-
 

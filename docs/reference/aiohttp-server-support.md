@@ -105,8 +105,4 @@ This would ignore any requests using the `OPTIONS` method and any requests conta
 
 A list of supported [aiohttp](/reference/supported-technologies.md#supported-aiohttp) and [Python](/reference/supported-technologies.md#supported-python) versions can be found on our [Supported Technologies](/reference/supported-technologies.md) page.
 
-::::{note}
-Elastic APM only supports `asyncio` when using Python 3.7+
-::::
-
 
