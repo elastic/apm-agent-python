@@ -23,8 +23,6 @@ For other frameworks and custom Python code, the agent exposes a set of [APIs](/
 
 The following Python versions are supported:
 
-* 3.6
-* 3.7
 * 3.8
 * 3.9
 * 3.10
