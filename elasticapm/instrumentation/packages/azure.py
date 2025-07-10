@@ -300,9 +300,12 @@ def handle_azuretable(request, hostname, path, query_params, service, service_ty
     account_name = hostname.split(".")[0]
     method = request.method
     body = request.body
-    try:
-        body = json.loads(body)
-    except json.decoder.JSONDecodeError:  # str not bytes
+    if body:
+        try:
+            body = json.loads(body)
+        except json.decoder.JSONDecodeError:  # str not bytes
+            body = {}
+    else:
         body = {}
     # /tablename(PartitionKey='<partition-key>',RowKey='<row-key>')
     resource_name = path.split("/", 1)[1] if "/" in path else path
@@ -313,7 +316,7 @@ def handle_azuretable(request, hostname, path, query_params, service, service_ty
     }
 
     operation_name = "Unknown"
-    if method.lower() == "put":
+    if method.lower() == "put" or method.lower() == "patch":
         operation_name = "Update"
         if "properties" in query_params.get("comp", []):
             operation_name = "SetProperties"
