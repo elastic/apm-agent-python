@@ -46,9 +46,8 @@ class MySQLCursorProxy(CursorProxy):
 
     @property
     def _self_database(self) -> str:
-        # for unknown reasons, the connection is available as the `_connection` attribute on Python 3.6,
-        # and as `_cnx` on later Python versions
-        connection = getattr(self, "_cnx") or getattr(self, "_connection")
+        # it looks like the connection is available as the `_connection` or as `_cnx` depending on Python versions
+        connection = getattr(self, "_connection", None) or getattr(self, "_cnx", None)
         return connection.database if connection else ""
 
 
