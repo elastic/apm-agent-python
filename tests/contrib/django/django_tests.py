@@ -1250,6 +1250,23 @@ def test_capture_post_errors_dict(client, django_elasticapm_client):
         assert error["context"]["request"]["body"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize(
+    "django_elasticapm_client",
+    [{"capture_body": "errors"}, {"capture_body": "transactions"}, {"capture_body": "all"}, {"capture_body": "off"}],
+    indirect=True,
+)
+def test_capture_django_orm_timeout_error(client, django_elasticapm_client):
+    with pytest.raises(DatabaseError):
+        client.get(reverse("elasticapm-django-orm-exc"))
+
+    errors = django_elasticapm_client.events[ERROR]
+    if django_elasticapm_client.config.capture_body in (constants.ERROR, "all"):
+        stacktrace = errors[0]["exception"]["stacktrace"]
+        frames = [frame for frame in stacktrace if frame["function"] == "django_queryset_error"]
+        qs_var = frames[0]["vars"]["qs"]
+        assert qs_var == "<CustomQuerySet `unevaluated`>"
+
+
 def test_capture_body_config_is_dynamic_for_errors(client, django_elasticapm_client):
     django_elasticapm_client.config.update(version="1", capture_body="all")
     with pytest.raises(MyException):

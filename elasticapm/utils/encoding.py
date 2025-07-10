@@ -36,6 +36,11 @@ import itertools
 import uuid
 from decimal import Decimal
 
+try:
+    from django.db.models import QuerySet as DjangoQuerySet
+except ImportError:
+    DjangoQuerySet = None
+
 from elasticapm.conf.constants import KEYWORD_MAX_LENGTH, LABEL_RE, LABEL_TYPES, LONG_FIELD_MAX_LENGTH
 
 PROTECTED_TYPES = (int, type(None), float, Decimal, datetime.datetime, datetime.date, datetime.time)
@@ -144,6 +149,14 @@ def transform(value, stack=None, context=None):
         ret = float(value)
     elif isinstance(value, int):
         ret = int(value)
+    elif (
+        DjangoQuerySet is not None
+        and isinstance(value, DjangoQuerySet)
+        and getattr(value, "_result_cache", True) is None
+    ):
+        # if we have a Django QuerySet a None result cache it may mean that the underlying query failed
+        # so represent it as unevaluated instead of retrying the query again
+        ret = "<%s `unevaluated`>" % (value.__class__.__name__)
     elif value is not None:
         try:
             ret = transform(repr(value))
