@@ -20,6 +20,24 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 7.0.0 [elastic-apm-python-agent-7000-release-notes]
+**Release date:** July 11, 2025
+
+### Features and enhancements [elastic-apm-python-agent-7000-features-enhancements]
+* Add support for recent sanic versions [#2190](https://github.com/elastic/apm-agent-python/pull/2190), [#2194](https://github.com/elastic/apm-agent-python/pull/2194)
+* Make server certificate verification mandatory in fips mode [#2227](https://github.com/elastic/apm-agent-python/pull/2227)
+* Add support Python 3.13 [#2216](https://github.com/elastic/apm-agent-python/pull/2216)
+* Add support for azure-data-tables package for azure instrumentation [#2187](https://github.com/elastic/apm-agent-python/pull/2187)
+
+### Fixes [elastic-apm-python-agent-7000-fixes]
+* Fix psycopg2 cursor execute and executemany signatures [#2331](https://github.com/elastic/apm-agent-python/pull/2331)
+* Fix psycopg cursor execute and executemany signatures [#2332](https://github.com/elastic/apm-agent-python/pull/2332)
+* Fix asgi middleware distributed tracing [#2334](https://github.com/elastic/apm-agent-python/pull/2334)
+* Fix typing of start in Span / capture_span to float [#2335](https://github.com/elastic/apm-agent-python/pull/2335)
+* Fix azure instrumentation client_class and metrics sets invocation [#2337](https://github.com/elastic/apm-agent-python/pull/2337)
+* Fix mysql_connector instrumentation connection retrieval [#2334](https://github.com/elastic/apm-agent-python/pull/2334)
+* Remove spurious Django QuerySet evaluation in case of database errors [#2158](https://github.com/elastic/apm-agent-python/pull/2158)
+
 ## 6.23.0 [elastic-apm-python-agent-6230-release-notes]
 **Release date:** July 30, 2024
 

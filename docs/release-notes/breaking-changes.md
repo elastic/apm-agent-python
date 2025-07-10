@@ -17,6 +17,14 @@ Before you upgrade, carefully review the Elastic APM RPython Agent breaking chan
 % **Action**<br> Steps for mitigating deprecation impact.
 % ::::
 
+## 7.0.0 [elastic-apm-python-agent-700-breaking-changes]
+**Release date:** July 11, 2025
+
+* Python 3.6 and 3.7 support has been removed. For more information, check [#2338](https://github.com/elastic/apm-agent-python/pull/2338) and [#2340](https://github.com/elastic/apm-agent-python/pull/2340).
+* OpenTracing integration has been removed. For more information, check [#2342](https://github.com/elastic/apm-agent-python/pull/2342).
+* Log shipping fron APM Python agent has been removed, included flask and Django integrations. For more information, check [#2348](https://github.com/elastic/apm-agent-python/pull/2348), [#2346](https://github.com/elastic/apm-agent-python/pull/2346) and [#2345](https://github.com/elastic/apm-agent-python/pull/2345).
+
+
 ## 6.0.0 [elastic-apm-python-agent-600-breaking-changes]
 **Release date:** February 1, 2021
 
