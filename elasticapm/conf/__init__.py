@@ -883,10 +883,6 @@ def setup_logging(handler):
 
     For a typical Python install:
 
-    >>> from elasticapm.handlers.logging import LoggingHandler
-    >>> client = ElasticAPM(...)
-    >>> setup_logging(LoggingHandler(client))
-
     Returns a boolean based on if logging was configured or not.
     """
     # TODO We should probably revisit this. Does it make more sense as
