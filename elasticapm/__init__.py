@@ -28,7 +28,6 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 import sys
-import importlib.metadata
 
 from elasticapm.base import Client, get_client  # noqa: F401
 from elasticapm.conf import setup_logging  # noqa: F401
@@ -55,7 +54,10 @@ __all__ = ("VERSION", "Client")
 _activation_method = None
 
 try:
-    VERSION = importlib.metadata.version("elastic-apm")
+    try:
+        VERSION = __import__("importlib.metadata").metadata.version("elastic-apm")
+    except ImportError:
+        VERSION = __import__("pkg_resources").get_distribution("elastic-apm").version
 except Exception:
     VERSION = "unknown"
 

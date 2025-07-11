@@ -560,9 +560,5 @@ def test_label_without_client():
     elasticapm.label(foo="foo")
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 9),
-    reason="Python 3.8 importlib.metadata.version does not see elasticapm package in path but not installed",
-)
 def test_version_is_not_unknown():
     assert elasticapm.VERSION != "unknown"
