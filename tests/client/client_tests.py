@@ -558,3 +558,7 @@ def test_user_agent(elasticapm_client, expected):
 
 def test_label_without_client():
     elasticapm.label(foo="foo")
+
+
+def test_version_is_not_unknown():
+    assert elasticapm.VERSION != "unknown"
