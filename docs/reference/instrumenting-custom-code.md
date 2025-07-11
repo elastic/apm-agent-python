@@ -50,10 +50,6 @@ async def coffee_maker(strength):
     fresh_pots()
 ```
 
-::::{note}
-`asyncio` support is only available in Python 3.7+.
-::::
-
 
 See [the API docs](/reference/api-reference.md#api-capture-span) for more information on `capture_span`.
 
