@@ -1,4 +1,4 @@
-[[run-tests-locally]]
+[[_run-tests-locally]]
 === Run Tests Locally
 
 To run tests locally you can make use of the docker images also used when running the whole test suite with Jenkins.

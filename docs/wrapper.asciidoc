@@ -1,4 +1,4 @@
-[[wrapper-support]]
+[[_wrapper-support]]
 === Wrapper Support
 
 experimental::[]

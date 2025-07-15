@@ -1,4 +1,4 @@
-[[how-the-agent-works]]
+[[_how-the-agent-works]]
 === How the Agent works
 
 To gather APM events (called transactions and spans), errors and metrics,
@@ -15,7 +15,7 @@ framework integration, instrumentation, and background collection.
 ==== Framework integration
 
 To collect data about incoming requests and background tasks,
-we integrate with frameworks like <<django-support,Django>>, <<flask-support,Flask>> and Celery.
+we integrate with frameworks like <<_django-support,Django>>, <<_flask-support,Flask>> and Celery.
 Whenever possible, framework integrations make use of hooks and signals provided by the framework.
 Examples of this are:
 
@@ -32,7 +32,7 @@ E.g. for Django, you need to add `elasticapm.contrib.django` to `INSTALLED_APPS`
 
 If you're not using a supported framework, for example, a simple Python script, you can still
 leverage the agent's <<automatic-instrumentation,automatic instrumentation>>. Check out
-our docs on <<instrumenting-custom-code, instrumenting custom code>>.
+our docs on <<_instrumenting-custom-code, instrumenting custom code>>.
 
 [float]
 [[how-it-works-instrumentation]]

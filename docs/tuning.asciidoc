@@ -1,4 +1,4 @@
-[[tuning-and-overhead]]
+[[_tuning-and-overhead]]
 == Performance tuning
 
 Using an APM solution comes with certain trade-offs, and the Python agent for Elastic APM is no different.

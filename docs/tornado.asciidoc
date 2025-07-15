@@ -1,4 +1,4 @@
-[[tornado-support]]
+[[_tornado-support]]
 === Tornado Support
 
 Incorporating Elastic APM into your Tornado project only requires a few easy
@@ -28,7 +28,7 @@ The settings are configured either via environment variables,
 the application's settings, or as initialization arguments.
 
 You can find a list of all available settings in the
-<<configuration, Configuration>> page.
+<<_configuration, Configuration>> page.
 
 To initialize the agent for your application using environment variables:
 
@@ -120,6 +120,6 @@ and any requests containing `MainHandler`.
 [[supported-tornado-and-python-versions]]
 ==== Supported tornado and Python versions
 
-A list of supported <<supported-tornado,tornado>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.
+A list of supported <<supported-tornado,tornado>> and <<supported-python,Python>> versions can be found on our <<_supported-technologies,Supported Technologies>> page.
 
 NOTE: Elastic APM only supports `asyncio` when using Python 3.7+

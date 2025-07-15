@@ -1,4 +1,4 @@
-[[aiohttp-server-support]]
+[[_aiohttp-server-support]]
 === Aiohttp Server support
 
 Getting Elastic APM set up for your Aiohttp Server project is easy,
@@ -27,7 +27,7 @@ To set up the agent, you need to initialize it with appropriate settings.
 The settings are configured either via environment variables,
 the application's settings, or as initialization arguments.
 
-You can find a list of all available settings in the <<configuration, Configuration>> page.
+You can find a list of all available settings in the <<_configuration, Configuration>> page.
 
 To initialize the agent for your application using environment variables:
 
@@ -119,6 +119,6 @@ and any requests containing `/api/`.
 [[supported-aiohttp-and-python-versions]]
 ==== Supported aiohttp and Python versions
 
-A list of supported <<supported-aiohttp,aiohttp>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.  
+A list of supported <<supported-aiohttp,aiohttp>> and <<supported-python,Python>> versions can be found on our <<_supported-technologies,Supported Technologies>> page.
 
-NOTE: Elastic APM only supports `asyncio` when using Python 3.7+ 
+NOTE: Elastic APM only supports `asyncio` when using Python 3.7+

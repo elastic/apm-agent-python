@@ -1,4 +1,4 @@
-[[troubleshooting]]
+[[_troubleshooting]]
 == Troubleshooting
 
 Below are some resources and tips for troubleshooting and debugging the

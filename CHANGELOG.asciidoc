@@ -29,7 +29,7 @@ endif::[]
 //===== Bug fixes
 //
 
-[[release-notes-6.x]]
+[[_release-notes-6.x]]
 === Python Agent version 6.x
 
 [[release-notes-6.23.0]]
@@ -740,7 +740,7 @@ s3-prefix).
 
 * Fix for GraphQL span spamming from scalar fields with required flag {pull}1015[#1015]
 
-[[release-notes-5.x]]
+[[_release-notes-5.x]]
 === Python Agent version 5.x
 
 
@@ -1130,7 +1130,7 @@ https://github.com/elastic/apm-agent-python/compare/v4.2.2\...v5.0.0[Check the d
 * Fixed an issue with certificate pinning {pull}497[#497]
 * Lowered log level of transport success messages {pull}527[#527], {pull}531[#531]
 
-[[release-notes-4.x]]
+[[_release-notes-4.x]]
 === Python Agent version 4.x
 
 [[release-notes-4.2.2]]
@@ -1225,7 +1225,7 @@ Other changes:
 * on Python 3.7, use https://docs.python.org/3/library/contextvars.html[contextvars] instead of threadlocals for storing
 current transaction and span. This is a necessary precursor for full asyncio support. {pull}291[#291]
 
-[[release-notes-3.x]]
+[[_release-notes-3.x]]
 === Python Agent version 3.x
 
 [[release-notes-3.0.2]]
@@ -1263,7 +1263,7 @@ from `-1` (always collect) to `5` (only collect for spans longer than 5 ms) {pul
 - added instrumentation for pymssql {pull}241[#241]
 - added instrumentation for pyodbc {pull}238[#238]
 
-[[release-notes-2.x]]
+[[_release-notes-2.x]]
 === Python Agent version 2.x
 
 [[release-notes-2.2.1]]
@@ -1354,7 +1354,7 @@ https://github.com/elastic/apm-agent-python/compare/v1.0.0\...v2.0.0[Check the d
     - `max_event_queue_length` became `max_queue_size`
     - `timeout` became `server_timeout`
 
-[[release-notes-1.x]]
+[[_release-notes-1.x]]
 === Python Agent version 1.x
 
 [[release-notes-1.0.0]]

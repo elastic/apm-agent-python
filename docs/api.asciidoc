@@ -1,4 +1,4 @@
-[[api]]
+[[_api]]
 == API reference
 
 The Elastic APM Python agent has several public APIs.
@@ -28,10 +28,10 @@ from elasticapm import Client
 client = Client({'SERVICE_NAME': 'example'}, **defaults)
 ----
 
- * `config`: A dictionary, with key/value configuration. For the possible configuration keys, see <<configuration, Configuration>>.
+ * `config`: A dictionary, with key/value configuration. For the possible configuration keys, see <<_configuration, Configuration>>.
  * `**defaults`: default values for configuration. These can be omitted in most cases, and take the least precedence.
 
-NOTE: framework integrations like <<django-support, Django>> and <<flask-support, Flask>>
+NOTE: framework integrations like <<_django-support, Django>> and <<_flask-support, Flask>>
 instantiate the client automatically.
 
 [float]

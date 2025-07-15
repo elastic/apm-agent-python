@@ -45,7 +45,7 @@ The settings are configured either via environment variables, or as
 initialization arguments.
 
 You can find a list of all available settings in the
-<<configuration, Configuration>> page.
+<<_configuration, Configuration>> page.
 
 To initialize the agent for your application using environment variables:
 

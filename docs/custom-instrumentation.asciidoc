@@ -1,4 +1,4 @@
-[[instrumenting-custom-code]]
+[[_instrumenting-custom-code]]
 === Instrumenting custom code
 
 [float]
@@ -9,7 +9,7 @@ Elastic APM instruments a variety of libraries out of the box, but sometimes you
 need to know how long a specific function took or how often it gets
 called.
 
-Assuming you're using one of our <<set-up, supported frameworks>>, you can
+Assuming you're using one of our <<_set-up, supported frameworks>>, you can
 apply the `@elasticapm.capture_span()` decorator to achieve exactly that. If
 you're not using a supported framework, see
 <<instrumenting-custom-code-transactions, Creating New Transactions>>.
@@ -64,7 +64,7 @@ See <<api-capture-span, the API docs>> for more information on `capture_span`.
 ==== Creating New Transactions
 
 It's important to note that `elasticapm.capture_span` only works if there is
-an existing transaction. If you're not using one of our <<set-up, supported
+an existing transaction. If you're not using one of our <<_set-up, supported
 frameworks>>, you need to create a `Client` object and begin and end the
 transactions yourself. You can even utilize the agent's
 <<automatic-instrumentation,automatic instrumentation>>!

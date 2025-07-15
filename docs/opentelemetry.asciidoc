@@ -1,4 +1,4 @@
-[[opentelemetry-bridge]]
+[[_opentelemetry-bridge]]
 == OpenTelemetry API Bridge
 
 The Elastic APM OpenTelemetry bridge allows you to create Elastic APM `Transactions` and `Spans`,
@@ -57,7 +57,7 @@ with tracer.start_as_current_span("test"):
 
   * `elasticapm_client`: an already instantiated Elastic APM client
   * `config`: a configuration dictionary, which will be used to instantiate a new Elastic APM client,
-     e.g. `{"SERVER_URL": "https://example.org"}`. See <<configuration, configuration>> for more information.
+     e.g. `{"SERVER_URL": "https://example.org"}`. See <<_configuration, configuration>> for more information.
 
 The `Tracer` object mirrors the upstream interface on the
 https://opentelemetry-python.readthedocs.io/en/latest/api/trace.html#opentelemetry.trace.Tracer[OpenTelemetry `Tracer` object.]
