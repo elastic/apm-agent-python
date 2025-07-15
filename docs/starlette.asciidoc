@@ -1,4 +1,4 @@
-[[starlette-support]]
+[[_starlette-support]]
 === Starlette/FastAPI Support
 
 Incorporating Elastic APM into your Starlette project only requires a few easy
@@ -28,7 +28,7 @@ The settings are configured either via environment variables, or as
 initialization arguments.
 
 You can find a list of all available settings in the
-<<configuration, Configuration>> page.
+<<_configuration, Configuration>> page.
 
 To initialize the agent for your application using environment variables, add
 the ElasticAPM middleware to your Starlette application:
@@ -59,7 +59,7 @@ from elasticapm.contrib.starlette import make_apm_client, ElasticAPM
 apm = make_apm_client({
     'SERVICE_NAME': '<SERVICE-NAME>',
     'SECRET_TOKEN': '<SECRET-TOKEN>',
-    'SERVER_URL': '<SERVER-URL>',    
+    'SERVER_URL': '<SERVER-URL>',
 })
 app = Starlette()
 app.add_middleware(ElasticAPM, client=apm)
@@ -147,6 +147,6 @@ and any requests containing `/extra_secret`.
 
 A list of supported <<supported-starlette,Starlette>> and
 <<supported-python,Python>> versions can be found on our
-<<supported-technologies,Supported Technologies>> page.
+<<_supported-technologies,Supported Technologies>> page.
 
 NOTE: Elastic APM only supports `asyncio` when using Python 3.7+

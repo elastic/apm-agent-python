@@ -1,18 +1,18 @@
-[[supported-technologies]]
+[[_supported-technologies]]
 == Supported Technologies
 
 [[framework-support]]
 The Elastic APM Python Agent comes with support for the following frameworks:
 
- * <<django-support,Django>>
- * <<flask-support,Flask>>
+ * <<_django-support,Django>>
+ * <<_flask-support,Flask>>
  * <<supported-aiohttp,Aiohttp Server>>
  * <<supported-tornado,Tornado>>
  * <<supported-starlette,Starlette/FastAPI>>
  * <<supported-sanic,Sanic>>
  * <<supported-grpc,GRPC>>
 
-For other frameworks and custom Python code, the agent exposes a set of <<api,APIs>> for integration.
+For other frameworks and custom Python code, the agent exposes a set of <<_api,APIs>> for integration.
 
 [float]
 [[supported-python]]

@@ -1,4 +1,4 @@
-[[getting-started]]
+[[_getting-started]]
 == Introduction
 
 The Elastic APM Python agent sends performance metrics and error logs to the APM Server.
@@ -10,7 +10,7 @@ It has built-in support for Django and Flask performance metrics and error loggi
 
 The Python Agent instruments your application to collect APM events in a few different ways:
 
-To collect data about incoming requests and background tasks, the Agent integrates with <<supported-technologies,supported technologies>> to make use of hooks and signals provided by the framework.
+To collect data about incoming requests and background tasks, the Agent integrates with <<_supported-technologies,supported technologies>> to make use of hooks and signals provided by the framework.
 These framework integrations require limited code changes in your application.
 
 To collect data from database drivers, HTTP libraries etc.,
@@ -21,7 +21,7 @@ In addition to APM and error data,
 the Python agent also collects system and application metrics in regular intervals.
 This collection happens in a background thread that is started by the agent.
 
-More detailed information on how the Agent works can be found in the <<how-the-agent-works,advanced topics>>.
+More detailed information on how the Agent works can be found in the <<_how-the-agent-works,advanced topics>>.
 
 [float]
 [[additional-components]]

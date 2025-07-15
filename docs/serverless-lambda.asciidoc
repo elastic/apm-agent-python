@@ -1,4 +1,4 @@
-[[lambda-support]]
+[[_lambda-support]]
 === Monitoring AWS Lambda Python Functions
 :layer-section-type: with-agent
 :apm-aws-repo-dir: ./lambda
@@ -43,11 +43,11 @@ For production environments, we recommend {apm-lambda-ref}/aws-lambda-secrets-ma
 include::./lambda/configure-lambda-widget.asciidoc[]
 <1> The {apm-lambda-ref}/aws-lambda-config-options.html#_elastic_apm_send_strategy[`ELASTIC_APM_SEND_STRATEGY`] defines when APM data is sent to your Elastic APM backend. To reduce the execution time of your lambda functions, we recommend to use the `background` strategy in production environments with steady load scenarios.
 
-You can optionally <<configuration,fine-tune the Python agent>> or the {apm-lambda-ref}/aws-lambda-config-options.html[configuration of the {apm-lambda-ext}].
+You can optionally <<_configuration,fine-tune the Python agent>> or the {apm-lambda-ref}/aws-lambda-config-options.html[configuration of the {apm-lambda-ext}].
 
 That's it. After following the steps above, you're ready to go!  Your Lambda
 function invocations should be traced from now on.  Spans will be captured for
-<<supported-technologies,supported technologies>>. You can also use
+<<_supported-technologies,supported technologies>>. You can also use
 <<api-capture-span,`capture_span`>> to capture custom spans, and you can
 retrieve the `Client` object for capturing exceptions/messages using
 <<api-get-client,`get_client`>>.

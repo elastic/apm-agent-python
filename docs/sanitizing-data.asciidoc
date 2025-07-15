@@ -1,4 +1,4 @@
-[[sanitizing-data]]
+[[_sanitizing-data]]
 === Sanitizing data
 
 Sometimes it is necessary to sanitize the data sent to Elastic APM,

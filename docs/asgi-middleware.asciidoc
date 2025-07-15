@@ -1,4 +1,4 @@
-[[asgi-middleware]]
+[[_asgi-middleware]]
 === ASGI Middleware
 
 experimental::[]
@@ -7,7 +7,7 @@ Incorporating Elastic APM into your ASGI-based project only requires a few easy
 steps.
 
 NOTE: Several ASGI frameworks are supported natively.
-Please check <<supported-technologies,Supported Technologies>> for more information
+Please check <<_supported-technologies,Supported Technologies>> for more information
 
 [float]
 [[asgi-installation]]
@@ -33,7 +33,7 @@ The settings are configured either via environment variables, or as
 initialization arguments.
 
 You can find a list of all available settings in the
-<<configuration, Configuration>> page.
+<<_configuration, Configuration>> page.
 
 To set up the APM agent, wrap your ASGI app with the `ASGITracingMiddleware`:
 
@@ -49,13 +49,13 @@ app = ASGITracingMiddleware(app)
 
 Make sure to call <<api-set-transaction-name, `elasticapm.set_transaction_name()`>> with an appropriate transaction name in all your routes.
 
-NOTE: Currently, the agent doesn't support automatic capturing of exceptions. 
+NOTE: Currently, the agent doesn't support automatic capturing of exceptions.
 You can follow progress on this issue on https://github.com/elastic/apm-agent-python/issues/1548[Github].
 
 [float]
 [[supported-python-versions]]
 ==== Supported Python versions
 
-A list of supported <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.
+A list of supported <<supported-python,Python>> versions can be found on our <<_supported-technologies,Supported Technologies>> page.
 
 NOTE: Elastic APM only supports `asyncio` when using Python 3.7+

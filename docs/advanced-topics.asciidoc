@@ -1,10 +1,10 @@
-[[advanced-topics]]
+[[_advanced-topics]]
 == Advanced Topics
 
-* <<instrumenting-custom-code>>
-* <<sanitizing-data>>
-* <<how-the-agent-works>>
-* <<run-tests-locally>>
+* <<_instrumenting-custom-code>>
+* <<_sanitizing-data>>
+* <<_how-the-agent-works>>
+* <<_run-tests-locally>>
 
 include::./custom-instrumentation.asciidoc[Custom Instrumentation]
 include::./sanitizing-data.asciidoc[Sanitizing Data]

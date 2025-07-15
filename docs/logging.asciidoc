@@ -1,4 +1,4 @@
-[[logs]]
+[[_logs]]
 == Logs
 
 Elastic Python APM Agent provides the following log features:

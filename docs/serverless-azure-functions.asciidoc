@@ -1,4 +1,4 @@
-[[azure-functions-support]]
+[[_azure-functions-support]]
 === Monitoring Azure Functions
 
 [float]
@@ -52,10 +52,10 @@ $ az functionapp config appsettings set --settings ELASTIC_APM_SERVER_URL=https:
 $ az functionapp config appsettings set --settings ELASTIC_APM_SECRET_TOKEN=verysecurerandomstring
 ----
 
-You can optionally <<configuration,fine-tune the Python agent>>.
+You can optionally <<_configuration,fine-tune the Python agent>>.
 
 That's it; Once the agent is installed and working, spans will be captured for
-<<supported-technologies,supported technologies>>. You can also use
+<<_supported-technologies,supported technologies>>. You can also use
 <<api-capture-span,`capture_span`>> to capture custom spans, and
 you can retrieve the `Client` object for capturing exceptions/messages
 using <<api-get-client,`get_client`>>.

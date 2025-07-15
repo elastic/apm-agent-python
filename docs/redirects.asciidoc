@@ -6,9 +6,191 @@ The following pages have moved or been deleted.
 [role="exclude",id="opentracing-bridge"]
 === OpenTracing API
 
-Refer to <<opentelemetry-bridge>> instead.
+Refer to <<_opentelemetry-bridge>> instead.
 
 [role="exclude",id="log-correlation"]
 === Log correlation
 
-Refer to <<logs>> instead.
+Refer to <<_logs>> instead.
+
+
+// Temporary redirects
+[id="getting-started",role="exclude"]
+=== Introduction
+
+Moved to <<_getting-started>>.
+
+[id="set-up",role="exclude"]
+=== Set up the Agent
+
+Moved to <<_set-up>>.
+
+[id="django-support",role="exclude"]
+=== Django support
+
+Moved to <<_django-support>>.
+
+[id="flask-support",role="exclude"]
+=== Flask support
+
+Moved to <<_flask-support>>.
+
+[id="aiohttp-server-support",role="exclude"]
+=== Aiohttp Server support
+
+Moved to <<_aiohttp-server-support>>.
+
+[id="tornado-support",role="exclude"]
+=== Tornado Support
+
+Moved to <<_tornado-support>>.
+
+[id="starlette-support",role="exclude"]
+=== Starlette/FastAPI Support
+
+Moved to <<_starlette-support>>.
+
+[id="sanic-support",role="exclude"]
+=== Sanic Support
+
+Moved to <<_sanic-support>>.
+
+[id="lambda-support",role="exclude"]
+=== Monitoring AWS Lambda Python Functions
+
+Moved to <<_lambda-support>>.
+
+[id="azure-functions-support",role="exclude"]
+=== Monitoring Azure Functions
+
+Moved to <<_azure-functions-support>>.
+
+[id="wrapper-support",role="exclude"]
+=== Wrapper Support
+
+Moved to <<_wrapper-support>>.
+
+[id="asgi-middleware",role="exclude"]
+=== ASGI Middleware
+
+Moved to <<_asgi-middleware>>.
+
+[id="supported-technologies",role="exclude"]
+=== Supported Technologies
+
+Moved to <<_supported-technologies>>.
+
+[id="configuration",role="exclude"]
+=== Configuration
+
+Moved to <<_configuration>>.
+
+[id="advanced-topics",role="exclude"]
+=== Advanced Topics
+
+Moved to <<_advanced-topics>>.
+
+[id="instrumenting-custom-code",role="exclude"]
+=== Instrumenting custom code
+
+Moved to <<_instrumenting-custom-code>>.
+
+[id="sanitizing-data",role="exclude"]
+=== Sanitizing data
+
+Moved to <<_sanitizing-data>>.
+
+[id="how-the-agent-works",role="exclude"]
+=== How the Agent works
+
+Moved to <<_how-the-agent-works>>.
+
+[id="run-tests-locally",role="exclude"]
+=== Run Tests Locally
+
+Moved to <<_run-tests-locally>>.
+
+[id="api",role="exclude"]
+=== API reference
+
+Moved to <<_api>>.
+
+[id="metrics",role="exclude"]
+=== Metrics
+
+Moved to <<_metrics>>.
+
+[id="opentelemetry-bridge",role="exclude"]
+=== OpenTelemetry API Bridge
+
+Moved to <<_opentelemetry-bridge>>.
+
+[id="logs",role="exclude"]
+=== Logs
+
+Moved to <<_logs>>.
+
+[id="tuning-and-overhead",role="exclude"]
+=== Performance tuning
+
+Moved to <<_tuning-and-overhead>>.
+
+[id="troubleshooting",role="exclude"]
+=== Troubleshooting
+
+Moved to <<_troubleshooting>>.
+
+[id="upgrading",role="exclude"]
+=== Upgrading
+
+Moved to <<_upgrading>>.
+
+[id="upgrading-6.x",role="exclude"]
+=== Upgrading to version 6 of the agent
+
+Moved to <<_upgrading-6.x>>.
+
+[id="upgrading-5.x",role="exclude"]
+=== Upgrading to version 5 of the agent
+
+Moved to <<_upgrading-5.x>>.
+
+[id="upgrading-4.x",role="exclude"]
+=== Upgrading to version 4 of the agent
+
+Moved to <<_upgrading-4.x>>.
+
+[id="release-notes",role="exclude"]
+=== Release notes
+
+Moved to <<_release-notes>>.
+
+[id="release-notes-6.x",role="exclude"]
+=== Python Agent version 6.x
+
+Moved to <<_release-notes-6.x>>.
+
+[id="release-notes-5.x",role="exclude"]
+=== Python Agent version 5.x
+
+Moved to <<_release-notes-5.x>>.
+
+[id="release-notes-4.x",role="exclude"]
+=== Python Agent version 4.x
+
+Moved to <<_release-notes-4.x>>.
+
+[id="release-notes-3.x",role="exclude"]
+=== Python Agent version 3.x
+
+Moved to <<_release-notes-3.x>>.
+
+[id="release-notes-2.x",role="exclude"]
+=== Python Agent version 2.x
+
+Moved to <<_release-notes-2.x>>.
+
+[id="release-notes-1.x",role="exclude"]
+=== Python Agent version 1.x
+
+Moved to <<_release-notes-1.x>>.

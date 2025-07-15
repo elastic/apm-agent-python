@@ -1,20 +1,20 @@
-[[set-up]]
+[[_set-up]]
 == Set up the Agent
 
 To get you off the ground, we’ve prepared guides for setting up the Agent with different frameworks:
 
- * <<django-support,Django>>
- * <<flask-support,Flask>>
- * <<aiohttp-server-support,aiohttp>>
- * <<tornado-support,Tornado>>
- * <<starlette-support,Starlette/FastAPI>>
- * <<sanic-support,Sanic>>
- * <<lambda-support,AWS Lambda>>
- * <<azure-functions-support,Azure Functions>>
- * <<wrapper-support,Wrapper (Experimental)>>
- * <<asgi-middleware,ASGI Middleware>>
+ * <<_django-support,Django>>
+ * <<_flask-support,Flask>>
+ * <<_aiohttp-server-support,aiohttp>>
+ * <<_tornado-support,Tornado>>
+ * <<_starlette-support,Starlette/FastAPI>>
+ * <<_sanic-support,Sanic>>
+ * <<_lambda-support,AWS Lambda>>
+ * <<_azure-functions-support,Azure Functions>>
+ * <<_wrapper-support,Wrapper (Experimental)>>
+ * <<_asgi-middleware,ASGI Middleware>>
 
-For custom instrumentation, see <<instrumenting-custom-code, Instrumenting Custom Code>>.
+For custom instrumentation, see <<_instrumenting-custom-code, Instrumenting Custom Code>>.
 
 include::./django.asciidoc[]
 

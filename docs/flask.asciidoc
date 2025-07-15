@@ -1,4 +1,4 @@
-[[flask-support]]
+[[_flask-support]]
 === Flask support
 
 Getting Elastic APM set up for your Flask project is easy,
@@ -36,7 +36,7 @@ To set up the agent, you need to initialize it with appropriate settings.
 The settings are configured either via environment variables,
 the application's settings, or as initialization arguments.
 
-You can find a list of all available settings in the <<configuration, Configuration>> page.
+You can find a list of all available settings in the <<_configuration, Configuration>> page.
 
 To initialize the agent for your application using environment variables:
 
@@ -140,7 +140,7 @@ apm.capture_message('hello, world!')
 
 This feature has been deprecated and will be removed in a future version.
 
-Please see our <<logs,Logging>> documentation for other supported ways to ship
+Please see our <<_logs,Logging>> documentation for other supported ways to ship
 logs to Elasticsearch.
 
 Note that you can always send exceptions and messages to the APM Server with
@@ -242,4 +242,4 @@ See the {apm-rum-ref}[JavaScript RUM agent documentation] for more information.
 [[supported-flask-and-python-versions]]
 ==== Supported Flask and Python versions
 
-A list of supported <<supported-flask,Flask>> and <<supported-python,Python>> versions can be found on our <<supported-technologies,Supported Technologies>> page.
+A list of supported <<supported-flask,Flask>> and <<supported-python,Python>> versions can be found on our <<_supported-technologies,Supported Technologies>> page.
