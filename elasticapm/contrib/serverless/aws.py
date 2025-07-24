@@ -235,10 +235,19 @@ class _lambda_transaction(object):
                 transaction_name = "RECEIVE {}".format(record["eventSourceARN"].split(":")[5])
 
         if "Records" in self.event:
+            # SQS
             links = [
                 TraceParent.from_string(record["messageAttributes"]["traceparent"]["stringValue"])
                 for record in self.event["Records"][:1000]
                 if "messageAttributes" in record and "traceparent" in record["messageAttributes"]
+            ]
+            # SNS
+            links += [
+                TraceParent.from_string(record["Sns"]["MessageAttributes"]["traceparent"]["Value"])
+                for record in self.event["Records"][:1000]
+                if "Sns" in record
+                and "MessageAttributes" in record["Sns"]
+                and "traceparent" in record["Sns"]["MessageAttributes"]
             ]
         else:
             links = []
