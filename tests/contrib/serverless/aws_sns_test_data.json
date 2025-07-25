@@ -27,6 +27,10 @@
                     "City": {
                         "Type": "String",
                         "Value": "Any City"
+                    },
+                    "traceparent": {
+                        "Type": "String",
+                        "Value": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00"
                     }
                 }
             }
