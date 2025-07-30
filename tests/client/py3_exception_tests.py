@@ -38,7 +38,7 @@
 #
 #
 
-import mock
+from unittest import mock
 
 from elasticapm.conf.constants import ERROR
 
