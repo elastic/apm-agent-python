@@ -33,7 +33,7 @@ import pytest  # isort:skip
 flask = pytest.importorskip("flask")  # isort:skip
 celery = pytest.importorskip("celery")  # isort:skip
 
-import mock
+from unittest import mock
 
 from elasticapm.conf.constants import ERROR, TRANSACTION
 

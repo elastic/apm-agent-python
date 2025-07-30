@@ -33,8 +33,8 @@ import pytest  # isort:skip
 tornado = pytest.importorskip("tornado")  # isort:skip
 
 import os
+from unittest import mock
 
-import mock
 from wrapt import BoundFunctionWrapper
 
 import elasticapm
