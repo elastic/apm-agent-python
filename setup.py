@@ -46,6 +46,15 @@ import os
 
 from setuptools import setup
 
+try:
+    import importlib.metadata
+
+    importlib.metadata.requires("setuptools")
+except ImportError:
+    import pkg_resources
+
+    pkg_resources.require("setuptools")
+
 
 def get_version():
     """
