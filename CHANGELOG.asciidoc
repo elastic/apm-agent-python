@@ -29,6 +29,40 @@ endif::[]
 //===== Bug fixes
 //
 
+[[release-notes-7.x]]
+=== Python Agent version 7.x
+
+[[release-notes-7.0.0]]
+==== 7.0.0 - 2025-07-11
+
+[float]
+===== Features
+
+* Add support for recent sanic versions {pull}2190[#2190], {pull}2194[#2194]
+* Make server certificate verification mandatory in fips mode {pull}2227[#2227]
+* Add support Python 3.13 {pull}2216[#2216]
+* Add support for azure-data-tables package for azure instrumentation {pull}2187[#2187]
+
+[float]
+===== Bug fixes
+
+* Fix psycopg2 cursor execute and executemany signatures {pull}2331[#2331]
+* Fix psycopg cursor execute and executemany signatures {pull}2332[#2332]
+* Fix asgi middleware distributed tracing {pull}2334[#2334]
+* Fix typing of start in Span / capture_span to float {pull}2335[#2335]
+* Fix azure instrumentation client_class and metrics sets invocation {pull}2337[#2337]
+* Fix mysql_connector instrumentation connection retrieval {pull}2334[#2334]
+* Remove spurious Django QuerySet evaluation in case of database errors {pull}2158[#2158]
+
+===== Breaking changes
+
+* Drop support for Python 3.6 {pull}2338[#2338]
+* Drop support for OpenTracing integration {pull}2342[#2342]
+* Drop support for Python 3.7 {pull}2340[#2340]
+* Remove deprecated Django LoggingHandler log shipping {pull}2345[#2345]
+* Remove deprecated flask log shipping {pull}2346[#2346]
+* Remove deprecated LoggingHandler for log shipping {pull}2348[#2348]
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
