@@ -274,33 +274,44 @@ def test_send_remote_failover_sync(should_try, sending_elasticapm_client, caplog
     assert not sending_elasticapm_client._transport.state.did_fail()
 
 
-@mock.patch("elasticapm.transport.http.Transport.send")
-@mock.patch("elasticapm.transport.base.TransportState.should_try")
-def test_send_remote_failover_sync_non_transport_exception_error(should_try, http_send, caplog):
-    should_try.return_value = True
-
+@mock.patch("elasticapm.transport.base.TransportState.should_try", return_value=True)
+def test_send_remote_failover_sync_non_transport_exception_error(should_try, caplog):
     client = Client(
         server_url="http://example.com",
         service_name="app_name",
         secret_token="secret",
-        transport_class="elasticapm.transport.http.Transport",
+        transport_class="tests.fixtures.MockSendHTTPTransport",
         metrics_interval="0ms",
         metrics_sets=[],
     )
+
     # test error
-    http_send.side_effect = ValueError("oopsie")
+    client._transport.send_mock.side_effect = ValueError("oopsie")
     with caplog.at_level("ERROR", "elasticapm.transport"):
         client.capture_message("foo", handled=False)
-    client._transport.flush()
+    try:
+        client._transport.flush()
+    except ValueError:
+        # give flush a bit more room because we may take a bit more than the max timeout to flush
+        client._transport._flushed.wait(timeout=1)
     assert client._transport.state.did_fail()
     assert_any_record_contains(caplog.records, "oopsie", "elasticapm.transport")
 
     # test recovery
-    http_send.side_effect = None
+    client._transport.send_mock.side_effect = None
     client.capture_message("foo", handled=False)
-    client.close()
+    try:
+        client._transport.flush()
+    except ValueError:
+        # give flush a bit more room because we may take a bit more than the max timeout to flush
+        client._transport._flushed.wait(timeout=1)
+    # We have a race here with the queue where we would end up checking for did_fail before the message
+    # is being handled by the queue, so sleep a bit and retry to give it enough time
+    retries = 0
+    while client._transport.state.did_fail() and retries < 3:
+        time.sleep(0.1)
+        retries += 1
     assert not client._transport.state.did_fail()
-    client.close()
 
 
 @pytest.mark.parametrize("validating_httpserver", [{"skip_validate": True}], indirect=True)

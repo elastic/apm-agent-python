@@ -59,6 +59,7 @@ from elasticapm.base import Client
 from elasticapm.conf.constants import SPAN
 from elasticapm.instrumentation import register
 from elasticapm.traces import execution_context
+from elasticapm.transport.http import Transport
 from elasticapm.transport.http_base import HTTPTransportBase
 from elasticapm.utils.threading import ThreadManager
 
@@ -394,6 +395,18 @@ class DummyTransport(HTTPTransportBase):
 
     def get_config(self, current_version=None, keys=None):
         return False, None, 30
+
+
+class MockSendHTTPTransport(Transport):
+    """Mocking the send method of the Transport class sometimes fails silently in client tests.
+    After spending some time trying to understand this with no luck just use this class instead."""
+
+    def __init__(self, url, *args, **kwargs):
+        self.send_mock = mock.Mock()
+        super().__init__(url, *args, **kwargs)
+
+    def send(self, data, forced_flush=False, custom_url=None, custom_headers=None):
+        return self.send_mock(data, forced_flush, custom_url, custom_headers)
 
 
 class TempStoreClient(Client):
