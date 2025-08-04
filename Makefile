@@ -10,8 +10,14 @@ flake8:
 test:
 	# delete any __pycache__ folders to avoid hard-to-debug caching issues
 	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
-	echo "Python 3.7+, with asyncio"; \
-	pytest -v $(PYTEST_ARGS) --showlocals $(PYTEST_MARKER) $(PYTEST_JUNIT); \
+	# pypy3 should be added to the first `if` once it supports py3.7
+	if [[ "$$PYTHON_VERSION" =~ ^(3.7|3.8|3.9|3.10|3.11|3.12|3.13|nightly)$$ ]] ; then \
+		echo "Python 3.7+, with asyncio"; \
+		pytest -v $(PYTEST_ARGS) --showlocals $(PYTEST_MARKER) $(PYTEST_JUNIT); \
+	else \
+		echo "Python < 3.7, without asyncio"; \
+		pytest -v $(PYTEST_ARGS) --showlocals $(PYTEST_MARKER) $(PYTEST_JUNIT) --ignore-glob='*/asyncio*/*'; \
+	fi
 
 coverage: PYTEST_ARGS=--cov --cov-context=test --cov-config=setup.cfg --cov-branch
 coverage: export COVERAGE_FILE=.coverage.docker.$(PYTHON_FULL_VERSION).$(FRAMEWORK)
