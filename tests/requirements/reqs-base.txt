@@ -1,6 +1,8 @@
-pytest==7.4.0
+pytest==7.0.1 ; python_version == '3.6'
+pytest==7.4.0 ; python_version > '3.6'
 pytest-random-order==1.1.0
 pytest-django==4.4.0
+coverage==6.2 ; python_version == '3.6'
 coverage==6.3 ; python_version == '3.7'
 coverage[toml]==6.3 ; python_version == '3.7'
 coverage==7.3.1 ; python_version > '3.7'
@@ -8,11 +10,16 @@ pytest-cov==4.0.0 ; python_version < '3.8'
 pytest-cov==4.1.0 ; python_version > '3.7'
 jinja2==3.1.5 ; python_version == '3.7'
 pytest-localserver==0.9.0
-pytest-mock==3.10.0
-pytest-benchmark==4.0.0
-pytest-bdd==6.1.1
-pytest-rerunfailures==11.1.2
-jsonschema==4.17.3
+pytest-mock==3.6.1 ; python_version == '3.6'
+pytest-mock==3.10.0 ; python_version > '3.6'
+pytest-benchmark==3.4.1 ; python_version == '3.6'
+pytest-benchmark==4.0.0 ; python_version > '3.6'
+pytest-bdd==5.0.0 ; python_version == '3.6'
+pytest-bdd==6.1.1 ; python_version > '3.6'
+pytest-rerunfailures==10.2 ; python_version == '3.6'
+pytest-rerunfailures==11.1.2 ; python_version > '3.6'
+jsonschema==3.2.0 ; python_version == '3.6'
+jsonschema==4.17.3 ; python_version > '3.6'
 
 
 urllib3!=2.0.0,<3.0.0
@@ -24,6 +31,6 @@ structlog
 wrapt>=1.14.1,!=1.15.0
 simplejson
 
-pytest-asyncio==0.21.0
-asynctest==0.13.0
+pytest-asyncio==0.21.0 ; python_version >= '3.7'
+asynctest==0.13.0 ; python_version >= '3.7'
 typing_extensions!=3.10.0.1 ; python_version >= '3.10' # see https://github.com/python/typing/issues/865

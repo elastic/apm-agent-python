@@ -114,6 +114,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          #  - version: "3.6"
+          #    framework: "none"
+          #    asyncio: "true"
           #  - version: "3.7"
           #    framework: none
           #    asyncio: true
